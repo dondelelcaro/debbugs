@@ -98,7 +98,8 @@ sub display_entity ($$$$\$\@) {
     }
 
     return if not $top and $disposition eq 'attachment' and not defined($att);
-    return unless ($type =~ m[^text/?] and $type !~ m[^text/html(?:;|$)]) or
+    return unless ($type =~ m[^text/?] and
+		   $type !~ m[^text/(?:html|enriched)(?:;|$)]) or
 		  $type =~ m[^application/pgp(?:;|$)] or
 		  $entity->parts;
 

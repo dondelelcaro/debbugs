@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.40 2003/08/30 00:15:15 cjwatson Exp $
+# $Id: errorlib.in,v 1.41 2004/02/15 16:12:00 cjwatson Exp $
 
 use Mail::Address;
 
@@ -347,8 +347,7 @@ sub appendfile {
 sub getmailbody {
 	my $entity = shift;
 	my $type = $entity->effective_type;
-	if ($type eq 'text/plain' or
-	    ($type =~ m#text/# and $type ne 'text/html') or
+	if ($type =~ m#text/(?!html|enriched)# or
 	    $type eq 'application/pgp') {
 		return $entity->bodyhandle;
 	} elsif ($type eq 'multipart/alternative') {
