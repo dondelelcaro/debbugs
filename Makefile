@@ -37,7 +37,8 @@ $(scripts_dir) $(examples_dir); \
 	# install examples
 	$(install_data) scripts/config.in $(examples_dir)/config
 	$(install_data) scripts/text.in $(examples_dir)/text
-	$(install_data) debian/crontab $(examples_dir)/crontab
+	$(install_data) debian/crontab misc/nextnumber misc/Maintainers \
+          misc/pseudo-packages.description $(examples_dir)
 
 	# install the HTML pages etc
 	$(foreach html, $(htmls_in), $(install_data) $(html) $(etc_dir)/html;)
@@ -51,6 +52,5 @@ $(scripts_dir) $(examples_dir); \
 	# install debbugsconfig
 	$(install_exec) debian/debbugsconfig $(sbin_dir)
 
-	# install the config files
-	$(install_data) misc/nextnumber $(examples_dir)
+	# install the updateseqs file
 	$(install_data) misc/updateseqs $(var_dir)/spool
