@@ -155,14 +155,19 @@ if (defined $pkg || defined $src) {
 	if ($pkg) {
 		print "You may want to refer to the following packages that are part of the same source:<br>\n";
 	} else {
-		print "You may want to refer to the following packages' individual bug pages:<br>\n";
+		print "You may want to refer to the following individual bug pages:<br>\n";
 	}
 	print join( ", ", map( "<A href=\"" . pkgurl($_) . "\">$_</A>", @pkgs ) );
-	print "\n";
+	print ".\n";
     }
     if ($pkg) {
 	my $stupidperl = ${debbugs::gPackagePages};
-	printf "<p>You might like to refer to the <a href=\"%s\">%s package page</a>, or to the source package <a href=\"%s\">%s</a>'s bug page.</p>\n", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg"), urlsanit(srcurl($pkg)), $pkgsrc{$pkg};
+	printf "<p>You might like to refer to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
+	if ($src) {
+	    printf ", or to the source package <a href=\"%s\">%s</a>'s bug page.</p>\n", srcurl($pkg), htmlsanit($pkgsrc{$pkg});
+	} else {
+	    printf ".\n";
+	}
     }
 } elsif (defined $maint || defined $maintenc) {
     print "<p>Note that maintainers may use different Maintainer fields for\n";
