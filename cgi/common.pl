@@ -198,12 +198,12 @@ sub htmlizebugs {
 }
 
 sub submitterbugs {
-    my $maint = shift;
+    my $submitter = shift;
     my $chk = sub {
         my %d = @_;
-        ($maintemail = $d{"maint"}) =~ s/\s*\(.*\)\s*//;
-        if ($maintemail =~ m/<(.*)>/) { $maintemail = $1 }
-        return $maintemail eq $maint;
+        ($subemail = $d{"submitter"}) =~ s/\s*\(.*\)\s*//;
+        if ($subemail =~ m/<(.*)>/) { $subemail = $1 }
+        return $subemail eq $submitter;
     };
     return getbugs($chk);
 }
@@ -244,7 +244,7 @@ sub getbugs {
     while(<I>) 
     {
         if (m/^(\S+)\s+(\d+)\s+(\S+)\s+(\d+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.+)$/) {
-            if ($bugfunc->(pkg => $1, bug => $2, maint => $5,
+            if ($bugfunc->(pkg => $1, bug => $2, submitter => $5,
 			   severity => $6, title => $7))
 	    {
 	    	push (@result, $2);
