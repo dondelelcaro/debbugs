@@ -129,7 +129,7 @@ sub quitcgi {
 sub splitpackages {
     my $pkgs = shift;
     return unless defined $pkgs;
-    return split /[ \t?,()]+/, $pkgs;
+    return map lc, split /[ \t?,()]+/, $pkgs;
 }
 
 # Generate a comma-separated list of HTML links to each package given in
