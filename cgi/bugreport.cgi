@@ -74,7 +74,7 @@ sub display_entity ($$$$\$\@) {
 	$$this .= "\n";
     }
 
-    unless (($top and $type =~ m[^text/plain(?:;|$)]) or
+    unless (($top and $type =~ m[^text(?:/plain)?(?:;|$)]) or
 	    ($type =~ m[^multipart/])) {
 	push @$attachments, $entity;
 	my @dlargs = ($ref, "msg=$xmessage", "att=$#$attachments");
@@ -98,7 +98,7 @@ sub display_entity ($$$$\$\@) {
     }
 
     return if $disposition eq 'attachment' and not defined($att);
-    return unless ($type =~ m[^text/] and $type !~ m[^text/html(?:;|$)]) or
+    return unless ($type =~ m[^text/?] and $type !~ m[^text/html(?:;|$)]) or
 		  $type =~ m[^application/pgp(?:;|$)] or
 		  $entity->is_multipart;
 
