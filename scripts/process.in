@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.44 2002/01/18 07:31:33 ajt Exp $
+# $Id: process.in,v 1.45 2002/01/19 05:38:29 ajt Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -933,7 +933,9 @@ sub checkmaintainers {
     for $p (split(m/[ \t?,()]+/,$s_package)) {
         $p =~ y/A-Z/a-z/;
 	if (defined($pkgsrc{$p})) {
-	    push @addsrcaddrs, "$pkgsrc{$p}@packages.qa.debian.org";
+	    push @addsrcaddrs, "$pkgsrc{$p}\@packages.qa.debian.org";
+	} else {
+	    push @addsrcaddrs, "$p\@packages.qa.debian.org";
 	}
         if (defined($maintainerof{$p})) {
 print DEBUG "maintainer add >$p|$maintainerof{$p}<\n";
