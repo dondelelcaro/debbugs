@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: html-control.in,v 1.11 2003/06/06 08:23:00 cjwatson Exp $
+# $Id: html-control.in,v 1.12 2004/10/26 14:00:05 cjwatson Exp $
 
 use POSIX qw(strftime tzset ENOENT);
 $ENV{"TZ"} = 'UTC';
@@ -63,7 +63,7 @@ From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $gMirrorList\@$gListDomain
 Subject: $gProject $gBugs autoupdate 259012
 Message-ID: <handle.htmlup.$seqmid\@$gEmailDomain>
-X-$gProject=PR: update $sequences
+X-$gProject-PR: update $sequences
 
 END
       ) or nonawful("write html-data.mail header: $!");
@@ -73,7 +73,7 @@ From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $gMaintainerEmail
 Subject: $gProject $gBugs autoupdate 259012
 Message-ID: <handle.htmlup.$seqmid\@$gEmailDomain>
-X-$gProject=PR: update $sequences
+X-$gProject-PR: update $sequences
 
 END
       ) or nonawful("write html-data.mail header: $!");
