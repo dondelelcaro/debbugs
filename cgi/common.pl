@@ -61,7 +61,7 @@ sub quit {
 
 sub htmlindexentry {
     my $ref = shift;
-    my %status = getbugstatus($ref);
+    my %status = %{getbugstatus($ref)};
     return htmlindexentrystatus(%status) if (%status);
     return "";
 }
@@ -204,11 +204,13 @@ sub allbugs {
 }
 
 sub htmlizebugs {
-    my @bugs = @_;
+    $b = $_[0];
+    my @bugs = @$b;
 
     my %section = ();
 
     my %displayshowpending = ("pending", "outstanding",
+			      "fixed", "fixed in NMU",
                               "done", "resolved",
                               "forwarded", "forwarded to upstream software authors");
 
@@ -217,7 +219,7 @@ sub htmlizebugs {
     }
 
     foreach my $bug (sort {$a<=>$b} @bugs) {
-	my %status = getbugstatus($bug);
+	my %status = %{getbugstatus($bug)};
         next unless %status;
 	my @merged = sort {$a<=>$b} ($bug, split(/ /, $status{mergedwith}));
 	next unless ($common_repeatmerged || $bug == $merged[0]);
@@ -255,7 +257,7 @@ sub htmlizebugs {
 
     my $result = "";
     my $anydone = 0;
-    foreach my $pending (qw(pending forwarded done)) {
+    foreach my $pending (qw(pending forwarded fixed done)) {
         foreach my $severity(@debbugs::gSeverityList) {
             $severity = $debbugs::gDefaultSeverity if ($severity eq '');
             next unless defined $section{${pending} . "_" . ${severity}};
@@ -324,16 +326,17 @@ print STDERR "done optimized\n" if ($debug);
         }
         while(<I>) {
             if (m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/) {
-                if ($bugfunc->(pkg => $1, bug => $2, status => $4, 
-                               submitter => $5, severity => $6, tags => $7))
-	        {
+		my %hash = (pkg => $1, bug => $2, status => $4,
+			    submitter => $5, severity => $6, tags => $7);
+                if ($bugfunc->(\%hash)) {
 	       	    push (@result, $2);
 	        }
 	    }
         }
         close I;
     }
-    return sort {$a <=> $b} @result;
+    @result = sort {$a <=> $b} @result;
+    return \@result;
 }
 
 sub emailfromrfc822 {
@@ -373,7 +376,7 @@ sub getmaintainers {
     }
     close(MM);
 
-    return %maintainer;
+    return \%maintainer;
 }
 
 sub getbugstatus {
@@ -400,9 +403,10 @@ sub getbugstatus {
 
     $status{"pending"} = 'pending';
     $status{"pending"} = 'forwarded' if (length($status{"forwarded"}));
+    $status{"pending"} = 'fixed'     if ($status{"tags"} =~ /\bfixed\b/);
     $status{"pending"} = 'done'      if (length($status{"done"}));
 
-    return %status;
+    return \%status;
 }
 
 sub buglog {

@@ -58,9 +58,9 @@ my $tag;
 my @bugs;
 if (defined $pkg) {
   $tag = "package $pkg";
-  @bugs = getbugs(sub {my %d=@_; return $pkg eq $d{"pkg"}}, 'package', $pkg);
+  @bugs = @{getbugs(sub {my %d=@{$_[0]}; return $pkg eq $d{"pkg"}}, 'package', $pkg)};
 } elsif (defined $maint) {
-  my %maintainers = getmaintainers();
+  my %maintainers = %{getmaintainers()};
   $tag = "maintainer $maint";
   my @pkgs = ();
   foreach my $p (keys %maintainers) {
@@ -69,34 +69,34 @@ if (defined $pkg) {
     $me = $1 if ($me =~ m/<(.*)>/);
     push @pkgs, $p if ($me eq $maint);
   }
-  @bugs = getbugs(sub {my %d=@_; my $me; 
+  @bugs = @{getbugs(sub {my %d=@{$_[0]}; my $me; 
 		       ($me = $maintainers{$d{"pkg"}}||"") =~ s/\s*\(.*\)\s*//;
 		       $me = $1 if ($me =~ m/<(.*)>/);
 		       return $me eq $maint;
-		     }, 'package', @pkgs);
+		     }, 'package', @pkgs)};
 } elsif (defined $maintenc) {
-  my %maintainers = getmaintainers();
+  my %maintainers = %{getmaintainers()};
   $tag = "encoded maintainer $maintenc";
-  @bugs = getbugs(sub {my %d=@_; 
+  @bugs = @{getbugs(sub {my %d=@_; 
 		       return maintencoded($maintainers{$d{"pkg"}} || "") 
 			 eq $maintenc
-		       });
+		       })};
 } elsif (defined $submitter) {
   $tag = "submitter $submitter";
-  @bugs = getbugs(sub {my %d=@_; my $se; 
+  @bugs = @{getbugs(sub {my %d=@_; my $se; 
 		       ($se = $d{"submitter"} || "") =~ s/\s*\(.*\)\s*//;
 		       $se = $1 if ($se =~ m/<(.*)>/);
 		       return $se eq $submitter;
-		     }, 'submitter-email', $submitter);
+		     }, 'submitter-email', $submitter)};
 } elsif (defined $severity) {
   $tag = "$status $severity bugs";
-  @bugs = getbugs(sub {my %d=@_;
+  @bugs = @{getbugs(sub {my %d=@_;
 		       return ($d{"severity"} eq $severity) 
 			 && ($d{"status"} eq $status);
-		     });
+		     })};
 }
 
-my $result = htmlizebugs(@bugs);
+my $result = htmlizebugs(\@bugs);
 
 print "Content-Type: text/html\n\n";
 
@@ -110,7 +110,7 @@ print "<H1>" . "$debbugs::gProject $Archived $debbugs::gBug report logs: $tag" .
       "</H1>\n";
 
 if (defined $pkg) {
-    my %maintainers = getmaintainers();
+    my %maintainers = %{getmaintainers()};
     if (defined $maintainers{$pkg}) {
         print "<p>Maintainer for $pkg is <a href=\"" 
               . mainturl($maintainers{$pkg}) . "\">"

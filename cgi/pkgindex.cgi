@@ -32,7 +32,7 @@ if ($sortby !~ m/^(alpha|count)$/) {
 
 my $Archived = $archive ? "Archived" : "";
 
-my %maintainers = &getmaintainers();
+my %maintainers = %{&getmaintainers()};
 my %strings = ();
 
 $ENV{"TZ"} = 'UTC';

@@ -17,14 +17,14 @@ my %param = readparse();
 
 my $tail_html;
 
-my %maintainer = getmaintainers();
+my %maintainer = %{getmaintainers()};
 
 my $ref = $param{'bug'} || quit("No bug number");
 my $msg = $param{'msg'} || "";
 my $boring = ($param{'boring'} || 'no') eq 'yes'; 
 my $reverse = ($param{'reverse'} || 'no') eq 'yes';
 
-my %status = getbugstatus($ref) or &quit("Couldn't get bug status: $!");
+my %status = %{getbugstatus($ref)} or &quit("Couldn't get bug status: $!");
 
 my $indexentry;
 my $descriptivehead;
