@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: mailsummary.in,v 1.7 2001/08/16 17:39:03 doogie Exp $
+# $Id: mailsummary.in,v 1.8 2001/08/16 17:40:22 doogie Exp $
 
 $config_path = '/org/bugs.debian.org/etc';
 $lib_path = '/org/bugs.debian.org/scripts';
@@ -59,7 +59,7 @@ $v=`$lib_path/summary $ARGV[0]`; $? && die "undone failed $?: $!\n";
 $v= $vdef if $v eq '';
 exit 0 if $v eq '';
 
-open(D, '| '.join(' ',('/usr/lib/sendmail','-f'.$gMaintainerEmail)).' -odi -oem -oi -t') ||
+open(D, '| '.join(' ',('/usr/lib/sendmail','-f'.$gMaintainerEmail)).' -odq -oem -oi -t') ||
     die "start sendmail: $!";
 
 print D <<END || die "complete sendmail";
