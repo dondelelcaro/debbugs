@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.17 2000/10/06 20:31:46 joy Exp $
+# $Id: service.in,v 1.18 2000/10/06 22:49:57 joy Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -55,7 +55,12 @@ for ($i=0; $i<=$#msg; $i++)
 }
 
 defined($header{'from'}) || &quit("no From header");
-$replyto= defined($header{'reply-to'}) ? $header{'reply-to'} : $header{'from'};
+delete $header{'reply-to'} if ( defined($header{'reply-to'}) && $header{'reply-to'} =~ m/^\s*$/ );
+if ( defined($header{'reply-to'}) && $header{'reply-to'} ne "" ) {
+    $replyto = $header{'reply-to'};
+} else {
+    $replyto = $header{'from'};
+}
 
 $controlrequestaddr= $control ? "control\@$gEmailDomain" : "request\@$gEmailDomain";
 $transcript='';
