@@ -91,6 +91,24 @@ or by using the <code>severity</code> command with the
 $gHTMLSeverityDesc
 </dl>
 
+<H2><a name="tags">Tags for $gBug reports</a></H2>
+
+<p>Each $gBug can have zero or more of a set of given tags. These tags are
+displayed in the list of $gBugs when you look at a package's page, and when
+you look at the full $gBug log.
+
+<p>Tags can be set by supplying a <code>Tags</code> line in the
+pseudo-header when the $gBug is submitted (see the
+<a href="Reporting.html#pseudoheader">instructions for reporting $gBugs</a>),
+or by using the <code>tags</code> command with the
+<a href="#requestserv">control request server</a>.
+
+<p>The current $gBug tags are:
+
+<dl>
+$gHTMLTagDesc
+</dl>
+
 <h2><A name="forward">Recording that you have passed on a $gBug report</a></h2>
 
 <p>When a developer forwards a $gBug report to the developer of the

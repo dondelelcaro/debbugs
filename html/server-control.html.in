@@ -155,6 +155,21 @@ mailservers is available via the WWW, in
   command; if you want to disconnect more than one $gBug simply include
   several <code>unmerge</code> commands in your message.
 
+<dt><code>tags</code> <var>bugnumber</var> [ <code>+</code> | <code>-</code> | <code>=</code> ] <var>tag</var>
+
+  <dd>Sets a particular tag for the $gBug report #<var>bugnumber</var> to
+  <var>tag</var>. No notification is sent to the user who reported the $gBug.
+  <code>+</code> means adding, <code>-</code> means subtracting, and
+  <code>=</code> means ignoring the current tags and setting them afresh.
+  The default action is adding.
+
+  <p>Available tags currently include <code>patch</code>, <code>wontfix</code>,
+  <code>moreinfo</code>, <code>unreproducible</code>, <code>fixed</code>,
+  and <code>stable</code>.
+
+  <p>For <a href="Developer.html#tags">their meanings</a> please consult the
+  general developers' documentation for the $gBug system.
+
 </dl>
 
 <hr>
