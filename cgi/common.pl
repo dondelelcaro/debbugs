@@ -509,6 +509,21 @@ sub getpkgcomponent {
     return $_pkgcomponent;
 }
 
+my $_pseudodesc;
+sub getpseudodesc {
+    return $_pseudodesc if $_pseudodesc;
+    my %pseudodesc;
+
+    open(PSEUDO, "< $gPseudoDescFile") or &quit("open $gPseudoDescFile: $!");
+    while(<PSEUDO>) {
+	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
+	$pseudodesc{lc $1} = $2;
+    }
+    close(PSEUDO);
+    $_pseudodesc = \%pseudodesc;
+    return $_pseudodesc;
+}
+
 sub getbugdir {
     my ( $bugnum, $ext ) = @_;
     my $archdir = sprintf "%02d", $bugnum % 100;

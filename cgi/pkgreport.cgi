@@ -206,11 +206,18 @@ if (defined $pkg || defined $src) {
 	    print ".\n";
 	}
 	if ($pkg) {
-	    printf "<p>You might like to refer to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
-	    if ($pkgsrc{ $pkg }) {
-		printf ", or to the source package <a href=\"%s\">%s</a>'s bug page.</p>\n", srcurl($pkgsrc{$pkg}), htmlsanit($pkgsrc{$pkg});
+	    my @references;
+	    my $pseudodesc = getpseudodesc();
+	    if (defined($pseudodesc) and exists($pseudodesc->{$pkg})) {
+		push @references, "to the <a href=\"http://${debbugs::gWebDomain}/pseudo-packages.html\">list of other pseudo-packages</a>";
 	    } else {
-		printf ".\n";
+		push @references, sprintf "to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
+	    }
+	    if ($pkgsrc{ $pkg }) {
+		push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($pkgsrc{$pkg}), htmlsanit($pkgsrc{$pkg});
+	    }
+	    if (@references) {
+		print "<p>You might like to refer ", join(", or ", @references), ".</p>\n";
 	    }
 	}
 	print "<p>If you find a bug not listed here, please\n";
