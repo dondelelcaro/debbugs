@@ -4,7 +4,7 @@ package debbugs;
 
 use strict;
 use CGI qw/:standard/;
-use POSIX qw(strftime);
+use POSIX qw(strftime tzset);
 
 #require '/usr/lib/debbugs/errorlib';
 #require '/usr/lib/debbugs/common.pl';
@@ -14,7 +14,6 @@ require '/etc/debbugs/config';
 require '/etc/debbugs/text';
 
 use vars(qw($gHTMLTail $gWebDomain));
-my $dtime;
 my $tail_html;
 
 my %maintainer = getmaintainers();
@@ -37,8 +36,10 @@ my $showseverity;
 my $tpack;
 my $tmain;
 
-$dtime = strftime "%H:%M:%S GMT %a %d %h", gmtime;
+$ENV{"TZ"} = 'UTC';
+tzset();
 
+my $dtime = strftime "%a, %e %b %Y %T UTC", localtime;
 $tail_html = $debbugs::gHTMLTail;
 $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
 
@@ -72,7 +73,7 @@ if (@merged) {
 	}
 }
 
-my $dummy = strftime "%a, %e, %b %Y %T %Z", gmtime($status{date});
+my $dummy = strftime "%a, %e %b %Y %T UTC", localtime($status{date});
 $submitted = ";\ndated ".$dummy;
 
 if (length($status{done})) {
