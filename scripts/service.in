@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.16 2000/10/06 05:44:45 doogie Exp $
+# $Id: service.in,v 1.17 2000/10/06 20:31:46 joy Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -90,7 +90,7 @@ for ($procline=$i; $procline<=$#msg; $procline++)
     next unless m/\S/; next if m/^\s*\#/;
     &transcript("> $_\n");
     $action= '';
-    if (m/^stop\s/i || m/^quit\s/i || m/^--/ || m/^thank\s/i) 
+    if (m/^stop\s/i || m/^quit\s/i || m/^--/ || m/^thank/i) 
 	{ 	&transcript("Stopping processing here.\n\n");
         last;
     } elsif (m/^debug\s+(\d+)$/i && $1 >= 0 && $1 <= 1000) {
