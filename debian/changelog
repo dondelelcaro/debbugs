@@ -5,6 +5,7 @@ debbugs (2.4.1) UNRELEASED; urgency=low
   * Display pending+fixed bugs as "fixed in NMU", not "pending upload".
     [Colin]
   * Add a man page for debbugsconfig. [Colin]
+  * Report original tags when changing them, closes: #170630. [Colin]
 
  -- Colin Watson <cjwatson@debian.org>  Mon, 25 Nov 2002 03:50:20 +0000
 

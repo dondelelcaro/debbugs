@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.62 2002/11/17 22:45:16 cjwatson Exp $
+# $Id: service.in,v 1.63 2002/11/25 12:44:19 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -399,6 +399,11 @@ END
  			"Recognized are: ".join(' ', @gTags).".\n\n");
 	}
 	if (&setbug) {
+	    if ($s_keywords eq '') {
+		&transcript("There were no tags set.\n");
+	    } else {
+		&transcript("Tags were: $s_keywords\n");
+	    }
 	    if ($addsub eq "set") {
 		$action= "Tags set to: " . join(", ", @okaytags);
 	    } elsif ($addsub eq "add") {
