@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.11 2002/11/02 09:21:42 ajt Exp $
+# $Id: errorlib.in,v 1.12 2002/11/05 08:25:03 ajt Exp $
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -103,23 +103,47 @@ sub sani {
     $out;
 }
 
-sub bughook {
-	my ( $type, $ref ) = ( shift, shift );
-	&filelock("debbugs.trace.lock");
-	&appendfile("debbugs.trace","$type $ref\n",@_);
-	my @stuff=split/\n/, "$_[0]\n\n\n\n\n\n\n";
-
-	my $hash = get_hashname($ref); # unused
+sub update_realtime {
+	my ($file, $bug, $new) = @_;
 
 	# update realtime index.db
-	open(IDXDB, "</org/bugs.debian.org/spool/index.db.realtime")
-		or open(IDXDB, "</org/bugs.debian.org/spool/index.db");
-	open(IDXNEW, ">/org/bugs.debian.org/spool/index.db.realtime.new");
-	while(my $line = <IDXDB>) {
-		@line = split /\s/, $line;
+
+	open(IDXDB, "<$file") or die "Couldn't open $file";
+	open(IDXNEW, ">$file.new");
+
+	my $line;
+	while($line = <IDXDB>) {
+		my @line = split /\s/, $line;
 		last if ($line[1] == $ref);
 		print IDXNEW $line;
 	}
+
+	if ($new eq "NOCHANGE") {
+		print IDXNEW $line;
+	} elsif ($new eq "REMOVE") {
+		0;
+	} else {
+		print IDXNEW $new;
+	}
+
+	print IDXNEW while(<IDXDB>);
+
+	close(IDXNEW);
+	close(IDXDB);
+
+	rename("$file.new", $file);
+
+	return $line;
+}
+
+sub bughook {
+	my ( $type, $ref ) = ( shift, shift );
+	&filelock("debbugs.trace.lock");
+
+	&appendfile("debbugs.trace","$type $ref\n",@_);
+
+	my @stuff=split/\n/, "$_[0]\n\n\n\n\n\n\n";
+
 	my $firstpkg;
 	my $whendone = "open";
 	my $severity = $gDefaultSeverity;
@@ -128,15 +152,11 @@ sub bughook {
 	$whendone = "done" if length $stuff[6];
 	$severity = $stuff[9] if length $stuff[9];
 
-	printf IDXNEW "%s %d %d %s [%s] %s %s\n",
+	my $k = sprintf "%s %d %d %s [%s] %s %s\n",
 			$firstpkg, $ref, $stuff[1], $whendone, $stuff[0],
 			$severity, $stuff[5];
-	print IDXNEW while(<IDXDB>);
-	close(IDXNEW);
-	close(IDXDB);
-	rename("/org/bugs.debian.org/spool/index.db.realtime.new",
-		"/org/bugs.debian.org/spool/index.db.realtime");
 
+	update_realtime("/org/bugs.debian.org/spool/index.db", $ref, $k);
 
 	&unfilelock;
 }
