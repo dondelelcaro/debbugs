@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.15 2002/10/03 11:09:54 cjwatson Exp $
+# $Id: text.in,v 1.16 2002/12/03 12:30:18 cjwatson Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -114,7 +114,7 @@ $gHTMLSeverityDesc = "<DT><CODE>critical</CODE>
 	where you install the package.
 
 	<DT><CODE>grave</CODE>
-	<DD>makes the package in question unuseable or mostly so, or causes data
+	<DD>makes the package in question unusable or mostly so, or causes data
 	loss, or introduces a security hole allowing access to the accounts of
 	users who use the package.
 
