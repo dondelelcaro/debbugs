@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: html-control.in,v 1.5 2000/10/07 17:27:13 joy Exp $
+# $Id: html-control.in,v 1.6 2001/01/27 22:09:01 joy Exp $
 
 use POSIX;
 
@@ -56,7 +56,7 @@ print(MM <<END
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $gMirrorList\@$gListDomain
 Subject: $gProject $gBugs autoupdate 259012
-Message-ID: <handle.htmlup.$seqmid\@gEmailDebian>
+Message-ID: <handle.htmlup.$seqmid\@$gEmailDomain>
 X-$gProject=PR: update $sequences
 
 END
@@ -66,7 +66,7 @@ print(MM <<END
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $gMaintainerEmail
 Subject: $gProject $gBugs autoupdate 259012
-Message-ID: <handle.htmlup.$seqmid\@gEmailDebian>
+Message-ID: <handle.htmlup.$seqmid\@$gEmailDomain>
 X-$gProject=PR: update $sequences
 
 END

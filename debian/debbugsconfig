@@ -18,16 +18,17 @@ EOF
 }
 
 $gConfigDir = "/etc/debbugs" if (!defined($gConfigDir));
-&template("config");
+&template("config", $gConfigDir);
 require "$gConfigDir/config";
 unshift @INC, $gConfigDir;
 
-&template("text");
+&template("text", $gConfigDir);
 require "text";
 
-&template("Maintainers");
-&template("pseudo-packages.description");
-&template("nextnumber");
+&template("Maintainers", $gConfigDir);
+&template("pseudo-packages.description", $gConfigDir);
+
+&template("nextnumber", $gSpoolDir);
 
 # stuff used when testing (comment out the above)
 #unshift @INC, "../";
@@ -61,11 +62,11 @@ exit(0);
 # -------------------------------------------------------------------------- #
 
 sub template {
-  my ($name) = @_;
-  if (! -f "$gConfigDir/$name") {
-  system("cp /usr/share/doc/debbugs/examples/$name $gConfigDir/$name") == 0 ||
+  my ($name, $destdir) = @_;
+  if (! -f "$destdir/$name") {
+  system("cp /usr/share/doc/debbugs/examples/$name $destdir/$name") == 0 ||
 	die "$!";
-  print "created $gConfigDir/$name from template.\n";
+  print "created $destdir/$name from template.\n";
   }
 } 
 

@@ -57,7 +57,7 @@ END
 }
 
 $base= $ENV{'HTTP_REFERER'};
-if ($base =~ s:/Bugs/.*$::) {
+if ($base =~ s:/${gWebHostBugDir}/.*$::) {
     for $y (keys %map) {
 	$base= $map{$y} if $base eq $y;
     }
@@ -65,7 +65,7 @@ if ($base =~ s:/Bugs/.*$::) {
     $base= $in{'base'};
 }
 
-$newurl= "$base/Bugs/db/$suburl";
+$newurl= "$base/${gWebHostBugDir}/db/$suburl";
 print <<END;
 Status: 301 Redirect
 Location: $newurl

@@ -5,7 +5,7 @@ Configuration
 -------------
 On initial installation, debbugsconfig will be run, and it will copy the
 basic configuration files to /etc/debbugs. Edit those files to suit your
-needs.
+needs, and re-run debbugsconfig.
 
 WWW
 ---

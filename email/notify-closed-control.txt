@@ -11,9 +11,7 @@ This is an automatic notification regarding your GTAG_BUG report.
 It has been marked as closed by one of the developers, namely
 LTAG_REPLY_TO.
 
-You should be hearing from them with a substantive response shortly,
-if you have not already done so.  If not, please contact them
-directly or email the Developer's list at debian-devel@lists.debian.org.
+GTAG_BUG_CLOSURE_MSG_BODY
 
 GTAG_MAINTAINER_NAME
 (administrator, GTAG_PROJECT GTAG_BUG database)

@@ -5,6 +5,17 @@
 From 2.3 to 2.4
 ---------------
 
+Add the following variables to the /etc/debbugs/config file:
+
+$gWebHost = "localhost";				# e.g. www.debian.org
+$gWebHostBugDir = "Bugs";				# e.g. Bugs
+# For now, don't change this one manually!
+$gWebDomain = "$gWebHost/$gWebHostBugDir";
+$gCGIDomain = "$gWebDomain/Bugs/cgi";			# e.g. cgi.debian.org
+$gPackagePages = "packages.debian.org";                 # e.g. packages.debian.org
+
+($gWebDomain will probably exist already, change it as shown above.)
+
 Add the following variable to the /etc/debbugs/text file:
 
 ############################################################################
