@@ -1,3 +1,5 @@
+# $Id: text.in,v 1.3 1999/09/02 20:10:02 gecko Exp $
+
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
 #  used by the receive script when bouncing a badly formatted email
