@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: db2html.in,v 1.17 2003/05/25 13:49:53 joy Exp $
+# $Id: db2html.in,v 1.18 2003/05/25 14:43:30 joy Exp $
 # usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
 
 #load the necessary libraries/configuration
@@ -11,7 +11,9 @@ require("$config_path/text");
 require("$lib_path/errorlib");
 $ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
 
-use POSIX qw(strftime);
+use POSIX qw(strftime tzset);
+$ENV{"TZ"} = 'UTC';
+tzset();
 
 #set current working directory
 chdir("$gSpoolDir") || die "chdir spool: $!\n";
@@ -30,7 +32,7 @@ $indexunmatched = '';
                        'forwarded','forwarded to upstream software authors');
 
 #set timestamp for html files
-$dtime = strftime "%a, %e %b %Y %T UTC", gmtime;
+$dtime = strftime "%a, %e %b %Y %T UTC", localtime;
 $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
 
 #check for commandline switches
@@ -206,7 +208,7 @@ for $f (@files)
             if ($preserveonly) {
                 $submitted = 'THIS IS A BUG IN THE BUG PROCESSOR';
             } else {
-                $submitted = strftime "%a, %e %b %Y %T %Z", gmtime($data->{date});
+                $submitted = strftime "%a, %e %b %Y %T %Z", localtime($data->{date});
             }
             $submitted= "; dated $submitted";
             $indexpart= "pending$addseverity";
