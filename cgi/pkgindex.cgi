@@ -30,7 +30,7 @@ if ($sortby !~ m/^(alpha|count)$/) {
 #my $include = $param{'include'} || "";
 #my $exclude = $param{'exclude'} || "";
 
-my $Archived = $archive ? "Archived" : "";
+my $Archived = $archive ? " Archived" : "";
 
 my %maintainers = %{&getmaintainers()};
 my %strings = ();
@@ -124,11 +124,11 @@ print "Content-Type: text/html\n\n";
 
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
 print "<HTML><HEAD>\n" . 
-    "<TITLE>$debbugs::gProject $Archived $debbugs::gBug reports by $tag</TITLE>\n" .
+    "<TITLE>$debbugs::gProject$Archived $debbugs::gBug reports by $tag</TITLE>\n" .
     "</HEAD>\n" .
     '<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#800080">' .
     "\n";
-print "<H1>" . "$debbugs::gProject $Archived $debbugs::gBug report logs by $tag" .
+print "<H1>" . "$debbugs::gProject$Archived $debbugs::gBug report logs by $tag" .
       "</H1>\n";
 
 print $note;
