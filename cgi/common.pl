@@ -291,7 +291,7 @@ sub getmaintainers {
 
     open(MM,"$gMaintainerFile") or &quit("open $gMaintainerFile: $!");
     while(<MM>) {
-	m/^(\S+)\s+(\S.*\S)\s*$/ or &quit("$gMaintainerFile: \`$_'");
+	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
 	($a,$b)=($1,$2);
 	$a =~ y/A-Z/a-z/;
 	$maintainer{$a}= $b;
