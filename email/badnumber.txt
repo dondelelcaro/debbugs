@@ -1,0 +1,32 @@
+From: GTAG_MAINTAINER_EMAIL (GTAG_PROJECT GTAG_BUG Tracking System)
+To: LTAG_REPLYTO
+Subject: Unknown problem report GTAG_BUG#LTAG_BUG_NUMBER (LTAG_SUBJECT)
+Message-ID: <handler.x.$nn.unknown\@GTAG_EMAIL_DOMAIN>
+In-Reply-To: LTAG_HEADER_MSG_ID
+References: LTAG_HEADER_MSG_ID LTAG_MESSAGE_ID
+X-GTAG_PROJECT-PR-Message: error
+
+You sent a message to the GTAG_BUG tracking system which gave (in the
+Subject line or encoded into the recipient at GTAG_EMAIL_DOMAIN),
+the number of a nonexistent GTAG_BUG report (LTAG_BUG_NUMBER).
+
+This may be because that GTAG_BUG report has been resolved for more than GTAG_REMOVE_AGE
+days, and the record of it has been expunged, or because you mistyped
+the GTAG_BUG report number.
+
+Your message was dated LTAG_HEADER_DATE and was sent to
+LTAG_TO_ADDRESS\@GTAG_EMAIL_DOMAIN.  It had
+Message-ID LTAG_HEADER_MSG_ID
+and Subject LTAG_SUBJECT.
+
+It has been filed (under junk) but otherwise ignored.
+
+Please consult your records to find the correct GTAG_BUG report number, or
+contact me, the system administrator, for assistance.
+
+GTAG_MAINTAINER_NAME
+(administrator, GTAG_PROJECT GTAG_BUG database)
+
+(NB: If you are a system administrator and have no idea what I am
+talking about this indicates a serious mail system misconfiguration
+somewhere.  Please contact me immediately.)

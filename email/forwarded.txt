@@ -1,0 +1,23 @@
+From: GTAG_MAINTAINER_EMAIL (GTAG_PROJECT GTAG_BUG Tracking System)
+To: LTAG_REPLYTO
+${noticecc}
+Subject: GTAG_BUG#LTAG_BUG_NUMBER: marked as forwarded (LTAG_SUBJECT)
+Message-ID: <header.LTAG_BUG_NUMBER.$nn.ackfwdd\@GTAG_EMAIL_DOMAIN>
+In-Reply-To: LTAG_HEADER_MSG_ID
+References: LTAG_HEADER_MSG_ID LTAG_MESSAGE_ID
+X-GTAG_PROJECT-PR-Message: forwarded LTAG_BUG_NUMBER
+
+Your message dated LTAG_HEADER_DATE
+with message-id LTAG_HEADER_MSG_ID
+and subject line LTAG_SUBJECT
+has caused the GTAG_PROJECT GTAG_BUG report #LTAG_BUG_NUMBER,
+regarding LTAG_SUBJECT
+to be marked as having been forwarded to the upstream software
+author(s) LTAG_FORWARD.
+
+GTAG_MAINTAINER_NAME
+(administrator, GTAG_PROJECT GTAG_BUG database)
+
+(NB: If you are a system administrator and have no idea what I am
+talking about this indicates a serious mail system misconfiguration
+somewhere.  Please contact me immediately.)
