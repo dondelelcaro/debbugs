@@ -26,9 +26,7 @@ There should be no nondigits in your entry.
 END
         exit(0);
     }
-    $suburl= $_;
-    $suburl =~ s,^..,$&/$&,;
-    $suburl.= '.html';
+    $suburl= "bugreport.cgi?bug=$_";
 } elsif ($in{'type'} eq 'package') {
     $_= $in{'package'};
     s/^\s+//; s/\s+$//; y/A-Z/a-z/;
@@ -47,7 +45,7 @@ or digit and contain only letters, digits and the characters
 END
         exit(0);
     }
-    $suburl= "pa/l$_.html";
+    $suburl= "pkgreport.cgi?pkg=$_";
 } else {
     print <<END;
 Content-Type: text/plain
@@ -57,16 +55,13 @@ END
     exit(0);
 }
 
-$base= $ENV{'HTTP_REFERER'};
-if ($base =~ s:/${gWebHostBugDir}/.*$::) {
-    for $y (keys %map) {
-	$base= $map{$y} if $base eq $y;
-    }
-} else {
+if (exists $in{'base'}) {
     $base= $in{'base'};
+} else {
+    $base= $gCGIDomain;
 }
 
-$newurl= "$base/${gWebHostBugDir}/db/$suburl";
+$newurl= "http://$base/$suburl";
 print <<END;
 Status: 301 Redirect
 Location: $newurl
