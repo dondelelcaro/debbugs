@@ -17,6 +17,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
       (closes: #133453).
     - Install Debian configuration in the binary package's examples
       directory (closes: #222118).
+    - New standalone SpamAssassin queue runner, spamscan.
 
   * Adam Heath:
     - Rewrite filtering in cgi's common.pl, to make it completely generic.

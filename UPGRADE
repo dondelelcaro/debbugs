@@ -13,6 +13,13 @@ run the 'debbugs-upgradestatus' program over your bug spool. The old .status
 files will be left intact, and will continue to be written in sync with the
 .summary files for compatibility with external tools.
 
+There is a new standalone spam-scanning script called spamscan, which uses
+the SpamAssassin modules. To use it, set the $gSpamScan variable in
+/etc/debbugs/config to a true value and $gSpamMailbox to an mbox file to
+which detected spam should be appended, add /usr/lib/debbugs/spamscan to
+your crontab as per the example, and optionally set $gSpamRulesDir and
+$gSpamLocalTestsOnly as desired.
+
 From 2.4 to 2.4.1
 -----------------
 
