@@ -476,6 +476,7 @@ sub htmlizebugs {
 
     my @status = ();
     my %count;
+    my ($header, $footer);
 
     if (@bugs == 0) {
         return "<HR><H2>No reports found!</H2></HR>\n";
@@ -528,28 +529,15 @@ sub htmlizebugs {
 		push @headers, map( { $common_headers{$common_grouping[$i]}{$_} } @items );
 	    }
 	}
-	$result .= "<table border=\"0\"><tr><td valign=\"top\">\n";
-	$result .= "<ul>\n";
+	$header .= "<ul>\n";
 	for ( my $i = 0; $i < @order; $i++ ) {
 	    my $order = $order[ $i ];
 	    next unless defined $section{$order};
 	    my $count = $count{"_$order"};
 	    my $bugs = $count == 1 ? "bug" : "bugs";
-	    $result .= "<li><a href=\"#$order\">$headers[$i]</a> ($count $bugs)</li>\n";
+	    $header .= "<li><a href=\"#$order\">$headers[$i]</a> ($count $bugs)</li>\n";
 	}
-	$result .= "</ul>\n</td>\n<td valign=\"top\">\n<ul>\n";
-	foreach my $grouping ( @common_grouping ) {
-	    my $local_result = '';
-	    foreach my $key ( @{$common_grouping_order{ $grouping }} ) {
-		my $count = $count{"${grouping}_$key"};
-		next if !$count;
-		$local_result .= "<li>$count $common_headers{$grouping}{$key}</li>\n";
-	    }
-	    if ( $local_result ) {
-		$result .= "<li>$common_grouping_display{$grouping}<ul>\n$local_result</ul></li>\n";
-	    }
-	}
-	$result .= "</ul>\n</td></tr></table>";
+	$header .= "</ul>\n";
 	for ( my $i = 0; $i < @order; $i++ ) {
 	    my $order = $order[ $i ];
 	    next unless defined $section{$order};
@@ -560,9 +548,24 @@ sub htmlizebugs {
 	    $result .= $section{$order};
 	    $result .= "</UL>\n";
 	}    
+	$footer .= "<ul>\n";
+	foreach my $grouping ( @common_grouping ) {
+	    my $local_result = '';
+	    foreach my $key ( @{$common_grouping_order{ $grouping }} ) {
+		my $count = $count{"${grouping}_$key"};
+		next if !$count;
+		$local_result .= "<li>$count $common_headers{$grouping}{$key}</li>\n";
+	    }
+	    if ( $local_result ) {
+		$footer .= "<li>$common_grouping_display{$grouping}<ul>\n$local_result</ul></li>\n";
+	    }
+	}
+	$footer .= "</ul>\n";
     }
 
+    $result = $header . $result;
     $result .= $debbugs::gHTMLExpireNote if $gRemoveAge and $anydone;
+    $result .= $footer;
     return $result;
 }
 
