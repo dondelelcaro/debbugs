@@ -41,6 +41,12 @@ $gBug reports, it's called
 It will guide you through the bug reporting process step by step,
 and probably ease filing bugs that way.</p>
 
+<p>Emacs users can also use the debian-bug command provided by the
+<code><a href="http://packages.debian.org/stable/utils/debbugs-el.html">
+debbugs-el</a></code> package. When called with <kbd>M-x
+debian-bug</kbd>, it will ask for all necessary information in a
+similar way to <code>reportbug</code>.</p>
+
 
 <h2>Sending the bug report via e-mail</h2>
 
