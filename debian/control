@@ -14,9 +14,9 @@ Description: The bug tracking system based on the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
  users and developers. Each bug is given a number, and is kept on file until
  it is marked as having been dealt with. The system is mainly controlled by
- e-mail, but the bug reports can be viewed using WWW.
+ e-mail, but the bug reports can be viewed using the WWW.
  .
- This version is fully functional, but it does not automatically configure,
- see /usr/share/doc/debbugs/README.Debian after installation.
+ This version is fully functional, but it does not automatically configure.
+ See /usr/share/doc/debbugs/README.Debian after installation.
  .
  Note: there might be various issues with this package, caveat emptor.
