@@ -68,6 +68,8 @@ debbugs (2.4) experimental; urgency=low
   * Depends: libmailtools-perl rather than mailtools, closes: #113028.
   * Add MIME support to process and service, and depend on libmime-perl as a
     result, closes: #36813. [Colin]
+  * Trim Bug#12345: from the Subject:, not "Bug#12345: [", closes: #78123.
+    [Anthony]
   * Fix a few typos, closes: #146745, #152751.
   * Various other things, not worth mentioning here.
 
