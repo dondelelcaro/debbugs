@@ -1,14 +1,18 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.39 2001/08/16 07:22:21 doogie Exp $
+# $Id: service.in,v 1.40 2001/08/16 07:23:06 doogie Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
 
 use Mail::Address;
-require('/etc/debbugs/config');
-require('/usr/lib/debbugs/errorlib');
-$ENV{'PATH'} = '/usr/lib/debbugs:'.$ENV{'PATH'};
+$config_path = '/org/bugs.debian.org/etc';
+$lib_path = '/org/bugs.debian.org/scripts';
+
+require "$config_path/config";
+require "$lib_path/errorlib";
+$ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
+
 chdir("$gSpoolDir") || die "chdir spool: $!\n";
 
 # open(DEBUG,">&4");
