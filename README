@@ -35,6 +35,8 @@ If you can't use the .deb, do the following:
 1. Run "make install" from the source directory.
 
 2. Edit the config files in /etc/debbugs/ directory to suit your needs.
+Re-run debbugsconfig when you're finished to regenerate the
+documentation.
 
 3. Set up the mail arrangements to deliver mail to the right place, and to
 set up a blackhole mail alias if you need one.  Ensure that owner@bugs, the
