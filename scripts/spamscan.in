@@ -1,5 +1,5 @@
 #! /usr/bin/perl -T
-# $Id: spamscan.in,v 1.3 2004/01/13 19:25:57 cjwatson Exp $
+# $Id: spamscan.in,v 1.4 2004/01/13 20:17:57 cjwatson Exp $
 #
 # Usage: spamscan
 #
@@ -126,7 +126,15 @@ for (;;) {
 	    or die "printf log: $!";
     } else {
 	open OUT, "> incoming/I$id" or die "open incoming/I$id: $!";
-	print OUT $mail->as_string() or die "print incoming/I$id: $!";
+	my @headers = $mail->get_all_headers();
+	if ($headers[0] =~ /^From /) {
+	    my $from = $headers[0];
+	    $headers[0] = $headers[1];
+	    $headers[1] = $from;
+	}
+	print OUT join '', @headers or die "print incoming/I$id: $!";
+	print OUT "\n" or die "print incoming/I$id: $!";
+	print OUT @{$mail->get_body()} or die "print incoming/I$id: $!";
 	close OUT or die "close incoming/I$id: $!";
 	unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
 	printf "  ok %.1f/%.1f\n",
