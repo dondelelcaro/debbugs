@@ -376,6 +376,14 @@ sub getmaintainers {
 	$maintainer{$a}= $b;
     }
     close(MM);
+    open(MM,"$gMaintainerFileOverride") or &quit("open $gMaintainerFileOverride: $!");
+    while(<MM>) {
+	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
+	($a,$b)=($1,$2);
+	$a =~ y/A-Z/a-z/;
+	$maintainer{$a}= $b;
+    }
+    close(MM);
 
     return \%maintainer;
 }
