@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: processall.in,v 1.5 2001/07/15 10:05:23 doogie Exp $
+# $Id: processall.in,v 1.6 2001/08/16 07:19:38 doogie Exp $
 #
 # Usage: processall
 #
@@ -8,11 +8,15 @@
 # Creates: incoming/E.nn
 # Stop;    process/stop
 
-require( '/etc/debbugs/config' );
-require( '/usr/lib/debbugs/errorlib' );
-$ENV{'PATH'} = '/usr/lib/debbugs:'.$ENV{'PATH'};
+$config_path = '/org/bugs.debian.org/etc';
+$lib_path = '/org/bugs.debian.org/scripts';
+
+require "$config_path/config";
+require "$lib_path/errorlib";
+$ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
+
 chdir( "$gSpoolDir" ) || die 'chdir spool: $!\n';
-push( @INC, '/usr/lib/debbugs' );
+push( @INC, "$lib_path" );
 
 #open(DEBUG,">&4");
 
@@ -44,11 +48,11 @@ for (;;) {
     if ($id =~ m/^[RC]/) {
         print(STDOUT "[$nf] $id service ...") || die $!;
         defined($c=fork) || die $!;
-        if (!$c) { exec("/usr/lib/debbugs/service",$id); die $!; }
+        if (!$c) { exec("$lib_path/service",$id); die $!; }
     } elsif ($id =~ m/^[BMQFDU]/) {
         print(STDOUT "[$nf] $id process ...") || die $!;
         defined($c=fork) || die $!;
-        if (!$c) { exec("/usr/lib/debbugs/process",$id); die $!; }
+        if (!$c) { exec("$lib_path/process",$id); die $!; }
     } else {
         die "bad name $id";
     }
