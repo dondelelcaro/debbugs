@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: summary.in,v 1.6 2002/11/17 22:45:16 cjwatson Exp $
+# $Id: summary.in,v 1.7 2003/01/08 12:47:56 cjwatson Exp $
 
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
@@ -34,13 +34,13 @@ close(M);
 
 defined($startdate= time) || &quit("failed to get time: $!");
 
-opendir(DIR,"db-h") || &quit("opendir db: $!\n");
+opendir(DIR,"db-h") || &quit("opendir db-h: $!\n");
 @dirs = sort { $a <=> $b } grep(s,^,db-h/,, grep(m/^\d+$/,readdir(DIR)));
-close(DIR);
+closedir(DIR);
 foreach my $dir (@dirs) {
         opendir(DIR,$dir);
         push @list, sort { $a <=> $b } grep(s/\.status$//,grep(m/^\d+\.status$/,readdir(DIR)));
-        close(DIR);
+        closedir(DIR);
 }
 
 $head= $mode eq 'bymaint'
@@ -50,14 +50,6 @@ $amonths=-1;
 
 while (length($f=shift(@list))) {
     if (!lockreadbug($f)) { next; }
-    chop($s_originator= <S>);
-    chop($s_date= <S>);
-    chop($s_subject= <S>);
-    chop($s_msgid= <S>);
-    chop($s_package= <S>);
-    chop($s_keywords= <S>);
-    chop($s_done= <S>);
-    chop($s_forwarded= <S>);
     $_= $s_package; y/A-Z/a-z/; $_= $` if m/[^-+._a-z0-9]/;
     $s_maintainer=
         defined($maintainer{$_}) ? $maintainer{$_} :
