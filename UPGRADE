@@ -13,8 +13,22 @@ $gWebHostBugDir = "Bugs";				# e.g. Bugs
 $gWebDomain = "$gWebHost/$gWebHostBugDir";
 $gCGIDomain = "$gWebDomain/Bugs/cgi";			# e.g. cgi.debian.org
 $gPackagePages = "packages.debian.org";                 # e.g. packages.debian.org
+$gMaintainerFileOverride = "$gConfigDir/Maintainers.override";
+$gUnknownMaintainerEmail = "$gMaintainerEmail";
+$gPackageSource = "$gConfigDir/indices/sources";
 
-($gWebDomain will probably exist already, change it as shown above.)
+$gWebDomain will probably exist already; change it as shown above.
+
+$gMaintainerFileOverride is the name of a file used to manually override the
+Maintainers file (which is often automatically generated).
+
+$gUnknownMaintainerEmail is the address to mail when a bug report arrives
+for a package with no maintainer in $gMaintainerFile or
+$gMaintainerFileOverride.
+
+$gPackageSource is a file containing three tab-separated columns: package
+name, component (e.g. main, contrib, non-free), and the corresponding source
+package name.
 
 Add the following variable to the /etc/debbugs/text file:
 
@@ -54,6 +68,11 @@ $gHTMLTagDesc = "
   affect the stable distribution.  It\'ll be replaced eventually with
   something a little more flexible, probably.
 ";
+
+The bug database is now stored in a hashed directory format (db-h).  You
+will need to migrate your database to this new format.  The
+/usr/sbin/debbugs-dbhash program is provided to help you perform this
+migration.
 
 From 2.2 to 2.3
 ---------------

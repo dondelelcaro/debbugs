@@ -6,6 +6,8 @@ etc_dir		:= $(DESTDIR)/etc/debbugs
 var_dir		:= $(DESTDIR)/var/lib/debbugs
 scripts_dir	:= $(DESTDIR)/usr/lib/debbugs
 doc_dir		:= $(DESTDIR)/usr/share/doc/debbugs
+man_dir		:= $(DESTDIR)/usr/share/man
+man8_dir	:= $(man_dir)/man8
 examples_dir	:= $(doc_dir)/examples
 
 scripts_in	:= $(filter-out scripts/config.in scripts/errorlib.in scripts/text.in, $(wildcard scripts/*.in))
@@ -26,8 +28,8 @@ install_mostfiles:
 	# create the directories if they aren't there
 	for dir in $(sbin_dir) $(etc_dir)/html $(var_dir)/indices \
 $(var_dir)/www/cgi $(var_dir)/www/db $(var_dir)/www/txt $(var_dir)/spool/lock \
-$(var_dir)/spool/archive $(var_dir)/spool/incoming $(var_dir)/spool/db \
-$(scripts_dir) $(examples_dir); \
+$(var_dir)/spool/archive $(var_dir)/spool/incoming $(var_dir)/spool/db-h \
+$(scripts_dir) $(examples_dir) $(man8_dir); \
           do test -d $$dir || $(install_exec) -d $$dir; done
 
 	# install the scripts
@@ -51,6 +53,9 @@ $(scripts_dir) $(examples_dir); \
 
 	# install debbugsconfig
 	$(install_exec) debian/debbugsconfig $(sbin_dir)
+	# install the debbugs-dbhash migration tool
+	$(install_exec) migrate/debbugs-dbhash $(sbin_dir)
+	$(install_data) migrate/debbugs-dbhash.8 $(man8_dir)
 
 	# install the updateseqs file
 	$(install_data) misc/updateseqs $(var_dir)/spool
