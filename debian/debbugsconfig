@@ -27,9 +27,17 @@ require "text";
 
 &template("nextnumber");
 
+# stuff used when testing (comment out the above)
+#unshift @INC, "../";
+#require "../scripts/config.in";
+#require "../scripts/text.in";
+#$gWebDir = "gWebDir";
+#$gDocDir = "gWebDir";
+
 my $dtime = strftime "%a, %e %b %Y %T UTC", localtime;
 $gHTMLTail =~ s/SUBSTITUTE_DTIME/$dtime/;
 
+print "Creating files in $gWebDir:\n";
 require('html/index.html.in');
 &writefiles ('index', '', $gIndexHtml );
 require('html/Access.html.in');
@@ -44,6 +52,7 @@ require('html/server-refcard.html.in');
 &writefiles ('server-refcard', 'bug-mailserver-refcard', $gRefcardHtml );
 require('html/server-request.html.in');
 &writefiles ('server-request', 'bug-log-mailserver', $gRequestHtml );
+print "\n";
 
 exit(0);
 
@@ -62,23 +71,34 @@ sub writefiles {
   local ($html, $text, $name) = @_;
 # first HTML
   unlink("$gWebDir/$html.html");
-  open(DEST, ">$gWebDir/$html.html") || die "$gWebDir/$html.html: $!";
+  open(DEST, ">$gWebDir/$html.html") || die "\n$gWebDir/$html.html: $!";
   print DEST $name;
   close(DEST);
-  print "wrote $gWebDir/$html.html\n";
+  print "$html.html ";
 # now text
   return if ($text eq ""); # for index.html
 # This should be done with pipes instead of a temporary files, but lynx
 # doesn't read HTML from stdin :/
-  open(DEST, ">$gDocDir/$text.html") || die "$gDocDir/$text.html: $!";
+  open(DEST, ">$gDocDir/$text.html") || die "\n$gDocDir/$text.html: $!";
   $name =~ s,\nOther pages:\n.*?<hr>,,si;
   print DEST $name;
   close(DEST);
   unlink("$gDocDir/$text.txt");
-  $ENV{'HOME'} = "/dev/null";
+  $ENV{'HOME'} = "/tmp";
   $ENV{'TERM'} = "linux";
-  system ("lynx -nolist -dump -cfg=$gConfigDir/html/lynx-cfg $gDocDir/$text.html > $gDocDir/$text.txt") == 0 ||
-    die "unable to write $gDocDir/$text.txt\n";
-  unlink("$gDocDir/$text.html") || die "can't remove temporary file $gDocDir/$text.html: $!";
-  print "wrote $gDocDir/$text.txt\n";
+  if (-x "/usr/bin/links") {
+    system ("rm -rf /tmp/.links/") == 0 || die;
+    system ("links -dump $gDocDir/$text.html > $gDocDir/$text.txt") == 0 ||
+      die "\nunable to write $gDocDir/$text.txt\n";
+    system ("rm -rf /tmp/.links/");
+  } elsif (-x "/usr/bin/lynx") {
+    system ("lynx -nolist -dump -cfg=$gConfigDir/html/lynx-cfg $gDocDir/$text.html > $gDocDir/$text.txt") == 0 ||
+      die "\nunable to write $gDocDir/$text.txt\n";
+  } else {
+    print "unable to write text versions of the HTMLs!";
+    print "if you need them, install links or lynx and run debbugsconfig again";
+    return;
+  }
+  unlink("$gDocDir/$text.html") || die "\ncan't remove temporary file $gDocDir/$text.html: $!";
+  print "$text.txt ";
 }
