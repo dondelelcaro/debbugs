@@ -213,7 +213,8 @@ if (defined $pkg || defined $src) {
 	       urlsanit("http://${debbugs::gWebDomain}/Reporting.html");
     } else {
 	print "<p>There is no record of the " .
-	      (defined($pkg) ? "$pkg package" : "$src source package") .
+	      (defined($pkg) ? htmlsanit($pkg) . " package"
+			     : htmlsanit($src) . " source package") .
 	      ", and no bugs have been filed against it.</p>";
 	$showresult = 0;
     }
