@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.46 2002/01/19 05:39:28 ajt Exp $
+# $Id: service.in,v 1.47 2002/07/10 04:48:01 doogie Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -94,7 +94,7 @@ while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
 my $quickabort = 0;
 
 my $fuckheads = "(" . join("|", @gFuckheads) . ")";
-if ($replyto =~ m/$fuckheads/) {
+if (@gFuckheads and $replyto =~ m/$fuckheads/) {
 	&transcript("This service is unavailable.\n\n");
 	$quickabort = 1;
 }
