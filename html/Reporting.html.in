@@ -165,6 +165,12 @@ This will cause the $gBug tracking system to send a copy of your report
 to the address(es) in the <code>X-Debbugs-CC</code> line as well as to
 any mailing list.
 
+<p>Avoid sending such copies to the addresses of other $gBug reports, as
+they will be caught by the checks that prevent mail loops. There is
+relatively little point in using <code>X-Debbugs-CC</code> for this
+anyway, as the $gBug number added by that mechanism will just be
+replaced by a new one; use an ordinary <code>CC</code> header instead.
+
 <p>This feature can often be combined usefully with mailing
 <code>quiet</code> - see below.
 
