@@ -40,6 +40,7 @@ $(var_dir)/spool/db-h $(scripts_dir) $(perl_dir) $(examples_dir) $(man8_dir); \
 
 	# install examples
 	$(install_data) scripts/config.in $(examples_dir)/config
+	$(install_data) scripts/config.debian $(examples_dir)/config.debian
 	$(install_data) scripts/text.in $(examples_dir)/text
 	$(install_data) debian/crontab misc/nextnumber misc/Maintainers \
 	  misc/Maintainers.override misc/pseudo-packages.description \
