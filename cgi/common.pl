@@ -183,7 +183,7 @@ sub submitterurl {
     my $ref = shift || "";
     my $params = "submitter=" . emailfromrfc822($ref);
     $params .= "&archive=yes" if ($common_archive);
-    $params .= "&repeatmerged=yes" if ($common_repeatmerged);
+    $params .= "&repeatmerged=no" unless ($common_repeatmerged);
     return urlsanit($debbugs::gCGIDomain . "pkgreport.cgi" . "?" . $params);
 }
 
@@ -191,7 +191,7 @@ sub mainturl {
     my $ref = shift || "";
     my $params = "maint=" . emailfromrfc822($ref);
     $params .= "&archive=yes" if ($common_archive);
-    $params .= "&repeatmerged=yes" if ($common_repeatmerged);
+    $params .= "&repeatmerged=no" unless ($common_repeatmerged);
     return urlsanit($debbugs::gCGIDomain . "pkgreport.cgi" . "?" . $params);
 }
 
@@ -199,7 +199,7 @@ sub pkgurl {
     my $ref = shift;
     my $params = "pkg=$ref";
     $params .= "&archive=yes" if ($common_archive);
-    $params .= "&repeatmerged=yes" if ($common_repeatmerged);
+    $params .= "&repeatmerged=no" unless ($common_repeatmerged);
     
     return urlsanit($debbugs::gCGIDomain . "pkgreport.cgi" . "?" . "$params");
 }
@@ -208,7 +208,7 @@ sub srcurl {
     my $ref = shift;
     my $params = "src=$ref";
     $params .= "&archive=yes" if ($common_archive);
-    $params .= "&repeatmerged=yes" if ($common_repeatmerged);
+    $params .= "&repeatmerged=no" unless ($common_repeatmerged);
     return urlsanit($debbugs::gCGIDomain . "pkgreport.cgi" . "?" . "$params");
 }
 
@@ -246,7 +246,7 @@ sub bugurl {
 	$params .= "\&archive=yes" if (!$common_archive && $val =~ /^archive.*$/);
     }
     $params .= "&archive=yes" if ($common_archive);
-    $params .= "&repeatmerged=yes" if ($common_repeatmerged);
+    $params .= "&repeatmerged=no" unless ($common_repeatmerged);
 
     return urlsanit($debbugs::gCGIDomain . "bugreport.cgi" . "?" . "$params");
 }
