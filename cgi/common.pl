@@ -317,15 +317,7 @@ sub mboxurl {
 }
 
 sub allbugs {
-    my @bugs = ();
-
-    opendir(D, "$debbugs::gSpoolDir/db") or &quitcgi("opendir db: $!");
-    @bugs = sort {$a<=>$b} grep s/\.status$//,
-		 (grep m/^[0-9]+\.status$/,
-		 (readdir(D)));
-    closedir(D);
-
-    return @bugs;
+    return @{getbugs(sub { 1 })};
 }
 
 sub htmlizebugs {
