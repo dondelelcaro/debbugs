@@ -82,9 +82,11 @@ debbugs (2.4) experimental; urgency=low
   * Add working-for-me instructions for exim setup on non-dedicated sites,
     together with Chad Miller's suggestions, closes: #78688. [Colin]
   * Fix a few typos, closes: #146745, #152751.
+  * Update the copyright file with the current list of maintainers and a
+    pointer to ViewCVS.
   * Various other things, not worth mentioning here.
 
- -- Josip Rodin <jrodin@jagor.srce.hr>  UNRELEASED
+ -- Colin Watson <cjwatson@debian.org>  Sun, 17 Nov 2002 17:54:49 +0000
 
 debbugs (2.3-4) unstable; urgency=low
 
