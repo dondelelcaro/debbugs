@@ -14,29 +14,6 @@ require '/etc/debbugs/text';
 
 use vars(qw($gHTMLTail $gWebDomain));
 
-sub readparse {
-        # Parse query string. I could use CGI.pm here, but it is 6 thousand
-        # lines long and very expensive. I want light-weight.
-        my ($in, $key, $val, %ret);
-        if (defined $ENV{"QUERY_STRING"} && $ENV{"QUERY_STRING"} ne "") {
-                $in=$ENV{QUERY_STRING};
-        } elsif(defined $ENV{"REQUEST_METHOD"} 
-		&& $ENV{"REQUEST_METHOD"} eq "POST") 
-	{
-                read(STDIN,$in,$ENV{CONTENT_LENGTH});
-        } else {
-		return;
-	}
-        foreach (split(/&/,$in)) {
-                s/\+/ /g;
-                ($key, $val) = split(/=/,$_,2);
-                $key=~s/%(..)/pack("c",hex($1))/ge;
-                $val=~s/%(..)/pack("c",hex($1))/ge;
-                $ret{$key}=$val;
-        }
-	return %ret;
-}
-
 my %param = readparse();
 
 my $tail_html;

@@ -14,27 +14,6 @@ require '/etc/debbugs/text';
 
 nice(5);
 
-sub readparse {
-        my ($in, $key, $val, %ret);
-        if (defined $ENV{"QUERY_STRING"} && $ENV{"QUERY_STRING"} ne "") {
-                $in=$ENV{QUERY_STRING};
-        } elsif(defined $ENV{"REQUEST_METHOD"}
-                && $ENV{"REQUEST_METHOD"} eq "POST")
-        {
-                read(STDIN,$in,$ENV{CONTENT_LENGTH});
-        } else {
-                return;
-        }
-        foreach (split(/&/,$in)) {
-                s/\+/ /g;
-                ($key, $val) = split(/=/,$_,2);
-                $key=~s/%(..)/pack("c",hex($1))/ge;
-                $val=~s/%(..)/pack("c",hex($1))/ge;
-                $ret{$key}=$val;
-        }
-        return %ret;
-}
-
 my %param = readparse();
 
 my ($pkg, $maint, $maintenc, $submitter, $severity, $status);
@@ -59,7 +38,7 @@ my $Archived = $archive ? "Archived" : "";
 my $this = "";
 
 my %indexentry;
-my %maintainer = &getmaintainers();
+my %maintainers = getmaintainers();
 my %strings = ();
 
 $ENV{"TZ"} = 'UTC';
@@ -70,19 +49,6 @@ my $tail_html = $debbugs::gHTMLTail;
 $tail_html = $debbugs::gHTMLTail;
 $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
 
-my $tag;
-if (defined $pkg) {
-    $tag = "package $pkg";
-} elsif (defined $maint) {
-    $tag = "maintainer $maint";
-} elsif (defined $maintenc) {
-    $tag = "encoded maintainer $maintenc";
-} elsif (defined $submitter) {
-    $tag = "submitter $submitter";
-} elsif (defined $severity) {
-    $tag = "$status $severity bugs";
-}
-
 set_option("repeatmerged", $repeatmerged);
 set_option("archive", $archive);
 set_option("include", { map {($_,1)} (split /[\s,]+/, $include) })
@@ -90,17 +56,42 @@ set_option("include", { map {($_,1)} (split /[\s,]+/, $include) })
 set_option("exclude", { map {($_,1)} (split /[\s,]+/, $exclude) })
 	if ($exclude);
 
+my $tag;
 my @bugs;
 if (defined $pkg) {
-    @bugs = pkgbugs($pkg);
+  $tag = "package $pkg";
+  #@bugs = pkgbugs($pkg);
+  @bugs = getbugs(sub {my %d=@_; return $pkg eq $d{"pkg"}});
 } elsif (defined $maint) {
-    @bugs = maintbugs($maint);
+  $tag = "maintainer $maint";
+  #@bugs = maintbugs($maint);
+  @bugs = getbugs(sub {my %d=@_; my $me; 
+		       ($me = $maintainers{$d{"pkg"}}||"") =~ s/\s*\(.*\)\s*//;
+		       if ($me =~ m/<(.*)>/) { $me = $1 }
+		       return $me eq $maint;
+		     })
 } elsif (defined $maintenc) {
-    @bugs = maintencbugs($maintenc);
+  $tag = "encoded maintainer $maintenc";
+  #@bugs = maintencbugs($maintenc);
+  @bugs = getbugs(sub {my %d=@_; 
+		       return maintencoded($maintainers{$d{"pkg"}} || "") 
+			 eq $maintenc
+		       });
 } elsif (defined $submitter) {
-    @bugs = submitterbugs($submitter);
+  $tag = "submitter $submitter";
+  #@bugs = submitterbugs($submitter);
+  @bugs = getbugs(sub {my %d=@_; my $se; 
+		       ($se = $d{"submitter"} || "") =~ s/\s*\(.*\)\s*//;
+		       if ($se =~ m/<(.*)>/) { $me = $1 }
+		       return $se eq $submitter;
+		     });
 } elsif (defined $severity) {
-    @bugs = severitybugs($status, $severity);
+  $tag = "$status $severity bugs";
+  #@bugs = severitybugs($status, $severity);
+  @bugs = getbugs(sub {my %d=@_;
+		       return ($d{"severity"} eq $severity) 
+			 && ($d{"status"} eq $status);
+		     });
 }
 
 my $result = htmlizebugs(@bugs);

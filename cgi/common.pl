@@ -13,6 +13,27 @@ sub set_option {
     if ($opt eq "include") { %common_include = %{$val}; }
 }
 
+sub readparse {
+    my ($in, $key, $val, %ret);
+    if (defined $ENV{"QUERY_STRING"} && $ENV{"QUERY_STRING"} ne "") {
+        $in=$ENV{QUERY_STRING};
+    } elsif(defined $ENV{"REQUEST_METHOD"}
+        && $ENV{"REQUEST_METHOD"} eq "POST")
+    {
+        read(STDIN,$in,$ENV{CONTENT_LENGTH});
+    } else {
+        return;
+    }
+    foreach (split(/&/,$in)) {
+        s/\+/ /g;
+        ($key, $val) = split(/=/,$_,2);
+        $key=~s/%(..)/pack("c",hex($1))/ge;
+        $val=~s/%(..)/pack("c",hex($1))/ge;
+        $ret{$key}=$val;
+    }
+    return %ret;
+}
+
 sub quit {
     my $msg = shift;
     print "Content-Type: text/html\n\n";
@@ -254,14 +275,35 @@ sub maintbugs {
 }
 
 sub maintencbugs {
-    my $maint = shift;
+    my $maintenc = shift;
     my %maintainers = getmaintainers();
-    return getbugs(sub {my %d=@_; return maintencoded($maintainers{$d{"pkg"}} || "") eq $maint});
+    return getbugs(sub {my %d=@_; return maintencoded($maintainers{$d{"pkg"}} || "") eq $maintenc});
 }
 
 sub pkgbugs {
     my $inpkg = shift;
     return getbugs( sub { my %d = @_; return $inpkg eq $d{"pkg"} });
+}
+
+sub countbugs {
+    my $bugfunc = shift;
+    if ($common_archive) {
+        open I, "<$debbugs::gSpoolDir/index.archive" or &quit("bugindex: $!");
+    } else {
+        open I, "<$debbugs::gSpoolDir/index.db" or &quit("bugindex: $!");
+    }
+
+    my %count = ();
+    while(<I>) 
+    {
+        if (m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/) {
+            my $x = $bugfunc->(pkg => $1, bug => $2, status => $4, 
+                               submitter => $5, severity => $6, tags => $7);
+	    $count{$x}++;
+	}
+    }
+    close I;
+    return %count;
 }
 
 sub getbugs {
