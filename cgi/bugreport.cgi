@@ -83,8 +83,10 @@ $indexentry .= "Package: <A HREF=\"" . pkgurl($status{package}) . "\">"
 	    .htmlsanit($status{package})."</A>;\n";
 
 $indexentry .= ";Reported by: ".htmlsanit($status{originator});
-$indexentry .= ";\nKeywords: ".htmlsanit($status{keywords}) 
-			if length($status{keywords});
+$indexentry .= ";\nTags: <strong>"
+		. htmlsanit(join(", ", sort(split(/\s+/, $status{tags}))))
+		. "</strong>"
+			if length($status{tags});
 
 my @merged= split(/ /,$status{mergedwith});
 if (@merged) {

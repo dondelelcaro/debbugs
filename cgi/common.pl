@@ -54,8 +54,10 @@ sub htmlindexentrystatus {
                if (length($status{"package"}));
     $result .= $showseverity;
     $result .= "Reported by: " . htmlsanit($status{originator});
-    $result .= ";\nKeywords: " . htmlsanit($status{keywords})
-                       if (length($status{keywords}));
+    $result .= ";\nTags: <strong>" 
+		 . htmlsanit(join(", ", sort(split(/\s+/, $status{tags}))))
+		 . "</strong>"
+                       if (length($status{tags}));
 
     my @merged= split(/ /,$status{mergedwith});
     my $mseparator= ";\nmerged with ";
@@ -323,7 +325,7 @@ sub getbugstatus {
         my $archdir = sprintf "%02d", $bugnum % 100;
 	open(S,"$gSpoolDir/archive/$archdir/$bugnum.status" ) or return ();
     }
-    my @lines = qw(originator date subject msgid package keywords done
+    my @lines = qw(originator date subject msgid package tags done
 			forwarded mergedwith severity);
     while(<S>) {
         chomp;
