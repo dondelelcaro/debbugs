@@ -97,8 +97,10 @@ sub htmlindexentrystatus {
 
 sub mainturl {
     my $ref = shift;
-    return sprintf "http://%s/db/ma/l%s.html",
-	$debbugs::gWebDomain, maintencoded($ref);
+    my $params = "maintenc=" . maintencoded($ref);
+    $params .= "&archive=yes" if ($common_archive);
+    $params .= "&repeatmerged=yes" if ($common_repeatmerged);
+    return $debbugs::gCGIDomain . "pkgreport.cgi" . "?" . $params;
 }
 
 sub pkgurl {
@@ -197,9 +199,10 @@ sub htmlizebugs {
 
 sub maintbugs {
     my $maint = shift;
+    my %maintainers = getmaintainers();
     my $chk = sub {
         my %d = @_;
-        ($maintemail = $d{"maint"}) =~ s/\s*\(.*\)\s*//;
+        ($maintemail = $maintainers{$d{"pkg"}}) =~ s/\s*\(.*\)\s*//;
         if ($maintemail =~ m/<(.*)>/) { $maintemail = $1 }
         return $maintemail eq $maint;
     };
@@ -208,7 +211,8 @@ sub maintbugs {
 
 sub maintencbugs {
     my $maint = shift;
-    return getbugs(sub {my %d=@_; return maintencoded($d{"maint"}) eq $maint});
+    my %maintainers = getmaintainers();
+    return getbugs(sub {my %d=@_; return maintencoded($maintainers{$d{"pkg"}}) eq $maint});
 }
 
 sub pkgbugs {
