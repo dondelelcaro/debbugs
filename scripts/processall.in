@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: processall.in,v 1.6 2001/08/16 07:19:38 doogie Exp $
+# $Id: processall.in,v 1.7 2001/08/16 07:20:18 doogie Exp $
 #
 # Usage: processall
 #
@@ -19,6 +19,8 @@ chdir( "$gSpoolDir" ) || die 'chdir spool: $!\n';
 push( @INC, "$lib_path" );
 
 #open(DEBUG,">&4");
+
+umask(002);
 
 $|=1;
 undef %fudged;
