@@ -8,6 +8,21 @@ OWNER_EMAIL		Owner Email		Globals->owner-email
 OWNER_NAME		Owner Name		Globals->owner-name
 LONG_NAME  		Long Name		Globals->project-long
 SHORT_NAME		Short Name		Globals->project-short
+EMAIL_DOMAIN		Email Domain		Globals->email-domain
+LIST_DOMAIN		List Domain		Globals->list-domain
+WEB_DOMAIN		Web Domain		Globals->web-domain
+CGI_DOMAIN		CGI Domain		Globals->cgi-domain
+SUBMIT_LIST		Submit List		Globals->submit-list
+MAINT_LIST		Maint List		Globals->maint-list
+QUIET_LIST		Quiet List		Globals->quiet-list
+FORWARDED_LIST		Forwarded List		Globals->forwarded-list
+DONE_LIST		Done List		Globals->done-list
+REQUEST_LIST		Request List		Globals->request-list
+SUBMITTER_LIST		Submitter List		Globals->submitter-list
+CONTROL_LIST		Control List		Globals->control-list
+SUMMARY_LIST		Summary List		Globals->summary-list
+MIRROR_LIST		Mirror List		Globals->mirror-list
+MIRROS			Mirrors			Globals->mirrors
 
 ############################################################################
 # Tags that come from processing the email/doing what wants to be done     #

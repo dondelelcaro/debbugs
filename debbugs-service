@@ -147,8 +147,8 @@ for ( my $procline=0; $procline<=$#body; $procline++)
     } elsif (m/^(send|get)\s+\#?(\d{2,})$/i) 
     {	$ref= $2+0; $reffile= $ref; $reffile =~ s,^..,$&/$&,;
         &sendlynxdoc( "db/$reffile.html", "logs for $gBug#$ref" );
-    } elsif (m/^send-detail\s+\#?(\d+)$/i) {
-        $ref= $1+0; $reffile= $ref; $reffile =~ s,^..,$&/$&,;
+    } elsif (m/^send-detail\s+\#?(\d+)$/i) 
+    {	$ref= $1+0; $reffile= $ref; $reffile =~ s,^..,$&/$&,;
         &sendlynxdoc("db/$reffile-b.html","additional logs for $gBug#$ref");
     } elsif (m/^index(\s+full)?$/i) {
         &sendlynxdoc("db/ix/full.html",'full index');

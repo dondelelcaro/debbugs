@@ -1,0 +1,20 @@
+From: GTAG_MAINTAINER_EMAIL (GTAG_PROJECT GTAG_BUG Tracking System)
+To: BTAG_BUG_ORIGINATOR
+Subject: Bug #BTAG_BUG_NUMBER closed by developer
+Message-ID: <header.LTAG_BUG_NUMBER.$nn.notdonctl\@GTAG_EMAIL_DOMAIN>
+In-Reply-To: LTAG_HEADER_MSG_ID
+References: LTAG_HEADER_MSG_ID LTAG_MESSAGE_ID
+X-GTAG_PROJECT-PR-Message: closed BTAG_BUG_NUMBER
+
+This is an automatic notification regarding your GTAG_BUG report.
+
+It has been marked as closed by one of the developers, namely
+LTAG_REPLY_TO.
+
+You should be hearing from them with a substantive response shortly,
+if you have not already done so.  If not, please contact them
+directly or email the Developer's list at debian-devel@lists.debian.org.
+
+GTAG_MAINTAINER_NAME
+(administrator, GTAG_PROJECT GTAG_BUG database)
+
