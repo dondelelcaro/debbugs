@@ -1,5 +1,5 @@
 # This is the bugs.debian.org debbugs configuration file.
-# $Id: config.debian,v 1.16 2003/01/28 23:52:08 cjwatson Exp $
+# $Id: config.debian,v 1.17 2003/02/16 15:20:26 cjwatson Exp $
 
 # Domains
 $gEmailDomain = "bugs.debian.org";
@@ -44,6 +44,7 @@ $gShowSeverities = "critical, grave, serious, important, normal, minor, wishlist
 @gSeverityList = ( "critical", "grave", "serious", "important", "normal",
                    "minor", "wishlist", "fixed"
                  );
+%gObsoleteSeverities = ( fixed => 'Use the fixed tag instead.' );
 %gSeverityDisplay = ( "critical", "Critical bugs",
                       "grave", "Grave functionality bugs",
                       "serious", "Serious policy violations",

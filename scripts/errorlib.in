@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.17 2002/11/17 22:45:16 cjwatson Exp $
+# $Id: errorlib.in,v 1.18 2003/02/16 15:20:26 cjwatson Exp $
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -218,7 +218,7 @@ sub escapelog {
 }
 
 
-@severities= @gSeverityList;
+@severities= grep { not exists $gObsoleteSeverities{$_} } @gSeverityList;
 @showseverities= @severities;
 grep ($_= $_ eq '' ? $gDefaultSeverity : $_, @showseverities);
 @strongseverities= @gStrongSeverities;

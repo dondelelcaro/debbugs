@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.67 2003/02/15 00:44:20 cjwatson Exp $
+# $Id: service.in,v 1.68 2003/02/16 15:20:26 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -416,6 +416,9 @@ END
         if (!grep($_ eq $newseverity, @gSeverityList, "$gDefaultSeverity")) {
             &transcript("Severity level \`$newseverity' is not known.\n".
  			"Recognized are: $gShowSeverities.\n\n");
+        } elsif (exists $gObsoleteSeverities{$newseverity}) {
+            &transcript("Severity level \`$newseverity' is obsolete. " .
+                        "$gObsoleteSeverities{$newseverity}\n\n");
         } elsif (&setbug) {
             $printseverity= $s_severity;
             $printseverity= "$gDefaultSeverity" if $printseverity eq '';
