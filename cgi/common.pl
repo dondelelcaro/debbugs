@@ -3,9 +3,15 @@
 use DB_File;
 use Fcntl qw/O_RDONLY/;
 use Mail::Address;
+use MLDBM qw/DB_File/;
+
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
 require "$lib_path/errorlib";
+
+use Debbugs::Versions;
+
+$MLDBM::RemoveTaint = 1;
 
 my $common_archive = 0;
 my $common_repeatmerged = 1;
@@ -20,6 +26,10 @@ my @common_pending_include = ();
 my @common_pending_exclude = ();
 my @common_severity_include = ();
 my @common_severity_exclude = ();
+
+my $common_version;
+my $common_dist;
+my $common_arch;
 
 my $debug = 0;
 
@@ -77,6 +87,9 @@ sub set_option {
 	@vals = @{$val} if (ref($val) eq "ARRAY" );
 	@common_severity_include = @vals if (@vals);
     }
+    if ($opt eq "version") { $common_version = $val; }
+    if ($opt eq "dist") { $common_dist = $val; }
+    if ($opt eq "arch") { $common_arch = $val; }
 }
 
 sub readparse {
@@ -219,9 +232,26 @@ sub htmlindexentrystatus {
         $mseparator= ", ";
     }
 
-    if (length($status{done})) {
+    if (@{$status{found_versions}}) {
+        $result .= ";\nfound in ";
+        $result .= (@{$status{found_versions}} == 1) ? 'version '
+                                                     : 'versions ';
+        $result .= join ', ', map htmlsanit($_), @{$status{found_versions}};
+    }
+
+    if (@{$status{fixed_versions}}) {
+        $result .= ";\n<strong>fixed</strong> in ";
+        $result .= (@{$status{fixed_versions}} == 1) ? 'version '
+                                                     : 'versions ';
+        $result .= join ', ', map htmlsanit($_), @{$status{fixed_versions}};
+        if (length($status{done})) {
+            $result .= ' by ' . htmlsanit($status{done});
+        }
+    } elsif (length($status{done})) {
         $result .= ";\n<strong>Done:</strong> " . htmlsanit($status{done});
-    } else {
+    }
+
+    unless (length($status{done})) {
         if (length($status{forwarded})) {
             $result .= ";\n<strong>Forwarded</strong> to "
                        . maybelink($status{forwarded});
@@ -254,44 +284,48 @@ sub htmlindexentrystatus {
     return $result;
 }
 
+sub urlargs {
+    my $args = '';
+    $args .= "&archive=yes" if $common_archive;
+    $args .= "&repeatmerged=no" unless $common_repeatmerged;
+    $args .= "&version=$common_version" if defined $common_version;
+    $args .= "&dist=$common_dist" if defined $common_dist;
+    $args .= "&arch=$common_arch" if defined $common_arch;
+    return $args;
+}
+
 sub submitterurl {
     my $ref = shift || "";
     my $params = "submitter=" . emailfromrfc822($ref);
-    $params .= "&archive=yes" if ($common_archive);
-    $params .= "&repeatmerged=no" unless ($common_repeatmerged);
+    $params .= urlargs();
     return urlsanit("pkgreport.cgi" . "?" . $params);
 }
 
 sub mainturl {
     my $ref = shift || "";
     my $params = "maint=" . emailfromrfc822($ref);
-    $params .= "&archive=yes" if ($common_archive);
-    $params .= "&repeatmerged=no" unless ($common_repeatmerged);
+    $params .= urlargs();
     return urlsanit("pkgreport.cgi" . "?" . $params);
 }
 
 sub pkgurl {
     my $ref = shift;
     my $params = "pkg=$ref";
-    $params .= "&archive=yes" if ($common_archive);
-    $params .= "&repeatmerged=no" unless ($common_repeatmerged);
-    
+    $params .= urlargs();
     return urlsanit("pkgreport.cgi" . "?" . "$params");
 }
 
 sub srcurl {
     my $ref = shift;
     my $params = "src=$ref";
-    $params .= "&archive=yes" if ($common_archive);
-    $params .= "&repeatmerged=no" unless ($common_repeatmerged);
+    $params .= urlargs();
     return urlsanit("pkgreport.cgi" . "?" . "$params");
 }
 
 sub tagurl {
     my $ref = shift;
     my $params = "tag=$ref";
-    $params .= "&archive=yes" if ($common_archive);
-    $params .= "&repeatmerged=no" unless ($common_repeatmerged);
+    $params .= urlargs();
     return urlsanit("pkgreport.cgi" . "?" . "$params");
 }
 
@@ -368,7 +402,8 @@ sub htmlizebugs {
 			      "pending-fixed", "pending upload",
 			      "fixed", "fixed in NMU",
                               "done", "resolved",
-                              "forwarded", "forwarded to upstream software authors");
+                              "forwarded", "forwarded to upstream software authors",
+                              "absent", "not applicable to this version");
 
     if (@bugs == 0) {
         return "<HR><H2>No reports found!</H2></HR>\n";
@@ -430,7 +465,7 @@ sub htmlizebugs {
     if ($common_raw_sort) {
 	$result .= "<UL>\n" . join("", @rawsort ) . "</UL>\n";
     } else {
-	my @pendingList = qw(pending forwarded pending-fixed fixed done);
+	my @pendingList = qw(pending forwarded pending-fixed fixed done absent);
 	@pendingList = reverse @pendingList if $common_pending_reverse;
 #print STDERR join(",",@pendingList)."\n";
 #print STDERR join(",",@common_pending_include).":$#common_pending_include\n";
@@ -630,6 +665,24 @@ sub getbugstatus {
     return {} if ( !$location );
     %status = %{ readbug( $bugnum, $location ) };
 
+    $status{found_versions} = [];
+    $status{fixed_versions} = [];
+    if (defined $gVersionBugsDir and
+            (defined $common_version or defined $common_dist)) {
+        my $bughash = get_hashname($bugnum);
+        if (open BUGVER, "< $gVersionBugsDir/$bughash/$bugnum.versions") {
+            local $_;
+            while (<BUGVER>) {
+                if (/^Found-in: (.*)/i) {
+                    $status{found_versions} = [split ' ', $1];
+                } elsif (/^Fixed-in: (.*)/i) {
+                    $status{fixed_versions} = [split ' ', $1];
+                }
+            }
+            close BUGVER;
+        }
+    }
+
     $status{tags} = $status{keywords};
 
     $status{"package"} =~ s/\s*$//;
@@ -640,7 +693,27 @@ sub getbugstatus {
     $status{"pending"} = 'forwarded'	    if (length($status{"forwarded"}));
     $status{"pending"} = 'pending-fixed'    if ($status{"tags"} =~ /\bpending\b/);
     $status{"pending"} = 'fixed'	    if ($status{"tags"} =~ /\bfixed\b/);
-    $status{"pending"} = 'done'		    if (length($status{"done"}));
+
+    my $version;
+    if (defined $common_version) {
+        $version = $common_version;
+    } elsif (defined $common_dist) {
+        $version = getversion($status{package}, $common_dist, $common_arch);
+    }
+
+    if (defined $version) {
+        my $buggy = buggyversion($bugnum, $version, \%status);
+        if ($buggy eq 'absent') {
+            $status{"pending"} = 'absent';
+        } elsif ($buggy eq 'fixed') {
+            $status{"pending"} = 'done';
+        }
+    }
+    
+    if (length($status{done}) and
+            (not defined $version or not @{$status{fixed_versions}})) {
+        $status{"pending"} = 'done';
+    }
 
     return \%status;
 }
@@ -660,6 +733,44 @@ sub buglog {
     my $bugnum = shift;
     my $location = getbuglocation($bugnum, 'log');
     return getbugcomponent($bugnum, 'log', $location);
+}
+
+my %_versionobj;
+sub buggyversion {
+    my ($bug, $ver, $status) = @_;
+    return '' unless defined $gVersionPackagesDir;
+    my $src = getpkgsrc()->{$status->{package}};
+    $src = $status->{package} unless defined $src;
+
+    my $tree;
+    if (exists $_versionobj{$src}) {
+        $tree = $_versionobj{$src};
+    } else {
+        $tree = Debbugs::Versions->new(\&DpkgVer::vercmp);
+        if (open VERFILE, "< $gVersionPackagesDir/$src") {
+            $tree->load(\*VERFILE);
+            close VERFILE;
+        }
+        $_versionobj{$src} = $tree;
+    }
+
+    return $tree->buggy($ver, $status->{found_versions},
+                        $status->{fixed_versions});
+}
+
+my %_versions;
+sub getversion {
+    my ($pkg, $dist, $arch) = @_;
+    return undef unless defined $gVersionIndex;
+    $dist = 'unstable' unless defined $dist;
+    $arch = 'i386' unless defined $arch;
+
+    unless (tied %_versions) {
+        tie %_versions, 'MLDBM', $gVersionIndex, O_RDONLY
+            or die "can't open versions index: $!";
+    }
+
+    return $_versions{$pkg}{$dist}{$arch};
 }
 
 1;

@@ -198,7 +198,22 @@ if (@merged) {
 	push @descstates, $descmerged;
 }
 
-if (length($status{done})) {
+if (@{$status{found_versions}}) {
+    my $foundtext = 'Found in ';
+    $foundtext .= (@{$status{found_versions}} == 1) ? 'version ' : 'versions ';
+    $foundtext .= join ', ', map htmlsanit($_), @{$status{found_versions}};
+    push @descstates, $foundtext;
+}
+
+if (@{$status{fixed_versions}}) {
+    my $fixedtext = '<strong>Fixed</strong> in ';
+    $fixedtext .= (@{$status{fixed_versions}} == 1) ? 'version ' : 'versions ';
+    $fixedtext .= join ', ', map htmlsanit($_), @{$status{fixed_versions}};
+    if (length($status{done})) {
+	$fixedtext .= ' by ' . htmlsanit($status{done});
+    }
+    push @descstates, $fixedtext;
+} elsif (length($status{done})) {
 	push @descstates, "<strong>Done:</strong> ".htmlsanit($status{done});
 } elsif (length($status{forwarded})) {
 	push @descstates, "<strong>Forwarded</strong> to ".maybelink($status{forwarded});

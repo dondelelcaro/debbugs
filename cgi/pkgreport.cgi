@@ -34,6 +34,9 @@ my $pend_exc = $param{'&pend-exc'} || $param{'pend-exc'} || "";
 my $pend_inc = $param{'&pend-inc'} || $param{'pend-inc'} || "";
 my $sev_exc = $param{'&sev-exc'} || $param{'sev-exc'} || "";
 my $sev_inc = $param{'&sev-inc'} || $param{'sev-inc'} || "";
+my $version = $param{'version'} || undef;
+my $dist = $param{'dist'} || undef;
+my $arch = $param{'arch'} || undef;
 
 my ($pkg, $src, $maint, $maintenc, $submitter, $severity, $status, $tag);
 
@@ -105,11 +108,21 @@ set_option("pend-exc", $pend_exc);
 set_option("pend-inc", $pend_inc);
 set_option("sev-exc", $sev_exc);
 set_option("sev-inc", $sev_inc);
+set_option("version", $version);
+set_option("dist", $dist);
+set_option("arch", $arch);
 
 my $title;
 my @bugs;
 if (defined $pkg) {
   $title = "package $pkg";
+  if (defined $version) {
+    $title .= " (version $version)";
+  } elsif (defined $dist) {
+    $title .= " in $dist";
+    my $distver = getversion($pkg, $dist, $arch);
+    $title .= " (version $distver)" if defined $distver;
+  }
   my @pkgs = split /,/, $pkg;
   @bugs = @{getbugs(sub {my %d=@_;
                          foreach my $try (splitpackages($d{"pkg"})) {
@@ -119,6 +132,13 @@ if (defined $pkg) {
                         }, 'package', @pkgs)};
 } elsif (defined $src) {
   $title = "source $src";
+  if (defined $version) {
+    $title .= " (version $version)";
+  } elsif (defined $dist) {
+    $title .= " in $dist";
+    my $distver = getversion($src, $dist, 'source');
+    $title .= " (version $distver)" if defined $distver;
+  }
   my @pkgs = ();
   my @srcs = split /,/, $src;
   foreach my $try (@srcs) {
@@ -134,6 +154,7 @@ if (defined $pkg) {
 } elsif (defined $maint) {
   my %maintainers = %{getmaintainers()};
   $title = "maintainer $maint";
+  $title .= " in $dist" if defined $dist;
   if ($maint eq "") {
     @bugs = @{getbugs(sub {my %d=@_;
                            foreach my $try (splitpackages($d{"pkg"})) {
@@ -161,6 +182,7 @@ if (defined $pkg) {
 } elsif (defined $maintenc) {
   my %maintainers = %{getmaintainers()};
   $title = "encoded maintainer $maintenc";
+  $title .= " in $dist" if defined $dist;
   @bugs = @{getbugs(sub {my %d=@_; 
                          foreach my $try (splitpackages($d{"pkg"})) {
                            my @me = getparsedaddrs($maintainers{$try});
@@ -172,6 +194,7 @@ if (defined $pkg) {
                         })};
 } elsif (defined $submitter) {
   $title = "submitter $submitter";
+  $title .= " in $dist" if defined $dist;
   my @submitters = split /,/, $submitter;
   @bugs = @{getbugs(sub {my %d=@_; my $se; 
 		       ($se = $d{"submitter"} || "") =~ s/\s*\(.*\)\s*//;
@@ -180,6 +203,7 @@ if (defined $pkg) {
 		     }, 'submitter-email', @submitters)};
 } elsif (defined($severity) && defined($status)) {
   $title = "$status $severity bugs";
+  $title .= " in $dist" if defined $dist;
   my @severities = split /,/, $severity;
   my @statuses = split /,/, $status;
   @bugs = @{getbugs(sub {my %d=@_;
@@ -188,12 +212,14 @@ if (defined $pkg) {
 		     })};
 } elsif (defined($severity)) {
   $title = "$severity bugs";
+  $title .= " in $dist" if defined $dist;
   my @severities = split /,/, $severity;
   @bugs = @{getbugs(sub {my %d=@_;
 		       return (grep($d{"severity"} eq $_, @severities));
 		     }, 'severity', @severities)};
 } elsif (defined($tag)) {
   $title = "bugs tagged $tag";
+  $title .= " in $dist" if defined $dist;
   my @tags = split /,/, $tag;
   @bugs = @{getbugs(sub {my %d = @_;
                          my %tags = map { $_ => 1 } split ' ', $d{"tags"};
