@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.66 2003/02/14 18:01:12 cjwatson Exp $
+# $Id: service.in,v 1.67 2003/02/15 00:44:20 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -248,6 +248,7 @@ END
 	$ok++;
 	$ref= $1;
 	if (&setbug) {
+	    &transcript("'close' is deprecated; see http://$gWebDomain/Developer$gHTMLSuffix#closing.\n");
 	    if (length($s_done)) {
 		&transcript("$gBug is already closed, cannot re-close.\n\n");
                 &nochangebug;
