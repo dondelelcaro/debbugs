@@ -1,6 +1,6 @@
 # This is the template debbugs configuration file.
 # You *must* edit it in order for debbugs to work.
-# $Id: config.in,v 1.9 2000/10/08 15:17:10 joy Exp $
+# $Id: config.in,v 1.10 2000/10/10 20:08:57 joy Exp $
 
 # Domains
 $gEmailDomain = "bugs.something";			# e.g. bugs.debian.org
@@ -46,6 +46,7 @@ $gShowSeverities = "critical, grave, normal, minor, wishlist";
                       'normal', "Normal $gBugs",
                       'fixed', "Fixed $gBugs",
                       'wishlist', "Wishlist items" );
+@gTags = ( 'patch', 'wontfix', 'moreinfo', 'unreproducible', 'fixed', 'stable' );
 
 # better don't change this
 $gBounceFroms = "^mailer|^da?emon|^post.*mast|^root|^wpuser|^mmdf|^smt.*|^mrgate|^vmmail|^mail.*system|^uucp|-maiser-|^mal\@|^mail.*agent|^tcpmail|^bitmail|^mailman";
