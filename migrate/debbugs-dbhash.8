@@ -1,0 +1,35 @@
+.TH DEBBUGS\-DBHASH 8
+.SH NAME
+debbugs\-dbhash \- migrate a debbugs database to hashed format
+.SH SYNOPSIS
+.B debbugs\-dbhash
+.I old-db-directory
+.I new-db-directory
+.SH DESCRIPTION
+.B debbugs\-dbhash
+converts an old-style flat debbugs database into a new-style
+hashed-directory debbugs database, for use with debbugs 2.4 and
+above.
+.PP
+The old database is simply copied, and otherwise left untouched.
+The directory given for the new database must not already exist.
+.PP
+In the hashed format, files with names of the form
+.I 1023.log
+are now stored as
+.I 23/1023.log
+instead.
+This improves performance on many filesystems for debbugs
+installations with large numbers of bug reports.
+.SH WARNINGS
+.B debbugs\-dbhash
+will print a warning message for each file whose name is of a form
+that cannot be hashed as above.
+Typical debbugs installations will have a few of these, usually
+index files and the like.
+.SH AUTHORS
+Adam Heath is primarily responsible for the hashed directory support
+in debbugs.
+Colin Watson wrote
+.B debbugs\-dbhash
+and this man page.

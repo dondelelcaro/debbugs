@@ -1,0 +1,42 @@
+#! /usr/bin/perl -w
+# Migrate an old-style database to the new hashed (db-h) form.
+
+use strict;
+use File::Copy;
+
+if (@ARGV != 2) {
+    print <<EOF;
+Usage: $0 old-db-directory new-db-directory
+
+debbugs-dbhash converts an old-style flat debbugs database into a
+new-style hashed-directory debbugs database.
+
+The old database is simply copied, and otherwise left untouched.
+The directory given for the new database must not already exist.
+
+EOF
+    exit 0;
+}
+
+my ($db, $dbh) = @ARGV[0, 1];
+opendir DB, $db or die "Can't opendir $db: $!";
+mkdir $dbh or die "Can't mkdir $dbh: $!";
+for my $i (0 .. 99) {
+    my $dir = sprintf '%s/%02d', $dbh, $i;
+    mkdir $dir or die "Can't mkdir $dir: $!";
+}
+
+while (defined(my $file = readdir DB)) {
+    next if $file =~ /^\.\.?$/;
+    my $oldfile = "$db/$file";
+    my $newfile;
+    if ($file =~ /(\d*)(\d\d)\.(.*)/) {
+	$newfile = "$dbh/$2/$1$2.$3";
+    } else {
+	warn "Not hashing $file.\n";
+	$newfile = "$dbh/$file";
+    }
+    copy $oldfile, $newfile or warn "Can't copy $oldfile to $newfile: $!";
+}
+
+closedir DB;
