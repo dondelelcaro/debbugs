@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.69 2003/02/27 01:43:30 cjwatson Exp $
+# $Id: service.in,v 1.70 2003/03/10 00:10:52 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -159,7 +159,7 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
         &transcript("Debug level $dl.\n\n");
     } elsif (m/^(send|get)\s+\#?(\d{2,})$/i) {
         $ref= $2+0;
-        &sendlynxdoc("$ref","logs for $gBug#$ref");
+        &sendlynxdoc("bugreport.cgi?bug=$ref","logs for $gBug#$ref");
     } elsif (m/^send-detail\s+\#?(\d+)$/i) {
 	&transcript("This BTS function is currently disabled, sorry.\n\n");
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
@@ -173,26 +173,18 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
 	&transcript("This BTS function is currently disabled, sorry.\n\n");
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
     } elsif (m/^index(\s+|-)pack(age)?s?$/i) {
-	&sendlynxdoc("cgi-bin/pkgindex.cgi?indexon=pkg",'index of packages');
+	&sendlynxdoc("pkgindex.cgi?indexon=pkg",'index of packages');
     } elsif (m/^index(\s+|-)maints?$/i) {
-	&sendlynxdoc("cgi-bin/pkgindex.cgi?indexon=maint",'index of maintainers');
+	&sendlynxdoc("pkgindex.cgi?indexon=maint",'index of maintainers');
     } elsif (m/^index(\s+|-)maint\s+(\S+)$/i) {
 	$maint = $2;
-# check for crap in $maint
-	if ($maint =~ m/^\./ || $maint !~ m/^[\d\w-+.@]+$/) {
-		&transcript("Invalid request $maint!\n");
-		next;
-	}
-	&sendlynxdoc("$maint","$gBug list for maintainer \`$maint'");
+	&sendlynxdoc("pkgreport.cgi?maint=" . urlsanit($maint),
+		     "$gBug list for maintainer \`$maint'");
         $ok++;
     } elsif (m/^index(\s+|-)pack(age)?s?\s+(\S.*\S)$/i) {
 	$package = $+;
-# check for crap in $package
-	if ($package =~ m/^\./ || $package !~ m/^[\d\w-+.@]+$/) {
-		&transcript("Invalid request $package!\n");
-		next;
-	}
-	&sendlynxdoc("$package","$gBug list for package $package sent.\n\n");
+	&sendlynxdoc("pkgreport.cgi?pkg=" . urlsanit($package),
+		     "$gBug list for package $package");
         $ok++;
     } elsif (m/^send-unmatched(\s+this|\s+-?0)?$/i) {
 	&transcript("This BTS function is currently disabled, sorry.\n\n");
@@ -947,6 +939,15 @@ sub transcript {
     $transcript.= $_[0];
 }
 
+sub urlsanit {
+    my $url = shift;
+    $url =~ s/%/%25/g;
+    $url =~ s/\+/%2b/g;
+    my %saniarray = ('<','lt', '>','gt', '&','amp', '"','quot');
+    $url =~ s/([<>&"])/\&$saniarray{$1};/g;
+    return $url;
+}
+
 sub sendlynxdoc {
     &sendlynxdocraw;
     &transcript("\n");
@@ -981,8 +982,7 @@ END
 sub sendlynxdocraw {
     local ($relpath,$description) = @_;
     $doc='';
-# the below oughta use $gWebDomain but it can't
-    open(L,"lynx -nolist -dump http://bugs.debian.org/$relpath 2>&1 |") || &quit("fork for lynx: $!");
+    open(L,"lynx -nolist -dump $gCGIDomain/\Q$relpath\E 2>&1 |") || &quit("fork for lynx: $!");
     while(<L>) { $doc.=$_; }
     $!=0; close(L);
     if ($? == 255 && $doc =~ m/^\n*lynx: Can\'t access start file/) {
