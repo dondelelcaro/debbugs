@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.9 2000/10/06 21:05:20 joy Exp $
+# $Id: text.in,v 1.10 2000/10/08 15:21:36 joy Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -18,7 +18,7 @@ $gTextInstructions = "$gBadEmailPrefix";
 ############################################################################
 # Here is a blurb for any mirrors of the web site.  Here's a sample:
 #
-#$gHTMLCopies = "Copies of the logs are available on the World Wide Web at<BR>
+#$gHTMLCopies = "<p>Copies of the logs are available on the World Wide Web at<BR>
 # <A HREF=\"http://mirror1.domain\"><CODE>http://mirror1.domain</CODE></A><BR>
 # <A HREF=\"http://mirror2.domain\"><CODE>http://mirror2.domain</CODE></A>";
 ############################################################################
@@ -64,7 +64,7 @@ $gHTMLFindPackage = "";
 
 ############################################################################
 # If you have pseudo packages, place a blurb here.  For example:
-# $gHTMLPseudoDesc = "There are some pseudo-packages available for putting in
+# $gHTMLPseudoDesc = "<p>There are some pseudo-packages available for putting in
 # the <CODE>Package</CODE> line when reporting a $gBug in something other than an
 # actual $gProject software package.  There is 
 # <A HREF="db/ix/pseudopackages.html"> a list of these</A> on the $gBugs WWW 
@@ -74,7 +74,15 @@ $gHTMLPseudoDesc = "";
 
 
 ############################################################################
-# List any extra information you would like included in bug reports
+# List any extra information you would like included in bug reports. For
+# example:
+# $gXtraBugInfo = "<li>What kernel version you're using (type
+# <code>uname -a</code>), your shared C library (type <code>ls -l
+# /lib/libc.so.6</code> or <code>dpkg -s libc6 | grep ^Version</code>), and
+# any other details about your Debian system, if it seems appropriate.
+# For example, if you had a problem with a Perl script, you would want to
+# provide the version of the `perl' binary (type <code>perl -v</code> or
+# <code>dpkg -s perl-5.005 | grep ^Version:</code>).";
 ############################################################################
 $gXtraBugInfo = "";
 
