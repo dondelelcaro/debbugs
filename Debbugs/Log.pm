@@ -35,8 +35,8 @@ types. ^A, ^B, etc. represent those control characters.
   [mail]
   ^C
 
-[mail] must start with /^Received: \(at \S+\) by \S+;/, and is copied to the
-output.
+C<[mail]> must start with /^Received: \(at \S+\) by \S+;/, and is copied to
+the output.
 
 =item autocheck
 
@@ -82,9 +82,9 @@ line.
 =head2 Perl Record Representation
 
 Each record is a hash. The C<type> field is C<incoming-recv>, C<autocheck>,
-C<recips>, or C<html> as above; C<mail> and C<html> contain text as above;
-C<recips> is a reference to an array of recipients (strings), or undef for
-C<-t>.
+C<recips>, or C<html> as above; C<text> contains text from C<[mail]> or
+C<[html]> as above; C<recips> is a reference to an array of recipients
+(strings), or undef for C<-t>.
 
 =head1 FUNCTIONS
 
