@@ -25,7 +25,7 @@ my %pkgsrc = %{getpkgsrc()};
 
 my $ref = $param{'bug'} || quit("No bug number");
 my $msg = $param{'msg'} || "";
-my $att = $param{'att'} || "0";
+my $att = $param{'att'};
 my $boring = ($param{'boring'} || 'no') eq 'yes'; 
 my $reverse = ($param{'reverse'} || 'no') eq 'yes';
 my $mbox = ($param{'mbox'} || 'no') eq 'yes'; 
@@ -186,7 +186,7 @@ while(my $line = <L>) {
 								push @attachments, $_;
 								my $file = $_->head->recommended_filename;
 								$downloadHtml .= "View Attachment: <a href=\"".dlurl($ref,"msg=$xmessage","att=$#attachments","filename=$file")."\">$file</a>\n";
-								if ($msg && $att eq $#attachments) {
+								if ($msg && defined($att) && $att eq $#attachments) {
 									my $head = $_->head;
 									my $type;
 									chomp($type = $head->mime_attr("content-type"));
