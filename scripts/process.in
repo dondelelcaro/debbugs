@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.40 2001/11/22 02:59:16 doogie Exp $
+# $Id: process.in,v 1.41 2001/11/22 03:04:10 doogie Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -52,7 +52,6 @@ print DEBUG "###\n",join("##\n",@msg),"\n###\n";
 
 chop($tdate= `date -u '+%a, %d %h %Y %T GMT'`);
 $fwd= <<END;
-X-Loop: $gMaintainerEmail
 Received: via spool by $baddress\@$gEmailDomain id=$nn
           (code $codeletter ref $tryref); $tdate
 END
@@ -747,7 +746,7 @@ Message-ID: <handler.$ref.$nn.ackinfo\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
 References: $header{'message-id'}
 X-$gProject-PR-Message: ack-info $ref
-Reply-To: $ref\@$gEmailDomain
+Disabled-Doogie-Reply-To: $ref\@$gEmailDomain
 
 Thank you for the additional information you have supplied regarding
 this problem report.  It has been forwarded to the developer(s) and
@@ -816,10 +815,10 @@ sub get_addresses {
    		map { Mail::Address->parse($_) } @_;
 }
 
-
 sub sendmessage {
     local ($msg,@recips) = @_;
     if ($recips[0] eq '' && $#recips == 0) { @recips= ('-t'); }
+    $msg = "X-Loop: $gMaintainerEmail\n" . $msg;
 
     my $hash = get_hashname($ref);
     #save email to the log
