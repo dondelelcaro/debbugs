@@ -4,4 +4,8 @@ if [ "$1" = "configure" ]; then
   /usr/sbin/debbugsconfig
 fi
 
+if [ -f /etc/debbugs/nextnumber ]; then
+  rm -f /etc/debbugs/nextnumber
+fi
+
 #DEBHELPER#
