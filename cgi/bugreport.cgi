@@ -4,6 +4,9 @@ package debbugs;
 
 use strict;
 use POSIX qw(strftime tzset);
+use MIME::Parser;
+use MIME::Decoder;
+use IO::Scalar;
 
 #require '/usr/lib/debbugs/errorlib';
 require './common.pl';
@@ -22,8 +25,10 @@ my %pkgsrc = %{getpkgsrc()};
 
 my $ref = $param{'bug'} || quit("No bug number");
 my $msg = $param{'msg'} || "";
+my $att = $param{'att'} || "0";
 my $boring = ($param{'boring'} || 'no') eq 'yes'; 
 my $reverse = ($param{'reverse'} || 'no') eq 'yes';
+my $mbox = ($param{'mbox'} || 'no') eq 'yes'; 
 
 my %status = %{getbugstatus($ref)} or &quit("Couldn't get bug status: $!");
 
@@ -60,7 +65,7 @@ $indexentry .= "Package: <A HREF=\"" . pkgurl($status{package}) . "\">"
 	    .htmlsanit($status{package})."</A>;\n";
 
 $indexentry .= "Reported by: <a href=\"" . submitterurl($status{originator})
-               . "\">" . htmlsanit($status{originator}) . "</a>";
+              . "\">" . htmlsanit($status{originator}) . "</a>";
 $indexentry .= ";\nTags: <strong>"
 		. htmlsanit(join(", ", sort(split(/\s+/, $status{tags}))))
 		. "</strong>"
@@ -102,12 +107,15 @@ my $log='';
 my $xmessage = 1;
 my $suppressnext = 0;
 
+my $thisheader = '';
 my $this = '';
 
 my $cmsg = 1;
 
 my $normstate= 'kill-init';
 my $linenum = 0;
+my $mail = '';
+my @mails = ();
 while(my $line = <L>) {
 	$linenum++;
 	if ($line =~ m/^.$/ and 1 <= ord($line) && ord($line) <= 7) {
@@ -141,20 +149,76 @@ while(my $line = <L>) {
 
 		if ($newstate eq 'kill-end') {
 
-			$this .= "</pre>\n"
-				if $normstate eq 'go' || $normstate eq 'go-nox';
-
-			if ($normstate eq 'html') {
-				$this .= "  <em><A href=\"" . bugurl($ref, "msg=$xmessage") . "\">Full text</A> available.</em>";
-			}
-
 			my $show = 1;
 			$show = $boring
 				if ($suppressnext && $normstate ne 'html');
 
 			$show = ($xmessage == $msg) if ($msg);
 
+			push @mails, $mail if ( $mbox && $mail );
 			if ($show) {
+				my $downloadHtml = '';
+				if ($mail) {
+					my $parser = new MIME::Parser;
+					$parser->tmp_to_core(1);
+					$parser->output_to_core(1);
+#					$parser->output_under("/tmp");
+					my $entity = $parser->parse_data($mail);
+					# TODO: make local subdir, clean it outselves
+					# the following does NOT delete the msg dirs in /tmp
+					END { $entity->purge; $parser->filer->purge; }
+					my @attachments = ();
+					if ( $entity->is_multipart ) {
+						my @parts = $entity->parts_DFS;
+#						$this .= htmlsanit($entity->head->stringify);
+						my @keep = ();
+						foreach ( @parts ) {
+							my $head = $_->head;
+#							$head->mime_attr("content-transfer-encoding" => "8bit")
+#								if !$head->mime_attr("content-transfer-encoding");
+							my ($disposition,$type) = (
+								$head->mime_attr("content-disposition"),
+								lc $head->mime_attr("content-type")
+								);
+							
+#print STDERR "'$type' '$disposition'\n";
+							if ($disposition && ( $disposition eq "attachment" || $disposition eq "inline" ) && $_->head->recommended_filename ) {
+								push @attachments, $_;
+								my $file = $_->head->recommended_filename;
+								$downloadHtml .= "Download Attachment: <a href=\"".dlurl($ref,"msg=$xmessage","att=$#attachments","filename=$file")."\">$file</a>\n";
+								if ($msg && $att eq $#attachments) {
+									my $head = $_->head;
+									my $type;
+									chomp($type = $head->mime_attr("content-type"));
+									my $body = $_->stringify_body;
+									print "Content-Type: $type; name=$file\n\n";
+									my $decoder = new MIME::Decoder($head->mime_encoding);
+									$decoder->decode(new IO::Scalar(\$body), \*STDOUT);
+									exit(0);
+								}
+								if ($type eq 'text/plain') {
+#									push @keep, $_;
+								}
+#								$this .= htmlsanit($_->head->stringify);
+							} else {
+#								$this .= htmlsanit($_->head->stringify);
+#								push @keep, $_;
+							}
+#							$this .= "\n" . htmlsanit($_->stringify_body);
+						}
+#						$entity->parts(\@keep) if (!$msg);
+					}
+					$this .= htmlsanit($entity->stringify);
+				}
+				$this = "$downloadHtml\n$this$downloadHtml" if $downloadHtml;
+				$downloadHtml = '';
+				$this = "<pre>\n$this</pre>\n"
+					if $normstate eq 'go' || $normstate eq 'go-nox';
+				$this = "$thisheader$this" if $thisheader && !( $normstate eq 'html' );;
+				$thisheader = '';
+				if ($normstate eq 'html') {
+					$this .= "  <em><A href=\"" . bugurl($ref, "msg=$xmessage") . "\">Full text</A> available.</em>";
+				}
 				if ($reverse) {
 					$log = "$this\n<hr>$log";
 				} else {
@@ -168,6 +232,7 @@ while(my $line = <L>) {
 		}
 		
 		$normstate = $newstate;
+		$mail = '';
 		next;
 	}
 
@@ -177,16 +242,26 @@ while(my $line = <L>) {
 		$pl =~ s/\n+$//;
 		m/^Received: \(at (\S+)\) by (\S+)\;/
 			|| &quit("bad line \`$pl' in state incoming-recv");
-		$this = "<h2>Message received at ".htmlsanit("$1\@$2")
-		        . ":</h2><br>\n<pre>\n$_";
+		$thisheader = "<h2>Message received at ".htmlsanit("$1\@$2")
+		        . ":</h2><br>\n";
+		$this = '';
 		$normstate= 'go';
+		$mail .= $_;
 	} elsif ($normstate eq 'html') {
 		$this .= $_;
 	} elsif ($normstate eq 'go') {
-		$this .= htmlsanit($_);
+		if ($mail) {
+			$mail .= $_;
+		} else {
+			$this .= htmlsanit($_);
+		}
 	} elsif ($normstate eq 'go-nox') {
 		next if !s/^X//;
-		$this .= htmlsanit($_);
+		if ($mail) {
+			$mail .= $_;
+		} else {
+			$this .= htmlsanit($_);
+		}
         } elsif ($normstate eq 'recips') {
 		if (m/^-t$/) {
 			$this = "<h2>Message sent:</h2><br>\n";
@@ -210,6 +285,26 @@ while(my $line = <L>) {
 &quit("$ref state $normstate at end") unless $normstate eq 'kill-end';
 close(L);
 
+if ( $mbox ) {
+	print "Content-Type: text/plain\n\n";
+	foreach ( @mails ) {
+		my @lines = split( "\n", $_, -1 );
+		if ( $lines[ 1 ] =~ m/^From / ) {
+			my $tmp = $lines[ 0 ];
+			$lines[ 0 ] = $lines[ 1 ];
+			$lines[ 1 ] = $tmp;
+			$_ = join( "\n", @lines ) . "\n";
+		}
+		if ( !( $lines[ 0 ] =~ m/^From / ) ) {
+			$ENV{ PATH } = "/bin:/usr/bin:/usr/local/bin";
+			my $date = `date "+%a %b %d %T %Y"`;
+			chomp $date;
+			$_ = "From unknown $date\n" . $_;
+		}
+	}
+	print join("", @mails );
+	exit 0;
+}
 print "Content-Type: text/html\n\n";
 
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
@@ -222,6 +317,7 @@ print "<H1>" .  "$debbugs::gProject $debbugs::gBug report logs - <A HREF=\"mailt
       "<BR>" . htmlsanit($status{subject}) . "</H1>\n";
 
 print "$descriptivehead\n";
+printf "<br><a href=\"%s\">Download as mbox</a>\n", mboxurl($ref);
 print "<HR>";
 print "$log";
 print $tail_html;

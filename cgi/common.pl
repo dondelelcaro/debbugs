@@ -249,9 +249,22 @@ sub bugurl {
     return urlsanit($debbugs::gCGIDomain . "bugreport.cgi" . "?" . "$params");
 }
 
-sub packageurl {
+sub dlurl {
     my $ref = shift;
-    return urlsanit($debbugs::gCGIDomain . "package.cgi" . "?" . "package=$ref");
+    my $params = "bug=$ref";
+    my $filename = '';
+    foreach my $val (@_) {
+	$params .= "\&$1=$2" if ($val =~ /^(msg|att)=([0-9]+)/);
+	$filename = $1 if ($val =~ /^filename=(.*)$/);
+    }
+    $params .= "&archive=yes" if ($common_archive);
+
+    return urlsanit($debbugs::gCGIDomain . "bugreport.cgi/$filename?$params");
+}
+
+sub mboxurl {
+    my $ref = shift;
+    return urlsanit($debbugs::gCGIDomain . "bugreport.cgi" . "?" . "bug=$ref&mbox=yes");
 }
 
 sub allbugs {
@@ -497,7 +510,7 @@ sub getpkgsrc {
 sub getbugdir {
     my ( $bugnum, $ext ) = @_;
     my $archdir = sprintf "%02d", $bugnum % 100;
-    foreach ( ( "$gSpoolDir/db-h/$archdir", "$gSpoolDir/db", "$gSpoolDir/archive/$archdir" ) ) {
+    foreach ( ( "$gSpoolDir/db-h/$archdir", "$gSpoolDir/db", "$gSpoolDir/archive/$archdir", "/debian/home/joeyh/tmp/infomagic-95/$archdir" ) ) {
 	return $_ if ( -r "$_/$bugnum.$ext" );
     }
     return undef;
