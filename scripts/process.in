@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.55 2002/11/08 14:01:33 ajt Exp $
+# $Id: process.in,v 1.56 2002/11/11 10:19:44 joy Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -532,6 +532,7 @@ END
     if (defined($pheader{'severity'}) || defined($pheader{'priority'})) {
  	$s_severity= $pheader{'severity'};
 	$s_severity= $pheader{'priority'} unless ($s_severity);
+	$s_severity =~ s/^\s*(.+)\s*$/$1/;
 
 	if (!grep($_ eq $s_severity, @severities, "$gDefaultSeverity")) {
             $brokenness.= <<END;
