@@ -59,9 +59,10 @@ $(var_dir)/spool/db-h $(scripts_dir) $(perl_dir) $(examples_dir) $(man8_dir); \
 	# install debbugsconfig
 	$(install_exec) debian/debbugsconfig $(sbin_dir)
 	$(install_data) debian/debbugsconfig.8 $(man8_dir)
-	# install the debbugs-dbhash migration tool
+	# install migration tools
 	$(install_exec) migrate/debbugs-dbhash $(sbin_dir)
 	$(install_data) migrate/debbugs-dbhash.8 $(man8_dir)
+	$(install_exec) migrate/debbugs-upgradestatus $(sbin_dir)
 
 	# install the updateseqs file
 	$(install_data) misc/updateseqs $(var_dir)/spool
