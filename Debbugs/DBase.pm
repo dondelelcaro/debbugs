@@ -126,7 +126,7 @@ sub OpenFile
 	    }
 	}
 	open( $handle, $Globals{ "work-dir" } . $path ) && return $handle;
-	if($new =~ "new") {
+	if(defined($new) && $new =~ "new") {
 	    my $dir = dirname( $path );
 	    if ( ! -d $Globals{ "work-dir" } . $dir ) {
 		mkpath($Globals{ "work-dir" } . $dir);
