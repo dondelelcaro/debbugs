@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.70 2003/03/10 00:10:52 cjwatson Exp $
+# $Id: service.in,v 1.71 2003/03/10 00:45:37 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -160,9 +160,10 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
     } elsif (m/^(send|get)\s+\#?(\d{2,})$/i) {
         $ref= $2+0;
         &sendlynxdoc("bugreport.cgi?bug=$ref","logs for $gBug#$ref");
-    } elsif (m/^send-detail\s+\#?(\d+)$/i) {
-	&transcript("This BTS function is currently disabled, sorry.\n\n");
-	$ok++; # well, it's not really ok, but it fixes #81224 :)
+    } elsif (m/^send-detail\s+\#?(\d{2,})$/i) {
+	$ref= $1+0;
+	&sendlynxdoc("bugreport.cgi?bug=$ref&boring=yes",
+		     "detailed logs for $gBug#$ref");
     } elsif (m/^index(\s+full)?$/i) {
 	&transcript("This BTS function is currently disabled, sorry.\n\n");
 	$ok++; # well, it's not really ok, but it fixes #81224 :)

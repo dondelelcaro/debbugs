@@ -39,9 +39,7 @@ server.
 
   <dd>Requests the transcript for the $gBug report in question.
   <code>send-detail</code> sends all of the `boring' messages in the
-  transcript, such as the various auto-acks (you should usually use
-  <code>send</code> as well, as the interesting messages are not sent by
-  <code>send-detail</code>).
+  transcript as well, such as the various auto-acks.
 
 <dt><code>index</code> [<code>full</code>]
 <dt><code>index-summary by-package</code>
