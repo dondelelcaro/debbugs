@@ -285,7 +285,7 @@ if (defined $pkg || defined $src) {
 	if ($pkg and defined($pseudodesc) and exists($pseudodesc->{$pkg})) {
 	    push @references, "to the <a href=\"http://${debbugs::gWebDomain}/pseudo-packages${debbugs::gHTMLSuffix}\">list of other pseudo-packages</a>";
 	} else {
-	    if ($pkg) {
+	    if ($pkg and defined $debbugs::gPackagePages) {
 		push @references, sprintf "to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
 	    }
 	    if (defined $debbugs::gSubscriptionDomain) {
