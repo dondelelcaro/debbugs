@@ -1,7 +1,7 @@
 #!/usr/bin/perl
-# $Id: expire.in,v 1.19 2003/08/23 15:12:57 cjwatson Exp $
+# $Id: expire.in,v 1.20 2004/01/13 18:48:22 cjwatson Exp $
 
-# Load modules and set envirnment
+# Load modules and set environment
 use File::Copy;
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
