@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: db2html.in,v 1.16 2003/05/25 13:25:51 joy Exp $
+# $Id: db2html.in,v 1.17 2003/05/25 13:49:53 joy Exp $
 # usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
 
 #load the necessary libraries/configuration
@@ -203,14 +203,11 @@ for $f (@files)
                 $font= length($font) ? "<$font>" : '';
                 $daysold= "; $font$days days old$efont";
             }
-            if ($preserveonly) { $submitted= 'THIS IS A BUG IN THE BUG PROCESSOR'; } 
-			else 
-			{ 	$submitted= `TZ=GMT LANG=C \\
-                             date -d '1 Jan 1970 00:00:00 + $data->{date} seconds' \\
-                             '+ %a, %d %b %Y %T %Z'`;
-                $? and die $?;
+            if ($preserveonly) {
+                $submitted = 'THIS IS A BUG IN THE BUG PROCESSOR';
+            } else {
+                $submitted = strftime "%a, %e %b %Y %T %Z", gmtime($data->{date});
             }
-            $submitted =~ s/\n$//; $submitted =~ s/, 0/, /g;
             $submitted= "; dated $submitted";
             $indexpart= "pending$addseverity";
         }
