@@ -34,7 +34,7 @@ my $mbox = ($param{'mbox'} || 'no') eq 'yes';
 
 my $buglog = buglog($ref);
 
-if ($ENV{REQUEST_METHOD} eq 'HEAD') {
+if ($ENV{REQUEST_METHOD} eq 'HEAD' and not defined($att) and not $mbox) {
     print "Content-Type: text/html\n";
     my @stat = stat $buglog;
     if (@stat) {
