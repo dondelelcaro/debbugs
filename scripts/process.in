@@ -1,10 +1,12 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.48 2002/09/25 16:19:08 doogie Exp $
+# $Id: process.in,v 1.49 2002/10/06 22:54:48 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
 
 use Mail::Address;
+use MIME::Parser;
+
 $config_path = '/org/bugs.debian.org/etc';
 $lib_path = '/org/bugs.debian.org/scripts';
 
@@ -12,7 +14,7 @@ require "$config_path/config";
 require "$lib_path/errorlib";
 $ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
 
-chdir( "$gSpoolDir" ) || die 'chdir spool: $!\n';
+chdir( "$gSpoolDir" ) || die "chdir spool: $!\n";
 
 #open(DEBUG,"> /tmp/debbugs.debug");
 umask(002);
@@ -46,7 +48,7 @@ open(M,"incoming/P$nn");
 close(M);
 
 @msg=@log;
-grep(s/\n+$//,@msg);
+chomp @msg;
 
 print DEBUG "###\n",join("##\n",@msg),"\n###\n";
 
@@ -56,57 +58,72 @@ Received: via spool by $baddress\@$gEmailDomain id=$nn
           (code $codeletter ref $tryref); $tdate
 END
 
-# Process the message's mail headers
-for ($i=0; $i<=$#msg; $i++) {
-    $_ = $msg[$i];
-    last unless length($_);
-    &quit("looping detected") if m/^x-loop: (\S+)$/i && $1 eq "$gMaintainerEmail";
-    $ins= !m/^subject:/i && !m/^reply-to:/i && !m/^return-path:/i
-       && !m/^From / && !m/^X-Debbugs-CC:/i && !m/^received:/i;
-    $fwd .= $_."\n" if $ins;
-    while ($msg[$i+1] =~ m/^\s/) {
-        $i++;
-        $fwd .= $msg[$i]."\n" if $ins;
-        $_ .= ' '.$msg[$i];
+# header and decoded body respectively
+my (@headerlines, @bodylines);
+
+my $parser = new MIME::Parser;
+mkdir "$gSpoolDir/mime.tmp", 0777;
+$parser->output_under("$gSpoolDir/mime.tmp");
+my $entity = eval { $parser->parse_data(join('',@log)) };
+
+if ($entity and $entity->head->tags) {
+    @headerlines = @{$entity->head->header};
+    chomp @headerlines;
+
+    my $entity_body = getmailbody($entity);
+    @bodylines = $entity_body ? $entity_body->as_lines() : ();
+    chomp @bodylines;
+
+    # set $i to beginning of encoded body data, so we can dump it out
+    # verbatim later
+    $i = 0;
+    ++$i while $msg[$i] =~ /./;
+} else {
+    # Legacy pre-MIME code, kept around in case MIME::Parser fails.
+    for ($i = 0; $i <= $#msg; $i++) {
+	$_ = $msg[$i];
+	last unless length($_);
+	while ($msg[$i+1] =~ m/^\s/) {
+	    $i++;
+	    $_ .= "\n".$msg[$i];
+	}
+	push @headerlines, $_;
     }
+
+    @bodylines = @msg[$i..$#msg];
+}
+
+for my $hdr (@headerlines) {
+    $_ = $hdr;
+    s/\n\s/ /g;
+    &quit("looping detected")
+	if m/^x-loop: (\S+)$/i && $1 eq "$gMaintainerEmail";
+    my $ins = !m/^subject:/i && !m/^reply-to:/i && !m/^return-path:/i
+           && !m/^From / && !m/^X-Debbugs-CC:/i && !m/^received:/i;
+    $fwd .= $hdr."\n" if $ins;
 # print DEBUG ">$_<\n";
     if (s/^(\S+):\s*//) {
-        $v= $1; $v =~ y/A-Z/a-z/;
-		print DEBUG ">$v=$_<\n";
-        $header{$v}= $_;
+	my $v = lc $1;
+	print DEBUG ">$v=$_<\n";
+	$header{$v} = $_;
     } else {
 	print DEBUG "!>$_<\n";
     }
 }
 
-#remove blank lines
-while ($i <= $#msg && !length($msg[$i])) { $fwd .= "\n"; $i++; }
+# remove blank lines
+shift @bodylines while @bodylines and $bodylines[0] !~ /\S/;
 
-#skips the "this is mime" message and any blank space after it
-if ( $msg[$i] =~ /^This is a multi-part message in MIME format./ )
+# extract pseudo-headers
+for my $phline (@bodylines)
 {
-	while ( $i <= $#msg && length( $msg[$i] ) ) { $fwd .= $msg[$i] . "\n"; $i++; }
-	while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
-}
-#if the lines starts with -- or is nothing but blank space...
-#skip to the next blank line(s) then skip past the blank line(s)
-if ( $msg[$i] =~ /^--/ || $msg[$i] =~ /^\s*$/ )
-{
-	while ( $i <= $#msg && length( $msg[$i] ) ) { $fwd .= $msg[$i] . "\n"; $i++; }
-	while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
-}		
-
-while (defined ($msg[$i] ) )
-{
-	last if ( $msg[$i] !~ m/^([\w]+):\s*(\S.*)/ );
-	$i++;
-	$fn = $1; $fv = $2;
-	print DEBUG ">$fn|$'|\n";
-    $fwd .= $fn.': '.$fv."\n";
-    $fn =~ y/A-Z/a-z/;
-    $fv =~ y/A-Z/a-z/;
-    $pheader{$fn}= $fv;
-	print DEBUG ">$fn~$fv<\n";
+    last if $phline !~ m/^([\w]+):\s*(\S.*)/;
+    my ($fn, $fv) = ($1, $2);
+    print DEBUG ">$fn|$fv|\n";
+    $fn = lc $fn;
+    $fv = lc $fv;
+    $pheader{$fn} = $fv;
+    print DEBUG ">$fn~$fv<\n";
 }
 
 

@@ -8,7 +8,7 @@ Build-Depends: debhelper
 
 Package: debbugs
 Architecture: all
-Depends: perl5 | perl, exim | mail-transport-agent, libmailtools-perl, ed
+Depends: perl5 | perl, exim | mail-transport-agent, libmailtools-perl, ed, libmime-perl
 Recommends: httpd, links | lynx
 Description: The bug tracking system based on the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by

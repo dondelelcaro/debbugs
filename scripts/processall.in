@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: processall.in,v 1.7 2001/08/16 07:20:18 doogie Exp $
+# $Id: processall.in,v 1.8 2002/10/06 22:54:48 cjwatson Exp $
 #
 # Usage: processall
 #
@@ -14,6 +14,8 @@ $lib_path = '/org/bugs.debian.org/scripts';
 require "$config_path/config";
 require "$lib_path/errorlib";
 $ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
+
+use File::Path;
 
 chdir( "$gSpoolDir" ) || die 'chdir spool: $!\n';
 push( @INC, "$lib_path" );
@@ -64,6 +66,7 @@ for (;;) {
         print(STDERR "$id: process failed ($status $!) - now in [PG]$id\n") || die $!;
     }
     print(STDOUT " done\n") || die $!;
+    rmtree("$gSpoolDir/mime.tmp",0,1);
     $ndone++;
 }
 &unfilelock;

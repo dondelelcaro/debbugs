@@ -66,6 +66,8 @@ debbugs (2.4) experimental; urgency=low
   * Fix viewing archived bugs by source package, closes: #121082, #146484.
     [Colin]
   * Depends: libmailtools-perl rather than mailtools, closes: #113028.
+  * Add MIME support to process and service, and depend on libmime-perl as a
+    result, closes: #36813. [Colin]
   * Fix a few typos, closes: #146745, #152751.
   * Various other things, not worth mentioning here.
 

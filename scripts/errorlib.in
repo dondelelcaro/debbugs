@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.6 2002/01/06 10:46:24 ajt Exp $
+# $Id: errorlib.in,v 1.7 2002/10/06 22:54:48 cjwatson Exp $
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -149,6 +149,29 @@ sub appendfile {
 	}
 	print(AP @_) || &quit("writing $file (appendfile): $!");
 	close(AP) || &quit("closing $file (appendfile): $!");
+}
+
+sub getmailbody {
+	my $entity = shift;
+	my $type = $entity->effective_type;
+	if ($type eq 'text/plain' or
+	    ($type =~ m#text/# and $type ne 'text/html')) {
+		return $entity->bodyhandle;
+	} elsif ($type eq 'multipart/alternative') {
+		# RFC 2046 says we should use the last part we recognize.
+		for my $part (reverse $entity->parts) {
+			my $ret = getmailbody($part);
+			return $ret if $ret;
+		}
+	} else {
+		# For other multipart types, we just pretend they're
+		# multipart/mixed and run through in order.
+		for my $part ($entity->parts) {
+			my $ret = getmailbody($part);
+			return $ret if $ret;
+		}
+	}
+	return undef;
 }
 
 

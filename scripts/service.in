@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.53 2002/10/06 20:05:49 cjwatson Exp $
+# $Id: service.in,v 1.54 2002/10/06 22:54:48 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -7,6 +7,7 @@
 
 use Mail::Address;
 use File::Copy;
+use MIME::Parser;
 
 $config_path = '/org/bugs.debian.org/etc';
 $lib_path = '/org/bugs.debian.org/scripts';
@@ -36,33 +37,56 @@ open(M,"incoming/P$nn");
 @msg=@log;
 close(M);
 
-grep((s/\n$//,s/\s+$//),@msg);
+chomp @msg;
 
 print "###\n",join("##\n",@msg),"\n###\n" if $debug;
 
-chop($tdate= `date -u '+%a, %d %h %Y %T GMT'`);
-$fwd= <<END;
-Received: via spool for service; $tdate
-END
+my $parser = new MIME::Parser;
+mkdir "$gSpoolDir/mime.tmp", 0777;
+$parser->output_under("$gSpoolDir/mime.tmp");
+my $entity = eval { $parser->parse_data(join('',@log)) };
 
-for ($i=0; $i<=$#msg; $i++) {
-     $_ = $msg[$i];
-    last unless length($_);
-    $fwd .= $_."\n";
-    while ($msg[$i+1] =~ m/^\s/) {
-	$i++;
-        $fwd .= $msg[$i]."\n" if $ins; # Huh ? Where is ins set ?
-        $_ .= ' '.$msg[$i];
+# header and decoded body respectively
+my (@headerlines, @bodylines);
+
+if ($entity and $entity->head->tags) {
+    @headerlines = @{$entity->head->header};
+    chomp @headerlines;
+
+    my $entity_body = getmailbody($entity);
+    @bodylines = $entity_body ? $entity_body->as_lines() : ();
+    chomp @bodylines;
+} else {
+    # Legacy pre-MIME code, kept around in case MIME::Parser fails.
+    my $i;
+    for ($i = 0; $i <= $#msg; $i++) {
+	$_ = $msg[$i];
+	last unless length($_);
+	while ($msg[$i+1] =~ m/^\s/) {
+	    $i++;
+	    $_ .= "\n".$msg[$i];
+	}
+	push @headerlines, $_;
     }
+
+    @bodylines = @msg[$i..$#msg];
+}
+
+for (@headerlines) {
+    s/\n\s/ /g;
     print ">$_<\n" if $debug;
     if (s/^(\S+):\s*//) {
- 	$v= $1; $v =~ y/A-Z/a-z/;
+	my $v = lc $1;
 	print ">$v=$_<\n" if $debug;
-        $header{$v}= $_;
+	$header{$v} = $_;
     } else {
-	print "!>$_<\n" if $debug; 
+	print "!>$_<\n" if $debug;
     }
 }
+
+grep(s/\s+$//,@bodylines);
+
+print "***\n",join("\n",@bodylines),"\n***\n" if $debug;
 
 if (defined $header{'resent-from'} && !defined $header{'from'}) {
     $header{'from'} = $header{'resent-from'};
@@ -90,9 +114,6 @@ $mergelowstate= 'idle';
 $midix=0;    
 $extras="";
 
-#strip blank line(s) after header
-while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
-
 my $quickabort = 0;
 
 my $fuckheads = "(" . join("|", @gFuckheads) . ")";
@@ -101,24 +122,10 @@ if (@gFuckheads and $replyto =~ m/$fuckheads/) {
 	$quickabort = 1;
 }
 
-#strip, if exists, mime header
-if ( $msg[$i] =~ /^This is a multi-part message in MIME format./ ) {
-    while ( $i <= $#msg && length( $msg[$i] ) ) {
-        $fwd .= $msg[$i] . "\n"; $i++; 
-    }
-    while ( $i <= $#msg && !length( $msg[$i] ) ) {
-        $fwd .= "\n"; $i++; 
-    }
-}
-if ( $msg[$i] =~ /^--/ || $msg[$i] =~ /^\s*$/ ) {
-    while ( $i <= $#msg && length( $msg[$i] ) ) { $fwd .= $msg[$i]; $i++; }
-    while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
-}	
-
 my %clonebugs = ();
 my @bcc = ();
 
-for ($procline=$i; $procline<=$#msg; $procline++) {
+for ($procline=0; $procline<=$#bodylines; $procline++) {
     $state eq 'idle' || print "$state ?\n";
     $lowstate eq 'idle' || print "$lowstate ?\n";
     $mergelowstate eq 'idle' || print "$mergelowstate ?\n";
@@ -126,7 +133,7 @@ for ($procline=$i; $procline<=$#msg; $procline++) {
          &transcript("Stopping processing here.\n\n");
 	 last;
     }
-    $_= $msg[$procline]; s/\s+$//;
+    $_= $bodylines[$procline]; s/\s+$//;
     next unless m/\S/; next if m/^\s*\#/;
     &transcript("> $_\n");
     $action= '';
@@ -598,7 +605,7 @@ END
         }
     }
 }
-if ($procline>$#msg) {
+if ($procline>$#bodylines) {
     &transcript(">\nEnd of message, stopping processing here.\n\n");
 }
 if (!$ok && !quickabort) {
