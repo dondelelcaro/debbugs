@@ -229,6 +229,8 @@ sub write_log_records (*@)
     1;
 }
 
+=back
+
 =head1 CAVEATS
 
 This module does none of the formatting that bugreport.cgi et al do. It's
