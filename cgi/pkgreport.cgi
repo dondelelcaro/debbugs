@@ -163,7 +163,7 @@ if (defined $pkg || defined $src) {
     if ($pkg) {
 	my $stupidperl = ${debbugs::gPackagePages};
 	printf "<p>You might like to refer to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
-	if ($src) {
+	if ($pkgsrc{ $pkg }) {
 	    printf ", or to the source package <a href=\"%s\">%s</a>'s bug page.</p>\n", srcurl($pkg), htmlsanit($pkgsrc{$pkg});
 	} else {
 	    printf ".\n";
