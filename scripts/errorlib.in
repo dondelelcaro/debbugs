@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.27 2003/05/31 14:24:58 cjwatson Exp $
+# $Id: errorlib.in,v 1.28 2003/06/05 08:54:31 cjwatson Exp $
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -30,8 +30,8 @@ sub getbuglocation {
     my ( $bugnum, $ext ) = @_;
     my $archdir = sprintf "%02d", $bugnum % 100;
     return 'archive' if ( -r "$gSpoolDir/archive/$archdir/$bugnum.$ext" );
-    return 'db' if ( -r "$gSpoolDir/db/$bugnum.$ext" );
     return 'db-h' if ( -r "$gSpoolDir/db-h/$archdir/$bugnum.$ext" );
+    return 'db' if ( -r "$gSpoolDir/db/$bugnum.$ext" );
     return undef;
 }
 
