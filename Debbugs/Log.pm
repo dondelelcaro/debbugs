@@ -74,14 +74,14 @@ of the message itself.
 [html] is copied unescaped to the output. The record immediately following
 this one is considered "boring" and only shown in certain output modes.
 
-No other types of records are permitted, and the file must end with a ^C
-line.
-
 (This is a design flaw in the log format, since it makes it difficult to
 change the HTML presentation later, or to present the data in an entirely
 different format.)
 
 =back
+
+No other types of records are permitted, and the file must end with a ^C
+line.
 
 =head2 Perl Record Representation
 
