@@ -348,11 +348,10 @@ sub htmlizebugs {
     } else {
 	@bugs = sort {$a<=>$b} @bugs;
     }
+    my %seenmerged;
     foreach my $bug (@bugs) {
 	my %status = %{getbugstatus($bug)};
         next unless %status;
-	my @merged = sort {$a<=>$b} ($bug, split(/ /, $status{mergedwith}));
-	next unless ($common_repeatmerged || $bug == $merged[0]);
 	if (%common_include) {
 	    my $okay = 0;
 	    foreach my $t (split /\s+/, $status{tags}) {
@@ -383,6 +382,10 @@ sub htmlizebugs {
 	     not grep { $_ eq $status{severity} } @common_severity_include;
 	next if grep { $_ eq $status{pending} } @common_pending_exclude;
 	next if grep { $_ eq $status{severity} } @common_severity_exclude;
+
+	my @merged = sort {$a<=>$b} ($bug, split(/ /, $status{mergedwith}));
+	next unless ($common_repeatmerged || !$seenmerged{$merged[0]});
+	$seenmerged{$merged[0]} = 1;
 
 	my $html = sprintf "<li><a href=\"%s\">#%d: %s</a>\n<br>",
 	    bugurl($bug), $bug, htmlsanit($status{subject});
