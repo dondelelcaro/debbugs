@@ -1,0 +1,24 @@
+############################################################################
+# Tags that come from configuration data                                   #
+############################################################################
+
+Tag			Config Field		Variable
+----------------------- ----------------------- ----------------------------
+OWNER_EMAIL		Owner Email		Globals->owner-email
+OWNER_NAME		Owner Name		Globals->owner-name
+LONG_NAME  		Long Name		Globals->project-long
+SHORT_NAME		Short Name		Globals->project-short
+
+############################################################################
+# Tags that come from processing the email/doing what wants to be done     #
+############################################################################
+Tag                     Meaining/Source
+----------------------- ----------------------------------------------------
+REPLY_TO                Person who sent the email being processed
+
+############################################################################
+# Tags that draw data out from the various fields of the bug Record        #
+############################################################################
+Tag                     Record Field
+----------------------- ----------------------------------------------------
+ORIGINATOR              Record->originator
