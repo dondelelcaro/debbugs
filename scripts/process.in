@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.87 2005/01/02 19:00:30 cjwatson Exp $
+# $Id: process.in,v 1.88 2005/01/02 19:08:12 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -584,7 +584,7 @@ END
             $data->{severity}= '';
         }
     }
-    if (defined($pheader{owner}) {
+    if (defined($pheader{owner})) {
         $data->{owner}= $pheader{owner};
     }
     &filelock("nextnumber.lock");
