@@ -73,8 +73,7 @@ if (!rename( $Globals{ 'spool-dir' }."G$inputfilename", $Globals{ 'spool-dir' }.
 	&fail("renaming to lock: $!");
 }    
 open( M, "P$inputfilename" );
-@inputfile=<M>;
-@inputlog = @inputfile;
+$inputmail = new Mail::Internet( \*M );
 close( M );
 
 ####################################### HERE ###############################
