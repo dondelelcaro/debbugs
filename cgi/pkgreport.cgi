@@ -221,7 +221,10 @@ if (defined $pkg || defined $src) {
 		if (defined $debbugs::gSubscriptionDomain) {
 		    push @references, "to the <a href=\"http://$debbugs::gSubscriptionDomain/$srcforpkg\">Package Tracking System</a>";
 		}
-		push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($srcforpkg), htmlsanit($srcforpkg);
+		# Only output this if the source listing is non-trivial.
+		if (@pkgs or $pkg ne $srcforpkg) {
+		    push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($srcforpkg), htmlsanit($srcforpkg);
+		}
 	    }
 	    if (@references) {
 		$references[$#references] = "or $references[$#references]" if @references > 1;
