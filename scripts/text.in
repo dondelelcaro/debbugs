@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.14 2001/09/18 20:55:10 joy Exp $
+# $Id: text.in,v 1.15 2002/10/03 11:09:54 cjwatson Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -182,7 +182,7 @@ $gHTMLTail = "<HR>
  <!--timestamp-->
  (<A HREF=\"http://$gWebDomain/db/ix/zstamp.html\">timestamp page</A> available).
 	  
- <P>Debian $gBug tracking system
+ <P><A HREF=\"http://$gWebDomain/\">Debian $gBug tracking system</A>
  <BR>
  Copyright (C) 1999 Darren O. Benham,
  1997 nCipher Corporation Ltd,
