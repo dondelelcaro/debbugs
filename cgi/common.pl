@@ -292,28 +292,40 @@ sub countbugs {
 
 sub getbugs {
     my $bugfunc = shift;
+    my $opt = shift;
 
-    if ( $common_archive ) {
-        open I, "<$debbugs::gSpoolDir/index.archive" or &quit("bugindex: $!");
-    } else {
-        open I, "<$debbugs::gSpoolDir/index.db" or &quit("bugindex: $!");
-    }
-    
     my @result = ();
-print STDERR "here start getbugs\n" if ($debug);
-    while(<I>) 
+
+    if (!$common_archive && defined $opt && 
+        -e "$debbugs::gSpoolDir/by-$opt.idx") 
     {
-        if (m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/) {
-            if ($bugfunc->(pkg => $1, bug => $2, status => $4, submitter => $5,
-			   severity => $6, tags => $7))
-	    {
-	    	push (@result, $2);
-		#last if (@result > 400);
+        tie my %lookup, DB_File => "$debbugs::gSpoolDir/by-$opt.idx", O_RDONLY
+            or die "$0: can't open $debbugs::gSpoolDir/by-$opt.idx ($!)\n";
+	while ($key = shift) {
+            my $bugs = $lookup{$key};
+            if (defined $bugs) {
+                push @result, (unpack 'N*', $bugs);
+            }
+        }
+    } else {
+        if ( $common_archive ) {
+            open I, "<$debbugs::gSpoolDir/index.archive" 
+                or &quit("bugindex: $!");
+        } else {
+            open I, "<$debbugs::gSpoolDir/index.db" 
+                or &quit("bugindex: $!");
+        }
+        while(<I>) {
+            if (m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/) {
+                if ($bugfunc->(pkg => $1, bug => $2, status => $4, 
+                               submitter => $5, severity => $6, tags => $7))
+	        {
+	       	    push (@result, $2);
+	        }
 	    }
-	}
+        }
+        close I;
     }
-    close I;
-print STDERR "here end getbugs\n" if ($debug);
     return sort {$a <=> $b} @result;
 }
 

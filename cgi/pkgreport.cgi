@@ -37,7 +37,6 @@ my $Archived = $archive ? "Archived" : "";
 my $this = "";
 
 my %indexentry;
-my %maintainers = getmaintainers();
 my %strings = ();
 
 $ENV{"TZ"} = 'UTC';
@@ -59,8 +58,9 @@ my $tag;
 my @bugs;
 if (defined $pkg) {
   $tag = "package $pkg";
-  @bugs = getbugs(sub {my %d=@_; return $pkg eq $d{"pkg"}});
+  @bugs = getbugs(sub {my %d=@_; return $pkg eq $d{"pkg"}}, 'package', $pkg);
 } elsif (defined $maint) {
+  my %maintainers = getmaintainers();
   $tag = "maintainer $maint";
   @bugs = getbugs(sub {my %d=@_; my $me; 
 		       ($me = $maintainers{$d{"pkg"}}||"") =~ s/\s*\(.*\)\s*//;
@@ -68,6 +68,7 @@ if (defined $pkg) {
 		       return $me eq $maint;
 		     })
 } elsif (defined $maintenc) {
+  my %maintainers = getmaintainers();
   $tag = "encoded maintainer $maintenc";
   @bugs = getbugs(sub {my %d=@_; 
 		       return maintencoded($maintainers{$d{"pkg"}} || "") 
@@ -79,7 +80,7 @@ if (defined $pkg) {
 		       ($se = $d{"submitter"} || "") =~ s/\s*\(.*\)\s*//;
 		       $se = $1 if ($se =~ m/<(.*)>/);
 		       return $se eq $submitter;
-		     });
+		     }, 'submitter', $submitter);
 } elsif (defined $severity) {
   $tag = "$status $severity bugs";
   @bugs = getbugs(sub {my %d=@_;
@@ -102,6 +103,7 @@ print "<H1>" . "$debbugs::gProject $Archived $debbugs::gBug report logs: $tag" .
       "</H1>\n";
 
 if (defined $pkg) {
+    my %maintainers = getmaintainers();
     if (defined $maintainers{$pkg}) {
         print "<p>Maintainer for $pkg is <a href=\"" 
               . mainturl($maintainers{$pkg}) . "\">"
