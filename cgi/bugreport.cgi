@@ -102,7 +102,7 @@ $tsrc = defined($pkgsrc{$tpack}) ? $pkgsrc{$tpack} : '(unknown)';
 $descriptivehead= $indexentry."Maintainer for $status{package} is\n".
             '<a href="http://'.$debbugs::gWebDomain.'/db/ma/l'.&maintencoded($tmaint).'.html">'.htmlsanit($tmaint).'</a>';
 $descriptivehead.= ";\nSource for $status{package} is\n".
-	    '<a href="'.srcurl($tsrc)."\">$tsrc</a>";
+	    '<a href="'.srcurl($tsrc)."\">$tsrc</a>" if ($tsrc ne "(unknown)");
 $descriptivehead.= ".</p>";
 
 my $buglog = buglog($ref);
