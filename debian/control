@@ -2,6 +2,7 @@ Source: debbugs
 Section: misc
 Priority: optional
 Maintainer: Darren Benham <gecko@debian.org>
+Uploaders: Josip Rodin <jrodin@jagor.srce.hr>
 Standards-Version: 3.2.1
 Build-Depends: debhelper
 
@@ -15,8 +16,7 @@ Description: The bug tracking system based on the active Debian BTS
  it is marked as having been dealt with. The system is mainly controlled by
  e-mail, but the bug reports can be viewed using WWW.
  .
- This version is fully functional, but it does not autoconfig, see
- /usr/share/doc/debbugs/README.Debian after installation.
+ This version is fully functional, but it does not automatically configure,
+ see /usr/share/doc/debbugs/README.Debian after installation.
  .
- Note: there might be some appearance issues where the a display variable
- doesn't expand as expected.
+ Note: there might be various issues with this package, caveat emptor.
