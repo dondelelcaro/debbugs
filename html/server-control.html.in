@@ -64,10 +64,22 @@ mailservers is available via the WWW, in
   again.
 
   <p>If the $gBug is not closed then reopen won't do anything, not even
-  change the originator.  There is no way to change the originator of an
-  open $gBug report (this is deliberate, so that you can't have a $gBug be
-  closed and then deleted $gRemoveAge days later without someone being told about
-  it).
+  change the originator.  To change the originator of an open $gBug report,
+  use the <code>submitter</code> command; note that this will inform the
+  original submitter of the change.
+
+<dt><code>submitter</code> <var>bugnumber</var>
+<var>originator-address</var> | <code>!</code>
+
+  <dd>Changes the originator of #<var>bugnumber</var> to
+  <var>originator-address</var>.
+
+  <p>If you wish to become the new originator of the report you can use
+  the <code>!</code> shorthand or specify your own email address.</p>
+
+  <p>While the <code>reopen</code> command changes the originator of other
+  bugs merged with the one being reopened, <code>submitter</code> does not
+  affect merged bugs.</p>
 
 <dt><code>forwarded</code> <var>bugnumber</var> <var>address</var>
 

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.63 2002/11/25 12:44:19 cjwatson Exp $
+# $Id: service.in,v 1.64 2002/11/26 04:21:06 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -323,6 +323,54 @@ END
                     $s_done= '';
                 } while (&getnextbug);
             }
+        }
+    } elsif (m/^submitter\s+\#?(-?\d+)\s+\!$/i ? ($newsubmitter=$replyto, 1) :
+             m/^submitter\s+\#?(-?\d+)\s+(\S.*\S)$/i ? ($newsubmitter=$2, 1) : 0) {
+        $ok++;
+        $ref= $1;
+        if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
+            $ref = $clonebugs{$ref};
+        }
+        if (&getbug) {
+            &foundbug;
+            &addmaintainers($s_package);
+            $oldsubmitter= $s_originator;
+            $s_originator= $newsubmitter;
+            $action= "Changed $gBug submitter.";
+            &savebug;
+            &transcript("$action\n");
+            if (length($s_done)) {
+                &transcript("(By the way, that $gBug is currently marked as done.)\n");
+            }
+            &transcript("\n");
+            $message= <<END;
+From: $gMaintainerEmail ($gProject $gBug Tracking System)
+To: $oldsubmitter
+Subject: $gBug#$ref submitter address changed
+         ($header{'subject'})
+References: $header{'message-id'} $s_msgid
+In-Reply-To: $s_msgid
+Message-ID: <handler.$ref.$nn.newsubmitter.$midix\@$gEmailDomain>
+Reply-To: $ref\@$gEmailDomain
+
+The submitter address recorded for your $gBug report
+#$ref: $s_subject
+has been changed.
+
+The new submitter address for this report is
+$newsubmitter.
+
+This change was made by
+$replyto.
+If it was incorrect, please contact them directly.
+
+$gMaintainer
+(administrator, $gProject $gBugs database)
+
+END
+            &sendmailmessage($message,$oldsubmitter);
+        } else {
+            &notfoundbug;
         }
     } elsif (m/^forwarded\s+\#?(-?\d+)\s+(\S.*\S)$/i) {
         $ok++;

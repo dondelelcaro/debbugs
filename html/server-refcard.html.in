@@ -60,6 +60,8 @@ sending the word <code>help</code> to each mailserver.
   <li><code>severity</code> <var>bugnumber</var> <var>severity</var>
   <li><code>reopen</code> <var>bugnumber</var>
       [ <var>originator-address</var> | <code>=</code> | <code>!</code> ]
+  <li><code>submitter</code> <var>bugnumber</var>
+      <var>originator-address</var> | <code>!</code>
   <li><code>forwarded</code> <var>bugnumber</var> <var>address</var>
   <li><code>notforwarded</code> <var>bugnumber</var>
   <li><code>retitle</code> <var>bugnumber</var> <var>new-title</var>
