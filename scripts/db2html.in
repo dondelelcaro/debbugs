@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: db2html.in,v 1.9 2002/09/25 16:16:55 doogie Exp $
+# $Id: db2html.in,v 1.10 2002/10/15 23:33:37 cjwatson Exp $
 # usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
 
 #load the necessary libraries/configuration
@@ -305,6 +305,7 @@ for $f (@files)
         } elsif ($normstate eq 'html') {
             $this .= $_;
         } elsif ($normstate eq 'go') {
+            s/^\030//;
             $this .= &sani($_);
         } elsif ($normstate eq 'go-nox') {
             next if !s/^X//;

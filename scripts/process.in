@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.50 2002/10/09 00:02:33 cjwatson Exp $
+# $Id: process.in,v 1.51 2002/10/15 23:33:37 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -802,7 +802,7 @@ sub appendlog {
         print DEBUG "failed open log err $!<\n";
         &quit("opening db-h/$hash/$ref.log (li): $!");
     }
-    print(AP "\7\n",@log,"\n\3\n") || &quit("writing db-h/$hash/$ref.log (li): $!");
+    print(AP "\7\n",@{escapelog(@log)},"\n\3\n") || &quit("writing db-h/$hash/$ref.log (li): $!");
     close(AP) || &quit("closing db-h/$hash/$ref.log (li): $!");
 }
 
@@ -844,7 +844,7 @@ sub sendmessage {
     my $hash = get_hashname($ref);
     #save email to the log
     open(AP,">>db-h/$hash/$ref.log") || &quit("opening db-h/$hash/$ref.log (lo): $!");
-    print(AP "\2\n",join("\4",@recips),"\n\5\n$msg\n\3\n") ||
+    print(AP "\2\n",join("\4",@recips),"\n\5\n",@{escapelog($msg)},"\n\3\n") ||
         &quit("writing db-h/$hash/$ref.log (lo): $!");
     close(AP) || &quit("closing db-h/$hash/$ref.log (lo): $!");
     

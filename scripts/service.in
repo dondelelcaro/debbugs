@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.55 2002/10/12 18:39:01 cjwatson Exp $
+# $Id: service.in,v 1.56 2002/10/15 23:33:37 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -671,7 +671,7 @@ print(AP
       &sani($header{'from'})."</code>\n".
       "to <code>".&sani($controlrequestaddr)."</code>\n".
       "\3\n".
-      "\7\n",@log,"\n\3\n") || &quit("writing db-h/-1.log: $!");
+      "\7\n",@{escapelog(@log)},"\n\3\n") || &quit("writing db-h/-1.log: $!");
 close(AP) || &quit("open db-h/-1.log: $!");
 &unfilelock;
 utime(time,time,"db-h");
@@ -887,7 +887,7 @@ sub savebug {
           "Request was from <code>".&sani($header{'from'})."</code>\n".
           "to <code>".&sani($controlrequestaddr)."</code>. \n".
           "\3\n".
-          "\7\n",@log,"\n\3\n") || &quit("writing db-h/$hash/$ref.log: $!");
+          "\7\n",@{escapelog(@log)},"\n\3\n") || &quit("writing db-h/$hash/$ref.log: $!");
     close(L) || &quit("closing db-h/$hash/$ref.log: $!");
     open(S,">db-h/$hash/$ref.status.new") || &quit("opening db-h/$hash/$ref.status.new: $!");
     print(S

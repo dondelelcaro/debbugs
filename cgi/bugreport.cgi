@@ -259,6 +259,7 @@ while(my $line = <L>) {
 	} elsif ($normstate eq 'html') {
 		$this .= $_;
 	} elsif ($normstate eq 'go') {
+		s/^\030//;
 		if ($mail) {
 			$mail .= $_;
 		} else {
