@@ -1,5 +1,5 @@
 # This is the bugs.debian.org debbugs configuration file.
-# $Id: config.debian,v 1.17 2003/02/16 15:20:26 cjwatson Exp $
+# $Id: config.debian,v 1.18 2003/05/28 19:15:08 cjwatson Exp $
 
 # Domains
 $gEmailDomain = "bugs.debian.org";
@@ -8,7 +8,7 @@ $gWebDomain = "www.debian.org/Bugs";
 $gHTMLSuffix = "";
 $gPackagePages = "packages.debian.org";
 $gCGIHost = "bugs.debian.org";
-$gCGIPath = "/cgi-bin/";
+$gCGIPath = "/cgi-bin";
 $gCGIDomain = "http://$gCGIHost$gCGIPath";
 $gMirrors = "";						# comma separated list
 $gSubscriptionDomain = "packages.qa.debian.org";
