@@ -264,6 +264,10 @@ if (defined $pkg || defined $src) {
 	my @pkgs = getsrcpkgs($pkg ? $srcforpkg : $src);
 	undef $srcforpkg unless @pkgs;
 	my @references;
+	my $ptslink = $src || $srcforpkg;
+	if (defined $debbugs::gSubscriptionDomain) {
+	    push @references, "to the <a href=\"http://$debbugs::gSubscriptionDomain/$ptslink\">Package Tracking System</a>";
+	}
 	@pkgs = grep( !/^\Q$pkg\E$/, @pkgs ) if ( $pkg );
 	if ( @pkgs ) {
 	    @pkgs = sort @pkgs;
@@ -275,9 +279,6 @@ if (defined $pkg || defined $src) {
 	    push @pkgs, $src if ( $src && !grep(/^\Q$src\E$/, @pkgs) );
 	    print join( ", ", map( "<A href=\"" . pkgurl($_) . "\">$_</A>", @pkgs ) );
 	    print ".\n";
-	    if (defined $debbugs::gSubscriptionDomain) {
-		push @references, "to the <a href=\"http://$debbugs::gSubscriptionDomain/$src\">Package Tracking System</a>";
-	    }
 	}
 	if ($pkg) {
 	    my $pseudodesc = getpseudodesc();
@@ -287,9 +288,6 @@ if (defined $pkg || defined $src) {
 		push @references, sprintf "to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
 	    }
 	    if ($srcforpkg) {
-		if (defined $debbugs::gSubscriptionDomain) {
-		    push @references, "to the <a href=\"http://$debbugs::gSubscriptionDomain/$srcforpkg\">Package Tracking System</a>";
-		}
 		# Only output this if the source listing is non-trivial.
 		if (@pkgs or $pkg ne $srcforpkg) {
 		    push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($srcforpkg), htmlsanit($srcforpkg);
