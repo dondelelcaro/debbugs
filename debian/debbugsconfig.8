@@ -1,0 +1,99 @@
+.TH DEBBUGSCONFIG 8
+.SH NAME
+debbugsconfig \- copy basic debbugs configuration files from templates
+.SH SYNOPSIS
+.B debbugsconfig
+.SH DESCRIPTION
+.B debbugsconfig
+will copy basic debbugs configuration files from templates if the files
+do not already exist, and will also create BTS user documentation in
+HTML and text.
+It should be run on installation and whenever
+.I /etc/debbugs/config
+or
+.I /etc/debbugs/text
+are changed.
+.SH FILES
+.B debbugsconfig
+creates the following template configuration files in
+.I $gConfigDir
+.RI ( /etc/debbugs
+by default):
+.RS
+.TP
+.I config
+General debbugs configuration file.
+.TP
+.I text
+Longer messages output by debbugs.
+.TP
+.I Maintainers
+Index of maintainers for each package.
+This will typically be automatically generated.
+.TP
+.I Maintainers.override
+Manual overrides for the maintainer index.
+.TP
+.I pseudo-packages.description
+Descriptions of any entries in the system's maintainer index that do not
+correspond to \(lqreal\(rq packages.
+For example, the Debian Project uses pseudo-packages for bugs against
+facilities such as the Debian web site, the mailing list archives, and
+the bug tracking system itself.
+.TP
+.I sources
+Index of source packages corresponding to each package.
+This may be used when several packages are produced from a single
+source, in which case the bug tracking system will group them together
+with links in the web front-end.
+.RE
+.PP
+.B debbugsconfig
+creates the following template state files in
+.I $gSpoolDir
+.RI ( /var/lib/debbugs/spool
+by default):
+.RS
+.TP
+.I nextnumber
+The file which records the tracking number that will be assigned to the
+next incoming bug report.
+.TP
+.I index.archive.realtime
+Real-time index of archived bugs.
+Created empty.
+.TP
+.I index.db.realtime
+Real-time index of non-archived bugs.
+Created empty.
+.RE
+.PP
+.B debbugsconfig
+creates the following documents in
+.I $gWebDir
+.RI ( /var/lib/debbugs/www
+by default):
+.RS
+.TP
+.I index.html
+Main contents page.
+.TP
+.IR Access.html ", " bug-log-access.txt
+Description of how to access bug reports.
+.TP
+.IR Reporting.html ", " bug-reporting.txt
+Advice on reporting bugs.
+.TP
+.IR server-control.html ", " bug-maint-mailcontrol.txt
+Introduction to the bug control and manipulation mail server.
+.TP
+.IR server-refcard.html ", " bug-mailserver-refcard.txt
+Mail servers' reference card.
+.TP
+.IR server-request.html ", " bug-log-mailserver.txt
+Introduction to the bug system request server.
+.RE
+.SH AUTHORS
+.B debbugsconfig
+was originally written by Darren Benham.
+Colin Watson wrote this man page.

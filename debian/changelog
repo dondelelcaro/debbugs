@@ -1,3 +1,13 @@
+debbugs (2.4.1) UNRELEASED; urgency=low
+
+  * Exit the CGI scripts straight away if the HTTP method is HEAD, to save
+    pointless work. [Colin]
+  * Display pending+fixed bugs as "fixed in NMU", not "pending upload".
+    [Colin]
+  * Add a man page for debbugsconfig. [Colin]
+
+ -- Colin Watson <cjwatson@debian.org>  Mon, 25 Nov 2002 03:50:20 +0000
+
 debbugs (2.4) experimental; urgency=low
 
   * Updating the package with what's in CVS, even though this might
