@@ -1,4 +1,4 @@
-# $Id: config.in.default,v 1.4 2003/04/28 23:51:15 cjwatson Exp $
+# $Id: config.in.default,v 1.5 2003/08/23 13:50:45 cjwatson Exp $
 #domains
 $gEmailDomain = "bugs.top.domain";		#bugs.debian.org
 $gListDomain = "lists.top.domain";		#lists.debian.org
@@ -29,7 +29,7 @@ $gPseudoDescFile = "/etc/debbugs/pseudo-packages.description";
 $gSubmitList = "submit.list";			#debian-bugs-dist@lists
 $gMaintList = "maint.list";				#
 $gQuietList = "quiet.list";				#
-$gFowardList = "forward.list";			#debian-bugs-forwarded@lists
+$gForwardList = "forward.list";			#debian-bugs-forwarded@lists
 $gDoneList = "done.list";				#debian-bugs-closed@lists
 $gRequestList = "request.list";
 $gSubmitterList = "submitter.list";

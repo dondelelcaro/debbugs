@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.80 2003/08/23 13:17:32 cjwatson Exp $
+# $Id: process.in,v 1.81 2003/08/23 13:50:45 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -250,8 +250,8 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
         $receivedat= "forwarded\@$gEmailDomain";
         $markaswhat= 'forwarded';
         $set_forwarded= $header{'to'};
-	if ( length( $gListDomain ) > 0 && length( $gFowardList ) > 0 ) {
-	    $generalcc= "$gFowardList\@$gListDomain";
+	if ( length( $gListDomain ) > 0 && length( $gForwardList ) > 0 ) {
+	    $generalcc= "$gForwardList\@$gListDomain";
 	} else { 
 	    $generalcc=''; 
         }

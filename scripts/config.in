@@ -1,6 +1,6 @@
 # This is the template debbugs configuration file.
 # You *must* edit it in order for debbugs to work.
-# $Id: config.in,v 1.20 2003/08/06 11:27:11 cjwatson Exp $
+# $Id: config.in,v 1.21 2003/08/23 13:50:45 cjwatson Exp $
 
 # Domains
 $gEmailDomain = "bugs.something";			# e.g. bugs.debian.org
@@ -30,7 +30,7 @@ $gUnknownMaintainerEmail = "$gMaintainerEmail";		# e.g. unknown-package@qa.debia
 $gSubmitList = "bug-submit-list";		# e.g. debian-bugs-dist
 $gMaintList = "bug-maint-list";			# e.g. debian-bugs-dist
 $gQuietList = "bug-quiet-list";			# e.g. debian-bugs-dist
-$gFowardList = "bug-forward-list";		# e.g. debian-bugs-forwarded
+$gForwardList = "bug-forward-list";		# e.g. debian-bugs-forwarded
 $gDoneList = "bug-done-list";			# e.g. debian-bugs-closed
 $gRequestList = "bug-request-list";		# e.g. debian-bugs-dist
 $gSubmitterList = "bug-submitter-list";		# e.g. debian-bugs-dist

@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.36 2003/08/23 13:17:32 cjwatson Exp $
+# $Id: errorlib.in,v 1.37 2003/08/23 13:50:45 cjwatson Exp $
 
 use Mail::Address;
 
@@ -390,5 +390,10 @@ sub isstrongseverity {
 @showseverities= @severities;
 grep ($_= $_ eq '' ? $gDefaultSeverity : $_, @showseverities);
 %displayshowseverities= %gSeverityDisplay;
+
+# compatibility
+if (defined $gFowardList and not defined $gForwardList) {
+    $gForwardList = $gFowardList;
+}
 
 1;

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.87 2003/08/23 13:17:32 cjwatson Exp $
+# $Id: service.in,v 1.88 2003/08/23 13:50:45 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -387,8 +387,8 @@ END
             }
             do {
                 &addmaintainers($data->{package}, $data->{severity});
-		if (length($gFowardList)>0 && length($gListDomain)>0 ) {
-		     &addccaddress("$gFowardList\@$gListDomain"); 
+		if (length($gForwardList)>0 && length($gListDomain)>0 ) {
+		     &addccaddress("$gForwardList\@$gListDomain"); 
 		}
                 $data->{forwarded}= $whereto;
             } while (&getnextbug);

@@ -1,5 +1,5 @@
 # This is the bugs.debian.org debbugs configuration file.
-# $Id: config.debian,v 1.22 2003/08/20 23:33:54 cjwatson Exp $
+# $Id: config.debian,v 1.23 2003/08/23 13:50:45 cjwatson Exp $
 
 # Domains
 $gEmailDomain = "bugs.debian.org";
@@ -22,7 +22,7 @@ $gMaintainerEmail = "owner\@bugs.debian.org";
 $gSubmitList = "debian-bugs-dist";
 $gMaintList = "debian-bugs-dist";
 $gQuietList = "debian-bugs-dist";
-$gFowardList = "debian-bugs-forwarded";
+$gForwardList = "debian-bugs-forwarded";
 $gDoneList = "debian-bugs-closed";
 $gRequestList = "debian-bugs-dist";
 $gSubmitterList = "debian-bugs-dist";
