@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-if [ "$1" = "configure" -a -z "$2" -a ! -f /etc/debbugs/config ]; then
+if [ "$1" = "configure" ]; then
   /usr/sbin/debbugsconfig
 fi
 
