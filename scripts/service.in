@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.68 2003/02/16 15:20:26 cjwatson Exp $
+# $Id: service.in,v 1.69 2003/02/27 01:43:30 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -147,8 +147,9 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
 	 last;
     }
     $_= $bodylines[$procline]; s/\s+$//;
-    next unless m/\S/; next if m/^\s*\#/;
+    next unless m/\S/;
     &transcript("> $_\n");
+    next if m/^\s*\#/;
     $action= '';
     if (m/^stop/i || m/^quit/i || m/^--/ || m/^thank/i) {
 	&transcript("Stopping processing here.\n\n");
