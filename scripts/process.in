@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.45 2002/01/19 05:38:29 ajt Exp $
+# $Id: process.in,v 1.46 2002/02/07 17:33:52 joy Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -127,16 +127,13 @@ print DEBUG "replytocompare >$replytocompare<\n";
     
 if (!defined($header{'subject'})) 
 {
-#	$brokenness.= <<END;
+	$brokenness.= <<END;
 
-#
-#Your message did not contain a Subject field.  This is broken, I am
-#afraid - the Subject: line is a Required Header according to RFC822.
-#Please remember to include a Subject field in your messages in future.
-#If you did so the fact that it got lost probably indicates a poorly
-#configured mail system at your site or an intervening one.
-#END
-#
+Your message did not contain a Subject field. They are recommended and
+useful because the title of a $gBug is determined using this field.
+Please remember to include a Subject field in your messages in future.
+END
+
 # RFC822 actually lists it as an `optional-field'.
 
     $subject= '(no subject)';
