@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.70 2003/05/25 14:43:30 joy Exp $
+# $Id: process.in,v 1.71 2003/05/27 02:39:17 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -309,9 +309,13 @@ END
 
     &checkmaintainers;
 
-    $noticeccval.= join(', ', grep($_ ne $replyto,@maintaddrs,@addsrcaddrs));
+    $noticeccval.= join(', ', grep($_ ne $replyto,@maintaddrs));
     $noticeccval =~ s/\s+\n\s+/ /g; 
     $noticeccval =~ s/^\s+/ /; $noticeccval =~ s/\s+$//;
+
+    $generalcc = join(', ', $generalcc, @addsrcaddrs);
+    $generalcc =~ s/\s+\n\s+/ /g; 
+    $generalcc =~ s/^\s+/ /; $generalcc =~ s/\s+$//;
 
     if (length($noticeccval)) { $noticecc= "Cc: $noticeccval\n"; }
     if (length($generalcc)) { $noticecc.= "Bcc: $generalcc\n"; }
@@ -604,7 +608,7 @@ Your message has been sent to the package maintainer(s):
 END
 }
 
-push(@resentccs, @addsrcaddrs);
+@bccs = @addsrcaddrs;
 
 $veryquiet= $codeletter eq 'Q';
 if ($codeletter eq 'M' && !@maintaddrs) {
@@ -630,7 +634,7 @@ if (length($resentccval)) {
 
 if ($codeletter eq 'U') {
     &htmllog("Message", "sent on", $data->{originator}, "$gBug#$ref.");
-    &sendmessage(<<END,$data->{originator},@resentccs);
+    &sendmessage(<<END,[$data->{originator},@resentccs],[@bccs]);
 Subject: $gBug#$ref: $newsubject
 Reply-To: $replyto, $ref-quiet\@$gEmailDomain
 ${orgsender}Resent-To: $data->{originator}
@@ -648,7 +652,7 @@ END
              "<code>$gBug#$ref</code>".
              (length($data->{package})? "; Package <code>".&sani($data->{package})."</code>" : '').
              ".");
-    &sendmessage(<<END,"$gSubmitList\@$gListDomain",@resentccs);
+    &sendmessage(<<END,["$gSubmitList\@$gListDomain",@resentccs],[@bccs]);
 Subject: $gBug#$ref: $newsubject
 Reply-To: $replyto, $ref\@$gEmailDomain
 Resent-From: $header{'from'}
@@ -661,16 +665,24 @@ X-$gProject-PR-Package: $data->{package}
 X-$gProject-PR-Keywords: $data->{keywords}
 $fwd
 END
-} elsif (@resentccs) {
+} elsif (@resentccs or @bccs) {
     # D and F done far earlier; B just done - so this must be M or Q
     # We preserve whichever it was in the Reply-To (possibly adding
     # the $gBug#).
-    &htmllog($newref ? "Report" : "Information", "forwarded",
-             $resentccval,
-             "<code>$gBug#$ref</code>".
-             (length($data->{package})? "; Package <code>".&sani($data->{package})."</code>" : '').
-             ".");
-    &sendmessage(<<END,@resentccs);
+    if (@resentccs) {
+        &htmllog($newref ? "Report" : "Information", "forwarded",
+                 $resentccval,
+                 "<code>$gBug#$ref</code>".
+                 (length($data->{package}) ? "; Package <code>".&sani($data->{package})."</code>" : '').
+                 ".");
+    } else {
+        &htmllog($newref ? "Report" : "Information", "stored",
+                 "",
+                 "<code>$gBug#$ref</code>".
+                 (length($data->{package}) ? "; Package <code>".&sani($data->{package})."</code>" : '').
+                 ".");
+    }
+    &sendmessage(<<END,[@resentccs],[@bccs]);
 Subject: $gBug#$ref: $newsubject
 Reply-To: $replyto, $ref-$baddressroot\@$gEmailDomain
 Resent-From: $header{'from'}
@@ -910,8 +922,9 @@ sub htmllog {
     open(AP,">>db-h/$hash/$ref.log") || &quit("opening db-h/$hash/$ref.log (lh): $!");
     print(AP
           "\6\n".
-          "<strong>$whatobj $whatverb</strong> to <code>".&sani($where).
-          "</code>:<br>\n". $desc.
+          "<strong>$whatobj $whatverb</strong>".
+          ($where eq '' ? "" : " to <code>".&sani($where)."</code>").
+          ":<br>\n". $desc.
           "\n\3\n") || &quit("writing db-h/$hash/$ref.log (lh): $!");
     close(AP) || &quit("closing db-h/$hash/$ref.log (lh): $!");
 }    
@@ -922,22 +935,54 @@ sub get_addresses {
    		map { Mail::Address->parse($_) } @_;
 }
 
+sub stripbccs {
+    my $msg = shift;
+    my $ret = '';
+    my $bcc = 0;
+    while ($msg =~ s/(.*\n)//) {
+	local $_ = $1;
+	if (/^$/) {
+	    $ret .= $_;
+	    last;
+	}
+	if ($bcc) {
+	    # strip continuation lines too
+	    next if /^\s/;
+	    $bcc = 0;
+	}
+	if (/^Bcc:/i) {
+	    $bcc = 1;
+	} else {
+	    $ret .= $_;
+	}
+    }
+    return $ret . $msg;
+}
+
 sub sendmessage {
-    local ($msg,@recips) = @_;
-    if ($recips[0] eq '' && $#recips == 0) { @recips= ('-t'); }
+    local ($msg,$recips,$bcc) = @_;
+    if ((!ref($recips) && $recips eq '') || @$recips == 0) {
+        $recips = ['-t'];
+    }
     $msg = "X-Loop: $gMaintainerEmail\n" . $msg;
 
     my $hash = get_hashname($ref);
     #save email to the log
     open(AP,">>db-h/$hash/$ref.log") || &quit("opening db-h/$hash/$ref.log (lo): $!");
-    print(AP "\2\n",join("\4",@recips),"\n\5\n",@{escapelog($msg)},"\n\3\n") ||
+    print(AP "\2\n",join("\4",@$recips),"\n\5\n",
+          @{escapelog(stripbccs($msg))},"\n\3\n") ||
         &quit("writing db-h/$hash/$ref.log (lo): $!");
     close(AP) || &quit("closing db-h/$hash/$ref.log (lo): $!");
-    
-#if debbuging.. save email to a log
+
+    if (ref($bcc)) {
+        shift @$recips if $recips->[0] eq '-t';
+        push @$recips, @$bcc;
+    }
+
+#if debugging.. save email to a log
 #    open AP, ">>debug";
-#    print AP join( '|', @recips )."\n>>";
-#    print AP get_addresses( @recips );
+#    print AP join( '|', @$recips )."\n>>";
+#    print AP get_addresses( @$recips );
 #    print AP "<<\n".$msg;
 #    print AP "\n--------------------------------------------------------\n";
 #    close AP;
@@ -967,7 +1012,7 @@ sub sendmessage {
 	#print DEBUG "mailing child forked again ok $c<\n";
         if (!$c) { # ie, we are the child process
 	    #print DEBUG "mailing grandchild<\n";
-            exec '/usr/lib/sendmail','-f'."$gMaintainerEmail",'-odq','-oem','-oi',get_addresses(@recips);
+            exec '/usr/lib/sendmail','-f'."$gMaintainerEmail",'-odq','-oem','-oi',get_addresses(@$recips);
 	    #print DEBUG "mailing grandchild exec failed<\n";
             die $!;
 	    #print DEBUG "mailing grandchild died !?<\n";
