@@ -130,6 +130,20 @@ severity levels available are described in the
 <a href="Developer.html#severities">developers' documentation</a>.
 
 
+<h2><a name="tags">Assigning tags</a></h2>
+
+<p>You can set tags on a $gBug as you are reporting it. For example, if
+you are including a patch with your $gBug report, you may wish to set
+the <code>patch</code> tag.  This is not required, and the developers
+will set tags on your report as and when it is appropriate.
+
+<p>To set tags, put a <code>Tags: <var>tags</var></code> line in the
+<a name="#pseudoheader">pseudo-header</a> together with the usual
+<code>Package</code> and <code>Version</code>.  The tags available are
+described in the
+<a href="Developer.html#tags">developers' documentation</a>.
+
+
 <h2>Not forwarding to the mailing list - minor $gBug reports</h2>
 
 <p>If a $gBug report is minor (for example, a documentation typo or other
