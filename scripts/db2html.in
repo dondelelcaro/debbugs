@@ -1,27 +1,36 @@
 #!/usr/bin/perl
-# $Id: db2html.in,v 1.1 1999/09/02 19:25:01 gecko Exp $
+# $Id: db2html.in,v 1.2 1999/09/09 03:17:57 gecko Exp $
 # usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
 
+#load the necessary libraries/configuration
 require('/etc/debbugs/config');
 require('/etc/debbugs/text');
 require('/usr/lib/debbugs/errorlib');
 $ENV{'PATH'}= '/usr/lib/debbugs'.$ENV{'PATH'};
+
+#set current working directory
 chdir("$gSpoolDir") || die "chdir spool: $!\n";
-#push(@INC,'/usr/lib/debbugs');
 
-chop($dtime=`date -u '+%H:%M:%S GMT %a %d %h'`); $? and die $?;
-
-%displayshowpendings= ('pending','outstanding',
+#setup variables
+$diff = 0;
+$stampfile = 'stamp.html';
+$tail_html = $gHTMLTail; 
+$expirynote_html = $gHTMLExpireNote;
+$shorthead = ' Ref   Package    Keywords/Subject                    Submitter';
+$shortindex = ''; 
+$amonths = -1;
+$indexunmatched = '';
+%displayshowpendings = ('pending','outstanding',
                        'done','resolved',
                        'forwarded','forwarded to upstream software authors');
 
-$diff=0;
-$stampfile= 'stamp.html';
-$tail_html= $gHTMLTail; $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
-$expirynote_html= $gHTMLExpireNote;
+#set timestamp for html files
+chop($dtime=`date -u '+%H:%M:%S GMT %a %d %h'`); $? and die $?;
+$tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
 
-while (@ARGV && $ARGV[0] =~ m/^-/) {
-    if ($ARGV[0] eq '-diff') { $diff=1; }
+#check for commandline switches
+while (@ARGV && $ARGV[0] =~ m/^-/) 
+{	if ($ARGV[0] eq '-diff') { $diff=1; }
     elsif ($ARGV[0] =~ m/^-lastrun\=([0-9.]+)$/) { $lastrun= $1; undef $stampfile; }
     elsif ($ARGV[0] =~ m/^-full$/) { undef $lastrun; undef $stampfile; }
     elsif ($ARGV[0] =~ m/^-stampfile\=(\S+)$/) { $stampfile= $1; }
@@ -29,66 +38,68 @@ while (@ARGV && $ARGV[0] =~ m/^-/) {
     shift;
 }
 
+#check for remaing argument, only one...
 @ARGV==1 or die;
 $wwwbase= shift(@ARGV);
 
+#get starting time
 defined($startdate= time) || &quit("failed to get time: $!");
 
 $|=1;
 
-if (defined($stampfile)) {
-    if (open(X,"< $stampfile")) {
-        $lastrun= -M X;
+#if stamp file was given, 
+if (defined($stampfile)) 
+{	if (open(X,"< $stampfile")) 
+	{ 	$lastrun= -M X;
         close(X);
         printf "progress last run %.7f days\n",$lastrun;
-    } else {
-        print "progress stamp file $stampfile: $! - full\n";
-    }
+    } else { print "progress stamp file $stampfile: $! - full\n"; }
 }
 
-if (defined($lastrun) && -M "db" > $lastrun) {
-    $_= $gHTMLStamp;
+#only process file if greater than last run...
+if (defined($lastrun) && -M "db" > $lastrun) 
+{	$_= $gHTMLStamp;
     s/SUBSTITUTE_DTIME/$dtime/o;
     s/\<\!\-\-updateupdate\-\-\>.*\<\!\-\-\/updateupdate\-\-\>/check/;
     &file('ix/zstamp.html','non',$_."</body></html>\n");
-    print "noremoves\n";
+	print "noremoves";
+#    print "db2html: no changes since last run\n";
     exit 0;
 }
 
+#parse maintainer file
 open(MM,"$gMaintainerFile") || &quit("open $gMaintainerFile: $!");
-while(<MM>) {
-    m/^(\S+)\s+(\S.*\S)\s*$/ || &quit("$gMaintainerFile: \`$_'");
+while(<MM>) 
+{	m/^(\S+)\s+(\S.*\S)\s*$/ || &quit("$gMaintainerFile: \`$_'");
     ($a,$b)=($1,$2);
     $a =~ y/A-Z/a-z/;
     $maintainer{$a}= $b;
 }
 close(MM);
 
+#load all database files
 opendir(D,'db') || &quit("opendir db: $!");
 @files= sort { $a <=> $b } readdir(D);
 closedir(D);
 
-$shorthead=' Ref   Package    Keywords/Subject                    Submitter';
-$shortindex=''; $amonths=-1;
-$indexunmatched='';
-for $pending (qw(pending done forwarded)) {
-    for $severity (@showseverities) {
-        eval "\$index${pending}${severity}= \$iiindex${pending}${severity}= ''; 1;"
+for $pending (qw(pending done forwarded)) 
+{	for $severity (@showseverities) 
+	{ 	eval "\$index${pending}${severity}= \$iiindex${pending}${severity}= ''; 1;"
             or &quit("reset \$index${pending}${severity}: $@");
     }
 }
 
-for $f (@files) {
-    next unless $f =~ m/^(-?\d+)\.log$/;
+for $f (@files) 
+{ 	next unless $f =~ m/^(-?\d+)\.log$/;
     $ref= $1;
-#((print STDERR "$ref\n"),
-#next
-#)
-# unless $ref =~ m/^-/ || $ref =~ m/^124/;
+	#((print STDERR "$ref\n"),
+	#next
+	#)
+	# unless $ref =~ m/^-/ || $ref =~ m/^124/;
     &filelock("lock/$ref");
     $preserveonly= defined($lastrun) && -M "db/$ref.log" > $lastrun;
-    if ($ref =~ m/^-\d$/) {
-        $week= $ref eq '-1' ? 'this week' :
+    if ($ref =~ m/^-\d$/) 
+	{ 	$week= $ref eq '-1' ? 'this week' :
                $ref eq '-2' ? 'last week' :
                $ref eq '-3' ? 'two weeks ago' :
                               ($ref-1)." weeks ago";
@@ -110,8 +121,8 @@ for $f (@files) {
         undef $iiref;
         $tpackfile= "pnone.html";
         $indexpart= 'unmatched';
-    } else {
-        open(S,"db/$ref.status") || &quit("open db/$ref.status: $!");
+    } else 
+	{ 	open(S,"db/$ref.status") || &quit("open db/$ref.status: $!");
         chomp($s_originator= <S>);
         chomp($s_date= <S>);
         chomp($s_subject= <S>);
@@ -124,14 +135,14 @@ for $f (@files) {
         chomp($s_severity= <S>);
         $_= $s_package; y/A-Z/a-z/; $_= $` if m/[^-+._a-z0-9()]/;
         $tpack= $_;
-        if ($s_severity eq '' || $s_severity eq 'normal') {
-            $showseverity= '';
+        if ($s_severity eq '' || $s_severity eq 'normal') 
+		{ 	$showseverity= '';
             $addseverity= $gDefaultSeverity;
-        } elsif (grep($s_severity eq $_, @strongseverities)) {
-            $showseverity= "<strong>Severity: $s_severity</strong>;\n";
+        } elsif (grep($s_severity eq $_, @strongseverities)) 
+		{ 	$showseverity= "<strong>Severity: $s_severity</strong>;\n";
             $addseverity= $s_severity;
-        } else {
-            $showseverity= "Severity: <em>$s_severity</em>;\n";
+        } else 
+		{ 	$showseverity= "Severity: <em>$s_severity</em>;\n";
             $addseverity= $s_severity;
         }
         $days= int(($startdate - $s_date)/86400); close(S);
@@ -147,28 +158,28 @@ for $f (@files) {
             if length($s_keywords);
         $linkto= $ref; $linkto =~ s,^..,$&/$&,;
         @merged= split(/ /,$s_mergedwith);
-        if (@merged) {
-            $mseparator= ";\nmerged with ";
-            for $m (@merged) {
-                $mfile= $m; $mfile =~ s,^..,$&/$&,;
+        if (@merged) 
+		{ 	$mseparator= ";\nmerged with ";
+            for $m (@merged) 
+			{ 	$mfile= $m; $mfile =~ s,^..,$&/$&,;
                 $indexentry .= $mseparator."<A href=\"../$mfile.html\">#$m</A>";
                 $mseparator= ",\n";
             }
         }
         $daysold=$submitted='';
-        if (length($s_done)) {
-            $indexentry .= ";\n<strong>Done:</strong> ".&sani($s_done);
+        if (length($s_done)) 
+		{ 	$indexentry .= ";\n<strong>Done:</strong> ".&sani($s_done);
             $indexpart= "done$addseverity";
-        } elsif (length($s_forwarded)) {
-            $indexentry .= ";\n<strong>Forwarded</strong> to ".&sani($s_forwarded);
+        } elsif (length($s_forwarded)) 
+		{ 	$indexentry .= ";\n<strong>Forwarded</strong> to ".&sani($s_forwarded);
             $indexpart= "forwarded$addseverity";
-        } else {
-            $cmonths= int($days/30);
-            if ($cmonths != $amonths) {
-        $msg= $cmonths == 0 ? "Submitted in the last month" :
-        $cmonths == 1 ? "Over one month old" :
-        $cmonths == 2 ? "Over two months old - attention is required" :
-        "OVER $cmonths MONTHS OLD - ATTENTION IS REQUIRED";
+        } else 
+		{ 	$cmonths= int($days/30);
+            if ($cmonths != $amonths) 
+			{ 	$msg= $cmonths == 0 ? "Submitted in the last month" :
+		        $cmonths == 1 ? "Over one month old" :
+		        $cmonths == 2 ? "Over two months old - attention is required" :
+		        "OVER $cmonths MONTHS OLD - ATTENTION IS REQUIRED";
                 $shortindex .= "</pre><h2>$msg:</h2><pre>\n$shorthead\n";
                 $amonths= $cmonths;
             }
@@ -182,20 +193,19 @@ for $f (@files) {
                         $s_subject, $s_originator));
             $shortindex.= $thissient;
             $sient{"$ref $s_package"}= $thissient;
-            if ($days >= 7) {
-                $font= $days <= 30 ? '' :
-                       $days <= 60 ? 'em' :
-                                     'strong';
+            if ($days >= 7) 
+			{ 	$font= $days <= 30 ? '' :
+                	$days <= 60 ? 'em' :
+                    'strong';
                 $efont= length($font) ? "</$font>" : '';
                 $font= length($font) ? "<$font>" : '';
                 $daysold= "; $font$days days old$efont";
             }
-            if ($preserveonly) {
-                $submitted= 'THIS IS A BUG IN THE BUG PROCESSOR';
-            } else {
-                $submitted= `TZ=GMT LANG=C \\
+            if ($preserveonly) { $submitted= 'THIS IS A BUG IN THE BUG PROCESSOR'; } 
+			else 
+			{ 	$submitted= `TZ=GMT LANG=C \\
                              date -d '1 Jan 1970 00:00:00 + $s_date seconds' \\
-                                     '+ %a, %d %b %Y %T %Z'`;
+                             '+ %a, %d %b %Y %T %Z'`;
                 $? and die $?;
             }
             $submitted =~ s/\n$//; $submitted =~ s/, 0/, /g;
@@ -219,23 +229,21 @@ for $f (@files) {
     $indexadd .= "\n";
     $estr= "\$index$indexpart = \$indexadd.\$index$indexpart; 1;";
     eval($estr) || &quit("eval add to \$index$indexpart ($estr) failed: $@");
-#print STDERR ">$estr|$indexadd<\n";
+	#print STDERR ">$estr|$indexadd<\n";
     $indexadd= "<!--ii $iiref-->\n" if defined($iiref);
     eval("\$iiindex$indexpart = \$indexadd.\$iiindex$indexpart; 1;") ||
         &quit("eval add to \$iiindex$indexpart failed: $@");
-    if (defined($tmaint)) {
-        $countpermaint{$tmaint} += length($s_done) ? 0 : length($s_forwarded) ? 0 : 1;
+    if (defined($tmaint)) 
+	{ 	$countpermaint{$tmaint} += length($s_done) ? 0 : length($s_forwarded) ? 0 : 1;
         eval("\$permaint${indexpart}{\$tmaint} .= \$indexadd; 1;") ||
             &quit("eval add to \$permaint${indexpart}{\$tmaint} failed: $@");
     }
-    if (defined($tpack)) {
-        $countperpack{$tpack} += length($s_done) ? 0 : length($s_forwarded) ? 0 : 1;
+    if (defined($tpack)) 
+	{ 	$countperpack{$tpack} += length($s_done) ? 0 : length($s_forwarded) ? 0 : 1;
         eval("\$perpack${indexpart}{\$tpack} .= \$indexadd; 1;") ||
             &quit("eval add to \$perpack${indexpart}{\$tpack} failed: $@");
     }
-    if ($preserveonly) {
-        &preserve("$linkto.html"); &preserve("$linkto-b.html"); &unfilelock; next;
-    }
+    if ($preserveonly) { &preserve("$linkto.html"); &preserve("$linkto-b.html"); &unfilelock; next; }
     open(L,"db/$ref.log") || &quit("open db/$ref.log: $!");
     $log='';
     $boring=''; $xmessage= 0;
