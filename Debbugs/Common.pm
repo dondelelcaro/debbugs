@@ -20,6 +20,9 @@ BEGIN {
 
 use vars      @EXPORT_OK;
 use Debbugs::Config qw(%Globals);
+use FileHandle;
+my @cleanups;
+my $DEBUG = new FileHandle;
 
 sub fail
 {
@@ -41,10 +44,14 @@ sub NameToPathHash
     return "$3/$2/$1/$name";
 }
 
+sub DEBUG
+{
+    print $DEBUG $_;
+}
 sub quit
 {
-    print DEBUG "quitting >$_[0]<\n";
-    local ($u);
+    DEBUG("quitting >$_[0]<\n");
+    my $u;
     while ($u= $cleanups[$#cleanups]) { &$u; }
     die "*** $_[0]\n";
 }
