@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.52 2002/09/25 17:19:34 cjwatson Exp $
+# $Id: service.in,v 1.53 2002/10/06 20:05:49 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -634,10 +634,6 @@ if (@maintccs) {
     &transcript("MC|@maintccs|\n") if $dl>2;
     $maintccs .= "Cc: " . join(",\n    ",@maintccs) . "\n";
 }
-if (@bcc) {
-    &transcript("BCC|@bcc|\n") if $dl>2;
-    $maintccs .= "Bcc: " . join(",\n   ", @bcc) . "\n";
-}
 
 if (!defined $header{'subject'} || $header{'subject'} eq "") {
   $header{'subject'} = "your mail";
@@ -673,7 +669,7 @@ close(AP) || &quit("open db-h/-1.log: $!");
 &unfilelock;
 utime(time,time,"db-h");
 
-&sendmailmessage($reply,$replyto,@maintccaddrs);
+&sendmailmessage($reply,$replyto,@maintccaddrs,@bcc);
 
 unlink("incoming/P$nn") || &quit("unlinking incoming/P$nn: $!");
 
