@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.63 2003/03/28 00:24:50 cjwatson Exp $
+# $Id: process.in,v 1.64 2003/04/05 00:10:17 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -99,7 +99,7 @@ for my $hdr (@headerlines) {
     s/\n\s/ /g;
     &finish if m/^x-loop: (\S+)$/i && $1 eq "$gMaintainerEmail";
     my $ins = !m/^subject:/i && !m/^reply-to:/i && !m/^return-path:/i
-           && !m/^From / && !m/^X-Debbugs-CC:/i && !m/^received:/i;
+           && !m/^From / && !m/^X-Debbugs-CC:/i;
     $fwd .= $hdr."\n" if $ins;
     # print DEBUG ">$_<\n";
     if (s/^(\S+):\s*//) {
