@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.18 2000/10/06 22:49:57 joy Exp $
+# $Id: service.in,v 1.19 2000/10/07 15:16:18 joy Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -399,6 +399,7 @@ END
 	    $mismatch= '';
 	    &checkmatch('package','m_package',$s_package);
 	    &checkmatch('forwarded addr','m_forwarded',$s_forwarded);
+	    $s_severity = '$gDefaultSeverity' if $s_severity eq '';
 	    &checkmatch('severity','m_severity',$s_severity);
 	    &checkmatch('done mark','m_done',length($s_done) ? 'done' : 'open');
 	    if (length($mismatch)) {
