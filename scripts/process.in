@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.72 2003/06/23 11:23:35 cjwatson Exp $
+# $Id: process.in,v 1.73 2003/07/16 10:08:04 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -102,7 +102,7 @@ for my $hdr (@headerlines) {
     s/\n\s/ /g;
     &finish if m/^x-loop: (\S+)$/i && $1 eq "$gMaintainerEmail";
     my $ins = !m/^subject:/i && !m/^reply-to:/i && !m/^return-path:/i
-           && !m/^From / && !m/^X-Debbugs-CC:/i;
+           && !m/^From / && !m/^X-Debbugs-/i;
     $fwd .= $hdr."\n" if $ins;
     # print DEBUG ">$_<\n";
     if (s/^(\S+):\s*//) {
@@ -702,12 +702,13 @@ if (length($resentccval)) {
     $htmlbreak = "  Copy sent to <code>".&sani($resentccval)."</code>.".
         $htmlbreak;
 }
-if ($newref) {
-    &htmllog("Acknowledgement","sent",$replyto,
-             ($veryquiet ?
-              "New $gBug report received and filed, but not forwarded." :
-              "New $gBug report received and forwarded."). $htmlbreak);
-    &sendmessage($veryquiet ? <<END : $codeletter eq 'M' ? <<END : <<END,'');
+unless (exists $header{'x-debbugs-no-ack'}) {
+    if ($newref) {
+        &htmllog("Acknowledgement","sent",$replyto,
+                 ($veryquiet ?
+                  "New $gBug report received and filed, but not forwarded." :
+                  "New $gBug report received and forwarded."). $htmlbreak);
+        &sendmessage($veryquiet ? <<END : $codeletter eq 'M' ? <<END : <<END,'');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
 Subject: $gBug#$ref: Acknowledgement of QUIET report
@@ -793,13 +794,13 @@ $brokenness
 $gMaintainer
 (administrator, $gProject $gBugs database)
 END
-} elsif ($codeletter ne 'U' and
-         $header{'precedence'} !~ /\b(?:bulk|junk|list)\b/) {
-    &htmllog("Acknowledgement","sent",$replyto,
-             ($veryquiet ? "Extra info received and filed, but not forwarded." :
-              $codeletter eq 'M' ? "Extra info received and forwarded to maintainer." :
-              "Extra info received and forwarded to list."). $htmlbreak);
-    &sendmessage($veryquiet ? <<END : $codeletter eq 'M' ? <<END : <<END,'');
+    } elsif ($codeletter ne 'U' and
+             $header{'precedence'} !~ /\b(?:bulk|junk|list)\b/) {
+        &htmllog("Acknowledgement","sent",$replyto,
+                 ($veryquiet ? "Extra info received and filed, but not forwarded." :
+                  $codeletter eq 'M' ? "Extra info received and forwarded to maintainer." :
+                  "Extra info received and forwarded to list."). $htmlbreak);
+        &sendmessage($veryquiet ? <<END : $codeletter eq 'M' ? <<END : <<END,'');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
 Subject: $gBug#$ref: Info received and FILED only
@@ -879,6 +880,7 @@ $brokenness
 $gMaintainer
 (administrator, $gProject $gBugs database)
 END
+    }
 }
 
 &appendlog;
