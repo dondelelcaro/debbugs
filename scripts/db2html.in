@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: db2html.in,v 1.7 2001/08/16 17:47:31 doogie Exp $
+# $Id: db2html.in,v 1.8 2002/09/22 15:20:08 cjwatson Exp $
 # usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
 
 #load the necessary libraries/configuration
@@ -445,7 +445,7 @@ $nobugs_html= "No reports are currently in this state.";
 $who_html= $gProject;
 $owner_addr= $gMaintainerEmail;
 $otherindex_html= "For other kinds of index or for other information about
-$gProject and the $gBug system, see the <A HREF\"../../\">$gBug system top-level
+$gProject and the $gBug system, see the <A HREF=\"../../\">$gBug system top-level
 contents WWW page</A>.
 
 ";
