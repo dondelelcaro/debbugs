@@ -173,10 +173,11 @@ sub htmlindexentrystatus {
 
     if (length($status{done})) {
         $result .= ";\n<strong>Done:</strong> " . htmlsanit($status{done});
-    } elsif (length($status{forwarded})) {
-        $result .= ";\n<strong>Forwarded</strong> to "
-                   . htmlsanit($status{forwarded});
     } else {
+        if (length($status{forwarded})) {
+            $result .= ";\n<strong>Forwarded</strong> to "
+                       . htmlsanit($status{forwarded});
+        }
         my $daysold = int((time - $status{date}) / 86400);   # seconds to days
         if ($daysold >= 7) {
             my $font = "";
