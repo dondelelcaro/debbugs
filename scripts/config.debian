@@ -1,21 +1,20 @@
 # This is the bugs.debian.org debbugs configuration file.
-# $Id: config.debian,v 1.3 2000/10/06 15:06:46 joy Exp $
+# $Id: config.debian,v 1.4 2000/10/06 22:31:32 joy Exp $
 
 $gAJDbDir = '/var/lib/debbugs/spool/db';
 $gAJIndex = '/debian/home/ajt/ajbug/pkgindex';
 
 #domains
 $gEmailDomain = "bugs.debian.org";	#bugs.debian.org
-#$gListDomain = "benham.net";	#lists.debian.org
 $gListDomain = "lists.debian.org";	#lists.debian.org
-$gWebDomain = "bugs.debian.org";#www.debian.org/Bugs
+$gWebDomain = "bugs.debian.org";	#www.debian.org/Bugs
 $gCGIDomain = "http://bugs.debian.org/cgi-bin/";	#cgi.debian.org
 $gMirrors = "";						#comma seperated list
 
 #Identification
 $gBug = "Bug";
 $gBugs = "Bugs";
-$gProject = "Debian";						#Debian
+$gProject = "Debian";				#Debian
 $gProjectTitle = "Debian GNU/Linux";		#Debian GNU/Linux
 
 #person responsible for this installation
@@ -26,7 +25,7 @@ $gMaintainerEmail = "owner\@bugs.debian.org";
 
 #directories
 #don't change location of dirs.  They are currently hardcoded.  Variables are
-#for future expantion.
+#for future expansion.
 $gSpoolDir = "/var/lib/debbugs/spool";	#working directory
 $gIncomingDir = "incoming";				#unprocessed emails
 $gWebDir = "/var/lib/debbugs/www";		#base location of web pages
@@ -41,7 +40,7 @@ $gSubmitList = "debian-bugs-dist";			#debian-bugs-dist@lists
 $gMaintList = "debian-bugs-dist";			#debian-bugs-dist@lists
 $gQuietList = "debian-bugs-dist";			#debian-bugs-dist@lists
 $gFowardList = "debian-bugs-forwarded";			#debian-bugs-fowarded@lists
-$gDoneList = "debian-bugs-closed";				#debian-bugs-closed@lists
+$gDoneList = "debian-bugs-closed";			#debian-bugs-closed@lists
 $gRequestList = "debian-bugs-dist";
 $gSubmitterList = "debian-bugs-dist";
 $gControlList = "debian-bugs-dist";
@@ -57,12 +56,11 @@ $gShowSeverities = 'critical, grave, important, normal, minor, wishlist, fixed';
 @gSeverityList= ('critical','grave','important','normal', 'minor', 'wishlist', 'fixed');
 %gSeverityDisplay=('critical','Critical bugs',
                    'grave','Grave bugs',
-				   'important','Important bugs',
+		   'important','Important bugs',
                    'normal','Normal bugs',
-				   'minor','Trivial bugs',
+		   'minor','Trivial bugs',
                    'fixed', 'NMU Fixed bugs',
                    'wishlist','Wishlist items');
 
-
-#dont change
+#don't change
 $gBounceFroms = "^mailer|^da?emon|^post.*mast|^root|^wpuser|^mmdf|^smt.*|^mrgate|^vmmail|^mail.*system|^uucp|-maiser-|^mal\@|^mail.*agent|^tcpmail|^bitmail|^mailman";
