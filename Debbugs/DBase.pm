@@ -13,12 +13,12 @@ BEGIN {
 	$VERSION     = 1.00;
 
 	@ISA         = qw(Exporter);
-	@EXPORT      = qw( %Record );
+	@EXPORT      = qw( %Record %BTags);
 	%EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
 
 	# your exported package globals go here,
 	# as well as any optionally exported functions
-	@EXPORT_OK   = qw( %Record );
+	@EXPORT_OK   = qw( %Record %BTags);
 }
 
 use vars      @EXPORT_OK;
@@ -36,6 +36,7 @@ use File::Basename qw(&dirname);
 use File::Path;
 
 %Record = ();
+%BTags= ( );
 
 my $LoadedRecord = 0;
 my $OpenedRecord = 0;
@@ -60,7 +61,7 @@ sub ParseVersion1Record
 	$Record{ $tag } = $line;
     	print "\t $tag = $line\n" if $Globals{ 'debug' } > 1;
 	$i++;
-	$GTags{ "BUG_$tag" } = $line;
+	$BTags{ "BUG_$tag" } = $line;
     }
 }
 
