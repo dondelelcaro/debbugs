@@ -2,7 +2,7 @@ Source: debbugs
 Section: misc
 Priority: optional
 Maintainer: Debbugs developers <debian-debbugs@lists.debian.org>
-Uploaders: Darren Benham <gecko@debian.org>, Josip Rodin <jrodin@jagor.srce.hr>, Colin Watson <cjwatson@debian.org>
+Uploaders: Josip Rodin <jrodin@jagor.srce.hr>, Colin Watson <cjwatson@debian.org>
 Standards-Version: 3.2.1
 Build-Depends-Indep: debhelper
 
