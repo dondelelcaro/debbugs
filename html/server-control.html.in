@@ -210,6 +210,28 @@ mailservers is available via the WWW, in
   who reported the $gBug knows why it is being closed.
   The use of this command is therefore deprecated.
 
+<dt><code>package</code> <var>packagename</var> ...
+
+  <dd>Limits the following commands so that they will only apply to bugs
+  filed against the listed packages. You can list one or more packages. If
+  you don't list any packages, the following commands will apply to all
+  bugs. You're encouraged to use this as a safety feature in case you
+  accidentally use the wrong bug numbers.</dd>
+
+  <p>Example usage:</p>
+
+  <pre>
+        package foo
+        reassign 1 bar
+
+        package bar
+        retitle 1 bar: bar sucks
+        severity 1 normal
+
+        package
+        severity 2 wishlist
+  </pre>
+
 <dt><code>quit</code>
 <dt><code>stop</code>
 <dt><code>thank</code>...
