@@ -84,6 +84,29 @@ my %ConfigMap = (
 		"Default Severity" => "default-severity",
 		"Normal Severity" => "normal-severity",
 	);
+
+my %GTagMap = (
+		"Owner Email" => "OWNER_EMAIL",
+		"Owner Name" => "OWNER_NAME",
+		"Long Name" => "LONG_NAME",
+		"Short Name" => "SHORT_NAME",
+		"Email Domain" => "EMAIL_DOMAIN",
+		"List Domain" => "LIST_DOMAIN",
+		"Web Domain" => "WEB_DOMAIN",
+		"CGI Domain" => "CGI_DOMAIN",
+		"Submit List" => "SUBMIT_LIST",
+		"Maint List" => "MAINT_LIST",
+		"Quiet List" => "QUIET_LIST",
+		"Forwarded List" => "FORWARDED_LIST",
+		"Done List" => "DONE_LIST",
+		"Request List" => "REQUEST_LIST",
+		"Submitter List" => "SUBMITTER_LIST",
+		"Control List" => "CONTROL_LIST",
+		"Summary List" => "SUMMARY_LIST",
+		"Mirror List" => "MIRROR_LIST",
+		"Mirrors" => "MIRRORS",
+);
+
 sub strip
 {   my $string = $_[0];
     chop $string while $string =~ /\s$/; 
@@ -145,10 +168,16 @@ sub ParseConfigFile
 		if(defined($map)) {
 		    $Globals{ $map } = $value;
 		    print "$key = '$value'\n" if $Globals{ 'debug' } > 1;
+		    my $tagmap = $GTagMap{$key};
+		    if(defined($tagmap)) {
+			$GTags{ $tagmap } = $value;
+			print "GTAG_$tagmap = $value from $key\n" if $Globals{ 'debug' } > 1;
+		    }
 		    next;
 		} else {
 		    print "$key\n";
 		}
+		    
 	    }
 	}
 	print "Unknown line in config!($_)\n";
