@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.39 2001/09/18 20:59:36 joy Exp $
+# $Id: process.in,v 1.40 2001/11/22 02:59:16 doogie Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -822,73 +822,73 @@ sub sendmessage {
     if ($recips[0] eq '' && $#recips == 0) { @recips= ('-t'); }
 
     my $hash = get_hashname($ref);
-	#save email to the log
+    #save email to the log
     open(AP,">>db-h/$hash/$ref.log") || &quit("opening db-h/$hash/$ref.log (lo): $!");
     print(AP "\2\n",join("\4",@recips),"\n\5\n$msg\n\3\n") ||
         &quit("writing db-h/$hash/$ref.log (lo): $!");
     close(AP) || &quit("closing db-h/$hash/$ref.log (lo): $!");
     
-	#if debbuging.. save email to a log
-#	open AP, ">>debug";
-#	print AP join( '|', @recips )."\n>>";
-#	print AP get_addresses( @recips );
-#	print AP "<<\n".$msg;
-#	print AP "\n--------------------------------------------------------\n";
-#	close AP;
+#if debbuging.. save email to a log
+#    open AP, ">>debug";
+#    print AP join( '|', @recips )."\n>>";
+#    print AP get_addresses( @recips );
+#    print AP "<<\n".$msg;
+#    print AP "\n--------------------------------------------------------\n";
+#    close AP;
 
-	#start mailing
-	$_ = '';
+    #start mailing
+    $_ = '';
     $SIG{'CHLD'}='chldhandle';
-	#print DEBUG "mailing sigchild set up<\n";
-	$chldexit = 'no';
+    #print DEBUG "mailing sigchild set up<\n";
+    $chldexit = 'no';
     $c= open(U,"-|");
-	#print DEBUG "mailing opened pipe fork<\n";
+    #print DEBUG "mailing opened pipe fork<\n";
     defined($c) || die $!;
-	#print DEBUG "mailing opened pipe fork ok $c<\n";
+    #print DEBUG "mailing opened pipe fork ok $c<\n";
     if (!$c) { # ie, we are in the child process
-		#print DEBUG "mailing child<\n";
+	#print DEBUG "mailing child<\n";
         unless (open(STDERR,">&STDOUT")) {
-			#print DEBUG "mailing child opened stderr<\n";
+	    #print DEBUG "mailing child opened stderr<\n";
             print STDOUT "redirect stderr: $!\n";
-			#print DEBUG "mailing child opened stderr fail<\n";
+	    #print DEBUG "mailing child opened stderr fail<\n";
             exit 1;
-			#print DEBUG "mailing child opened stderr fail exit !?<\n";
+	    #print DEBUG "mailing child opened stderr fail exit !?<\n";
         }
-		#print DEBUG "mailing child opened stderr ok<\n";
+	#print DEBUG "mailing child opened stderr ok<\n";
         $c= open(D,"|-");
-		#print DEBUG "mailing child forked again<\n";
+	#print DEBUG "mailing child forked again<\n";
         defined($c) || die $!;
-		#print DEBUG "mailing child forked again ok $c<\n";
+	#print DEBUG "mailing child forked again ok $c<\n";
         if (!$c) { # ie, we are the child process
-			#print DEBUG "mailing grandchild<\n";
+	    #print DEBUG "mailing grandchild<\n";
             exec '/usr/lib/sendmail','-f'."$gMaintainerEmail",'-odq','-oem','-oi',get_addresses(@recips);
-			#print DEBUG "mailing grandchild exec failed<\n";
+	    #print DEBUG "mailing grandchild exec failed<\n";
             die $!;
-			#print DEBUG "mailing grandchild died !?<\n";
+	    #print DEBUG "mailing grandchild died !?<\n";
         }
-		#print DEBUG "mailing child not grandchild<\n";
+	#print DEBUG "mailing child not grandchild<\n";
         print(D $msg) || die $!;
-		#print DEBUG "mailing child printed msg<\n";
+	#print DEBUG "mailing child printed msg<\n";
         close(D);
-		#print DEBUG "mailing child closed pipe<\n";
+	#print DEBUG "mailing child closed pipe<\n";
         die "\n*** command returned exit status $?\n" if $?;
-		#print DEBUG "mailing child exit status ok<\n";
+	#print DEBUG "mailing child exit status ok<\n";
         exit 0;
-		#print DEBUG "mailing child exited ?!<\n";
+	#print DEBUG "mailing child exited ?!<\n";
     }
-	#print DEBUG "mailing parent<\n";
+    #print DEBUG "mailing parent<\n";
     $results='';
-	#print DEBUG "mailing parent results emptied<\n";
+    #print DEBUG "mailing parent results emptied<\n";
     while( $chldexit eq 'no' ) { $results.= $_; }
-	#print DEBUG "mailing parent results read >$results<\n";
+    #print DEBUG "mailing parent results read >$results<\n";
     close(U);
-	#print DEBUG "mailing parent results closed<\n";
+    #print DEBUG "mailing parent results closed<\n";
     $results.= "\n*** child returned exit status $?\n" if $?;
-	#print DEBUG "mailing parent exit status ok<\n";
+    #print DEBUG "mailing parent exit status ok<\n";
     $SIG{'CHLD'}='DEFAULT';
-	#print DEBUG "mailing parent sigchild default<\n";
+    #print DEBUG "mailing parent sigchild default<\n";
     if (length($results)) { &quit("running sendmail: $results"); }
-	#print DEBUG "mailing parent results ok<\n";
+    #print DEBUG "mailing parent results ok<\n";
 }
 
 sub checkmaintainers {
