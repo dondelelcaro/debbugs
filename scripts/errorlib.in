@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.3 1999/12/01 18:04:01 gecko Exp $
+# $Id: errorlib.in,v 1.4 2001/07/15 09:46:16 doogie Exp $
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -96,6 +96,25 @@ sub sani {
     $out.= $in;
     $out;
 }
+
+sub bughook {
+	my ( $type, $ref ) = ( shift, shift );
+	&filelock("debbugs.trace.lock");
+	&appendfile("debbugs.trace","$type $ref\n",@_);
+	&unfilelock;
+}
+
+sub appendfile {
+	my $file = shift;
+	if (!open(AP,">>$file")) {
+		print DEBUG "failed open log<\n";
+		print DEBUG "failed open log err $!<\n";
+		&quit("opening db/$ref.log (li): $!");
+	}
+	print(AP @_) || &quit("writing $file (appendfile): $!");
+	close(AP) || &quit("closing $file (appendfile): $!");
+}
+
 
 @severities= @gSeverityList;
 @showseverities= @severities;

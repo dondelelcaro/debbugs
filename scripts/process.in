@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.29 2001/05/12 18:37:45 joy Exp $
+# $Id: process.in,v 1.30 2001/07/15 09:46:16 doogie Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -264,6 +264,9 @@ END
 		&overwrite("db/$ref.status",
         	   "$s_originator\n$s_date\n$s_subject\n$s_msgid\n".
                    "$s_package\n$s_keywords\n$s_done\n$s_forwarded\n$s_mergedwith\n$s_severity\n");
+		&bughook('change',$ref,
+        	   "$s_originator\n$s_date\n$s_subject\n$s_msgid\n".
+                   "$s_package\n$s_keywords\n$s_done\n$s_forwarded\n$s_mergedwith\n$s_severity\n");
         open(O,"db/$ref.report") || &quit("read original report: $!");
         $x= join('',<O>); close(O);
         if ($codeletter eq 'F') 
@@ -474,6 +477,9 @@ END
     &unfilelock;
     &overwrite("db/$ref.log",'');
     &overwrite("db/$ref.status",
+               "$replyto\n$intdate\n$subject\n$header{'message-id'}\n".
+               "$s_package\n$s_keywords\n\n\n\n$s_severity\n");
+	&bughook('new',$ref,
                "$replyto\n$intdate\n$subject\n$header{'message-id'}\n".
                "$s_package\n$s_keywords\n\n\n\n$s_severity\n");
     &overwrite("db/$ref.report",

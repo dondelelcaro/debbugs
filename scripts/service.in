@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.36 2001/05/02 20:13:49 joy Exp $
+# $Id: service.in,v 1.37 2001/07/15 09:46:16 doogie Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -806,6 +806,17 @@ sub savebug {
     close(S) || &quit("closing db/$ref.status.new: $!");
     rename("db/$ref.status.new","db/$ref.status") ||
         &quit("installing new db/$ref.status: $!");
+	&bughook('change',$ref,
+          "$s_originator\n".
+          "$s_date\n".
+          "$s_subject\n".
+          "$s_msgid\n".
+          "$s_package\n".
+          "$s_keywords\n".
+          "$s_done\n".
+          "$s_forwarded\n".
+          "$s_mergedwith\n".
+	  "$s_severity\n");
     &unfilelock;
     $lowstate= "idle";
     &dlex("savebug");
