@@ -54,7 +54,7 @@ server.
 <dt><code>index-maint</code>
 
   <dd>Requests the index page giving the list of maintainers with $gBugs
-  (open and recently-closed) in the tracking sytem.
+  (open and recently-closed) in the tracking system.
 
 <dt><code>index maint</code> <var>maintainer</var>
 
@@ -66,7 +66,7 @@ server.
 <dt><code>index-packages</code>
 
   <dd>Requests the index page giving the list of packages with $gBugs (open
-  and recently-closed) in the tracking sytem.
+  and recently-closed) in the tracking system.
 
 <dt><code>index packages</code> <var>package</var>
 
