@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.11 2000/10/02 11:32:29 joy Exp $
+# $Id: service.in,v 1.12 2000/10/02 13:02:09 joy Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -222,7 +222,7 @@ END
 		&transcript("$gBug is already closed, cannot re-close.\n\n");
                 &nochangebug;
             } else {
-                $action= "$gBug closed, ack sent to submitter - they'd better know why !";
+                $action= "$gBug closed, send any further explanations to $s_originator";
                 do {
                     &addmaintainers($s_package);
 					if ( length( $gDoneList ) > 0 && length( $gListDomain ) >
@@ -232,12 +232,13 @@ END
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $s_originator
 Subject: $gBug#$ref acknowledged by developer
-         ($s_subject)
+         ($header{'subject'})
 References: $header{'message-id'} $s_msgid
 In-Reply-To: $s_msgid
 Message-ID: <handler.$ref.$nn.notifdonectrl.$midix\@$gEmailDomain>
 
-This is an automatic notification regarding your $gBug report.
+This is an automatic notification regarding your $gBug report
+#$ref: $s_subject.
 
 It has been marked as closed by one of the developers, namely
 $replyto.
