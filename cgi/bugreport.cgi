@@ -418,14 +418,16 @@ if ( $mbox ) {
 }
 print "Content-Type: text/html\n\n";
 
+my $title = htmlsanit($status{subject});
+
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
 print "<HTML><HEAD>\n" . 
-    "<TITLE>$debbugs::gProject $debbugs::gBug report logs - $short</TITLE>\n" .
+    "<TITLE>$debbugs::gProject $debbugs::gBug report logs - $short - $title</TITLE>\n" .
     "</HEAD>\n" .
     '<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#800080">' .
     "\n";
-print "<H1>" .  "$debbugs::gProject $debbugs::gBug report logs - <A HREF=\"mailto:$ref\@$gEmailDomain\">$short</A>" .
-      "<BR>" . htmlsanit($status{subject}) . "</H1>\n";
+print "<H1>" . "$debbugs::gProject $debbugs::gBug report logs - <A HREF=\"mailto:$ref\@$gEmailDomain\">$short</A>" .
+      "<BR>" . $title . "</H1>\n";
 
 print "$descriptivehead\n";
 printf "<p>View this report as an <a href=\"%s\">mbox folder</a>.</p>\n", mboxurl($ref);
