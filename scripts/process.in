@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.53 2002/10/21 08:37:29 cjwatson Exp $
+# $Id: process.in,v 1.54 2002/10/27 14:54:02 ajt Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -29,9 +29,10 @@ $tryref= length($2) ? $2+0 : -1;
 $nn= $_;
 
 if (!rename("incoming/G$nn","incoming/P$nn")) 
-{	$_=$!.'';  m/no such file or directory/i && exit 0;
+{
+    $_=$!.'';  m/no such file or directory/i && exit 0;
     &quit("renaming to lock: $!");
-}    
+}
 
 $baddress= 'submit' if $codeletter eq 'B';
 $baddress= 'maintonly' if $codeletter eq 'M';
@@ -101,7 +102,7 @@ for my $hdr (@headerlines) {
     my $ins = !m/^subject:/i && !m/^reply-to:/i && !m/^return-path:/i
            && !m/^From / && !m/^X-Debbugs-CC:/i && !m/^received:/i;
     $fwd .= $hdr."\n" if $ins;
-# print DEBUG ">$_<\n";
+    # print DEBUG ">$_<\n";
     if (s/^(\S+):\s*//) {
 	my $v = lc $1;
 	print DEBUG ">$v=$_<\n";
@@ -167,17 +168,23 @@ END
 # RFC822 actually lists it as an `optional-field'.
 
     $subject= '(no subject)';
-} else { $subject= $header{'subject'}; }
+} else { 
+    $subject= $header{'subject'}; 
+}
 
 $ref=-1;
 $subject =~ s/^Re:\s*//i; $_= $subject."\n";
-if ($tryref < 0 && m/^Bug ?\#(\d+)\D/i) { $tryref= $1+0; }
+if ($tryref < 0 && m/^Bug ?\#(\d+)\D/i) {
+    $tryref= $1+0; 
+}
 
 if ($tryref >= 0) 
-{ 	$bfound= &lockreadbugmerge($tryref);
-    if ($bfound) { $ref= $tryref; } 
-	else 
-	{ 	&htmllog("Reply","sent", $replyto,"Unknown problem report number <code>$tryref</code>.");
+{
+    $bfound= &lockreadbugmerge($tryref);
+    if ($bfound) { 
+        $ref= $tryref; 
+    } else {
+        &htmllog("Reply","sent", $replyto,"Unknown problem report number <code>$tryref</code>.");
         &sendmessage(<<END, '');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
@@ -213,36 +220,45 @@ talking about this indicates a serious mail system misconfiguration
 somewhere.  Please contact me immediately.)
 
 END
-		&appendlog;
+        &appendlog;
         &finish;
     }
-} else { &filelock('lock/-1'); }
+} else { 
+    &filelock('lock/-1'); 
+}
 
 if ($codeletter eq 'D' || $codeletter eq 'F') 
-{ 	if ($replyto =~ m/$gBounceFroms/o ||
-		$header{'from'} =~ m/$gBounceFroms/o) 
-		{ &quit("bounce detected !  Mwaap! Mwaap!"); }
+{
+    if ($replyto =~ m/$gBounceFroms/o ||
+        $header{'from'} =~ m/$gBounceFroms/o)
+    { 
+        &quit("bounce detected !  Mwaap! Mwaap!"); 
+    }
     $markedby= $header{'from'} eq $replyto ? $replyto :
                "$header{'from'} (reply to $replyto)";
-    if ($codeletter eq 'F') 
-	{ 	(&appendlog,&finish) if length($s_forwarded);
+    if ($codeletter eq 'F') {
+        (&appendlog,&finish) if length($s_forwarded);
         $receivedat= "forwarded\@$gEmailDomain";
         $markaswhat= 'forwarded';
         $set_forwarded= $header{'to'};
-		if ( length( $gListDomain ) > 0 && length( $gFowardList ) > 0 ) 
-			{ $generalcc= "$gFowardList\@$gListDomain"; } 
-		else { $generalcc=''; }
-    } else 
-	{ 	(&appendlog,&finish) if length($s_done);
+	if ( length( $gListDomain ) > 0 && length( $gFowardList ) > 0 ) {
+	    $generalcc= "$gFowardList\@$gListDomain";
+	} else { 
+	    $generalcc=''; 
+        }
+    } else {
+ 	(&appendlog,&finish) if length($s_done);
         $receivedat= "done\@$gEmailDomain";
         $markaswhat= 'done';
         $set_done= $header{'from'};
-		if ( length( $gListDomain ) > 0 && length( $gDoneList ) > 0 ) 
-			{ $generalcc= "$gDoneList\@$gListDomain"; } 
-		else { $generalcc=''; }
+	if ( length( $gListDomain ) > 0 && length( $gDoneList ) > 0 ) {
+            $generalcc= "$gDoneList\@$gListDomain";
+	} else { 
+	    $generalcc=''; 
+	}
     }
-    if ($ref<0) 
-	{ 	&htmllog("Warning","sent",$replyto,"Message ignored.");
+    if ($ref<0) {
+	&htmllog("Warning","sent",$replyto,"Message ignored.");
         &sendmessage(<<END, '');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
@@ -281,34 +297,41 @@ $gMaintainer
 (administrator, $gProject $gBugs database)
 
 END
-		&appendlog;
-		&finish;
+	&appendlog;
+	&finish;
     }
+
     &checkmaintainers;
+
     $noticeccval.= join(', ', grep($_ ne $replyto,@maintaddrs,@addsrcaddrs));
-    $noticeccval =~ s/\s+\n\s+/ /g; $noticeccval =~ s/^\s+/ /; $noticeccval =~ s/\s+$//;
+    $noticeccval =~ s/\s+\n\s+/ /g; 
+    $noticeccval =~ s/^\s+/ /; $noticeccval =~ s/\s+$//;
+
     if (length($noticeccval)) { $noticecc= "Cc: $noticeccval\n"; }
-	if (length($generalcc)) { $noticecc.= "Bcc: $generalcc\n"; }
+    if (length($generalcc)) { $noticecc.= "Bcc: $generalcc\n"; }
+
     @process= ($ref,split(/ /,$s_mergedwith));
     $orgref= $ref;
-    for $ref (@process) 
-	{ 	if ($ref != $orgref) 
-		{ 	&unfilelock;
-	    	&lockreadbug($ref) || die "huh ? $ref from $orgref out of @process";
-		}
+
+    for $ref (@process) {
+ 	if ($ref != $orgref) {
+	    &unfilelock;
+	    &lockreadbug($ref) || die "huh ? $ref from $orgref out of @process";
+	}
         $s_done= $set_done if defined($set_done);
         $s_forwarded= $set_forwarded if defined($set_forwarded);
 	my $hash = get_hashname($ref);
-		&overwrite("db-h/$hash/$ref.status",
-        	   "$s_originator\n$s_date\n$s_subject\n$s_msgid\n".
-                   "$s_package\n$s_keywords\n$s_done\n$s_forwarded\n$s_mergedwith\n$s_severity\n");
-		&bughook('change',$ref,
-        	   "$s_originator\n$s_date\n$s_subject\n$s_msgid\n".
-                   "$s_package\n$s_keywords\n$s_done\n$s_forwarded\n$s_mergedwith\n$s_severity\n");
+	&overwrite("db-h/$hash/$ref.status",
+       	   "$s_originator\n$s_date\n$s_subject\n$s_msgid\n".
+           "$s_package\n$s_keywords\n$s_done\n$s_forwarded\n$s_mergedwith\n$s_severity\n");
+	&bughook('change',$ref,
+       	   "$s_originator\n$s_date\n$s_subject\n$s_msgid\n".
+           "$s_package\n$s_keywords\n$s_done\n$s_forwarded\n$s_mergedwith\n$s_severity\n");
+
         open(O,"db-h/$hash/$ref.report") || &quit("read original report: $!");
         $x= join('',<O>); close(O);
-        if ($codeletter eq 'F') 
-		{ 	&htmllog("Reply","sent",$replyto,"You have marked $gBug as forwarded.");
+        if ($codeletter eq 'F') {
+	    &htmllog("Reply","sent",$replyto,"You have marked $gBug as forwarded.");
             &sendmessage(<<END."---------------------------------------\n".join( "\n", @msg ), '');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
@@ -333,8 +356,9 @@ $gMaintainer
 (administrator, $gProject $gBugs database)
 
 END
-        } else 
-		{   &htmllog("Reply","sent",$replyto,"You have taken responsibility.");
+
+        } else {
+	    &htmllog("Reply","sent",$replyto,"You have taken responsibility.");
             &sendmessage(<<END."--------------------------------------\n".$x."---------------------------------------\n".join( "\n", @msg ), '');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
@@ -362,7 +386,7 @@ $gMaintainer
 
 END
             &htmllog("Notification","sent",$s_originator, 
-				"$gBug acknowledged by developer.");
+		"$gBug acknowledged by developer.");
             &sendmessage(<<END.join("\n",@msg),'');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $s_originator
@@ -390,14 +414,14 @@ $gMaintainer
 
 END
         }
-		&appendlog;
+	&appendlog;
     }
     &finish;
 }
 
-if ($ref<0) 
-{ 	if ($codeletter eq 'U') 
-	{ 	&htmllog("Warning","sent",$replyto,"Message not forwarded.");
+if ($ref<0) {
+    if ($codeletter eq 'U') {
+        &htmllog("Warning","sent",$replyto,"Message not forwarded.");
         &sendmessage(<<END, '');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
@@ -440,8 +464,8 @@ END
 	&appendlog;
 	&finish;
     }
-    if (!defined($pheader{'package'}))
-	{ 	&htmllog("Warning","sent",$replyto,"Message not forwarded.");
+    if (!defined($pheader{'package'})) {
+ 	&htmllog("Warning","sent",$replyto,"Message not forwarded.");
         &sendmessage(<<END."---------------------------------------------------------------------------\n".join("\n", @msg), '');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
@@ -473,7 +497,9 @@ $gMaintainer
 END
 	&appendlog;
 	&finish;
-    } else { $s_package= $pheader{'package'}; }
+    } else {
+	$s_package= $pheader{'package'}; 
+    }
     $s_keywords= '';
     if (defined($pheader{'keywords'})) {
         $s_keywords= $pheader{'keywords'};
@@ -489,11 +515,11 @@ END
         $s_keywords = join(" ", @kws);
     }
     $s_severity= '';
-	if (defined($pheader{'severity'}) || defined($pheader{'priority'})) 
-	{ 	$s_severity= $pheader{'severity'};
-	    $s_severity= $pheader{'priority'} unless ($s_severity);
+    if (defined($pheader{'severity'}) || defined($pheader{'priority'})) {
+ 	$s_severity= $pheader{'severity'};
+	$s_severity= $pheader{'priority'} unless ($s_severity);
 
-		if (!grep($_ eq $s_severity, @severities, "$gDefaultSeverity")) {
+	if (!grep($_ eq $s_severity, @severities, "$gDefaultSeverity")) {
             $brokenness.= <<END;
 
 Your message specified a Severity: in the pseudo-header, but
@@ -518,7 +544,7 @@ END
     &overwrite("db-h/$hash/$ref.status",
                "$replyto\n$intdate\n$subject\n$header{'message-id'}\n".
                "$s_package\n$s_keywords\n\n\n\n$s_severity\n");
-	&bughook('new',$ref,
+    &bughook('new',$ref,
                "$replyto\n$intdate\n$subject\n$header{'message-id'}\n".
                "$s_package\n$s_keywords\n\n\n\n$s_severity\n");
     &overwrite("db-h/$hash/$ref.report",
@@ -571,7 +597,9 @@ END
 
 $resentccval.= join(', ',@resentccs);
 $resentccval =~ s/\s+\n\s+/ /g; $resentccval =~ s/^\s+/ /; $resentccval =~ s/\s+$//;
-if (length($resentccval)) { $resentcc= "Resent-CC: $resentccval\n"; }
+if (length($resentccval)) { 
+    $resentcc= "Resent-CC: $resentccval\n"; 
+}
 
 if ($codeletter eq 'U') {
     &htmllog("Message", "sent on", $s_originator, "$gBug#$ref.");
@@ -633,8 +661,7 @@ END
 $htmlbreak= length($brokenness) ? "<p>\n".&sani($brokenness)."\n<p>\n" : '';
 $htmlbreak =~ s/\n\n/\n<P>\n\n/g;
 if (length($resentccval)) {
-    $htmlbreak =
-        "  Copy sent to <code>".&sani($resentccval)."</code>.".
+    $htmlbreak = "  Copy sent to <code>".&sani($resentccval)."</code>.".
         $htmlbreak;
 }
 if ($newref) {
@@ -962,13 +989,13 @@ sub checkmaintainers {
 	    push @addsrcaddrs, "$p\@packages.qa.debian.org";
 	}
         if (defined($maintainerof{$p})) {
-print DEBUG "maintainer add >$p|$maintainerof{$p}<\n";
+	    print DEBUG "maintainer add >$p|$maintainerof{$p}<\n";
             $addmaint= $maintainerof{$p};
             push(@maintaddrs,$addmaint) unless
                 $addmaint eq $replyto || grep($_ eq $addmaint, @maintaddrs);
             $anymaintfound++;
         } else {
-print DEBUG "maintainer none >$p<\n";
+	    print DEBUG "maintainer none >$p<\n";
 	    push(@maintaddrs,$gUnknownMaintainerEmail) unless $anymaintnotfound;
             $anymaintnotfound++;
             last;
