@@ -383,7 +383,7 @@ sub htmlizebugs {
             next unless defined $section{${pending} . "_" . ${severity}};
             $result .= "<HR><H2>$debbugs::gSeverityDisplay{$severity} - $displayshowpending{$pending}</H2>\n";
             #$result .= "(A list of <a href=\"http://${debbugs::gWebDomain}/db/si/$pending$severity\">all such bugs</a> is available).\n";
-	    $result .= "(A list of all such bugs used to be available).\n";
+            #$result .= "(A list of all such bugs used to be available).\n";
             $result .= "<UL>\n";
 	    $result .= $section{$pending . "_" . $severity}; 
 	    $result .= "</UL>\n";
