@@ -285,7 +285,7 @@ such as control@bugs, but don't want to ban them altogether. In this case an
 autoreply approach may be useful.
 
         :0h
-        * ? test "$LOCAL_PART" = control
+        * LOCAL_PART ?? control
         * !^FROM_DAEMON
         * !^X-Loop: owner@bugs\.example\.org
         * ^(From|Reply-To):.*(abuser1@example\.org|abuser2@example\.org)
