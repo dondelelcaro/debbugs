@@ -1,11 +1,13 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.48 2002/07/10 04:50:17 doogie Exp $
+# $Id: service.in,v 1.49 2002/08/26 15:18:09 ajt Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
 
 use Mail::Address;
+use File::Copy;
+
 $config_path = '/org/bugs.debian.org/etc';
 $lib_path = '/org/bugs.debian.org/scripts';
 
@@ -378,8 +380,9 @@ END
             }
             do {
                 &addmaintainers($s_package);
-				if (length($gFowardList)>0 && length($gListDomain)>0 )
-                { &addccaddress("$gFowardList\@$gListDomain"); }
+		if (length($gFowardList)>0 && length($gListDomain)>0 ) {
+		     &addccaddress("$gFowardList\@$gListDomain"); 
+		}
                 $s_forwarded= $whereto;
             } while (&getnextbug);
         }
@@ -465,6 +468,9 @@ END
     } elsif (m/^retitle\s+\#?(-?\d+)\s+(\S.*\S)\s*$/i) {
         $ok++;
         $ref= $1; $newtitle= $2;
+	if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
+	    $ref = $clonebugs{$ref};
+	}
         if (&getbug) {
             &foundbug;
             &addmaintainers($s_package);
@@ -498,7 +504,7 @@ END
                 } while (&getnextbug);
 	    }
 	}
-    } elsif (m/^merge\s+(-?\d+(\s+-?\d+)+)\s*$/i) {
+    } elsif (m/^merge\s+(\d+(\s+\d+)+)\s*$/i) {
 	$ok++;
         @tomerge= sort { $a <=> $b } split(/\s+/,$1);
         @newmergelist= ();
@@ -540,6 +546,52 @@ END
     	    &transcript("$action\n\n");
 	}
         &endmerge;
+    } elsif (m/^clone\s+#?(\d+)\s+((-\d+\s+)*-\d+)\s*$/i) {
+	$ok++;
+
+	$origref = $1;
+	@newclonedids = split /\s+/, $2;
+	$newbugsneeded = scalar(@newclonedids);
+
+	$ref = $origref;
+	if (&setbug) {
+	    if (length($s_mergedwith)) {
+		&transcript("$gBug is marked as being merged with others.\n\n");
+		&nochangebug;
+	    } else {
+        	&filelock("nextnumber.lock");
+        	open(N,"nextnumber") || &quit("nextnumber: read: $!");
+        	$v=<N>; $v =~ s/\n$// || &quit("nextnumber bad format");
+        	$firstref= $v+0;  $v += $newbugsneeded;
+		open(NN,">nextnumber"); print NN "$v\n"; close(NN);
+        	&unfilelock;
+
+		$lastref = $firstref + $newbugsneeded - 1;
+
+		if ($newbugsneeded == 1) {
+		    $action= "$gBug $origref cloned as bug $firstref.";
+		} else {
+		    $action= "$gBug $origref cloned as bugs $firstref-$lastref.";
+		}
+		&getnextbug;
+		my $ohash = get_hashname($origref);
+		$ref = $firstref;
+		for $newclonedid (@newclonedids) {
+		    $clonebugs{$newclonedid} = $ref;
+	    
+		    my $hash = get_hashname($ref);
+	            copy("db-h/$ohash/$origref.log", "db-h/$hash/$ref.log");
+	            copy("db-h/$ohash/$origref.status", "db-h/$hash/$ref.status");
+	            copy("db-h/$ohash/$origref.report", "db-h/$hash/$ref.report");
+	            &bughook('new', $ref, "$s_originator\n$s_date\n$s_subject\n$s_msgid\n$s_package\n$s_keywords\n$s_done\n$s_forwarded\n$s_mergedwith\n$s_severity\n");
+	            link("db-h/$hash/$ref.log", "db/$ref.log");
+	            link("db-h/$hash/$ref.status", "db/$ref.status");
+	            link("db-h/$hash/$ref.report", "db/$ref.report");
+
+		    $ref++;
+		}
+	    }
+	}
     } else {
         &transcript("Unknown command or malformed arguments to command.\n\n");
         if (++$unknowns >= 5) {
