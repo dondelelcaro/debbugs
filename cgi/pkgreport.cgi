@@ -41,7 +41,7 @@ if (defined $pkg) {
 } elsif (defined $maint) {
     $tag = "maintainer $maint";
 } elsif (defined $maintenc) {
-    $tag = "maintainer $maintenc";
+    $tag = "encoded maintainer $maintenc";
 } else {
     $tag = "submitter $submitter";
 }
@@ -55,7 +55,7 @@ if (defined $pkg) {
 } elsif (defined $maint) {
     @bugs = maintbugs($maint);
 } elsif (defined $maintenc) {
-    @bugs = maintbugs($maintenc);
+    @bugs = maintencbugs($maintenc);
 } else {
     @bugs = submitterbugs($submitter);
 }
