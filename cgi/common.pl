@@ -497,7 +497,8 @@ sub htmlizebugs {
 
     my @status = ();
     my %count;
-    my ($header, $footer);
+    my $header = '';
+    my $footer = '';
 
     if (@bugs == 0) {
         return "<HR><H2>No reports found!</H2></HR>\n";
