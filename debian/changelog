@@ -41,6 +41,27 @@ debbugs (2.4) experimental; urgency=low
     an package with no maintainer is referenced. [Adam]
   * processall locks 'incoming-cleaner' before starting, so we don't have
     multiple copies of it running at the same time. [Adam]
+  * Sort bugs tagged 'pending' as 'pending upload', between 'forwarded' and
+    'fixed'. [Adam]
+  * Add support for searching by source package.  pkgreport.cgi takes src=,
+    and both pkgreport.cgi and bugreport.cgi have enhanced HTML headers now.
+    [Adam]
+  * Add support in the CGIs for:
+    * 'raw' sorting. This does no grouping based on status or severity, and
+      just lists bugs in number order.
+    * reversing the order that bugs are displayed. This does not affect
+      severity or status ordering.
+    * inclusions/exclusions of status and severity. Also, support reverse
+      sorting of the above.
+  * Make it possible to ban people from control@bugs. [Anthony]
+  * Don't lie about missing Subject:s being an RFC822 violation, because
+    they aren't. [Anthony, Josip]
+  * Added preliminary support for ###-request. [Adam]
+  * Added preliminary fast indexing support. [Adam/Anthony (?)]
+  * Added preliminary support for CC:ing <src>@packages.qa.debian.org.
+    [Anthony]
+  * Added preliminary cloning support. [Anthony]
+  * Link to submitter's web page, patch from Matt Kraai. [Josip]
   * Various other things, not worth mentioning here.
 
  -- Josip Rodin <jrodin@jagor.srce.hr>  UNRELEASED
