@@ -1,8 +1,8 @@
 #!/bin/sh
-# $Id: age-1.in,v 1.2 1999/09/02 22:27:29 gecko Exp $
+# $Id: age-1.in,v 1.3 2002/01/06 10:46:24 ajt Exp $
 set -e
-cd /var/lib/debbugs/spool
+cd /var/lib/debbugs/spool/db-h
 test -f ./-3.log && rm ./-3.log
 test -f ./-2.log && mv ./-2.log ./-3.log
 test -f ./-1.log && mv ./-1.log ./-2.log
-rm -f ../stamp.html
+#rm -f ../stamp.html

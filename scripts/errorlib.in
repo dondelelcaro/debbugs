@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.5 2001/08/19 02:09:18 doogie Exp $
+# $Id: errorlib.in,v 1.6 2002/01/06 10:46:24 ajt Exp $
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -28,7 +28,7 @@ sub lockreadbugmerge {
 sub lockreadbug {
     local ($lref) = @_;
     &filelock("lock/$lref");
-    if (!open(S,"db-h/".get_hashname($lref)."/$lref.status")) { &unfilelock; return 0; }
+    if (!open(S,"db/$lref.status")) { &unfilelock; return 0; }
     chop($s_originator= <S>);
     chop($s_date= <S>);
     chop($s_subject= <S>);
@@ -106,6 +106,37 @@ sub bughook {
 	my ( $type, $ref ) = ( shift, shift );
 	&filelock("debbugs.trace.lock");
 	&appendfile("debbugs.trace","$type $ref\n",@_);
+	my @stuff=split/\n/, "$_[0]\n\n\n\n\n\n\n";
+	# XXX: bug: this'll only keep the most recent update until index.db
+	#      starts getting overwritten by index.db.realtime after update
+	my $hash = get_hashname($ref);
+	unlink("$gSpoolDir/db/$ref.status.new");
+	link("$gSpoolDir/db-h/$hash/$ref.status", "$gSpoolDir/db/$ref.status.new");
+	rename("$gSpoolDir/db/$ref.status.new", "$gSpoolDir/db/$ref.status");
+	open(IDXDB, "</org/bugs.debian.org/spool/index.db.realtime")
+		or open(IDXDB, "</org/bugs.debian.org/spool/index.db");
+	open(IDXNEW, ">/org/bugs.debian.org/spool/index.db.realtime.new");
+	while(my $line = <IDXDB>) {
+		@line = split /\s/, $line;
+		last if ($line[1] == $ref);
+		print IDXNEW $line;
+	}
+	my $firstpkg;
+	my $whendone = "open";
+	my $severity = $gDefaultSeverity;
+	($firstpkg = $stuff[4]) =~ s/[,\s].*$//;
+	$whendone = "forwarded" if length $stuff[7];
+	$whendone = "done" if length $stuff[6];
+	$severity = $stuff[9] if length $stuff[9];
+
+	printf IDXNEW "%s %d %d %s [%s] %s %s\n",
+			$firstpkg, $ref, $stuff[1], $whendone, $stuff[0],
+			$severity, $stuff[5];
+	print IDXNEW while(<IDXDB>);
+	close(IDXNEW);
+	close(IDXDB);
+	rename("/org/bugs.debian.org/spool/index.db.realtime.new",
+		"/org/bugs.debian.org/spool/index.db.realtime");
 	&unfilelock;
 }
 

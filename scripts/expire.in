@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: expire.in,v 1.9 2001/08/19 06:36:43 doogie Exp $
+# $Id: expire.in,v 1.10 2002/01/06 10:46:24 ajt Exp $
 
 # Load modules and set envirnment
 use File::Copy;
@@ -28,8 +28,8 @@ foreach my $dir (@dirs) {
 }
 
 #process each bug (ie, status file)
-while (length($ref=shift(@list))) 
-{ 	print STDERR "$ref considering\n" if $debug;
+while (length($ref=shift(@list))) {
+	print STDERR "$ref considering\n" if $debug;
     $bfound= &lockreadbugmerge($ref);
 	print STDERR "$ref read $bfound\n" if $debug;
     $bfound || next;
@@ -40,15 +40,15 @@ while (length($ref=shift(@list)))
     if (length($s_mergedwith)) { push(@aref,split/ /,$s_mergedwith); }
 	print "$ref aref @aref\n" if $debug;
     $oktoremove= 1;
-    for $mref (@aref) 
-	{	print "$ref $mref check\n" if $debug;
-        if ($mref != $ref) 
-		{ 	print "$ref $mref reading\n" if $debug;
+    for $mref (@aref) {
+	print "$ref $mref check\n" if $debug;
+        if ($mref != $ref) {
+	 	print "$ref $mref reading\n" if $debug;
             &lockreadbug($mref) || die "huh ?";
-			print "$ref $mref read ok\n" if $debug;
+		print "$ref $mref read ok\n" if $debug;
             $bfound++;
         }
-		print "$ref $mref read/not\n" if $debug;
+	print "$ref $mref read/not\n" if $debug;
         $expectmerge= join(' ',grep($_ != $mref, sort { $a <=> $b } @aref));
         $s_mergedwith eq $expectmerge ||
             die "$ref -> $mref: ($s_mergedwith) vs. ($expectmerge) (@aref)";
@@ -58,28 +58,31 @@ while (length($ref=shift(@list)))
         $days= -M "db-h/".get_hashname($mref)."/$mref.log";
 		print "ref $mref days $days\n" if $debug;
         if ($days <= $gRemoveAge) 
-			{ print "$ref $mref saved\n" if $debug; $oktoremove= 0;}
+		{ print "$ref $mref saved\n" if $debug; $oktoremove= 0; }
     }
-    if ($oktoremove) 
-	{	print "$ref removing\n" if $debug;
-        for $mref (@aref) 
-		{ 	print "$ref removing $mref\n" if $debug;
-			my $dir = get_hashname($mref);
-			if ( $gSaveOldBugs )
-			{
-				`mkdir -p "archive/$dir"`;
-				copy( "db-h/$dir/$mref.log", "archive/$dir/$mref.log" );
-				copy( "db-h/$dir/$mref.status", "archive/$dir/$mref.status" );
-				copy( "db-h/$dir/$mref.report", "archive/$dir/$mref.report" );
-				if ( open( IDXFILE, ">>archive/index" ) )
-				{	printf IDXFILE "%s %d %s\n", $s_package, $mref, $s_subject;
-					close IDXFILE;
-				} else { print "Unable to write to index file\n"; }
+    if ($oktoremove) {
+	print "$ref removing\n" if $debug;
+        for $mref (@aref) {
+	 	print "$ref removing $mref\n" if $debug;
+		my $dir = get_hashname($mref);
+		if ( $gSaveOldBugs ) {
+			`mkdir -p "archive/$dir"`;
+			link( "db-h/$dir/$mref.log", "archive/$dir/$mref.log" ) || copy( "db-h/$dir/$mref.log", "archive/$dir/$mref.log" );
+			link( "db-h/$dir/$mref.status", "archive/$dir/$mref.status" ) || copy( "db-h/$dir/$mref.status", "archive/$dir/$mref.status" );
+			link( "db-h/$dir/$mref.report", "archive/$dir/$mref.report" ) || copy( "db-h/$dir/$mref.report", "archive/$dir/$mref.report" );
+			if ( open( IDXFILE, ">>archive/index" ) ) {
+				printf IDXFILE "%s %d %s\n", $s_package, $mref, $s_subject;
+				close IDXFILE;
+			} else { print "Unable to write to index file\n"; }
 				
-            	print("archived $mref to archive/$dir (from $ref)\n") || &quit("output old: $!");
-			}
-            unlink("db-h/$dir/$mref.log", "db-h/$dir/$mref.status", "db-h/$dir/$mref.report");
-            print("deleted $mref (from $ref)\n") || &quit("output old: $!");
+            		print("archived $mref to archive/$dir (from $ref)\n") || &quit("output old: $!");
+		}
+		unlink("db/$mref.log", "db/$mref.status", "db/$mref.report");
+		unlink("db-h/$dir/$mref.log", "db-h/$dir/$mref.status", "db-h/$dir/$mref.report");
+		print("deleted $mref (from $ref)\n") || &quit("output old: $!");
+		&filelock("debbugs.trace.lock");
+		&appendfile("debbugs.trace","archive $mref\n");
+		&unfilelock;
         }
     }
 	print "$ref unlocking $bfound\n" if $debug;
