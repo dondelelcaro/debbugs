@@ -2,11 +2,15 @@
 
 my $common_archive = 0;
 my $common_repeatmerged = 1;
+my %common_include = ();
+my %common_exclude = ();
 
 sub set_option {
     my ($opt, $val) = @_;
     if ($opt eq "archive") { $common_archive = $val; }
     if ($opt eq "repeatmerged") { $common_repeatmerged = $val; }
+    if ($opt eq "exclude") { %common_exclude = %{$val}; }
+    if ($opt eq "include") { %common_include = %{$val}; }
 }
 
 sub quit {
@@ -174,13 +178,27 @@ sub htmlizebugs {
 	my %status = getbugstatus($bug);
         next unless %status;
 	my @merged = sort {$a<=>$b} ($bug, split(/ /, $status{mergedwith}));
-	if ($common_repeatmerged || $bug == $merged[0]) {
-	    $section{$status{pending} . "_" . $status{severity}} .=
-	        sprintf "<li><a href=\"%s\">#%d: %s</a>\n<br>",
-		    bugurl($bug), $bug, htmlsanit($status{subject});
-	    $section{$status{pending} . "_" . $status{severity}} .=
-		htmlindexentrystatus(\%status) . "\n";
+	next unless ($common_repeatmerged || $bug == $merged[0]);
+	if (%common_include) {
+	    my $okay = 0;
+	    foreach my $t (split /\s+/, $status{tags}) {
+		$okay = 1, last if (defined $common_include{$t});
+	    }
+	    next unless ($okay);
+        }
+	if (%common_exclude) {
+	    my $okay = 1;
+	    foreach my $t (split /\s+/, $status{tags}) {
+		$okay = 0, last if (defined $comon_exclude{$t});
+	    }
+	    next unless ($okay);
 	}
+	    
+	$section{$status{pending} . "_" . $status{severity}} .=
+	    sprintf "<li><a href=\"%s\">#%d: %s</a>\n<br>",
+		bugurl($bug), $bug, htmlsanit($status{subject});
+	$section{$status{pending} . "_" . $status{severity}} .=
+	    htmlindexentrystatus(\%status) . "\n";
     }
 
     my $result = "";

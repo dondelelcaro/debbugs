@@ -51,6 +51,8 @@ if (defined ($pkg = $param{'pkg'})) {
 
 my $repeatmerged = ($param{'repeatmerged'} || "yes") eq "yes";
 my $archive = ($param{'archive'} || "no") eq "yes";
+my $include = $param{'include'} || "";
+my $exclude = $param{'exclude'} || "";
 
 my $Archived = $archive ? "Archived" : "";
 
@@ -83,6 +85,10 @@ if (defined $pkg) {
 
 set_option("repeatmerged", $repeatmerged);
 set_option("archive", $archive);
+set_option("include", { map {($_,1)} (split /[\s,]+/, $include) })
+	if ($include);
+set_option("exclude", { map {($_,1)} (split /[\s,]+/, $exclude) })
+	if ($exclude);
 
 my @bugs;
 if (defined $pkg) {
