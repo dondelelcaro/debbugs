@@ -1,6 +1,6 @@
 # This is the template debbugs configuration file.
 # You *must* edit it in order for debbugs to work.
-# $Id: config.in,v 1.14 2001/11/17 00:40:03 doogie Exp $
+# $Id: config.in,v 1.15 2002/11/17 16:00:54 cjwatson Exp $
 
 # Domains
 $gEmailDomain = "bugs.something";			# e.g. bugs.debian.org
@@ -20,6 +20,7 @@ $gProjectTitle = "Something DebBugs Test";		# e.g. Debian GNU/Linux
 $gMaintainer = "Local DebBugs Owner";			# e.g. Ian Jackson
 $gMaintainerWebpage = "http://localhost/~owner";	# e.g. http://www.debian.org/~iwj
 $gMaintainerEmail = "root\@something";			# e.g. owner@bugs.debian.org
+$gUnknownMaintainerEmail = "$gMaintainerEmail";		# e.g. unknown-package@qa.debian.org
 
 # BTS mailing lists, at $gListDomain
 # if you don't want lists, set them all to $gMaintainerEmail
