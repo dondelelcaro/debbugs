@@ -9,6 +9,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - CGI scripts now support multiple maintainers for a single package.
     - Add support for an X-Debbugs-No-Ack: mail header to suppress
       acknowledgements.
+    - Document how to deliver mail to debbugs via procmail and SpamAssassin.
 
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
 

@@ -204,3 +204,97 @@ Finally add bugs.domain.net to mydestination in main.cf:
 Now that all this is done, restart postfix and it should be working..
 
 Wichert.
+
+Procmail and SpamAssassin
+-------------------------
+
+Publicly-accessible debbugs installations have been known to receive a lot
+of spam. To combat this, some sites may find it useful to deliver mail to
+debbugs via procmail and filter everything through a spam detector like
+SpamAssassin. Here's a quick sketch of how to set this up (with Exim, but
+other MTAs should be similar).
+
+Arrange for mail to be delivered to procmail somehow. At the time of
+writing, bugs.debian.org uses a .forward file like this:
+
+        |procmail -p -m /org/bugs.debian.org/mail/.procmailrc
+
+The first thing to do in .procmailrc is to set up various variables used
+either implicitly or explicitly later on. Obviously, substitute
+/org/bugs.debian.org and so on with details of your own installation, and
+make sure any directories mentioned in mailbox names exist with appropriate
+permissions under $MAILDIR. Many of these variables are documented in
+procmailrc(5).
+
+        MAILDIR=/org/bugs.debian.org/mail
+        LOGFILE=$MAILDIR/.logfile
+        COMSAT=no
+        UMASK=003
+        SPAMC=/usr/bin/spamc
+        SENDMAIL=/usr/sbin/sendmail
+        YEARMONTH=`/bin/date +%Y-%m`
+        YEAR=`/bin/date +%Y`
+
+Next, a safety catch (optional): we copy all incoming mail into an mbox.
+This can easily grow quite large!
+
+        :0c:
+        backup/save-all.$YEARMONTH
+
+At this point you can insert customized rules for your site that drop or
+bounce particular types of mail. Then, filter through SpamAssassin and file
+matches off into a separate mailbox:
+
+        :0fw:spamc.lock
+        | $SPAMC
+
+        :0:
+        * ^X-Spam-Flag: yes
+        spam/assassinated.$YEARMONTH
+
+(The lock here is due to resource problems during mail floods. There may be
+better solutions.)
+
+Now arrange for owner@bugs mail to be copied to another mailbox and sent on
+to the right people. $LOCAL_PART is Exim-specific. Some people may prefer
+this to come before the SpamAssassin check.
+
+        :0
+        ? test "$LOCAL_PART" = owner -o "$LOCAL_PART" = postmaster
+        {
+          :0c:
+          owner/owner.$YEAR
+
+          :0
+          !foo@example.org, bar@example.org
+        }
+
+Everything else can now be saved to yet another mailbox and passed on to the
+receive script:
+
+        :0c:
+        receive/receive.$YEARMONTH
+
+        :0
+        |/usr/lib/debbugs/receive
+
+This should be sufficient, or even overkill, for a small installation.
+
+Some sites need to block particular abusers from using particular services,
+such as control@bugs, but don't want to ban them altogether. In this case an
+autoreply approach may be useful.
+
+        :0h
+        * ? test "$LOCAL_PART" = control
+        * !^FROM_DAEMON
+        * !^X-Loop: owner@bugs\.example\.org
+        * ^(From|Reply-To):.*(abuser1@example\.org|abuser2@example\.org)
+        | (formail -r -I"From: owner@bugs.example.org" -I"Precedence: junk" \
+                      -A"X-Loop: owner@bugs.example.org"; \
+           echo "Processing commands for control@bugs.example.org:"; \
+           echo; \
+           echo "This service is unavailable.") | $SENDMAIL -oi -t
+
+Although not documented here, similar autoreply tricks should be possible
+without procmail. For instance, I would be surprised if Exim filters weren't
+up to the task.
