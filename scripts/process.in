@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.51 2002/10/15 23:33:37 cjwatson Exp $
+# $Id: process.in,v 1.52 2002/10/20 13:21:15 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -113,6 +113,19 @@ for my $hdr (@headerlines) {
 
 # remove blank lines
 shift @bodylines while @bodylines and $bodylines[0] !~ /\S/;
+
+# Strip off RFC2440-style PGP clearsigning.
+if (@bodylines and $bodylines[0] =~ /^-----BEGIN PGP SIGNED/) {
+    shift @bodylines while @bodylines and length $bodylines[0];
+    shift @bodylines while @bodylines and $bodylines[0] !~ /\S/;
+    for my $findsig (0 .. $#bodylines) {
+	if ($bodylines[$findsig] =~ /^-----BEGIN PGP SIGNATURE/) {
+	    $#bodylines = $findsig - 1;
+	    last;
+	}
+    }
+    map { s/^- // } @bodylines;
+}
 
 # extract pseudo-headers
 for my $phline (@bodylines)

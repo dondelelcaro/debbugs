@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.8 2002/10/15 23:33:37 cjwatson Exp $
+# $Id: errorlib.in,v 1.9 2002/10/20 13:21:15 cjwatson Exp $
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -155,7 +155,8 @@ sub getmailbody {
 	my $entity = shift;
 	my $type = $entity->effective_type;
 	if ($type eq 'text/plain' or
-	    ($type =~ m#text/# and $type ne 'text/html')) {
+	    ($type =~ m#text/# and $type ne 'text/html') or
+	    $type eq 'application/pgp') {
 		return $entity->bodyhandle;
 	} elsif ($type eq 'multipart/alternative') {
 		# RFC 2046 says we should use the last part we recognize.

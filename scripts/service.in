@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.56 2002/10/15 23:33:37 cjwatson Exp $
+# $Id: service.in,v 1.57 2002/10/20 13:21:15 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -82,6 +82,19 @@ for (@headerlines) {
     } else {
 	print "!>$_<\n" if $debug;
     }
+}
+
+# Strip off RFC2440-style PGP clearsigning.
+if (@bodylines and $bodylines[0] =~ /^-----BEGIN PGP SIGNED/) {
+    shift @bodylines while @bodylines and length $bodylines[0];
+    shift @bodylines while @bodylines and $bodylines[0] !~ /\S/;
+    for my $findsig (0 .. $#bodylines) {
+	if ($bodylines[$findsig] =~ /^-----BEGIN PGP SIGNATURE/) {
+	    $#bodylines = $findsig - 1;
+	    last;
+	}
+    }
+    map { s/^- // } @bodylines;
 }
 
 grep(s/\s+$//,@bodylines);
