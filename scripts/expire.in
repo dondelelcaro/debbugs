@@ -1,11 +1,11 @@
 #!/usr/bin/perl
-# $Id: expire.in,v 1.5 1999/09/20 05:40:07 gecko Exp $
+# $Id: expire.in,v 1.6 2000/10/07 17:27:13 joy Exp $
 
 # Load modules and set envirnment
 require('/etc/debbugs/config');
 require('/usr/lib/debbugs/errorlib');
 use File::Copy;
-$ENV{'PATH'}= '/usr/lib/debbugs'.$ENV{'PATH'};
+$ENV{'PATH'} = '/usr/lib/debbugs:'.$ENV{'PATH'};
 chdir("$gSpoolDir") || die "chdir spool: $!\n";
 
 #global variables

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.19 2000/10/07 15:16:18 joy Exp $
+# $Id: service.in,v 1.20 2000/10/07 17:27:13 joy Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -7,7 +7,7 @@
 use Mail::Address;
 require('/etc/debbugs/config');
 require('/usr/lib/debbugs/errorlib');
-$ENV{'PATH'}= '/usr/lib/debbugs'.$ENV{'PATH'};;
+$ENV{'PATH'} = '/usr/lib/debbugs:'.$ENV{'PATH'};
 chdir("$gSpoolDir") || die "chdir spool: $!\n";
 
 # open(DEBUG,">&4");

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: processall.in,v 1.3 1999/09/18 21:01:27 gecko Exp $
+# $Id: processall.in,v 1.4 2000/10/07 17:27:13 joy Exp $
 #
 # Usage: processall
 #
@@ -9,7 +9,7 @@
 # Stop;    process/stop
 
 require( '/etc/debbugs/config' );
-$ENV{'PATH'} = '/usr/lib/debbugs'.$ENV{'PATH'};
+$ENV{'PATH'} = '/usr/lib/debbugs:'.$ENV{'PATH'};
 chdir( "$gSpoolDir" ) || die 'chdir spool: $!\n';
 push( @INC, '/usr/lib/debbugs' );
 

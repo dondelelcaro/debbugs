@@ -1,11 +1,11 @@
 #!/usr/bin/perl
-# $Id: html-control.in,v 1.4 1999/10/25 01:35:04 gecko Exp $
+# $Id: html-control.in,v 1.5 2000/10/07 17:27:13 joy Exp $
 
 use POSIX;
 
 require '/etc/debbugs/config';
 require '/usr/lib/debbugs/errorlib';
-$ENV{'PATH'}= '/usr/lib/debbugs'.$ENV{'PATH'};
+$ENV{'PATH'} = '/usr/lib/debbugs:'.$ENV{'PATH'};
 chdir("$gSpoolDir") || die "chdir spool: $!\n";
 #push(@INC,'/usr/lib/debbugs');
 

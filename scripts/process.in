@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.15 2000/10/06 06:21:54 doogie Exp $
+# $Id: process.in,v 1.16 2000/10/07 17:27:13 joy Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -50,6 +50,7 @@ Received: via spool by $baddress\@$gEmailDomain id=$nn
           (code $codeletter ref $tryref); $tdate
 END
 
+# Process the message's mail headers
 for ($i=0; $i<=$#msg; $i++) {
     $_ = $msg[$i];
     last unless length($_);

@@ -1,9 +1,9 @@
 #!/usr/bin/perl
-# $Id: mailsummary.in,v 1.4 1999/09/20 05:40:07 gecko Exp $
+# $Id: mailsummary.in,v 1.5 2000/10/07 17:27:13 joy Exp $
 
 require( '/etc/debbugs/config' );
 
-$ENV{'PATH'}= '/usr/lib/debbugs'.$ENV{'PATH'};
+$ENV{'PATH'} = '/usr/lib/debbugs:'.$ENV{'PATH'};
 chdir("$gSpoolDir") || die "chdir spool: $!\n";
 
 #open(DEBUG,">&4");
