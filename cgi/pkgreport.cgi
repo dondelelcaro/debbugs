@@ -109,7 +109,7 @@ if (defined $pkg) {
   $tag = "source $src";
   my @pkgs = getsrcpkgs($src);
   push @pkgs, $src if ( !grep(/^\Q$src\E$/, @pkgs) );
-  @bugs = @{getbugs(sub {my %d=@_; return $pkg eq $d{"pkg"}}, 'package', @pkgs)};
+  @bugs = @{getbugs(sub {my %d=@_; return grep($d{"pkg"} eq $_, @pkgs)}, 'package', @pkgs)};
 } elsif (defined $maint) {
   my %maintainers = %{getmaintainers()};
   $tag = "maintainer $maint";
