@@ -137,8 +137,7 @@ if (defined $pkg) {
   if ($maint eq "") {
     @bugs = @{getbugs(sub {my %d=@_;
                            foreach my $try (splitpackages($d{"pkg"})) {
-                             my @me = getparsedaddrs($maintainers{$try});
-                             return 1 if grep { $_->address eq $maint } @me;
+                             return 1 if !getparsedaddrs($maintainers{$try});
                            }
                            return 0;
                           })};
