@@ -17,8 +17,10 @@ SYSTEM REQUIREMENTS
  - The bug system requires its own mail domain.  It comes with code
    which understands how exim, qmail and sendmail deliver mail for such a 
    domain to a script.
- - A webserver (this is easiest if the bug system can write
-   directly to the webspace).
+ - A webserver.  For the old system of static HTML pages generated for
+   bug reports and index pages, this is easiest if the bug system can
+   write directly to the webspace; for the new system of CGI scripts
+   that generate web pages on the fly, write access is not required.
  - Somewhere to run CGI scripts (unless you don't need the web forms for
    searching for bugs by number, package, maintainer or submitter).
 
@@ -44,7 +46,11 @@ All other email should be piped into the receive script.
 directory.
 
 5. Test things a bit, by sending mail messages to the bug system and
-running .../scripts/processall and/or .../scripts/update-html.
+running /usr/lib/debbugs/processall and/or /usr/lib/debbugs/rebuild.
+The latter updates index files used by the CGI scripts.  If you're
+feeling brave, you can link /var/lib/debbugs/spool/index.db to
+index.db.realtime and .../index.archive to index.archive.realtime to
+remove the need for the rebuild script; this is still semi-experimental.
 
 6. If all seems well then install the crontab from
 /usr/share/doc/debbugs/examples/crontab.
