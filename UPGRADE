@@ -1,0 +1,58 @@
+There are three new scripts that have to be installed in CGI and the front
+page (or any other search you have set up) needs to be changed to use these
+scripts.  They are:
+	* bugreport.cgi
+	* common.pl
+	* pkgreport.cgi
+
+Add the following variables to the /etc/debbugs/config file:
+(the /usr/share/doc/debbugs/examples/config file can be used as a
+reference)
+
+$gSummaryList = "summary.list";         #debian-bugs-report@lists
+$gSaveOldBugs = 1;
+
+Make sure you do not have a double ,, as shown here if you're using the
+default severities.  Also, 'fixed' was added to the default severities:
+-                                       'normal',"Normal $gBugs",,
++                                       'normal',"Normal $gBugs",
++				                        'fixed',"NMU Fixed $gBugs",
+ 
+These have been added to the /etc/debbugs/text file:
++############################################################################
++#  Here is a blurb to point people to ftp archive of directions.  It is
++#  used by the receive script when bouncing a badly formatted email
++#
++# $gTextInstructions = "$gBadEmailPrefix
++# $gBadEmailPrefix Instructions are available from ftp.debian.org in /debian
++# $gBadEmailPrefix and at all Debian mirror sites, in the files:
++# $gBadEmailPrefix  doc/bug-reporting.txt
++# $gBadEmailPrefix  doc/bug-log-access.txt
++# $gBadEmailPrefix  doc/bug-maint-info.txt
++# $gBadEmailPrefix";
++############################################################################
++$gTextInstructions = "$gBadEmailPrefix";
++
++
+ 
+$gHTMLStart = "<BODY TEXT=#0F0F0F>";	#this is used by HTML generation to create the "uniform look"
+ 
+The following code was added to /etc/debbugs/text if you use the new fixed
+severity
+
+ 	<DT><CODE>wishlist</CODE>
+-	<DD>for any feature request, and also for any $gBugs that are very difficult
+-	to fix due to major design considerations.";
++	<DD>for any feature request, and also for any $gBugs that are very 
++	difficult to fix due to major design considerations.";
++
++	<DT><CODE>fixed</CODE>
++	<DD>fixed in the current version in the unstable archive but the fix has
++	not been fixed by the person responsible.
+  
+ In All such entries in /etc/debbugs/text, if you replace <BODY> with
+ $gHTMLStart, all html pages will have the same look (as specified in
+ $gHTMLStart):
+
+ $gSummaryIndex = "<HTML><HEAD><TITLE>$gProject $gBug report logs - summary index</TITLE>
+ $gPackageLog = "<HTML><HEAD><TITLE>$gProject $gBug report logs - index by package</TITLE>
