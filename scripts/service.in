@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.93 2003/10/01 14:40:40 cjwatson Exp $
+# $Id: service.in,v 1.94 2003/10/02 13:48:38 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -548,6 +548,7 @@ END
 	    $data->{severity} = '$gDefaultSeverity' if $data->{severity} eq '';
 	    &checkmatch('severity','m_severity',$data->{severity});
 	    &checkmatch('done mark','m_done',length($data->{done}) ? 'done' : 'open');
+	    &checkmatch('owner','m_owner',$data->{owner});
 	    foreach my $t (split /\s+/, $data->{keywords}) { $tags{$t} = 1; }
 	    if (length($mismatch)) {
 	        &transcript("Mismatch - only $gBugs in same state can be merged:\n".
