@@ -78,8 +78,9 @@ if (defined $pkg) {
   @bugs = @{getbugs(sub {my %d=@_; return $pkg eq $d{"pkg"}}, 'package', $pkg)};
 } elsif (defined $src) {
   $tag = "source $src";
-  my %pkgsrc = %{getpkgsrc()};
-  @bugs = @{getbugs(sub {my %d=@_; return $pkg eq $d{"pkg"}}, 'package', getsrcpkgs($src))};
+  my @pkgs = getsrcpkgs($src);
+  push @pkgs, $src if ( !grep(/^\Q$src\E$/, @pkgs) );
+  @bugs = @{getbugs(sub {my %d=@_; return $pkg eq $d{"pkg"}}, 'package', @pkgs)};
 } elsif (defined $maint) {
   my %maintainers = %{getmaintainers()};
   $tag = "maintainer $maint";
