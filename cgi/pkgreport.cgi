@@ -67,7 +67,7 @@ if (defined $pkg) {
   #@bugs = maintbugs($maint);
   @bugs = getbugs(sub {my %d=@_; my $me; 
 		       ($me = $maintainers{$d{"pkg"}}||"") =~ s/\s*\(.*\)\s*//;
-		       if ($me =~ m/<(.*)>/) { $me = $1 }
+		       $me = $1 if ($me =~ m/<(.*)>/);
 		       return $me eq $maint;
 		     })
 } elsif (defined $maintenc) {
@@ -82,7 +82,7 @@ if (defined $pkg) {
   #@bugs = submitterbugs($submitter);
   @bugs = getbugs(sub {my %d=@_; my $se; 
 		       ($se = $d{"submitter"} || "") =~ s/\s*\(.*\)\s*//;
-		       if ($se =~ m/<(.*)>/) { $me = $1 }
+		       $se = $1 if ($se =~ m/<(.*)>/);
 		       return $se eq $submitter;
 		     });
 } elsif (defined $severity) {
@@ -107,10 +107,10 @@ print "<H1>" . "$debbugs::gProject $Archived $debbugs::gBug report logs: $tag" .
       "</H1>\n";
 
 if (defined $pkg) {
-    if (defined $maintainer{$pkg}) {
+    if (defined $maintainers{$pkg}) {
         print "<p>Maintainer for $pkg is <a href=\"" 
-              . mainturl($maintainer{$pkg}) . "\">"
-              . htmlsanit($maintainer{$pkg}) . "</a>.</p>\n";
+              . mainturl($maintainers{$pkg}) . "\">"
+              . htmlsanit($maintainers{$pkg}) . "</a>.</p>\n";
     }
     print "<p>Note that with multi-binary packages there may be other\n";
     print "reports filed under the different binary package names.</p>\n";
