@@ -17,16 +17,45 @@ my %param = readparse();
 
 my ($pkg, $src, $maint, $maintenc, $submitter, $severity, $status);
 
-if (defined ($pkg = $param{'pkg'})) {
-} elsif (defined ($src = $param{'src'})) {
-} elsif (defined ($maint = $param{'maint'})) {
-} elsif (defined ($maintenc = $param{'maintenc'})) {
-} elsif (defined ($submitter= $param{'submitter'})) { 
-} elsif (defined ($severity = $param{'severity'})) { 
-	$status = $param{'status'} || 'open';
-} else {
-	quit("You have to choose something to select by");
+my %which = (
+	'pkg' => \$pkg,
+	'src' => \$src,
+	'maint' => \$maint,
+	'maintenc' => \$maintenc,
+	'submitter' => \$submitter,
+	'severity' => \$severity,
+	);
+my @allowedEmpty = ( 'maint' );
+
+my $found;
+foreach ( keys %which ) {
+	$status = $param{'status'} || 'open' if /^severity$/;
+	if (($found = $param{$_})) {
+		${ $which{$_} } = $found;
+		last;
+	}
 }
+if (!$found) {
+	foreach ( @allowedEmpty ) {
+		if (exists($param{$_})) {
+			${ $which{$_} } = '';
+			$found = 1;
+			last;
+		}
+	}
+}
+if (!$found) {
+	my $which;
+	if (($which = $param{'which'})) {
+		if (grep( /^\Q$which\E$/, @allowedEmpty)) {
+			${ $which{$which} } = $param{'data'};
+			$found = 1;
+		} elsif (($found = $param{'data'})) {
+			${ $which{$which} } = $found if (exists($which{$which}));
+		}
+	}
+}
+quit("You have to choose something to select by") if (!$found);
 
 my $repeatmerged = ($param{'repeatmerged'} || "yes") eq "yes";
 my $archive = ($param{'archive'} || "no") eq "yes";
