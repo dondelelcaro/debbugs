@@ -1,0 +1,78 @@
+#!/usr/bin/perl
+
+require( '/etc/debbugs/config' );
+
+$ENV{'PATH'}= '/usr/lib/debbugs'.$ENV{'PATH'};
+chdir("$gSpoolDir") || die "chdir spool: $!\n";
+
+#open(DEBUG,">&4");
+
+if ($ARGV[0] eq 'undone') {
+    $vdef= "(no outstanding $gBug reports on file, or problem running script)\n";
+    $subject= "Unanswered problem reports by date";
+    $intro=
+"The following problem reports have not yet been marked as `taken up\' by a
+message to done\@$gEmailDomain or or `forwarded\' by a
+message to fowarded\@$gEmailDomain."
+    ;
+} elsif ($ARGV[0] eq 'bymaint') {
+    $vdef= "(no outstanding $gBug reports on file, or problem running script)\n";
+    $subject= "Unanswered problem reports by maintainer and package";
+    $intro=
+"The following problem reports have not yet been marked as `taken up\' by a
+message to done\@$gEmailDomain or or `forwarded\' by a
+message to forwarded\@$gEmailDomain.
+The maintainer listed against each package is derived from the Maintainer
+field of the package found in the development tree; there is an override file
+that can be amended to get the right results if you have taken over a package
+and do not expect to issue a new version soon.
+
+Variant versions of the Maintainer field for the same actual package
+maintainer will be listed separately.
+
+Maintainers with few outstanding $gBug appear first, to avoid those with few
+$gBugs being lost deep in the message.
+"
+    ;
+} elsif ($ARGV[0] eq 'veryold') {
+    $vdef= '';
+    $subject= "Overdue problem reports by age";
+    $intro=
+"The following problem reports are very old but have not yet been marked
+as `taken up\' by a message to done\@$gEmailDomain as forwarded
+to a developer by CCing a message to fowarded\@$gEmailDomain.
+Please help ensure that these $gBugs are dealt with quickly, even if you
+are not the package maintainer in question.  (NB a full list of outstanding
+$gBug reports is posted periodically - this is a partial list only!)
+"
+} else {
+    die "urgk, wrong argument @ARGV";
+}
+
+$v=`/usr/lib/debbugs/summary $ARGV[0]`; $? && die "undone failed $?: $!\n";
+
+$v= $vdef if $v eq '';
+exit 0 if $v eq '';
+
+open(D, '| '.join(' ',('/usr/lib/sendmail','-f'.$gMaintainerEmail)).' -odi -oem -oi -t') ||
+    die "start sendmail: $!";
+
+print D <<END || die "complete sendmail";
+From: $gMaintainerEmail ($gMaintainer)
+To: submit\@$gListDomain
+Subject: $subject
+
+$intro
+$v
+Every Tuesday, the listing by package maintainer is posted.
+Every Frideay, the listing by age of the report is posted.
+
+Please see the documentation for more information about how to
+use the $gBug tracking system.  It is available on the WWW at
+<A HREF=\"http://$gWebUrl/txt/\">$gWebUrl/txt</A>
+END
+
+close(D);
+$? && die "sendmail failed $?: $!\n";
+
+print length($v)," bytes of summary posted.\n";

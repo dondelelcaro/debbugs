@@ -1,0 +1,85 @@
+$gIndexHtml = <<HTML_END
+<html><head>
+<title>$gProject $gBug tracking system</title>
+<link rev="made" href="mailto:$gMaintainerEmail">
+</head><body>
+<h1>$gProject $gBug tracking system main contents page</h1>
+
+$gProjectTitle has a $gBug tracking system which files
+details of $gBugs reported by users and developers.  Each $gBug is given a
+number, and is kept on file until it is marked as having been dealt
+with.
+
+$gHTMLCopies
+
+<h2>Documentation about the $gBug tracking system</h2>
+
+<ul>
+<li><A href="Reporting.html">Instructions for reporting a $gBug.</A>
+<li><A href="Access.html">Ways of accessing the $gBug reporting logs.</A>
+<li><A href="server-request.html">Requesting $gBug reports by email.</A>
+<li><A href="Developer.html">Developers' information on how to use the system.</A>
+<li><A href="server-control.html">Developers' information on
+manipulating $gBugs by email.</A>
+<li><A href="server-refcard.html">Mailservers' reference card.</A>
+</ul>
+
+<h2>Reviewing $gBug reports on the WWW</h2>
+
+<ul>
+<li><A href="db/ix/full.html">Full list of outstanding and recent $gBug reports.</A>
+<li><A href="db/ix/packages.html">Index of packages with $gBug reports.</A>
+<li><A href="db/ix/maintainers.html">Index of maintainers of packages with $gBug reports.</A>
+<li>Outstanding
+<A href="db/si/pendingcritical.html">critical</A>,
+<A href="db/si/pendinggrave.html">grave</A> and
+<A href="db/si/pendingnormal.html">normal</A> $gBugs and
+<A href="db/si/pendingwishlist.html">wishlist</A> items.
+<li>Forwarded
+<A href="db/si/forwardedcritical.html">critical</A>,
+<A href="db/si/forwardedgrave.html">grave</A> and
+<A href="db/si/forwardednormal.html">normal</A> $gBugs and
+<A href="db/si/forwardedwishlist.html">wishlist</A> items.
+<li>Resolved
+<A href="db/si/donecritical.html">critical</A>,
+<A href="db/si/donegrave.html">grave</A> and
+<A href="db/si/donenormal.html">normal</A> $gBugs and
+<A href="db/si/donewishlist.html">wishlist</A> items.
+<li><A href="db/ix/psummary.html">Summary of outstanding reports, sorted by package.</A>
+<li><A href="db/ix/summary.html">Summary of outstanding reports, sorted by number.</A>
+<li><A href="db/ju/junk.html">Logs not associated with a particular $gBug report.</A>
+<li><A href="db/ix/zstamp.html">Time stamp page (for checking that mirror is current).</A>
+</ul>
+
+Each closed $gBug report is expired from these logs $gRemoveAge days after the
+last message relating to it is received and filed.
+
+<h3>Find a $gBug report by reference number</h2>
+
+<form method="get" action="$gCGIDomain/bugs-fetch2.pl">
+<input type="hidden" name="type" value="ref">
+<input type="text" size="10" name="ref" value="">
+<input type="hidden" name="base" value="http://$gWebDomain">
+<input type="submit" value="Fetch">
+</form>
+`Not found' means that the $gBug was closed and expired or
+never existed, or that this mirror has not yet recorded that $gBug - see
+also the <A href="db/ix/zstamp.html">timestamp page</A>.
+
+<h3>Find a $gBug report by package</h2>
+
+<form method="get" action="$gCGIDomain/bugs-fetch2.pl">
+<input type="hidden" name="type" value="package">
+<input type="text" size="30" name="package" value="">
+<input type="hidden" name="base" value="http://$gWebDomain">
+<input type="submit" value="Fetch">
+</form>
+`Not found' means that that package does not exist or does not have
+any outstanding or recently closed $gBug reports.
+
+$gHTMLOtherPages
+
+$gHTMLTail
+
+HTML_END
+

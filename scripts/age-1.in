@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+cd /var/lib/debbugs/spool
+test -f ./-3.log && rm ./-3.log
+test -f ./-2.log && mv ./-2.log ./-3.log
+test -f ./-1.log && mv ./-1.log ./-2.log
+rm -f ../stamp.html

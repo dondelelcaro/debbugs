@@ -1,0 +1,837 @@
+#!/usr/bin/perl
+#
+# Usage: process nn
+# Temps:  incoming/Pnn
+
+use Mail::Address;
+require( '/etc/debbugs/config' );
+require( '/usr/lib/debbugs/errorlib' );
+chdir( "$gSpoolDir" ) || die 'chdir spool: $!\n';
+@showseverities=();
+
+#open(DEBUG,"> /tmp/debbugs.debug");
+
+defined( $intdate= time ) || &quit( "failed to get time: $!" );
+
+$_=shift;
+m/^([BMQFDU])(\d*)\.\d+$/ || &quit("bad argument");
+$codeletter= $1;
+$tryref= length($2) ? $2+0 : -1;
+$nn= $_;
+
+if (!rename("incoming/G$nn","incoming/P$nn")) {
+    $_=$!.'';  m/no such file or directory/i && exit 0;
+    &quit("renaming to lock: $!");
+}    
+
+$baddress= 'bugs' if $codeletter eq 'B';
+$baddress= 'maintonly' if $codeletter eq 'M';
+$baddress= 'quiet' if $codeletter eq 'Q';
+$baddress= 'forwarded' if $codeletter eq 'F';
+$baddress= 'done' if $codeletter eq 'D';
+$baddress= 'submitter' if $codeletter eq 'U';
+$baddress || &quit("bad codeletter $codeletter");
+$baddressroot= $baddress;
+$baddress= "$tryref-$baddress" if $tryref>=0;
+
+open(M,"incoming/P$nn");
+@log=<M>;
+close(M);
+
+@msg=@log;
+grep(s/\n+$//,@msg);
+
+print DEBUG "###\n",join("##\n",@msg),"\n###\n";
+
+chop($tdate= `date -u '+%a, %d %h 19%y %T GMT'`);
+$fwd= <<END;
+X-Loop: $gMaintainerEmail
+Received: via spool by $baddress\@$gEmailDomain id=$nn
+          (code $codeletter ref $tryref); $tdate
+END
+
+for ($i=0; $i<=$#msg; $i++) {
+    $_ = $msg[$i];
+    last unless length($_);
+    &quit("looping detected") if m/^x-loop: (\S+)$/i && $1 eq "$gMaintainerEmail";
+    $ins= !m/^subject:/i && !m/^reply-to:/i && !m/^return-path:/i
+       && !m/^From / && !m/^X-$gProjct-Message:/i && !m/^received:/i;
+    $fwd .= $_."\n" if $ins;
+    while ($msg[$i+1] =~ m/^\s/) {
+        $i++;
+        $fwd .= $msg[$i]."\n" if $ins;
+        $_ .= ' '.$msg[$i];
+    }
+# print DEBUG ">$_<\n";
+    if (s/^(\S+):\s*//) {
+        $v= $1; $v =~ y/A-Z/a-z/;
+print DEBUG ">$v=$_<\n";
+        $header{$v}= $_;
+    } else {
+print DEBUG "!>$_<\n";
+    }
+}
+
+while ($i <= $#msg && !length($msg[$i])) { $fwd .= "\n"; $i++; }
+
+while ($msg[$i] =~ m/^(\w+):\s*/) {
+    $fn=$1; $fv = $';
+print DEBUG ">$fn|$'|\n";
+    $fwd .= $fn.': '.$fv."\n";
+    while ($msg[++$i] =~ m/^\s/) { $fwd .= $msg[$i]."\n"; $fv .= ' '.$msg[$i]; }
+    $fn =~ y/A-Z/a-z/;
+    $pheader{$fn}= $fv;
+print DEBUG ">$fn~$fv<\n";
+}
+
+$fwd .= join("\n",@msg[$i..$#msg]);
+
+print DEBUG "***\n$fwd\n***\n";
+
+defined($header{'from'}) || &quit("no From header");
+$replyto= defined($header{'reply-to'}) ? $header{'reply-to'} : $header{'from'};
+
+$_= $replyto;
+$_= "$2 <$1>" if m/^([^\<\> \t\n\(\)]+) \(([^\(\)\<\>]+)\)$/;
+$replytocompare= $_;
+print DEBUG "replytocompare >$replytocompare<\n";
+    
+if (!defined($header{'subject'})) {
+    $brokenness.= <<END;
+
+Your message did not contain a Subject field.  This is broken, I am
+afraid - the Subject: line is a Required Header according to RFC822.
+Please remember to include a Subject field in your messages in future.
+If you did so the fact that it got lost probably indicates a poorly
+configured mail system at your site or an intervening one.
+END
+    $subject= '(no subject)';
+} else {
+    $subject= $header{'subject'};
+}
+
+$ref=-1;
+$subject =~ s/^Re:\s*//i; $_= $subject."\n";
+if ($tryref < 0 && m/^Bug ?\#(\d+)\D/i) {
+    $tryref= $1+0;
+}
+if ($tryref >= 0) {
+    $bfound= &lockreadbugmerge($tryref);
+    if ($bfound) {
+	$ref= $tryref;
+    } else {
+		&htmllog("Reply","sent", $replyto,"Unknown problem report number <code>$tryref</code>.");
+        &sendmessage(<<END, '');
+From: $gMaintainerEmail ($Maintainer)
+To: $replyto
+Subject: Unknown problem report $gBug#$tryref ($subject)
+Message-ID: <handler.x.$nn.unknown\@$gEmailDomain>
+In-Reply-To: $header{'message-id'}
+References: $header{'message-id'} $s_msgid
+X-$gProject-PR-Message: error
+
+You sent a message to the $gBug tracking system which gave (in the
+Subject line or encoded into the recipient at $gEmailDomain),
+the number of a nonexistent $gBug report (#$tryref).
+
+This may be because that $gBug report has been resolved for more than $gRemoveAge
+days, and the record of it has been expunged, or because you mistyped
+the $gBug report number.
+
+Your message was dated $header{'date'} and was sent to
+$baddress\@$gEmailDomain.  It had
+Message-ID $header{'message-id'}
+and Subject $subject.
+
+It has been filed (under junk) but otherwise ignored.
+
+Please consult your records to find the correct $gBug report number, or
+contact me, the system administrator, for assistance.
+
+$gMaintainer
+(administrator, $gProject $gBugs database)
+
+(NB: If you are a system administrator and have no idea what I am
+talking about this indicates a serious mail system misconfiguration
+somewhere.  Please contact me immediately.)
+
+END
+		&appendlog;
+        &finish;
+    }
+} else {
+    &filelock('lock/-1');
+}
+
+if ($codeletter eq 'D' || $codeletter eq 'F') {
+    if ($replyto =~ m/$gBounceFroms/o ||
+	$header{'from'} =~ m/$gBounceFroms/o) {
+		&quit("bounce detected !  Mwaap! Mwaap!");
+    }
+    $markedby= $header{'from'} eq $replyto ? $replyto :
+               "$header{'from'} (reply to $replyto)";
+    if ($codeletter eq 'F') {
+        (&appendlog,&finish) if length($s_forwarded);
+        $receivedat= "forwarded\@$gEmailDomain";
+        $markaswhat= 'forwarded';
+        $set_forwarded= $header{'to'};
+		if ( length( $gListDomain ) > 0 && length( $gFowardList ) > 0 ) {
+        	$generalcc= "$gFowardList\@$gListDomain";
+		} else {
+			$generalcc='';
+		}
+    } else {
+        (&appendlog,&finish) if length($s_done);
+        $receivedat= "done\@$gEmailDomain";
+        $markaswhat= 'done';
+        $set_done= $header{'from'};
+		if ( length( $gListDomain ) > 0 && length( $gDoneList ) > 0 ) {
+        	$generalcc= "$gDoneList\@$gListDomain";
+		} else {
+			$generalcc='';
+		}
+    }
+    if ($ref<0) {
+        &htmllog("Warning","sent",$replyto,"Message ignored.");
+        &sendmessage(<<END, '');
+From: $gMaintainerEmail
+To: $replyto
+Subject: Message with no $gBug number ignored by $receivedat
+         ($subject)
+Message-ID: <header.x.$nn.warnignore\@$gEmailDomain>
+In-Reply-To: $header{'message-id'}
+References: $header{'message-id'} $s_msgid
+X-$gProject-PR-Message: error
+
+You sent a message to the $gProject $gBug tracking system old-style
+unified mark as $markaswhat address ($receivedat),
+without a recognisable $gBug number in the Subject.
+Your message has been filed under junk but otherwise ignored.
+
+If you don't know what I'm talking about then probably either:
+
+(a) you unwittingly sent a message to done\@$gEmailDomain
+because you replied to all recipients of the message a developer used
+to mark a $gBug as done and you modified the Subject.  In this case,
+please do not be alarmed.  To avoid confusion do not do it again, but
+there is no need to apologise or mail anyone asking for an explanation.
+
+(b) you are a system administrator, reading this because the $gBug 
+tracking system is responding to a misdirected bounce message.  In this
+case there is a serious mail system misconfiguration somewhere - please
+contact me immediately.
+
+Your message was dated $header{'date'} and had
+message-id $header{'message-id'}
+and subject $subject.
+
+If you need any assistance or explanation please contact me.
+
+$gMaintainer
+(administrator, $gProject $gBugs database)
+
+END
+		&appendlog;
+		&finish;
+    }
+    &checkmaintainers;
+    $noticeccval.= join(', ', grep($_ ne $replyto,@maintaddrs));
+    $noticeccval =~ s/\s+\n\s+/ /g; $noticeccval =~ s/^\s+/ /; $noticeccval =~ s/\s+$//;
+    if (length($noticeccval)) { $noticecc= "Cc: $noticeccval\n"; }
+	if (length($generalcc)) { $noticecc.= "Bcc: $generalcc\n"; }
+    @process= ($ref,split(/ /,$s_mergedwith));
+    $orgref= $ref;
+    for $ref (@process) {
+	if ($ref != $orgref) {
+	    &unfilelock;
+	    &lockreadbug($ref) || die "huh ? $ref from $orgref out of @process";
+	}
+        $s_done= $set_done if defined($set_done);
+        $s_forwarded= $set_forwarded if defined($set_forwarded);
+		&overwrite("db/$ref.status",
+        	   "$s_originator\n$s_date\n$s_subject\n$s_msgid\n".
+                   "$s_package\n$s_keywords\n$s_done\n$s_forwarded\n$s_mergedwith\n$s_severity\n");
+        open(O,"db/$ref.report") || &quit("read original report: $!");
+        $x= join('',<O>); close(O);
+        if ($codeletter eq 'F') {
+            &htmllog("Reply","sent",$replyto,"You have marked $gBug as forwarded.");
+            &sendmessage(<<END.$x, '');
+From: $gMaintainerEmail ($gMaintainer)
+To: $replyto
+${noticecc}Subject: $gBug#$ref: marked as forwarded ($s_subject)
+Message-ID: <header.$ref.$nn.ackfwdd\@$gEmailDomain>
+In-Reply-To: $header{'message-id'}
+References: $header{'message-id'} $s_msgid
+X-$gProject-PR-Message: forwarded $ref
+
+Your message dated $header{'date'}
+with message-id $header{'message-id'}
+and subject line $subject
+has caused the $gProject $gBug report #$ref,
+regarding $s_subject
+to be marked as having been forwarded to the upstream software
+author(s) $s_forwarded.
+
+(NB: If you are a system administrator and have no idea what I am
+talking about this indicates a serious mail system misconfiguration
+somewhere.  Please contact me immediately.)
+
+$gMaintainer
+(administrator, $gProject $gBugs database)
+
+END
+        } else {    
+            &htmllog("Reply","sent",$replyto,"You have taken responsibility.");
+            &sendmessage(<<END.$x, '');
+From: $gMaintainerEmail ($gMaintainer)
+To: $replyto
+${noticecc}Subject: $gBug#$ref: marked as done ($s_subject)
+Message-ID: <handler.$ref.$nn.ackdone\@$gEmailDomain>
+In-Reply-To: $header{'message-id'}
+References: $header{'message-id'} $s_msgid
+X-$gProject-PR-Message: closed $ref
+
+Your message dated $header{'date'}
+with message-id $header{'message-id'}
+and subject line $subject
+has caused the attached $gBug report to be marked as done.
+
+This means that you claim that the problem has been dealt with.
+If this is not the case it is now your responsibility to reopen the
+$gBug report if necessary, and/or fix the problem forthwith.
+
+(NB: If you are a system administrator and have no idea what I am
+talking about this indicates a serious mail system misconfiguration
+somewhere.  Please contact me immediately.)
+
+$gMaintainer
+(administrator, $gProject $gBugs database)
+
+END
+            &htmllog("Notification","sent",$s_originator,
+	             "$gBug acknowledged by developer.");
+            &sendmessage(<<END.join("\n",@msg),'');
+From: $gMaintainerEmail ($gMaintainer)
+To: $s_originator
+Subject: $gBug#$ref acknowledged by developer ($s_subject)
+Message-ID: <handler.$ref.$nn.notifdone\@$gEmailDomain>
+In-Reply-To: $s_msgid
+References: $header{'message-id'} $s_msgid
+X-$gProject-PR-Message: they-closed $ref
+
+This is an automatic notification regarding your $gBug report.
+
+It has been closed by one of the developers, namely
+$markedby.
+
+Their explanation is attached below.  If this explanation is
+unsatisfactory and you have not received a better one in a separate
+message then please contact the developer directly, or email
+submit\@$gEmailDomain or me.
+
+$gMaintainer
+(administrator, $gProject $gBugs database)
+
+END
+        }
+	&appendlog;
+    }
+    &finish;
+}
+
+if ($ref<0) {
+    if ($codeletter eq 'U') {
+        &htmllog("Warning","sent",$replyto,"Message not forwarded.");
+        &sendmessage(<<END, '');
+From: $gMaintainerEmail ($gMaintainer)
+To: $replyto
+Subject: Message with no $gBug number cannot be sent to submitter !
+         ($subject)
+Message-ID: <handler.x.$nn.nonumnosub\@$gEmailDomain>
+In-Reply-To: $header{'message-id'}
+References: $header{'message-id'} $s_msgid
+X-$gProject-PR-Message: error
+
+You sent a message to the $gProject $gBug tracking system send to $gBug 
+report submitter address $baddress\@$gEmailDomain, without a
+recognisable $gBug number in the Subject.  Your message has been filed
+under junk but otherwise ignored.
+
+If you don't know what I'm talking about then probably either:
+
+(a) you unwittingly sent a message to $baddress\@$gEmailDomain
+because you replied to all recipients of the message a developer sent
+to a $gBug's submitter and you modified the Subject.  In this case,
+please do not be alarmed.  To avoid confusion don't do it again, but
+there is no need to apologise or mail anyone asking for an
+explanation.
+
+(b) you are a system administrator, reading this because the $gBug 
+tracking system is responding to a misdirected bounce message.  In this
+case there is a serious mail system misconfiguration somewhere - please
+contact me immediately.
+
+Your message was dated $header{'date'} and had
+message-id $header{'message-id'}
+and subject $subject.
+
+If you need any assistance or explanation please contact me.
+
+$gMaintainer
+(administrator, $gProject $gBugs database)
+
+END
+	&appendlog;
+	&finish;
+    }
+    if (!defined($pheader{'package'})) {
+        $brokenness.= <<END;
+
+Your message didn't have a Package: line at the start (in the
+pseudo-header following the real mail header), or didn't have a
+psuedo-header at all.
+
+This makes it much harder for us to categorise and deal with your
+problem report; please ensure that you say which package(s) and
+version(s) the problem is with next time.  Some time in the future the
+problem reports system may start rejecting such messages.
+END
+    } else {
+        $s_package= $pheader{'package'};
+    }
+    if (defined($pheader{'keywords'})) {
+        $s_keywords= $pheader{'keywords'};
+    }
+    $s_severity= '';
+    if (defined($pheader{'severity'})) {
+        $s_severity= $pheader{'severity'};
+	if (!grep($_ eq $s_severity, @severities, "$gDefaultSeverity")) {
+            $brokenness.= <<END;
+
+Your message specified a Severity: in the psuedo-header, but
+the severity value $s_severity was not recognised.
+The default severity $gDefaultSeverity is being used instead.
+The recognised values are: @showseverities.
+END
+            $s_severity= '';
+        }
+    }
+    &filelock("nextnumber.lock");
+    open(N,"nextnumber") || &quit("nextnumber: read: $!");
+    $v=<N>; $v =~ s/\n$// || &quit("nextnumber bad format");
+    $ref= $v+0;  $v += 1;  $newref=1;
+    &overwrite('nextnumber', "$v\n");
+    &unfilelock;
+    &overwrite("db/$ref.log",'');
+    &overwrite("db/$ref.status",
+               "$replyto\n$intdate\n$subject\n$header{'message-id'}\n".
+               "$s_package\n$s_keywords\n\n\n\n$s_severity\n");
+    &overwrite("db/$ref.report",
+               join("\n",@msg)."\n");
+}
+
+&checkmaintainers;
+
+print DEBUG "maintainers >@maintaddrs<\n";
+
+$orgsender= defined($header{'sender'}) ? "Orignal-Sender: $header{'sender'}\n" : '';
+$newsubject= $subject;  $newsubject =~ s/^$gBug#$ref\W*\s*//;
+
+$xcchdr= $header{dbc_xcc_hdr};
+if ($xcchdr =~ m/\S/) {
+    push(@resentccs,$xcchdr);
+    $resentccexplain.= <<END;
+
+As you requested using X-$gProject-CC, your message was also forwarded to
+   $xcchdr
+(after having been given a $gBug report number, if it did not have one).
+END
+}
+
+if (@maintaddrs && ($codeletter eq 'B' || $codeletter eq 'M')) {
+    push(@resentccs,@maintaddrs);
+    $resentccexplain.= <<END." ".join("\n ",@maintaddrs)."\n";
+
+Your message has been sent to the package maintainer(s):
+END
+}
+
+$veryquiet= $codeletter eq 'Q';
+if ($codeletter eq 'M' && !@maintaddrs) {
+    $veryquiet= 1;
+    $brokenness.= <<END;
+
+You requested that the message be sent to the package maintainer(s)
+but either the $gBug report is not associated with any package (probably
+because of a missing Package psuedo-header field in the original $gBug
+report), or the package(s) specified do not have any maintainer(s).
+
+Your message has *not* been sent to any package maintainers; it has
+merely been filed in the $gBug tracking system.  If you require assistance
+please contact $gMaintainerEmail quoting the $gBug number $ref.
+END
+}
+
+$resentccval.= join(', ',@resentccs);
+$resentccval =~ s/\s+\n\s+/ /g; $resentccval =~ s/^\s+/ /; $resentccval =~ s/\s+$//;
+if (length($resentccval)) { $resentcc= "Resent-CC: $resentccval\n"; }
+
+if ($codeletter eq 'U') {
+    &htmllog("Message", "sent on", $s_originator, "$gBug#$ref.");
+    &sendmessage(<<END,$s_originator,@resentccs);
+Subject: $gBug#$ref: $newsubject
+Reply-To: $replyto, $ref-quiet\@$gEmailDomain
+${orgsender}Resent-To: $s_originator
+${resentcc}Resent-Date: $tdate
+Resent-Message-ID: <handler.$ref.$nn\@$gEmailDomain>
+Resent-Sender: $gMaintainerEmail
+X-$gProject-PR-Message: report $ref
+X-$gProject-PR-Package: $s_package
+X-$gProject-PR-Keywords: $s_keywords
+$fwd
+END
+} elsif ($codeletter eq 'B') {
+    &htmllog($newref ? "Report" : "Information", "forwarded",
+             join(', ',"$gSubmitList\@$gListDomain",@resentccs),
+             "<code>$gBug#$ref</code>".
+             (length($s_package)? "; Package <code>".&sani($s_package)."</code>" : '').
+             (length($s_keywords)? "; Keywords <code>".&sani($s_keywords)."</code>":'').
+             ".");
+    &sendmessage(<<END,"$gSubmitList\@$gListDomain",@resentccs);
+Subject: $gBug#$ref: $newsubject
+Reply-To: $replyto, $ref\@$gEmailDomain
+Resent-From: $header{'from'}
+${orgsender}Resent-To: $gSubmitList\@$gListDomain
+${resentcc}Resent-Date: $tdate
+Resent-Message-ID: <handler.$ref.$nn\@$gEmailDomain>
+Resent-Sender: $gMaintainerEmail
+X-$gProject-PR-Message: report $ref
+X-$gProject-PR-Package: $s_package
+X-$gProject-PR-Keywords: $s_keywords
+$fwd
+END
+} elsif (@resentccs) {
+    # D and F done far earlier; B just done - so this must be M or Q
+    # We preserve whichever it was in the Reply-To (possibly adding
+    # the $gBug#).
+    &htmllog($newref ? "Report" : "Information", "forwarded",
+             $resentccval,
+             "<code>$gBug#$ref</code>".
+             (length($s_package)? "; Package <code>".&sani($s_package)."</code>" : '').
+             (length($s_keywords)? "; Keywords <code>".&sani($s_keywords)."</code>":'').
+             ".");
+    &sendmessage(<<END,@resentccs);
+Subject: $gBug#$ref: $newsubject
+Reply-To: $replyto, $ref-$baddressroot\@$gEmailDomain
+Resent-From: $header{'from'}
+${orgsender}Resent-To: $resentccval
+Resent-Date: $tdate
+Resent-Message-ID: <handler.$ref.$nn\@$gEmailDomain>
+Resent-Sender: $gMaintainerEmail
+X-$gProject-PR-Message: report $ref
+X-$gProject-PR-Package: $s_package
+X-$gProject-PR-Keywords: $s_keywords
+$fwd
+END
+}
+
+$htmlbreak= length($brokenness) ? "<p>\n".&sani($brokenness)."\n<p>\n" : '';
+$htmlbreak =~ s/\n\n/\n<P>\n\n/g;
+if (length($resentccval)) {
+    $htmlbreak =
+        "  Copy sent to <code>".&sani($resentccval)."</code>.".
+        $htmlbreak;
+}
+if ($newref) {
+    &htmllog("Acknowledgement","sent",$replyto,
+             ($veryquiet ?
+              "New $gBug report received and filed, but not forwarded." :
+              "New $gBug report received and forwarded."). $htmlbreak);
+    &sendmessage($veryquiet ? <<END : $codeletter eq 'M' ? <<END : <<END,'');
+From: $gMaintainerEmail ($gMaintainer)
+To: $replyto
+Subject: $gBug#$ref: Acknowledgement of QUIET report
+         ($subject)
+Message-ID: <handler.$ref.$nn.ackquiet\@$gEmailDomain>
+In-Reply-To: $header{'message-id'}
+References: $header{'message-id'}
+X-$gProject-PR-Message: ack-quiet $ref
+
+Thank you for the problem report you have sent regarding $gProject.
+This is an automatically generated reply, to let you know your message
+has been received.  It has not been forwarded to the developers or
+their mailing list; you should ensure that the developers are aware of
+the problem you have entered into the system - preferably quoting the
+$gBug reference number, #$ref.
+$resentccexplain
+If you wish to submit further information on your problem, please send it
+to $ref-$baddressroot\@$gEmailDomain (and *not*
+to $baddress\@$gEmailDomain).
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the $gBug-tracking system.
+$brokenness
+$gMaintainer
+(administrator, $gProject $gBugs database)
+END
+From: $gMaintainerEmail ($gMaintainer)
+To: $replyto
+Subject: $gBug#$ref: Acknowledgement of maintainer-only report
+         ($subject)
+Message-ID: <handler.$ref.$nn.ackmaint\@$gEmailDomain>
+In-Reply-To: $header{'message-id'}
+References: $header{'message-id'}
+X-$gProject-PR-Message: ack-maintonly $ref
+
+Thank you for the problem report you have sent regarding $gProject.
+This is an automatically generated reply, to let you know your message has
+been received.  It is being forwarded to the developers (but not the mailing
+list, as you requested) for their attention; they will reply in due course.
+$resentccexplain
+If you wish to submit further information on your problem, please send
+it to $ref-$baddressroot\@$gEmailDomain (and *not*
+to $baddress\@$gEmailDomain).
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the $gBug-tracking system.
+$brokenness
+$gMaintainer
+(administrator, $gProject $gBugs database)
+END
+From: $gMaintainerEmail ($gMaintainer)
+To: $replyto
+Subject: $gBug#$ref: Acknowledgement ($subject)
+Message-ID: <handler.$ref.$nn.ack\@$gEmailDomain>
+In-Reply-To: $header{'message-id'}
+References: $header{'message-id'}
+X-$gProject-PR-Message: ack $ref
+
+Thank you for the problem report you have sent regarding $gProject.
+This is an automatically generated reply, to let you know your message has
+been received.  It is being forwarded to the developers mailing list for
+their attention; they will reply in due course.
+$resentccexplain
+If you wish to submit further information on your problem, please send
+it to $ref\@$gEmailDomain (and *not* to
+$baddress\@$gEmailDomain).
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the $gBug-tracking system.
+$brokenness
+$gMaintainer
+(administrator, $gProject $gBugs database)
+END
+} elsif ($codeletter ne 'U') {
+    &htmllog("Acknowledgement","sent",$replyto,
+             ($veryquiet ? "Extra info received and filed, but not forwarded." :
+              $codeletter eq 'M' ? "Extra info received and forwarded to maintainer." :
+              "Extra info received and forwarded to list."). $htmlbreak);
+    &sendmessage($veryquiet ? <<END : $codeletter eq 'M' ? <<END : <<END,'');
+From: $gMaintainerEmail ($gMaintainer)
+To: $replyto
+Subject: $gBug#$ref: Info received and FILED only
+         (was $subject)
+Message-ID: <handler.$ref.$nn.ackinfoquiet\@$gEmailDomain>
+In-Reply-To: $header{'message-id'}
+References: $header{'message-id'}
+X-$gProject-PR-Message: ack-info-quiet $ref
+
+Thank you for the additional information you have supplied regarding
+this problem report.  It has NOT been forwarded to the developers, but
+will accompany the original report in the $gBug tracking system.  Please
+ensure that you yourself have sent a copy of the additional
+information to any relevant developers or mailing lists.
+$resentccexplain
+If you wish to continue to submit further information on your problem,
+please send it to $ref-$baddressroot\@$gEmailDomain, as before.
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the $gBug-tracking system.
+$brokenness
+$gMaintainer
+(administrator, $gProject $gBugs database)
+END
+From: $gMaintainerEmail ($gMaintainer)
+To: $replyto
+Subject: $gBug#$ref: Info received for maintainer only
+         (was $subject)
+Message-ID: <handler.$ref.$nn.ackinfomaint\@$gEmailDomain>
+In-Reply-To: $header{'message-id'}
+References: $header{'message-id'}
+X-$gProject-PR-Message: ack-info $ref
+
+Thank you for the additional information you have supplied regarding
+this problem report.  It has been forwarded to the developer(s) (but
+not to the mailing list) to accompany the original report.
+$resentccexplain
+If you wish to continue to submit further information on your problem,
+please send it to $ref-$baddressroot\@$gEmailDomain, as before.
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the $gBug-tracking system.
+$brokenness
+$gMaintainer
+(administrator, $gProject $gBugs database)
+END
+From: $gMaintainerEmail ($gMaintainer)
+To: $replyto
+Subject: $gBug#$ref: Info received (was $subject)
+Message-ID: <handler.$ref.$nn.ackinfo\@$gEmailDomain>
+In-Reply-To: $header{'message-id'}
+References: $header{'message-id'}
+X-$gProject-PR-Message: ack-info-maintonly $ref
+
+Thank you for the additional information you have supplied regarding
+this problem report.  It has been forwarded to the developer(s) and
+to the developers mailing list to accompany the original report.
+$resentccexplain
+If you wish to continue to submit further information on your problem,
+please send it to $ref\@$gEmailDomain, as before.
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the $gBug-tracking system.
+$brokenness
+$gMaintainer
+(administrator, $gProject $gBugs database)
+END
+}
+
+&appendlog;
+&finish;
+
+sub overwrite {
+    local ($f,$v) = @_;
+    open(NEW,">$f.new") || &quit("$f.new: create: $!");
+    print(NEW "$v") || &quit("$f.new: write: $!");
+    close(NEW) || &quit("$f.new: close: $!");
+    rename("$f.new","$f") || &quit("rename $f.new to $f: $!");
+}
+
+sub appendlog {
+    if (!open(AP,">>db/$ref.log")) {
+        print DEBUG "failed open log<\n";
+        print DEBUG "failed open log err $!<\n";
+        &quit("opening db/$ref.log (li): $!");
+    }
+    print(AP "\7\n",@log,"\n\3\n") || &quit("writing db/$ref.log (li): $!");
+    close(AP) || &quit("closing db/$ref.log (li): $!");
+}
+
+sub finish {
+    utime(time,time,"db");
+    local ($u);
+    while ($u= $cleanups[$#cleanups]) { &$u; }
+    unlink("incoming/P$nn") || &quit("unlinking incoming/P$nn: $!");
+    exit $_[0];
+}
+
+&quit("wot no exit");
+
+sub chldhandle { $chldexit = 'yes'; }
+
+sub htmllog {
+    local ($whatobj,$whatverb,$where,$desc) = @_;
+    open(AP,">>db/$ref.log") || &quit("opening db/$ref.log (lh): $!");
+    print(AP
+          "\6\n".
+          "<strong>$whatobj $whatverb</strong> to <code>".&sani($where).
+          "</code>:<br>\n". $desc.
+          "\n\3\n") || &quit("writing db/$ref.log (lh): $!");
+    close(AP) || &quit("closing db/$ref.log (lh): $!");
+}    
+
+sub get_addresses {
+	return
+   		map { $_->address() }
+   		map { Mail::Address->parse($_) } @_;
+}
+
+
+sub sendmessage {
+    local ($msg,@recips) = @_;
+    if ($recips[0] eq '' && $#recips == 0) { @recips= ('-t'); }
+    open(AP,">>db/$ref.log") || &quit("opening db/$ref.log (lo): $!");
+    print(AP "\2\n",join("\4",@recips),"\n\5\n$msg\n\3\n") ||
+        &quit("writing db/$ref.log (lo): $!");
+    close(AP) || &quit("closing db/$ref.log (lo): $!");
+    
+    print DEBUG "mailing to >",join('|',@recips),"<\n";
+    $SIG{'CHLD'}='chldhandle';
+	#print DEBUG "mailing sigchild set up<\n";
+	$chldexit = 'no';
+    $c= open(U,"-|");
+	#print DEBUG "mailing opened pipe fork<\n";
+    defined($c) || die $!;
+	#print DEBUG "mailing opened pipe fork ok $c<\n";
+    if (!$c) { # ie, we are in the child process
+		#print DEBUG "mailing child<\n";
+        unless (open(STDERR,">&STDOUT")) {
+			#print DEBUG "mailing child opened stderr<\n";
+            print STDOUT "redirect stderr: $!\n";
+			#print DEBUG "mailing child opened stderr fail<\n";
+            exit 1;
+			#print DEBUG "mailing child opened stderr fail exit !?<\n";
+        }
+		#print DEBUG "mailing child opened stderr ok<\n";
+        $c= open(D,"|-");
+		#print DEBUG "mailing child forked again<\n";
+        defined($c) || die $!;
+		#print DEBUG "mailing child forked again ok $c<\n";
+        if (!$c) { # ie, we are the child process
+			#print DEBUG "mailing grandchild<\n";
+            exec '/usr/lib/sendmail','-f'."$gMaintainerEmail",'-odi','-oem','-oi',get_addresses(@recips);
+			#print DEBUG "mailing grandchild exec failed<\n";
+            die $!;
+			#print DEBUG "mailing grandchild died !?<\n";
+        }
+		#print DEBUG "mailing child not grandchild<\n";
+        print(D $msg) || die $!;
+		#print DEBUG "mailing child printed msg<\n";
+        close(D);
+		#print DEBUG "mailing child closed pipe<\n";
+        die "\n*** command returned exit status $?\n" if $?;
+		#print DEBUG "mailing child exit status ok<\n";
+        exit 0;
+		#print DEBUG "mailing child exited ?!<\n";
+    }
+	#print DEBUG "mailing parent<\n";
+    $results='';
+	#print DEBUG "mailing parent results emptied<\n";
+    while( $chldexit eq 'no' ) { $results.= $_; }
+	#print DEBUG "mailing parent results read >$results<\n";
+    close(U);
+	#print DEBUG "mailing parent results closed<\n";
+    $results.= "\n*** child returned exit status $?\n" if $?;
+	#print DEBUG "mailing parent exit status ok<\n";
+    $SIG{'CHLD'}='DEFAULT';
+	#print DEBUG "mailing parent sigchild default<\n";
+    if (length($results)) { &quit("running sendmail: $results"); }
+	#print DEBUG "mailing parent results ok<\n";
+}
+
+sub checkmaintainers {
+    return if $maintainerschecked++;
+    return if !length($s_package);
+    open(MAINT,"$gMaintainerFile") || die &quit("maintainers open: $!");
+    while (<MAINT>) {
+        m/^(\S+)\s+(\S.*\S)\n$/ || &quit("maintainers bogus \`$_'");
+        $a= $1; $b= $2; $a =~ y/A-Z/a-z/;
+        $maintainerof{$1}= $2;
+    }
+    close(MAINT);
+    $anymaintfound=0; $anymaintnotfound=0;
+    for $p (split(m/[ \t?,()]+/,$s_package)) {
+        $p =~ y/A-Z/a-z/;
+        if (defined($maintainerof{$p})) {
+print DEBUG "maintainer add >$p|$maintainerof{$p}<\n";
+            $addmaint= $maintainerof{$p};
+            push(@maintaddrs,$addmaint) unless
+                $addmaint eq $replyto || grep($_ eq $addmaint, @maintaddrs);
+            $anymaintfound++;
+        } else {
+print DEBUG "maintainer none >$p<\n";
+            $anymaintnotfound++;
+            last;
+        }
+    }
+}

@@ -1,0 +1,104 @@
+# -*- perl -*-
+
+sub F_SETLK { 6; } sub F_WRLCK{ 1; }
+$flockstruct= 'sslll'; # And there ought to be something for this too.
+
+sub unlockreadbugmerge {
+    local ($rv) = @_;
+    &unfilelock if $rv >= 2;
+    &unfilelock if $rv >= 1;
+}
+
+sub lockreadbugmerge {
+    local ($lref) = @_;
+    if (!&lockreadbug($lref)) { return 0; }
+    if (!length($s_mergedwith)) { return 1; }
+    &unfilelock;
+    &filelock('lock/merge');
+    if (!&lockreadbug($lref)) { &unfilelock; return 0; }
+    return 2;
+}
+
+sub lockreadbug {
+    local ($lref) = @_;
+    &filelock("lock/$lref");
+    if (!open(S,"db/$lref.status")) { &unfilelock; return 0; }
+    chop($s_originator= <S>);
+    chop($s_date= <S>);
+    chop($s_subject= <S>);
+    chop($s_msgid= <S>);
+    chop($s_package= <S>);
+    chop($s_keywords= <S>);
+    chop($s_done= <S>);
+    chop($s_forwarded= <S>);
+    chop($s_mergedwith= <S>);
+    chop($s_severity= <S>);
+    close(S);
+    return 1;
+}
+
+sub filelock {
+    # NB - NOT COMPATIBLE WITH `with-lock'
+    local ($lockfile,$flockpushno,$evalstring,$count,$errors,@s1,@s2) = @_;
+    $flockpushno= $#filelocks+1;
+    $count= 10; $errors= '';
+    for (;;) {
+        $evalstring= "
+            open(FLOCK${flockpushno},\"> \$lockfile\") || die \"open: \$!\";
+            \$flockwant= pack(\$flockstruct,&F_WRLCK,0,0,1,0);".
+                ($] >= 5.000 ? "
+            fcntl(FLOCK$flockpushno,&F_SETLK,\$flockwant) || die \"setlk: \$!\";" : "
+            \$z= syscall(&SYS_fcntl,fileno(FLOCK$flockpushno),&F_SETLK,\$flockwant) < 0
+                 && die \"syscall fcntl setlk: \$!\";") ."
+            (\@s1= lstat(\$lockfile)) || die \"lstat: \$!\";
+            (\@s2= stat(FLOCK$flockpushno)) || die \"fstat: \$!\";
+            join(',',\@s1) eq join(',',\@s2) || die \"file switched\";
+            1;
+        ";
+        last if eval $evalstring;
+        $errors .= $@;
+        eval "close(FLOCK$flockpushno);";
+        if (--$count <=0) {
+            $errors =~ s/\n+$//;
+            &quit("failed to get lock on file $lockfile: $errors // $evalstring");
+        }
+        sleep 10;
+    }
+    push(@cleanups,'unfilelock');
+    push(@filelocks,$lockfile);
+}
+
+sub unfilelock {
+    local ($lockfile) = pop(@filelocks);
+    pop(@cleanups);
+    eval 'close(FLOCK'.($#filelocks+1).');' || warn "failed to close lock file: $!";
+    unlink($lockfile) || warn "failed to remove lock file: $!";
+}
+
+sub quit {
+    print DEBUG "quitting >$_[0]<\n";
+    local ($u);
+    while ($u= $cleanups[$#cleanups]) { &$u; }
+    die "*** $_[0]\n";
+}
+
+%saniarray= ('<','lt', '>','gt', '&','amp', '"','quot');
+
+sub sani {
+    local ($in) = @_;
+    local ($out);
+    while ($in =~ m/[<>&"]/) {
+        $out.= $`. '&'. $saniarray{$&}. ';';
+        $in=$';
+    }
+    $out.= $in;
+    $out;
+}
+
+@severities= @gSeverityList;
+@showseverities= @severities;
+grep ($_= $_ eq '' ? $gDefaultSeverity : $_, @showseverities);
+@strongseverities= @gStrongSeverities;
+%displayshowseverities= %gSeverityDisplay;
+
+1;

@@ -1,0 +1,66 @@
+#domains
+$gEmailDomain = "bugs.benham";		#bugs.debian.org
+$gListDomain = "lists.benham";		#lists.debian.org
+$gWebDomain = "localhost/Bugs";			#www.debian.org/Bugs
+$gDBPath = "Reports";
+$gCGIDomain = "/Bugs/cgi";			#cgi.debian.org
+$gMirrors = "";						#comma seperated list
+
+#Identification
+$gProject = "Benham";					#Debian
+$gProjectTitle = "Benham DebBug Test";		#Debian GNU/Linux
+
+#person responsible for this installation
+$gMaintainer = "owner";					#Ian Jackson
+$gMaintainerWebpage = "http://localhost/benham";			#http://www.debian.org/~iwj
+$gMaintainerEmail = "root\@benham";			#ownder@bugs.debian.org
+
+#directories
+#don't change location of dirs.  They are currently hardcoded.  Variables are
+#for future expantion.
+$gSpoolDir = "/var/lib/debbugs/spool";	#working directory
+$gIncomingDir = "incoming";				#unprocessed emails
+$gWebDir = "/var/lib/debbugs/www";		#base location of web pages
+$gDocDir = "/var/lib/debbugs/www/txt";		#location of doc files
+
+#data files
+$gMaintainerFile = "/etc/debbugs/Maintainers";
+$gPseudoDescFile = "/etc/debbugs/pseudo-packages.description";
+
+#lists
+$gSubmitList = "submit.list";			#debian-bugs-dist@lists
+$gMaintList = "maint.list";				#
+$gQuietList = "quiet.list";				#
+$gFowardList = "foward.list";			#debian-bugs-fowarded@lists
+$gDoneList = "done.list";				#debian-bugs-closed@lists
+$gRequestList = "request.list";
+$gSubmitterList = "submitter.list";
+$gControlList = "control.list";
+$gMirrorList = "mirrors.list";          #sends to all mirrors
+
+#config
+$gMailer='exim';						#valid: exim, qmail and sendmail
+$gBug='bug';
+$gBugs='bugs';
+$gRemoveAge = 28;						#days
+$gDefaultSeverity = 'normal';
+@gStrongSeverities= ('critical','grave');
+@gSeverityList= ('critical','grave','','wishlist');
+%gSeverityDisplay=('critical',"Critical $gBugs",
+                                       'grave',"Grave $gBugs",
+                                       'normal',"Normal $gBugs",,
+                                       'wishlist','Wishlist items');
+
+$gTextInstructions = "Instructions are available from ftp.debian.org 
+and at all Debian mirror sites, in the files:
+   debian/doc/bug-reporting.txt
+   debian/doc/bug-log-access.txt
+   debian/doc/bug-maint-info.txt";
+
+
+
+
+
+
+#dont change
+$gBounceFroms = "^mailer|^da?emon|^post.*mast|^root|^wpuser|^mmdf|^smt.*|\\$emd|^mrgate|^vmmail|^mail.*system|^uucp|-maiser-|^mal\@|^mail.*agent|^tcpmail|^bitmail|^mailman";

@@ -1,0 +1,70 @@
+debbugs (2.2-3) unstable; urgency=low
+
+  * Perl Depends change
+
+ -- Darren Benham <gecko@debian.org>  Tue, 27 Jul 1999 11:27:22 -0700
+
+debbugs (2.2-2) unstable; urgency=low
+
+  * Added mailtools to dependency
+
+ -- Darren Benham <gecko@debian.org>  Thu, 13 May 1999 13:13:15 -0700
+
+debbugs (2.2-1) unstable; urgency=low
+
+  * NATIVE Qmail (mailer) support!  No more "other MTA" needed
+  	for Qmail users!
+  * Improved sendmail support.
+  * Changed lynx dependancies to simply "lynx"
+  * fixed bad spelling in service script (fixes #36205)
+
+ -- Darren Benham <gecko@debian.org>  Thu,  8 Apr 1999 16:00:32 -0700
+
+debbugs (2.1-1) unstable; urgency=low
+
+  * Added variable in "bad email" message (receive)
+  * Fixed SUBSTITUTE_DTIME in main html pages
+  * Changed crontab sample (had bad directories)
+  * Added some documentation for MTA setup
+  * Added support for sendmail
+  * Removed use of btoa to move change around.  It's non-free.
+
+ -- Darren Benham <gecko@debian.org>  Thu,  1 Apr 1999 14:17:01 -0800
+
+debbugs (2.0-1) unstable; urgency=low
+
+  * First public release of deb
+  * Config modification implemented
+
+ -- Darren Benham <gecko@debian.org>  Sat, 27 Mar 1999 10:37:37 -0800
+
+debbugs (1.0-4) unstable; urgency=low
+
+  * Tried a stopgap measure for config files
+
+ -- Darren Benham <gecko@debian.org>  Mon, 15 Feb 1999 22:11:08 -0800
+
+debbugs (1.0-3) unstable; urgency=low
+
+  * $gListDomain yet again
+  * removed nextnumber, config and text from deb for time bing
+
+ -- Darren Benham <gecko@debian.org>  Wed, 10 Feb 1999 11:09:47 -0800
+
+debbugs (1.0-2) unstable; urgency=low
+
+  * internal release
+  * fixed scripting bugs in list email
+
+ -- Darren Benham <gecko@debian.org>  Wed, 10 Feb 1999 10:39:18 -0800
+
+debbugs (1.0-1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Darren Benham <gecko@debian.org>  Thu, 21 Jan 1999 20:55:51 -0800
+
+Local variables:
+mode: debian-changelog
+add-log-mailing-address: "gecko@debian.org"
+End:

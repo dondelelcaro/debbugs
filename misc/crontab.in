@@ -1,0 +1,10 @@
+# Example crontab for bugs system.  You can just install the crontab.out
+# version of this file if you like.
+DBC_CRONTAB_MAILTO
+DBC_PROCESS_FREQ	* * *	DBC_SCRIPT_PATH/processall >/dev/null
+DBC_HTMLCHECK_FREQ	* * *	DBC_SCRIPT_PATH/html-control >/dev/null
+22 7			* * *	touch DBC_SPOOL_PATH/db
+23 7			* * 3	DBC_SCRIPT_PATH/age-1
+24 7			* * *	DBC_SCRIPT_PATH/expire >/dev/null
+23 16			* * 5	DBC_SCRIPT_PATH/mailsummary undone >/dev/null
+23 16			* * 2	DBC_SCRIPT_PATH/mailsummary bymaint >/dev/null

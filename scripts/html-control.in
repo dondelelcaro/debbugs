@@ -1,0 +1,93 @@
+#!/usr/bin/perl
+
+use POSIX;
+
+require '/etc/debbugs/config';
+require '/usr/lib/debbugs/errorlib';
+$ENV{'PATH'}= '/usr/lib/debbugs'.$ENV{'PATH'};
+chdir("$gSpoolDir") || die "chdir spool: $!\n";
+#push(@INC,'/usr/lib/debbugs');
+
+&filelock("html.fcntl-lock");
+
+unlink("html-data.gz") || $!==&ENOENT or &quit("remove html-data.gz: $!");
+
+sub nonawful ($) {
+    rename("stamp.html.run","stamp.html") or warn "warning: put back stamp.html: $!";
+    &quit($_[0]);
+}
+
+if (open(US,'updateseqs') && -f 'stamp.html') {
+    chop($lastmain=<US>);
+    chop($lastsub=<US>);
+    close(US);
+
+    $lastsub++;
+    $args= "-diff -stampfile=stamp.html.run";
+    rename("stamp.html","stamp.html.run") or &quit("rename stamp.html: $!");
+} else {
+    $lastsub=0;
+    chop($lastmain=`TZ=GMT date '+%Y%m%d%H%M%S'`);
+    $args= '-full';
+    unlink('stamp.html') || $!==&ENOENT or &quit("excise stale stamp.html: $!");
+}
+
+open(X,">stamp.html.new") or &quit("stamp.html.new: $!");
+close(X) or &quit("close stamp.html.new: $!");
+
+open(US,'>updateseqs.new') || &quit("create updateseqs.new: $!");
+print(US "$lastmain\n$lastsub\n") || &quit("write updateseqs.new: $!");
+close(US) || &quit("close updateseqs.new: $!");
+rename('updateseqs.new','updateseqs') or nonawful("install updateseqs: $!");
+
+sub runshell ($&) {
+    my ($cmd,$errhref) = @_;
+    print "xx $cmd\n";
+    system $cmd;
+    !$? && !length($stderr) or &$errhref("$cmd failed - gave $? / $stderr");
+}
+
+$sequences="$lastmain $lastsub";
+$seqmid= $sequences; $seqmid =~ y/ /-/;
+open(MM,">html-data.mail") or nonawful("open html-data.mail: $!");
+if ( length( $gListDomain ) > 0 && length( $gMirrorList ) > 0 ) {
+print(MM <<END
+From: $gMaintainerEmail ($gMaintainer)
+To: $gMirrorList\@$gListDomain
+Subject: $gProject $gBugs autoupdate 259012
+Message-ID: <handle.htmlup.$seqmid\@gEmailDebian>
+X-$gProject=PR: update $sequences
+
+END
+      ) or nonawful("write html-data.mail header: $!");
+} else {
+print(MM <<END
+From: $gMaintainerEmail ($gMaintainer)
+To: $gMaintainerEmail
+Subject: $gProject $gBugs autoupdate 259012
+Message-ID: <handle.htmlup.$seqmid\@gEmailDebian>
+X-$gProject=PR: update $sequences
+
+END
+      ) or nonawful("write html-data.mail header: $!");
+}
+close(MM) or nonawful("close html-data.mail: $!");
+
+runshell("/usr/lib/debbugs/db2html $args 2>&1 >html-data $gWebDir/db",
+         sub { &nonawful; });
+runshell("/usr/lib/debbugs/html-install $gWebDir/db <html-data 2>&1",sub { &quit; });
+runshell("gzip -9 html-data 2>&1",sub { &quit; });
+#runshell("btoa 2>&1 <html-data.gz >>html-data.mail",sub { &quit; });
+#runshell('2>&1 '.join(' ',('/usr/lib/sendmail','-f'."$gMaintainerEmail")).' -oem -oi -t <html-data.mail',
+#         sub { &quit; });
+
+rename("stamp.html.new","stamp.html") or &quit("install new stamp.html: $!");
+
+unlink("html-data.gz") or warn "remove html-data.gz: $!";
+unlink("html-data.mail") or warn "remove html-data.mail: $!";
+unlink("stamp.html.run") || $!==&ENOENT or warn "remove stamp.html.run: $!";
+
+print "sequences $lastmain $lastsub\n";
+
+&unfilelock();
+exit(0);

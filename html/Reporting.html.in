@@ -1,0 +1,191 @@
+$gReportingHtml = <<HTML_END
+<html><head><title>$gProject $gBugs - how to report a $gBug</title>
+<link rev="made" href="mailto:$gMaintainerEmail">
+</head><body>
+<h1>How to report a $gBug in $gProject</h1>
+
+Send mail to
+<A href="mailto:submit\@$gEmailDomain"><code>submit\@$gEmailDomain</code></A>,
+as described below.
+<p>
+
+Please don't report several unrelated $gBugs - especially ones in
+different packages - in one message.  Also, please don't mail your $gBug
+report to any mailing lists or recipients other than
+<code>submit\@$gEmailDomain</code> (for details of how to do this right, see
+<A href="#xcc">below</A>).
+<p>
+
+Lists of currently-outstanding $gBugs are available <A href="./">on
+the World Wide Web</A> and <A href="Access.html">elsewhere</A> - see
+other documents for details.
+<p>
+
+You should put a pseudo-header at the start of the body of the
+message, with the <code>Package:</code> and <code>Version:</code>
+lines giving the name and version of the package which has the $gBug.
+(The pseudo-header fields must start at the very start of their lines,
+and the $gBug system does not currently understand them if they're
+buried in MIMEd or PGPd mail.)
+
+$gHTMLFindPackage
+
+<em>See below for <A href="#details">further requirements</A></em>.
+<p>
+
+$gHTMLPseudoDesc
+
+<h2><A name="example">Example</A></h2>
+
+A $gBug report, with mail header, looks something like this:
+<pre>
+  To: submit\@$gEmailDomain
+  From: diligent\@testing.linux.org
+  Subject: Hello says `goodbye'
+<A name="psuedoheader">
+  Package: hello</A>
+  Version: 1.3-2
+
+  When I invoke `hello' without arguments from an ordinary shell
+  prompt it prints `goodbye', rather than the expected `hello, world'.
+  Here is a transcript:
+
+  $ hello
+  goodbye
+  $ /usr/bin/hello
+  goodbye
+  $
+
+  I suggest that the output string, in hello.c, be corrected.
+
+  I am using Debian 1.1, kernel version 1.3.99.15z
+  and libc 5.2.18.3.2.1.3-beta.
+</pre>
+
+<h2><A name="details">Please include in your report:</A></h2>
+
+<ul>
+<li>The <em>exact</em> and <em>complete</em> text of any error
+messages printed or logged.  This is very important!
+<li>Exactly what you typed or did to demonstrate the problem.
+<li>A description of the incorrect behaviour: exactly what behaviour
+you were expecting, and what you observed.  A transcript of an
+example session is a good way of showing this.
+<li>A suggested fix, or even a patch, if you have one.
+<li>Details of the configuration of the program with the problem.
+Include the complete text of its configuration files.
+$gXtraBugInfo
+</ul>
+
+Include any detail that seems relevant - you are in very little danger
+of making your report too long by including too much information.  If
+they are small please include in your report any files you were using
+to reproduce the problem (uuencoding them if they may contain odd
+characters etc.).
+
+<p>
+
+Of course, like any email, you should include a clear, descriptive
+<code>Subject</code> line in your main mail header.  The subject you
+give will be used as the initial $gBug title in the tracking system, so
+please try to make it informative !
+
+<h2><A name="xcc">Sending copies of $gBug reports to other addresses</A></h2>
+
+Sometimes it is necessary to send a copy of a $gBug report to somewhere
+else besides the mailing list and the package maintainer, which is where they
+are normally sent.
+<p>
+
+You could do this by CC'ing your $gBug report to the other address(es),
+but then the other copies would not have the $gBug report number put in
+the <code>Reply-To</code> field and the <code>Subject</code> line.
+When the recipients reply they will probably preserve the
+<code>submit\@$gEmailDomain</code> entry in the header and have their
+message filed as a new $gBug report.  This leads to many duplicated
+reports.
+<p>
+
+The <em>right</em> way to do this is to use the
+<code>X-$gProject-CC</code> header.  Add a line like this to your
+message's mail header (not to the psuedo header with the
+<code>Package</code> field):
+<pre>
+ X-$gProject-CC: other-list\@cosmic.edu
+</pre>
+This will cause the $gBug tracking system to send a copy of your report
+to the address(es) in the <code>X-$gProject-CC</code> line as well as to
+any mailing list.
+<p>
+
+This feature can often be combined usefully with mailing
+<code>quiet</code> - see below.
+
+
+<h2><A name="severities">Severity levels</A></h2>
+
+If a report is of a particularly serious $gBug, or is merely a feature
+request that, you can set the severity level of the $gBug as you report
+it.  This is not required, however, and the developers will assign an
+appropriate severity level to your report if you do not.
+<p>
+
+To assign a severity level put a
+<code>Severity: <var>severity</var></code> line in the psuedo-header,
+together with <code>Package</code> and <code>Version</code>.  The
+severity levels available are described in the
+<A href="Developer.html#severities">developers' documentation</A>.
+
+
+<h2>Not forwarding to the mailing list - minor $gBug reports</h2>
+
+If a $gBug report is minor (for example, a documentation typo or other
+trivial build problem), or you're submitting many reports at once,
+send them to <code>maintonly\@$gEmailDomain</code> or <code>quiet\@$gEmailDomain</code>.
+<code>maintonly</code> will send the report on to the package
+maintainer (provided you supply a correct <code>Package</code> line in
+the pseudo-header and the maintainer is known), and <code>quiet</code>
+will not forward it anywhere at all but only file it as a $gBug (useful
+if, for example, you are submitting many similar $gBugs and want to post
+only a summary).
+<p>
+
+If you do this the $gBug system will set the <code>Reply-To</code> of
+any forwarded message so that replies will by default be processed in
+the same way as the original report.
+
+<h3>Unknown packages or $gBugs with no <code>Package</code> key</h3>
+
+If the $gBug tracking system doesn't know who the maintainer of the
+relevant package is it'll forward the report to
+the mailing list even if <code>maintonly</code> was used.
+<p>
+
+When sending to <code>maintonly\@$gEmailDomain</code> or
+<var>nnn</var><code>-maintonly\@$gEmailDomain</code> you should make sure that
+the $gBug report is assigned to the right package, by putting a correct
+<code>Package</code> at the top of an original submission of a report,
+or by using <A href="server-control.html">the
+<code>control\@$gEmailDomain</code> service</A> to (re)assign the report
+appropriately first if it isn't correct already.
+
+$gXtraReportingInfo
+
+<hr>
+Other pages:
+<ul>
+<li><A href="./">Bug tracking system main contents page.</A>
+<li><A href="Developer.html">Developers'
+information regarding the $gBug processing system.</A>
+<li><A href="Access.html">Accessing the $gBug tracking logs other than by WWW.</A>
+<li><A href="db/ix/full.html">Full list of outstanding and recent $gBug reports.</A>
+<li><A href="db/ix/packages.html">Packages with $gBug reports.</A>
+<li><A href="db/ix/maintainers.html">Maintainers of packages with $gBug reports.</A>
+
+$gHTMLOtherPageList
+
+</ul>
+
+$gHTMLEnd
+
+HTML_END

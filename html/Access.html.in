@@ -1,0 +1,42 @@
+$gAccessHtml = <<HTML_END
+<HTML>
+<HEAD>
+	<TITLE>$gProject $gBugs - Accessing the logs</TITLE>
+	<LINK REV="made" HREF="mailto:$gMaintainerEmail">
+</HEAD>
+<BODY>
+<A NAME="developers"> 
+	<H1>Accessing $gBug reports in the tracking system logs</H1>
+</A>
+
+Each message received at or sent by the $gBug processing system is
+logged and made available in a number of ways.
+<P>
+
+$gHTMLCopies
+
+There is a <A HREF="server-request.html">mailserver</A> which can send
+$gBug reports as plain text on request.  To use it send the word
+<CODE>help</CODE> as the sole contents of an email to
+<CODE>request</CODE> (the <CODE>Subject</CODE> of the
+message is ignored), or read the instructions on the World Wide Web or
+in the file <CODE>bug-log-mailserver.txt</CODE>.
+
+<HR>
+
+Other pages:
+<UL>
+	<LI><A href="./">$gBug tracking system main contents page.</A>
+	<LI><A href="Reporting.html">Instructions for reporting $gBugs.</A>
+	<LI><A href="Developer.html">Developers' information regarding the $gBug processing system.</A>
+	<LI><A href="db/ix/full.html">Full list of outstanding and recent $gBug reports.</A>
+	<LI><A href="db/ix/packages.html">Packages with $gBug reports.</A>
+	<LI><A href="db/ix/maintainers.html">Maintainers of packages with $gBug reports.</A>
+
+$gHTMLOtherPageList
+
+</ul>
+
+$gHTMLTail
+
+HTML_END

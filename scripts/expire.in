@@ -1,0 +1,65 @@
+#!/usr/bin/perl
+
+require('/etc/debbugs/config');
+require('/usr/lib/debbugs/errorlib');
+$ENV{'PATH'}= '/usr/lib/debbugs'.$ENV{'PATH'};
+chdir("$gSpoolDir") || die "chdir spool: $!\n";
+#push(@INC,'/usr/lib/debbugs');
+
+#open(DEBUG,">&4");
+
+defined($startdate= time) || &quit("failed to get time: $!");
+
+opendir(DIR,"db") || &quit("opendir db: $!\n");
+@list= grep(m/^\d+\.status$/,readdir(DIR));
+grep(s/\.status$//,@list);
+@list= sort { $a <=> $b } @list;
+
+while (length($ref=shift(@list))) {
+#print DEBUG "$ref $considering\n";
+    $bfound= &lockreadbugmerge($ref);
+#print DEBUG "$ref read $bfound\n";
+    $bfound || next;
+#print DEBUG "$ref read ok (done $s_done)\n";
+    (&unlockreadbugmerge($bfound), next) unless length($s_done);
+#print DEBUG "$ref read done\n";
+    @aref= ($ref);
+    if (length($s_mergedwith)) { push(@aref,split/ /,$s_mergedwith); }
+#print DEBUG "$ref aref @aref\n";
+    $oktoremove= 1;
+    for $mref (@aref) {
+#print DEBUG "$ref $mref check\n";
+        if ($mref != $ref) {
+#print DEBUG "$ref $mref reading\n";
+            &lockreadbug($mref) || die "huh ?";
+#print DEBUG "$ref $mref read ok\n";
+            $bfound++;
+        }
+#print DEBUG "$ref $mref read/not\n";
+        $expectmerge= join(' ',grep($_ != $mref, sort { $a <=> $b } @aref));
+        $s_mergedwith eq $expectmerge ||
+            die "$ref -> $mref: ($s_mergedwith) vs. ($expectmerge) (@aref)";
+#print DEBUG "$ref $mref merge-ok\n";
+        length($s_done) || die "$ref -> $mref";
+#print DEBUG "$ref $mref done-ok\n";
+        $days= -M "db/$mref.log";
+#print DEBUG "$ref $mref days $days\n";
+        if ($days <= $gRemoveAge) {
+#print DEBUG "$ref $mref saved\n";
+            $oktoremove= 0;
+        }
+    }
+    if ($oktoremove) {
+#print DEBUG "$ref removing\n";
+        for $mref (@aref) {
+#print DEBUG "$ref removing $mref\n";
+            unlink("db/$mref.log", "db/$mref.status", "db/$mref.report");
+            print("deleted $mref (from $ref)\n") || &quit("output old: $!");
+        }
+    }
+#print DEBUG "$ref unlocking $bfound\n";
+    for ($i=0; $i<$bfound; $i++) { &unfilelock; }
+#print DEBUG "$ref unlocking done\n";
+}
+
+close(STDOUT) || &quit("close stdout: $!");

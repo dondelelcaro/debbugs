@@ -1,0 +1,36 @@
+This package was debianized by Johnie Ingram (johnie@debian.org)
+on Tue Jan  6 10:20:12 EST 1998.
+
+It was downloaded from:
+	http://www.chiark.greenend.org.uk/~ian/debbugs/
+
+
+COPYRIGHT AND LACK-OF-WARRANTY NOTICE
+
+Copyright 1994,1995,1996,1997 Ian Jackson <ijackson@chiark.greenend.org.uk>
+Copyright 1997 nCipher Corporation Limited
+Copyright 1995 Steven Brenner (for cgi-lib.pl).
+
+This bug system is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+
+This program and documentation is distributed in the hope that it will be
+useful, but without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose. See the GNU General
+Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program, or one should be available above; if not, write to the
+Free Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+02111-1307, USA, or email debbugs-maint@chiark.greenend.org.uk.
+
+ - Ian Jackson 30.10.1997
+
+Modifications from version 1.0 to 2.0 are
+Copyright (C) 1999 Darren Benham <gecko@debian.org>
+and released under the terms of the GPL -- version 2.
+
+On Debian/GNU Linux systems, the text of the GPL can be found in
+/usr/doc/copyright/GPL.

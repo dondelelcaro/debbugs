@@ -1,0 +1,265 @@
+############################################################################
+# Here is a blurb for any mirrors of the web site.  Here's a sample:
+#
+#$gHTMLCopies = "Copies of the logs are available on the World Wide Web at<BR>
+# <A HREF=\"http://mirror1.domain\"><CODE>http://mirror1.domain</CODE></A><BR>
+# <A HREF=\"http://mirror2.domain\"><CODE>http://mirror2.domain</CODE></A>";
+############################################################################
+$gHTMLCopies = "";
+
+
+############################################################################
+# notice other links you want to note, like your list archives or project
+# home page.
+#
+#$gHTMLOtherPages = "Other Links of note:<BR>
+#	<A HREF=\"http://www.debian.org/\">The Debian Project</A><BR>
+#	<A HREF=\"http://another.domain\">Description of URL</A>";
+############################################################################
+$gHTMLOtherPages = "";
+
+
+############################################################################
+# list of other links you want to note, like your list archives or project
+# home page.  Some pages already have links in a list, this adds them to 
+# the end of the list.
+#
+#$gHTMLOtherPageList = "<LI><A HREF=\"http://www.debian.org/\">
+#	The Debian Project</A>
+#	<LI><A HREF=\"http://another.domain\">Description of URL</A>";
+############################################################################
+$gHTMLOtherPageList = "";
+
+
+############################################################################
+# gives explanation of bad maintainer situation and instructions on how to
+# correct.
+############################################################################
+$gBadMaintHtml = "";
+
+
+############################################################################
+# give directions here for how to find the proper title for Package:
+# pseudo header line.
+############################################################################
+$gHTMLFindPackage = "";
+
+
+############################################################################
+# If you have pseudo packages, place a blurb here.  For example:
+# $gHTMLPseudoDesc = "There are some pseudo-packages available for putting in
+# the <CODE>Package</CODE> line when reporting a $gBug in something other than an
+# actual $gProject software package.  There is 
+# <A HREF="db/ix/pseudopackages.html"> a list of these</A> on the $gBugs WWW 
+# pages.";
+############################################################################
+$gHTMLPseudoDesc = "";
+
+
+############################################################################
+# List any extra information you would like included in bug reports
+############################################################################
+$gXtraBugInfo = "";
+
+
+############################################################################
+# List any extra information you would like about reporting bugs
+############################################################################
+$gXtraReportingInfo = "";
+
+
+############################################################################
+# Process used by system to create Maintainers index file
+############################################################################
+$gCreateMaintainers = "";
+
+
+###########################################################################
+# You shouldn't have to modify anything below here unless it's for personal
+# preference.  Be very careful and don't touch unless you *know* what
+# you're doing.  Much of the stuff has hardcoded duplicates elsewhere.
+
+
+############################################################################
+# Description of the severities
+############################################################################
+$gHTMLSeverityDesc = "<DT><CODE>critical</CODE>
+	<DD>makes unrelated software on the system (or the whole system) break, or
+	causes serious data loss, or introduces a security hole on systems where
+	you install the package.
+
+	<DT><CODE>grave</CODE>
+	<DD>makes the package in question unuseable or mostly so, or causes data
+	loss, or introduces a security hole allowing access to the accounts of
+	users who use the package.
+
+	<DT><CODE>normal</CODE>
+	<DD>the default value, for normal $gBugs.
+
+	<DT><CODE>wishlist</CODE>
+	<DD>for any feature request, and also for any $gBugs that are very difficult
+	to fix due to major design considerations.";
+
+############################################################################
+# shows up at the end of (most) html pages.  You shouldn't have
+############################################################################
+$gHTMLTail = "<HR><ADDRESS><A HREF=\"$gMaintainerWebpage\">$gMaintainer</A> /
+ <A HREF=\"mailto:$gMaintainerEmail\">$gMaintainerEmail</A>.  Last modifed:
+ <!--timestamp-->
+ SUBSTITUTE_DTIME
+ <!--timestamp-->
+ (<A HREF=\"$gWebDomain/ix/zstamp.html\">timestamp page</A> available).
+	  
+ <P>
+ Debian $gBug tracking system<BR>
+ copyright 1997 nCipher Corporation Ltd,<BR>
+ copyright 1994-1997 Ian Jackson,<BR>
+ copyright 1995 Steven Brenner.<BR>
+ <A HREF=\"http://www.chiark.greenend.org.uk/~ian/debbugs/\">
+ Available under the GPL.</A>
+ </ADDRESS>
+ </BODY>
+ </HTML>";
+
+############################################################################
+# Message on when reports are purged.  28 days is hardcoded.
+############################################################################
+$gHTMLExpireNote = "(Closed $gBugs are cleaned out 28 days after the last related message is received.)";
+
+############################################################################
+# Makeup of the stamp page
+############################################################################
+$gHTMLStamp = "<HTML><HEAD><TITLE>$gProject $gBugs - timestamp page</TITLE>
+	<LINK REV=\"made\" HREF=\"mailto:$gMaintainerEmail\">
+	</HEAD><BODY><H1>Is this $gBug log or mirror up to date?</H1>
+
+	Unlike all the other $gBug pages, this small timestamp page is updated every
+	time the update check job runs.  If the timestamp here is recent it\'s
+	likely that the mirror in which you\'re reading it is up to date.
+	<P>
+	The last
+	<!--updateupdate-->update<!--/updateupdate-->
+	was at 
+	<STRONG><!--updatetime-->SUBSTITUTE_DTIME<!--/updatetime--></STRONG>;
+	The logs are usually checked every hour and updated if necessary.
+	<P>
+	For the $gBug index or for other information about $gProject and the $gBug 
+	system, see the <A HREF=\"../../\">$gBug system main contents page</A>.
+
+	<HR>
+	<ADDRESS>
+	<A HREF=\"mailto:$gMaintainerEmail\">$gMaintainerEmail</A>,
+	through the <A HREF=\"../../\">$gProject $gBug database</a>
+	</ADDRESS>
+	<!--version 1.0-4.3-->";
+
+############################################################################
+# Makeup of the indices pages
+############################################################################
+$gFullIndex = "<HTML><HEAD><TITLE>$gProject $gBugs - full index</TITLE>
+	<LINK REV=\"make\" HREF=\"mailto:$gMaintainerEmail\">
+	</HEAD><BODY><H1>$gProject $gBug report logs - index</H1>
+
+	This index gives access to $gBugs sent to <CODE>submit\@$gEmailDomain</CODE>
+	but not yet marked as done, and to $gBugs marked as done but not yet purged
+	from the database (this happens 28 days after the last message relating to
+	the report).
+	<P>
+	For other kinds of indices or for other information about $gProject and
+	the $gBug system, see <A HREF=\"../../\">$gBug system top-level contents WWW
+	page</A>.
+
+
+	";
+
+$gJunkIndex = "<HTML><HEAD><TITLE>$gProject $gBug reports - Junk</TITLE>
+	<LINK REV=\"made\" HREF=\"$gMaintainerEmail\">
+	</HEAD><BODY><H1>$gProject $gBug reports - Junk</H1>
+
+	This is the index page for logs of messages not associated with a specific
+	$gBug report.
+	<P>
+	For other kinds of indices or for other information about $gProject and
+	the $gBug system, see <A HREF=\"../../\"> $gBug system top-level contents WWW
+	page</A>.
+
+
+	";
+
+$gMaintIndex = "<HTML><HEAD><TITLE>$gProject $gBug reports by maintainer</TITLE>
+	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
+	</HEAD><BODY><H1>$gProject $gBug reports by maintainer</H1>
+
+	This page lists the package maintainers against whose packages there are
+	outstanding, fowarded or recently-closed $gBug reports.  A maintainer who
+	has several versions of their email address in the <CODE>Maintainer</CODE>
+	package control file field may appear several times.<P>
+	If the maintainers information here is not accurate, please see 
+	<A HREF=\"../../Developer.html#maintincorrect\">the developers\'
+	instructions</A> to find how this can happen and what to do about it. <P>
+	For other kinds of indices or for other information about $gProject and
+	the $gBug system, see <A HREF=\"../../\">$gBug system top-level contents WWW
+	page</A>.
+
+
+	";
+
+$gPackageIndex = "<HTML><HEAD><TITLE>$gProject $gBug reports by package</TITLE>
+	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
+	</HEAD><BODY><H1>$gProject $gBug reports by package</H1>
+
+	This page lists the package against which there are outstanding, fowarded or
+	recently-closed $gBug reports.  A multi-binary package may appear several
+	times, once for each binary package name and once for the source package
+	name (if it is different).<P>
+	For other kinds of indices or for other information about $gProject and
+	the $gBug system, see <A HREF=\"../../\">$gBug system top-level contents WWW
+	page</A>.
+
+
+	";
+
+$gSummaryIndex = "<HTML><HEAD><TITLE>$gProject $gBug report logs - summary index</TITLE>
+	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
+	</HEAD><BODY><H1>$gProject $gBug report logs - summary index</H1>
+
+	This summary index breiefly lists $gBugs sent to <CODE>submit\@$gEmailDomain
+	</CODE> but not yet marked as done, or as fowarded to an upstream author.  
+	Here they are sorted by reference number (and therefore by submission date, 
+	too).<P>
+	For other kinds of indices or for other information about $gProject and
+	the $gBug system, see <A HREF=\"../../\">$gBug system top-level contents WWW
+	page</A>.
+
+
+	";
+
+$gPackageLog = "<HTML><HEAD><TITLE>$gProject $gBug report logs - index by package</TITLE>
+	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
+	</HEAD><BODY><H1>$gProject $gBug report logs - index by package</H1>
+
+	This summary index breiefly lists $gBugs sent to <CODE>submit\@$gEmailDomain
+	</CODE> but not yet marked as done, or as fowarded to an upstream author.  
+	Here they are sorted by package name.<P>
+	For other kinds of indices or for other information about $gProject and
+	the $gBug system, see <A HREF=\"../../\">$gBug system top-level contents WWW
+	page</A>.
+
+
+	";
+
+$gPseudoIndex = "<HTML><HEAD><TITLE>$gProject $gBug report pseudo-packages</TITLE>
+	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
+	</HEAD><BODY><H1>$gProject $gBug report pseudo-packages</H1>
+
+	This page lists the pseudo-packages available for use in the
+	<CODE>Package:</CODE> line in $gBug reports.<P>
+
+	See the <A HREF=\"../../Reporting.html\">instructions for reporting a
+	$gBug</A> for details of how to specify a <CODE>Package:</CODE> line.<P>
+	For other kinds of indices or for other information about $gProject and
+	the $gBug system, see <A HREF=\"../../\">$gBug system top-level contents WWW
+	page</A>.
+
+
+	";

@@ -1,0 +1,88 @@
+#!/usr/bin/perl
+
+require('/etc/debbugs/config');
+require('/usr/lib/debbugs/errorlib');
+chdir("$gSpoolDir") || die "chdir spool: $!\n";
+
+#open(DEBUG,">&4");
+
+$mode= shift(@ARGV);
+
+open(M,"$gMaintainerFile") || &quit("open $gMaintainerFile: $!");
+while (<M>) {
+    m/^(\S+)\s+(\S.*\S)\s*$/ || warn "$_ ?";
+    ($a,$b)=($1,$2);
+    $a =~ y/A-Z/a-z/;
+    $maintainer{$a}= $b;
+}
+close(M);
+
+defined($startdate= time) || &quit("failed to get time: $!");
+
+opendir(DIR,"db") || &quit("opendir db: $!\n");
+@list= grep(m/^\d+\.status$/,readdir(DIR));
+grep(s/\.status$//,@list);
+@list= sort { $a <=> $b } @list;
+
+$head= $mode eq 'bymaint'
+    ? ' Package     Ref    Subject'
+    : ' Ref   Package    Keywords/Subject               Package maintainer';
+$amonths=-1;
+
+while (length($f=shift(@list))) {
+    &filelock("lock/$f");
+    if (!open(S,"db/$f.status")) { &unlinklock; next; }
+    chop($s_originator= <S>);
+    chop($s_date= <S>);
+    chop($s_subject= <S>);
+    chop($s_msgid= <S>);
+    chop($s_package= <S>);
+    chop($s_keywords= <S>);
+    chop($s_done= <S>);
+    chop($s_forwarded= <S>);
+    $_= $s_package; y/A-Z/a-z/; $_= $` if m/[^-+._a-z0-9]/;
+    $s_maintainer=
+        defined($maintainer{$_}) ? $maintainer{$_} :
+        length($_) ? "(unknown -- \`$_')" :
+        "(unknown)";
+    if ($mode eq 'undone' || $mode eq 'veryold') {
+        &unfilelock;
+        next if length($s_done) || length($s_forwarded);
+        $cmonths= int(($startdate - $s_date)/2592000); # 3600*24*30 (30 days)
+        next if $mode eq 'veryold' && $cmonths < 2;
+        if ($cmonths != $amonths) {
+            $msg= $cmonths == 0 ? "Submitted in the last month" :
+                  $cmonths == 1 ? "Over one month old" :
+                  $cmonths == 2 ? "Over two months old - attention is required" :
+                                  "OVER $cmonths MONTHS OLD - ATTENTION IS REQUIRED";
+            print "\n$msg:\n$head\n";
+            $amonths= $cmonths;
+        }
+        printf("%6d %-10.10s %-30.30s %-.31s\n", $f, $s_package,
+               (length($s_keywords) ? $s_keywords.'/' : '').$s_subject,
+               $s_maintainer) || &quit("output undone: $!");
+    } elsif ($mode eq 'bymaint') {
+        &unfilelock;
+        next if length($s_done) || length($s_forwarded);
+        $string{$f}=
+            sprintf(" %-10.10s %6d  %-.59s\n", $s_package, $f, $s_subject);
+        $s_maintainer= "(unknown)" if $s_maintainer =~ m/^\(unknown \-\-/;
+        $maintainercnt{$s_maintainer}++;
+        $maintainerlist{$s_maintainer}.= " $f";
+    } else {
+        &quit("badmode $mode");
+    }
+}
+
+if ($mode eq 'bymaint') {
+    print("$head\n") || &quit("output head: $!");
+    for $m (sort { $maintainercnt{$a} <=> $maintainercnt{$b} } keys %maintainercnt) {
+        printf("\n%s (%d $gBugs):\n",$m,$maintainercnt{$m})
+            || &quit("output mainthead: $!");
+        for $i (sort { $string{$a} cmp $string{$b} } split(/ /,$maintainerlist{$m})) {
+            printf($string{$i}) || &quit("output 1bymaint: $!");
+        }
+    }
+}
+
+close(STDOUT) || &quit("close stdout: $!");

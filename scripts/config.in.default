@@ -1,0 +1,55 @@
+#domains
+$gEmailDomain = "bugs.top.domain";		#bugs.debian.org
+$gListDomain = "lists.top.domain";		#lists.debian.org
+$gWebDomain = "www.top.domain";			#www.debian.org/Bugs
+$gCGIDomain = "cgi.top.domain";			#cgi.debian.org
+
+#Identification
+$gProject = "project";					#Debian
+$gProjectTitle = "project title";		#Debian GNU/Linux
+
+#person responsible for this installation
+$gMaintainer = "name";					#Ian Jackson
+$gMaintainerWebpage = "url";			#http://www.debian.org/~iwj
+$gMaintainerEmail = "address";			#ownder@bugs.debian.org
+
+#directories
+$gSpoolDir = "/var/lib/debbugs/spool";	#working directory
+$gIncomingDir = "incoming";				#unprocessed emails
+$gWebDir = "/var/lib/debbugs/www";		#base location of web pages
+$gDocDir = "/usr/lib/debbugs";			#location of doc files
+
+#data files
+$gMaintainerFile = "/etc/debbugs/Maintainers";
+$gPseudoDescFile = "/etc/debbugs/pseudo-packages.description";
+
+#lists
+$gSubmitList = "submit.list";			#debian-bugs-dist@lists
+$gMaintList = "maint.list";				#
+$gQuietList = "quiet.list";				#
+$gFowardList = "foward.list";			#debian-bugs-fowarded@lists
+$gDoneList = "done.list";				#debian-bugs-closed@lists
+$gRequestList = "request.list";
+$gSubmitterList = "submitter.list";
+$gControlList = "control.list";
+$gMirrorList = "mirrors.list";          #sends to all mirrors
+
+#config
+$gMailer='exim';
+$gRemoveAge = 28;						#days
+$gDefaultSeverity = 'normal';
+@gStrongSeverities= ('critical','grave');
+@gSeverityList= ('critical','grave','','wishlist');
+%gSeverityDisplay=('critical','Critical bugs',
+                                       'grave','Grave bugs',
+                                       'normal','Normal bugs',
+                                       'wishlist','Wishlist items');
+
+
+
+
+
+
+
+#dont change
+$gBounceFroms = "^mailer|^da?emon|^post.*mast|^root|^wpuser|^mmdf|^smt.*|\\$emd|^mrgate|^vmmail|^mail.*system|^uucp|-maiser-|^mal\@|^mail.*agent|^tcpmail|^bitmail|^mailman";

@@ -1,0 +1,116 @@
+#!/usr/bin/perl
+# Takes 1 argument - directory tree to install into
+# Tree _must_ be synch'd with one used by db2html to generate file
+
+use POSIX;
+require( '/etc/debbugs/config' );
+
+$dirtree= shift(@ARGV);
+defined($dirtree) or die 'usage';
+chdir $dirtree or die $!;
+
+$filenamere= '[0-9a-z]{2}/[0-9a-z][-+_:,.0-9a-zA-Z]*';
+
+opendir(D,".") or die " opendir: $!";
+while ($dir=readdir(D)) {
+    next if $dir =~ m/^\.\.?$/;
+    if (-f $dir) {
+        $remove{$dir}= 1;
+    } else {
+        opendir(E,"$dir") or die " opendir $dir: $!";
+        while ($_=readdir(E)) {
+            next if $_ =~ m/^\.\.?$/;
+            $remove{"$dir/$_"}= 1;
+        }
+        closedir(E) or die " closedir $dir: $!";
+        $rmdir{$dir}= 1;
+    }
+}
+closedir(D) or die " closedir: $!";
+
+while(<>) {
+    chomp;
+    if (m/^end$/) {
+	print "end, removing\n";
+        for $k (keys %remove) { unlink($k) || $!==&ENOENT or die "$k: $!"; }
+        for $k (keys %rmdir) { rmdir($k) || $!==&ENOTEMPTY || $!==EEXIST or die "$k: $!"; }
+        exit 0;
+    } elsif (s/^progress //) {
+        y/-+:._!#=,0-9a-zA-Z //cd;
+        print " progress $_\n";
+    } elsif (m/^preserve ($filenamere)$/o) {
+        delete $remove{$1};
+        delete $remove{"$1.ref"};
+        print " preserve $1\n";
+    } elsif (m/^(file|diff) (\d+) (ref|def|non) ($filenamere)$/o) {
+        $filediff= $1; $linestodo= $2; $ii= $3; $file= $4;
+        print " $filediff $ii $file\n";
+        delete $remove{$file};
+        delete $remove{"$file.ref"} if $ii eq 'ref';
+        $file =~ m,^(..)/, or die $file;
+        mkdir($1,0777) || $!==EEXIST or die $!;
+        $tranfile= $file;
+        $tranfile.= '.ref' if $ii eq 'ref';
+        open(DT,"> recv.tmp") or die $!;
+        if ($filediff eq 'diff') { print DT "r $tranfile\n" or die $!; }
+        $indata= 0;
+        while ($linestodo--) {
+            $z=<STDIN>;
+            if ($filediff eq 'diff') {
+                if ($indata) { $indata=0 if $incmd && m/^\.$/; }
+                elsif ($z =~ m/^[0-9,]+[ac]/) { $indata= 1; }
+                elsif ($z !~ m/^[0-9,]+[ds]/) { die "SECURITY $file >$z<"; }
+            }
+            print DT $z or die $!;
+        }
+        if ($filediff eq 'diff') { print DT "w new.tmp\nq\n" or die $!; }
+        close(DT) or die $!;
+        ($z=<STDIN>) eq "that$filediff $file\n" or die die "not confirmed >$z<";
+        if ($filediff eq 'diff') {
+            $q= `ed -s <recv.tmp 2>&1`;
+            length($q) || $? and die "ed $q $?";
+            rename("new.tmp","$tranfile") or die "$tranfile $!";
+            unlink("recv.tmp") or die $!;
+        } else {
+            rename("recv.tmp","$tranfile") or die "$tranfile $!";
+        }
+        if ($ii eq 'ref') {
+            open(I,"$tranfile") or die $!;
+            open(O,"> ref.tmp") or die $!;
+            while (<I>) {
+                if (m/^\<\!\-\-ii (\d+)\-\-\>$/) {
+                    defined($iival{$1}) or die "$tranfile $1";
+                    print O $iival{$1} or die $!;
+                } else {
+                    print O or die $!;
+                }
+            }
+            close(I) or die $!;
+            close(O) or die $!;
+            rename("ref.tmp","$file") or die $!;
+        } elsif ($ii eq 'def') {
+            open(I,"$file") or die $!;
+            undef $cdef; $ctext= '';
+            while (<I>) {
+                if (s/^\<\!\-\-iid (\d+)\-\-\>//) {
+                    defined($cdef) and die $file;
+                    $cdef= $1;
+                    $ctext= $_;
+                } elsif (s/\<\!\-\-\/iid\-\-\>\n$//) {
+                    defined($cdef) or die $file;
+                    $iival{$cdef}= $ctext.$_."\n";
+                    $ctext=''; undef $cdef;
+                } else {
+                    $ctext.= $_ if defined($cdef);
+                }
+            }
+        }
+    } elsif (m/^noremoves$/) {
+	print "noremoves\n";
+        exit 0;
+    } else {
+        die " huh ? $_";
+    }
+}
+
+die "eof $!";

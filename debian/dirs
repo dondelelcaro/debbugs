@@ -1,0 +1,12 @@
+/etc/debbugs/html
+usr/lib/debbugs
+usr/sbin
+usr/doc/debbugs/examples
+var/lib/debbugs/indices
+var/lib/debbugs/www/cgi
+var/lib/debbugs/www/db
+var/lib/debbugs/www/txt
+var/lib/debbugs/spool/lock
+var/lib/debbugs/spool/archive
+var/lib/debbugs/spool/incoming
+var/lib/debbugs/spool/db

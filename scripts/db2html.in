@@ -1,0 +1,638 @@
+#!/usr/bin/perl
+# $Id: db2html.in,v 1.1 1999/09/02 19:25:01 gecko Exp $
+# usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
+
+require('/etc/debbugs/config');
+require('/etc/debbugs/text');
+require('/usr/lib/debbugs/errorlib');
+$ENV{'PATH'}= '/usr/lib/debbugs'.$ENV{'PATH'};
+chdir("$gSpoolDir") || die "chdir spool: $!\n";
+#push(@INC,'/usr/lib/debbugs');
+
+chop($dtime=`date -u '+%H:%M:%S GMT %a %d %h'`); $? and die $?;
+
+%displayshowpendings= ('pending','outstanding',
+                       'done','resolved',
+                       'forwarded','forwarded to upstream software authors');
+
+$diff=0;
+$stampfile= 'stamp.html';
+$tail_html= $gHTMLTail; $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
+$expirynote_html= $gHTMLExpireNote;
+
+while (@ARGV && $ARGV[0] =~ m/^-/) {
+    if ($ARGV[0] eq '-diff') { $diff=1; }
+    elsif ($ARGV[0] =~ m/^-lastrun\=([0-9.]+)$/) { $lastrun= $1; undef $stampfile; }
+    elsif ($ARGV[0] =~ m/^-full$/) { undef $lastrun; undef $stampfile; }
+    elsif ($ARGV[0] =~ m/^-stampfile\=(\S+)$/) { $stampfile= $1; }
+    else { &quit("bad usage"); }
+    shift;
+}
+
+@ARGV==1 or die;
+$wwwbase= shift(@ARGV);
+
+defined($startdate= time) || &quit("failed to get time: $!");
+
+$|=1;
+
+if (defined($stampfile)) {
+    if (open(X,"< $stampfile")) {
+        $lastrun= -M X;
+        close(X);
+        printf "progress last run %.7f days\n",$lastrun;
+    } else {
+        print "progress stamp file $stampfile: $! - full\n";
+    }
+}
+
+if (defined($lastrun) && -M "db" > $lastrun) {
+    $_= $gHTMLStamp;
+    s/SUBSTITUTE_DTIME/$dtime/o;
+    s/\<\!\-\-updateupdate\-\-\>.*\<\!\-\-\/updateupdate\-\-\>/check/;
+    &file('ix/zstamp.html','non',$_."</body></html>\n");
+    print "noremoves\n";
+    exit 0;
+}
+
+open(MM,"$gMaintainerFile") || &quit("open $gMaintainerFile: $!");
+while(<MM>) {
+    m/^(\S+)\s+(\S.*\S)\s*$/ || &quit("$gMaintainerFile: \`$_'");
+    ($a,$b)=($1,$2);
+    $a =~ y/A-Z/a-z/;
+    $maintainer{$a}= $b;
+}
+close(MM);
+
+opendir(D,'db') || &quit("opendir db: $!");
+@files= sort { $a <=> $b } readdir(D);
+closedir(D);
+
+$shorthead=' Ref   Package    Keywords/Subject                    Submitter';
+$shortindex=''; $amonths=-1;
+$indexunmatched='';
+for $pending (qw(pending done forwarded)) {
+    for $severity (@showseverities) {
+        eval "\$index${pending}${severity}= \$iiindex${pending}${severity}= ''; 1;"
+            or &quit("reset \$index${pending}${severity}: $@");
+    }
+}
+
+for $f (@files) {
+    next unless $f =~ m/^(-?\d+)\.log$/;
+    $ref= $1;
+#((print STDERR "$ref\n"),
+#next
+#)
+# unless $ref =~ m/^-/ || $ref =~ m/^124/;
+    &filelock("lock/$ref");
+    $preserveonly= defined($lastrun) && -M "db/$ref.log" > $lastrun;
+    if ($ref =~ m/^-\d$/) {
+        $week= $ref eq '-1' ? 'this week' :
+               $ref eq '-2' ? 'last week' :
+               $ref eq '-3' ? 'two weeks ago' :
+                              ($ref-1)." weeks ago";
+        $linkto= "ju/unmatched$ref";
+        $short= "junk, $week";
+        $descriptivehead=
+            "This includes messages sent to <code>done\@$gEmailDomain</code>\n".
+            "which did not have a $gBug reference number in the Subject line\n".
+            "or which contained an\n".
+            "unknown or out of date $gBug report number (these cause a warning\n".
+            "to be sent to the sender) and details about the messages\n".
+            "sent to <code>request@$gEmailDomain</code> (all of which".
+            "produce replies).\n";
+        $indexlink= "Messages not matched to a specific $gBug report - $week";
+        $s_subject= '';
+        $indexentry= '';
+        undef $tpack;
+        undef $tmaint;
+        undef $iiref;
+        $tpackfile= "pnone.html";
+        $indexpart= 'unmatched';
+    } else {
+        open(S,"db/$ref.status") || &quit("open db/$ref.status: $!");
+        chomp($s_originator= <S>);
+        chomp($s_date= <S>);
+        chomp($s_subject= <S>);
+        chomp($s_msgid= <S>);
+        chomp($s_package= <S>);
+        chomp($s_keywords= <S>);
+        chomp($s_done= <S>);
+        chomp($s_forwarded= <S>);
+        chomp($s_mergedwith= <S>);
+        chomp($s_severity= <S>);
+        $_= $s_package; y/A-Z/a-z/; $_= $` if m/[^-+._a-z0-9()]/;
+        $tpack= $_;
+        if ($s_severity eq '' || $s_severity eq 'normal') {
+            $showseverity= '';
+            $addseverity= $gDefaultSeverity;
+        } elsif (grep($s_severity eq $_, @strongseverities)) {
+            $showseverity= "<strong>Severity: $s_severity</strong>;\n";
+            $addseverity= $s_severity;
+        } else {
+            $showseverity= "Severity: <em>$s_severity</em>;\n";
+            $addseverity= $s_severity;
+        }
+        $days= int(($startdate - $s_date)/86400); close(S);
+        $indexlink= "#$ref: ".&sani($s_subject);
+        $indexentry= '';
+        $packfile= length($tpack) ? "pa/l$tpack.html" : "pa/none.html";
+        $indexentry .= "Package: <A href=\"../$packfile\"><strong>".
+                        &sani($s_package)."</strong></A>;\n"
+            if length($s_package);
+        $indexentry .= $showseverity;
+        $indexentry .= "Reported by: ".&sani($s_originator);
+        $indexentry .= ";\nKeywords: ".&sani($s_keywords)
+            if length($s_keywords);
+        $linkto= $ref; $linkto =~ s,^..,$&/$&,;
+        @merged= split(/ /,$s_mergedwith);
+        if (@merged) {
+            $mseparator= ";\nmerged with ";
+            for $m (@merged) {
+                $mfile= $m; $mfile =~ s,^..,$&/$&,;
+                $indexentry .= $mseparator."<A href=\"../$mfile.html\">#$m</A>";
+                $mseparator= ",\n";
+            }
+        }
+        $daysold=$submitted='';
+        if (length($s_done)) {
+            $indexentry .= ";\n<strong>Done:</strong> ".&sani($s_done);
+            $indexpart= "done$addseverity";
+        } elsif (length($s_forwarded)) {
+            $indexentry .= ";\n<strong>Forwarded</strong> to ".&sani($s_forwarded);
+            $indexpart= "forwarded$addseverity";
+        } else {
+            $cmonths= int($days/30);
+            if ($cmonths != $amonths) {
+        $msg= $cmonths == 0 ? "Submitted in the last month" :
+        $cmonths == 1 ? "Over one month old" :
+        $cmonths == 2 ? "Over two months old - attention is required" :
+        "OVER $cmonths MONTHS OLD - ATTENTION IS REQUIRED";
+                $shortindex .= "</pre><h2>$msg:</h2><pre>\n$shorthead\n";
+                $amonths= $cmonths;
+            }
+            $pad= 6-length(sprintf("%d",$f));
+            $thissient=
+                ($pad>0 ? ' 'x$pad : '').
+                sprintf("<A href=\"../%s.html\">%d</A>",$linkto,$ref).
+                &sani(sprintf(" %-10.10s %-35.35s %-.25s\n",
+                        $s_package,
+                        (length($s_keywords) ? $s_keywords.'/' : '').
+                        $s_subject, $s_originator));
+            $shortindex.= $thissient;
+            $sient{"$ref $s_package"}= $thissient;
+            if ($days >= 7) {
+                $font= $days <= 30 ? '' :
+                       $days <= 60 ? 'em' :
+                                     'strong';
+                $efont= length($font) ? "</$font>" : '';
+                $font= length($font) ? "<$font>" : '';
+                $daysold= "; $font$days days old$efont";
+            }
+            if ($preserveonly) {
+                $submitted= 'THIS IS A BUG IN THE BUG PROCESSOR';
+            } else {
+                $submitted= `TZ=GMT LANG=C \\
+                             date -d '1 Jan 1970 00:00:00 + $s_date seconds' \\
+                                     '+ %a, %d %b %Y %T %Z'`;
+                $? and die $?;
+            }
+            $submitted =~ s/\n$//; $submitted =~ s/, 0/, /g;
+            $submitted= "; dated $submitted";
+            $indexpart= "pending$addseverity";
+        }
+        $iiref= $ref;
+        $short= $ref; $short =~ s/^\d+/#$&/;
+        $tmaint= defined($maintainer{$tpack}) ? $maintainer{$tpack} : '(unknown)';
+        $qpackage= &sani($_);
+        $descriptivehead= $indexentry.$submitted.";\nMaintainer for $qpackage is\n".
+            '<A href="../ma/l'.&maintencoded($tmaint).'.html">'.&sani($tmaint).'</A>.';
+        $indexentry .= $daysold;
+        $indexentry .= ".";
+    }
+    $indexadd='';
+    $indexadd .= "<!--iid $iiref-->" if defined($iiref);
+    $indexadd .= "<li><A href=\"../$linkto.html\">".$indexlink."</A>";
+    $indexadd .=  "<br>\n".$indexentry if length($indexentry);
+    $indexadd .= "<!--/iid-->" if defined($iiref);
+    $indexadd .= "\n";
+    $estr= "\$index$indexpart = \$indexadd.\$index$indexpart; 1;";
+    eval($estr) || &quit("eval add to \$index$indexpart ($estr) failed: $@");
+#print STDERR ">$estr|$indexadd<\n";
+    $indexadd= "<!--ii $iiref-->\n" if defined($iiref);
+    eval("\$iiindex$indexpart = \$indexadd.\$iiindex$indexpart; 1;") ||
+        &quit("eval add to \$iiindex$indexpart failed: $@");
+    if (defined($tmaint)) {
+        $countpermaint{$tmaint} += length($s_done) ? 0 : length($s_forwarded) ? 0 : 1;
+        eval("\$permaint${indexpart}{\$tmaint} .= \$indexadd; 1;") ||
+            &quit("eval add to \$permaint${indexpart}{\$tmaint} failed: $@");
+    }
+    if (defined($tpack)) {
+        $countperpack{$tpack} += length($s_done) ? 0 : length($s_forwarded) ? 0 : 1;
+        eval("\$perpack${indexpart}{\$tpack} .= \$indexadd; 1;") ||
+            &quit("eval add to \$perpack${indexpart}{\$tpack} failed: $@");
+    }
+    if ($preserveonly) {
+        &preserve("$linkto.html"); &preserve("$linkto-b.html"); &unfilelock; next;
+    }
+    open(L,"db/$ref.log") || &quit("open db/$ref.log: $!");
+    $log='';
+    $boring=''; $xmessage= 0;
+    $normstate= 'kill-init';
+    $suppressnext= 0;
+    while(<L>) {
+        if (m/^\07$/) {
+            $normstate eq 'kill-init' || $normstate eq 'kill-end' ||
+                &quit("$ref ^G in state $normstate");
+            $normstate= 'incoming-recv';
+        } elsif (m/^\01$/) {
+            $normstate eq 'kill-init' || $normstate eq 'kill-end' ||
+                &quit("$ref ^A in state $normstate");
+            $normstate= 'autocheck';
+        } elsif (m/^\02$/) {
+            $normstate eq 'kill-init' || $normstate eq 'kill-end' ||
+                &quit("$ref ^B in state $normstate");
+            $normstate= 'recips';
+        } elsif (m/^\03$/) {
+            $normstate eq 'go' || $normstate eq 'go-nox' || $normstate eq 'html' ||
+                &quit("$ref ^C in state $normstate");
+            $this .= "</pre>\n" if $normstate eq 'go' || $normstate eq 'go-nox';
+            if ($normstate eq 'html') {
+                $xmessage++;
+                $this .= "  <em><A href=\"../$linkto-b.html#m$xmessage\">Full text</A>".
+                         " available.</em>";
+            }
+            if ($suppressnext && $normstate ne 'html') {
+                $ntis= $this; $ntis =~ s:\<pre\>:</A><pre>:i;
+                $boring .= "<hr><A name=\"m$xmessage\">\n$ntis\n";
+            } else {
+                $log = $this. "<hr>\n". $log;
+            }
+            $suppressnext= $normstate eq 'html';
+            $normstate= 'kill-end';
+        } elsif (m/^\05$/) {
+            $normstate eq 'kill-body' || &quit("^E in state $normstate");
+            $this .= "<pre>\n";
+            $normstate= 'go';
+        } elsif (m/^\06$/) {
+            $normstate eq 'kill-init' || $normstate eq 'kill-end' ||
+                &quit("$ref ^F in state $normstate");
+            $normstate= 'html'; $this= '';
+        } elsif ($normstate eq 'incoming-recv') {
+            $pl= $_; $pl =~ s/\n+$//;
+            m/^Received: \(at (\S+)\) by (\S+)\;/ ||
+                &quit("bad line \`$pl' in state incoming-recv");
+            $this = "<h2>Message received at ".&sani("$1\@$2").":</h2><br>\n".
+                    "<pre>\n".
+                    "$_";
+            $normstate= 'go';
+        } elsif ($normstate eq 'html') {
+            $this .= $_;
+        } elsif ($normstate eq 'go') {
+            $this .= &sani($_);
+        } elsif ($normstate eq 'go-nox') {
+            next if !s/^X//;
+            $this .= &sani($_);
+        } elsif ($normstate eq 'recips') {
+            if (m/^-t$/) {
+                $this = "<h2>Message sent:</h2><br>\n";
+            } else {
+                s/\04/, /g; s/\n$//;
+                $this = "<h2>Message sent to ".&sani($_).":</h2><br>\n";
+            }
+            $normstate= 'kill-body';
+        } elsif ($normstate eq 'autocheck') {
+            next if !m/^X-Debian-Bugs(-\w+)?: This is an autoforward from (\S+)/;
+            $normstate= 'autowait';
+            $this = "<h2>Message received at $2:</h2><br>\n";
+        } elsif ($normstate eq 'autowait') {
+            next if !m/^$/;
+            $normstate= 'go-nox';
+            $this .= "<pre>\n";
+        } else {
+            &quit("$ref state $normstate line \`$_'");
+        }
+    }
+    &quit("$ref state $normstate at end") unless $normstate eq 'kill-end';
+    close(L);
+    if (length($boring)) {
+        &file("$linkto-b.html",'non',
+              "<html><head><title>$gProject $gBug report logs - ".
+              "$short, boring messages</title>\n".
+              "<link rev=\"made\" href=\"mailto:$gMaintainerEmail)\">\n".
+              "</head><body><h1>$gProject $gBugreport logs -".
+              "\n <A href=\"../$linkto.html\">$short</A>,".
+              " boring messages</h1>\n$boring\n<hr>\n".
+              $tail_html."</body></html>\n");
+    }
+    &file("$linkto.html",'non',
+          "<html><head><title>$gProject $gBug report logs - ".
+          "$short</title>\n".
+          "<link rev=\"made\" href=\"mailto:$gMaintainerEmail)\">\n".
+          "</head><body><h1>$gProject) $gBug report logs -  $short<br>\n".
+          &sani($s_subject)."</h1>".
+          "$descriptivehead\n".
+          "\n<hr>\n".
+          $log.
+          $tail_html."</body></html>\n");
+    &unfilelock;
+}
+
+sub maintsort {
+    $_= $_[0];
+    s/([^<>()]+) \(([^()<>]+)\)/$2 \<$1\>/;
+    
+    s/\s+/ /g;
+    s/^\s*//;
+    $email= s/ *\<[^<>()]+\>$//g ? $& : '';
+    $_= "$1 $_" if s/ (\S+)$//;
+    $_.= $email;
+    $_;
+}
+
+sub maintencoded {
+    return $maintencoded{$_[0]} if defined($maintencoded{$_[0]});
+    local ($input)= @_;
+    local ($todo,$encoded)= ($input);
+    while ($todo =~ m/\W/) {
+        $encoded.=$`.sprintf("-%02x_",unpack("C",$&));
+        $todo= $';
+    }
+    $encoded.= $todo;
+    $encoded =~ s/-2e_/\./g;
+    $encoded =~ s/^([^,]+)-20_-3c_(.*)-40_(.*)-3e_/$1,$2,$3,/;
+    $encoded =~ s/^(.*)-40_(.*)-20_-28_([^,]+)-29_$/,$1,$2,$3/;
+    $encoded =~ s/-20_/_/g;
+    $encoded =~ s/-([^_]+)_-/-$1/g;
+    $maintencoded{$input}= $encoded;
+}
+
+for $tmaint (keys %countpermaint) {
+    $_= $tmaint;
+    $after=$before=$sort2d=$sort2s=$sort1d=$sort1s='';
+    $after= "$&$after" if s/\s*\<[^<>()]+\>\s*$//;
+    $after= "$&$after" if s/\s*\)\s*$//;
+    $after= "$&$after" if s/\s*,.*$//;
+    $before.= $& if s/^.*\(\s*//;
+    $sort2d= $& if s/\S+$//;
+    $sort1d= $_;
+    while (s/^([^()<>]+)\. */$1 /) { };
+    s/\s+$//; y/A-Za-z/a-zA-Z/; $sort1s= $_;
+    $sort2s= $sort2d; $sort2s =~ y/A-Za-z/a-zA-Z/;
+    $maintsort{$tmaint}= $sort2s.' '.$sort1s.' '.$before.$sort1d.$sort2d.$after;
+    $maintdisplay{$tmaint}=
+        &sani($before).'<strong>'.&sani($sort1d.$sort2d).'</strong>'.&sani($after);
+}
+
+sub heading ($$) {
+    my ($pt,$sv) = @_;
+    return $displayshowseverities{$sv}.' - '.$displayshowpendings{$pt};
+}
+
+sub makeindex ($$$) {
+    my ($varprefix,$varsuffix,$tkey) = @_;
+    my ($pending,$severity,$anydone,$text);
+    $anydone= 0;
+    $text= '';
+    for $pending (qw(pending forwarded done)) {
+        for $severity (@showseverities) {
+            $estr= "\$value= \\${varprefix}${pending}${severity}${varsuffix}; 1;";
+#print STDERR $estr;
+            eval $estr
+                or &quit("eval get \$${varprefix}${pending}${severity} failed: $@");
+#print STDERR ">$$value<\n";
+            next unless length($$value);
+            $text.= "<hr>\n<h2>".&heading($pending,$severity).":</h2>\n".
+                    "(List of <A href=\"../si/$pending$severity.html\">all".
+                    " such $gBugs</A> is available.)\n<ul>\n".
+                    $$value.
+                    "</ul>\n";
+            $anydone=1 if $pending eq 'done';
+        }
+    }
+    $text.= $expirynote_html if $anydone;
+    return $text;
+}        
+
+&file("ix/full.html",'def',
+      $gFullIndex.
+      makeindex('$index',"",'').
+      "<hr>\n".
+      $tail_html."</body><html>\n");
+
+&file("ju/junk.html",'non',
+      $gJunkIndex.
+      "<hr>\n<h2>Junk (messages without a specific $gBug report number):</h2>\n".
+      "(\`this week' is everything since last Wednesday.)\n<ul>\n".
+      $indexunmatched.
+      "</ul><hr>\n".
+      $tail_html."</body><html>\n");
+
+$nobugs_html= "No reports are currently in this state.";
+$who_html= $gProject;
+$owner_addr= $gMaintainerEmail;
+$otherindex_html= "For other kinds of index or for other information about
+$gProject and the $gBug system, see the <A HREF\"../../\">$gBug system top-level
+contents WWW page</A>.
+
+";
+
+for $pending (qw(pending forwarded done)) {
+    for $severity (@showseverities) {
+        eval "\$value= \\\$iiindex${pending}${severity}; 1;"
+            or &quit("eval get \$iiindex${pendingtype}${severity} failed: $@");
+        $value= \$nobugs_html if !length($$value);
+        $headstring= &heading($pending,$severity);
+        &file("si/$pending$severity.html",'ref',
+              "<html><head><title>$who_html $gBug reports: $headstring</title>\n".
+              "<link rev=\"made\" href=\"mailto:".&sani($owner_addr)."\">\n".
+              "</head><body><h1>$who_html $gBug reports: $headstring</h1>\n".
+              $otherindex_html.
+              ($pending eq 'done' ? "<P>\n$expirynote_html" : '').
+              "<hr>\n".
+              $$value.
+              "<hr>\n".
+              $tail_html."</body></html>\n");
+    }
+}
+
+sub individualindexes ($\@&\%&&$$$$$&&) {
+    my ($filename,$keysref,$getfilenameref,$countref,$getdisplayref,
+        $getsimpledisplayref,$what,$caveat,$whatplural,$abbrev,$ihead,
+        $getxinforef,$getxindexref) = @_;
+    my ($itext,$i,$tkey,$sani,$count,$tfilename,$refto,$backnext,$xitext,$bugbugs);
+    $itext='';
+    for ($i=0; $i<=$#$keysref; $i++) {
+        $tkey= $$keysref[$i];
+        $tfilename= &$getfilenameref($tkey);
+        $sani= &$getsimpledisplayref($tkey);
+        $count= $$countref{$tkey};
+        $count= $count >= 1 ? "$count" : "no";
+        $bugbugs= $count == 1 ? "$gBug" : "$gBugs";
+        $xitext= &$getxindexref($tkey);
+        $xitext= length($xitext) ? "$count $bugbugs; $xitext"
+                                 : "$count outstanding $bugbugs";
+        $itext .= "<li><A href=\"../$tfilename\">".&$getdisplayref($tkey)."</A>"."\n".
+                  "  ($xitext)\n";
+        $backnext= '';
+        if ($i>0) {
+            $refto= $$keysref[$i-1];
+            $xitext= &$getxindexref($refto);
+            $xitext= " ($xitext)" if length($xitext);
+            $backnext .= "<br>\nPrevious $what in list, <A href=\"../".
+                         &$getfilenameref($refto)."\">".&$getdisplayref($refto)."</A>".
+                         "$xitext\n";
+        }
+        if ($i<$#$keysref) {
+            $refto= $$keysref[$i+1];
+            $xitext= &$getxindexref($refto);
+            $xitext= " ($xitext)" if length($xitext);
+            $backnext .= "<br>\nNext $what in list, <A href=\"../".
+                         &$getfilenameref($refto)."\">".&$getdisplayref($refto)."</A>".
+                         "$xitext\n";
+        }
+        &file($tfilename,'ref',
+              "<html><head><title>$gProject $gBug reports: $what $sani</title>\n".
+              "<link rev=\"made\" href=\"mailto:$gMaintainerEmail\">\n".
+              "</head><body><h1>$gProject $gBug reports: $what $sani</h1>\n".
+              &$getxinforef($tkey).
+              $caveat.
+              "See the <A href=\"../$filename\">listing of $whatplural</A>.\n".
+              $backnext.
+              &makeindex("\$per${abbrev}","{\$tkey}",$tkey).
+              "<hr>\n".
+              $tail_html."</body></html>\n");
+    }
+    &file($filename,'non',
+          $ihead.
+          "<hr><ul>\n".
+          $itext.
+          "</ul><hr>\n".
+          $tail_html."</body></html>\n");
+}
+
+@maintainers= sort { $maintsort{$a} cmp $maintsort{$b}; } keys %countpermaint;
+individualindexes('ix/maintainers.html',
+                  @maintainers,
+                  sub { 'ma/l'.&maintencoded($_[0]).'.html'; },
+                  %countpermaint,
+                  sub { $maintdisplay{$_[0]}; },
+                  sub { &sani($_[0]); },
+                  'maintainer',
+                  "Note that there may be other reports filed under different
+				  variations on the maintainer\'s name and email address.<P>",
+                  'maintainers',
+                  'maint',
+                  $gMaintIndex,
+                  sub { return ''; },
+                  sub { return ''; });
+
+@packages= sort keys %countperpack;
+individualindexes('ix/packages.html',
+                  @packages,
+                  sub { length($_[0]) ? "pa/l$_[0].html" : 'pa/none.html'; },
+                  %countperpack,
+                  sub { length($_[0]) ? $_[0] : 'not specified'; },
+                  sub { &sani(length($_[0]) ? $_[0] : 'not specified'); },
+                  'package',
+                  "Note that with multi-binary packages there may be other
+				  reports filed under the different binary package names.<P>",
+                  'packages',
+                  'pack',
+                  $gPackageIndex,
+                  sub {
+                      return unless defined($maintainer{$_[0]});
+                      $tmaint= $maintainer{$_[0]};
+                      return "Maintainer for $_[0] is <A href=\"../ma/l".
+                             &maintencoded($tmaint).
+                             ".html\">".&sani($tmaint)."</A>.\n<p>\n";
+                  },
+                  sub {
+                      return unless defined($maintainer{$_[0]});
+                      $tmaint= $maintainer{$_[0]};
+                      return "<A href=\"../ma/l".
+                             &maintencoded($tmaint).
+                             ".html\">".&sani($tmaint)."</A>";
+                  });
+
+&file('ix/summary.html','non',
+      $gSummaryIndex.
+      "<hr><pre>\n".
+      $shortindex.
+      "</pre><hr>\n".
+      $tail_html."</body></html>\n");
+
+$bypackageindex='';
+for $k (map {$_->[0] }
+	sort { $a->[2] cmp $b->[2]  ||  $a->[1] <=> $b->[1] }
+	map { [$_, split(' ',$_,2)] } keys %sient)
+    { $bypackageindex.= $sient{$k}; }
+&file('ix/psummary.html','non',
+      $gPackageLog.
+      "<hr><pre>\n$shorthead\n".
+      $bypackageindex.
+      "</pre><hr>\n".
+      $tail_html."</body></html>\n");
+
+open(P,"$gPseudoDescFile") ||
+    &quit("$gPseudoDescFile: $!");
+$ppd=''; while(<P>) { s/\s*\n$//; $ppd.= &sani($_)."\n"; } close(P);
+&file('ix/pseudopackages.html','non',
+      $gPseudoIndex.
+      "<hr><pre>\n$ppd".
+      "</pre><hr>\n".
+      $tail_html."</body></html>\n");
+
+$_= $gHTMLStamp; s/SUBSTITUTE_DTIME/$dtime/o;
+
+&file('ix/zstamp.html','non',$_."</body></html>\n");
+
+sub notimestamp ($) {
+    $_= $_[0];
+    s/\<\!\-\-timestamp\-\-\>\n.*\n\<\!\-\-\/timestamp\-\-\>\n//;
+    return $_;
+}
+
+sub file {
+    local ($name,$ii,$file)= @_;
+    if ($diff) {
+        $cmppath= "$wwwbase/$name".($ii eq 'ref' ? '.ref' : '');
+        if (open(ORIG,"$cmppath")) {
+            undef $/; $orig= <ORIG>; $/= "\n";
+            close(ORIG);
+            if (&notimestamp($orig) eq &notimestamp($file)) {
+		print "preserve $name\n";
+		return;
+	    }
+            defined($c= open(P,"-|")) or &quit("pipe/fork for diff: $!");
+            if (!$c) {
+                open(Q,"|diff -e $cmppath -") or die "pipe/fork II for diff: $!\n";
+                print Q $file or die "write orig to diff: $!\n";
+                close(Q); $?==0 || $?==256 or die "diff gave $?\n";
+                exit($?>>8);
+            }
+            undef $/; $difftxt= <P>; $/= "\n";
+            close(P); $?==0 || $?==256 or die "diff fork gave $?\n";
+            if ($?==0) {
+                print "preserve $name\n";
+                return;
+            }
+            $v= (split(/\n/,$difftxt));
+            print "diff $v $ii $name\n${difftxt}thatdiff $name\n"
+                or &quit("stdout (diff): $!");
+            return;
+        }
+    } 
+    $v= (split(/\n/,$file));
+    print "file $v $ii $name\n${file}thatfile $name\n" or &quit("stdout: $!");
+}
+
+sub preserve {
+    print "preserve $_[0]\n";
+}
+
+print "end\n";
+
+while ($u= $cleanups[$#cleanups]) { &$u; }
+exit 0;

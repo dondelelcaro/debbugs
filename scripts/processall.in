@@ -1,0 +1,61 @@
+#!/usr/bin/perl
+#
+# Usage: processall
+#
+# Uses up: incoming/I<code><bugnum>.nn
+# Temps:   incoming/[GP].nn
+# Creates: incoming/E.nn
+# Stop;    process/stop
+
+require( '/etc/debbugs/config' );
+$ENV{'PATH'} = '/usr/lib/debbugs'.$ENV{'PATH'};
+chdir( "$gSpoolDir" ) || die 'chdir spool: $!\n';
+push( @INC, '/usr/lib/debbugs' );
+
+#open(DEBUG,">&4");
+
+$|=1;
+undef %fudged;
+
+for (;;) {
+    if (-f 'stop') {
+        print(STDERR "stop file created\n") || die $!;
+        last;
+    }
+    if (!@ids) {
+        opendir(DIR,"incoming") || die $!;
+        while ($_= readdir(DIR)) { push(@ids,$_) if s/^I//; }
+        last unless @ids;
+        @ids= sort(@ids);
+    }
+    stat("$gMaintainerFile") || die "stat $gMaintainerFile: $!\n";
+    $nf= @ids;
+    $id= shift(@ids);
+    unless (rename("incoming/I$id","incoming/G$id")) {
+        if ($fudged{$id}) {
+            die "$id already fudged once! $!\n";
+        }
+        $fudged{$id}= 1;
+        next;
+    }
+    if ($id =~ m/^[RC]/) {
+        print(STDOUT "[$nf] $id service ...") || die $!;
+        defined($c=fork) || die $!;
+        if (!$c) { exec("/usr/lib/debbugs/service",$id); die $!; }
+    } elsif ($id =~ m/^[BMQFDU]/) {
+        print(STDOUT "[$nf] $id process ...") || die $!;
+        defined($c=fork) || die $!;
+        if (!$c) { exec("/usr/lib/debbugs/process",$id); die $!; }
+    } else {
+        die "bad name $id";
+    }
+    $cc=waitpid($c,0); $cc == $c || die "$cc $c $!";
+    $status=$?;
+    if ($status) {
+        print(STDERR "$id: process failed ($status $!) - now in [PG]$id\n") || die $!;
+    }
+    print(STDOUT " done\n") || die $!;
+    $ndone++;
+}
+
+exit(0);

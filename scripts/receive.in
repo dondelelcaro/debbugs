@@ -1,0 +1,116 @@
+#!/usr/bin/perl
+
+#load configuration file
+require( '/etc/debbugs/config' );
+
+#set source of mail delivery
+#sets any prefix needed to get mailer to add it to error mail
+if ( $gMailer eq 'exim' ) 
+{	$gBadEmailPrefix = '';
+	$_ = $ENV{'LOCAL_PART'};
+} elsif ( $gMailer eq 'qmail' )
+{	$gBadEmailPrefix = '//';
+	$_ = $ENV{'DEFAULT'};
+#	$_ = $ENV{'RECIPIENT'};
+#	s/^\w+-bugs--?//;
+} else 
+{	$gBadEmailPrefix = '';
+	$_ = $ARGV[0];
+	s/\>//;
+	s/\<//;
+}
+
+
+#remove everything from @ to end of line
+s/\@.*$//;
+
+#convert remaining upper case to lower case
+y/A-Z/a-z/;
+
+#set up to determine command
+%withnaddressmap= ('-submit',     'B',
+                   '',            'B',
+                   '-maintonly',  'M',
+                   '-quiet',      'Q',
+                   '-forwarded',  'F',
+                   '-done',       'D',
+                   '-close',      'D',
+                   '-submitter',  'U');
+
+%withoutnaddressmap= ('submit',     'B',
+                      'bugs',       'B',
+                      'maintonly',  'M',
+                      'quiet',      'Q',
+                      'forwarded',  'F',
+                      'done',       'D',
+                      'close',      'D',
+                      'request',    'R',
+                      'submitter',  'U',
+                      'control',    'C');
+
+#determine command
+if (s/^(\d{1,9})\b//) {
+    $bugnumber= $1;
+    $map= $withnaddressmap{$_};
+    $addrrec= "$bugnumber$_";
+} else {
+    $bugnumber= '';
+    $map= $withoutnaddressmap{$_};
+    $addrrec= "$_";
+}
+
+#print no command received
+if (!defined($map)) {
+    print STDERR <<ENDTEXT;
+$gBadEmailPrefix
+$gBadEmailPrefix Unknown $gBug service address $_\@$gEmailDomain.
+$gBadEmailPrefix Recognised addresses are:
+$gBadEmailPrefix
+$gBadEmailPrefix     General:       Read $gBug# in Subject:    $gBug# is NNNN:
+$gBadEmailPrefix
+$gBadEmailPrefix      request        submit  $gBug             NNNN  NNNN-submit
+$gBadEmailPrefix      control        maintonly                NNNN-maintonly
+$gBadEmailPrefix      owner          quiet                    NNNN-quiet
+$gBadEmailPrefix      postmaster     forwarded                NNNN-forwarded
+$gBadEmailPrefix                     done  close              NNNN-done  NNNN-close
+$gBadEmailPrefix                     submitter                NNNN-submitter
+$gBadEmailPrefix
+$gBadEmailPrefix (all \@$gEmailDomain.)
+$gBadEmailPrefix
+$gBadEmailPrefix For instructions via the WWW see:
+$gBadEmailPrefix   http://$gWebDomain/
+$gBadEmailPrefix   http://$gWebDomain/Reporting.html
+$gBadEmailPrefix   http://$gWebDomain/Developer.html
+$gBadEmailPrefix   http://$gWebDomain/Access.html
+$gBadEmailPrefix $gTextInstructions
+$gBadEmailPrefix For details of how to access $gBug report logs by email:
+$gBadEmailPrefix   send \`request\@$gEmailDomain' the word \`help'
+$gBadEmailPrefix
+ENDTEXT
+    exit(100);
+}
+
+@months=qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
+($sec,$min,$hour,$mday,$mon,$year)= gmtime(time);
+
+$queue= "$map$bugnumber";
+
+chdir("$gSpoolDir/incoming") || &failure("chdir to spool: $!");
+
+$id= time.$$;
+open(FILE,">T.$id") || &failure("open temporary file: $!");
+printf(FILE "Received: (at %s) by $gEmailDomain; %d %s %d %02d:%02d:%02d +0000\n",
+       $addrrec, $mday,$months[$mon],$year+1900, $hour,$min,$sec) ||
+    &failure("write header to temporary file: $!");
+while(<STDIN>) { print(FILE) || &failure("write temporary file: $!"); }
+close(FILE) || &failure("close temporary file: $!");
+
+rename("T.$id","I$queue.$id") || &failure("rename spool message: $!");
+
+exit(0);
+
+sub failure {
+    length($id) && unlink("T.$id");
+    print STDERR "bugs receive failure: @_\n";
+    exit(75); # EX_TEMPFAIL
+}
