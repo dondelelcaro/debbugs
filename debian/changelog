@@ -1,19 +1,18 @@
 debbugs (2.4.1) UNRELEASED; urgency=low
 
-  * Exit the CGI scripts straight away if the HTTP method is HEAD, to save
-    pointless work. [Colin]
-  * Display pending+fixed bugs as "fixed in NMU", not "pending upload".
-    [Colin]
-  * Add a man page for debbugsconfig. [Colin]
-  * Report original tags when changing them, closes: #170630. [Colin]
-  * Add missing <ul></ul> tags to db2html's output, closes: #50746. [Colin]
-  * Add a 'submitter' command to service, based on a patch by Matt Kraai.
-    [Colin]
-  * Remove the final use of cgi-lib.pl, so it's gone. Remove copyright
-    notices that were there due to using it. [Colin]
-  * Accept ';' as well as '&' as a CGI argument separator. [Colin]
-  * db2html now works with the new hashed database layout. [Colin]
-  * Disable the fixed severity in favour of the tag. [Colin]
+  * Colin Watson:
+    - Exit the CGI scripts straight away if the HTTP method is HEAD, to save
+      pointless work.
+    - Display pending+fixed bugs as "fixed in NMU", not "pending upload".
+    - Add a man page for debbugsconfig.
+    - Report original tags when changing them, closes: #170630.
+    - Add missing <ul></ul> tags to db2html's output, closes: #50746.
+    - Add a 'submitter' command to service, based on a patch by Matt Kraai.
+    - Remove the final use of cgi-lib.pl, so it's gone. Remove copyright
+      notices that were there due to using it.
+    - Accept ';' as well as '&' as a CGI argument separator.
+    - db2html now works with the new hashed database layout.
+    - Disable the fixed severity in favour of the tag.
 
  -- Colin Watson <cjwatson@debian.org>  Mon, 25 Nov 2002 03:50:20 +0000
 
