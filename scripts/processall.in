@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: processall.in,v 1.4 2000/10/07 17:27:13 joy Exp $
+# $Id: processall.in,v 1.5 2001/07/15 10:05:23 doogie Exp $
 #
 # Usage: processall
 #
@@ -9,6 +9,7 @@
 # Stop;    process/stop
 
 require( '/etc/debbugs/config' );
+require( '/usr/lib/debbugs/errorlib' );
 $ENV{'PATH'} = '/usr/lib/debbugs:'.$ENV{'PATH'};
 chdir( "$gSpoolDir" ) || die 'chdir spool: $!\n';
 push( @INC, '/usr/lib/debbugs' );
@@ -18,6 +19,7 @@ push( @INC, '/usr/lib/debbugs' );
 $|=1;
 undef %fudged;
 
+&filelock('incoming-cleaner');
 for (;;) {
     if (-f 'stop') {
         print(STDERR "stop file created\n") || die $!;
@@ -58,5 +60,6 @@ for (;;) {
     print(STDOUT " done\n") || die $!;
     $ndone++;
 }
+&unfilelock;
 
 exit(0);
