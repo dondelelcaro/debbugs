@@ -37,12 +37,12 @@ headers, but <a href="#xcc">a different method, described below</a>.</p>
 
 <p>There is a program that was developed in Debian to help reporting
 $gBug reports, it's called
-<code><a href="http://packages.debian.org/stable/utils/reportbug.html">reportbug</a></code>.
+<code><a href="http://packages.debian.org/stable/utils/reportbug">reportbug</a></code>.
 It will guide you through the bug reporting process step by step,
 and probably ease filing bugs that way.</p>
 
 <p>Emacs users can also use the debian-bug command provided by the
-<code><a href="http://packages.debian.org/stable/utils/debbugs-el.html">
+<code><a href="http://packages.debian.org/stable/utils/debbugs-el">
 debbugs-el</a></code> package. When called with <kbd>M-x
 debian-bug</kbd>, it will ask for all necessary information in a
 similar way to <code>reportbug</code>.</p>
