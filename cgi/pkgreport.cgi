@@ -15,10 +15,11 @@ require '/etc/debbugs/text';
 my $pkg = param('pkg');
 my $maint = defined $pkg ? undef : param('maint');
 my $maintenc = (defined $pkg || defined $maint) ? undef : param('maintenc');
+my $submitter = (defined $pkg || defined $maint || defined $maintenc) ? undef : param('submitter');
 my $repeatmerged = (param('repeatmerged') || "yes") eq "yes";
 my $archive = (param('archive') || "no") eq "yes";
 
-$pkg = 'ALL' unless (defined($pkg) || defined($maint) || defined($maintenc));
+$pkg = 'ALL' unless (defined($pkg) || defined($maint) || defined($maintenc)) || defined($submitter);
 
 my $Archived = $archive ? "Archived" : "";
 
@@ -38,8 +39,10 @@ if (defined $pkg) {
     $tag = "package $pkg";
 } elsif (defined $maint) {
     $tag = "maintainer $maint";
-} else {
+} elsif (defined $maintenc) {
     $tag = "maintainer $maintenc";
+} else {
+    $tag = "submitter $submitter";
 }
 
 set_option("repeatmerged", $repeatmerged);
@@ -50,8 +53,10 @@ if (defined $pkg) {
     @bugs = pkgbugs($pkg);
 } elsif (defined $maint) {
     @bugs = maintbugs($maint);
+} elsif (defined $maintenc) {
+    @bugs = maintbugs($maintenc);
 } else {
-    @bugs = maintencbugs($maintenc);
+    @bugs = submitterbugs($submitter);
 }
 
 my $result = htmlizebugs(@bugs);
@@ -75,9 +80,13 @@ if (defined $maintainer{$pkg}) {
 if (defined $pkg) {
     print "<p>Note that with multi-binary packages there may be other\n";
     print "reports filed under the different binary package names.</p>\n";
-} else {
+} elsif (defined $maint || defined $maintenc) {
     print "<p>Note that maintainers may use different Maintainer fields for\n";
     print "different packages, so there may be other reports filed under\n";
+    print "different addresses.\n";
+} elsif (defined $submitter) {
+    print "<p>Note that people may use different email accounts for\n";
+    print "different bugs, so there may be other reports filed under\n";
     print "different addresses.\n";
 }
 

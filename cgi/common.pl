@@ -197,6 +197,17 @@ sub htmlizebugs {
     return $result;
 }
 
+sub submitterbugs {
+    my $maint = shift;
+    my $chk = sub {
+        my %d = @_;
+        ($maintemail = $d{"maint"}) =~ s/\s*\(.*\)\s*//;
+        if ($maintemail =~ m/<(.*)>/) { $maintemail = $1 }
+        return $maintemail eq $maint;
+    };
+    return getbugs($chk);
+}
+
 sub maintbugs {
     my $maint = shift;
     my %maintainers = getmaintainers();
