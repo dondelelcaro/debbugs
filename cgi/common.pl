@@ -404,7 +404,7 @@ sub getbugstatus {
 
     my $dir = getbugdir( $bugnum, "status" );
     return {} if ( !$dir );
-    open S, "< $status{ file }";
+    open S, "< $dir/$bugnum.status";
     my @lines = qw(originator date subject msgid package tags done
 			forwarded mergedwith severity);
     while(<S>) {
