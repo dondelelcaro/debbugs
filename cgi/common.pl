@@ -276,11 +276,12 @@ sub getbugs {
     my @result = ();
     while(<I>) 
     {
-        if (m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.+)$/) {
+        if (m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/) {
             if ($bugfunc->(pkg => $1, bug => $2, status => $4, submitter => $5,
-			   severity => $6, title => $7))
+			   severity => $6, tags => $7))
 	    {
 	    	push (@result, $2);
+		#last if (@result > 400);
 	    }
 	}
     }
