@@ -32,6 +32,13 @@ my $terse = ($param{'terse'} || 'no') eq 'yes';
 my $reverse = ($param{'reverse'} || 'no') eq 'yes';
 my $mbox = ($param{'mbox'} || 'no') eq 'yes'; 
 
+# Not used by this script directly, but fetch these so that pkgurl() and
+# friends can propagate them correctly.
+my $archive = ($param{'archive'} || 'no') eq 'yes';
+my $repeatmerged = ($param{'repeatmerged'} || 'yes') eq 'yes';
+set_option('archive', $archive);
+set_option('repeatmerged', $repeatmerged);
+
 my $buglog = buglog($ref);
 
 if ($ENV{REQUEST_METHOD} eq 'HEAD' and not defined($att) and not $mbox) {
