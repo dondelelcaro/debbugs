@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.64 2003/04/05 00:10:17 cjwatson Exp $
+# $Id: process.in,v 1.65 2003/04/24 02:24:55 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -492,8 +492,9 @@ pseudo-header following the real mail header), or didn't have a
 pseudo-header at all.
 
 This makes it much harder for us to categorise and deal with your
-problem report. Please _resubmit_ your report and tell us which package
-the report is on. For help, check out http://$gWebDomain/Reporting$gHTMLSuffix.
+problem report. Please _resubmit_ your report to $baddress\@$gEmailDomain
+and tell us which package the report is on. For help, check out
+http://$gWebDomain/Reporting$gHTMLSuffix.
 
 Your message was dated $header{'date'} and had
 message-id $header{'message-id'}
