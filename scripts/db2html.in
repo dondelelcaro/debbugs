@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: db2html.in,v 1.12 2002/11/25 13:53:44 cjwatson Exp $
+# $Id: db2html.in,v 1.13 2002/12/11 02:15:15 cjwatson Exp $
 # usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
 
 #load the necessary libraries/configuration
@@ -60,7 +60,7 @@ if (defined($stampfile))
 }
 
 #only process file if greater than last run...
-if (defined($lastrun) && -M "db" > $lastrun) 
+if (defined($lastrun) && -M "db-h" > $lastrun) 
 {	$_= $gHTMLStamp;
     s/SUBSTITUTE_DTIME/$dtime/o;
     s/\<\!\-\-updateupdate\-\-\>.*\<\!\-\-\/updateupdate\-\-\>/check/;
@@ -81,9 +81,14 @@ while(<MM>)
 close(MM);
 
 #load all database files
-opendir(D,'db') || &quit("opendir db: $!");
-@files= sort { $a <=> $b } readdir(D);
+opendir(D,'db-h') || &quit("opendir db-h: $!");
+@dirs = sort { $a <=> $b } grep(s#^#db-h/#,grep(/^\d+$/,readdir(D)));
 closedir(D);
+foreach my $dir (@dirs) {
+    opendir(D,$dir);
+    push @files, sort { $a <=> $b } grep(/^-?\d+\.log$/,readdir(D));
+    closedir(D);
+}
 
 for $pending (qw(pending done forwarded)) 
 {	for $severity (@showseverities) 

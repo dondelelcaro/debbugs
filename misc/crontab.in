@@ -3,7 +3,7 @@
 DBC_CRONTAB_MAILTO
 DBC_PROCESS_FREQ	* * *	DBC_SCRIPT_PATH/processall >/dev/null
 DBC_HTMLCHECK_FREQ	* * *	DBC_SCRIPT_PATH/html-control >/dev/null
-22 7			* * *	touch DBC_SPOOL_PATH/db
+22 7			* * *	touch DBC_SPOOL_PATH/db-h
 23 7			* * 3	DBC_SCRIPT_PATH/age-1
 24 7			* * *	DBC_SCRIPT_PATH/expire >/dev/null
 23 16			* * 5	DBC_SCRIPT_PATH/mailsummary undone >/dev/null
