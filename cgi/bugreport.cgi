@@ -14,7 +14,7 @@ require './common.pl';
 require '/etc/debbugs/config';
 require '/etc/debbugs/text';
 
-use vars(qw($gHTMLTail $gWebDomain));
+use vars(qw($gHTMLTail $gSpoolDir $gWebDomain));
 
 my %param = readparse();
 
@@ -101,6 +101,9 @@ $descriptivehead.= ".";
 
 my $buglog = buglog($ref);
 open L, "<$buglog" or &quit("open log for $ref: $!");
+if ($buglog !~ m#^\Q$gSpoolDir/db-h/#) {
+    $descriptivehead .= "\n<br>Bug is <strong>archived</strong>. No further changes may be made.";
+}
 
 my $log='';
 
