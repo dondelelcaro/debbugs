@@ -322,7 +322,13 @@ sub htmlizebugs {
             }
 	    next unless ($okay);
 	}
-	    
+	next if @common_pending_include and
+	     not grep { $_ eq $status{pending} } @common_pending_include;
+	next if @common_severity_include and
+	     not grep { $_ eq $status{severity} } @common_severity_include;
+	next if grep { $_ eq $status{pending} } @common_pending_exclude;
+	next if grep { $_ eq $status{severity} } @common_severity_exclude;
+
 	my $html = sprintf "<li><a href=\"%s\">#%d: %s</a>\n<br>",
 	    bugurl($bug), $bug, htmlsanit($status{subject});
 	$html .= htmlindexentrystatus(\%status) . "\n";
@@ -336,20 +342,16 @@ sub htmlizebugs {
 	$result .= "<UL>\n" . join("", @rawsort ) . "</UL>\n";
     } else {
 	my @pendingList = qw(pending forwarded pending-fixed fixed done);
-	@pendingList = @common_pending_include if @common_pending_include;
 	@pendingList = reverse @pendingList if $common_pending_reverse;
 #print STDERR join(",",@pendingList)."\n";
 #print STDERR join(",",@common_pending_include).":$#common_pending_include\n";
     foreach my $pending (@pendingList) {
-	next if grep( /^$pending$/, @common_pending_exclude);
 	my @severityList = @debbugs::gSeverityList;
-	@severityList = @common_severity_include if @common_severity_include;
 	@severityList = reverse @severityList if $common_severity_reverse;
 #print STDERR join(",",@severityList)."\n";
 
 #        foreach my $severity(@debbugs::gSeverityList) {
         foreach my $severity(@severityList) {
-	    next if grep( /^$severity$/, @common_severity_exclude);
             $severity = $debbugs::gDefaultSeverity if ($severity eq '');
             next unless defined $section{${pending} . "_" . ${severity}};
             $result .= "<HR><H2>$debbugs::gSeverityDisplay{$severity} - $displayshowpending{$pending}</H2>\n";
