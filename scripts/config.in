@@ -1,12 +1,12 @@
 # This is the template debbugs configuration file.
 # You *must* edit it in order for debbugs to work.
-# $Id: config.in,v 1.8 2000/10/07 19:00:44 joy Exp $
+# $Id: config.in,v 1.9 2000/10/08 15:17:10 joy Exp $
 
 # Domains
 $gEmailDomain = "bugs.something";			# e.g. bugs.debian.org
 $gListDomain = "lists.something";			# e.g. lists.debian.org
 $gWebDomain = "localhost/Bugs";				# e.g. www.debian.org/Bugs
-$gCGIDomain = "/Bugs/cgi";				# e.g. cgi.debian.org
+$gCGIDomain = "$gWebDomain/Bugs/cgi";			# e.g. cgi.debian.org
 $gMirrors = "";						# comma separated list
 
 # Project identification
