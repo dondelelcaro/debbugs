@@ -24,6 +24,8 @@ my %maintainer = %{getmaintainers()};
 my %pkgsrc = %{getpkgsrc()};
 
 my $ref = $param{'bug'} || quit("No bug number");
+$ref =~ /(\d+)/ or quit("Invalid bug number");
+$ref = $1;
 my $msg = $param{'msg'} || "";
 my $att = $param{'att'};
 my $boring = ($param{'boring'} || 'no') eq 'yes'; 
