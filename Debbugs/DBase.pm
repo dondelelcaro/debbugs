@@ -153,7 +153,7 @@ sub OpenLogfile
     if ( $record ne $OpenedLog )
     {
 	$LogfileHandle = OpenFile("/db/", $record, ".log", "log");
-	seek( $FileHandle, 0, 0 );
+	seek( $FileHandle, 0, 2 );
 	$OpenedLog = $record;
     }
 }
