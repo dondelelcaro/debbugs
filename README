@@ -12,7 +12,7 @@ SYSTEM REQUIREMENTS
  - GNU date
  - GNU gzip
  - Perl 5 (5.005 is known to work)
- - Mailtools perl module to manipulate email
+ - Mailtools and MIME-tools perl modules to manipulate email
  - Lynx 2.7 or later
  - The bug system requires its own mail domain.  It comes with code
    which understands how exim, qmail and sendmail deliver mail for such a 
