@@ -541,8 +541,8 @@ sub getbugstatus {
 
     $status{"pending"} = 'pending';
     $status{"pending"} = 'forwarded'	    if (length($status{"forwarded"}));
-    $status{"pending"} = 'fixed'	    if ($status{"tags"} =~ /\bfixed\b/);
     $status{"pending"} = 'pending-fixed'    if ($status{"tags"} =~ /\bpending\b/);
+    $status{"pending"} = 'fixed'	    if ($status{"tags"} =~ /\bfixed\b/);
     $status{"pending"} = 'done'		    if (length($status{"done"}));
 
     return \%status;
