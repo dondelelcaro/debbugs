@@ -328,7 +328,7 @@ print STDERR "done optimized\n" if ($debug);
             if (m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/) {
 		my %hash = (pkg => $1, bug => $2, status => $4,
 			    submitter => $5, severity => $6, tags => $7);
-                if ($bugfunc->(\%hash)) {
+                if ($bugfunc->(%hash)) {
 	       	    push (@result, $2);
 	        }
 	    }

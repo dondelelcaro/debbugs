@@ -58,7 +58,7 @@ my $tag;
 my @bugs;
 if (defined $pkg) {
   $tag = "package $pkg";
-  @bugs = @{getbugs(sub {my %d=@{$_[0]}; return $pkg eq $d{"pkg"}}, 'package', $pkg)};
+  @bugs = @{getbugs(sub {my %d=@_; return $pkg eq $d{"pkg"}}, 'package', $pkg)};
 } elsif (defined $maint) {
   my %maintainers = %{getmaintainers()};
   $tag = "maintainer $maint";
@@ -69,7 +69,7 @@ if (defined $pkg) {
     $me = $1 if ($me =~ m/<(.*)>/);
     push @pkgs, $p if ($me eq $maint);
   }
-  @bugs = @{getbugs(sub {my %d=@{$_[0]}; my $me; 
+  @bugs = @{getbugs(sub {my %d=@_}; my $me; 
 		       ($me = $maintainers{$d{"pkg"}}||"") =~ s/\s*\(.*\)\s*//;
 		       $me = $1 if ($me =~ m/<(.*)>/);
 		       return $me eq $maint;
