@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.10 2002/10/27 13:40:17 ajt Exp $
+# $Id: errorlib.in,v 1.11 2002/11/02 09:21:42 ajt Exp $
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -108,12 +108,10 @@ sub bughook {
 	&filelock("debbugs.trace.lock");
 	&appendfile("debbugs.trace","$type $ref\n",@_);
 	my @stuff=split/\n/, "$_[0]\n\n\n\n\n\n\n";
-	# XXX: bug: this'll only keep the most recent update until index.db
-	#      starts getting overwritten by index.db.realtime after update
-	my $hash = get_hashname($ref);
-	unlink("$gSpoolDir/db/$ref.status.new");
-	link("$gSpoolDir/db-h/$hash/$ref.status", "$gSpoolDir/db/$ref.status.new");
-	rename("$gSpoolDir/db/$ref.status.new", "$gSpoolDir/db/$ref.status");
+
+	my $hash = get_hashname($ref); # unused
+
+	# update realtime index.db
 	open(IDXDB, "</org/bugs.debian.org/spool/index.db.realtime")
 		or open(IDXDB, "</org/bugs.debian.org/spool/index.db");
 	open(IDXNEW, ">/org/bugs.debian.org/spool/index.db.realtime.new");
@@ -138,6 +136,8 @@ sub bughook {
 	close(IDXDB);
 	rename("/org/bugs.debian.org/spool/index.db.realtime.new",
 		"/org/bugs.debian.org/spool/index.db.realtime");
+
+
 	&unfilelock;
 }
 

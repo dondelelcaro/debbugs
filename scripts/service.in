@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.59 2002/10/21 08:37:29 cjwatson Exp $
+# $Id: service.in,v 1.60 2002/11/02 09:21:43 ajt Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -162,20 +162,15 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
     } elsif (m/^send-detail\s+\#?(\d+)$/i) {
 	&transcript("This BTS function is currently disabled, sorry.\n\n");
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
-#        $ref= $1+0; $reffile= $ref; $reffile =~ s,^..,$&/$&,;
-#        &sendlynxdoc("db/$reffile-b.html","additional logs for $gBug#$ref");
     } elsif (m/^index(\s+full)?$/i) {
 	&transcript("This BTS function is currently disabled, sorry.\n\n");
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
-#        &sendlynxdoc("db/ix/full.html",'full index');
     } elsif (m/^index-summary\s+by-package$/i) {
 	&transcript("This BTS function is currently disabled, sorry.\n\n");
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
-#        &sendlynxdoc("db/ix/psummary.html",'summary index sorted by package/title');
     } elsif (m/^index-summary(\s+by-number)?$/i) {
 	&transcript("This BTS function is currently disabled, sorry.\n\n");
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
-#        &sendlynxdoc("db/ix/summary.html",'summary index sorted by number/date');
     } elsif (m/^index(\s+|-)pack(age)?s?$/i) {
 	&sendlynxdoc("cgi-bin/pkgindex.cgi?indexon=pkg",'index of packages');
     } elsif (m/^index(\s+|-)maints?$/i) {
@@ -188,41 +183,6 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
 		next;
 	}
 	&sendlynxdoc("$maint","$gBug list for maintainer \`$maint'");
-if (0) {
-        $substrg= $2; $matches=0;
-        opendir(DBD,"$gWebDir/db/ma") || die $!;
-        while (defined($_=readdir(DBD))) {
-            next unless m/^l/ && m/\.html$/;
-            &transcript("F|$_\n") if $dl>1;
-            $filename= $_; s/^l//; s/\.html$//;
-            &transcript("P|$_\n") if $dl>2;
-            while (s/-(..)([^_])/-$1_-$2/) { }
-            &transcript("P|$_\n") if $dl>2;
-            s/^(.{0,2})_/$1-20_/g; while (s/([^-]..)_/$1-20_/) { };
-            &transcript("P|$_\n") if $dl>2;
-            s/^,(.*),(.*),([^,]+)$/$1-40_$2-20_-28_$3-29_/;
-            &transcript("P|$_\n") if $dl>2;
-            s/^([^,]+),(.*),(.*),$/$1-20_-3c_$2-40_$3-3e_/;
-            &transcript("P|$_\n") if $dl>2;
-            s/\./-2e_/g;
-            &transcript("P|$_\n") if $dl>2;
-            $out='';
-            while (m/-(..)_/) { $out.= $`.sprintf("%c",hex($1)); $_=$'; }
-            $out.=$_;
-            &transcript("M|$out\n") if $dl>1;
-            next unless index(lc $out, lc $substrg)>=0;
-            &transcript("S|$filename\n") if $dl>0;
-            &transcript("S|$out\n") if $dl>0;
-            $matches++;
-            &sendlynxdocraw("db/ma/$filename","$gBug list for maintainer \`$out'");
-        }
-        if ($matches) {
-            &transcript("$gBug list(s) for $matches maintainer(s) sent.\n\n");
-        } else {
-            &transcript("No maintainers found containing \`$substrg'.\n".
-                        "Use \`index-maint' to get list of maintainers.\n\n");
-        }
-} # 0
         $ok++;
     } elsif (m/^index(\s+|-)pack(age)?s?\s+(\S.*\S)$/i) {
 	$package = $+;
@@ -232,41 +192,18 @@ if (0) {
 		next;
 	}
 	&sendlynxdoc("$package","$gBug list for package $package sent.\n\n");
-if (0) {
-        $substrg= $+; $matches=0;
-        opendir(DBD,"$gWebDir/db/pa") || die $!;
-        while (defined($_=readdir(DBD))) {
-            next unless m/^l/ && m/\.html$/;
-            &transcript("F|$_\n") if $dl>1;
-            $filename= $_; s/^l//; s/\.html$//;
-            next unless index(lc $_, lc $substrg)>=0;
-            &transcript("S|$filename\n") if $dl>0;
-            &transcript("S|$out\n") if $dl>0;
-            $matches++;
-            &sendlynxdocraw("db/pa/$filename","$gBug list for package \`$_'");
-        }
-        if ($matches) {
-            &transcript("$gBug list(s) for $matches package(s) sent.\n\n");
-        } else {
-            &transcript("No packages found containing \`$substrg'.\n".
-                        "Use \`index-packages' to get list of packages.\n\n");
-        }
-} # 0
         $ok++;
     } elsif (m/^send-unmatched(\s+this|\s+-?0)?$/i) {
 	&transcript("This BTS function is currently disabled, sorry.\n\n");
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
-#        &sendlynxdoc("db/ju/unmatched-1.html","junk (this week)");
     } elsif (m/^send-unmatched\s+(last|-1)$/i) {
 	&transcript("This BTS function is currently disabled, sorry.\n\n");
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
-#        &sendlynxdoc("db/ju/unmatched-2.html","junk (last week)");
     } elsif (m/^send-unmatched\s+(old|-2)$/i) {
 	&transcript("This BTS function is currently disabled, sorry.\n\n");
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
-#        &sendlynxdoc("db/ju/unmatched-3.html","junk (two weeks ago)");
     } elsif (m/^getinfo\s+([\w-.]+)$/i) {
-# the following is basically a Debian-specific kludge, but who cares
+        # the following is basically a Debian-specific kludge, but who cares
         $req = $1;
 	if ($req =~ /^maintainers$/i && -f "$gConfigDir/Maintainers") {
 	    &sendinfo("local", "$gConfigDir/Maintainers", "Maintainers file");
