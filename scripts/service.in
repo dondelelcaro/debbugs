@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.73 2003/05/03 20:01:20 doogie Exp $
+# $Id: service.in,v 1.74 2003/05/03 21:10:40 doogie Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -1008,6 +1008,7 @@ sub addmaintainers {
 	    print "maintainer add >$p|$addmaint<\n" if $debug;
         } else { 
 	    print "maintainer none >$p<\n" if $debug; 
+	    &transcript("Warning: Unknown package '$p'\n");
 	    &transcript("MR|unknown-package|$p|$ref|\n") if $dl>2;
             $maintccreasons{$gUnknownMaintainerEmail}{$p}{$ref}= 1;
 	}
