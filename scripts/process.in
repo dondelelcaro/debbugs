@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.32 2001/08/16 06:55:17 doogie Exp $
+# $Id: process.in,v 1.33 2001/08/16 07:06:16 doogie Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -906,6 +906,7 @@ print DEBUG "maintainer add >$p|$maintainerof{$p}<\n";
             $anymaintfound++;
         } else {
 print DEBUG "maintainer none >$p<\n";
+	    push(@maintaddrs,$gUnknownMaintainerEmail) unless $anymaintnotfound;
             $anymaintnotfound++;
             last;
         }
