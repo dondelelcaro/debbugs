@@ -1,8 +1,10 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.68 2003/05/15 22:48:00 cjwatson Exp $
+# $Id: process.in,v 1.69 2003/05/25 13:32:02 joy Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
+
+use POSIX qw(strftime);
 
 use Mail::Address;
 use MIME::Parser;
@@ -53,7 +55,7 @@ chomp @msg;
 
 print DEBUG "###\n",join("##\n",@msg),"\n###\n";
 
-chop($tdate= `date -u '+%a, %d %h %Y %T GMT'`);
+$tdate = strftime "%a, %d %h %Y %T UTC", gmtime;
 $fwd= <<END;
 Received: via spool by $baddress\@$gEmailDomain id=$nn
           (code $codeletter ref $tryref); $tdate
