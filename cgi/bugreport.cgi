@@ -59,7 +59,7 @@ $indexentry .= $showseverity;
 $indexentry .= "Package: <A HREF=\"" . pkgurl($status{package}) . "\">"
 	    .htmlsanit($status{package})."</A>;\n";
 
-$indexentry .= ";Reported by: ".htmlsanit($status{originator});
+$indexentry .= "Reported by: ".htmlsanit($status{originator});
 $indexentry .= ";\nTags: <strong>"
 		. htmlsanit(join(", ", sort(split(/\s+/, $status{tags}))))
 		. "</strong>"
