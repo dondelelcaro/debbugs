@@ -1,10 +1,11 @@
 # This is the bugs.debian.org debbugs configuration file.
-# $Id: config.debian,v 1.15 2002/11/17 22:45:16 cjwatson Exp $
+# $Id: config.debian,v 1.16 2003/01/28 23:52:08 cjwatson Exp $
 
 # Domains
 $gEmailDomain = "bugs.debian.org";
 $gListDomain = "lists.debian.org";
 $gWebDomain = "www.debian.org/Bugs";
+$gHTMLSuffix = "";
 $gPackagePages = "packages.debian.org";
 $gCGIHost = "bugs.debian.org";
 $gCGIPath = "/cgi-bin/";

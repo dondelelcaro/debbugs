@@ -1,6 +1,6 @@
 # This is the template debbugs configuration file.
 # You *must* edit it in order for debbugs to work.
-# $Id: config.in,v 1.16 2002/11/17 22:45:16 cjwatson Exp $
+# $Id: config.in,v 1.17 2003/01/28 23:52:08 cjwatson Exp $
 
 # Domains
 $gEmailDomain = "bugs.something";			# e.g. bugs.debian.org
@@ -9,6 +9,7 @@ $gWebHost = "localhost";				# e.g. www.debian.org
 $gWebHostBugDir = "Bugs";				# e.g. Bugs
 # For now, don't change this one manually!
 $gWebDomain = "$gWebHost/$gWebHostBugDir";
+$gHTMLSuffix = ".html";
 $gCGIDomain = "$gWebDomain/Bugs/cgi";			# e.g. cgi.debian.org
 $gMirrors = "";						# comma separated list
 $gPackagePages = "packages.debian.org";                 # e.g. packages.debian.org

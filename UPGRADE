@@ -2,6 +2,13 @@
                             Debbugs upgrade notes
                            +=====================+
 
+From 2.4 to 2.4.1
+-----------------
+
+Add the following variables to the /etc/debbugs/config file:
+
+$gHTMLSuffix = ".html";
+
 From 2.3 to 2.4
 ---------------
 

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.58 2003/01/05 17:54:23 cjwatson Exp $
+# $Id: process.in,v 1.59 2003/01/28 23:52:08 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -482,7 +482,7 @@ pseudo-header at all.
 
 This makes it much harder for us to categorise and deal with your
 problem report. Please _resubmit_ your report and tell us which package
-the report is on. For help, check out http://$gWebDomain/Reporting.html.
+the report is on. For help, check out http://$gWebDomain/Reporting$gHTMLSuffix.
 
 Your message was dated $header{'date'} and had
 message-id $header{'message-id'}
