@@ -22,6 +22,19 @@ nice(5);
 
 my %param = readparse();
 
+my $repeatmerged = ($param{'repeatmerged'} || "yes") eq "yes";
+my $archive = ($param{'archive'} || "no") eq "yes";
+my $include = $param{'include'} || "";
+my $exclude = $param{'exclude'} || "";
+my $raw_sort = ($param{'raw'} || "no") eq "yes";
+my $bug_rev = ($param{'bug-rev'} || "no") eq "yes";
+my $pend_rev = ($param{'pend-rev'} || "no") eq "yes";
+my $sev_rev = ($param{'sev-rev'} || "no") eq "yes";
+my $pend_exc = $param{'&pend-exc'} || $param{'pend-exc'} || "";
+my $pend_inc = $param{'&pend-inc'} || $param{'pend-inc'} || "";
+my $sev_exc = $param{'&sev-exc'} || $param{'sev-exc'} || "";
+my $sev_inc = $param{'&sev-inc'} || $param{'sev-inc'} || "";
+
 my ($pkg, $src, $maint, $maintenc, $submitter, $severity, $status);
 
 my %which = (
@@ -42,7 +55,7 @@ foreach ( keys %which ) {
 		last;
 	}
 }
-if (!$found) {
+if (!$found && !$archive) {
 	foreach ( @allowedEmpty ) {
 		if (exists($param{$_})) {
 			${ $which{$_} } = '';
@@ -63,19 +76,6 @@ if (!$found) {
 	}
 }
 quit("You have to choose something to select by") if (!$found);
-
-my $repeatmerged = ($param{'repeatmerged'} || "yes") eq "yes";
-my $archive = ($param{'archive'} || "no") eq "yes";
-my $include = $param{'include'} || "";
-my $exclude = $param{'exclude'} || "";
-my $raw_sort = ($param{'raw'} || "no") eq "yes";
-my $bug_rev = ($param{'bug-rev'} || "no") eq "yes";
-my $pend_rev = ($param{'pend-rev'} || "no") eq "yes";
-my $sev_rev = ($param{'sev-rev'} || "no") eq "yes";
-my $pend_exc = $param{'&pend-exc'} || $param{'pend-exc'} || "";
-my $pend_inc = $param{'&pend-inc'} || $param{'pend-inc'} || "";
-my $sev_exc = $param{'&sev-exc'} || $param{'sev-exc'} || "";
-my $sev_inc = $param{'&sev-inc'} || $param{'sev-inc'} || "";
 
 my $Archived = $archive ? " Archived" : "";
 
