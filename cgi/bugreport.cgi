@@ -180,10 +180,11 @@ while(my $line = <L>) {
 			&quit("$ref: Transition from $normstate to $newstate at $linenum disallowed");
 		}
 
-		if ($newstate eq 'go') {
-			$this .= "<pre>\n";
-		}
+#$this .= "\n<br>states: $normstate $newstate<br>\n";
 
+#		if ($newstate eq 'go') {
+#			$this .= "<pre>\n";
+#		}
 		if ($newstate eq 'html') {
 			$this = '';
 		}
@@ -253,13 +254,15 @@ while(my $line = <L>) {
 				}
 				$this = "$downloadHtml\n$this$downloadHtml" if $downloadHtml;
 				$downloadHtml = '';
-				$this = "<pre>\n$this</pre>\n"
-					if $normstate eq 'go' || $normstate eq 'go-nox';
+#				if ($normstate eq 'go' || $normstate eq 'go-nox') {
+				if ($normstate ne 'html') {
+					$this = "<pre>\n$this</pre>\n";
+				}
+				if ($normstate eq 'html') {
+					$this .= "  <em><a href=\"" . bugurl($ref, "msg=$xmessage") . "\">Full text</a> available.</em>";
+				}
 				$this = "$thisheader$this" if $thisheader && !( $normstate eq 'html' );;
 				$thisheader = '';
-				if ($normstate eq 'html') {
-					$this .= "  <em><A href=\"" . bugurl($ref, "msg=$xmessage") . "\">Full text</A> available.</em>";
-				}
 				if ($reverse) {
 					$log = "$this\n<hr>$log";
 				} else {
@@ -306,11 +309,12 @@ while(my $line = <L>) {
 		}
         } elsif ($normstate eq 'recips') {
 		if (m/^-t$/) {
-			$this = "<h2>Message sent:</h2>\n";
+			$thisheader = "<h2>Message sent:</h2>\n";
 		} else {
 			s/\04/, /g; s/\n$//;
-			$this = "<h2>Message sent to ".htmlsanit($_).":</h2>\n";
+			$thisheader = "<h2>Message sent to ".htmlsanit($_).":</h2>\n";
 		}
+		$this = "";
 		$normstate= 'kill-body';
 	} elsif ($normstate eq 'autocheck') {
 		next if !m/^X-Debian-Bugs(-\w+)?: This is an autoforward from (\S+)/;
@@ -361,7 +365,7 @@ print "<H1>" .  "$debbugs::gProject $debbugs::gBug report logs - <A HREF=\"mailt
       "<BR>" . htmlsanit($status{subject}) . "</H1>\n";
 
 print "$descriptivehead\n";
-printf "<p>View this report as an <a href=\"%s\">mbox folder</a>.</p>", mboxurl($ref);
+printf "<p>View this report as an <a href=\"%s\">mbox folder</a>.</p>\n", mboxurl($ref);
 print "<HR>";
 print "$log";
 print $tail_html;
