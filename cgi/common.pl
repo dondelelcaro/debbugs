@@ -70,7 +70,7 @@ sub readparse {
     } else {
         return;
     }
-    foreach (split(/&/,$in)) {
+    foreach (split(/[&;]/,$in)) {
         s/\+/ /g;
         ($key, $val) = split(/=/,$_,2);
         $key=~s/%(..)/pack("c",hex($1))/ge;
