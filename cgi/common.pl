@@ -172,7 +172,14 @@ sub urlsanit {
     my $url = shift;
     $url =~ s/%/%25/g;
     $url =~ s/\+/%2b/g;
-    return htmlsanit($url);
+    my %saniarray = ('<','lt', '>','gt', '"','quot');
+    my $out;
+    while ($url =~ m/[<>"]/) {
+        $out .= $`. '&'. $saniarray{$&}. ';';
+        $url = $';
+    }
+    $out .= $url;
+    return $out;
 }
 
 sub htmlsanit {
