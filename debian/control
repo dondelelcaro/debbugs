@@ -2,17 +2,21 @@ Source: debbugs
 Section: misc
 Priority: optional
 Maintainer: Darren Benham <gecko@debian.org>
-Standards-Version: 3.1.0.0
+Standards-Version: 3.2.1
+Build-Depends: debhelper
 
 Package: debbugs
 Architecture: all
-Depends: perl|perl5, lynx, mail-transport-agent, mailtools, ed
+Depends: perl5 | perl, mail-transport-agent, mailtools, ed, lynx
 Recommends: httpd
 Description: The bug tracking system based on the active Debian BTS
- This is an email based bug tracking system.  It is the same system used by
- the Debian Project (Debian uses v0.2).
+ Debian has a bug tracking system which files details of bugs reported by
+ users and developers. Each bug is given a number, and is kept on file until
+ it is marked as having been dealt with. The system is mainly controlled by
+ e-mail, but the bug reports can be viewed using WWW.
  .
- This version does not autoconfig.  Read /usr/doc/debbugs/README.Debian
- after installing the deb.  This version is fully functional.  There might
- be some appearance issues where the a display variable doesn't expand as
- expected.
+ This version is fully functional, but it does not autoconfig, see
+ /usr/share/doc/debbugs/README.Debian after installation.
+ .
+ Note: there might be some appearance issues where the a display variable
+ doesn't expand as expected.
