@@ -199,7 +199,7 @@ mailservers is available via the WWW, in
   <p>For <a href="Developer.html#tags">their meanings</a> please consult the
   general developers' documentation for the $gBug system.
 
-<dt><code>close</code> <var>bugnumber</var>
+<dt><code>close</code> <var>bugnumber</var> (deprecated)
 
   <dd>Close $gBug report #<var>bugnumber</var>.
 
