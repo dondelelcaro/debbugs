@@ -206,6 +206,7 @@ close(L);
 
 print "Content-Type: text/html\n\n";
 
+print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
 print "<HTML><HEAD><TITLE>\n" . 
     "$debbugs::gProject $debbugs::gBug report logs - $short\n" .
     "</TITLE></HEAD>\n" .

@@ -97,6 +97,7 @@ my $result = htmlizebugs(@bugs);
 
 print "Content-Type: text/html\n\n";
 
+print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
 print "<HTML><HEAD><TITLE>\n" . 
     "$debbugs::gProject $Archived $debbugs::gBug report logs: $tag\n" .
     "</TITLE></HEAD>\n" .

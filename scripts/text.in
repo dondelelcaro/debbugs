@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.12 2000/10/30 19:07:29 joy Exp $
+# $Id: text.in,v 1.13 2001/02/18 14:35:02 joy Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -203,7 +203,8 @@ $gHTMLExpireNote = "(Closed $gBugs are cleaned out $gRemoveAge days after the la
 ############################################################################
 # Makeup of the stamp page
 ############################################################################
-$gHTMLStamp = "<HTML><HEAD><TITLE>$gProject $gBugs - timestamp page</TITLE>
+$gHTMLStamp = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
+	<HTML><HEAD><TITLE>$gProject $gBugs - timestamp page</TITLE>
 	<LINK REV=\"made\" HREF=\"mailto:$gMaintainerEmail\">
 	</HEAD>$gHTMLStart<H1>Is this $gBug log or mirror up to date?</H1>
 
@@ -230,7 +231,8 @@ $gHTMLStamp = "<HTML><HEAD><TITLE>$gProject $gBugs - timestamp page</TITLE>
 ############################################################################
 # Makeup of the indices pages
 ############################################################################
-$gFullIndex = "<HTML><HEAD><TITLE>$gProject $gBugs - full index</TITLE>
+$gFullIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
+	<HTML><HEAD><TITLE>$gProject $gBugs - full index</TITLE>
 	<LINK REV=\"make\" HREF=\"mailto:$gMaintainerEmail\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug report logs - index</H1>
 
@@ -246,7 +248,8 @@ $gFullIndex = "<HTML><HEAD><TITLE>$gProject $gBugs - full index</TITLE>
 
 	";
 
-$gJunkIndex = "<HTML><HEAD><TITLE>$gProject $gBug reports - Junk</TITLE>
+$gJunkIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
+	<HTML><HEAD><TITLE>$gProject $gBug reports - Junk</TITLE>
 	<LINK REV=\"made\" HREF=\"$gMaintainerEmail\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug reports - Junk</H1>
 
@@ -260,7 +263,8 @@ $gJunkIndex = "<HTML><HEAD><TITLE>$gProject $gBug reports - Junk</TITLE>
 
 	";
 
-$gMaintIndex = "<HTML><HEAD><TITLE>$gProject $gBug reports by maintainer</TITLE>
+$gMaintIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
+	<HTML><HEAD><TITLE>$gProject $gBug reports by maintainer</TITLE>
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug reports by maintainer</H1>
 
@@ -278,7 +282,8 @@ $gMaintIndex = "<HTML><HEAD><TITLE>$gProject $gBug reports by maintainer</TITLE>
 
 	";
 
-$gPackageIndex = "<HTML><HEAD><TITLE>$gProject $gBug reports by package</TITLE>
+$gPackageIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
+	<HTML><HEAD><TITLE>$gProject $gBug reports by package</TITLE>
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug reports by package</H1>
 
@@ -293,7 +298,8 @@ $gPackageIndex = "<HTML><HEAD><TITLE>$gProject $gBug reports by package</TITLE>
 
 	";
 
-$gSummaryIndex = "<HTML><HEAD><TITLE>$gProject $gBug report logs - summary index</TITLE>
+$gSummaryIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
+	<HTML><HEAD><TITLE>$gProject $gBug report logs - summary index</TITLE>
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug report logs - summary index</H1>
 
@@ -310,7 +316,8 @@ $gSummaryIndex = "<HTML><HEAD><TITLE>$gProject $gBug report logs - summary index
 
 	";
 
-$gPackageLog = "<HTML><HEAD><TITLE>$gProject $gBug report logs - index by package</TITLE>
+$gPackageLog = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
+	<HTML><HEAD><TITLE>$gProject $gBug report logs - index by package</TITLE>
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug report logs - index by package</H1>
 
@@ -324,7 +331,8 @@ $gPackageLog = "<HTML><HEAD><TITLE>$gProject $gBug report logs - index by packag
 
 	";
 
-$gPseudoIndex = "<HTML><HEAD><TITLE>$gProject $gBug report pseudo-packages</TITLE>
+$gPseudoIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
+	<HTML><HEAD><TITLE>$gProject $gBug report pseudo-packages</TITLE>
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug report pseudo-packages</H1>
 
