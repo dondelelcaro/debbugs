@@ -1,12 +1,12 @@
 #!/usr/bin/perl
-# $Id: processall.in,v 1.9 2002/11/17 22:45:16 cjwatson Exp $
+# $Id: processall.in,v 1.10 2004/03/20 15:13:52 cjwatson Exp $
 #
 # Usage: processall
 #
 # Uses up: incoming/I<code><bugnum>.nn
 # Temps:   incoming/[GP].nn
 # Creates: incoming/E.nn
-# Stop;    process/stop
+# Stop:    stop
 
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
@@ -17,8 +17,8 @@ $ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
 
 use File::Path;
 
-chdir( "$gSpoolDir" ) || die 'chdir spool: $!\n';
-push( @INC, "$lib_path" );
+chdir( $gSpoolDir ) || die "chdir spool: $!\n";
+push( @INC, $lib_path );
 
 #open(DEBUG,">&4");
 
