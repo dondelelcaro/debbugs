@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.37 2001/07/15 09:46:16 doogie Exp $
+# $Id: service.in,v 1.38 2001/08/16 07:21:36 doogie Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -939,7 +939,7 @@ sub ensuremaintainersloaded {
     while (<MAINT>) {
         m/^\n$/ && next;
         m/^\s*$/ && next;
-        m/^(\S+)\s+(\S.*\S)\n$/ || &quit("maintainers.override bogus \`$_'");
+        m/^(\S+)\s+(\S.*\S)\s*\n$/ || &quit("maintainers.override bogus \`$_'");
         $a= $1; $b= $2; $a =~ y/A-Z/a-z/;
         $maintainerof{$1}= $2;
     }
