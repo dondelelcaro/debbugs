@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.41 2001/08/16 07:24:18 doogie Exp $
+# $Id: service.in,v 1.42 2001/08/19 02:09:18 doogie Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -580,7 +580,7 @@ END
 
 $repliedshow= join(', ',$replyto,@maintccaddrs);
 &filelock("lock/-1");
-open(AP,">>db/-1.log") || &quit("open db/-1.log: $!");
+open(AP,">>db-h/-1.log") || &quit("open db-h/-1.log: $!");
 print(AP
       "\2\n$repliedshow\n\5\n$reply\n\3\n".
       "\6\n".
@@ -588,10 +588,10 @@ print(AP
       &sani($header{'from'})."</code>\n".
       "to <code>".&sani($controlrequestaddr)."</code>\n".
       "\3\n".
-      "\7\n",@log,"\n\3\n") || &quit("writing db/-1.log: $!");
-close(AP) || &quit("open db/-1.log: $!");
+      "\7\n",@log,"\n\3\n") || &quit("writing db-h/-1.log: $!");
+close(AP) || &quit("open db-h/-1.log: $!");
 &unfilelock;
-utime(time,time,"db");
+utime(time,time,"db-h");
 
 &sendmailmessage($reply,$replyto,@maintccaddrs);
 
@@ -787,16 +787,17 @@ sub savebug {
     $lowstate eq 'open' || die "$lowstate ?";
     length($action) || die;
     $ref == $sref || die "read $sref but saving $ref ?";
-    open(L,">>db/$ref.log") || &quit("opening db/$ref.log: $!");
+    my $hash = get_hashname($ref);
+    open(L,">>db-h/$hash/$ref.log") || &quit("opening db-h/$hash/$ref.log: $!");
     print(L
           "\6\n".
           "<strong>".&sani($action)."</strong>\n".
           "Request was from <code>".&sani($header{'from'})."</code>\n".
           "to <code>".&sani($controlrequestaddr)."</code>. \n".
           "\3\n".
-          "\7\n",@log,"\n\3\n") || &quit("writing db/$ref.log: $!");
-    close(L) || &quit("closing db/$ref.log: $!");
-    open(S,">db/$ref.status.new") || &quit("opening db/$ref.status.new: $!");
+          "\7\n",@log,"\n\3\n") || &quit("writing db-h/$hash/$ref.log: $!");
+    close(L) || &quit("closing db-h/$hash/$ref.log: $!");
+    open(S,">db-h/$hash/$ref.status.new") || &quit("opening db-h/$hash/$ref.status.new: $!");
     print(S
           "$s_originator\n".
           "$s_date\n".
@@ -807,10 +808,10 @@ sub savebug {
           "$s_done\n".
           "$s_forwarded\n".
           "$s_mergedwith\n".
-	  "$s_severity\n") || &quit("writing db/$ref.status.new: $!");
-    close(S) || &quit("closing db/$ref.status.new: $!");
-    rename("db/$ref.status.new","db/$ref.status") ||
-        &quit("installing new db/$ref.status: $!");
+	  "$s_severity\n") || &quit("writing db-h/$hash/$ref.status.new: $!");
+    close(S) || &quit("closing db-h/$hash/$ref.status.new: $!");
+    rename("db-h/$hash/$ref.status.new","db-h/$hash/$ref.status") ||
+        &quit("installing new db-h/$hash/$ref.status: $!");
 	&bughook('change',$ref,
           "$s_originator\n".
           "$s_date\n".

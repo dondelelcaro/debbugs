@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.35 2001/08/16 07:11:04 doogie Exp $
+# $Id: process.in,v 1.36 2001/08/19 02:09:18 doogie Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -267,13 +267,14 @@ END
 		}
         $s_done= $set_done if defined($set_done);
         $s_forwarded= $set_forwarded if defined($set_forwarded);
-		&overwrite("db/$ref.status",
+	my $hash = get_hashname($ref);
+		&overwrite("db-h/$hash/$ref.status",
         	   "$s_originator\n$s_date\n$s_subject\n$s_msgid\n".
                    "$s_package\n$s_keywords\n$s_done\n$s_forwarded\n$s_mergedwith\n$s_severity\n");
 		&bughook('change',$ref,
         	   "$s_originator\n$s_date\n$s_subject\n$s_msgid\n".
                    "$s_package\n$s_keywords\n$s_done\n$s_forwarded\n$s_mergedwith\n$s_severity\n");
-        open(O,"db/$ref.report") || &quit("read original report: $!");
+        open(O,"db-h/$hash/$ref.report") || &quit("read original report: $!");
         $x= join('',<O>); close(O);
         if ($codeletter eq 'F') 
 		{ 	&htmllog("Reply","sent",$replyto,"You have marked $gBug as forwarded.");
@@ -481,14 +482,15 @@ END
     $ref= $v+0;  $v += 1;  $newref=1;
     &overwrite('nextnumber', "$v\n");
     &unfilelock;
-    &overwrite("db/$ref.log",'');
-    &overwrite("db/$ref.status",
+    my $hash = get_hashname($ref);
+    &overwrite("db-h/$hash/$ref.log",'');
+    &overwrite("db-h/$hash/$ref.status",
                "$replyto\n$intdate\n$subject\n$header{'message-id'}\n".
                "$s_package\n$s_keywords\n\n\n\n$s_severity\n");
 	&bughook('new',$ref,
                "$replyto\n$intdate\n$subject\n$header{'message-id'}\n".
                "$s_package\n$s_keywords\n\n\n\n$s_severity\n");
-    &overwrite("db/$ref.report",
+    &overwrite("db-h/$hash/$ref.report",
                join("\n",@msg)."\n");
 }
 
@@ -768,13 +770,14 @@ sub overwrite {
 }
 
 sub appendlog {
-    if (!open(AP,">>db/$ref.log")) {
+    my $hash = get_hashname($ref);
+    if (!open(AP,">>db-h/$hash/$ref.log")) {
         print DEBUG "failed open log<\n";
         print DEBUG "failed open log err $!<\n";
-        &quit("opening db/$ref.log (li): $!");
+        &quit("opening db-h/$hash/$ref.log (li): $!");
     }
-    print(AP "\7\n",@log,"\n\3\n") || &quit("writing db/$ref.log (li): $!");
-    close(AP) || &quit("closing db/$ref.log (li): $!");
+    print(AP "\7\n",@log,"\n\3\n") || &quit("writing db-h/$hash/$ref.log (li): $!");
+    close(AP) || &quit("closing db-h/$hash/$ref.log (li): $!");
 }
 
 sub finish {
@@ -791,13 +794,14 @@ sub chldhandle { $chldexit = 'yes'; }
 
 sub htmllog {
     local ($whatobj,$whatverb,$where,$desc) = @_;
-    open(AP,">>db/$ref.log") || &quit("opening db/$ref.log (lh): $!");
+    my $hash = get_hashname($ref);
+    open(AP,">>db-h/$hash/$ref.log") || &quit("opening db-h/$hash/$ref.log (lh): $!");
     print(AP
           "\6\n".
           "<strong>$whatobj $whatverb</strong> to <code>".&sani($where).
           "</code>:<br>\n". $desc.
-          "\n\3\n") || &quit("writing db/$ref.log (lh): $!");
-    close(AP) || &quit("closing db/$ref.log (lh): $!");
+          "\n\3\n") || &quit("writing db-h/$hash/$ref.log (lh): $!");
+    close(AP) || &quit("closing db-h/$hash/$ref.log (lh): $!");
 }    
 
 sub get_addresses {
@@ -811,11 +815,12 @@ sub sendmessage {
     local ($msg,@recips) = @_;
     if ($recips[0] eq '' && $#recips == 0) { @recips= ('-t'); }
 
+    my $hash = get_hashname($ref);
 	#save email to the log
-    open(AP,">>db/$ref.log") || &quit("opening db/$ref.log (lo): $!");
+    open(AP,">>db-h/$hash/$ref.log") || &quit("opening db-h/$hash/$ref.log (lo): $!");
     print(AP "\2\n",join("\4",@recips),"\n\5\n$msg\n\3\n") ||
-        &quit("writing db/$ref.log (lo): $!");
-    close(AP) || &quit("closing db/$ref.log (lo): $!");
+        &quit("writing db-h/$hash/$ref.log (lo): $!");
+    close(AP) || &quit("closing db-h/$hash/$ref.log (lo): $!");
     
 	#if debbuging.. save email to a log
 #	open AP, ">>debug";

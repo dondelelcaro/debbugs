@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: expire.in,v 1.7 2001/08/16 07:25:53 doogie Exp $
+# $Id: expire.in,v 1.8 2001/08/19 02:09:18 doogie Exp $
 
 # Load modules and set envirnment
 use File::Copy;
@@ -17,21 +17,15 @@ chdir("$gSpoolDir") || die "chdir spool: $!\n";
 $debug = 0;
 defined($startdate= time) || &quit("failed to get time: $!");
 
-sub get_archivename
-{	my $bugnum = shift;
-	my $archivename = "";
-
-#	while( $bugnum > 99 ) { $bugnum = int $bugnum/10; }
-	$bugnum = $bugnum % 100;
-	$archivename = sprintf "%02d", $bugnum;
-	return $archivename;
-}
-	
 #get list of bugs (ie, status files)
-opendir(DIR,"db") || &quit("opendir db: $!\n");
-@list= grep(m/^\d+\.status$/,readdir(DIR));
-grep(s/\.status$//,@list);
-@list= sort { $a <=> $b } @list;
+opendir(DIR,"db-h") || &quit("opendir db: $!\n");
+@dirs = sort { $a <=> $b } grep(s,^,db-h/,, grep(m/^\d+$/,readdir(DIR)));
+close(DIR);
+foreach my $dir (@dirs) {
+	opendir(DIR,$dir);
+	push @list, sort { $a <=> $b } grep(s/\.status$//,grep(m/^\d+\.status$/,readdir(DIR)));
+	close(DIR);
+}
 
 #process each bug (ie, status file)
 while (length($ref=shift(@list))) 
@@ -61,7 +55,7 @@ while (length($ref=shift(@list)))
 		print "$ref $mref merge-ok\n" if $debug;
         length($s_done) || die "$ref -> $mref";
 		print "$ref $mref done-ok\n" if $debug;
-        $days= -M "db/$mref.log";
+        $days= -M "db-h/".get_hashname($mref)."/$mref.log";
 		print "ref $mref days $days\n" if $debug;
         if ($days <= $gRemoveAge) 
 			{ print "$ref $mref saved\n" if $debug; $oktoremove= 0;}
@@ -70,22 +64,21 @@ while (length($ref=shift(@list)))
 	{	print "$ref removing\n" if $debug;
         for $mref (@aref) 
 		{ 	print "$ref removing $mref\n" if $debug;
+			my $dir = get_hashname($mref);
 			if ( $gSaveOldBugs )
 			{
-				my $dir;
-				$dir = "archive/" . get_archivename $mref;
-				`mkdir -p "$dir"`;
-				copy( "db/$mref.log", "$dir/$mref.log" );
-				copy( "db/$mref.status", "$dir/$mref.status" );
-				copy( "db/$mref.report", "$dir/$mref.report" );
-				if ( open( IDXFILE, ">>archive/index" ) )
+				`mkdir -p "archive2/$dir"`;
+				copy( "db-h/$dir/$mref.log", "archive2/$dir/$mref.log" );
+				copy( "db-h/$dir/$mref.status", "archive2/$dir/$mref.status" );
+				copy( "db-h/$dir/$mref.report", "archive2/$dir/$mref.report" );
+				if ( open( IDXFILE, ">>archive2/index" ) )
 				{	printf IDXFILE "%s %d %s\n", $s_package, $mref, $s_subject;
 					close IDXFILE;
 				} else { print "Unable to write to index file\n"; }
 				
-            	print("archived $mref to $dir (from $ref)\n") || &quit("output old: $!");
+            	print("archived $mref to archive2/$dir (from $ref)\n") || &quit("output old: $!");
 			}
-            unlink("db/$mref.log", "db/$mref.status", "db/$mref.report");
+            unlink("db-h/$dir/$mref.log", "db-h/$dir/$mref.status", "db-h/$dir/$mref.report");
             print("deleted $mref (from $ref)\n") || &quit("output old: $!");
         }
     }
