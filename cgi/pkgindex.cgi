@@ -17,14 +17,14 @@ my %param = readparse();
 
 my $indexon = $param{'indexon'} || 'pkg';
 if ($indexon !~ m/^(pkg|maint|submitter)$/) {
-    quit("You have to choose something to index on");
+    quitcgi("You have to choose something to index on");
 }
 
 my $repeatmerged = ($param{'repeatmerged'} || "yes") eq "yes";
 my $archive = ($param{'archive'} || "no") eq "yes";
 my $sortby = $param{'sortby'} || 'alpha';
 if ($sortby !~ m/^(alpha|count)$/) {
-    quit("Don't know how to sort like that");
+    quitcgi("Don't know how to sort like that");
 }
 
 #my $include = $param{'include'} || "";

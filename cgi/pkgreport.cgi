@@ -75,7 +75,7 @@ if (!$found) {
 		}
 	}
 }
-quit("You have to choose something to select by") if (!$found);
+quitcgi("You have to choose something to select by") if (!$found);
 
 my $Archived = $archive ? " Archived" : "";
 

@@ -21,8 +21,8 @@ my %param = readparse();
 
 my $tail_html;
 
-my $ref = $param{'bug'} || quit("No bug number");
-$ref =~ /(\d+)/ or quit("Invalid bug number");
+my $ref = $param{'bug'} || quitcgi("No bug number");
+$ref =~ /(\d+)/ or quitcgi("Invalid bug number");
 $ref = $1;
 my $short = "#$ref";
 my $msg = $param{'msg'} || "";
@@ -139,7 +139,7 @@ foreach my $pkg (@tpacks) {
     $descriptivehead .= ".\n<br>";
 }
 
-open L, "<$buglog" or &quit("open log for $ref: $!");
+open L, "<$buglog" or &quitcgi("open log for $ref: $!");
 if ($buglog !~ m#^\Q$gSpoolDir/db-h/#) {
     $descriptivehead .= "\n<p>Bug is <strong>archived</strong>. No further changes may be made.</p>";
 }
@@ -178,7 +178,7 @@ while(my $line = <L>) {
 		    || m/^(kill-init|kill-end) (incoming-recv|autocheck|recips|html)$/
 		    || m/^kill-body go$/)
 		{
-			&quit("$ref: Transition from $normstate to $newstate at $linenum disallowed");
+			&quitcgi("$ref: Transition from $normstate to $newstate at $linenum disallowed");
 		}
 
 #$this .= "\n<br>states: $normstate $newstate<br>\n";
@@ -288,7 +288,7 @@ while(my $line = <L>) {
 		my $pl= $_;
 		$pl =~ s/\n+$//;
 		m/^Received: \(at (\S+)\) by (\S+)\;/
-			|| &quit("bad line \`$pl' in state incoming-recv");
+			|| &quitcgi("bad line \`$pl' in state incoming-recv");
 		$thisheader = "<h2>Message received at ".htmlsanit("$1\@$2")
 		        . ":</h2>\n";
 		$this = '';
@@ -329,10 +329,10 @@ while(my $line = <L>) {
 		next if !m/^$/;
 		$normstate= 'go-nox';
 	} else {
-		&quit("$ref state $normstate line \`$_'");
+		&quitcgi("$ref state $normstate line \`$_'");
 	}
 }
-&quit("$ref state $normstate at end") unless $normstate eq 'kill-end';
+&quitcgi("$ref state $normstate at end") unless $normstate eq 'kill-end';
 close(L);
 
 if ( $mbox ) {

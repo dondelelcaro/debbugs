@@ -103,7 +103,7 @@ $debug = 1 if (defined $ret{"debug"} && $ret{"debug"} eq "aj");
     return %ret;
 }
 
-sub quit {
+sub quitcgi {
     my $msg = shift;
     print "Content-Type: text/html\n\n";
     print "<HTML><HEAD><TITLE>Error</TITLE></HEAD><BODY>\n";
@@ -314,7 +314,7 @@ sub mboxurl {
 sub allbugs {
     my @bugs = ();
 
-    opendir(D, "$debbugs::gSpoolDir/db") or &quit("opendir db: $!");
+    opendir(D, "$debbugs::gSpoolDir/db") or &quitcgi("opendir db: $!");
     @bugs = sort {$a<=>$b} grep s/\.status$//,
 		 (grep m/^[0-9]+\.status$/,
 		 (readdir(D)));
@@ -424,9 +424,9 @@ sub htmlizebugs {
 sub countbugs {
     my $bugfunc = shift;
     if ($common_archive) {
-        open I, "<$debbugs::gSpoolDir/index.archive" or &quit("bugindex: $!");
+        open I, "<$debbugs::gSpoolDir/index.archive" or &quitcgi("bugindex: $!");
     } else {
-        open I, "<$debbugs::gSpoolDir/index.db" or &quit("bugindex: $!");
+        open I, "<$debbugs::gSpoolDir/index.db" or &quitcgi("bugindex: $!");
     }
 
     my %count = ();
@@ -466,10 +466,10 @@ print STDERR "done optimized\n" if ($debug);
     } else {
         if ( $common_archive ) {
             open I, "<$debbugs::gSpoolDir/index.archive" 
-                or &quit("bugindex: $!");
+                or &quitcgi("bugindex: $!");
         } else {
             open I, "<$debbugs::gSpoolDir/index.db" 
-                or &quit("bugindex: $!");
+                or &quitcgi("bugindex: $!");
         }
         while(<I>) {
             if (m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/) {
@@ -516,7 +516,7 @@ sub getmaintainers {
     return $_maintainer if $_maintainer;
     my %maintainer;
 
-    open(MM,"$gMaintainerFile") or &quit("open $gMaintainerFile: $!");
+    open(MM,"$gMaintainerFile") or &quitcgi("open $gMaintainerFile: $!");
     while(<MM>) {
 	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
 	($a,$b)=($1,$2);
@@ -524,7 +524,7 @@ sub getmaintainers {
 	$maintainer{$a}= $b;
     }
     close(MM);
-    open(MM,"$gMaintainerFileOverride") or &quit("open $gMaintainerFileOverride: $!");
+    open(MM,"$gMaintainerFileOverride") or &quitcgi("open $gMaintainerFileOverride: $!");
     while(<MM>) {
 	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
 	($a,$b)=($1,$2);
@@ -543,7 +543,7 @@ sub getpkgsrc {
     my %pkgsrc;
     my %pkgcomponent;
 
-    open(MM,"$gPackageSource") or &quit("open $gPackageSource: $!");
+    open(MM,"$gPackageSource") or &quitcgi("open $gPackageSource: $!");
     while(<MM>) {
 	next unless m/^(\S+)\s+(\S+)\s+(\S.*\S)\s*$/;
 	($a,$b,$c)=($1,$2,$3);
@@ -568,7 +568,7 @@ sub getpseudodesc {
     return $_pseudodesc if $_pseudodesc;
     my %pseudodesc;
 
-    open(PSEUDO, "< $gPseudoDescFile") or &quit("open $gPseudoDescFile: $!");
+    open(PSEUDO, "< $gPseudoDescFile") or &quitcgi("open $gPseudoDescFile: $!");
     while(<PSEUDO>) {
 	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
 	$pseudodesc{lc $1} = $2;
@@ -578,31 +578,16 @@ sub getpseudodesc {
     return $_pseudodesc;
 }
 
-sub getbugdir {
-    my ( $bugnum, $ext ) = @_;
-    my $archdir = sprintf "%02d", $bugnum % 100;
-    foreach ( ( "$gSpoolDir/db-h/$archdir", "$gSpoolDir/db", "$gSpoolDir/archive/$archdir" ) ) {
-	return $_ if ( -r "$_/$bugnum.$ext" );
-    }
-    return undef;
-}
-    
 sub getbugstatus {
     my $bugnum = shift;
 
     my %status;
 
-    my $dir = getbugdir( $bugnum, "status" );
-    return {} if ( !$dir );
-    open S, "< $dir/$bugnum.status";
-    my @lines = qw(originator date subject msgid package tags done
-			forwarded mergedwith severity);
-    while(<S>) {
-        chomp;
-	$status{shift @lines} = $_;
-    }
-    close(S);
-    $status{shift @lines} = '' while(@lines);
+    my $location = getbuglocation( $bugnum, "status" );
+    return {} if ( !$location );
+    %status = %{ readbug( $bugnum, $location ) };
+
+    $status{tags} = $status{keywords};
 
     $status{"package"} =~ s/\s*$//;
     $status{"package"} = 'unknown' if ($status{"package"} eq '');
@@ -631,9 +616,10 @@ sub getsrcpkgs {
 sub buglog {
     my $bugnum = shift;
 
-    my $dir = getbugdir( $bugnum, "log" );
+    my $dir = getlocationpath( getbuglocation( $bugnum, "log" ) );
+    my $hash = get_hashname( $bugnum );
     return "" if ( !$dir );
-    return "$dir/$bugnum.log";
+    return "$dir/$hash/$bugnum.log";
 }
 
 1;
