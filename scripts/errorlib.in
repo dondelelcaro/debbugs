@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.33 2003/08/06 18:45:41 cjwatson Exp $
+# $Id: errorlib.in,v 1.34 2003/08/21 19:21:43 cjwatson Exp $
 
 use Mail::Address;
 
@@ -70,26 +70,36 @@ sub getbugcomponent {
     }
 }
 
+my @fields = qw(originator date subject msgid package
+                keywords done forwarded mergedwith severity);
+
 sub readbug {
     local ($lref, $location) = @_;
     my $status = getbugcomponent($lref, 'status', $location);
     return undef unless defined $status;
     if (!open(S,$status)) { return undef; }
+
     my %data;
-    chop($data{originator}= <S>);
-    chop($data{date}= <S>);
-    chop($data{subject}= <S>);
-    chop($data{msgid}= <S>);
-    chop($data{package}= <S>);
-    chop($data{keywords}= <S>);
-    chop($data{done}= <S>);
-    chop($data{forwarded}= <S>);
-    chop($data{mergedwith}= <S>);
-    chop($data{severity}= <S>);
-    chop($data{versions}= <S>);
-    chop($data{fixed_versions}= <S>);
+    my @lines;
+    local $_;
+
+    while (<S>) {
+        chomp;
+        push @lines, $_;
+    }
+
+    for my $field (@fields) {
+        if (@lines) {
+            $data{$field} = shift @lines;
+        } else {
+            $data{$field} = '';
+        }
+    }
+
     close(S);
-	$data{severity} = 'normal' if $data{severity} eq '';
+
+    $data{severity} = 'normal' if $data{severity} eq '';
+
     return \%data;
 }
 
@@ -103,19 +113,16 @@ sub lockreadbug {
 
 sub makestatus {
     my $data = shift;
-    my $contents = 
-          "$data->{originator}\n".
-          "$data->{date}\n".
-          "$data->{subject}\n".
-          "$data->{msgid}\n".
-          "$data->{package}\n".
-          "$data->{keywords}\n".
-          "$data->{done}\n".
-          "$data->{forwarded}\n".
-          "$data->{mergedwith}\n".
-          "$data->{severity}\n".
-          "$data->{versions}\n".
-          "$data->{fixed_versions}\n";
+    my $contents = '';
+
+    for my $field (@fields) {
+        if (exists $data->{$field}) {
+            $contents .= "$data->{$field}\n";
+        } else {
+            $contents .= "\n";
+        }
+    }
+
     return $contents;
 }
 
