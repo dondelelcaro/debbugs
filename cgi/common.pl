@@ -158,7 +158,7 @@ sub urlsanit {
     my $url = shift;
     $url =~ s/%/%25/g;
     $url =~ s/\+/%2b/g;
-    return $url;
+    return htmlsanit($url);
 }
 
 sub htmlsanit {
@@ -183,12 +183,12 @@ sub bugurl {
     $params .= "&archive=yes" if ($common_archive);
     $params .= "&repeatmerged=yes" if ($common_repeatmerged);
 
-    return $debbugs::gCGIDomain . "bugreport.cgi" . "?" . "$params";
+    return urlsanit($debbugs::gCGIDomain . "bugreport.cgi" . "?" . "$params");
 }
 
 sub packageurl {
     my $ref = shift;
-    return $debbugs::gCGIDomain . "package.cgi" . "?" . "package=$ref";
+    return urlsanit($debbugs::gCGIDomain . "package.cgi" . "?" . "package=$ref");
 }
 
 sub allbugs {
