@@ -1,4 +1,4 @@
-debbugs (2.4.1) UNRELEASED; urgency=low
+debbugs (2.4.1) unstable; urgency=low
 
   * Colin Watson:
     - Exit the CGI scripts straight away if the HTTP method is HEAD, to save
@@ -29,7 +29,7 @@ debbugs (2.4.1) UNRELEASED; urgency=low
       monstrously long bugs.
     - Purged needless date(1) forks, replaced with strftime.
 
- -- Colin Watson <cjwatson@debian.org>  Mon, 25 Nov 2002 03:50:20 +0000
+ -- Colin Watson <cjwatson@debian.org>  Fri,  6 Jun 2003 09:25:30 +0100
 
 debbugs (2.4) experimental; urgency=low
 
