@@ -46,6 +46,7 @@ sub contains_field_match {
 
 sub detect_user_agent {
     my $userAgent = $ENV{HTTP_USER_AGENT};
+    return { 'name' => 'unknown' } unless defined $userAgent;
     return { 'name' => 'links' } if ( $userAgent =~ m,^ELinks,);
     return { 'name' => 'lynx' } if ( $userAgent =~ m,^Lynx,);
     return { 'name' => 'wget' } if ( $userAgent =~ m,^Wget,);
@@ -53,6 +54,7 @@ sub detect_user_agent {
     return { 'name' => 'ie' } if ( $userAgent =~ m,^.*MSIE.*,);
     return { 'name' => 'unknown' };
 }
+
 my %field_match = (
     'subject' => \&contains_field_match,
     'tags' => sub {
