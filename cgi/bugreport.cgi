@@ -16,17 +16,9 @@ require '/etc/debbugs/text';
 
 use vars(qw($gEmailDomain $gHTMLTail $gSpoolDir $gWebDomain));
 
-if ($ENV{REQUEST_METHOD} eq 'HEAD') {
-    print "Content-Type: text/html\n\n";
-    exit 0;
-}
-
 my %param = readparse();
 
 my $tail_html;
-
-my %maintainer = %{getmaintainers()};
-my %pkgsrc = %{getpkgsrc()};
 
 my $ref = $param{'bug'} || quit("No bug number");
 $ref =~ /(\d+)/ or quit("Invalid bug number");
@@ -37,6 +29,22 @@ my $att = $param{'att'};
 my $boring = ($param{'boring'} || 'no') eq 'yes'; 
 my $reverse = ($param{'reverse'} || 'no') eq 'yes';
 my $mbox = ($param{'mbox'} || 'no') eq 'yes'; 
+
+my $buglog = buglog($ref);
+
+if ($ENV{REQUEST_METHOD} eq 'HEAD') {
+    print "Content-Type: text/html\n";
+    my @stat = stat $buglog;
+    if (@stat) {
+	my $mtime = strftime '%a, %d %b %Y %T GMT', gmtime($stat[9]);
+	print "Last-Modified: $mtime\n";
+    }
+    print "\n";
+    exit 0;
+}
+
+my %maintainer = %{getmaintainers()};
+my %pkgsrc = %{getpkgsrc()};
 
 my $indexentry;
 my $descriptivehead;
@@ -127,7 +135,6 @@ $descriptivehead.= ";\nSource for $status{package} is\n".
 	    '<a href="'.srcurl($tsrc)."\">$tsrc</a>" if ($tsrc ne "(unknown)");
 $descriptivehead.= ".</p>";
 
-my $buglog = buglog($ref);
 open L, "<$buglog" or &quit("open log for $ref: $!");
 if ($buglog !~ m#^\Q$gSpoolDir/db-h/#) {
     $descriptivehead .= "\n<p>Bug is <strong>archived</strong>. No further changes may be made.</p>";
