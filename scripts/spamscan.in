@@ -1,5 +1,5 @@
 #! /usr/bin/perl -T
-# $Id: spamscan.in,v 1.2 2004/01/13 19:01:13 cjwatson Exp $
+# $Id: spamscan.in,v 1.3 2004/01/13 19:25:57 cjwatson Exp $
 #
 # Usage: spamscan
 #
@@ -17,6 +17,8 @@ $lib_path = '/usr/lib/debbugs';
 require "$config_path/config";
 require "$lib_path/errorlib";
 $ENV{PATH} = $lib_path . ':' . $ENV{PATH};
+
+exit unless $gSpamScan;
 
 chdir $gSpoolDir or die "chdir spool: $!\n";
 push @INC, $lib_path;
