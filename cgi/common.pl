@@ -462,7 +462,8 @@ sub allbugs {
 
 sub bugmatches(\%\%) {
     my ($hash, $status) = @_;
-    while ((my ($key, $value) = each(%$hash))) {
+    foreach my $key( keys( %$hash ) ) {
+        my $value = $hash->{$key};
 	my $sub = $field_match{$key};
 	return 1 if ($sub->($key, $value, $status));
     }
