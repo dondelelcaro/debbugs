@@ -11,6 +11,7 @@ debbugs (2.4.1) UNRELEASED; urgency=low
     [Colin]
   * Remove the final use of cgi-lib.pl, so it's gone. Remove copyright
     notices that were there due to using it. [Colin]
+  * Accept ';' as well as '&' as a CGI argument separator. [Colin]
 
  -- Colin Watson <cjwatson@debian.org>  Mon, 25 Nov 2002 03:50:20 +0000
 
