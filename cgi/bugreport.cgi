@@ -304,14 +304,15 @@ if ( $mbox ) {
 			my $tmp = $lines[ 0 ];
 			$lines[ 0 ] = $lines[ 1 ];
 			$lines[ 1 ] = $tmp;
-			$_ = join( "\n", @lines ) . "\n";
 		}
 		if ( !( $lines[ 0 ] =~ m/^From / ) ) {
 			$ENV{ PATH } = "/bin:/usr/bin:/usr/local/bin";
 			my $date = `date "+%a %b %d %T %Y"`;
 			chomp $date;
-			$_ = "From unknown $date\n" . $_;
+			unshift @lines, "From unknown $date";
 		}
+		map { s/^(>*From )/>$1/ } @lines[ 1 .. $#lines ];
+		$_ = join( "\n", @lines ) . "\n";
 	}
 	print join("", @mails );
 	exit 0;
