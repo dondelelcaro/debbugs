@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.30 2000/11/08 18:09:39 joy Exp $
+# $Id: service.in,v 1.31 2000/11/22 10:02:51 joy Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -243,7 +243,8 @@ In-Reply-To: $s_msgid
 Message-ID: <handler.$ref.$nn.notifdonectrl.$midix\@$gEmailDomain>
 
 This is an automatic notification regarding your $gBug report
-#$ref: $s_subject.
+#$ref: $s_subject,
+which was filed against the $s_package package.
 
 It has been marked as closed by one of the developers, namely
 $replyto.
@@ -254,6 +255,7 @@ directly or myself.
 
 $gMaintainer
 (administrator, $gProject $gBugs database)
+
 END
                     &sendmailmessage($message,$s_originator);
                 } while (&getnextbug);

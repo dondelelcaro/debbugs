@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.21 2000/10/31 13:14:53 joy Exp $
+# $Id: process.in,v 1.22 2000/11/22 10:02:51 joy Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -323,13 +323,16 @@ END
             &sendmessage(<<END.join("\n",@msg),'');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $s_originator
-Subject: $gBug#$ref acknowledged by developer ($s_subject)
+Subject: $gBug#$ref acknowledged by developer
+         ($header{'subject'})
 Message-ID: <handler.$ref.$nn.notifdone\@$gEmailDomain>
 In-Reply-To: $s_msgid
 References: $header{'message-id'} $s_msgid
 X-$gProject-PR-Message: they-closed $ref
 
-This is an automatic notification regarding your $gBug report.
+This is an automatic notification regarding your $gBug report
+#$ref: $s_subject,
+which was filed against the $s_package package.
 
 It has been closed by one of the developers, namely
 $markedby.
