@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: expire.in,v 1.8 2001/08/19 02:09:18 doogie Exp $
+# $Id: expire.in,v 1.9 2001/08/19 06:36:43 doogie Exp $
 
 # Load modules and set envirnment
 use File::Copy;
@@ -67,16 +67,16 @@ while (length($ref=shift(@list)))
 			my $dir = get_hashname($mref);
 			if ( $gSaveOldBugs )
 			{
-				`mkdir -p "archive2/$dir"`;
-				copy( "db-h/$dir/$mref.log", "archive2/$dir/$mref.log" );
-				copy( "db-h/$dir/$mref.status", "archive2/$dir/$mref.status" );
-				copy( "db-h/$dir/$mref.report", "archive2/$dir/$mref.report" );
-				if ( open( IDXFILE, ">>archive2/index" ) )
+				`mkdir -p "archive/$dir"`;
+				copy( "db-h/$dir/$mref.log", "archive/$dir/$mref.log" );
+				copy( "db-h/$dir/$mref.status", "archive/$dir/$mref.status" );
+				copy( "db-h/$dir/$mref.report", "archive/$dir/$mref.report" );
+				if ( open( IDXFILE, ">>archive/index" ) )
 				{	printf IDXFILE "%s %d %s\n", $s_package, $mref, $s_subject;
 					close IDXFILE;
 				} else { print "Unable to write to index file\n"; }
 				
-            	print("archived $mref to archive2/$dir (from $ref)\n") || &quit("output old: $!");
+            	print("archived $mref to archive/$dir (from $ref)\n") || &quit("output old: $!");
 			}
             unlink("db-h/$dir/$mref.log", "db-h/$dir/$mref.status", "db-h/$dir/$mref.report");
             print("deleted $mref (from $ref)\n") || &quit("output old: $!");
