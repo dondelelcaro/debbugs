@@ -94,7 +94,7 @@ sub filter_include_exclude($\%) {
         if (/^([^:]*):(.*)$/) { if ($1 eq 'subj') { ['subject', $2]; } else { [$1, $2] } } else { ['tags', $_] }
     } split /[\s,]+/, join ',', @vals;
     foreach my $data (@data) {
-	&quitcgi("Invalid filter key: '$data->[0]'") if (!exists($filter_map->{$data->[0]}));
+	&quitcgi("Invalid filter key: '$data->[0]'") if (!exists($field_match{$data->[0]}));
         push @{$filter_map->{$data->[0]}}, $data->[1];
     }
 }
