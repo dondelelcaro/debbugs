@@ -1,4 +1,3 @@
-MTA for Debbugs
 ===============
 
 Config
@@ -123,3 +122,45 @@ Now the final step: run sendmailconfig to regenerate sendmail.cf and
 restart sendmail with the new configuration. Your system should now
 be up and running. Congratulations!
 
+Postfix
+--------
+It seems Bdale isn't around currently, so I'll just mail this
+here directly. This is a short description of how to get debbugs
+working with postfix. If someone can verify this and give me some
+feedback if would be appreciated.
+
+Lets assume that you are going to install bugs.domain.net, and you
+are going to run it on the machine master.domain.net.
+
+DNS setup: point the MX to the machine running debbugs:
+
+	bugs.domain.net		MX	50	master.domain.net.
+
+In /etc/postfix/master.cf enable the transport maps by inserting the
+following line:
+
+	transport_maps =3D hash:/etc/postfix/transport
+
+Now create /etc/postfix/transport and insert:
+
+	bugs.domain.net        debbugs:
+
+This tells postfix to use the debbugs transport agent to deliver any
+mail send to bugs.domain.net. Now we need to make a database from that
+that postfix can use:
+
+	# makemap hash transport
+
+Now we need to teach postfix what the debbugs transport agent is. Edit
+/etc/postfix/master.cf and add:
+
+	debbugs   unix  -       n       n       -       -       pipe
+		flags=3DF user=3Ddebbugs argv=3D/usr/lib/debbugs/receive $recipient
+
+This assumes that you are running debbugs with uid debbugs (the package
+doesn't do that by default, but I generally chown /var/lib/debbugs/*
+to a new debbugs account just to be safe).
+
+Now that all this is done, restart postfix and it should be working..
+
+Wichert.
