@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.12 2002/11/05 08:25:03 ajt Exp $
+# $Id: errorlib.in,v 1.13 2002/11/05 08:33:24 ajt Exp $
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -156,7 +156,7 @@ sub bughook {
 			$firstpkg, $ref, $stuff[1], $whendone, $stuff[0],
 			$severity, $stuff[5];
 
-	update_realtime("/org/bugs.debian.org/spool/index.db", $ref, $k);
+	update_realtime("/org/bugs.debian.org/spool/index.db.realtime", $ref, $k);
 
 	&unfilelock;
 }
