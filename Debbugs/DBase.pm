@@ -215,7 +215,7 @@ sub GetBugList
 		    my @files = grep { /\d*\d\d.status/ } readdir($dir);
 		    close $dir;
 		    foreach (@files) {
-			next if ( -s "$prefix$_1/$_2/$_3/$_" );
+			next if ( ! -s "$prefix$_1/$_2/$_3/$_" );
 			s/.status$//;
 			push @ret, $_;
 #			print "$_ -> $_1/$_2/$_3/$_\n";
