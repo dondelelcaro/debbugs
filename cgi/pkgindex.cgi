@@ -16,7 +16,7 @@ nice(5);
 my %param = readparse();
 
 my $indexon = $param{'indexon'} || 'pkg';
-if ($indexon !~ m/^(pkg|maint|submitter)$/) {
+if ($indexon !~ m/^(pkg|src|maint|submitter)$/) {
     quitcgi("You have to choose something to index on");
 }
 
@@ -68,6 +68,24 @@ if ($indexon eq "pkg") {
                            htmlsanit($pkg),
                            mainturl($maintainers{$pkg}),
 			   htmlsanit($maintainers{$pkg} || "(unknown)"));
+  }
+} elsif ($indexon eq "src") {
+  $tag = "source package";
+  my $pkgsrc = getpkgsrc();
+  %count = countbugs(sub {my %d=@_;
+                          return map {
+                            $pkgsrc->{$_} || $_
+                          } splitpackages($d{"pkg"});
+                         });
+  $note = "";
+  foreach my $src (keys %count) {
+    $sortkey{$src} = lc $src;
+    $htmldescrip{$src} = sprintf('<a href="%s">%s</a> '
+                           . '(maintainer: <a href="%s">%s</a>)',
+                           srcurl($src),
+                           htmlsanit($src),
+                           mainturl($maintainers{$src}),
+                           htmlsanit($maintainers{$src} || "(unknown)"));
   }
 } elsif ($indexon eq "maint") {
   $tag = "maintainer";
