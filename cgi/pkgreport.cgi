@@ -1,10 +1,10 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl -wT
 
 package debbugs;
 
 use strict;
 use CGI qw/:standard/;
-use POSIX;
+use POSIX qw(strftime tzset nice);
 
 require '/debian/home/ajt/newajbug/common.pl';
 #require '/usr/lib/debbugs/common.pl';
@@ -13,7 +13,7 @@ require '/debian/home/ajt/newajbug/common.pl';
 require '/etc/debbugs/config';
 require '/etc/debbugs/text';
 
-POSIX::nice(5);
+nice(5);
 
 my ($pkg, $maint, $maintenc, $submitter, $severity, $status);
 
@@ -38,8 +38,10 @@ my %indexentry;
 my %maintainer = &getmaintainers();
 my %strings = ();
 
-my $dtime=`date -u '+%H:%M:%S GMT %a %d %h'`;
-chomp($dtime);
+$ENV{"TZ"} = 'UTC';
+tzset();
+
+my $dtime = strftime "%a, %e %b %Y %T UTC", localtime;
 my $tail_html = $debbugs::gHTMLTail;
 $tail_html = $debbugs::gHTMLTail;
 $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
