@@ -210,6 +210,7 @@ sub htmlizebugs {
     my %section = ();
 
     my %displayshowpending = ("pending", "outstanding",
+			      "pending-fixed", "pending upload",
 			      "fixed", "fixed in NMU",
                               "done", "resolved",
                               "forwarded", "forwarded to upstream software authors");
@@ -257,7 +258,7 @@ sub htmlizebugs {
 
     my $result = "";
     my $anydone = 0;
-    foreach my $pending (qw(pending forwarded fixed done)) {
+    foreach my $pending (qw(pending forwarded pending-fixed fixed done)) {
         foreach my $severity(@debbugs::gSeverityList) {
             $severity = $debbugs::gDefaultSeverity if ($severity eq '');
             next unless defined $section{${pending} . "_" . ${severity}};
@@ -419,9 +420,10 @@ sub getbugstatus {
     $status{"severity"} = 'normal' if ($status{"severity"} eq '');
 
     $status{"pending"} = 'pending';
-    $status{"pending"} = 'forwarded' if (length($status{"forwarded"}));
-    $status{"pending"} = 'fixed'     if ($status{"tags"} =~ /\bfixed\b/);
-    $status{"pending"} = 'done'      if (length($status{"done"}));
+    $status{"pending"} = 'forwarded'	    if (length($status{"forwarded"}));
+    $status{"pending"} = 'fixed'	    if ($status{"tags"} =~ /\bfixed\b/);
+    $status{"pending"} = 'pending-fixed'    if ($status{"tags"} =~ /\bpending\b/);
+    $status{"pending"} = 'done'		    if (length($status{"done"}));
 
     return \%status;
 }
