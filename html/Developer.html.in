@@ -135,6 +135,21 @@ of the message it gets, if the $gBug is not already marked as forwarded.
 <p>You can also manipulate the `forwarded to' information by sending
 messages to <a href="server-control.html"><code>control\@$gEmailDomain</code></a>.
 
+<h2><a name="owner">Changing $gBug ownership</a></h2>
+
+<p>In cases where the person responsible for fixing a $gBug is not the
+assigned maintainer for the associated package (for example, when the
+package is maintained by a team), it may be useful to record this fact
+in the $gBug tracking system. To help with this, each $gBug may
+optionally have an owner.
+
+<p>The owner can be set by supplying an <code>Owner</code> line in the
+pseudo-header when the $gBug is submitted (see the
+<a href="Reporting.html#pseudoheader">instructions for reporting
+$gBugs</a>),
+or by using the <code>owner</code> and <code>noowner</code> commands
+with the <a href="#requestserv">control request server</a>.
+
 <h2>Summary postings</h2>
 
 <p>Every Friday, a list of outstanding $gBug reports is posted to a summary
@@ -149,8 +164,9 @@ $gBadMaintHtml
 <p>It is possible to reassign $gBug reports to other packages, to reopen
 erroneously-closed ones, to modify the information saying to where, if
 anywhere, a $gBug report has been forwarded, to change the severities
-and titles of reports and to merge and unmerge $gBug reports.  This is
-done by sending mail to <code>control\@$gEmailDomain</code>.
+and titles of reports, to set the ownership of bugs and to merge and
+unmerge $gBug reports.  This is done by sending mail to
+<code>control\@$gEmailDomain</code>.
 
 <p>The <a href="server-control.html">format of these messages</a> is
 described in another document available on the World Wide Web or in

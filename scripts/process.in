@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.86 2004/08/05 15:09:30 cjwatson Exp $
+# $Id: process.in,v 1.87 2005/01/02 19:00:30 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -583,6 +583,9 @@ END
 #          process line 452, near "$gDefaultSeverity is being used instead.
             $data->{severity}= '';
         }
+    }
+    if (defined($pheader{owner}) {
+        $data->{owner}= $pheader{owner};
     }
     &filelock("nextnumber.lock");
     open(N,"nextnumber") || &quit("nextnumber: read: $!");

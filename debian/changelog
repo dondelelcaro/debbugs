@@ -13,8 +13,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Implement new .status format that's extensible and easier to read; it
       now lives in .summary rather than .status. Use debbugs-upgradestatus
       to convert existing bug databases.
-    - Implement bug ownership, with new 'owner' and 'noowner' commands
-      (closes: #133453).
+    - Implement bug ownership, with new 'owner' and 'noowner' commands and
+      Owner: pseudo-header (closes: #133453).
     - Install Debian configuration in the binary package's examples
       directory (closes: #222118).
     - New standalone SpamAssassin queue runner, spamscan.
