@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.24 2001/03/18 05:00:01 doogie Exp $
+# $Id: process.in,v 1.25 2001/03/18 05:06:00 doogie Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -438,7 +438,7 @@ END
     }
     if (length($s_keywords)) {
         my @kws;
-        my %gkws = map { (%_, 1) } @gTags;
+        my %gkws = map { ($_, 1) } @gTags;
         foreach my $kw (sort split(/[,\s]+/, lc($s_keywords))) {
             push @kws, $kw if (defined $gkws{$kw});
         }
