@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.26 2003/05/26 12:30:04 cjwatson Exp $
+# $Id: errorlib.in,v 1.27 2003/05/31 14:24:58 cjwatson Exp $
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -244,16 +244,17 @@ sub bughook {
 
 	my @stuff=split /\n/, "$_[0]\n\n\n\n\n\n\n";
 
-	my $firstpkg;
 	my $whendone = "open";
 	my $severity = $gDefaultSeverity;
-	($firstpkg = $stuff[4]) =~ s/[,\s].*$//;
+	(my $pkglist = $stuff[4]) =~ s/[,\s]+/,/g;
+	$pkglist =~ s/^,+//;
+	$pkglist =~ s/,+$//;
 	$whendone = "forwarded" if length $stuff[7];
 	$whendone = "done" if length $stuff[6];
 	$severity = $stuff[9] if length $stuff[9];
 
 	my $k = sprintf "%s %d %d %s [%s] %s %s\n",
-			$firstpkg, $ref, $stuff[1], $whendone, $stuff[0],
+			$pkglist, $ref, $stuff[1], $whendone, $stuff[0],
 			$severity, $stuff[5];
 
 	update_realtime("$gSpoolDir/index.db.realtime", $ref, $k);
