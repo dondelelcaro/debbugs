@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.21 2003/06/06 17:56:05 cjwatson Exp $
+# $Id: text.in,v 1.22 2003/08/24 23:30:04 cjwatson Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -12,6 +12,7 @@
 # $gBadEmailPrefix  doc/bug-maint-info.txt
 # $gBadEmailPrefix";
 ############################################################################
+$gBadEmailPrefix = '' unless defined $gBadEmailPrefix;
 $gTextInstructions = "$gBadEmailPrefix";
 
 
