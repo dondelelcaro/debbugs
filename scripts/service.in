@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.91 2003/08/31 14:21:02 cjwatson Exp $
+# $Id: service.in,v 1.92 2003/09/01 01:19:24 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -615,7 +615,7 @@ END
 		}
 	    }
 	}
-    } elsif (m/^package\s*(\S.*\S)?\s*$/i) {
+    } elsif (m/^package\s+(\S.*\S)?\s*$/i) {
         $ok++;
 	my @pkgs = split /\s+/, $1;
 	if (scalar(@pkgs) > 0) {
