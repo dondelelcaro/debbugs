@@ -1,3 +1,11 @@
+debbugs (2.3-3) unstable; urgency=low
+
+  * Fixed examples installation, debbugsconfig should actually work now,
+    closes: #77126.
+  * Removed all traces of the package after purging, in postrm.
+
+ -- Josip Rodin <jrodin@jagor.srce.hr>  Wed, 15 Nov 2000 22:34:19 +0100
+
 debbugs (2.3-2) unstable; urgency=low
 
   * Tweaks to the [pkg|bug]report.cgi scripts
