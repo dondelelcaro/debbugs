@@ -424,9 +424,11 @@ sub htmlizebugs {
 sub countbugs {
     my $bugfunc = shift;
     if ($common_archive) {
-        open I, "<$debbugs::gSpoolDir/index.archive" or &quitcgi("bugindex: $!");
+        open I, "<$debbugs::gSpoolDir/index.archive"
+            or &quitcgi("$debbugs::gSpoolDir/index.archive: $!");
     } else {
-        open I, "<$debbugs::gSpoolDir/index.db" or &quitcgi("bugindex: $!");
+        open I, "<$debbugs::gSpoolDir/index.db"
+            or &quitcgi("$debbugs::gSpoolDir/index.db: $!");
     }
 
     my %count = ();
@@ -467,10 +469,10 @@ print STDERR "done optimized\n" if ($debug);
     } else {
         if ( $common_archive ) {
             open I, "<$debbugs::gSpoolDir/index.archive" 
-                or &quitcgi("bugindex: $!");
+                or &quitcgi("$debbugs::gSpoolDir/index.archive: $!");
         } else {
             open I, "<$debbugs::gSpoolDir/index.db" 
-                or &quitcgi("bugindex: $!");
+                or &quitcgi("$debbugs::gSpoolDir/index.db: $!");
         }
         while(<I>) {
             if (m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/) {
@@ -525,14 +527,16 @@ sub getmaintainers {
 	$maintainer{$a}= $b;
     }
     close(MM);
-    open(MM,"$gMaintainerFileOverride") or &quitcgi("open $gMaintainerFileOverride: $!");
-    while(<MM>) {
-	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
-	($a,$b)=($1,$2);
-	$a =~ y/A-Z/a-z/;
-	$maintainer{$a}= $b;
+    if (defined $gMaintainerFileOverride) {
+	open(MM,"$gMaintainerFileOverride") or &quitcgi("open $gMaintainerFileOverride: $!");
+	while(<MM>) {
+	    next unless m/^(\S+)\s+(\S.*\S)\s*$/;
+	    ($a,$b)=($1,$2);
+	    $a =~ y/A-Z/a-z/;
+	    $maintainer{$a}= $b;
+	}
+	close(MM);
     }
-    close(MM);
     $_maintainer = \%maintainer;
     return $_maintainer;
 }
@@ -541,6 +545,7 @@ my $_pkgsrc;
 my $_pkgcomponent;
 sub getpkgsrc {
     return $_pkgsrc if $_pkgsrc;
+    return {} unless defined $gPackageSource;
     my %pkgsrc;
     my %pkgcomponent;
 
