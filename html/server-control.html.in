@@ -181,13 +181,33 @@ mailservers is available via the WWW, in
   command; if you want to disconnect more than one $gBug simply include
   several <code>unmerge</code> commands in your message.
 
-<dt><code>tags</code> <var>bugnumber</var> [ <code>+</code> | <code>-</code> | <code>=</code> ] <var>tag</var>
+<dt><code>tags</code> <var>bugnumber</var> [ <code>+</code> | <code>-</code> | <code>=</code> ] <var>tag</var> [ <var>tag</var> ... ]
 
-  <dd>Sets a particular tag for the $gBug report #<var>bugnumber</var> to
-  <var>tag</var>. No notification is sent to the user who reported the $gBug.
-  <code>+</code> means adding, <code>-</code> means subtracting, and
-  <code>=</code> means ignoring the current tags and setting them afresh.
-  The default action is adding.
+  <dd>Sets tags for the $gBug report #<var>bugnumber</var>. No notification
+  is sent to the user who reported the $gBug. Setting the action to
+  <code>+</code> means to add each given <var>tag</var>, <code>-</code>
+  means to remove each given <var>tag</var>, and <code>=</code> means to
+  ignore the current tags and set them afresh to the list provided. The
+  default action is adding.
+
+  <p>Example usage:</p>
+
+  <pre>
+        # same as 'tags 123456 + patch'
+        tags 123456 patch
+
+        # same as 'tags 123456 + help security'
+        tags 123456 help security
+
+        # add 'fixed' and 'pending' tags
+        tags 123456 + fixed pending
+
+        # remove 'unreproducible' tag
+        tags 123456 - unreproducible
+
+        # set tags to exactly 'moreinfo' and 'unreproducible'
+        tags 123456 = moreinfo unreproducible
+  </pre>
 
   <p>Available tags currently include <code>patch</code>, <code>wontfix</code>,
   <code>moreinfo</code>, <code>unreproducible</code>, <code>help</code>,
