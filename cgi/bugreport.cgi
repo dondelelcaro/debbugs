@@ -70,7 +70,7 @@ sub display_entity ($$$$\$\@) {
     $filename = '' unless defined $filename;
 
     if ($top) {
-	$$this .= htmlsanit($entity->stringify_header);
+	$$this .= htmlsanit($entity->stringify_header) unless ($terse);
 	$$this .= "\n";
     }
 
@@ -110,7 +110,7 @@ sub display_entity ($$$$\$\@) {
 	    $$this .= "\n";
 	}
     } else {
-	$$this .= htmlsanit($entity->bodyhandle->as_string);
+	$$this .= htmlsanit($entity->bodyhandle->as_string) unless ($terse);
     }
 }
 
