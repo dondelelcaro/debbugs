@@ -305,8 +305,10 @@ sub dlurl {
 	$filename = $1 if ($val =~ /^filename=(.*)$/);
     }
     $params .= "&archive=yes" if ($common_archive);
+    my $pathinfo = '';
+    $pathinfo = "/$filename" if $filename ne '';
 
-    return urlsanit("bugreport.cgi/$filename?$params");
+    return urlsanit("bugreport.cgi$pathinfo?$params");
 }
 
 sub mboxurl {

@@ -31,6 +31,7 @@ my $boring = ($param{'boring'} || 'no') eq 'yes';
 my $terse = ($param{'terse'} || 'no') eq 'yes';
 my $reverse = ($param{'reverse'} || 'no') eq 'yes';
 my $mbox = ($param{'mbox'} || 'no') eq 'yes'; 
+my $mime = ($param{'mime'} || 'yes') eq 'yes';
 
 # Not used by this script directly, but fetch these so that pkgurl() and
 # friends can propagate them correctly.
@@ -50,6 +51,67 @@ if ($ENV{REQUEST_METHOD} eq 'HEAD' and not defined($att) and not $mbox) {
     }
     print "\n";
     exit 0;
+}
+
+sub display_entity ($$$$\$\@);
+sub display_entity ($$$$\$\@) {
+    my $entity = shift;
+    my $ref = shift;
+    my $top = shift;
+    my $xmessage = shift;
+    my $this = shift;
+    my $attachments = shift;
+
+    my $head = $entity->head;
+    my $disposition = $head->mime_attr('content-disposition');
+    $disposition = 'inline' if not defined $disposition or $disposition eq '';
+    my $type = $entity->effective_type;
+    my $filename = $entity->head->recommended_filename;
+    $filename = '' unless defined $filename;
+
+    if ($top) {
+	$$this .= htmlsanit($entity->stringify_header);
+	$$this .= "\n";
+    }
+
+    unless (($top and $type =~ m[^text/plain(?:;|$)]) or
+	    ($type =~ m[^multipart/])) {
+	push @$attachments, $entity;
+	my @dlargs = ($ref, "msg=$xmessage", "att=$#$attachments");
+	push @dlargs, "filename=$filename" if $filename ne '';
+	my $printname = $filename;
+	$printname = 'Message part ' . ($#$attachments + 1) if $filename eq '';
+	$$this .= '[<a href="' . dlurl(@dlargs) . qq{">$printname</a> } .
+		  "($type, $disposition)]\n\n";
+
+	if ($msg and defined($att) and $att eq $#$attachments) {
+	    my $head = $entity->head;
+	    chomp(my $type = $entity->effective_type);
+	    my $body = $entity->stringify_body;
+	    print "Content-Type: $type";
+	    print "; name=$filename" if $filename ne '';
+	    print "\n\n";
+	    my $decoder = new MIME::Decoder($head->mime_encoding);
+	    $decoder->decode(new IO::Scalar(\$body), \*STDOUT);
+	    exit(0);
+	}
+    }
+
+    return if $disposition eq 'attachment' and not defined($att);
+    return unless ($type =~ m[^text/] and $type !~ m[^text/html(?:;|$)]) or
+		  $type =~ m[^application/pgp(?:;|$)] or
+		  $entity->is_multipart;
+
+    if ($entity->is_multipart) {
+	my @parts = $entity->parts;
+	foreach my $part (@parts) {
+	    display_entity($part, $ref, 0, $xmessage,
+			   $$this, @$attachments);
+	    $$this .= "\n";
+	}
+    } else {
+	$$this .= htmlsanit($entity->bodyhandle->as_string);
+    }
 }
 
 my %maintainer = %{getmaintainers()};
@@ -209,60 +271,20 @@ while(my $line = <L>) {
 
 			push @mails, join( '', @mail ) if ( $mbox && @mail );
 			if ($show) {
-				my $downloadHtml = '';
-				if (@mail) {
+				if (not $mime and @mail) {
+					$this .= htmlsanit(join '', @mail);
+				} elsif (@mail) {
 					my $parser = new MIME::Parser;
 					$parser->tmp_to_core(1);
 					$parser->output_to_core(1);
 #					$parser->output_under("/tmp");
 					my $entity = $parser->parse( new IO::Lines \@mail );
-					# TODO: make local subdir, clean it outselves
+					# TODO: make local subdir, clean it ourselves
 					# the following does NOT delete the msg dirs in /tmp
 					END { if ( $entity ) { $entity->purge; } if ( $parser ) { $parser->filer->purge; } }
 					my @attachments = ();
-					if ( $entity->is_multipart ) {
-						my @parts = $entity->parts_DFS;
-#						$this .= htmlsanit($entity->head->stringify);
-						my @keep = ();
-						foreach ( @parts ) {
-							my $head = $_->head;
-#							$head->mime_attr("content-transfer-encoding" => "8bit")
-#								if !$head->mime_attr("content-transfer-encoding");
-							my ($disposition,$type) = (
-								$head->mime_attr("content-disposition"),
-								lc $head->mime_attr("content-type")
-								);
-							
-#print STDERR "'$type' '$disposition'\n";
-							if ($disposition && ( $disposition eq "attachment" || $disposition eq "inline" ) && $_->head->recommended_filename ) {
-								push @attachments, $_;
-								my $file = $_->head->recommended_filename;
-								$downloadHtml .= "View Attachment: <a href=\"".dlurl($ref,"msg=$xmessage","att=$#attachments","filename=$file")."\">$file</a>\n";
-								if ($msg && defined($att) && $att eq $#attachments) {
-									my $head = $_->head;
-									my $type;
-									chomp($type = $head->mime_attr("content-type"));
-									my $body = $_->stringify_body;
-									print "Content-Type: $type; name=$file\n\n";
-									my $decoder = new MIME::Decoder($head->mime_encoding);
-									$decoder->decode(new IO::Scalar(\$body), \*STDOUT);
-									exit(0);
-								}
-								if ($type eq 'text/plain') {
-#									push @keep, $_;
-								}
-#								$this .= htmlsanit($_->head->stringify);
-							} else {
-#								$this .= htmlsanit($_->head->stringify);
-#								push @keep, $_;
-							}
-#							$this .= "\n" . htmlsanit($_->stringify_body);
-						}
-#						$entity->parts(\@keep) if (!$msg);
-					}
-					$this .= htmlsanit($entity->stringify);
+					display_entity($entity, $ref, 1, $xmessage, $this, @attachments);
 				}
-				$this = "$downloadHtml\n$this$downloadHtml" if $downloadHtml;
 #				if ($normstate eq 'go' || $normstate eq 'go-nox') {
 				if ($normstate ne 'html') {
 					$this = "<pre>\n$this</pre>\n";
@@ -271,8 +293,6 @@ while(my $line = <L>) {
 					$this .= "  <em><a href=\"" . bugurl($ref, "msg=$xmessage") . "\">Full text</a> available.</em>";
 				}
 				$this = "$thisheader$this" if $thisheader && !( $normstate eq 'html' );;
-				$this = "$downloadHtml" if ($terse && $normstate ne 'html');
-				$downloadHtml = '';
 				$thisheader = '';
 				my $delim = $terse ? "<p>" : "<hr>";
 				if ($reverse) {
