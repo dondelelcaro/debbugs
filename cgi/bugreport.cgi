@@ -6,7 +6,8 @@ use strict;
 use CGI qw/:standard/;
 
 require '/usr/lib/debbugs/errorlib';
-require '/usr/lib/debbugs/common.pl';
+#require '/usr/lib/debbugs/common.pl';
+require '/debian/home/ajt/newajbug/common.pl';
 
 require '/etc/debbugs/config';
 require '/etc/debbugs/text';
@@ -58,7 +59,7 @@ $indexentry .= $showseverity;
 $indexentry .= "Package: <A HREF=\"" . pkgurl($status{package}) . "\">"
 	    .htmlsanit($status{package})."</A>;\n";
 
-$indexentry .= "Reported by: ".&sani($status{originator})."; ";
+$indexentry .= ";Reported by: ".&sani($status{originator});
 $indexentry .= ";\nKeywords: ".&sani($status{keywords}) 
 			if length($status{keywords});
 
@@ -75,7 +76,7 @@ my $dummy = `TZ=GMT LANG=C \\
 		date -d '1 Jan 1970 00:00:00 + $status{date} seconds' \\
 		'+ %a, %e %b %Y %T %Z'`;
 chomp($dummy);
-$submitted = "dated ".$dummy;
+$submitted = ";\ndated ".$dummy;
 
 if (length($status{done})) {
 	$indexentry .= ";\n<strong>Done:</strong> ".&sani($status{done});
