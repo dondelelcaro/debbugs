@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.6 1999/09/18 14:53:02 gecko Exp $
+# $Id: service.in,v 1.7 1999/09/18 21:01:27 gecko Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -11,17 +11,15 @@ $ENV{'PATH'}= '/usr/lib/debbugs'.$ENV{'PATH'};;
 chdir("$gSpoolDir") || die "chdir spool: $!\n";
 
 # open(DEBUG,">&4");
-
+$debug = 0;
 $wwwbase= "$gWebDir";
-
-# defined($intdate= time) || &quit("failed to get time: $!");
 
 $_=shift;
 m/^[RC]\.\d+$/ || &quit("bad argument");
 $control= m/C/;
 $nn= $_;
-if (!rename("incoming/G$nn","incoming/P$nn")) {
-    $_=$!.'';  m/no such file or directory/i && exit 0;
+if (!rename("incoming/G$nn","incoming/P$nn")) 
+{ 	$_=$!.'';  m/no such file or directory/i && exit 0;
     &quit("renaming to lock: $!");
 }    
 
@@ -32,30 +30,28 @@ close(M);
 
 grep((s/\n$//,s/\s+$//),@msg);
 
-print DEBUG "###\n",join("##\n",@msg),"\n###\n";
+print "###\n",join("##\n",@msg),"\n###\n" if $debug;
 
 chop($tdate= `date -u '+%a, %d %h %Y %T GMT'`);
 $fwd= <<END;
 Received: via spool for service; $tdate
 END
 
-for ($i=0; $i<=$#msg; $i++) {
-    $_ = $msg[$i];
+for ($i=0; $i<=$#msg; $i++) 
+{ 	$_ = $msg[$i];
     last unless length($_);
     $fwd .= $_."\n";
-    while ($msg[$i+1] =~ m/^\s/) {
-        $i++;
+    while ($msg[$i+1] =~ m/^\s/) 
+	{ 	$i++;
         $fwd .= $msg[$i]."\n" if $ins; # Huh ? Where is ins set ?
         $_ .= ' '.$msg[$i];
     }
-# print DEBUG ">$_<\n";
-    if (s/^(\S+):\s*//) {
-        $v= $1; $v =~ y/A-Z/a-z/;
-print DEBUG ">$v=$_<\n";
+ 	print ">$_<\n" if $debug;
+    if (s/^(\S+):\s*//) 
+	{ 	$v= $1; $v =~ y/A-Z/a-z/;
+		print ">$v=$_<\n" if $debug;
         $header{$v}= $_;
-    } else {
-print DEBUG "!>$_<\n";
-    }
+    } else { print "!>$_<\n" if $debug; }
 }
 
 defined($header{'from'}) || &quit("no From header");
@@ -72,25 +68,30 @@ $mergelowstate= 'idle';
 $midix=0;    
 $extras="";
 
+#strip blank line(s) after header
 while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
 
+#strip, if exists, mime header
+if ( $msg[$i] =~ /^This is a multi-part message in MIME format./ )
+{ 	while ( $i <= $#msg && length( $msg[$i] ) ) { $fwd .= $msg[$i] . "\n"; $i++; }
+	while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
+}
 if ( $msg[$i] =~ /^--/ || $msg[$i] =~ /^\s*$/ )
-{
-	while ( $i <= $#msg && length( $msg[$i] ) ) { $fwd .= $msg[$i]; $i++; }
+{ 	while ( $i <= $#msg && length( $msg[$i] ) ) { $fwd .= $msg[$i]; $i++; }
 	while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
 }	
 
 
-for ($procline=$i; $procline<=$#msg; $procline++) {
-    $state eq 'idle' || print "$state ?\n";
+for ($procline=$i; $procline<=$#msg; $procline++) 
+{ 	$state eq 'idle' || print "$state ?\n";
     $lowstate eq 'idle' || print "$lowstate ?\n";
     $mergelowstate eq 'idle' || print "$mergelowstate ?\n";
     $_= $msg[$procline]; s/\s+$//;
     next unless m/\S/; next if m/^\s*\#/;
     &transcript("> $_\n");
     $action= '';
-    if (m/^stop$/ || m/^quit$/ || m/^--/ || m/^thank/) {
-        &transcript("Stopping processing here.\n\n");
+    if (m/^stop$/ || m/^quit$/ || m/^--/ || m/^thank/) 
+	{ 	&transcript("Stopping processing here.\n\n");
         last;
     } elsif (m/^debug\s+(\d+)$/ && $1 >= 0 && $1 <= 1000) {
         $dl= $1+0;
@@ -255,6 +256,7 @@ END
     } elsif (m/^reassign\s+\#?(\d+)\s+(\S.*\S)$/) {
         $ok++;
         $ref= $1; $newpackage= $2;
+    	$newpackage =~ y/A-Z/a-z/;
         if (&setbug) {
             if (length($s_package)) {
                 $action= "$gBug reassigned from package \`$s_package'".
@@ -450,7 +452,7 @@ for $maint (keys %maintccreasons) {
 if (@maintccs) {
     &transcript("MC|@maintccs|\n") if $dl>2;
     $maintccs= "Cc: ".join(",\n    ",@maintccs)."\n";
-}
+} else { $maintccs = ""; }
 
 $reply= <<END;
 From: $gMaintainerEmail ($gMaintainer)
@@ -494,7 +496,7 @@ sub get_addresses {
 
 sub sendmailmessage {
     local ($message,@recips) = @_;
-    print DEBUG "mailing to >@recips<\n";
+    print "mailing to >@recips<\n" if $debug;
     $c= open(D,"|-");
     defined($c) || &quit("mailing forking for sendmail: $!");
     if (!$c) { # ie, we are the child process
@@ -716,7 +718,7 @@ sub dlex {
 }
 
 sub transcript {
-    print(DEBUG $_[0]);
+    print $_[0] if $debug;
     $transcript.= $_[0];
 }
 
@@ -783,23 +785,21 @@ sub addccaddress {
     $maintccreasons{$cca}{''}{$ref}= 1;
 }
 
-sub addmaintainers {
-    # Data structure is:
+sub addmaintainers 
+{ 	# Data structure is:
     #   maintainer email address &c -> assoc of packages -> assoc of bug#'s
     my ($p, $addmaint, $pshow);
     &ensuremaintainersloaded;
     $anymaintfound=0; $anymaintnotfound=0;
-    for $p (split(m/[ \t?,()]+/,$_[0])) {
-        $p =~ y/A-Z/a-z/;
+    for $p (split(m/[ \t?,()]+/,$_[0])) 
+	{ 	$p =~ y/A-Z/a-z/;
         $pshow= ($p =~ m/[-+.a-z0-9]+/ ? $& : '');
-        if (defined($maintainerof{$p})) {
-            $addmaint= $maintainerof{$p};
-&transcript("MR|$addmaint|$p|$ref|\n") if $dl>2;
+        if (defined($maintainerof{$p})) 
+		{ 	$addmaint= $maintainerof{$p};
+			&transcript("MR|$addmaint|$p|$ref|\n") if $dl>2;
             $maintccreasons{$addmaint}{$p}{$ref}= 1;
-print DEBUG "maintainer add >$p|$addmaint<\n";
-        } else {
-print DEBUG "maintainer none >$p<\n";
-        }
+			print "maintainer add >$p|$addmaint<\n" if $debug;
+        } else { print "maintainer none >$p<\n" if $debug; }
     }
 }
 

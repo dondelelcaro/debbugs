@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: processall.in,v 1.2 1999/09/02 22:27:29 gecko Exp $
+# $Id: processall.in,v 1.3 1999/09/18 21:01:27 gecko Exp $
 #
 # Usage: processall
 #
@@ -25,7 +25,7 @@ for (;;) {
     }
     if (!@ids) {
         opendir(DIR,"incoming") || die $!;
-        while ($_= readdir(DIR)) { push(@ids,$_) if s/^I//; }
+        while ( defined( $_= readdir(DIR) )) { push(@ids,$_) if s/^I//; }
         last unless @ids;
         @ids= sort(@ids);
     }

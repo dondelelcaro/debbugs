@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.6 1999/09/18 14:53:02 gecko Exp $
+# $Id: process.in,v 1.7 1999/09/18 21:01:27 gecko Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -94,10 +94,11 @@ while (defined ($msg[$i] ) )
 {
 	last if ( $msg[$i] !~ m/^([\w]+):\s*(\S+)/ );
 	$i++;
-	$fn = $1; $fv = $2;
+	$fn = $1; $fv $2;
 	print DEBUG ">$fn|$'|\n";
     $fwd .= $fn.': '.$fv."\n";
     $fn =~ y/A-Z/a-z/;
+    $fv =~ y/A-Z/a-z/;
     $pheader{$fn}= $fv;
 	print DEBUG ">$fn~$fv<\n";
 }
