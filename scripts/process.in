@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.8 1999/09/20 05:40:07 gecko Exp $
+# $Id: process.in,v 1.9 1999/10/14 19:56:58 gecko Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -291,7 +291,7 @@ $gMaintainer
 END
         } else 
 		{   &htmllog("Reply","sent",$replyto,"You have taken responsibility.");
-            &sendmessage(<<END.$x, '');
+            &sendmessage(<<END."--------------------------------------\n".$x."---------------------------------------\n".join( "\n", @msg ), '');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
 ${noticecc}Subject: $gBug#$ref: marked as done ($s_subject)
