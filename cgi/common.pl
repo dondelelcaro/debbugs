@@ -317,7 +317,11 @@ sub htmlindexentrystatus {
     } elsif (length($status{done})) {
         $result .= ";\n<strong>Done:</strong> " . htmlsanit($status{done});
         $days = ceil($debbugs::gRemoveAge - -M buglog($status{id}));
-	$result .= ";\n<strong>Will be archived:</strong>" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" );
+        if ($days >= 0) {
+            $result .= ";\n<strong>Will be archived:</strong>" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" );
+        } else {
+            $result .= ";\n<strong>Archived</strong>";
+        }
     }
 
     unless (length($status{done})) {
