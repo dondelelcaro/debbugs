@@ -50,9 +50,9 @@ $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
 
 set_option("repeatmerged", $repeatmerged);
 set_option("archive", $archive);
-set_option("include", { map {($_,1)} (split /[\s,]+/, $include) })
+set_option("include", { map {if (m/^(.*):(.*)$/) { ($1,$2) } else { ($_,1) }} (split /[\s,]+/, $include) })
 	if ($include);
-set_option("exclude", { map {($_,1)} (split /[\s,]+/, $exclude) })
+set_option("exclude", { map {if (m/^(.*):(.*)$/) { ($1,$2) } else { ($_,1) }} (split /[\s,]+/, $exclude) })
 	if ($exclude);
 
 my $tag;

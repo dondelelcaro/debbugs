@@ -220,6 +220,11 @@ sub htmlizebugs {
 	    foreach my $t (split /\s+/, $status{tags}) {
 		$okay = 1, last if (defined $common_include{$t});
 	    }
+	    if (defined $common_include{subj}) {
+                if (index($status{subject}, $common_include{subj}) > -1) {
+                    $okay = 1;
+                }
+            }
 	    next unless ($okay);
         }
 	if (%common_exclude) {
@@ -227,6 +232,11 @@ sub htmlizebugs {
 	    foreach my $t (split /\s+/, $status{tags}) {
 		$okay = 0, last if (defined $comon_exclude{$t});
 	    }
+	    if (defined $common_exclude{subj}) {
+                if (index($status{subject}, $common_exclude{subj}) > -1) {
+                    $okay = 0;
+                }
+            }
 	    next unless ($okay);
 	}
 	    
