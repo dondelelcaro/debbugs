@@ -1,0 +1,15 @@
+TODO
+====
+
+I'll be working on 2.x changes and 3.0 concurrently...
+
+Major Goals
+-----------
+1)	Allow multiple archives on the same machine.  This is actually a
+feature that was lost from 1.0 in order to have runtime configurability.
+
+2)	Move the database from flat files into... something else. LDAP or MySQL
+or...?
+
+3)	
+
