@@ -27,7 +27,8 @@ use Debbugs::Config;
 use Debbugs::Email;
 use Debbugs::Common;
 use FileHandle;
-use File::Basename qw(&basename);
+use File::Basename qw(&dirname);
+use File::Path;
 
 %Record = ();
 
@@ -112,29 +113,35 @@ sub WriteRecord
 
 sub OpenFile
 {
-    my $prePath = $_[0], my $stub = $_[1], my $postPath = $_[2], my $desc = $_[3];
-    my $path = "/db/".$stub.".status", my $handle = new FileHandle;
-    print "V: Opening $desc $stub\n" if $Globals{ 'verbose' };
-    print "D2: (DBase) $path found as data path\n" if $Globals{ 'debug' } > 1;
-    if( ! -r $Globals{ "work-dir" } . $path ) {
-	my $dir;
-	$path = $prePath. &NameToPathHash($stub) .$postPath;
-	$dir = basename($path);
-	if( ! -d $Globals{ "work-dir" } . $dir ) {
-	    print "D1 (DBase) making dir $dir\n" if $Globals{ 'debug' };
-	    mkdir $Globals{ "work-dir" } . $dir, umask();
+    my ($prePaths, $stub, $postPath, $desc, $new) = (shift, shift, shift, shift, shift);
+    foreach my $prePath (@$prePaths) {
+	my $path = "/" . $prePath . "/" . $stub . $postPath, my $handle = new FileHandle;
+	print "V: Opening $desc $stub\n" if $Globals{ 'verbose' };
+	print "D2: (DBase) trying $path\n" if $Globals{ 'debug' } > 1;
+	if( ! -r $Globals{ "work-dir" } . $path ) {
+	    $path = "/" . $prePath . "/" . &NameToPathHash($stub) . $postPath;
+	    print "D2: (DBase) trying $path\n" if $Globals{ 'debug' } > 1;
+	    if( ! -r $Globals{ "work-dir" } . $path ) {
+		next if( !$new =~ "new" );
+	    }
+	}
+	open( $handle, $Globals{ "work-dir" } . $path ) && return $handle;
+	if($new =~ "new") {
+	    my $dir = dirname( $path );
+	    if ( ! -d $Globals{ "work-dir" } . $dir ) {
+		mkpath($Globals{ "work-dir" } . $dir);
+	    }
+	    open( $handle, ">" . $Globals{ "work-dir" } . $path ) && return $handle;
 	}
     }
-    open( $handle, $Globals{ "work-dir" } . $path ) 
-	|| &fail( "Unable to open $desc: ".$Globals{ "work-dir" }."$path\n");
-    return $handle;
+    return;
 }
 sub OpenRecord
 {
     my $record = $_[0];
     if ( $record ne $OpenedRecord )
     {
-	$FileHandle = OpenFile("/db/", $record, ".status", "status");
+	$FileHandle = OpenFile ["db", "archive"], $record, ".status", "status", $_[1];
 	flock( $FileHandle, LOCK_EX ) || &fail( "Unable to lock record $record\n" );
 	$OpenedRecord = $record;
     }
@@ -152,7 +159,7 @@ sub OpenLogfile
     my $record = $_[0];
     if ( $record ne $OpenedLog )
     {
-	$LogfileHandle = OpenFile("/db/", $record, ".log", "log");
+	$LogfileHandle = OpenFile("db", $record, ".log", "log");
 	seek( $FileHandle, 0, 2 );
 	$OpenedLog = $record;
     }
@@ -171,40 +178,48 @@ sub GetBugList
 #
     my $dir = new FileHandle;
 
-    my $prefix = $Globals{ "work-dir" };
-    if ( defined($_[0]) ) {
-	$prefix .= "/" . $_[0] . "/";
+    my $prefix;
+    my $paths = shift;
+    my @paths;
+    if ( !defined($paths) ) {
+	@paths = ("db");
     } else {
-	$prefix .= "/" . "db" . "/";
+	@paths = @$paths;
     }
     my @ret;
-    opendir $dir, $prefix;
-    my @files = readdir($dir);
-    closedir $dir;
-    foreach (grep { /\d*\d\d.status/ } @files) {
-	s/.status$//;
-	push @ret, $_;
-#	print "$_ -> $_\n";
-    }
-    foreach (grep { /^[s0-9]$/ } @files) {
-	my $_1 = $_;
-	opendir $dir, $prefix . $_1;
-	@files = grep { /^\d$/ } readdir($dir);
+    my $path;
+    foreach $path (@paths) {
+	$prefix = $Globals{ "work-dir" } . "/" . $path . "/";
+	opendir $dir, $prefix;
+	my @files = readdir($dir);
 	closedir $dir;
-	foreach (@files) {
-	    my $_2 = $_;
-	    opendir $dir, $prefix . $_1 . "/" .$_2;
+	foreach (grep { /\d*\d\d.status/ } @files) {
+	    next if ( ! -s $prefix . "/" . $_ );
+	    s/.status$//;
+	    push @ret, $_;
+#	    print "$_ -> $_\n";
+	}
+	foreach (grep { /^[s0-9]$/ } @files) {
+	    my $_1 = $_;
+	    opendir $dir, $prefix . $_1;
 	    @files = grep { /^\d$/ } readdir($dir);
-	    close $dir;
+	    closedir $dir;
 	    foreach (@files) {
-		my $_3 = $_;
-		opendir $dir, $prefix . $_1 . "/" . $_2 . "/" .$_3;
-		@files = grep { /\d*\d\d.status/ } readdir($dir);
+		my $_2 = $_;
+		opendir $dir, $prefix . $_1 . "/" .$_2;
+		@files = grep { /^\d$/ } readdir($dir);
 		close $dir;
 		foreach (@files) {
-		    s/.status$//;
-		    push @ret, $_;
-#		    print "$_ -> $_1/$_2/$_3/$_\n";
+		    my $_3 = $_;
+		    opendir $dir, $prefix . $_1 . "/" . $_2 . "/" .$_3;
+		    @files = grep { /\d*\d\d.status/ } readdir($dir);
+		    close $dir;
+		    foreach (@files) {
+			next if ( ! -s $prefix . $_1 . "/" . $_2 . "/" .$_3 . "/" . $_ );
+			s/.status$//;
+			push @ret, $_;
+#			print "$_ -> $_1/$_2/$_3/$_\n";
+		    }
 		}
 	    }
 	}
