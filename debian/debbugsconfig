@@ -1,6 +1,10 @@
 #!/usr/bin/perl
 # debbugsconfig: copies debbugs configuration files from templates, and
 #                creates documentation in HTML and text
+# Copyright (C) 1999 Darren Benham
+# Copyright (C) 2000 Josip Rodin
+# Licensed under the version 2 of the GNU General Public License as
+# published by the Free
 
 use POSIX qw(strftime);
 
