@@ -65,6 +65,11 @@ print "D1: config file=$config\n" if $Globals{ 'debug' };
 @config = Debbugs::Config::ParseConfigFile( $config );
 
 #############################################################################
+#  Load in template emails
+#############################################################################
+@notify_done_email = Debbugs::Email::LoadEmail( 
+
+#############################################################################
 #  Find file name and load input file
 #############################################################################
 $_=shift;

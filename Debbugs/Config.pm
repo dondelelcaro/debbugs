@@ -64,6 +64,7 @@ my %ConfigMap = (
 		"Work Dir" => "work-dir",
 		"Web Dir" => "www-dir",
 		"Doc Dir" => "doc-dir",
+		"Template Dir" => "template-dir",
 		"Maintainer File" => "maintainer-file",
 		"Pseudo Description File" => "pseudo-description",
 		"Submit List" => "submit-list",
