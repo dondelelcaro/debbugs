@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: db2html.in,v 1.8 2002/09/22 15:20:08 cjwatson Exp $
+# $Id: db2html.in,v 1.9 2002/09/25 16:16:55 doogie Exp $
 # usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
 
 #load the necessary libraries/configuration
@@ -100,7 +100,7 @@ for $f (@files)
 	#)
 	# unless $ref =~ m/^-/ || $ref =~ m/^124/;
     &filelock("lock/$ref");
-    $preserveonly= defined($lastrun) && -M "db/$ref.log" > $lastrun;
+    $preserveonly= defined($lastrun) && -M "db-h/".get_hashname($ref)."/$ref.log" > $lastrun;
     if ($ref =~ m/^-\d$/) 
 	{ 	$week= $ref eq '-1' ? 'this week' :
                $ref eq '-2' ? 'last week' :
@@ -125,7 +125,9 @@ for $f (@files)
         $tpackfile= "pnone.html";
         $indexpart= 'unmatched';
     } else 
-	{ 	open(S,"db/$ref.status") || &quit("open db/$ref.status: $!");
+	{
+	my $hash = get_hashname($ref);
+ 	open(S,"db-h/$hash/$ref.status") || &quit("open db-h/$hash/$ref.status: $!");
         chomp($s_originator= <S>);
         chomp($s_date= <S>);
         chomp($s_subject= <S>);
@@ -248,7 +250,8 @@ for $f (@files)
             &quit("eval add to \$perpack${indexpart}{\$tpack} failed: $@");
     }
     if ($preserveonly) { &preserve("$linkto.html"); &preserve("$linkto-b.html"); &unfilelock; next; }
-    open(L,"db/$ref.log") || &quit("open db/$ref.log: $!");
+    my $hash = get_hashname($ref);
+    open(L,"db-h/$hash/$ref.log") || &quit("open db-h/$hash/$ref.log: $!");
     $log='';
     $boring=''; $xmessage= 0;
     $normstate= 'kill-init';
