@@ -1,13 +1,13 @@
 # This is the template debbugs configuration file.
 # You *must* edit it in order for debbugs to work.
-# $Id: config.in,v 1.7 2000/10/07 17:14:02 joy Exp $
+# $Id: config.in,v 1.8 2000/10/07 19:00:44 joy Exp $
 
 # Domains
 $gEmailDomain = "bugs.something";			# e.g. bugs.debian.org
 $gListDomain = "lists.something";			# e.g. lists.debian.org
 $gWebDomain = "localhost/Bugs";				# e.g. www.debian.org/Bugs
 $gCGIDomain = "/Bugs/cgi";				# e.g. cgi.debian.org
-$gMirrors = "";						# comma seperated list!
+$gMirrors = "";						# comma separated list
 
 # Project identification
 $gProject = "Something";				# e.g. Debian
@@ -18,7 +18,8 @@ $gMaintainerWebpage = "http://localhost/~owner";	# e.g. http://www.debian.org/~i
 $gMaintainerEmail = "root\@something";			# e.g. owner@bugs.debian.org
 
 # BTS mailing lists, at $gListDomain
-# if you don't want them, set them all to $gMaintainerEmail or similar
+# if you don't want lists, set them all to $gMaintainerEmail
+# if you don't want that mail at all, filter it out somehow :)
 $gSubmitList = "bug-submit-list";		# e.g. debian-bugs-dist
 $gMaintList = "bug-maint-list";			# e.g. debian-bugs-dist
 $gQuietList = "bug-quiet-list";			# e.g. debian-bugs-dist
@@ -62,3 +63,12 @@ $gAJIndex = "/debian/home/ajt/ajbug/pkgindex";		# AJ's package index
 # Required data files
 $gMaintainerFile = "$gConfigDir/Maintainers";
 $gPseudoDescFile = "$gConfigDir/pseudo-packages.description";
+
+# Part of instructions printed by the receive script when bouncing a bad e-mail
+$gTextInstructions = "$gBadEmailPrefix
+$gBadEmailPrefix Instructions are available from ftp.debian.org in /debian
+$gBadEmailPrefix and at all Debian mirror sites, in the files:
+$gBadEmailPrefix  doc/bug-reporting.txt
+$gBadEmailPrefix  doc/bug-log-access.txt
+$gBadEmailPrefix  doc/bug-maint-info.txt
+$gBadEmailPrefix";

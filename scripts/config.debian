@@ -1,12 +1,12 @@
 # This is the bugs.debian.org debbugs configuration file.
-# $Id: config.debian,v 1.5 2000/10/07 17:14:02 joy Exp $
+# $Id: config.debian,v 1.6 2000/10/07 19:00:44 joy Exp $
 
 # Domains
 $gEmailDomain = "bugs.debian.org";
 $gListDomain = "lists.debian.org";
 $gWebDomain = "bugs.debian.org";
 $gCGIDomain = "http://bugs.debian.org/cgi-bin/";
-$gMirrors = "";						#comma seperated list
+$gMirrors = "";						# comma separated list
 
 # Project identification
 $gProject = "Debian";
@@ -15,7 +15,6 @@ $gProjectTitle = "Debian GNU/Linux";
 $gMaintainer = "Darren Benham";
 $gMaintainerWebpage = "http://master.debian.org/~gecko";
 $gMaintainerEmail = "owner\@bugs.debian.org";
-
 
 # BTS mailing lists, at $gListDomain
 $gSubmitList = "debian-bugs-dist";
@@ -52,13 +51,23 @@ $gBounceFroms = "^mailer|^da?emon|^post.*mast|^root|^wpuser|^mmdf|^smt.*|^mrgate
 
 # Directories -- do _not_ change their locations.
 # They are currently hardcoded, variables are here for future expansion.
+$gConfigDir = "/etc/debbugs";				# directory where this file is
 $gSpoolDir = "/var/lib/debbugs/spool";			# working directory
 $gIncomingDir = "incoming";				# unprocessed e-mails
 $gWebDir = "/var/lib/debbugs/www";			# base location of web pages
-$gDocDir = "/debian/debian/doc";			# location of doc files
+$gDocDir = "/debian/debian/doc";			# location of text doc files
 $gAJDbDir = "/var/lib/debbugs/spool/db";		# AJ's database dir
 $gAJIndex = "/debian/home/ajt/ajbug/pkgindex";		# AJ's package index
 
 # Required data files
-$gMaintainerFile = "/etc/debbugs/Maintainers";
-$gPseudoDescFile = "/etc/debbugs/pseudo-packages.description";
+$gMaintainerFile = "$gConfigDir/Maintainers";
+$gPseudoDescFile = "$gConfigDir/pseudo-packages.description";
+
+# Part of instructions printed by the receive script when bouncing a bad e-mail
+$gTextInstructions = "$gBadEmailPrefix
+$gBadEmailPrefix Instructions are available from ftp.debian.org in /debian
+$gBadEmailPrefix and at all Debian mirror sites, in the files:
+$gBadEmailPrefix  doc/bug-reporting.txt
+$gBadEmailPrefix  doc/bug-log-access.txt
+$gBadEmailPrefix  doc/bug-maint-info.txt
+$gBadEmailPrefix";
