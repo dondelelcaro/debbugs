@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.25 2000/10/14 21:01:22 joy Exp $
+# $Id: service.in,v 1.26 2000/10/14 22:22:01 joy Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -335,9 +335,9 @@ END
         $ok++;
         $ref= $1;
         $newseverity= $2;
-        if (!grep($_ eq $newseverity, @severities, "$gDefaultSeverity")) {
+        if (!grep($_ eq $newseverity, @gSeverityList, "$gDefaultSeverity")) {
             &transcript("Severity level \`$newseverity' is not known.\n".
- 			"Recognised are: ".join(' ',@showseverities).".\n\n");
+ 			"Recognized are: $gShowSeverities.\n\n");
         } elsif (&setbug) {
             $printseverity= $s_severity;
             $printseverity= "$gDefaultSeverity" if $printseverity eq '';
@@ -365,7 +365,7 @@ END
        }
        if (@badtags) {
             &transcript("Unknown tag/s: ".join(', ', @badtags).".\n".
-                       "Recognised are: ".join(' ', @gTags).".\n\n");
+                       "Recognized are: ".join(' ', @gTags).".\n\n");
        }
        if (&setbug) {
            if ($addsub eq "set") {
@@ -501,7 +501,7 @@ for $maint (keys %maintccreasons) {
         $reasonstring.= $p.' ' if length($p);
         $reasonstring.= join(' ',map("#$_",sort keys %{$$reasonsref{$p}}));
     }
-    $reasonstring = "" if undefined($reasonstring);
+    $reasonstring = "" if (!defined($reasonstring));
     push(@maintccs,"$maint ($reasonstring)");
     push(@maintccaddrs,"$maint");
 }
