@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.28 2001/05/02 20:13:49 joy Exp $
+# $Id: process.in,v 1.29 2001/05/12 18:37:45 joy Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -25,7 +25,7 @@ if (!rename("incoming/G$nn","incoming/P$nn"))
     &quit("renaming to lock: $!");
 }    
 
-$baddress= 'bugs' if $codeletter eq 'B';
+$baddress= 'submit' if $codeletter eq 'B';
 $baddress= 'maintonly' if $codeletter eq 'M';
 $baddress= 'quiet' if $codeletter eq 'Q';
 $baddress= 'forwarded' if $codeletter eq 'F';
