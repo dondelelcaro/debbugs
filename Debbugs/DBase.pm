@@ -27,6 +27,7 @@ use Debbugs::Config;
 use Debbugs::Email;
 use Debbugs::Common;
 use FileHandle;
+use File::Basename qw(&basename);
 
 %Record = ();
 
@@ -117,7 +118,7 @@ sub OpenFile
     print "D2: (DBase) $path found as data path\n" if $Globals{ 'debug' } > 1;
     if( ! -r $Globals{ "work-dir" } . $path ) {
 	my $dir;
-	$path = $prePath.Number2Path($stub).$postPath;
+	$path = $prePath. &NameToPathHash($stub) .$postPath;
 	$dir = basename($path);
 	if( ! -d $Globals{ "work-dir" } . $dir ) {
 	    print "D1 (DBase) making dir $dir\n" if $Globals{ 'debug' };
