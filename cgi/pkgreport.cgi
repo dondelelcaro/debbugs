@@ -11,6 +11,8 @@ require './common.pl';
 require '/etc/debbugs/config';
 require '/etc/debbugs/text';
 
+use vars qw($gPackagePages $gWebDomain);
+
 nice(5);
 
 my %param = readparse();
@@ -196,7 +198,6 @@ if (defined $pkg || defined $src) {
 	print ".\n";
     }
     if ($pkg) {
-	my $stupidperl = ${debbugs::gPackagePages};
 	printf "<p>You might like to refer to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
 	if ($pkgsrc{ $pkg }) {
 	    printf ", or to the source package <a href=\"%s\">%s</a>'s bug page.</p>\n", srcurl($pkgsrc{$pkg}), htmlsanit($pkgsrc{$pkg});
