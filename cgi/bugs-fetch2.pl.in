@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 require '/etc/debbugs/config';
-require '/var/lib/debbugs/www/cgi/cgi-lib.pl';
+require './cgi-lib.pl';
 
 %map= ($gMirrors);
 
