@@ -9,21 +9,25 @@ use Debbugs::Email;
 use Debbugs::DBase;
 use Debbugs::Common;
 use Getopt::Long;
-use Mail::Address;
+use MIME::Parser;
 
 #############################################################################
 #  Gloabal Variable Declaration
 #############################################################################
-my $VERSION = '3.01';						#External Version number
-my $BANNER = "DebBugs v$VERSION";			#Version Banner - text form
-my $FILE = 'debbugs-service1';					#File name
+my $VERSION = '3.01';                        #External Version number
+my $BANNER = "DebBugs v$VERSION";            #Version Banner - text form
+my $FILE = 'debbugs-service';                #File name
 my $config = '';
 my @config = undef;
 
-my $inputfilename;			#file specified on commandline
+my $inputfilename;                           #file specified on commandline
 my @inputfile;
 my @imputlog;
-my $control;				#call to control or request
+my $control;                                 #call to control or request
+
+my @body;				    #list of commands
+my $replyto;				    #address of to send reply to
+my $transcript;				    #building of return message
 
 #############################################################################
 #  Commandline parsing
@@ -58,90 +62,87 @@ $Globals{ 'verbose' } = $verbose;
 #############################################################################
 $config = "./debbugs.cfg" if( $config eq '' );
 print "D1: config file=$config\n" if $Globals{ 'debug' };
-@config = ParseConfigFile( $config );
+@config = Debbugs::Config::ParseConfigFile( $config );
 
 #############################################################################
 #  Find file name and load input file
 #############################################################################
 $_=shift;
-m/^[RC]\.\d+$/ || &quit("bad argument");
+m/^[RC]\.\d+$/ || &fail("bad argument");
 $control= m/C/;
 $inputfilename = $_;
 if (!rename( $Globals{ 'spool-dir' }."G$inputfilename", $Globals{ 'spool-dir' }."P$inputfilename")) 
 {	$_=$!.'';  
 	m/no such file or directory/i && exit 0;
 	&fail("renaming to lock: $!");
-}    
-open( M, "P$inputfilename" );
-$inputmail = new Mail::Internet( \*M );
-close( M );
-
-####################################### HERE ###############################
-grep((s/\n$//,s/\s+$//),@msg); #remove blank lines
-
-## DEBUG ## print "###\n",join("##\n",@msg),"\n###\n" if $debug;
-
-
-
-
-for ($i=0; $i<=$#msg; $i++) 
-{ 	$_ = $msg[$i];
-    last unless length($_);
-    $fwd .= $_."\n";
-    while ($msg[$i+1] =~ m/^\s/) 
-	{ 	$i++;
-        $_ .= ' '.$msg[$i];
-    }
- 	print ">$_<\n" if $debug;
-    if (s/^(\S+):\s*//) 
-	{ 	$v= $1; $v =~ y/A-Z/a-z/;
-		print ">$v=$_<\n" if $debug;
-        $header{$v}= $_;
-    } else { print "!>$_<\n" if $debug; }
 }
 
-defined($header{'from'}) || &quit("no From header");
-$replyto= defined($header{'reply-to'}) ? $header{'reply-to'} : $header{'from'};
+############################################################################
+#  Set up MIME Message class
+############################################################################
+my $parser = new MIME::Parser;
+$parser->output_dir("$ENV{HOME}/mimemail");
+$parser->output_prefix("part");
+$parser->output_to_core(100000);
+my $inputmail = $parser->parse_in("P$inputfilename") or die "couldn't parse MIME file";
+#for use when stdin in stead of file is used
+#my $inputmail = $parser->read(\*STDIN) or die "couldn't parse MIME stream";
 
-$controlrequestaddr= $control ? "control\@$gEmailDomain" : "request\@$gEmailDomain";
+############################################################################
+#  Extract first part (if mime type) for processing.  All else assumed junk
+############################################################################
+if ( $inputmail->is_multipart )
+{   my	$parts = $inputmail->parts( 0 );
+    while( $parts->is_multipart ) { $parts = $parts->parts( 0 ); }
+    @body = $parts->bodyhandle->as_lines;
+}
+else { @body = $inputmail->bodyhandle->as_lines; }
+
+
+$inputmail->head->count('From') || &fail( "no From header" );
+
+############################################################################
+#  Determine Reply To address
+############################################################################
+$replyto= $inputmail->head->count( "Reply-to" ) ? $inputmail->head->get( "Reply-to" ) : $inputmail->head->get( "From" );
+
+############################################################################
+#  Start processing of commands 
+############################################################################
 $transcript='';
-&transcript("Processing commands for $controlrequestaddr:\n\n");
+if ( $control ) { &transcript("Processing commands for control message:\n\n"); }
+else { &transcript("Processing commands for request message:\n\n"); }
 
-$dl= 0;
+####################################### HERE ###############################
 $state= 'idle';
 $lowstate= 'idle';
 $mergelowstate= 'idle';
 $midix=0;    
 $extras="";
 
-#strip blank line(s) after header
-while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
-
-#strip, if exists, mime header
-if ( $msg[$i] =~ /^This is a multi-part message in MIME format./ )
-{ 	while ( $i <= $#msg && length( $msg[$i] ) ) { $fwd .= $msg[$i] . "\n"; $i++; }
-	while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
-}
-if ( $msg[$i] =~ /^--/ || $msg[$i] =~ /^\s*$/ )
-{ 	while ( $i <= $#msg && length( $msg[$i] ) ) { $fwd .= $msg[$i]; $i++; }
-	while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
-}	
-
-
-for ($procline=$i; $procline<=$#msg; $procline++) 
-{ 	$state eq 'idle' || print "$state ?\n";
+for ( my $procline=0; $procline<=$#body; $procline++) 
+{   
+    #test state
+    $state eq 'idle' || print "$state ?\n";
     $lowstate eq 'idle' || print "$lowstate ?\n";
     $mergelowstate eq 'idle' || print "$mergelowstate ?\n";
-    $_= $msg[$procline]; s/\s+$//;
-    next unless m/\S/; next if m/^\s*\#/;
+
+    #get first line
+    $_= $msg[$procline]; 
+    s/\s+$//;	#strip ending white space, including newlines
+
+    next unless m/\S/;	    #skip blank lines
+    next if m/^\s*\#/;	    #skip comment-only lines
     &transcript("> $_\n");
+
+
     $action= '';
     if (m/^stop\s/i || m/^quit\s/i || m/^--/ || m/^thank\s/i) 
-	{ 	&transcript("Stopping processing here.\n\n");
+    {   &transcript("Stopping processing here.\n\n");
         last;
-    } elsif (m/^debug\s+(\d+)$/i && $1 >= 0 && $1 <= 1000) {
-        $dl= $1+0;
-        &transcript("Debug level $dl.\n\n");
+    } elsif (m/^debug\s+(\d+)$/i && $1 >= 0 && $1 <= 1000) 
+    {	$debug= $1+0;
+        &transcript("Debug level $debug.\n\n");
     } elsif (m/^(send|get)\s+\#?(\d{2,})$/i) {
         $ref= $2+0; $reffile= $ref; $reffile =~ s,^..,$&/$&,;
         &sendlynxdoc("db/$reffile.html","logs for $gBug#$ref");
