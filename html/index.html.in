@@ -32,18 +32,21 @@ manipulating $gBugs by email.</A>
 <li><A href="db/ix/maintainers.html">Index of maintainers of packages with $gBug reports.</A>
 <li>Outstanding
 <A href="db/si/pendingcritical.html">critical</A>,
-<A href="db/si/pendinggrave.html">grave</A> and
-<A href="db/si/pendingnormal.html">normal</A> $gBugs and
+<A href="db/si/pendinggrave.html">grave</A>,
+<A href="db/si/pendingnormal.html">normal</A> and
+<A href="db/si/pendingfixed.html">fixed</A> $gBugs and
 <A href="db/si/pendingwishlist.html">wishlist</A> items.
 <li>Forwarded
 <A href="db/si/forwardedcritical.html">critical</A>,
-<A href="db/si/forwardedgrave.html">grave</A> and
-<A href="db/si/forwardednormal.html">normal</A> $gBugs and
+<A href="db/si/forwardedgrave.html">grave</A>,
+<A href="db/si/forwardednormal.html">normal</A> and
+<A href="db/si/forwardedfixed.html">fixed</A> $gBugs and
 <A href="db/si/forwardedwishlist.html">wishlist</A> items.
 <li>Resolved
 <A href="db/si/donecritical.html">critical</A>,
-<A href="db/si/donegrave.html">grave</A> and
-<A href="db/si/donenormal.html">normal</A> $gBugs and
+<A href="db/si/donegrave.html">grave</A>,
+<A href="db/si/donenormal.html">normal</A> and
+<A href="db/si/donefixed.html">fixed</A> $gBugs and
 <A href="db/si/donewishlist.html">wishlist</A> items.
 <li><A href="db/ix/psummary.html">Summary of outstanding reports, sorted by package.</A>
 <li><A href="db/ix/summary.html">Summary of outstanding reports, sorted by number.</A>
