@@ -1,0 +1,117 @@
+#! /usr/bin/perl -w
+# Migrate from .status format version 1 to version 2. The new format uses
+# RFC822-style name/value pairs to allow new fields to be added more easily.
+
+use vars qw($gSpoolDir);
+
+my $config_path = '/etc/debbugs';
+my $lib_path = '/usr/lib/debbugs';
+
+require "$config_path/config";
+require "$lib_path/errorlib";
+
+if (@ARGV < 1 or $ARGV[0] !~ /^(?:db-h|archive)$/) {
+    print <<EOF;
+Usage: $0 db-h|archive (relative to $gSpoolDir)
+
+debbugs-upgradestatus converts a debbugs database in-place to use version 2
+of the bug status file format. Version 1 metadata files were stored in
+.status files; version 2 metadata files are written to .db files.
+
+EOF
+    exit 0;
+}
+
+chdir $gSpoolDir or die "Can't chdir to $gSpoolDir: $!";
+
+my $archive = $ARGV[0];
+my $db = getlocationpath($archive);
+opendir DB, $db or die "Can't opendir $db: $!";
+
+my @files;
+for (my $subdir = 0; $subdir < 100; ++$subdir) {
+    my $path = sprintf "$archive/%.2d", $subdir;
+    opendir DIR, $path or next;
+    my @list = grep /^\d+\.status$/, readdir DIR;
+    closedir DIR;
+    grep s/\.status$//, @list;
+    push @files, @list;
+}
+
+closedir DB;
+
+@files = sort { $a <=> $b } @files;
+
+my @v1fields = qw(originator date subject msgid package
+                  keywords done forwarded mergedwith severity);
+
+sub v1readbug {
+    my ($lref, $location) = @_;
+    my $status = getbugcomponent($lref, 'status', $location);
+    return undef unless defined $status;
+    if (!open(S,$status)) { return undef; }
+
+    my %data;
+    my @lines;
+    local $_;
+
+    while (<S>) {
+        chomp;
+        push @lines, $_;
+    }
+
+    for my $field (@v1fields) {
+        if (@lines) {
+            $data{$field} = shift @lines;
+        } else {
+            $data{$field} = '';
+        }
+    }
+
+    close(S);
+
+    $data{severity} = 'normal' if $data{severity} eq '';
+
+    return \%data;
+}
+
+my $success = 0;
+my $failure = 0;
+for my $ref (@files) {
+    filelock("lock/$ref") unless $ENV{NO_LOCKING};
+    my $data = v1readbug($ref, $archive);
+    if (defined $data) {
+        if ($ENV{NO_LOCKING}) {
+            writebug($ref, $data, $archive, 2, 'disable bughook');
+        } else {
+            unlockwritebug($ref, $data, $archive, 2, 'disable bughook');
+        }
+
+        # Test new .db file
+        my $newdata = readbug($ref, $archive);
+        my %jointkeys = map { $_ => 1 } (keys %$data), (keys %$newdata);
+        for my $key (keys %jointkeys) {
+            unless (exists $data->{$key}) {
+                die "BUG: $ref: key '$key' in .db but not .status!\n";
+            }
+            unless (exists $newdata->{$key}) {
+                die "BUG: $ref: key '$key' in .status but not .db!\n";
+            }
+            if ($data->{$key} ne $newdata->{$key}) {
+                die "BUG: $ref: key '$key' different in .status and .db:\n" .
+                    "     .status has '$data->{$key}';\n" .
+                    "     .db has '$newdata->{$key}'!\n";
+            }
+        }
+
+        ++$success;
+    } else {
+        unfilelock() unless $ENV{NO_LOCKING};
+        ++$failure;
+    }
+}
+
+print "$success bugs converted successfully.\n" if $success;
+print "Failed to convert $failure bugs.\n" if $failure;
+
+exit !($success && !$failure);

@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.34 2003/08/21 19:21:43 cjwatson Exp $
+# $Id: errorlib.in,v 1.35 2003/08/22 01:41:54 cjwatson Exp $
 
 use Mail::Address;
 
@@ -70,30 +70,50 @@ sub getbugcomponent {
     }
 }
 
-my @fields = qw(originator date subject msgid package
-                keywords done forwarded mergedwith severity);
+my @v1fieldorder = qw(originator date subject msgid package
+                      keywords done forwarded mergedwith severity);
+
+my %fields = (originator => 'submitter',
+              date => 'date',
+              subject => 'subject',
+              msgid => 'message-id',
+              'package' => 'package',
+              keywords => 'tags',
+              done => 'done',
+              forwarded => 'forwarded-to',
+              mergedwith => 'merged-with',
+              severity => 'severity',
+             );
 
 sub readbug {
-    local ($lref, $location) = @_;
-    my $status = getbugcomponent($lref, 'status', $location);
+    my ($lref, $location) = @_;
+    my $status = getbugcomponent($lref, 'db', $location);
     return undef unless defined $status;
     if (!open(S,$status)) { return undef; }
 
     my %data;
     my @lines;
+    my $version = 2;
     local $_;
 
     while (<S>) {
         chomp;
         push @lines, $_;
+        $version = $1 if /^Format-Version: (.*)/i;
     }
 
-    for my $field (@fields) {
-        if (@lines) {
-            $data{$field} = shift @lines;
-        } else {
-            $data{$field} = '';
+    # Version 2 is the latest format version currently supported.
+    return undef if $version > 2;
+
+    my %namemap = reverse %fields;
+    for my $line (@lines) {
+        if ($line =~ /(\S+?): (.*)/) {
+            my ($name, $value) = (lc $1, $2);
+            $data{$namemap{$name}} = $value if exists $namemap{$name};
         }
+    }
+    for my $field (keys %fields) {
+        $data{$field} = '' unless exists $data{$field};
     }
 
     close(S);
@@ -113,13 +133,30 @@ sub lockreadbug {
 
 sub makestatus {
     my $data = shift;
+    my $version = shift;
+    $version = 2 unless defined $version;
+
     my $contents = '';
 
-    for my $field (@fields) {
-        if (exists $data->{$field}) {
-            $contents .= "$data->{$field}\n";
-        } else {
-            $contents .= "\n";
+    if ($version == 1) {
+        for my $field (@v1fieldorder) {
+            if (exists $data->{$field}) {
+                $contents .= "$data->{$field}\n";
+            } else {
+                $contents .= "\n";
+            }
+        }
+    } elsif ($version == 2) {
+        # Version 2. Add a file format version number for the sake of
+        # further extensibility in the future.
+        $contents .= "Format-Version: 2\n";
+        for my $field (keys %fields) {
+            if (exists $data->{$field} and $data->{$field} ne '') {
+                # Output field names in proper case, e.g. 'Merged-With'.
+                my $properfield = $fields{$field};
+                $properfield =~ s/(?:^|(?<=-))([a-z])/\u$1/g;
+                $contents .= "$properfield: $data->{$field}\n";
+            }
         }
     }
 
@@ -127,20 +164,29 @@ sub makestatus {
 }
 
 sub writebug {
-    local ($ref, $data, $location) = @_;
+    my ($ref, $data, $location, $minversion, $disablebughook) = @_;
     my $change;
-    my $status = getbugcomponent($ref, 'status', $location);
-    &quit("can't find location for $ref") unless defined $status;
-    open(S,"> $status.new") || &quit("opening $status.new: $!");
-    print(S makestatus($data)) || &quit("writing $status.new: $!");
-    close(S) || &quit("closing $status.new: $!");
-    if (-e $status) {
-        $change = 'change';
-    } else {
-        $change = 'new';
+
+    my %outputs = (1 => 'status', 2 => 'db');
+    for my $version (keys %outputs) {
+        next if defined $minversion and $version < $minversion;
+        my $status = getbugcomponent($ref, $outputs{$version}, $location);
+        &quit("can't find location for $ref") unless defined $status;
+        open(S,"> $status.new") || &quit("opening $status.new: $!");
+        print(S makestatus($data, $version)) ||
+            &quit("writing $status.new: $!");
+        close(S) || &quit("closing $status.new: $!");
+        if (-e $status) {
+            $change = 'change';
+        } else {
+            $change = 'new';
+        }
+        rename("$status.new",$status) || &quit("installing new $status: $!");
     }
-    rename("$status.new",$status) || &quit("installing new $status: $!");
-    &bughook($change,$ref,$data);
+
+    # $disablebughook is a bit of a hack to let format migration scripts use
+    # this function rather than having to duplicate it themselves.
+    &bughook($change,$ref,$data) unless $disablebughook;
 }
 
 sub unlockwritebug {
@@ -266,7 +312,7 @@ sub bughook {
 	my ( $type, $ref, $data ) = @_;
 	&filelock("debbugs.trace.lock");
 
-	&appendfile("debbugs.trace","$type $ref\n",makestatus($data));
+	&appendfile("debbugs.trace","$type $ref\n",makestatus($data, 1));
 
 	my $whendone = "open";
 	my $severity = $gDefaultSeverity;

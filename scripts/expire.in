@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: expire.in,v 1.17 2003/08/06 10:57:23 cjwatson Exp $
+# $Id: expire.in,v 1.18 2003/08/22 01:41:54 cjwatson Exp $
 
 # Load modules and set envirnment
 use File::Copy;
@@ -26,7 +26,7 @@ opendir(DIR,"db-h") || &quit("opendir db: $!\n");
 close(DIR);
 foreach my $dir (@dirs) {
 	opendir(DIR,$dir);
-	push @list, sort { $a <=> $b } grep(s/\.status$//,grep(m/^\d+\.status$/,readdir(DIR)));
+	push @list, sort { $a <=> $b } grep(s/\.db$//,grep(m/^\d+\.db$/,readdir(DIR)));
 	close(DIR);
 }
 
@@ -74,10 +74,11 @@ while (length($ref=shift(@list))) {
 			`mkdir -p "archive/$dir"`;
 			link( "db-h/$dir/$mref.log", "archive/$dir/$mref.log" ) || copy( "db-h/$dir/$mref.log", "archive/$dir/$mref.log" );
 			link( "db-h/$dir/$mref.status", "archive/$dir/$mref.status" ) || copy( "db-h/$dir/$mref.status", "archive/$dir/$mref.status" );
+			link( "db-h/$dir/$mref.db", "archive/$dir/$mref.db" ) || copy( "db-h/$dir/$mref.db", "archive/$dir/$mref.db" );
 			link( "db-h/$dir/$mref.report", "archive/$dir/$mref.report" ) || copy( "db-h/$dir/$mref.report", "archive/$dir/$mref.report" );
             		print("archived $mref to archive/$dir (from $ref)\n") || &quit("output old: $!");
 		}
-		unlink("db-h/$dir/$mref.log", "db-h/$dir/$mref.status", "db-h/$dir/$mref.report");
+		unlink("db-h/$dir/$mref.log", "db-h/$dir/$mref.status", "db-h/$dir/$mref.db", "db-h/$dir/$mref.report");
 		print("deleted $mref (from $ref)\n") || &quit("output old: $!");
 		bughook_archive($mref);
         }

@@ -661,7 +661,7 @@ sub getbugstatus {
 
     my %status;
 
-    my $location = getbuglocation( $bugnum, "status" );
+    my $location = getbuglocation( $bugnum, 'db' );
     return {} if ( !$location );
     %status = %{ readbug( $bugnum, $location ) };
 

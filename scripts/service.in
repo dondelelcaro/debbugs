@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.85 2003/08/20 23:33:54 cjwatson Exp $
+# $Id: service.in,v 1.86 2003/08/22 01:41:54 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -605,6 +605,7 @@ END
 		    my $hash = get_hashname($ref);
 	            copy("db-h/$ohash/$origref.log", "db-h/$hash/$ref.log");
 	            copy("db-h/$ohash/$origref.status", "db-h/$hash/$ref.status");
+	            copy("db-h/$ohash/$origref.db", "db-h/$hash/$ref.db");
 	            copy("db-h/$ohash/$origref.report", "db-h/$hash/$ref.report");
 	            &bughook('new', $ref, $data);
 

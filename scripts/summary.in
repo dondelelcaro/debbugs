@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: summary.in,v 1.8 2003/05/03 20:01:20 doogie Exp $
+# $Id: summary.in,v 1.9 2003/08/22 01:41:54 cjwatson Exp $
 
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
@@ -39,7 +39,7 @@ opendir(DIR,"db-h") || &quit("opendir db-h: $!\n");
 closedir(DIR);
 foreach my $dir (@dirs) {
         opendir(DIR,$dir);
-        push @list, sort { $a <=> $b } grep(s/\.status$//,grep(m/^\d+\.status$/,readdir(DIR)));
+        push @list, sort { $a <=> $b } grep(s/\.db$//,grep(m/^\d+\.db$/,readdir(DIR)));
         closedir(DIR);
 }
 
