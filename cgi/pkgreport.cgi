@@ -3,7 +3,6 @@
 package debbugs;
 
 use strict;
-use CGI qw/:standard/;
 use POSIX qw(strftime tzset nice);
 
 require '/debian/home/ajt/newajbug/common.pl';
@@ -15,20 +14,43 @@ require '/etc/debbugs/text';
 
 nice(5);
 
-my ($pkg, $maint, $maintenc, $submitter, $severity, $status);
-
-if (defined ($pkg = param('pkg'))) {
-} elsif (defined ($maint = param('maint'))) {
-} elsif (defined ($maintenc = param('maintenc'))) {
-} elsif (defined ($submitter= param('submitter'))) { 
-} elsif (defined ($severity = param('severity'))) { 
-	$status = param('status') || 'open';
-} else {
-	$pkg = "ALL";
+sub readparse {
+        my ($in, $key, $val, %ret);
+        if (defined $ENV{"QUERY_STRING"} && $ENV{"QUERY_STRING"} ne "") {
+                $in=$ENV{QUERY_STRING};
+        } elsif(defined $ENV{"REQUEST_METHOD"}
+                && $ENV{"REQUEST_METHOD"} eq "POST")
+        {
+                read(STDIN,$in,$ENV{CONTENT_LENGTH});
+        } else {
+                return;
+        }
+        foreach (split(/&/,$in)) {
+                s/\+/ /g;
+                ($key, $val) = split(/=/,$_,2);
+                $key=~s/%(..)/pack("c",hex($1))/ge;
+                $val=~s/%(..)/pack("c",hex($1))/ge;
+                $ret{$key}=$val;
+        }
+        return %ret;
 }
 
-my $repeatmerged = (param('repeatmerged') || "yes") eq "yes";
-my $archive = (param('archive') || "no") eq "yes";
+my %param = readparse();
+
+my ($pkg, $maint, $maintenc, $submitter, $severity, $status);
+
+if (defined ($pkg = $param{'pkg'})) {
+} elsif (defined ($maint = $param{'maint'})) {
+} elsif (defined ($maintenc = $param{'maintenc'})) {
+} elsif (defined ($submitter= $param{'submitter'})) { 
+} elsif (defined ($severity = $param{'severity'})) { 
+	$status = $param{'status'} || 'open';
+} else {
+	quit("You have to choose something to select by");
+}
+
+my $repeatmerged = ($param{'repeatmerged'} || "yes") eq "yes";
+my $archive = ($param{'archive'} || "no") eq "yes";
 
 my $Archived = $archive ? "Archived" : "";
 
@@ -77,15 +99,15 @@ if (defined $pkg) {
 
 my $result = htmlizebugs(@bugs);
 
-print header;
-print start_html(
-        -TEXT => "#000000",
-        -BGCOLOR=>"#FFFFFF",
-        -LINK => "#0000FF",
-        -VLINK => "#800080",
-        -title => "$debbugs::gProject $Archived $debbugs::gBug report logs: $tag");
+print "Content-Type: text/html\n\n";
 
-print h1("$debbugs::gProject $Archived $debbugs::gBug report logs: $tag");
+print "<HTML><HEAD><TITLE>\n" . 
+    "$debbugs::gProject $Archived $debbugs::gBug report logs: $tag\n" .
+    "</TITLE></HEAD>\n" .
+    '<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#800080">' .
+    "\n";
+print "<H1>" . "$debbugs::gProject $Archived $debbugs::gBug report logs: $tag" .
+      "</H1>\n";
 
 if (defined $pkg) {
     if (defined $maintainer{$pkg}) {
@@ -109,7 +131,7 @@ if (defined $pkg) {
 
 print $result;
 
-print hr;
+print "<hr>\n";
 print "$tail_html";
 
-print end_html;
+print "</body></html>\n";

@@ -11,10 +11,11 @@ sub set_option {
 
 sub quit {
     my $msg = shift;
-    print header . start_html("Error");
+    print "Content-Type: text/html\n\n";
+    print "<HTML><HEAD><TITLE>Error</TITLE></HEAD><BODY>\n";
     print "An error occurred. Dammit.\n";
     print "Error was: $msg.\n";
-    print end_html;
+    print "</BODY></HTML>\n";
     exit 0;
 }
 
@@ -164,7 +165,7 @@ sub htmlizebugs {
                               "forwarded", "forwarded to upstream software authors");
 
     if (@bugs == 0) {
-        return hr . h2("No reports found!");
+        return "<HR><H2>No reports found!</H2></HR>\n";
     }
 
     foreach my $bug (sort {$a<=>$b} @bugs) {
@@ -186,9 +187,11 @@ sub htmlizebugs {
         foreach my $severity(@debbugs::gSeverityList) {
             $severity = $debbugs::gDefaultSeverity if ($severity eq '');
             next unless defined $section{${pending} . "_" . ${severity}};
-            $result .= hr . h2("$debbugs::gSeverityDisplay{$severity} - $displayshowpending{$pending}");
+            $result .= "<HR><H2>$debbugs::gSeverityDisplay{$severity} - $displayshowpending{$pending}</H2>\n";
             $result .= "(A list of <a href=\"http://www.debian.org/Bugs/db/si/$pending$severity\">all such bugs</a> is available).\n";
-            $result .= ul($section{$pending . "_" . $severity});
+            $result .= "<UL>\n";
+	    $result .= $section{$pending . "_" . $severity}; 
+	    $result .= "</UL>\n";
             $anydone = 1 if ($pending eq "done");
          }
     }

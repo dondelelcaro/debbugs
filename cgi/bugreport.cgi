@@ -3,7 +3,6 @@
 package debbugs;
 
 use strict;
-use CGI qw/:standard/;
 use POSIX qw(strftime tzset);
 
 #require '/usr/lib/debbugs/errorlib';
@@ -14,17 +13,40 @@ require '/etc/debbugs/config';
 require '/etc/debbugs/text';
 
 use vars(qw($gHTMLTail $gWebDomain));
+
+sub readparse {
+        # Parse query string. I could use CGI.pm here, but it is 6 thousand
+        # lines long and very expensive. I want light-weight.
+        my ($in, $key, $val, %ret);
+        if (defined $ENV{"QUERY_STRING"} && $ENV{"QUERY_STRING"} ne "") {
+                $in=$ENV{QUERY_STRING};
+        } elsif(defined $ENV{"REQUEST_METHOD"} 
+		&& $ENV{"REQUEST_METHOD"} eq "POST") 
+	{
+                read(STDIN,$in,$ENV{CONTENT_LENGTH});
+        } else {
+		return;
+	}
+        foreach (split(/&/,$in)) {
+                s/\+/ /g;
+                ($key, $val) = split(/=/,$_,2);
+                $key=~s/%(..)/pack("c",hex($1))/ge;
+                $val=~s/%(..)/pack("c",hex($1))/ge;
+                $ret{$key}=$val;
+        }
+	return %ret;
+}
+
+my %param = readparse();
+
 my $tail_html;
 
 my %maintainer = getmaintainers();
 
-my $ref= param('bug') || die("No bug number");
-my $archive = (param('archive') || 'no') eq 'yes';
-my $msg = param('msg') || "";
-my $boring = (param('boring') || 'no') eq 'yes'; 
-my $reverse = (param('reverse') || 'no') eq 'yes';
-
-set_option("archive", $archive);
+my $ref = $param{'bug'} || quit("No bug number");
+my $msg = $param{'msg'} || "";
+my $boring = ($param{'boring'} || 'no') eq 'yes'; 
+my $reverse = ($param{'reverse'} || 'no') eq 'yes';
 
 my %status = getbugstatus($ref) or &quit("Couldn't get bug status: $!");
 
@@ -204,22 +226,21 @@ while(my $line = <L>) {
 &quit("$ref state $normstate at end") unless $normstate eq 'kill-end';
 close(L);
 
-print header;
-print start_html(
-	-TEXT => "#000000",
-	-BGCOLOR=>"#FFFFFF",
-	-LINK => "#0000FF",
-	-VLINK => "#800080",
-	-title => "$debbugs::gProject $debbugs::gBug report logs - $short");
+print "Content-Type: text/html\n\n";
 
-print h1("$debbugs::gProject $debbugs::gBug report logs -  $short<br>\n"
-	. htmlsanit($status{subject}));
+print "<HTML><HEAD><TITLE>\n" . 
+    "$debbugs::gProject $debbugs::gBug report logs - $short\n" .
+    "</TITLE></HEAD>\n" .
+    '<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#800080">' .
+    "\n";
+print "<H1>" .  "$debbugs::gProject $debbugs::gBug report logs -  $short" .
+      "<BR>" . htmlsanit($status{subject}) . "</H1>\n";
 
 print "$descriptivehead\n";
-print hr;
+print "<HR>";
 print "$log";
 print $tail_html;
 
-print end_html;
+print "</BODY></HTML>\n";
 
 exit 0;
