@@ -1,14 +1,14 @@
 Source: debbugs
 Section: misc
 Priority: optional
-Maintainer: Darren Benham <gecko@debian.org>
-Uploaders: Josip Rodin <jrodin@jagor.srce.hr>
+Maintainer: Debbugs developers <debian-debbugs@lists.debian.org>
+Uploaders: Darren Benham <gecko@debian.org>, Josip Rodin <jrodin@jagor.srce.hr>
 Standards-Version: 3.2.1
 Build-Depends: debhelper
 
 Package: debbugs
 Architecture: all
-Depends: perl5 | perl, mail-transport-agent, mailtools, ed
+Depends: perl5 | perl, exim | mail-transport-agent, mailtools, ed
 Recommends: httpd, links | lynx
 Description: The bug tracking system based on the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
