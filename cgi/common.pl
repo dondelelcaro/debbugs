@@ -560,9 +560,13 @@ sub htmlizebugs {
 	for ( my $i = 0; $i < @order; $i++ ) {
 	    my $order = $order[ $i ];
 	    next unless defined $section{$order};
-	    my $count = $count{"_$order"};
-	    my $bugs = $count == 1 ? "bug" : "bugs";
-	    $result .= "<HR><H2><a name=\"$order\"></a>$headers[$i] ($count $bugs)</H2>\n";
+	    if ($common{show_list_header}) {
+		my $count = $count{"_$order"};
+		my $bugs = $count == 1 ? "bug" : "bugs";
+		$result .= "<HR><H2><a name=\"$order\"></a>$headers[$i] ($count $bugs)</H2>\n";
+	    } else {
+		$result .= "<HR><H2>$headers[$i]</H2>\n";
+	    }
 	    $result .= "<UL>\n";
 	    $result .= $section{$order};
 	    $result .= "</UL>\n";
