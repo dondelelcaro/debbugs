@@ -388,15 +388,23 @@ sub getmaintainers {
     return \%maintainer;
 }
 
+sub getbugdir {
+    my ( $bugnum, $ext ) = @_;
+    my $archdir = sprintf "%02d", $bugnum % 100;
+    foreach ( ( "$gSpoolDir/db-h/$archdir", "$gSpoolDir/db", "$gSpoolDir/archive/$archdir" ) ) {
+	return $_ if ( -r "$_/$bugnum.$ext" );
+    }
+    return undef;
+}
+    
 sub getbugstatus {
     my $bugnum = shift;
 
     my %status;
 
-    unless (open(S,"$gSpoolDir/db/$bugnum.status")) {
-        my $archdir = sprintf "%02d", $bugnum % 100;
-	open(S,"$gSpoolDir/archive/$archdir/$bugnum.status" ) or return {};
-    }
+    my $dir = getbugdir( $bugnum, "status" );
+    return {} if ( !$dir );
+    open S, "< $status{ file }";
     my @lines = qw(originator date subject msgid package tags done
 			forwarded mergedwith severity);
     while(<S>) {
@@ -420,16 +428,10 @@ sub getbugstatus {
 
 sub buglog {
     my $bugnum = shift;
-    my $res;
 
-    $res = "$gSpoolDir/db/$bugnum.log"; 
-    return $res if ( -e $res );
-
-    my $archdir = sprintf "%02d", $bugnum % 100;
-    $res = "$gSpoolDir/archive/$archdir/$bugnum.log";
-    return $res if ( -e $res );
-
-    return "";
+    my $dir = getbugdir( $bugnum, "log" );
+    return "" if ( !$dir );
+    return "$dir/$bugnum.log";
 }
 
-1
+1;
