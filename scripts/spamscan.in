@@ -1,5 +1,5 @@
 #! /usr/bin/perl -T
-# $Id: spamscan.in,v 1.7 2004/01/14 19:41:18 cjwatson Exp $
+# $Id: spamscan.in,v 1.8 2005/02/01 07:54:01 blarson Exp $
 #
 # Usage: spamscan
 #
@@ -26,12 +26,19 @@ push @INC, $lib_path;
 use Mail::SpamAssassin;
 use Mail::SpamAssassin::NoMailAudit;
 
+use lib '/usr/lib/debbugs';
+use Mail::CrossAssassin;
+
 umask 002;
 
 eval {
     &filelock('incoming-spamscan');
 };
 exit if $@;
+
+ca_init('\b\d{3,8}(?:-(?:close|done|forwarded|maintonly|submitter|quiet))?\@bugs\.debian\.org', '/org/bugs.debian.org/CrossAssassinDb');
+
+my %spamseen = ();
 
 my $user_prefs = "$ENV{HOME}/.spamassassin/user_prefs";
 my $user_prefs_time;
@@ -45,6 +52,7 @@ my $spam = Mail::SpamAssassin->new({
     userprefs_filename => $user_prefs,
     local_tests_only => ($gSpamLocalTestsOnly || 0),
     debug => ($ENV{DEBBUGS_SPAM_DEBUG} || 0),
+    check_mx_delay => 2, # bit of a hack until we have parallelization
 });
 $spam->compile_now(1); # use all user preferences
 
@@ -116,38 +124,59 @@ for (;;) {
     my $mail = Mail::SpamAssassin::NoMailAudit->new(data => \@textarray);
     $mail->{noexit} = 1;
 
+    my $messageid = header_or_empty($mail, 'Message-Id');
     print "  From: ", header_or_empty($mail, 'From'), "\n";
     print "  Subject: ", header_or_empty($mail, 'Subject'), "\n";
     print "  Date: ", header_or_empty($mail, 'Date'), "\n";
-    print "  Message-Id: ", header_or_empty($mail, 'Message-Id'), "\n";
-    my $status = $spam->check($mail);
-    $status->rewrite_mail();
-
-    if ($status->is_spam()) {
+    print "  Message-Id: $messageid\n";
+    my $ca_score = ca_set(ca_keys($mail->get_body));
+    if (exists $spamseen{$messageid}) {
 	$mail->accept($gSpamMailbox);
 	unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
-	printf "  spam %.1f/%.1f\n",
-	       $status->get_hits(), $status->get_required_hits()
+	print "  spam $spamseen{$messageid} duplicate\n"
 	    or die "printf log: $!";
     } else {
-	open OUT, "> incoming/I$id" or die "open incoming/I$id: $!";
-	my @headers = $mail->get_all_headers();
-	if ($headers[0] =~ /^From /) {
-	    my $from = $headers[0];
-	    $headers[0] = $headers[1];
-	    $headers[1] = $from;
-	}
-	print OUT join '', @headers or die "print incoming/I$id: $!";
-	print OUT "\n" or die "print incoming/I$id: $!";
-	print OUT @{$mail->get_body()} or die "print incoming/I$id: $!";
-	close OUT or die "close incoming/I$id: $!";
-	unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
-	printf "  ok %.1f/%.1f\n",
-	       $status->get_hits(), $status->get_required_hits()
-	    or die "printf log: $!";
-    }
+	my $status = $spam->check($mail);
+	$status->rewrite_mail();
 
-    $status->finish();
+	if ($status->is_spam()) {
+	    $mail->accept($gSpamMailbox);
+	    unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
+	    my $score = sprintf "%.1f/%.1f %d",
+	        $status->get_hits(), $status->get_required_hits(), $ca_score;
+	    print "  spam $score\n" or die "print log: $!";
+	    $spamseen{$messageid} = $score;
+	} elsif ($status->get_hits() > 0 && $ca_score >= 4) {
+	    $mail->accept($gCrossMailbox);
+	    unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
+	    my $score = sprintf "%.1f/%.1f %d",
+	        $status->get_hits(), $status->get_required_hits(), $ca_score;
+	    printf "  spam $score\n" or die "printf log: $!";
+	    $spamseen{$messageid} = $score;
+	} else {
+	    open OUT, "> incoming/I$id" or die "open incoming/I$id: $!";
+	    my @headers = $mail->get_all_headers();
+	    if ($headers[0] =~ /^From /) {
+		my $from = $headers[0];
+		$headers[0] = $headers[1];
+		$headers[1] = $from;
+	    }
+	    print OUT join '', @headers or die "print incoming/I$id: $!";
+	    if ($ca_score > 1) {
+		print OUT "X-CrossAssassin-Score: $ca_score\n"
+		    or die "print incoming/I$id: $!";
+	    }
+	    print OUT "\n" or die "print incoming/I$id: $!";
+	    print OUT @{$mail->get_body()} or die "print incoming/I$id: $!";
+	    close OUT or die "close incoming/I$id: $!";
+	    unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
+	    printf "  ok %.1f/%.1f %d\n",
+	    	$status->get_hits(), $status->get_required_hits(), $ca_score
+	        or die "printf log: $!";
+	}
+
+	$status->finish();
+    }
 }
 &unfilelock;
 
