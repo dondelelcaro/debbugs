@@ -2,6 +2,9 @@
 
 use DB_File;
 use Fcntl qw/O_RDONLY/;
+$config_path = '/etc/debbugs';
+$lib_path = '/usr/lib/debbugs';
+require "$lib_path/errorlib";
 
 my $common_archive = 0;
 my $common_repeatmerged = 1;
