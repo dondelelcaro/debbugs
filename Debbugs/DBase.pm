@@ -171,8 +171,14 @@ sub GetBugList
 #
     my $dir = new FileHandle;
 
+    my $prefix = $Globals{ "work-dir" };
+    if ( defined($_[0]) ) {
+	$prefix .= "/" . $_[0] . "/";
+    } else {
+	$prefix .= "/" . "db" . "/";
+    }
     my @ret;
-    opendir $dir, $Globals{ "work-dir" } . "/db";
+    opendir $dir, $prefix;
     my @files = readdir($dir);
     closedir $dir;
     foreach (grep { /\d*\d\d.status/ } @files) {
@@ -182,17 +188,17 @@ sub GetBugList
     }
     foreach (grep { /^[s0-9]$/ } @files) {
 	my $_1 = $_;
-	opendir $dir, $Globals{ "work-dir" } . "/db/".$_1;
+	opendir $dir, $prefix . $_1;
 	@files = grep { /^\d$/ } readdir($dir);
 	closedir $dir;
 	foreach (@files) {
 	    my $_2 = $_;
-	    opendir $dir, $Globals{ "work-dir" } . "/db/".$_1."/".$_2;
+	    opendir $dir, $prefix . $_1 . "/" .$_2;
 	    @files = grep { /^\d$/ } readdir($dir);
 	    close $dir;
 	    foreach (@files) {
 		my $_3 = $_;
-		opendir $dir, $Globals{ "work-dir" } . "/db/".$_1."/".$_2."/".$_3;
+		opendir $dir, $prefix . $_1 . "/" . $_2 . "/" .$_3;
 		@files = grep { /\d*\d\d.status/ } readdir($dir);
 		close $dir;
 		foreach (@files) {
