@@ -407,6 +407,7 @@ sub tagurl {
 sub urlsanit {
     my $url = shift;
     $url =~ s/%/%25/g;
+    $url =~ s/#/%23/g;
     $url =~ s/\+/%2b/g;
     my %saniarray = ('<','lt', '>','gt', '&','amp', '"','quot');
     $url =~ s/([<>&"])/\&$saniarray{$1};/g;
