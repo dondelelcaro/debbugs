@@ -24,9 +24,9 @@ sending the word <code>help</code> to each mailserver.
   <li><code>index-summary by-package</code>
   <li><code>index-summary by-number</code>
   <li><code>index-maint</code>
-  <li><code>index maint</code> <var>maintainer-substring</var>
+  <li><code>index maint</code> <var>maintainer</var>
   <li><code>index-packages</code>
-  <li><code>index packages</code> <var>package-substring</var>
+  <li><code>index packages</code> <var>package</var>
   <li><code>send-unmatched</code> [<code>this</code>|<code>0</code>]
   <li><code>send-unmatched</code> <code>last</code>|<code>-1</code>
   <li><code>send-unmatched</code> <code>old</code>|<code>-2</code>

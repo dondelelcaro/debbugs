@@ -58,10 +58,9 @@ server.
 
 <dt><code>index maint</code> <var>maintainer</var>
 
-  <dd>Requests the index pages of $gBugs in the system for all maintainers
-  containing the string <var>maintainer</var>.  The search term is a
-  case insensitive substring.  The $gBug index for each matching
-  maintainer will be sent in a separate message.
+  <dd>Requests the index pages of $gBugs in the system for the maintainer
+  <var>maintainer</var>.  The search term is an exact match.
+  The $gBug index will be sent in a separate message.
 
 <dt><code>index-packages</code>
 
@@ -70,10 +69,9 @@ server.
 
 <dt><code>index packages</code> <var>package</var>
 
-  <dd>Requests the index pages of $gBugs in the system for all packages
-  containing the string <var>package</var>.  The search term is a case
-  insensitive substring.  The $gBug index for each matching package will
-  be sent in a separate message.
+  <dd>Requests the index pages of $gBugs in the system for the package
+  <var>package</var>.  The search term is an exact match.
+  The $gBug index will be sent in a separate message.
 
 <dt><code>send-unmatched</code> [<code>this</code>|<code>0</code>]
 <dt><code>send-unmatched</code> <code>last</code>|<code>-1</code>
