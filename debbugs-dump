@@ -1,0 +1,89 @@
+#!/usr/bin/perl -w
+
+push(@INC,'/home/gecko/debian/debvote');
+use strict;
+use Debbugs::Config qw(%Globals &ParseConfigFile);
+#use Debvote::Email qw(&InitEmailTags &LoadEmail &ProcessTags %gtags);
+use Debbugs::DBase;
+use Getopt::Long;
+
+#############################################################################
+#  Customization Variables
+#############################################################################
+
+#############################################################################
+#  Gloabal Variable Declaration
+#############################################################################
+my $VERSION = '3.01';						#External Version number
+my $BANNER = "DebBugs v$VERSION";			#Version Banner - text form
+my $FILE = 'debbugs-dump';					#File name
+my $config = '';
+my @config = undef;
+
+#############################################################################
+#  Commandline parsing
+#############################################################################
+# Hash used to process commandline options
+my $verbose = 0;
+my $quiet = 0;
+my $debug = 0;
+my %opthash = (# ------------------ actions
+    "config|c=s" => \$config,
+    "help|h" => \&syntax,
+    "version|V" => \&banner,
+    "verbose|v!" => \$verbose,
+    "quiet|q!" => \$quiet,
+    "debug|d+" => \$debug,     # Count the -d flags
+    );
+Getopt::Long::config('bundling', 'no_getopt_compat', 'no_auto_abbrev');
+GetOptions(%opthash) or &syntax( 1 );
+if ( $debug > 1 )
+{ 	print "D2: Commandline:\n";
+	print "\tconfig = $config\n" unless $config eq '';
+	print "\tverbos\n" if $verbose;
+	print "\tquiet\n" if $quiet;
+	print "\tdebug  = $debug\n";
+}
+$Globals{ 'debug' } = $debug;
+$Globals{ 'quiet' } = $quiet;
+$Globals{ 'verbose' } = $verbose;
+
+#############################################################################
+#  Read Config File and parse
+#############################################################################
+$config = "./debbugs.cfg" if( $config eq '' );
+print "D1: config file=$config\n" if $Globals{ 'debug' };
+@config = ParseConfigFile( $config );
+
+## Put Real Code Here
+
+Debbugs::DBase::ReadRecord( "59999" );
+foreach my $key ( keys( %Record ) )
+{
+    print "Key= $key   Value = ". $Record{ "$key" } . "\n";
+}
+Debbugs::DBase::ReadRecord( "60000" );
+foreach my $key ( keys( %Record ) )
+{
+    print "Key= $key   Value = ". $Record{ "$key" } . "\n";
+}
+
+
+#############################################################################
+#  Ack Back
+#############################################################################
+
+sub syntax {
+  print "$BANNER\n";
+  print <<"EOT-EOT-EOT";
+Syntax: $FILE [options]
+    -c, --config CFGFILE      read CFGFILE for configuration (default=./debvote.cfg)
+    -h, --help                display this help text
+    -v, --verbose             verbose messages
+    -q, --quiet               cancels verbose in a config file
+    -V, --version             display Debvote version and exit
+    -d, --debug               turn debug messages ON (multiple -d for more verbose)
+EOT-EOT-EOT
+
+  exit $_[0];
+}
