@@ -216,9 +216,9 @@ sub urlsanit {
     my $url = shift;
     $url =~ s/%/%25/g;
     $url =~ s/\+/%2b/g;
-    my %saniarray = ('<','lt', '>','gt', '"','quot');
+    my %saniarray = ('<','lt', '>','gt', '&','amp', '"','quot');
     my $out;
-    while ($url =~ m/[<>"]/) {
+    while ($url =~ m/[<>&"]/) {
         $out .= $`. '&'. $saniarray{$&}. ';';
         $url = $';
     }
