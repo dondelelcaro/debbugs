@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.15 2000/10/06 05:34:29 doogie Exp $
+# $Id: service.in,v 1.16 2000/10/06 05:44:45 doogie Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -97,8 +97,8 @@ for ($procline=$i; $procline<=$#msg; $procline++)
         $dl= $1+0;
         &transcript("Debug level $dl.\n\n");
     } elsif (m/^(send|get)\s+\#?(\d{2,})$/i) {
-        $ref= $2+0; $reffile= $ref; $reffile =~ s,^..,$&/$&,;
-        &sendlynxdoc("db/$reffile.html","logs for $gBug#$ref");
+        $ref= $2+0;
+        &sendlynxdoc("$ref","logs for $gBug#$ref");
     } elsif (m/^send-detail\s+\#?(\d+)$/i) {
         $ref= $1+0; $reffile= $ref; $reffile =~ s,^..,$&/$&,;
         &sendlynxdoc("db/$reffile-b.html","additional logs for $gBug#$ref");
