@@ -6,6 +6,11 @@ with assistance from nCipher Corporation Limited in 1997.  nCipher allowed
 Ian to redistribute modifications he made to the system while working as an
 employee of nCipher.
 
+Since then, it has been developed by the various administrators of
+bugs.debian.org, including Darren Benham, Adam Heath, Josip Rodin, Anthony
+Towns, and Colin Watson.  As in the case of Ian, nCipher allowed Colin to
+redistribute modifications he made while working as an employee of nCipher.
+
 =============================================================================
 SYSTEM REQUIREMENTS
 =============================================================================
