@@ -19,37 +19,42 @@ SYSTEM REQUIREMENTS
    domain to a script.
  - A webserver (this is easiest if the bug system can write
    directly to the webspace).
- - Somewhere to run CGI scripts (unless you don't need the `go to
-   bug' and `go to package' forms to work).
+ - Somewhere to run CGI scripts (unless you don't need the web forms for
+   searching for bugs by number, package, maintainer or submitter).
 
 =============================================================================
 INSTALLATION INSTRUCTIONS
 =============================================================================
-1. Install the deb.  If you don't have a deb, consult the file list at the
-end of this document.
 
-2. Copy the template files from /usr/share/doc/debbugs/examples to
-/etc/debbugs.  Edit the config file, it is necessary.  Edit the text file if
-you wish to change some of the text as it gets displayed.
+Install the Debian package and read /usr/share/doc/debbugs/README.Debian file.
 
-3. Run "debbugsconfig"
+If you can't use the .deb, do the following:
 
-4. Edit the /etc/debbugs/Maintainers file in the format of
-"package<whitespece>maintianer".
+1. Run "make install" from the source directory.
 
-5. Set up the mail arrangements to deliver mail to the right place, and to
-set up a blackhole mail alias if you need one.  Ensure that owner@bugs, if
-that's what you're using, is handled by the MTA.  All other email should be
-piped into the receive script.
+2. Edit the config files in /etc/debbugs/ directory to suit your needs.
 
-6. Set up http to point people looking for bug reports to
-/var/lib/debbugs/www and set /var/lib/debbugs/www/cgi as a valid cgi
+3. Set up the mail arrangements to deliver mail to the right place, and to
+set up a blackhole mail alias if you need one.  Ensure that owner@bugs, the
+address of the BTS owner, if that's what you're using, is handled by the MTA.
+All other email should be piped into the receive script.
+
+4. Set up your HTTP server to point people looking for bug reports to
+/var/lib/debbugs/www and set /var/lib/debbugs/www/cgi as a valid CGI
 directory.
 
-7. Test things a bit, by sending mail messages to the bug system and
+5. Test things a bit, by sending mail messages to the bug system and
 running .../scripts/processall and/or .../scripts/update-html.
 
-8. If all seems well then install the crontab in `misc/crontab.out'.
+6. If all seems well then install the crontab from
+/usr/share/doc/debbugs/examples/crontab.
+
+Notes:
+
+Each line of /etc/debbugs/Maintainers file needs to be formatted like
+this: "package       maintainer name <e-mail@address>".
+
+If you need a template, look in /usr/share/doc/debbugs/examples/ directory.
 
 =============================================================================
 FURTHER INFORMATION
@@ -57,62 +62,6 @@ FURTHER INFORMATION
 Web:  http://benham.net/debbugs/
 Email: debbugs@benham.net (mailing list)
        debbugs-REQUEST@benham.net with the word subscribe in the body
-
-=============================================================================
-Filelist of installed files
-=============================================================================
-********************config files**
--rw-r--r-- root/root      1293 1999-10-14 13:14:08 ./etc/debbugs/html/Access.html
--rw-r--r-- root/root      6983 1999-10-14 13:14:08 ./etc/debbugs/html/Reporting.html
--rw-r--r-- root/root      7460 1999-10-14 13:14:08 ./etc/debbugs/html/Developer.html
--rw-r--r-- root/root      3394 1999-10-14 13:14:08 ./etc/debbugs/html/index.html
--rw-r--r-- root/root      7608 1999-10-14 13:14:08 ./etc/debbugs/html/server-control.html
--rw-r--r-- root/root      6434 1999-10-14 13:14:08 ./etc/debbugs/html/server-request.html
--rw-r--r-- root/root      3579 1999-10-14 13:14:08 ./etc/debbugs/html/server-refcard.html
--rw-r--r-- root/root         2 1999-10-14 13:14:08 ./etc/debbugs/lynx-cfg
--rw-r--r-- root/root        79 1999-10-14 13:14:08 ./etc/debbugs/Maintainers
--rw-r--r-- root/root        59 1999-10-14 13:14:08 ./etc/debbugs/pseudo-packages.description
-********************scripts**
--rwxr-xr-x root/root       177 1999-10-14 13:14:07 ./usr/lib/debbugs/age-1
--rwxr-xr-x root/root     24471 1999-10-14 13:14:07 ./usr/lib/debbugs/db2html
--rwxr-xr-x root/root      2159 1999-10-14 13:14:07 ./usr/lib/debbugs/expire
--rwxr-xr-x root/root      3925 1999-10-14 13:14:07 ./usr/lib/debbugs/html-install
--rwxr-xr-x root/root      2747 1999-10-14 13:14:07 ./usr/lib/debbugs/mailsummary
--rwxr-xr-x root/root      1621 1999-10-14 13:14:07 ./usr/lib/debbugs/processall
--rwxr-xr-x root/root     25566 1999-10-14 13:14:08 ./usr/lib/debbugs/service
--rw-r--r-- root/root      2952 1999-10-14 13:14:08 ./usr/lib/debbugs/errorlib
--rwxr-xr-x root/root      3024 1999-10-14 13:14:08 ./usr/lib/debbugs/html-control
--rwxr-xr-x root/root     29290 1999-10-14 13:14:08 ./usr/lib/debbugs/process
--rwxr-xr-x root/root      3664 1999-10-14 13:14:08 ./usr/lib/debbugs/receive
--rwxr-xr-x root/root      3056 1999-10-14 13:14:08 ./usr/lib/debbugs/summary
-********************admin scripts*
--rwxr-xr-x root/root      1958 1999-10-14 13:14:08 ./usr/sbin/debbugsconfig
--rwxr-xr-x root/root       859 1999-10-14 13:14:08 ./usr/sbin/debbugs-maketxt
-********************documentation**
--rw-r--r-- root/root      2390 1999-10-14 13:14:08 ./usr/share/doc/debbugs/examples/config
--rw-r--r-- root/root     11146 1999-10-14 13:14:08 ./usr/share/doc/debbugs/examples/text
--rw-r--r-- root/root       432 1999-10-14 13:14:08 ./usr/share/doc/debbugs/examples/crontab
--rw-r--r-- root/root         3 1999-10-14 13:14:08 ./usr/share/doc/debbugs/examples/nextnumber
--rw-r--r-- root/root       321 1999-04-02 10:12:03 ./usr/share/doc/debbugs/TODO
--rw-r--r-- root/root      1430 1999-04-02 10:08:36 ./usr/share/doc/debbugs/README.Debian
--rw-r--r-- root/root       321 1999-04-02 10:12:03 ./usr/share/doc/debbugs/TODO.Debian
--rw-r--r-- root/root      1419 1999-03-27 11:26:38 ./usr/share/doc/debbugs/copyright
--rw-r--r-- root/root      1977 1999-04-16 17:21:00 ./usr/share/doc/debbugs/README.mail.gz
--rw-r--r-- root/root       812 1999-07-27 11:27:22 ./usr/share/doc/debbugs/changelog.Debian.gz
-********************web/data files
-drwxr-xr-x root/root         0 1999-10-14 13:14:08 ./var/lib/debbugs/www/cgi/
--rwxr-xr-x root/root      1807 1999-10-14 13:14:08 ./var/lib/debbugs/www/cgi/bugs-fetch2.pl
--rwxr-xr-x root/root      4755 1999-10-14 13:14:08 ./var/lib/debbugs/www/cgi/cgi-lib.pl
-drwxr-xr-x root/root         0 1999-10-14 13:14:08 ./var/lib/debbugs/www/db/
--rw-r--r-- root/root        37 1999-10-14 13:14:08 ./var/lib/debbugs/www/db/.htaccess
-drwxr-xr-x root/root         0 1999-10-14 13:14:07 ./var/lib/debbugs/www/txt/
--rw-r--r-- root/root        17 1999-10-14 13:14:08 ./var/lib/debbugs/spool/updateseqs
-********************needed, precreated directories
-drwxr-xr-x root/root         0 1999-10-14 13:14:07 ./var/lib/debbugs/indices/
-drwxr-xr-x root/root         0 1999-10-14 13:14:07 ./var/lib/debbugs/spool/lock/
-drwxr-xr-x root/root         0 1999-10-14 13:14:07 ./var/lib/debbugs/spool/archive/
-drwxr-xr-x root/root         0 1999-10-14 13:14:07 ./var/lib/debbugs/spool/incoming/
-drwxr-xr-x root/root         0 1999-10-14 13:14:07 ./var/lib/debbugs/spool/db/
 
 =============================================================================
 COPYRIGHT AND LACK-OF-WARRANTY NOTICE
