@@ -151,7 +151,8 @@ mailservers is available via the WWW, in
   package to which the $gBug is assigned), and all of the same severity.
   If they don't start out in the same state you should use
   <code>reassign</code>, <code>reopen</code> and so forth to make sure
-  that they are before using <code>merge</code>.
+  that they are before using <code>merge</code>. Titles are not required
+  to match, and will not be affected by the merge.
 
   <p>If any of the $gBugs listed in a <code>merge</code> command is already
   merged with another $gBug then all the reports merged with any of the
