@@ -148,7 +148,7 @@ if (defined $pkg || defined $src) {
     }
     my %pkgsrc = %{getpkgsrc()};
     my @pkgs = getsrcpkgs($pkg ? $pkgsrc{ $pkg } : $src);
-    @pkgs = grep( !/^$pkg$/, @pkgs ) if ( $pkg );
+    @pkgs = grep( !/^\Q$pkg\E$/, @pkgs ) if ( $pkg );
     if ( @pkgs ) {
 	@pkgs = sort @pkgs;
 	if ($pkg) {
