@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.31 2000/11/22 10:02:51 joy Exp $
+# $Id: service.in,v 1.32 2001/01/27 21:46:27 joy Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -821,6 +821,11 @@ END
 
 sub sendlynxdocraw {
     local ($relpath,$description) = @_;
+# check for crap in $relpath
+    if ($relpath =~ m/^\./ || $relpath !~ m/^[\d\w-+.@]+$/) {
+      &transcript("Invalid request $relpath!\n");
+      return;
+    }
     $doc='';
     open(L,"lynx -nolist -dump http://$gWebDomain/$relpath 2>&1 |") || &quit("fork for lynx: $!");
     while(<L>) { $doc.=$_; }
