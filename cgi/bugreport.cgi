@@ -14,7 +14,7 @@ require './common.pl';
 require '/etc/debbugs/config';
 require '/etc/debbugs/text';
 
-use vars(qw($gHTMLTail $gSpoolDir $gWebDomain));
+use vars(qw($gHTMLTail $gSpoolDir));
 
 my %param = readparse();
 
@@ -100,7 +100,7 @@ $short = $ref; $short =~ s/^\d+/#$&/;
 $tmaint = defined($maintainer{$tpack}) ? $maintainer{$tpack} : '(unknown)';
 $tsrc = defined($pkgsrc{$tpack}) ? $pkgsrc{$tpack} : '(unknown)';
 $descriptivehead= $indexentry."Maintainer for $status{package} is\n".
-            '<a href="http://'.$debbugs::gWebDomain.'/db/ma/l'.&maintencoded($tmaint).'.html">'.htmlsanit($tmaint).'</a>';
+            '<a href="'.mainturl($tmaint).'">'.htmlsanit($tmaint).'</a>';
 $descriptivehead.= ";\nSource for $status{package} is\n".
 	    '<a href="'.srcurl($tsrc)."\">$tsrc</a>" if ($tsrc ne "(unknown)");
 $descriptivehead.= ".</p>";
