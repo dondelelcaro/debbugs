@@ -32,7 +32,7 @@ $(scripts_dir) $(examples_dir); \
 
 	# install the scripts
 	$(foreach script,$(scripts_in), $(install_exec) $(script) $(scripts_dir)/$(patsubst scripts/%.in,%,$(script));)
-	$(install_data) scripts/errorlib.in $(scripts_dir)
+	$(install_data) scripts/errorlib.in $(scripts_dir)/errorlib
 
 	# install examples
 	$(install_data) scripts/config.in $(examples_dir)/config
