@@ -204,6 +204,9 @@ if (defined $pkg || defined $src) {
 	    printf ".\n";
 	}
     }
+    print "<p>If you find a bug not listed here, please\n";
+    printf "<a href=\"%s\">report</a> it.</p>\n",
+	   urlsanit("http://${debbugs::gWebDomain}/Reporting.html");
 } elsif (defined $maint || defined $maintenc) {
     print "<p>Note that maintainers may use different Maintainer fields for\n";
     print "different packages, so there may be other reports filed under\n";
