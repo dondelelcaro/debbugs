@@ -237,7 +237,7 @@ sub getbugs {
 	}
     }
     close I;
-    return @result;
+    return sort {$a <=> $b} @result;
 }
 
 sub pkgbugsindex {
@@ -291,11 +291,9 @@ sub getbugstatus {
 
     my %status;
 
-    if ( $common_archive ) {
+    unless (open(S,"$gSpoolDir/db/$bugnum.status")) {
         my $archdir = sprintf "%02d", $bugnum % 100;
 	open(S,"$gSpoolDir/archive/$archdir/$bugnum.status" ) or return ();
-    } else {
-        open(S,"$gSpoolDir/db/$bugnum.status") or return ();
     }
     my @lines = qw(originator date subject msgid package keywords done
 			forwarded mergedwith severity);
@@ -319,12 +317,16 @@ sub getbugstatus {
 
 sub buglog {
     my $bugnum = shift;
-    if ( $common_archive ) {
-	my $archdir = sprintf "%02d", $bugnum % 100;
-	return "$gSpoolDir/archive/$archdir/$bugnum.log";
-    } else {
-        return "$gSpoolDir/db/$bugnum.log"; 
-    }
+    my $res;
+
+    $res = "$gSpoolDir/db/$bugnum.log"; 
+    return $res if ( -e $res );
+
+    my $archdir = sprintf "%02d", $bugnum % 100;
+    $res = "$gSpoolDir/archive/$archdir/$bugnum.log";
+    return $res if ( -e $res );
+
+    return "";
 }
 
 1
