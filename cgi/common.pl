@@ -124,7 +124,7 @@ sub htmlindexentrystatus {
 }
 
 sub submitterurl {
-    my $ref = shift;
+    my $ref = shift || "";
     my $params = "submitter=" . emailfromrfc822($ref);
     $params .= "&archive=yes" if ($common_archive);
     $params .= "&repeatmerged=yes" if ($common_repeatmerged);
@@ -132,7 +132,7 @@ sub submitterurl {
 }
 
 sub mainturl {
-    my $ref = shift;
+    my $ref = shift || "";
     my $params = "maint=" . emailfromrfc822($ref);
     $params .= "&archive=yes" if ($common_archive);
     $params .= "&repeatmerged=yes" if ($common_repeatmerged);
@@ -150,7 +150,7 @@ sub pkgurl {
 
 sub htmlsanit {
     my %saniarray = ('<','lt', '>','gt', '&','amp', '"','quot');
-    my $in = shift;
+    my $in = shift || "";
     my $out;
     while ($in =~ m/[<>&"]/) {
         $out .= $`. '&'. $saniarray{$&}. ';';

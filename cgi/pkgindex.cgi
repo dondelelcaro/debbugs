@@ -49,21 +49,22 @@ set_option("archive", $archive);
 my %count;
 my $tag;
 my $note;
-my $linksub;
+my %htmldescrip = ();
+my %sortkey = ();
 if ($indexon eq "pkg") {
   $tag = "package";
   %count = countbugs(sub {my %d=@_; return $d{"pkg"}});
   $note = "<p>Note that with multi-binary packages there may be other\n";
   $note .= "reports filed under the different binary package names.</p>\n";
-  $linksub = sub {
-                   my $pkg = shift; 
-                   sprintf('<a href="%s">%s</a> ' 
-                            . '(maintained by <a href="%s">%s</a>',
+  foreach my $pkg (keys %count) {
+    $sortkey{$pkg} = lc $pkg;
+    $htmldescrip{$pkg} = sprintf('<a href="%s">%s</a> ' 
+                           . '(maintainer: <a href="%s">%s</a>)',
                            pkgurl($pkg),
                            htmlsanit($pkg),
                            mainturl($maintainers{$pkg}),
-			   htmlsanit($maintainers{$pkg}));
-                  };
+			   htmlsanit($maintainers{$pkg} || "(unknown)"));
+  }
 } elsif ($indexon eq "maint") {
   $tag = "maintainer";
   %count = countbugs(sub {my %d=@_; 
@@ -72,17 +73,17 @@ if ($indexon eq "pkg") {
   $note = "<p>Note that maintainers may use different Maintainer fields for\n";
   $note .= "different packages, so there may be other reports filed under\n";
   $note .= "different addresses.</p>\n";
-  $linksub = sub {
-                   my $maint = shift; my $maintfull = $maint;
-		   foreach my $x (values %maintainers) {
-                       if (emailfromrfc822($x) eq $maint) {
-			  $maintfull = $x; last;
-		       }
-                   }
-                   sprintf('<a href="%s">%s</a>',
+  my %email2maint = ();
+  for my $x (values %maintainers) {
+    my $y = emailfromrfc822($x);
+    $email2maint{$y} = $x unless (defined $email2maint{$y});
+  }
+  foreach my $maint (keys %count) {
+    $sortkey{$maint} = lc $email2maint{$maint} || "(unknown)";
+    $htmldescrip{$maint} = sprintf('<a href="%s">%s</a>',
                            mainturl($maint),
-			   htmlsanit($maintfull));
-                  };
+			   htmlsanit($email2maint{$maint}) || "(unknown)")
+  }
 } elsif ($indexon eq "submitter") {
   $tag = "submitter";
   my %fullname = ();
@@ -91,20 +92,20 @@ if ($indexon eq "pkg") {
                           $fullname{$em} = $f if (!defined $fullname{$em});
 			  return $em;
 			});
-  $linksub = sub {
-                   my $sub = shift;
-                   sprintf('<a href="%s">%s</a>',
+  foreach my $sub (keys %count) {
+    $sortkey{$sub} = lc $fullname{$sub};
+    $htmldescrip{$sub} = sprintf('<a href="%s">%s</a>',
                            submitterurl($sub),
 			   htmlsanit($fullname{$sub}));
-                  };
+  }
   $note = "<p>Note that people may use different email accounts for\n";
   $note .= "different bugs, so there may be other reports filed under\n";
   $note .= "different addresses.</p>\n";
 }
 
 my $result = "<ul>\n";
-foreach my $x (sort keys %count) {
-  $result .= "<li>" . $linksub->($x) . " has $count{$x} bugs</li>\n";
+foreach my $x (sort { $sortkey{$a} cmp $sortkey{$b} } keys %count) {
+  $result .= "<li>" . $htmldescrip{$x} . " has $count{$x} bugs</li>\n";
 }
 $result .= "</ul>\n";
 
@@ -115,7 +116,7 @@ print "<HTML><HEAD><TITLE>\n" .
     "</TITLE></HEAD>\n" .
     '<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#800080">' .
     "\n";
-print "<H1>" . "$debbugs::gProject $Archived $debbugs::gBug report logs: $tag" .
+print "<H1>" . "$debbugs::gProject $Archived $debbugs::gBug report logs by $tag" .
       "</H1>\n";
 
 print $note;
