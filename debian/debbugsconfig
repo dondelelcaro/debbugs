@@ -97,7 +97,7 @@ sub writefiles {
       die "\nunable to write $gDocDir/$text.txt\n";
     system ("rm -rf /tmp/.links/");
   } elsif (-x "/usr/bin/lynx") {
-    system ("lynx -nolist -dump -cfg=$gConfigDir/html/lynx-cfg $gDocDir/$text.html > $gDocDir/$text.txt") == 0 ||
+    system ("lynx -nolist -dump -cfg=/dev/null $gDocDir/$text.html > $gDocDir/$text.txt") == 0 ||
       die "\nunable to write $gDocDir/$text.txt\n";
   } else {
     print "unable to write text versions of the HTMLs!";

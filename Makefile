@@ -45,7 +45,6 @@ $(var_dir)/spool/db-h $(scripts_dir) $(examples_dir) $(man8_dir); \
 
 	# install the HTML pages etc
 	$(foreach html, $(htmls_in), $(install_data) $(html) $(etc_dir)/html;)
-	$(install_data) html/lynx-cfg $(etc_dir)/html/lynx-cfg
 	$(install_data) html/htaccess $(var_dir)/www/db/.htaccess
 
 	# install the CGIs

@@ -19,7 +19,7 @@ txtconvert () {
 	rm -f html/txt/$dst.html html/txt/$dst.out
 	perl -ne 'print unless m/^Other pages:$/ .. /^\<hr\>/' \
 		html/$src.out >html/txt/$dst.html
-	HOME=/dev/null lynx -nolist -dump -cfg=html/lynx-cfg \
+	HOME=/dev/null lynx -nolist -dump -cfg=/dev/null \
 		file://localhost/$cwd/html/txt/$dst.html >html/txt/$dst.out
 	rm html/txt/$dst.html
 }

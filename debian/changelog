@@ -84,6 +84,7 @@ debbugs (2.4) experimental; urgency=low
   * Fix a few typos, closes: #146745, #152751.
   * Update the copyright file with the current list of maintainers and a
     pointer to ViewCVS.
+  * Remove lynx-cfg, and use 'lynx -cfg=/dev/null' instead. [Colin]
   * Various other things, not worth mentioning here.
 
  -- Colin Watson <cjwatson@debian.org>  Sun, 17 Nov 2002 17:54:49 +0000
