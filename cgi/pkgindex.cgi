@@ -123,9 +123,9 @@ $result .= "</ul>\n";
 print "Content-Type: text/html\n\n";
 
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
-print "<HTML><HEAD><TITLE>\n" . 
-    "$debbugs::gProject $Archived $debbugs::gBug reports by $tag\n" .
-    "</TITLE></HEAD>\n" .
+print "<HTML><HEAD>\n" . 
+    "<TITLE>$debbugs::gProject $Archived $debbugs::gBug reports by $tag</TITLE>\n" .
+    "</HEAD>\n" .
     '<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#800080">' .
     "\n";
 print "<H1>" . "$debbugs::gProject $Archived $debbugs::gBug report logs by $tag" .
