@@ -1,5 +1,5 @@
 # This is the bugs.debian.org debbugs configuration file.
-# $Id: config.debian,v 1.7 2000/10/10 20:08:57 joy Exp $
+# $Id: config.debian,v 1.8 2000/10/10 23:42:14 joy Exp $
 
 # Domains
 $gEmailDomain = "bugs.debian.org";
@@ -63,12 +63,3 @@ $gAJIndex = "/debian/home/ajt/ajbug/pkgindex";		# AJ's package index
 # Required data files
 $gMaintainerFile = "$gConfigDir/Maintainers";
 $gPseudoDescFile = "$gConfigDir/pseudo-packages.description";
-
-# Part of instructions printed by the receive script when bouncing a bad e-mail
-$gTextInstructions = "$gBadEmailPrefix
-$gBadEmailPrefix Instructions are available from ftp.debian.org in /debian
-$gBadEmailPrefix and at all Debian mirror sites, in the files:
-$gBadEmailPrefix  doc/bug-reporting.txt
-$gBadEmailPrefix  doc/bug-log-access.txt
-$gBadEmailPrefix  doc/bug-maint-info.txt
-$gBadEmailPrefix";
