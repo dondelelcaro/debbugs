@@ -10,7 +10,7 @@ BEGIN {
 	$VERSION     = 1.00;
 
 	@ISA         = qw(Exporter);
-	@EXPORT      = qw( &fail );
+	@EXPORT      = qw(&fail &NameToPathHash &sani &quit);
 	%EXPORT_TAGS = (  );     # eg: TAG => [ qw!name1 name2! ],
 
 	# your exported package globals go here,
@@ -41,5 +41,16 @@ sub NameToPathHash
     return "$3/$2/$1/$name";
 }
 
+sub quit
+{
+    print DEBUG "quitting >$_[0]<\n";
+    local ($u);
+    while ($u= $cleanups[$#cleanups]) { &$u; }
+    die "*** $_[0]\n";
+}
+sub sani
+{
+    HTML::Entities::encode($a);
+}
 1;
 END { }       # module clean-up code here (global destructor)
