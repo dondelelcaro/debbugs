@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: rebuild.in,v 1.9 2003/05/25 13:13:18 cjwatson Exp $
+# $Id: rebuild.in,v 1.10 2003/05/25 15:51:51 cjwatson Exp $
 
 # Load modules and set environment
 use File::Copy;
@@ -16,8 +16,10 @@ chdir("$gSpoolDir") || die "chdir spool: $!\n";
 $debug = 0;
 
 @ARGV==0 and &quit( "no archive given on the commandline" );
-$archive= shift(@ARGV);
-open IDXFILE, "> index.$archive" or &quit( "trying to reset index file: $!" );
+my $archive = shift(@ARGV);
+my $index = "index.$archive";
+$index = 'index.db' if $archive eq 'db-h';
+open IDXFILE, "> $index" or &quit( "trying to reset index file: $!" );
 
 #get list of bugs (ie, status files)
 my @files;
