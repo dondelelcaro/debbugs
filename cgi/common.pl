@@ -556,7 +556,7 @@ sub getpseudodesc {
 sub getbugdir {
     my ( $bugnum, $ext ) = @_;
     my $archdir = sprintf "%02d", $bugnum % 100;
-    foreach ( ( "$gSpoolDir/db-h/$archdir", "$gSpoolDir/db", "$gSpoolDir/archive/$archdir", "/debian/home/joeyh/tmp/infomagic-95/$archdir" ) ) {
+    foreach ( ( "$gSpoolDir/db-h/$archdir", "$gSpoolDir/db", "$gSpoolDir/archive/$archdir" ) ) {
 	return $_ if ( -r "$_/$bugnum.$ext" );
     }
     return undef;
