@@ -535,7 +535,7 @@ sub getbugstatus {
 
 sub getsrcpkgs {
     my $src = shift;
-
+    return () if !$src;
     my %pkgsrc = %{getpkgsrc()};
     my @pkgs;
     foreach ( keys %pkgsrc ) {
