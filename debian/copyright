@@ -3,7 +3,7 @@ Tue, Jan  6 10:20:12 EST 1998. It is maintained by the Debbugs developers
 <debian-debbugs@lists.debian.org>, who are currently:
 
 	Adam Heath <doogie@debian.org>
-	Josip Rodin <jrodin@jagor.srce.hr>
+	Josip Rodin <joy-packages@debian.org>
 	Anthony Towns <ajt@debian.org>
 	Colin Watson <cjwatson@debian.org>
 
@@ -15,9 +15,9 @@ Former developers have been:
 The sources can be found at:
 	http://cvs.debian.org/?cvsroot=debbugs
 
-Copyright 1999 Darren O. Benham <gecko@debian.org>
-Copyright 1994,1995,1996,1997 Ian Jackson <ijackson@chiark.greenend.org.uk>
+Copyright 1994-1997 Ian Jackson
 Copyright 1997,2003 nCipher Corporation Limited
+Copyright 1999 Darren O. Benham
 
 This bug system is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free

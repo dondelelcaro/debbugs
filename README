@@ -1,5 +1,5 @@
-                     DEBIAN BUG TRACKING SYSTEM
-                     --------------------------
+                     debbugs, Debian bug tracking system
+                     -----------------------------------
 
 This bug tracking system was developed by Ian Jackson from 1994-1997,
 with assistance from nCipher Corporation Limited in 1997.  nCipher allowed
@@ -9,6 +9,7 @@ employee of nCipher.
 =============================================================================
 SYSTEM REQUIREMENTS
 =============================================================================
+
  - GNU date
  - GNU gzip
  - Perl 5 (5.005 is known to work)
@@ -67,16 +68,18 @@ If you need a template, look in /usr/share/doc/debbugs/examples/ directory.
 =============================================================================
 FURTHER INFORMATION
 =============================================================================
-Web:  http://benham.net/debbugs/
+
 Email: debian-debbugs@lists.debian.org (mailing list)
-       debian-debbugs-request@lists.debian.org with the word subscribe in the
-       subject line
+       To subscribe, email debian-debbugs-request@lists.debian.org
+       with the word "subscribe" in the subject line
+Outdated web site: http://benham.net/debbugs/
 
 =============================================================================
 COPYRIGHT AND LACK-OF-WARRANTY NOTICE
 =============================================================================
-Copyright 1999 Darren O. Benham <gecko@debian.org>
-Copyright 1994,1995,1996,1997 Ian Jackson <ijackson@chiark.greenend.org.uk>
+
+Copyright 1999 Darren O. Benham
+Copyright 1994-1997 Ian Jackson
 Copyright 1997,2003 nCipher Corporation Limited
 
 This bug system is free software; you can redistribute it and/or modify it
@@ -92,5 +95,3 @@ You should have received a copy of the GNU General Public License along
 with this program, or one should be available above; if not, write to the
 Free Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 02111-1307, USA.
-
- - Darren Benham 14 Oct, 1999
