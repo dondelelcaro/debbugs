@@ -7,6 +7,7 @@
 # published by the Free Software Foundation
 
 use POSIX qw(strftime);
+use File::Path;
 
 if (@ARGV) {
   print STDOUT <<EOF;
@@ -37,6 +38,12 @@ require "text";
 &template("nextnumber", $gSpoolDir);
 &touch("$gSpoolDir/index.archive.realtime");
 &touch("$gSpoolDir/index.db.realtime");
+print "Creating directories in $gSpoolDir:\n";
+for my $num (0 .. 99) {
+  &spooldirectory(sprintf('archive/%02d', $num));
+  &spooldirectory(sprintf('db-h/%02d', $num));
+}
+print "\n";
 
 # stuff used when testing (comment out the above)
 #unshift @INC, "../";
@@ -84,6 +91,14 @@ sub touch {
     open TOUCH, ">> $name" or die "open $name: $!";
     close TOUCH;
     print "created empty $name.\n";
+  }
+}
+
+sub spooldirectory {
+  my $name = shift;
+  unless (-d "$gSpoolDir/$name") {
+    mkpath("$gSpoolDir/$name");
+    print "$name ";
   }
 }
 
