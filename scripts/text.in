@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.19 2003/04/28 23:51:15 cjwatson Exp $
+# $Id: text.in,v 1.20 2003/06/04 18:05:51 cjwatson Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -123,11 +123,7 @@ $gHTMLSeverityDesc = "<DT><CODE>critical</CODE>
 
 	<DT><CODE>wishlist</CODE>
 	<DD>for any feature request, and also for any $gBugs that are very 
-	difficult to fix due to major design considerations.
-
-	<DT><CODE>fixed</CODE>
-	<DD>fixed in the current version in the unstable archive but the fix has
-	not been fixed by the person responsible.";
+	difficult to fix due to major design considerations.";
 
 ############################################################################
 # Description of the tags
@@ -157,7 +153,7 @@ $gHTMLTagDesc = "
 
 <dt><code>fixed</code>
   <dd>This $gBug is fixed or worked around, but there\'s still an issue that
-  needs to be resolved. (This will eventually replace the \"fixed\" severity)
+  needs to be resolved.
 
 <dt><code>stable</code>
   <dd>This $gBug affects the stable distribution in particular.  This is only

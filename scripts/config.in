@@ -1,6 +1,6 @@
 # This is the template debbugs configuration file.
 # You *must* edit it in order for debbugs to work.
-# $Id: config.in,v 1.17 2003/01/28 23:52:08 cjwatson Exp $
+# $Id: config.in,v 1.18 2003/06/04 18:05:51 cjwatson Exp $
 
 # Domains
 $gEmailDomain = "bugs.something";			# e.g. bugs.debian.org
@@ -51,7 +51,6 @@ $gShowSeverities = "critical, grave, normal, minor, wishlist";
 %gSeverityDisplay = ( 'critical', "Critical $gBugs",
                       'grave', "Grave $gBugs",
                       'normal', "Normal $gBugs",
-                      'fixed', "Fixed $gBugs",
                       'wishlist', "Wishlist items" );
 @gTags = ( 'patch', 'wontfix', 'moreinfo', 'unreproducible', 'fixed', 'stable' );
 
