@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.49 2002/08/26 15:18:09 ajt Exp $
+# $Id: service.in,v 1.50 2002/08/26 15:36:06 ajt Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -116,6 +116,7 @@ if ( $msg[$i] =~ /^--/ || $msg[$i] =~ /^\s*$/ ) {
 }	
 
 my %clonebugs = ();
+my @bcc = ();
 
 for ($procline=$i; $procline<=$#msg; $procline++) {
     $state eq 'idle' || print "$state ?\n";
@@ -630,10 +631,16 @@ for $maint (keys %maintccreasons) {
     push(@maintccs,"$maint ($reasonstring)");
     push(@maintccaddrs,"$maint");
 }
+
+$maintccs = ""; 
 if (@maintccs) {
     &transcript("MC|@maintccs|\n") if $dl>2;
-    $maintccs= "Cc: ".join(",\n    ",@maintccs)."\n";
-} else { $maintccs = ""; }
+    $maintccs .= "Cc: " . join(",\n    ",@maintccs) . "\n";
+}
+if (@bcc) {
+    &transcript("BCC|@bcc|\n") if $dl>2;
+    $maintccs .= "Bcc: " . join(,\n   ", @bcc) . "\n";
+}
 
 if (!defined $header{'subject'} || $header{'subject'} eq "") {
   $header{'subject'} = "your mail";
@@ -1000,6 +1007,11 @@ sub addmaintainers {
     for $p (split(m/[ \t?,()]+/,$_[0])) {
  	$p =~ y/A-Z/a-z/;
         $pshow= ($p =~ m/[-+.a-z0-9]+/ ? $& : '');
+        if (defined($pkgsrc{$p})) {
+	    push @bcc, "$pkgsrc{$p}\@packages.qa.debian.org";
+	} else {
+	    push @bcc, "$p\@packages.qa.debian.org";
+	}
         if (defined($maintainerof{$p})) {
  	    $addmaint= $maintainerof{$p};
 	    &transcript("MR|$addmaint|$p|$ref|\n") if $dl>2;
@@ -1033,6 +1045,14 @@ sub ensuremaintainersloaded {
         $a= $1; $b= $2; $a =~ y/A-Z/a-z/;
         $maintainerof{$1}= $2;
     }
+
+    open(SOURCES, "$gPackageSource") || &quit("pkgsrc open: $!");
+    while (<SOURCES>) {
+	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
+	my ($a, $b) = ($1, $2);
+	$pkgsrc{lc($a)} = $b;
+    }
+    close(SOURCES);
 }
 
 sub sendinfo {
