@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.27 2000/10/21 18:35:58 joy Exp $
+# $Id: service.in,v 1.28 2000/11/03 16:37:52 joy Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -510,6 +510,10 @@ if (@maintccs) {
     &transcript("MC|@maintccs|\n") if $dl>2;
     $maintccs= "Cc: ".join(",\n    ",@maintccs)."\n";
 } else { $maintccs = ""; }
+
+if (!defined $header{'subject'} || $header{'subject'} eq "") {
+  $header{'subject'} = "your mail";
+}
 
 $reply= <<END;
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
