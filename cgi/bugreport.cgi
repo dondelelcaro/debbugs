@@ -243,7 +243,7 @@ while(my $line = <L>) {
 		m/^Received: \(at (\S+)\) by (\S+)\;/
 			|| &quit("bad line \`$pl' in state incoming-recv");
 		$thisheader = "<h2>Message received at ".htmlsanit("$1\@$2")
-		        . ":</h2><br>\n";
+		        . ":</h2>\n";
 		$this = '';
 		$normstate= 'go';
 		$mail .= $_;
@@ -264,16 +264,16 @@ while(my $line = <L>) {
 		}
         } elsif ($normstate eq 'recips') {
 		if (m/^-t$/) {
-			$this = "<h2>Message sent:</h2><br>\n";
+			$this = "<h2>Message sent:</h2>\n";
 		} else {
 			s/\04/, /g; s/\n$//;
-			$this = "<h2>Message sent to ".htmlsanit($_).":</h2><br>\n";
+			$this = "<h2>Message sent to ".htmlsanit($_).":</h2>\n";
 		}
 		$normstate= 'kill-body';
 	} elsif ($normstate eq 'autocheck') {
 		next if !m/^X-Debian-Bugs(-\w+)?: This is an autoforward from (\S+)/;
 		$normstate= 'autowait';
-		$this = "<h2>Message received at $2:</h2><br>\n";
+		$this = "<h2>Message received at $2:</h2>\n";
 	} elsif ($normstate eq 'autowait') {
 		next if !m/^$/;
 		$normstate= 'go-nox';
