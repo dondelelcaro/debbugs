@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.67 2003/05/03 20:53:03 doogie Exp $
+# $Id: process.in,v 1.68 2003/05/15 22:48:00 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -132,7 +132,7 @@ for my $phline (@bodylines)
 {
     last if $phline !~ m/^([\w]+):\s*(\S.*)/;
     my ($fn, $fv) = ($1, $2);
-    $fv =~ s/\s*$//
+    $fv =~ s/\s*$//;
     print DEBUG ">$fn|$fv|\n";
     $fn = lc $fn;
     $fv = lc $fv;
