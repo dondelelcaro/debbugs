@@ -616,11 +616,7 @@ sub getsrcpkgs {
    
 sub buglog {
     my $bugnum = shift;
-
-    my $dir = getlocationpath( getbuglocation( $bugnum, "log" ) );
-    my $hash = get_hashname( $bugnum );
-    return "" if ( !$dir );
-    return "$dir/$hash/$bugnum.log";
+    return getbugcomponent($bugnum, 'log');
 }
 
 1;

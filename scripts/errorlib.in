@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.28 2003/06/05 08:54:31 cjwatson Exp $
+# $Id: errorlib.in,v 1.29 2003/06/06 17:56:05 cjwatson Exp $
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -46,11 +46,25 @@ sub getlocationpath {
     }
 }
 
+sub getbugcomponent {
+    my ($bugnum, $ext, $location) = @_;
+
+    $location = getbuglocation($bugnum, $ext) unless defined $location;
+    my $dir = getlocationpath($location);
+    return undef unless $dir;
+    if ($location eq 'db') {
+	return "$dir/$bugnum.$ext";
+    } else {
+	my $hash = get_hashname($bugnum);
+	return "$dir/$hash/$bugnum.$ext";
+    }
+}
+
 sub readbug {
     local ($lref, $location) = @_;
-    my $hash = get_hashname($lref);
-    $path = getlocationpath($location);
-    if (!open(S,"$path/$hash/$lref.status")) { &unfilelock; return undef; }
+    my $status = getbugcomponent($lref, 'status', $location);
+    return undef unless defined $status;
+    if (!open(S,$status)) { return undef; }
     my %data;
     chop($data{originator}= <S>);
     chop($data{date}= <S>);
@@ -72,15 +86,17 @@ sub readbug {
 sub lockreadbug {
     local ($lref, $location) = @_;
     &filelock("lock/$lref");
-    return readbug($lref, $location);
+    my $data = readbug($lref, $location);
+    &unfilelock unless defined $data;
+    return $data;
 }
 
 sub writebug {
     local ($ref, $data, $location) = @_;
-    my $hash = get_hashname($ref);
     my $change;
-    $path = getlocationpath($location);
-    open(S,">$path/$hash/$ref.status.new") || &quit("opening $path/$hash/$ref.status.new: $!");
+    my $status = getbugcomponent($ref, 'status', $location);
+    &quit("can't find location for $ref") unless defined $status;
+    open(S,"> $status.new") || &quit("opening $status.new: $!");
     print(S
           "$data->{originator}\n".
           "$data->{date}\n".
@@ -93,15 +109,15 @@ sub writebug {
           "$data->{mergedwith}\n".
           "$data->{severity}\n".
           "$data->{versions}\n".
-          "$data->{fixed_versions}\n") || &quit("writing $path/$hash/$ref.status.new: $!");
-    close(S) || &quit("closing $path/$hash/$ref.status.new: $!");
-    if (-e "$path/$hash/$ref.status") {
+          "$data->{fixed_versions}\n") || &quit("writing $status.new: $!");
+    close(S) || &quit("closing $status.new: $!");
+    if (-e $status) {
         $change = 'change';
     } else {
         $change = 'new';
     }
-    rename("$path/$hash/$ref.status.new","$path/$hash/$ref.status") ||
-        &quit("installing new $path/$hash/$ref.status: $!");
+    rename("$status.new",$status) ||
+        &quit("installing new $status: $!");
         &bughook($change,$ref,
           "$data->{originator}\n".
           "$data->{date}\n".

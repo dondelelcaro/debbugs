@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.20 2003/06/04 18:05:51 cjwatson Exp $
+# $Id: text.in,v 1.21 2003/06/06 17:56:05 cjwatson Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -180,7 +180,7 @@ $gHTMLTail = "<HR>
  <P>
  <A HREF=\"http://$gWebDomain/\">Debian $gBug tracking system</A><BR>
  Copyright (C) 1999 Darren O. Benham,
- 1997 nCipher Corporation Ltd,
+ 1997,2003 nCipher Corporation Ltd,
  1994-97 Ian Jackson.
  </ADDRESS>
 ";
