@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.78 2003/06/23 11:23:35 cjwatson Exp $
+# $Id: service.in,v 1.79 2003/07/15 12:20:32 ajt Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -134,6 +134,7 @@ if (@gFuckheads and $replyto =~ m/$fuckheads/) {
 	$quickabort = 1;
 }
 
+my %limit_pkgs = ();
 my %clonebugs = ();
 my @bcc = ();
 
@@ -600,6 +601,17 @@ END
 		}
 	    }
 	}
+    } elsif (m/^package\s+(\S.*\S)$/i) {
+        $ok++;
+	my @pkgs = split /\s+/ $1;
+	if (scalar(@pkgs) > 0) {
+		%limit_pkgs = map { ($_, 1) } @pkgs;
+		&transcript("Ignoring bugs not assigned to: " . 
+			join(" ", keys(%limit_pkgs) . "\n\n");
+	} else {
+		%limit_pkgs = ();
+		&transcript("Not ignoring any bugs.\n\n");
+	}
     } else {
         &transcript("Unknown command or malformed arguments to command.\n\n");
         if (++$unknowns >= 5) {
@@ -769,6 +781,13 @@ sub setbug {
         &dlex("setbug => 0s");
         return 0;
     }
+
+    if ($keys %limit_pkgs && not defined $limit_pkgs{$s_package}) {
+	&transcript("$gBug number $ref belongs to package $s_package, skipping.");
+	&cancelbug;
+	return 0;
+    } 
+
     @thisbugmergelist= split(/ /,$data->{mergedwith});
     if (!@thisbugmergelist) {
         &foundbug;
