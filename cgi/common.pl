@@ -451,6 +451,17 @@ sub getbugstatus {
     return \%status;
 }
 
+sub getsrcpkgs {
+    my $src = shift;
+
+    my %pkgsrc = %{getpkgsrc()};
+    my @pkgs;
+    foreach ( keys %pkgsrc ) {
+	push @pkgs, $_ if $pkgsrc{$_} eq $src;
+    }
+    return @pkgs;
+}
+   
 sub buglog {
     my $bugnum = shift;
 

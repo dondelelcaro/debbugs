@@ -63,7 +63,7 @@ if (defined $pkg) {
 } elsif (defined $src) {
   $tag = "source $src";
   my %pkgsrc = %{getpkgsrc()};
-  @bugs = @{getbugs(sub { my %d=@_; return $src eq $d{"pkg"} || ( defined( $pkgsrc{$d{"pkg"}} ) && $src eq $pkgsrc{$d{"pkg"}} ) }, 'source', $src) };
+  @bugs = @{getbugs(sub {my %d=@_; return $pkg eq $d{"pkg"}}, 'package', getsrcpkgs($src))};
 } elsif (defined $maint) {
   my %maintainers = %{getmaintainers()};
   $tag = "maintainer $maint";
@@ -131,11 +131,8 @@ if (defined $pkg || defined $src) {
               . htmlsanit($maint) . "</a>.</p>\n";
     }
     my %pkgsrc = %{getpkgsrc()};
-    my @pkgs;
-    $src = $pkgsrc{ $pkg } if ( $pkg && !$src );
-    foreach ( keys %pkgsrc ) {
-	push @pkgs, $_ if $pkgsrc{$_} eq $src && ( ( $pkg && !( $_ eq $pkg ) ) || ( !$pkg && $src ) );
-    }
+    my @pkgs = getsrcpkgs($pkg ? $pkgsrc{ $pkg } : $src);
+    @pkgs = grep( !/^$pkg$/, @pkgs ) if ( $pkg );
     if ( @pkgs ) {
 	@pkgs = sort @pkgs;
 	if ($pkg) {
@@ -148,7 +145,7 @@ if (defined $pkg || defined $src) {
     }
     if ($pkg) {
 	my $stupidperl = ${debbugs::gPackagePages};
-	printf "<p>You might like to refer to the <a href=\"%s\">%s package page</a>, or to the source package <a href=\"%s\">%s</a>'s bug page.</p>\n", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg"), urlsanit(srcurl($src)), $src;
+	printf "<p>You might like to refer to the <a href=\"%s\">%s package page</a>, or to the source package <a href=\"%s\">%s</a>'s bug page.</p>\n", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg"), urlsanit(srcurl($pkg)), $pkgsrc{$pkg};
     }
 } elsif (defined $maint || defined $maintenc) {
     print "<p>Note that maintainers may use different Maintainer fields for\n";
