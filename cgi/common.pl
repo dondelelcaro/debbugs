@@ -475,7 +475,7 @@ sub bugmatches(\%\%) {
 }
 sub bugfilter($%) {
     my ($bug, %status) = @_;
-    local (%seenmerged);
+    our (%seenmerged);
     if (%common_include) {
 	return 1 if (!bugmatches(%common_include, %status));
     }
