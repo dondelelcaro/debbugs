@@ -164,11 +164,13 @@ sub htmlindexentrystatus {
             $daysold = $daysold - $yearsold * 364;
 
             $result .= ";\n $font";
-            $result .= "1 year and " if ($yearsold == 1);
-            $result .= "$yearsold years and " if ($yearsold > 1);
-            $result .= "1 day old" if ($daysold == 1);
-            $result .= "$daysold days old" if ($daysold != 1);
-            $result .= "$efont";
+            my @age;
+            push @age, "1 year" if ($yearsold == 1);
+            push @age, "$yearsold years" if ($yearsold > 1);
+            push @age, "1 day" if ($daysold == 1);
+            push @age, "$daysold days" if ($daysold > 1);
+            $result .= join(" and ", @age);
+            $result .= " old$efont";
         }
     }
 
