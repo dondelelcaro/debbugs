@@ -1,4 +1,19 @@
 ############################################################################
+#  Here is a blurb to point people to ftp archive of directions.  It is
+#  used by the receive script when bouncing a badly formatted email
+#
+# $gTextInstructions = "$gBadEmailPrefix
+# $gBadEmailPrefix Instructions are available from ftp.debian.org in /debian
+# $gBadEmailPrefix and at all Debian mirror sites, in the files:
+# $gBadEmailPrefix  doc/bug-reporting.txt
+# $gBadEmailPrefix  doc/bug-log-access.txt
+# $gBadEmailPrefix  doc/bug-maint-info.txt
+# $gBadEmailPrefix";
+############################################################################
+$gTextInstructions = "$gBadEmailPrefix";
+
+
+############################################################################
 # Here is a blurb for any mirrors of the web site.  Here's a sample:
 #
 #$gHTMLCopies = "Copies of the logs are available on the World Wide Web at<BR>
