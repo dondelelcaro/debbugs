@@ -31,13 +31,12 @@ my %pkgsrc = %{getpkgsrc()};
 my $ref = $param{'bug'} || quit("No bug number");
 $ref =~ /(\d+)/ or quit("Invalid bug number");
 $ref = $1;
+my $short = "#$ref";
 my $msg = $param{'msg'} || "";
 my $att = $param{'att'};
 my $boring = ($param{'boring'} || 'no') eq 'yes'; 
 my $reverse = ($param{'reverse'} || 'no') eq 'yes';
 my $mbox = ($param{'mbox'} || 'no') eq 'yes'; 
-
-my %status = %{getbugstatus($ref)} or &quit("Couldn't get bug status: $!");
 
 my $indexentry;
 my $descriptivehead;
@@ -52,6 +51,23 @@ tzset();
 my $dtime = strftime "%a, %e %b %Y %T UTC", localtime;
 $tail_html = $debbugs::gHTMLTail;
 $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
+
+my %status = %{getbugstatus($ref)};
+unless (%status) {
+    print <<EOF;
+Content-Type: text/html
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head><title>$debbugs::gProject $debbugs::gBug report logs - $short</title></head>
+<body>
+<h1>$debbugs::gProject $debbugs::gBug report logs - $short</h1>
+<p>There is no record of $debbugs::gBug $short.
+Try the <a href="http://$debbugs::gWebDomain/">search page</a> instead.</p>
+$tail_html</body></html>
+EOF
+    exit 0;
+}
 
 $|=1;
 
@@ -102,8 +118,7 @@ if (length($status{done})) {
 
 $indexentry .= join(";\n", @descstates) . ";\n<br>" if @descstates;
 
-my ($short, $tmaint, $tsrc);
-$short = $ref; $short =~ s/^\d+/#$&/;
+my ($tmaint, $tsrc);
 $tmaint = defined($maintainer{$tpack}) ? $maintainer{$tpack} : '(unknown)';
 $tsrc = defined($pkgsrc{$tpack}) ? $pkgsrc{$tpack} : '(unknown)';
 $descriptivehead= $indexentry."Maintainer for $status{package} is\n".
