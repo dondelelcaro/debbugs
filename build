@@ -1,0 +1,136 @@
+#!/bin/sh
+
+set -e
+
+cwd="`pwd`"
+date="`date +'%d %h %Y'`"
+
+process () {
+	(cd config &&
+	 rm -f trace &&
+	 m4 -P -I "$config" -DDB_DATE="$date" \
+		common/init.m4 config.m4 common/main.m4 - common/final.m4
+	)
+}
+
+txtconvert () {
+	src=$1; dst=$2
+	echo "	generating $dst from $src ..."
+	rm -f html/txt/$dst.html html/txt/$dst.out
+	perl -ne 'print unless m/^Other pages:$/ .. /^\<hr\>/' \
+		html/$src.out >html/txt/$dst.html
+	HOME=/dev/null lynx -nolist -dump -cfg=html/lynx-cfg \
+		file://localhost/$cwd/html/txt/$dst.html >html/txt/$dst.out
+	rm html/txt/$dst.html
+}
+
+config=local
+if [ $# != 0 ]; then config="$1"; shift; fi
+if [ $# != 0 ]; then echo >&2 'usage: ./build [<config>]'; false; fi
+
+if [ ! -f config/$config/config.m4 ]; then echo >&2 "no such config: $config"; false; fi
+
+errs="`echo 'm4_undivert(1)' | process | sed -ne '/[^ \t]/ s/^/ /p'`"
+if [ "x$errs" != x ]
+then
+	echo >&2 'unexpected residues:'
+	echo "$errs"
+	false
+fi
+
+echo "macro substitutions ..."
+for f in `find -name '*.in'`
+do
+	h="`echo $f | sed -e 's/\.in$//'`"
+	process <"$f" >"$h.out"
+	mv config/trace "$h.trace"
+	if egrep 'DBC?U?_' /dev/null "$h.out"
+	then
+		echo >&2 'undefined macros'
+		false
+	fi
+	[ ! -x "$f" ] || chmod +x "$h.out"
+done
+
+echo "documentation conversion ..."
+txtconvert Reporting.html bug-reporting.txt
+txtconvert Access.html bug-log-access.txt
+txtconvert server-request.html bug-log-mailserver.txt
+txtconvert Developer.html bug-maint-info.txt
+txtconvert server-control.html bug-maint-mailcontrol.txt
+txtconvert server-refcard.html bug-mailserver-refcard.txt
+
+cgilibexist=`echo 'test -f DBC_CGILIB_PATH && echo true || echo false' | process`
+htaccesspath=`echo DBC_HTACCESS_PATH | process`
+
+rm -f install install.new
+process <<'END' >install.new
+#!/bin/sh
+	set -e
+	test -d DBC_BASE || mkdir DBC_BASE
+	bugsid () {
+		echo "installing $1 ..."
+		test -d "$2" || mkdir "$2"
+		cd "$1"
+		for f in *.out
+		do
+			h="`echo $f | sed -e 's/\.out$//'`"
+			rm -f "$2/$f"
+			cp "./$f" "$2/"
+			mv -f "$2/$f" "$2/$h"
+		done
+		cd "$3"
+	}
+	bugsid scripts DBC_SCRIPT_PATH ..
+	bugsid html DBC_HTML_PATH ..
+	bugsid html/txt DBC_DOCDIR_PATH ../..
+	bugsid cgi DBC_CGI_PATH ..
+END
+if [ "x$htaccesspath" != x ]; then
+	process <<END >>install.new
+		cat <<'END2' >$htaccesspath.new
+DBC_HTACCESS_CONTENTS
+END2
+		mv -f $htaccesspath.new $htaccesspath
+END
+fi
+
+if $cgilibexist
+then
+	cgiii='cgi-lib already exists in DBC_CGILIB_PATH'
+else
+	cgiii='	DBC_CGILIB_PATH'
+	process <<'END' >>install.new
+		echo "installing cgi-lib.pl ..."
+		cp cgi/cgi-lib.pl DBC_CGILIB_PATH.new
+		mv -f DBC_CGILIB_PATH.new DBC_CGILIB_PATH
+END
+fi
+process >>install.new <<'END'
+	echo "setting up bugs database ..."
+	DBC_SCRIPT_PATH/initialise
+	echo "done."
+	echo "You will have to intall the crontab (misc/crontab.out) yourself."
+	exit 0
+END
+chmod +x install.new
+mv -f install.new install
+
+cgi="`cd cgi && echo *.out | sed -e 's/\.out//g'`"
+
+process <<END
+built for $config date DB_DATE ...
+	will install unchanging files into:
+		DBC_SCRIPT_PATH/
+		DBC_HTML_PATH/
+		DBC_CGI_PATH/ ($cgi)
+	$cgiii
+	will store data in:
+		DB_HTMLDB_PATH/
+		DBC_SPOOL_PATH/
+	will expect CGI scripts to be available in:
+		DBC_CGI_URL/
+END
+
+echo "run ./install to install"
+exit 0

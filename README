@@ -1,0 +1,78 @@
+                     DEBIAN BUG TRACKING SYSTEM
+                     --------------------------
+
+This bug tracking system was developed by Ian Jackson from 1994-1997,
+with assistance from nCipher Corporation Limited in 1997.  I am grateful to
+nCipher for allowing me to redistribute modifications I have made to the
+system while working as an employee of nCipher (obviously I gave my
+permission for nCipher to use and modify my work in this way).
+
+SYSTEM REQUIREMENTS
+ - GNU m4
+ - GNU date
+ - GNU gzip
+ - Perl 5 (5.004 is known to work)
+ - Lynx 2.7 or later
+ - atob/btoa
+ - The bug system requires its own mail domain.  It comes with code
+   which understands how exim and qmail deliver mail for such a domain to a
+   script.
+ - If the local MTA is qmail you _must_ install a different MTA
+   somewhere (eg in a subdirectory) and tell the bug system to use that;
+   qmail has broken command-line parsing in its /usr/lib/sendmail
+   emulation.
+ - A webserver (this is easiest if the bug system can write
+   directly to the webspace).
+ - Somewhere to run CGI scripts (unless you don't need the `go to
+   bug' and `go to package' forms to work).
+
+INSTALLATION INSTRUCTIONS
+
+1. Create a directory `config/local', alongside `config/common' and
+`config/debian'.
+
+2. Copy the template files from `config/template' to `config/local'
+and edit them.  There is currently no documentation about the meanings
+of the config variables, I'm afraid.  The m4 quotes have been set to
+[[ and ]], so almost all definitions should use these.  Pieces of text
+which do not contain DBC_... macros should be enclosed in further sets
+of [[ ]] (making [[[[ ]]]] in all), as commas and other metacharacters
+might otherwise be interpreted by m4 in undesirable ways.  Note that
+you can also add settings for the variables mentioned in defaults.m4.
+
+3. Set up the mail arrangements to deliver mail to the right place, and to
+set up a blackhole mail alias if you need one.  Ensure that owner@bugs, if
+that's what you're using, is handled by the MTA.
+
+4. Run `./build'; if all was well run `./install'.  If `./build'
+complains or there are brokennesses in the results then the files
+`config/trace' (for failures during the check by `build') and
+`*.trace' for each `*.in' and `*.out' may be useful.
+
+5. Test things a bit, by sending mail messages to the bug system and
+running .../scripts/processall and/or .../scripts/update-html.
+
+6. If all seems well then install the crontab in `misc/crontab.out'.
+
+COPYRIGHT AND LACK-OF-WARRANTY NOTICE
+
+Copyright 1994,1995,1996,1997 Ian Jackson <ijackson@chiark.greenend.org.uk>
+Copyright 1997 nCipher Corporation Limited
+Copyright 1995 Steven Brenner (for cgi-lib.pl).
+
+This bug system is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+
+This program and documentation is distributed in the hope that it will be
+useful, but without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose. See the GNU General
+Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program, or one should be available above; if not, write to the
+Free Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+02111-1307, USA, or email debbugs-maint@chiark.greenend.org.uk.
+
+ - Ian Jackson 30.10.1997
