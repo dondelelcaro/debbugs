@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.85 2004/02/27 02:05:17 cjwatson Exp $
+# $Id: process.in,v 1.86 2004/08/05 15:09:30 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -152,7 +152,14 @@ if (defined $header{'resent-from'} && !defined $header{'from'}) {
     $header{'from'} = $header{'resent-from'};
 }
 defined($header{'from'}) || &quit("no From header");
-$replyto= defined($header{'reply-to'}) ? $header{'reply-to'} : $header{'from'};
+
+$replyto = $header{'reply-to'};
+$replyto = '' unless defined $replyto;
+$replyto =~ s/^ +//;
+$replyto =~ s/ +$//;
+unless (length $replyto) {
+    $replyto = $header{'from'};
+}
 
 $_= $replyto;
 $_= "$2 <$1>" if m/^([^\<\> \t\n\(\)]+) \(([^\(\)\<\>]+)\)$/;
