@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.38 2001/09/18 20:12:54 joy Exp $
+# $Id: process.in,v 1.39 2001/09/18 20:59:36 joy Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -498,7 +498,7 @@ END
 
 print DEBUG "maintainers >@maintaddrs<\n";
 
-$orgsender= defined($header{'sender'}) ? "Orignal-Sender: $header{'sender'}\n" : '';
+$orgsender= defined($header{'sender'}) ? "Original-Sender: $header{'sender'}\n" : '';
 $newsubject= $subject;  $newsubject =~ s/^$gBug#$ref\W*\s*//;
 
 $xcchdr= $header{ 'x-debbugs-cc' };
