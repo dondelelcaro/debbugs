@@ -9,6 +9,11 @@ Add the following variables to the /etc/debbugs/config file:
 
 $gHTMLSuffix = ".html";
 
+The use of $gCGIDomain has been cleaned up; formerly, it needed to begin
+with "http://", which was confusingly inconsistent with all the other domain
+variables. If you worked around this in your configuration, you will need to
+recheck it.
+
 From 2.3 to 2.4
 ---------------
 

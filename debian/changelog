@@ -18,6 +18,7 @@ debbugs (2.4.1) UNRELEASED; urgency=low
     - Add facility to search by tag.
     - Fix rebuild script and add it to the example crontab, closes: #139696.
     - Silence postinst warning if spool/db doesn't exist, closes: #194892.
+    - Clean up the definition and use of $gCGIDomain, closes: #139697.
   * Adam Heath:
     - Convert all code to use global read/write functions, instead of having
       it duplicated everywhere.
