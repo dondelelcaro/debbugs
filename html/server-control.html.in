@@ -216,7 +216,7 @@ mailservers is available via the WWW, in
   filed against the listed packages. You can list one or more packages. If
   you don't list any packages, the following commands will apply to all
   bugs. You're encouraged to use this as a safety feature in case you
-  accidentally use the wrong bug numbers.</dd>
+  accidentally use the wrong bug numbers.
 
   <p>Example usage:</p>
 
