@@ -39,7 +39,7 @@ my $version = $param{'version'} || undef;
 my $dist = $param{'dist'} || undef;
 my $arch = $param{'arch'} || undef;
 my $show_list_header = ($param{'show_list_header'} || $userAgent->{'show_list_header'} || "yes" ) eq "yes";
-my $show_foot_header = ($param{'show_foot_header'} || $userAgent->{'show_list_footer'} || "yes" ) eq "yes";
+my $show_list_footer = ($param{'show_list_footer'} || $userAgent->{'show_list_footer'} || "yes" ) eq "yes";
 
 my ($pkg, $src, $maint, $maintenc, $submitter, $severity, $status, $tag);
 
@@ -115,7 +115,7 @@ set_option("version", $version);
 set_option("dist", $dist);
 set_option("arch", $arch);
 set_option("show_list_header", $show_list_header);
-set_option("show_foot_header", $show_foot_header);
+set_option("show_list_footer", $show_list_footer);
 
 my $title;
 my @bugs;
