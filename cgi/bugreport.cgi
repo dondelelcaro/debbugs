@@ -345,9 +345,7 @@ if ( $mbox ) {
 			$lines[ 1 ] = $tmp;
 		}
 		if ( !( $lines[ 0 ] =~ m/^From / ) ) {
-			$ENV{ PATH } = "/bin:/usr/bin:/usr/local/bin";
-			my $date = `date "+%a %b %d %T %Y"`;
-			chomp $date;
+			my $date = strftime "%a %b %d %T %Y", localtime;
 			unshift @lines, "From unknown $date";
 		}
 		map { s/^(>*From )/>$1/ } @lines[ 1 .. $#lines ];
