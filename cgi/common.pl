@@ -387,7 +387,9 @@ sub maintencoded {
     return $encoded;
 }
 
+my $_maintainer;
 sub getmaintainers {
+    return $_maintainer if $_maintainer;
     my %maintainer;
 
     open(MM,"$gMaintainerFile") or &quit("open $gMaintainerFile: $!");
@@ -406,11 +408,13 @@ sub getmaintainers {
 	$maintainer{$a}= $b;
     }
     close(MM);
-
-    return \%maintainer;
+    $_maintainer = \%maintainer;
+    return $_maintainer;
 }
 
+my $_pkgsrc;
 sub getpkgsrc {
+    return $_pkgsrc if $_pkgsrc;
     my %pkgsrc;
 
     open(MM,"$gPackageSource") or &quit("open $gPackageSource: $!");
@@ -421,8 +425,8 @@ sub getpkgsrc {
 	$pkgsrc{$a}= $b;
     }
     close(MM);
-
-    return \%pkgsrc
+    $_pkgsrc = \%pkgsrc;
+    return $_pkgsrc;
 }
 
 sub getbugdir {
