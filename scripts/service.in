@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.38 2001/08/16 07:21:36 doogie Exp $
+# $Id: service.in,v 1.39 2001/08/16 07:22:21 doogie Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -604,7 +604,7 @@ sub sendmailmessage {
     $c= open(D,"|-");
     defined($c) || &quit("mailing forking for sendmail: $!");
     if (!$c) { # ie, we are the child process
-        exec '/usr/lib/sendmail','-f'."$gMaintainerEmail",'-odi','-oem','-oi',get_addresses(@recips);
+        exec '/usr/lib/sendmail','-f'."$gMaintainerEmail",'-odq','-oem','-oi',get_addresses(@recips);
         die $!;
     }
     print(D $message) || &quit("writing to sendmail process: $!");
