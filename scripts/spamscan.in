@@ -1,5 +1,5 @@
 #! /usr/bin/perl -T
-# $Id: spamscan.in,v 1.6 2004/01/14 01:39:01 cjwatson Exp $
+# $Id: spamscan.in,v 1.7 2004/01/14 19:41:18 cjwatson Exp $
 #
 # Usage: spamscan
 #
@@ -27,6 +27,11 @@ use Mail::SpamAssassin;
 use Mail::SpamAssassin::NoMailAudit;
 
 umask 002;
+
+eval {
+    &filelock('incoming-spamscan');
+};
+exit if $@;
 
 my $user_prefs = "$ENV{HOME}/.spamassassin/user_prefs";
 my $user_prefs_time;
@@ -57,11 +62,6 @@ sub header_or_empty ($$) {
     }
     return '';
 }
-
-eval {
-    &filelock('incoming-spamscan');
-};
-exit if $@;
 
 for (;;) {
     if (-f 'spamscan-stop') {
