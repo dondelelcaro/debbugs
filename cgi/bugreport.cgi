@@ -212,7 +212,7 @@ print "<HTML><HEAD>\n" .
     "</HEAD>\n" .
     '<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#800080">' .
     "\n";
-print "<H1>" .  "$debbugs::gProject $debbugs::gBug report logs -  $short" .
+print "<H1>" .  "$debbugs::gProject $debbugs::gBug report logs - <A HREF=\"mailto:$ref\@bugs.debian.org\">$short</A>" .
       "<BR>" . htmlsanit($status{subject}) . "</H1>\n";
 
 print "$descriptivehead\n";
