@@ -24,8 +24,8 @@ my %param = readparse();
 
 my $repeatmerged = ($param{'repeatmerged'} || "yes") eq "yes";
 my $archive = ($param{'archive'} || "no") eq "yes";
-my $include = $param{'include'} || "";
-my $exclude = $param{'exclude'} || "";
+my $include = $param{'&include'} || $param{'include'} || "";
+my $exclude = $param{'&exclude'} || $param{'exclude'} || "";
 my $raw_sort = ($param{'raw'} || "no") eq "yes";
 my $bug_rev = ($param{'bug-rev'} || "no") eq "yes";
 my $pend_rev = ($param{'pend-rev'} || "no") eq "yes";
@@ -94,10 +94,8 @@ $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
 
 set_option("repeatmerged", $repeatmerged);
 set_option("archive", $archive);
-set_option("include", { map {if (m/^(.*):(.*)$/) { ($1,$2) } else { ($_,1) }} (split /[\s,]+/, $include) })
-	if ($include);
-set_option("exclude", { map {if (m/^(.*):(.*)$/) { ($1,$2) } else { ($_,1) }} (split /[\s,]+/, $exclude) })
-	if ($exclude);
+set_option("include", $include);
+set_option("exclude", $exclude);
 set_option("raw", $raw_sort);
 set_option("bug-rev", $bug_rev);
 set_option("pend-rev", $pend_rev);

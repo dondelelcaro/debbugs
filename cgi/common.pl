@@ -23,8 +23,24 @@ sub set_option {
     my ($opt, $val) = @_;
     if ($opt eq "archive") { $common_archive = $val; }
     if ($opt eq "repeatmerged") { $common_repeatmerged = $val; }
-    if ($opt eq "exclude") { %common_exclude = %{$val}; }
-    if ($opt eq "include") { %common_include = %{$val}; }
+    if ($opt eq "exclude") {
+	my @vals;
+	@vals = ( $val ) if (ref($val) eq "" && $val );
+	@vals = ( $$val ) if (ref($val) eq "SCALAR" && $$val );
+	@vals = @{$val} if (ref($val) eq "ARRAY" );
+	%common_exclude = map {
+	    if (/^(.*):(.*)$/) { ($1, $2) } else { ($_, 1) }
+	} split /[\s,]+/, join ',', @vals;
+    }
+    if ($opt eq "include") {
+	my @vals;
+	@vals = ( $val, ) if (ref($val) eq "" && $val );
+	@vals = ( $$val, ) if (ref($val) eq "SCALAR" && $$val );
+	@vals = @{$val} if (ref($val) eq "ARRAY" );
+	%common_include = map {
+	    if (/^(.*):(.*)$/) { ($1, $2) } else { ($_, 1) }
+	} split /[\s,]+/, join ',', @vals;
+    }
     if ($opt eq "raw") { $common_raw_sort = $val; }
     if ($opt eq "bug-rev") { $common_bug_reverse = $val; }
     if ($opt eq "pend-rev") { $common_pending_reverse = $val; }
