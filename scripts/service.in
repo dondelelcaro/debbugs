@@ -1,6 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.81 2003/07/15 13:04:33 ajt Exp $
-# ^ more or less ^
+# $Id: service.in,v 1.82 2003/07/15 14:20:52 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
