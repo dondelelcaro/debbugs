@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.52 2002/10/20 13:21:15 cjwatson Exp $
+# $Id: process.in,v 1.53 2002/10/21 08:37:29 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -947,7 +947,7 @@ sub checkmaintainers {
     close(MAINT);
     open(SOURCES,"$gPackageSource") || &quit("pkgsrc open: $!");
     while (<SOURCES>) {
-        next unless m/^(\S+)\s+(\S.*\S)\s*$/;
+        next unless m/^(\S+)\s+\S+\s+(\S.*\S)\s*$/;
 	($a,$b)=($1,$2);
 	$a =~ y/A-Z/a-z/;
 	$pkgsrc{$a} = $b;
