@@ -3,21 +3,21 @@
 @file_flag = stat( '/etc/debbugs/config');
 if ( !@file_flag ) 
 {
-	system( '/bin/cp', '/usr/doc/debbugs/examples/config', '/etc/debbugs/config' );
+	system( '/bin/cp', '/usr/share/doc/debbugs/examples/config', '/etc/debbugs/config' );
 	print( "copying config file" );
 } else { print( "skipping config file" ); }
 
 @file_flag = stat( '/etc/debbugs/text');
 if ( !@file_flag ) 
 {
-	system( '/bin/cp', '/usr/doc/debbugs/examples/text', '/etc/debbugs/text' );
+	system( '/bin/cp', '/usr/share/doc/debbugs/examples/text', '/etc/debbugs/text' );
 	print( "copying text file" );
 } else { print( "skipping text file" ); }
 
 @file_flag = stat( '/var/lib/debbugs/spool/nextnumber');
 if ( !@file_flag ) 
 {
-	system( '/bin/cp', '/usr/doc/debbugs/examples/nextnumber', '/var/lib/debbugs/spool/nextnumber' );
+	system( '/bin/cp', '/usr/share/doc/debbugs/examples/nextnumber', '/var/lib/debbugs/spool/nextnumber' );
 	print( "copying next file" );
 } else { print( "skipping next file" ); }
 

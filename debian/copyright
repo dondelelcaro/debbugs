@@ -27,5 +27,5 @@ with this program, or one should be available above; if not, write to the
 Free Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 02111-1307, USA.
 
-On Debian/GNU Linux systems, the text of the GPL can be found in
-/usr/doc/copyright/GPL.
+On Debian GNU/Linux systems, the text of the GPL can be found in
+/usr/share/common-licenses/GPL.

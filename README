@@ -9,10 +9,9 @@ employee of nCipher.
 =============================================================================
 SYSTEM REQUIREMENTS
 =============================================================================
- - GNU m4
  - GNU date
  - GNU gzip
- - Perl 5 (5.004 is known to work)
+ - Perl 5 (5.005 is known to work)
  - Mailtools perl module to manipulate email
  - Lynx 2.7 or later
  - The bug system requires its own mail domain.  It comes with code
@@ -40,12 +39,17 @@ you wish to change some of the text as it gets displayed.
 
 5. Set up the mail arrangements to deliver mail to the right place, and to
 set up a blackhole mail alias if you need one.  Ensure that owner@bugs, if
-that's what you're using, is handled by the MTA.
+that's what you're using, is handled by the MTA.  All other email should be
+piped into the receive script.
 
-6. Test things a bit, by sending mail messages to the bug system and
+6. Set up http to point people looking for bug reports to
+/var/lib/debbugs/www and set /var/lib/debbugs/www/cgi as a valid cgi
+directory.
+
+7. Test things a bit, by sending mail messages to the bug system and
 running .../scripts/processall and/or .../scripts/update-html.
 
-7. If all seems well then install the crontab in `misc/crontab.out'.
+8. If all seems well then install the crontab in `misc/crontab.out'.
 
 =============================================================================
 FURTHER INFORMATION
@@ -132,4 +136,4 @@ with this program, or one should be available above; if not, write to the
 Free Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 02111-1307, USA.
 
- - gecko 14 Oct, 1999
+ - Darren Benham 14 Oct, 1999

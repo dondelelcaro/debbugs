@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.6 1999/09/16 19:42:50 gecko Exp $
+# $Id: text.in,v 1.7 1999/11/22 01:35:10 gecko Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -115,11 +115,11 @@ $gHTMLSeverityDesc = "<DT><CODE>critical</CODE>
 
 	<DT><CODE>wishlist</CODE>
 	<DD>for any feature request, and also for any $gBugs that are very 
-	difficult to fix due to major design considerations.";
+	difficult to fix due to major design considerations.
 
 	<DT><CODE>fixed</CODE>
 	<DD>fixed in the current version in the unstable archive but the fix has
-	not been fixed by the person responsible.
+	not been fixed by the person responsible.";
 
 ############################################################################
 # shows up at the end of (most) html pages.  You shouldn't have
@@ -203,7 +203,7 @@ $gJunkIndex = "<HTML><HEAD><TITLE>$gProject $gBug reports - Junk</TITLE>
 	$gBug report.
 	<P>
 	For other kinds of indices or for other information about $gProject and
-	the $gBug system, see <A HREF=\"../../\"> $gBug system top-level contents WWW
+	the $gBug system, see <A HREF=\"../../\">$gBug system top-level contents WWW
 	page</A>.
 
 

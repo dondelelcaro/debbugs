@@ -42,8 +42,7 @@ A $gBug report, with mail header, looks something like this:
   To: submit\@$gEmailDomain
   From: diligent\@testing.linux.org
   Subject: Hello says `goodbye'
-<A name="psuedoheader">
-  Package: hello</A>
+<A name="psuedoheader">Package: hello</A>
   Version: 1.3-2
 
   When I invoke `hello' without arguments from an ordinary shell
