@@ -21,6 +21,10 @@ debbugs (2.4.1) UNRELEASED; urgency=low
       it duplicated everwhere.
     - Trim trailing whitespace from pseudoheader values.  Closes: #153590.
     - Warn when reassigning to an unknown package.  Closes: #60595.
+  * Josip Rodin:
+    - Added a terse=yes mode for bugreport.cgi, possibly useful for
+      monstrously long bugs.
+    - Purged needless date(1) forks, replaced with strftime.
 
  -- Colin Watson <cjwatson@debian.org>  Mon, 25 Nov 2002 03:50:20 +0000
 
