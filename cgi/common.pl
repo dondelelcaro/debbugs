@@ -18,14 +18,14 @@ sub quit {
     exit 0;
 }
 
-sub abort {
-    my $msg = shift;
-    my $Archive = $common_archive ? "archive" : "";
-    print header . start_html("Sorry");
-    print "Sorry bug #$msg doesn't seem to be in the $Archive database.\n";
-    print end_html;
-    exit 0;
-}
+#sub abort {
+#    my $msg = shift;
+#    my $Archive = $common_archive ? "archive" : "";
+#    print header . start_html("Sorry");
+#    print "Sorry bug #$msg doesn't seem to be in the $Archive database.\n";
+#    print end_html;
+#    exit 0;
+#}
 
 sub htmlindexentry {
     my $ref = shift;
@@ -208,6 +208,16 @@ sub submitterbugs {
     return getbugs($chk);
 }
 
+sub severitybugs {
+    my $status = shift;
+    my $severity = shift;
+    my $chk = sub {
+	my %d = @_; 
+	return ($d{"severity"} eq $severity) && ($d{"status"} eq $status); 
+    };
+    return getbugs($chk);
+}
+
 sub maintbugs {
     my $maint = shift;
     my %maintainers = getmaintainers();
@@ -243,8 +253,8 @@ sub getbugs {
     my @result = ();
     while(<I>) 
     {
-        if (m/^(\S+)\s+(\d+)\s+(\S+)\s+(\d+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.+)$/) {
-            if ($bugfunc->(pkg => $1, bug => $2, submitter => $5,
+        if (m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.+)$/) {
+            if ($bugfunc->(pkg => $1, bug => $2, status => $4, submitter => $5,
 			   severity => $6, title => $7))
 	    {
 	    	push (@result, $2);

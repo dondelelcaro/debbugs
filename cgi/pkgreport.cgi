@@ -4,6 +4,7 @@ package debbugs;
 
 use strict;
 use CGI qw/:standard/;
+use POSIX;
 
 require '/debian/home/ajt/newajbug/common.pl';
 #require '/usr/lib/debbugs/common.pl';
@@ -12,14 +13,22 @@ require '/debian/home/ajt/newajbug/common.pl';
 require '/etc/debbugs/config';
 require '/etc/debbugs/text';
 
-my $pkg = param('pkg');
-my $maint = defined $pkg ? undef : param('maint');
-my $maintenc = (defined $pkg || defined $maint) ? undef : param('maintenc');
-my $submitter = (defined $pkg || defined $maint || defined $maintenc) ? undef : param('submitter');
+POSIX::nice(5);
+
+my ($pkg, $maint, $maintenc, $submitter, $severity, $status);
+
+if (defined ($pkg = param('pkg'))) {
+} elsif (defined ($maint = param('maint'))) {
+} elsif (defined ($maintenc = param('maintenc'))) {
+} elsif (defined ($submitter= param('submitter'))) { 
+} elsif (defined ($severity = param('severity'))) { 
+	$status = param('status') || 'open';
+} else {
+	$pkg = "ALL";
+}
+
 my $repeatmerged = (param('repeatmerged') || "yes") eq "yes";
 my $archive = (param('archive') || "no") eq "yes";
-
-$pkg = 'ALL' unless (defined($pkg) || defined($maint) || defined($maintenc)) || defined($submitter);
 
 my $Archived = $archive ? "Archived" : "";
 
@@ -42,8 +51,10 @@ if (defined $pkg) {
     $tag = "maintainer $maint";
 } elsif (defined $maintenc) {
     $tag = "encoded maintainer $maintenc";
-} else {
+} elsif (defined $submitter) {
     $tag = "submitter $submitter";
+} elsif (defined $severity) {
+    $tag = "$status $severity bugs";
 }
 
 set_option("repeatmerged", $repeatmerged);
@@ -56,8 +67,10 @@ if (defined $pkg) {
     @bugs = maintbugs($maint);
 } elsif (defined $maintenc) {
     @bugs = maintencbugs($maintenc);
-} else {
+} elsif (defined $submitter) {
     @bugs = submitterbugs($submitter);
+} elsif (defined $severity) {
+    @bugs = severitybugs($status, $severity);
 }
 
 my $result = htmlizebugs(@bugs);

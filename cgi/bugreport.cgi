@@ -1,9 +1,10 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl -wT
 
 package debbugs;
 
 use strict;
 use CGI qw/:standard/;
+use POSIX qw(strftime);
 
 #require '/usr/lib/debbugs/errorlib';
 #require '/usr/lib/debbugs/common.pl';
@@ -36,8 +37,7 @@ my $showseverity;
 my $tpack;
 my $tmain;
 
-$dtime=`date -u '+%H:%M:%S GMT %a %d %h'`;
-chomp($dtime);
+$dtime = strftime "%H:%M:%S GMT %a %d %h", gmtime;
 
 $tail_html = $debbugs::gHTMLTail;
 $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
@@ -72,10 +72,7 @@ if (@merged) {
 	}
 }
 
-my $dummy = `TZ=GMT LANG=C \\
-		date -d '1 Jan 1970 00:00:00 + $status{date} seconds' \\
-		'+ %a, %e %b %Y %T %Z'`;
-chomp($dummy);
+my $dummy = strftime "%a, %e, %b %Y %T %Z", gmtime($status{date});
 $submitted = ";\ndated ".$dummy;
 
 if (length($status{done})) {
