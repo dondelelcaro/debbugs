@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.43 2001/09/18 19:35:22 joy Exp $
+# $Id: service.in,v 1.44 2001/09/18 20:04:41 joy Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -282,6 +282,7 @@ Subject: $gBug#$ref acknowledged by developer
 References: $header{'message-id'} $s_msgid
 In-Reply-To: $s_msgid
 Message-ID: <handler.$ref.$nn.notifdonectrl.$midix\@$gEmailDomain>
+Reply-To: $ref\@$gEmailDomain
 
 This is an automatic notification regarding your $gBug report
 #$ref: $s_subject,
