@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.19 2003/05/03 20:01:20 doogie Exp $
+# $Id: errorlib.in,v 1.20 2003/05/03 20:40:56 doogie Exp $
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -26,14 +26,33 @@ sub lockreadbugmerge {
     return ( 2, $data );
 }
 
+sub getbuglocation {
+    my ( $bugnum, $ext ) = @_;
+    my $archdir = sprintf "%02d", $bugnum % 100;
+    return 'archive' if ( -r "$gSpoolDir/archive/$archdir/$bugnum.$ext" );
+    return 'db' if ( -r "$gSpoolDir/db/$bugnum.$ext" );
+    return 'db-h' if ( -r "$gSpoolDir/db-h/$archdir/$bugnum.$ext" );
+    return 'infomagic-95' if ( -r "/org/bugs.debian.org/joeyh-old/infomagic-95/$archdir/$bugnum.$ext" );
+    return undef;
+}
+
+sub getlocationpath {
+    my ($location) = @_;
+    if ($location eq 'archive') {
+        return "$gSpoolDir/archive";
+    } elsif ($location eq 'db') {
+        return "$gSpoolDir/db";
+    } elsif ($location eq 'db-h') {
+        return "$gSpoolDir/db-h";
+    } else {
+        return "/org/bugs.debian.org/joeyh-old/infomagic-95";
+    }
+}
+
 sub readbug {
     local ($lref, $location) = @_;
     my $hash = get_hashname($lref);
-    if ($location eq 'archive') {
-        $path = 'archive';
-    } else {
-        $path = 'db-h';
-    }
+    $path = getlocationpath($location);
     if (!open(S,"$path/$hash/$lref.status")) { &unfilelock; return undef; }
     my %data;
     chop($data{originator}= <S>);
@@ -63,11 +82,7 @@ sub writebug {
     local ($ref, $data, $location) = @_;
     my $hash = get_hashname($ref);
     my $change;
-    if ($location eq 'archive') {
-        $path = 'archive';
-    } else {
-        $path = 'db-h';
-    }
+    $path = getlocationpath($location);
     open(S,">$path/$hash/$ref.status.new") || &quit("opening $path/$hash/$ref.status.new: $!");
     print(S
           "$data->{originator}\n".
