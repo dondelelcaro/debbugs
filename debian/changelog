@@ -1,3 +1,15 @@
+debbugs (2.3-4) unstable; urgency=low
+
+  * Added a check for unwanted characters in the part of request passed on
+    to sendlynxdoc that gets passed to shell. [Josip]
+  * Applied Rob Browning's patches to remove more Debian-only stuff,
+    closes: #80077. [Josip]
+  * Fixed the nextnumber misplacement (it should be in spool dir, not config
+    dir), and added a note about running debbugsconfig after changes to
+    config file, thanks to Rob for the hints. [Josip]
+
+ -- Josip Rodin <jrodin@jagor.srce.hr>  Sat, 27 Jan 2001 23:20:06 +0100
+
 debbugs (2.3-3) unstable; urgency=low
 
   * Fixed examples installation, debbugsconfig should actually work now,
