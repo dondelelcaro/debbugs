@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: summary.in,v 1.7 2003/01/08 12:47:56 cjwatson Exp $
+# $Id: summary.in,v 1.8 2003/05/03 20:01:20 doogie Exp $
 
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
@@ -49,16 +49,16 @@ $head= $mode eq 'bymaint'
 $amonths=-1;
 
 while (length($f=shift(@list))) {
-    if (!lockreadbug($f)) { next; }
-    $_= $s_package; y/A-Z/a-z/; $_= $` if m/[^-+._a-z0-9]/;
-    $s_maintainer=
+    if (!($data = lockreadbug($f))) { next; }
+    $_= $data->{package}; y/A-Z/a-z/; $_= $` if m/[^-+._a-z0-9]/;
+    $data->{maintainer}=
         defined($maintainer{$_}) ? $maintainer{$_} :
         length($_) ? "(unknown -- \`$_')" :
         "(unknown)";
     if ($mode eq 'undone' || $mode eq 'veryold') {
         &unfilelock;
-        next if length($s_done) || length($s_forwarded);
-        $cmonths= int(($startdate - $s_date)/2592000); # 3600*24*30 (30 days)
+        next if length($data->{done}) || length($data->{forwarded});
+        $cmonths= int(($startdate - $data->{date})/2592000); # 3600*24*30 (30 days)
         next if $mode eq 'veryold' && $cmonths < 2;
         if ($cmonths != $amonths) {
             $msg= $cmonths == 0 ? "Submitted in the last month" :
@@ -68,17 +68,17 @@ while (length($f=shift(@list))) {
             print "\n$msg:\n$head\n";
             $amonths= $cmonths;
         }
-        printf("%6d %-10.10s %-30.30s %-.31s\n", $f, $s_package,
-               (length($s_keywords) ? $s_keywords.'/' : '').$s_subject,
-               $s_maintainer) || &quit("output undone: $!");
+        printf("%6d %-10.10s %-30.30s %-.31s\n", $f, $data->{package},
+               (length($data->{keywords}) ? $data->{keywords}.'/' : '').$data->{subject},
+               $data->{maintainer}) || &quit("output undone: $!");
     } elsif ($mode eq 'bymaint') {
         &unfilelock;
-        next if length($s_done) || length($s_forwarded);
+        next if length($data->{done}) || length($data->{forwarded});
         $string{$f}=
-            sprintf(" %-10.10s %6d  %-.59s\n", $s_package, $f, $s_subject);
-        $s_maintainer= "(unknown)" if $s_maintainer =~ m/^\(unknown \-\-/;
-        $maintainercnt{$s_maintainer}++;
-        $maintainerlist{$s_maintainer}.= " $f";
+            sprintf(" %-10.10s %6d  %-.59s\n", $data->{package}, $f, $data->{subject});
+        $data->{maintainer}= "(unknown)" if $data->{maintainer} =~ m/^\(unknown \-\-/;
+        $maintainercnt{$data->{maintainer}}++;
+        $maintainerlist{$data->{maintainer}}.= " $f";
     } else {
         &quit("badmode $mode");
     }

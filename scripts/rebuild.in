@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: rebuild.in,v 1.5 2002/11/17 22:45:16 cjwatson Exp $
+# $Id: rebuild.in,v 1.6 2003/05/03 20:01:20 doogie Exp $
 
 # Load modules and set envirnment
 use File::Copy;
@@ -11,23 +11,13 @@ require("$lib_path/errorlib");
 $ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
 
 chdir("$gSpoolDir") || die "chdir spool: $!\n";
+my $data;
 
 sub readreport {
     my $lref = shift;
 	my $path = shift;
 	
-    open(S,"$path/$lref.status") || die "unable to open $path/$lref: $!\n";
-    chop($s_originator= <S>);
-    chop($s_date= <S>);
-    chop($s_subject= <S>);
-    chop($s_msgid= <S>);
-    chop($s_package= <S>);
-    chop($s_keywords= <S>);
-    chop($s_done= <S>);
-    chop($s_forwarded= <S>);
-    chop($s_mergedwith= <S>);
-    chop($s_severity= <S>);
-    close(S);
+    $data = readbug($lref);
     return 1;
 }
 
@@ -53,7 +43,7 @@ if ( $archive eq 'db' )
 	{ 	my $ref = shift @list;
 		print STDERR "$ref considering\n" if $debug;
     	readreport($ref, $path);
-		printf IDXFILE "%s %d %s\n", $s_package, $ref, $s_subject;
+		printf IDXFILE "%s %d %s\n", $data->{package}, $ref, $data->{subject};
     }
 }
 else
@@ -74,7 +64,7 @@ for ($subdir=0; $subdir<100; $subdir++ )
 	{ 	my $ref = shift @list;
 		print STDERR "$ref considering\n" if $debug;
     	readreport($ref, $path);
-		printf IDXFILE "%s %d %s\n", $s_package, $ref, $s_subject;
+		printf IDXFILE "%s %d %s\n", $data->{package}, $ref, $data->{subject};
     }
 }
 

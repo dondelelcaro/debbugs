@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.65 2003/04/24 02:24:55 cjwatson Exp $
+# $Id: process.in,v 1.66 2003/05/03 20:01:20 doogie Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -179,7 +179,7 @@ if ($tryref < 0 && m/^Bug ?\#(\d+)\D/i) {
 
 if ($tryref >= 0) 
 {
-    $bfound= &lockreadbugmerge($tryref);
+    ($bfound, $data)= &lockreadbugmerge($tryref);
     if ($bfound) { 
         $ref= $tryref; 
     } else {
@@ -190,7 +190,7 @@ To: $replyto
 Subject: Unknown problem report $gBug#$tryref ($subject)
 Message-ID: <handler.x.$nn.unknown\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
-References: $header{'message-id'} $s_msgid
+References: $header{'message-id'} $data->{msgid}
 Precedence: bulk
 X-$gProject-PR-Message: error
 
@@ -237,7 +237,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
     $markedby= $header{'from'} eq $replyto ? $replyto :
                "$header{'from'} (reply to $replyto)";
     if ($codeletter eq 'F') {
-        (&appendlog,&finish) if length($s_forwarded);
+        (&appendlog,&finish) if length($data->{forwarded});
         $receivedat= "forwarded\@$gEmailDomain";
         $markaswhat= 'forwarded';
         $set_forwarded= $header{'to'};
@@ -247,7 +247,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	    $generalcc=''; 
         }
     } else {
- 	(&appendlog,&finish) if length($s_done);
+ 	(&appendlog,&finish) if length($data->{done});
         $receivedat= "done\@$gEmailDomain";
         $markaswhat= 'done';
         $set_done= $header{'from'};
@@ -266,7 +266,7 @@ Subject: Message with no $gBug number ignored by $receivedat
          ($subject)
 Message-ID: <header.x.$nn.warnignore\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
-References: $header{'message-id'} $s_msgid
+References: $header{'message-id'} $data->{msgid}
 Precedence: bulk
 X-$gProject-PR-Message: error
 
@@ -311,24 +311,20 @@ END
     if (length($noticeccval)) { $noticecc= "Cc: $noticeccval\n"; }
     if (length($generalcc)) { $noticecc.= "Bcc: $generalcc\n"; }
 
-    @process= ($ref,split(/ /,$s_mergedwith));
+    @process= ($ref,split(/ /,$data->{mergedwith}));
     $orgref= $ref;
 
     for $ref (@process) {
  	if ($ref != $orgref) {
 	    &unfilelock;
-	    &lockreadbug($ref) || die "huh ? $ref from $orgref out of @process";
+	    $data = &lockreadbug($ref)
+		|| die "huh ? $ref from $orgref out of @process";
 	}
-        $s_done= $set_done if defined($set_done);
-        $s_forwarded= $set_forwarded if defined($set_forwarded);
-	my $hash = get_hashname($ref);
-	&overwrite("db-h/$hash/$ref.status",
-       	   "$s_originator\n$s_date\n$s_subject\n$s_msgid\n".
-           "$s_package\n$s_keywords\n$s_done\n$s_forwarded\n$s_mergedwith\n$s_severity\n");
-	&bughook('change',$ref,
-       	   "$s_originator\n$s_date\n$s_subject\n$s_msgid\n".
-           "$s_package\n$s_keywords\n$s_done\n$s_forwarded\n$s_mergedwith\n$s_severity\n");
+        $data->{done}= $set_done if defined($set_done);
+        $data->{forwarded}= $set_forwarded if defined($set_forwarded);
+	writebug($ref, $data);
 
+	my $hash = get_hashname($ref);
         open(O,"db-h/$hash/$ref.report") || &quit("read original report: $!");
         $x= join('',<O>); close(O);
         if ($codeletter eq 'F') {
@@ -336,21 +332,21 @@ END
             &sendmessage(<<END."---------------------------------------\n".join( "\n", @msg ), '');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
-${noticecc}Subject: $gBug#$ref: marked as forwarded ($s_subject)
+${noticecc}Subject: $gBug#$ref: marked as forwarded ($data->{subject})
 Message-ID: <header.$ref.$nn.ackfwdd\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
-References: $header{'message-id'} $s_msgid
+References: $header{'message-id'} $data->{msgid}
 Precedence: bulk
 X-$gProject-PR-Message: forwarded $ref
-X-$gProject-PR-Package: $s_package
-X-$gProject-PR-Keywords: $s_keywords
+X-$gProject-PR-Package: $data->{package}
+X-$gProject-PR-Keywords: $data->{keywords}
 
 Your message dated $header{'date'}
 with message-id $header{'message-id'}
 has caused the $gProject $gBug report #$ref,
-regarding $s_subject
+regarding $data->{subject}
 to be marked as having been forwarded to the upstream software
-author(s) $s_forwarded.
+author(s) $data->{forwarded}.
 
 (NB: If you are a system administrator and have no idea what I am
 talking about this indicates a serious mail system misconfiguration
@@ -366,14 +362,14 @@ END
             &sendmessage(<<END."--------------------------------------\n".$x."---------------------------------------\n".join( "\n", @msg ), '');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
-${noticecc}Subject: $gBug#$ref: marked as done ($s_subject)
+${noticecc}Subject: $gBug#$ref: marked as done ($data->{subject})
 Message-ID: <handler.$ref.$nn.ackdone\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
-References: $header{'message-id'} $s_msgid
+References: $header{'message-id'} $data->{msgid}
 Precedence: bulk
 X-$gProject-PR-Message: closed $ref
-X-$gProject-PR-Package: $s_package
-X-$gProject-PR-Keywords: $s_keywords
+X-$gProject-PR-Package: $data->{package}
+X-$gProject-PR-Keywords: $data->{keywords}
 
 Your message dated $header{'date'}
 with message-id $header{'message-id'}
@@ -392,24 +388,24 @@ $gMaintainer
 (administrator, $gProject $gBugs database)
 
 END
-            &htmllog("Notification","sent",$s_originator, 
+            &htmllog("Notification","sent",$data->{originator}, 
 		"$gBug acknowledged by developer.");
             &sendmessage(<<END.join("\n",@msg),'');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
-To: $s_originator
+To: $data->{originator}
 Subject: $gBug#$ref acknowledged by developer
          ($header{'subject'})
 Message-ID: <handler.$ref.$nn.notifdone\@$gEmailDomain>
-In-Reply-To: $s_msgid
-References: $header{'message-id'} $s_msgid
+In-Reply-To: $data->{msgid}
+References: $header{'message-id'} $data->{msgid}
 X-$gProject-PR-Message: they-closed $ref
-X-$gProject-PR-Package: $s_package
-X-$gProject-PR-Keywords: $s_keywords
+X-$gProject-PR-Package: $data->{package}
+X-$gProject-PR-Keywords: $data->{keywords}
 Reply-To: $ref\@$gEmailDomain
 
 This is an automatic notification regarding your $gBug report
-#$ref: $s_subject,
-which was filed against the $s_package package.
+#$ref: $data->{subject},
+which was filed against the $data->{package} package.
 
 It has been closed by one of the developers, namely
 $markedby.
@@ -438,7 +434,7 @@ Subject: Message with no $gBug number cannot be sent to submitter !
          ($subject)
 Message-ID: <handler.x.$nn.nonumnosub\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
-References: $header{'message-id'} $s_msgid
+References: $header{'message-id'} $data->{msgid}
 Precedence: bulk
 X-$gProject-PR-Message: error
 
@@ -483,7 +479,7 @@ Subject: Message with no Package: tag cannot be processed!
          ($subject)
 Message-ID: <handler.x.$nn.nonumnosub\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
-References: $header{'message-id'} $s_msgid
+References: $header{'message-id'} $data->{msgid}
 Precedence: bulk
 X-$gProject-PR-Message: error
 
@@ -510,54 +506,54 @@ END
 	&appendlog;
 	&finish;
     } else {
-	$s_package= $pheader{'package'}; 
+	$data->{package}= $pheader{'package'}; 
     }
 
-    $s_versions= '';
+    $data->{versions}= '';
     if (defined($pheader{'version'})) {
-        $s_versions = $pheader{'version'};
-        $s_versions =~ s/\s+/ /;
+        $data->{versions} = $pheader{'version'};
+        $data->{versions} =~ s/\s+/ /;
 	# BUG: need to bounce unknown versions back to submitter here
     }
 
-    $s_fixed_versions= '';
+    $data->{fixed_versions}= '';
     if (defined($pheader{'fixed-in-version'})) {
-        $s_fixed_versions = $pheader{'fixed-in-version'};
-        $s_fixed_versions =~ s/\s+/ /;
+        $data->{fixed_versions} = $pheader{'fixed-in-version'};
+        $data->{fixed_versions} =~ s/\s+/ /;
     }
 
-    $s_keywords= '';
+    $data->{keywords}= '';
     if (defined($pheader{'keywords'})) {
-        $s_keywords= $pheader{'keywords'};
+        $data->{keywords}= $pheader{'keywords'};
     } elsif (defined($pheader{'tags'})) {
-        $s_keywords= $pheader{'tags'};
+        $data->{keywords}= $pheader{'tags'};
     }
-    if (length($s_keywords)) {
+    if (length($data->{keywords})) {
         my @kws;
         my %gkws = map { ($_, 1) } @gTags;
-        foreach my $kw (sort split(/[,\s]+/, lc($s_keywords))) {
+        foreach my $kw (sort split(/[,\s]+/, lc($data->{keywords}))) {
             push @kws, $kw if (defined $gkws{$kw});
         }
-        $s_keywords = join(" ", @kws);
+        $data->{keywords} = join(" ", @kws);
     }
-    $s_severity= '';
+    $data->{severity}= '';
     if (defined($pheader{'severity'}) || defined($pheader{'priority'})) {
- 	$s_severity= $pheader{'severity'};
-	$s_severity= $pheader{'priority'} unless ($s_severity);
-	$s_severity =~ s/^\s*(.+)\s*$/$1/;
+ 	$data->{severity}= $pheader{'severity'};
+	$data->{severity}= $pheader{'priority'} unless ($data->{severity});
+	$data->{severity} =~ s/^\s*(.+)\s*$/$1/;
 
-	if (!grep($_ eq $s_severity, @severities, "$gDefaultSeverity")) {
+	if (!grep($_ eq $data->{severity}, @severities, "$gDefaultSeverity")) {
             $brokenness.= <<END;
 
 Your message specified a Severity: in the pseudo-header, but
-the severity value $s_severity was not recognised.
+the severity value $data->{severity} was not recognised.
 The default severity $gDefaultSeverity is being used instead.
 The recognised values are: $gShowSeverities.
 END
 # if we use @gSeverityList array in the above line, perl -c gives:
 # In string, @gSeverityList now must be written as \@gSeverityList at
 #          process line 452, near "$gDefaultSeverity is being used instead.
-            $s_severity= '';
+            $data->{severity}= '';
         }
     }
     &filelock("nextnumber.lock");
@@ -568,14 +564,11 @@ END
     &unfilelock;
     my $hash = get_hashname($ref);
     &overwrite("db-h/$hash/$ref.log",'');
-    &overwrite("db-h/$hash/$ref.status",
-               "$replyto\n$intdate\n$subject\n$header{'message-id'}\n".
-               "$s_package\n$s_keywords\n\n\n\n$s_severity\n$s_versions\n".
-               "$s_fixed_versions\n");
-    &bughook('new',$ref,
-               "$replyto\n$intdate\n$subject\n$header{'message-id'}\n".
-               "$s_package\n$s_keywords\n\n\n\n$s_severity\n$s_versions\n".
-               "$s_fixed_versions\n");
+    $data->{originator} = $replyto;
+    $data->{date} = $intdate;
+    $data->{subject} = $subject;
+    $data->{msgid} = $header{'message-id'};
+    writebug($ref, $data);
     &overwrite("db-h/$hash/$ref.report",
                join("\n",@msg)."\n");
 }
@@ -631,24 +624,24 @@ if (length($resentccval)) {
 }
 
 if ($codeletter eq 'U') {
-    &htmllog("Message", "sent on", $s_originator, "$gBug#$ref.");
-    &sendmessage(<<END,$s_originator,@resentccs);
+    &htmllog("Message", "sent on", $data->{originator}, "$gBug#$ref.");
+    &sendmessage(<<END,$data->{originator},@resentccs);
 Subject: $gBug#$ref: $newsubject
 Reply-To: $replyto, $ref-quiet\@$gEmailDomain
-${orgsender}Resent-To: $s_originator
+${orgsender}Resent-To: $data->{originator}
 ${resentcc}Resent-Date: $tdate
 Resent-Message-ID: <handler.$ref.$nn\@$gEmailDomain>
 Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: report $ref
-X-$gProject-PR-Package: $s_package
-X-$gProject-PR-Keywords: $s_keywords
+X-$gProject-PR-Package: $data->{package}
+X-$gProject-PR-Keywords: $data->{keywords}
 $fwd
 END
 } elsif ($codeletter eq 'B') {
     &htmllog($newref ? "Report" : "Information", "forwarded",
              join(', ',"$gSubmitList\@$gListDomain",@resentccs),
              "<code>$gBug#$ref</code>".
-             (length($s_package)? "; Package <code>".&sani($s_package)."</code>" : '').
+             (length($data->{package})? "; Package <code>".&sani($data->{package})."</code>" : '').
              ".");
     &sendmessage(<<END,"$gSubmitList\@$gListDomain",@resentccs);
 Subject: $gBug#$ref: $newsubject
@@ -659,8 +652,8 @@ ${resentcc}Resent-Date: $tdate
 Resent-Message-ID: <handler.$ref.$nn\@$gEmailDomain>
 Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: report $ref
-X-$gProject-PR-Package: $s_package
-X-$gProject-PR-Keywords: $s_keywords
+X-$gProject-PR-Package: $data->{package}
+X-$gProject-PR-Keywords: $data->{keywords}
 $fwd
 END
 } elsif (@resentccs) {
@@ -670,7 +663,7 @@ END
     &htmllog($newref ? "Report" : "Information", "forwarded",
              $resentccval,
              "<code>$gBug#$ref</code>".
-             (length($s_package)? "; Package <code>".&sani($s_package)."</code>" : '').
+             (length($data->{package})? "; Package <code>".&sani($data->{package})."</code>" : '').
              ".");
     &sendmessage(<<END,@resentccs);
 Subject: $gBug#$ref: $newsubject
@@ -681,8 +674,8 @@ Resent-Date: $tdate
 Resent-Message-ID: <handler.$ref.$nn\@$gEmailDomain>
 Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: report $ref
-X-$gProject-PR-Package: $s_package
-X-$gProject-PR-Keywords: $s_keywords
+X-$gProject-PR-Package: $data->{package}
+X-$gProject-PR-Keywords: $data->{keywords}
 $fwd
 END
 }
@@ -708,8 +701,8 @@ In-Reply-To: $header{'message-id'}
 References: $header{'message-id'}
 Precedence: bulk
 X-$gProject-PR-Message: ack-quiet $ref
-X-$gProject-PR-Package: $s_package
-X-$gProject-PR-Keywords: $s_keywords
+X-$gProject-PR-Package: $data->{package}
+X-$gProject-PR-Keywords: $data->{keywords}
 Reply-To: $ref-quiet\@$gEmailDomain
 
 Thank you for the problem report you have sent regarding $gProject.
@@ -738,8 +731,8 @@ In-Reply-To: $header{'message-id'}
 References: $header{'message-id'}
 Precedence: bulk
 X-$gProject-PR-Message: ack-maintonly $ref
-X-$gProject-PR-Package: $s_package
-X-$gProject-PR-Keywords: $s_keywords
+X-$gProject-PR-Package: $data->{package}
+X-$gProject-PR-Keywords: $data->{keywords}
 Reply-To: $ref-maintonly\@$gEmailDomain
 
 Thank you for the problem report you have sent regarding $gProject.
@@ -765,8 +758,8 @@ In-Reply-To: $header{'message-id'}
 References: $header{'message-id'}
 Precedence: bulk
 X-$gProject-PR-Message: ack $ref
-X-$gProject-PR-Package: $s_package
-X-$gProject-PR-Keywords: $s_keywords
+X-$gProject-PR-Package: $data->{package}
+X-$gProject-PR-Keywords: $data->{keywords}
 Reply-To: $ref\@$gEmailDomain
 
 Thank you for the problem report you have sent regarding $gProject.
@@ -800,8 +793,8 @@ In-Reply-To: $header{'message-id'}
 References: $header{'message-id'}
 Precedence: bulk
 X-$gProject-PR-Message: ack-info-quiet $ref
-X-$gProject-PR-Package: $s_package
-X-$gProject-PR-Keywords: $s_keywords
+X-$gProject-PR-Package: $data->{package}
+X-$gProject-PR-Keywords: $data->{keywords}
 Reply-To: $ref-quiet\@$gEmailDomain
 
 Thank you for the additional information you have supplied regarding
@@ -828,8 +821,8 @@ In-Reply-To: $header{'message-id'}
 References: $header{'message-id'}
 Precedence: bulk
 X-$gProject-PR-Message: ack-info-maintonly $ref
-X-$gProject-PR-Package: $s_package
-X-$gProject-PR-Keywords: $s_keywords
+X-$gProject-PR-Package: $data->{package}
+X-$gProject-PR-Keywords: $data->{keywords}
 Reply-To: $ref-maintonly\@$gEmailDomain
 
 Thank you for the additional information you have supplied regarding
@@ -853,8 +846,8 @@ In-Reply-To: $header{'message-id'}
 References: $header{'message-id'}
 Precedence: bulk
 X-$gProject-PR-Message: ack-info $ref
-X-$gProject-PR-Package: $s_package
-X-$gProject-PR-Keywords: $s_keywords
+X-$gProject-PR-Package: $data->{package}
+X-$gProject-PR-Keywords: $data->{keywords}
 Disabled-Doogie-Reply-To: $ref\@$gEmailDomain
 
 Thank you for the additional information you have supplied regarding
@@ -1001,7 +994,7 @@ sub sendmessage {
 
 sub checkmaintainers {
     return if $maintainerschecked++;
-    return if !length($s_package);
+    return if !length($data->{package});
     open(MAINT,"$gMaintainerFile") || die &quit("maintainers open: $!");
     while (<MAINT>) {
 	m/^\n$/ && next;
@@ -1029,7 +1022,7 @@ sub checkmaintainers {
     }
     close(SOURCES);
     $anymaintfound=0; $anymaintnotfound=0;
-    for $p (split(m/[ \t?,()]+/,$s_package)) {
+    for $p (split(m/[ \t?,()]+/,$data->{package})) {
         $p =~ y/A-Z/a-z/;
 	if (defined $gSubscriptionDomain) {
 	    if (defined($pkgsrc{$p})) {

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.72 2003/03/27 23:29:19 cjwatson Exp $
+# $Id: service.in,v 1.73 2003/05/03 20:01:20 doogie Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -243,29 +243,29 @@ END
 	$ref= $1;
 	if (&setbug) {
 	    &transcript("'close' is deprecated; see http://$gWebDomain/Developer$gHTMLSuffix#closing.\n");
-	    if (length($s_done)) {
+	    if (length($data->{done})) {
 		&transcript("$gBug is already closed, cannot re-close.\n\n");
                 &nochangebug;
             } else {
-                $action= "$gBug closed, send any further explanations to $s_originator";
+                $action= "$gBug closed, send any further explanations to $data->{originator}";
                 do {
-                    &addmaintainers($s_package);
+                    &addmaintainers($data->{package});
 					if ( length( $gDoneList ) > 0 && length( $gListDomain ) >
 					0 ) { &addccaddress("$gDoneList\@$gListDomain"); }
-                    $s_done= $replyto;
+                    $data->{done}= $replyto;
 		    $message= <<END;
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
-To: $s_originator
+To: $data->{originator}
 Subject: $gBug#$ref acknowledged by developer
          ($header{'subject'})
-References: $header{'message-id'} $s_msgid
-In-Reply-To: $s_msgid
+References: $header{'message-id'} $data->{msgid}
+In-Reply-To: $data->{msgid}
 Message-ID: <handler.$ref.$nn.notifdonectrl.$midix\@$gEmailDomain>
 Reply-To: $ref\@$gEmailDomain
 
 This is an automatic notification regarding your $gBug report
-#$ref: $s_subject,
-which was filed against the $s_package package.
+#$ref: $data->{subject},
+which was filed against the $data->{package} package.
 
 It has been marked as closed by one of the developers, namely
 $replyto.
@@ -277,7 +277,7 @@ $gMaintainer
 (administrator, $gProject $gBugs database)
 
 END
-                    &sendmailmessage($message,$s_originator);
+                    &sendmailmessage($message,$data->{originator});
                 } while (&getnextbug);
             }
         }
@@ -286,16 +286,16 @@ END
         $ref= $1; $newpackage= $2;
     	$newpackage =~ y/A-Z/a-z/;
         if (&setbug) {
-            if (length($s_package)) {
-                $action= "$gBug reassigned from package \`$s_package'".
+            if (length($data->{package})) {
+                $action= "$gBug reassigned from package \`$data->{package}'".
                          " to \`$newpackage'.";
             } else {
                 $action= "$gBug assigned to package \`$newpackage'.";
             }
             do {
-                &addmaintainers($s_package);
+                &addmaintainers($data->{package});
                 &addmaintainers($newpackage);
-                $s_package= $newpackage;
+                $data->{package}= $newpackage;
             } while (&getnextbug);
         }
     } elsif (m/^reopen\s+\#?(-?\d+)$/i ? ($noriginator='', 1) :
@@ -305,7 +305,7 @@ END
         $ok++;
         $ref= $1;
         if (&setbug) {
-            if (!length($s_done)) {
+            if (!length($data->{done})) {
                 &transcript("$gBug is already open, cannot reopen.\n\n");
                 &nochangebug;
             } else {
@@ -313,9 +313,9 @@ END
                     $noriginator eq '' ? "$gBug reopened, originator not changed." :
                         "$gBug reopened, originator set to $noriginator.";
                 do {
-                    &addmaintainers($s_package);
-                    $s_originator= $noriginator eq '' ?  $s_originator : $noriginator;
-                    $s_done= '';
+                    &addmaintainers($data->{package});
+                    $data->{originator}= $noriginator eq '' ?  $data->{originator} : $noriginator;
+                    $data->{done}= '';
                 } while (&getnextbug);
             }
         }
@@ -328,13 +328,13 @@ END
         }
         if (&getbug) {
             &foundbug;
-            &addmaintainers($s_package);
-            $oldsubmitter= $s_originator;
-            $s_originator= $newsubmitter;
+            &addmaintainers($data->{package});
+            $oldsubmitter= $data->{originator};
+            $data->{originator}= $newsubmitter;
             $action= "Changed $gBug submitter from $oldsubmitter to $newsubmitter.";
             &savebug;
             &transcript("$action\n");
-            if (length($s_done)) {
+            if (length($data->{done})) {
                 &transcript("(By the way, that $gBug is currently marked as done.)\n");
             }
             &transcript("\n");
@@ -343,13 +343,13 @@ From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $oldsubmitter
 Subject: $gBug#$ref submitter address changed
          ($header{'subject'})
-References: $header{'message-id'} $s_msgid
-In-Reply-To: $s_msgid
+References: $header{'message-id'} $data->{msgid}
+In-Reply-To: $data->{msgid}
 Message-ID: <handler.$ref.$nn.newsubmitter.$midix\@$gEmailDomain>
 Reply-To: $ref\@$gEmailDomain
 
 The submitter address recorded for your $gBug report
-#$ref: $s_subject
+#$ref: $data->{subject}
 has been changed.
 
 The new submitter address for this report is
@@ -371,34 +371,34 @@ END
         $ok++;
         $ref= $1; $whereto= $2;
         if (&setbug) {
-            if (length($s_forwarded)) {
-    $action= "Forwarded-to-address changed from $s_forwarded to $whereto.";
+            if (length($data->{forwarded})) {
+    $action= "Forwarded-to-address changed from $data->{forwarded} to $whereto.";
             } else {
     $action= "Noted your statement that $gBug has been forwarded to $whereto.";
             }
-            if (length($s_done)) {
+            if (length($data->{done})) {
                 $extramessage= "(By the way, this $gBug is currently marked as done.)\n";
             }
             do {
-                &addmaintainers($s_package);
+                &addmaintainers($data->{package});
 		if (length($gFowardList)>0 && length($gListDomain)>0 ) {
 		     &addccaddress("$gFowardList\@$gListDomain"); 
 		}
-                $s_forwarded= $whereto;
+                $data->{forwarded}= $whereto;
             } while (&getnextbug);
         }
     } elsif (m/^notforwarded\s+\#?(-?\d+)$/i) {
         $ok++;
         $ref= $1;
         if (&setbug) {
-            if (!length($s_forwarded)) {
+            if (!length($data->{forwarded})) {
                 &transcript("$gBug is not marked as having been forwarded.\n\n");
                 &nochangebug;
             } else {
-    $action= "Removed annotation that $gBug had been forwarded to $s_forwarded.";
+    $action= "Removed annotation that $gBug had been forwarded to $data->{forwarded}.";
                 do {
-                    &addmaintainers($s_package);
-                    $s_forwarded= '';
+                    &addmaintainers($data->{package});
+                    $data->{forwarded}= '';
                 } while (&getnextbug);
             }
         }
@@ -414,12 +414,12 @@ END
             &transcript("Severity level \`$newseverity' is obsolete. " .
                         "$gObsoleteSeverities{$newseverity}\n\n");
         } elsif (&setbug) {
-            $printseverity= $s_severity;
+            $printseverity= $data->{severity};
             $printseverity= "$gDefaultSeverity" if $printseverity eq '';
 	    $action= "Severity set to \`$newseverity'.";
 	    do {
-                &addmaintainers($s_package);
-                $s_severity= $newseverity;
+                &addmaintainers($data->{package});
+                $data->{severity}= $newseverity;
             } while (&getnextbug);
         }
     } elsif (m/^tags?\s+\#?(-?\d+)\s+(([=+-])\s*)?(\S.*)?$/i) {
@@ -445,10 +445,10 @@ END
  			"Recognized are: ".join(' ', @gTags).".\n\n");
 	}
 	if (&setbug) {
-	    if ($s_keywords eq '') {
+	    if ($data->{keywords} eq '') {
 		&transcript("There were no tags set.\n");
 	    } else {
-		&transcript("Tags were: $s_keywords\n");
+		&transcript("Tags were: $data->{keywords}\n");
 	    }
 	    if ($addsub eq "set") {
 		$action= "Tags set to: " . join(", ", @okaytags);
@@ -458,20 +458,20 @@ END
 		$action= "Tags removed: " . join(", ", @okaytags);
 	    }
 	    do {
-                &addmaintainers($s_package);
-	        $s_keywords = '' if ($addsub eq "set");
+                &addmaintainers($data->{package});
+	        $data->{keywords} = '' if ($addsub eq "set");
 		if ($addsub eq "sub") {
 		    foreach my $t (@badtags) {
-	                $s_keywords = join ' ', grep $_ ne $t, 
-		            split ' ', $s_keywords;
+	                $data->{keywords} = join ' ', grep $_ ne $t, 
+		            split ' ', $data->{keywords};
 		    }
 		}
 	        foreach my $t (@okaytags) {
-	            $s_keywords = join ' ', grep $_ ne $t, 
-			split ' ', $s_keywords;
-	            $s_keywords = "$t $s_keywords" unless($addsub eq "sub");
+	            $data->{keywords} = join ' ', grep $_ ne $t, 
+			split ' ', $data->{keywords};
+	            $data->{keywords} = "$t $data->{keywords}" unless($addsub eq "sub");
 	        }
-		$s_keywords =~ s/\s*$//;
+		$data->{keywords} =~ s/\s*$//;
             } while (&getnextbug);
 	}
     } elsif (m/^retitle\s+\#?(-?\d+)\s+(\S.*\S)\s*$/i) {
@@ -482,12 +482,12 @@ END
 	}
         if (&getbug) {
             &foundbug;
-            &addmaintainers($s_package);
-            $s_subject= $newtitle;
+            &addmaintainers($data->{package});
+            $data->{subject}= $newtitle;
             $action= "Changed $gBug title.";
             &savebug;
             &transcript("$action\n");
-            if (length($s_done)) {
+            if (length($data->{done})) {
                 &transcript("(By the way, that $gBug is currently marked as done.)\n");
             }
             &transcript("\n");
@@ -498,17 +498,17 @@ END
 	$ok++;
 	$ref= $1;
 	if (&setbug) {
-	    if (!length($s_mergedwith)) {
+	    if (!length($data->{mergedwith})) {
 		&transcript("$gBug is not marked as being merged with any others.\n\n");
 		&nochangebug;
 	    } else {
                 $mergelowstate eq 'locked' || die "$mergelowstate ?";
 		$action= "Disconnected #$ref from all other report(s).";
-		@newmergelist= split(/ /,$s_mergedwith);
+		@newmergelist= split(/ /,$data->{mergedwith});
                 $discref= $ref;
                 do {
-                    &addmaintainers($s_package);
-		    $s_mergedwith= ($ref == $discref) ? ''
+                    &addmaintainers($data->{package});
+		    $data->{mergedwith}= ($ref == $discref) ? ''
                         : join(' ',grep($_ ne $ref,@newmergelist));
                 } while (&getnextbug);
 	    }
@@ -525,21 +525,21 @@ END
 	    next if grep($_ eq $ref,@newmergelist);
 	    if (!&getbug) { &notfoundbug; @newmergelist=(); last }
             &foundbug;
-            &transcript("D| adding $ref ($s_mergedwith)\n") if $dl;
+            &transcript("D| adding $ref ($data->{mergedwith})\n") if $dl;
 	    $mismatch= '';
-	    &checkmatch('package','m_package',$s_package);
-	    &checkmatch('forwarded addr','m_forwarded',$s_forwarded);
-	    $s_severity = '$gDefaultSeverity' if $s_severity eq '';
-	    &checkmatch('severity','m_severity',$s_severity);
-	    &checkmatch('done mark','m_done',length($s_done) ? 'done' : 'open');
-	    foreach my $t (split /\s+/, $s_keywords) { $tags{$t} = 1; }
+	    &checkmatch('package','m_package',$data->{package});
+	    &checkmatch('forwarded addr','m_forwarded',$data->{forwarded});
+	    $data->{severity} = '$gDefaultSeverity' if $data->{severity} eq '';
+	    &checkmatch('severity','m_severity',$data->{severity});
+	    &checkmatch('done mark','m_done',length($data->{done}) ? 'done' : 'open');
+	    foreach my $t (split /\s+/, $data->{keywords}) { $tags{$t} = 1; }
 	    if (length($mismatch)) {
 	        &transcript("Mismatch - only $gBugs in same state can be merged:\n".
                             $mismatch."\n");
 		&cancelbug; @newmergelist=(); last;
 	    }
             push(@newmergelist,$ref);
-            push(@tomerge,split(/ /,$s_mergedwith));
+            push(@tomerge,split(/ /,$data->{mergedwith}));
 	    &cancelbug;
 	}
 	if (@newmergelist) {
@@ -547,9 +547,9 @@ END
             $action= "Merged @newmergelist.";
 	    for $ref (@newmergelist) {
 		&getbug || die "huh ?  $gBug $ref disappeared during merge";
-                &addmaintainers($s_package);
-		$s_mergedwith= join(' ',grep($_ ne $ref,@newmergelist));
-		$s_keywords= join(' ', keys %tags);
+                &addmaintainers($data->{package});
+		$data->{mergedwith}= join(' ',grep($_ ne $ref,@newmergelist));
+		$data->{keywords}= join(' ', keys %tags);
 		&savebug;
 	    }
     	    &transcript("$action\n\n");
@@ -564,7 +564,7 @@ END
 
 	$ref = $origref;
 	if (&setbug) {
-	    if (length($s_mergedwith)) {
+	    if (length($data->{mergedwith})) {
 		&transcript("$gBug is marked as being merged with others.\n\n");
 		&nochangebug;
 	    } else {
@@ -592,7 +592,7 @@ END
 	            copy("db-h/$ohash/$origref.log", "db-h/$hash/$ref.log");
 	            copy("db-h/$ohash/$origref.status", "db-h/$hash/$ref.status");
 	            copy("db-h/$ohash/$origref.report", "db-h/$hash/$ref.report");
-	            &bughook('new', $ref, "$s_originator\n$s_date\n$s_subject\n$s_msgid\n$s_package\n$s_keywords\n$s_done\n$s_forwarded\n$s_mergedwith\n$s_severity\n");
+	            &bughook('new', $ref, "$data->{originator}\n$data->{date}\n$data->{subject}\n$data->{msgid}\n$data->{package}\n$data->{keywords}\n$data->{done}\n$data->{forwarded}\n$data->{mergedwith}\n$data->{severity}\n");
 
 		    $ref++;
 		}
@@ -773,7 +773,7 @@ sub setbug {
         &dlex("setbug => 0s");
         return 0;
     }
-    @thisbugmergelist= split(/ /,$s_mergedwith);
+    @thisbugmergelist= split(/ /,$data->{mergedwith});
     if (!@thisbugmergelist) {
         &foundbug;
         $manybugs= 0;
@@ -835,7 +835,7 @@ sub getnextbug {
 #    endmerge
 
 sub notfoundbug { &transcript("$gBug number $ref not found.\n\n"); }
-sub foundbug { &transcript("$gBug#$ref: $s_subject\n"); }
+sub foundbug { &transcript("$gBug#$ref: $data->{subject}\n"); }
 
 sub getmerge {
     &dlen("getmerge");
@@ -856,7 +856,7 @@ sub endmerge {
 sub getbug {
     &dlen("getbug $ref");
     $lowstate eq 'idle' || die "$state ?";
-    if (&lockreadbug($ref)) {
+    if (($data = &lockreadbug($ref))) {
         $sref= $ref;
         $lowstate= "open";
         &dlex("getbug => 1");
@@ -891,37 +891,7 @@ sub savebug {
           "\3\n".
           "\7\n",@{escapelog(@log)},"\n\3\n") || &quit("writing db-h/$hash/$ref.log: $!");
     close(L) || &quit("closing db-h/$hash/$ref.log: $!");
-    open(S,">db-h/$hash/$ref.status.new") || &quit("opening db-h/$hash/$ref.status.new: $!");
-    print(S
-          "$s_originator\n".
-          "$s_date\n".
-          "$s_subject\n".
-          "$s_msgid\n".
-          "$s_package\n".
-          "$s_keywords\n".
-          "$s_done\n".
-          "$s_forwarded\n".
-          "$s_mergedwith\n".
-          "$s_severity\n".
-          "$s_versions\n".
-	  "$s_fixed_versions\n") || &quit("writing db-h/$hash/$ref.status.new: $!");
-    close(S) || &quit("closing db-h/$hash/$ref.status.new: $!");
-    rename("db-h/$hash/$ref.status.new","db-h/$hash/$ref.status") ||
-        &quit("installing new db-h/$hash/$ref.status: $!");
-	&bughook('change',$ref,
-          "$s_originator\n".
-          "$s_date\n".
-          "$s_subject\n".
-          "$s_msgid\n".
-          "$s_package\n".
-          "$s_keywords\n".
-          "$s_done\n".
-          "$s_forwarded\n".
-          "$s_mergedwith\n".
-	  "$s_severity\n".
-	  "$s_versions\n".
-	  "$s_fixed_versions\n");
-    &unfilelock;
+    writebug($ref, $data);
     $lowstate= "idle";
     &dlex("savebug");
 }
