@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: db2html.in,v 1.21 2003/08/30 00:15:15 cjwatson Exp $
+# $Id: db2html.in,v 1.22 2004/04/19 10:03:53 cjwatson Exp $
 # usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
 
 #load the necessary libraries/configuration
@@ -87,13 +87,14 @@ close(MM);
 
 #load all database files
 opendir(D,'db-h') || &quit("opendir db-h: $!");
-@dirs = sort { $a <=> $b } grep(s#^#db-h/#,grep(/^\d+$/,readdir(D)));
+@dirs = grep(s#^#db-h/#,grep(/^\d+$/,readdir(D)));
 closedir(D);
 foreach my $dir (@dirs) {
     opendir(D,$dir);
-    push @files, sort { $a <=> $b } grep(/^-?\d+\.log$/,readdir(D));
+    push @files, grep(/^-?\d+\.log$/,readdir(D));
     closedir(D);
 }
+@files = sort { $a <=> $b } @files;
 
 for $pending (qw(pending done forwarded)) 
 {	for $severity (@showseverities) 

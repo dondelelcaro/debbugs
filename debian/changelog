@@ -19,6 +19,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
       directory (closes: #222118).
     - New standalone SpamAssassin queue runner, spamscan.
     - Allow # prefix on bug numbers in 'merge' command.
+    - Fix some ordering issues in old-style package pages and summaries.
 
   * Adam Heath:
     - Rewrite filtering in cgi's common.pl, to make it completely generic.
