@@ -299,6 +299,7 @@ sub pkgbugsindex {
     while(<I>) { 
         $descstr{ $1 } = 1 if (m/^(\S+)/);
     }
+    close(I);
     return %descstr;
 }
 
