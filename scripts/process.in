@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.20 2000/10/21 18:35:58 joy Exp $
+# $Id: process.in,v 1.21 2000/10/31 13:14:53 joy Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -277,7 +277,6 @@ X-$gProject-PR-Message: forwarded $ref
 
 Your message dated $header{'date'}
 with message-id $header{'message-id'}
-and subject line $subject
 has caused the $gProject $gBug report #$ref,
 regarding $s_subject
 to be marked as having been forwarded to the upstream software
