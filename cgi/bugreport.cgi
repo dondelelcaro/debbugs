@@ -34,7 +34,6 @@ my %status = %{getbugstatus($ref)} or &quit("Couldn't get bug status: $!");
 
 my $indexentry;
 my $descriptivehead;
-my $submitted;
 my $showseverity;
 
 my $tpack;
@@ -60,49 +59,56 @@ if  ($status{severity} eq 'normal') {
 	$showseverity = "Severity: <em>$status{severity}</em>;\n";
 }
 
-$indexentry .= $showseverity;
-$indexentry .= "Package: <A HREF=\"" . pkgurl($status{package}) . "\">"
-	    .htmlsanit($status{package})."</A>;\n";
+$indexentry .= "<p>$showseverity";
+$indexentry .= "Package: <a href=\"" . pkgurl($status{package}) . "\">"
+	    .htmlsanit($status{package})."</a>;\n";
 
 $indexentry .= "Reported by: <a href=\"" . submitterurl($status{originator})
-              . "\">" . htmlsanit($status{originator}) . "</a>";
-$indexentry .= ";\nTags: <strong>"
+              . "\">" . htmlsanit($status{originator}) . "</a>;\n";
+
+my $dummy = strftime "%a, %e %b %Y %T UTC", localtime($status{date});
+$indexentry .= "Date: ".$dummy.";\n<br>";
+
+my @descstates;
+
+push @descstates, "Tags: <strong>"
 		. htmlsanit(join(", ", sort(split(/\s+/, $status{tags}))))
 		. "</strong>"
 			if length($status{tags});
 
 my @merged= split(/ /,$status{mergedwith});
 if (@merged) {
-	my $mseparator= ";\nmerged with ";
+	my $descmerged = 'merged with ';
+	my $mseparator = '';
 	for my $m (@merged) {
-		$indexentry .= $mseparator."<A href=\"" . bugurl($m) . "\">#$m</A>";
+		$descmerged .= $mseparator."<a href=\"" . bugurl($m) . "\">#$m</a>";
 		$mseparator= ",\n";
 	}
+	push @descstates, $descmerged;
 }
-
-my $dummy = strftime "%a, %e %b %Y %T UTC", localtime($status{date});
-$submitted = ";\ndated ".$dummy;
 
 if (length($status{done})) {
-	$indexentry .= ";\n<strong>Done:</strong> ".htmlsanit($status{done});
+	push @descstates, "<strong>Done:</strong> ".htmlsanit($status{done});
 } elsif (length($status{forwarded})) {
-	$indexentry .= ";\n<strong>Forwarded</strong> to ".htmlsanit($status{forwarded});
+	push @descstates, "<strong>Forwarded</strong> to ".htmlsanit($status{forwarded});
 }
+
+$indexentry .= join(";\n", @descstates) . ";\n<br>" if @descstates;
 
 my ($short, $tmaint, $tsrc);
 $short = $ref; $short =~ s/^\d+/#$&/;
 $tmaint = defined($maintainer{$tpack}) ? $maintainer{$tpack} : '(unknown)';
 $tsrc = defined($pkgsrc{$tpack}) ? $pkgsrc{$tpack} : '(unknown)';
-$descriptivehead= $indexentry.$submitted.";\nMaintainer for $status{package} is\n".
-            '<A href="http://'.$debbugs::gWebDomain.'/db/ma/l'.&maintencoded($tmaint).'.html">'.htmlsanit($tmaint).'</A>';
-$descriptivehead.= ";\n<br>Source for $status{package} is\n".
-	    '<A href="'.srcurl($tsrc)."\">$tsrc</A>";
-$descriptivehead.= ".";
+$descriptivehead= $indexentry."Maintainer for $status{package} is\n".
+            '<a href="http://'.$debbugs::gWebDomain.'/db/ma/l'.&maintencoded($tmaint).'.html">'.htmlsanit($tmaint).'</a>';
+$descriptivehead.= ";\nSource for $status{package} is\n".
+	    '<a href="'.srcurl($tsrc)."\">$tsrc</a>";
+$descriptivehead.= ".</p>";
 
 my $buglog = buglog($ref);
 open L, "<$buglog" or &quit("open log for $ref: $!");
 if ($buglog !~ m#^\Q$gSpoolDir/db-h/#) {
-    $descriptivehead .= "\n<br>Bug is <strong>archived</strong>. No further changes may be made.";
+    $descriptivehead .= "\n<p>Bug is <strong>archived</strong>. No further changes may be made.</p>";
 }
 
 my $log='';
@@ -321,7 +327,7 @@ print "<H1>" .  "$debbugs::gProject $debbugs::gBug report logs - <A HREF=\"mailt
       "<BR>" . htmlsanit($status{subject}) . "</H1>\n";
 
 print "$descriptivehead\n";
-printf "<p><a href=\"%s\">View</a> this report as an mbox folder.</p>", mboxurl($ref);
+printf "<p>View this report as an <a href=\"%s\">mbox folder</a>.</p>", mboxurl($ref);
 print "<HR>";
 print "$log";
 print $tail_html;

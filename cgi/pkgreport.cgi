@@ -206,7 +206,7 @@ if (defined $pkg || defined $src) {
 	}
     }
     print "<p>If you find a bug not listed here, please\n";
-    printf "<a href=\"%s\">report</a> it.</p>\n",
+    printf "<a href=\"%s\">report it</a>.</p>\n",
 	   urlsanit("http://${debbugs::gWebDomain}/Reporting.html");
 } elsif (defined $maint || defined $maintenc) {
     print "<p>Note that maintainers may use different Maintainer fields for\n";
