@@ -26,9 +26,7 @@ other documents for details.
 <p>You need to put a pseudo-header at the start of the body of the
 message, with the <code>Package:</code> and <code>Version:</code>
 lines giving the name and version of the package which has the $gBug.
-(The pseudo-header fields should start at the very start of their lines.
-The $gBug system does not currently understand MIME or PGP mail properly
-and may fail to recognise the pseudo-headers in such mail.)
+(The pseudo-header fields should start at the very start of their lines.)
 
 $gHTMLFindPackage
 
