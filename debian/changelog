@@ -1,12 +1,32 @@
 debbugs (2.3-2) unstable; urgency=low
 
   * Tweeks to the [pkg|bug]report.cgi scripts
-  * Merged README and README.Debian
+  * Merged README and README.Debian (not quite yet)
   * Sundry of patchs from netgod.. see list archives for details :)
-    (#36147, #39540, #39063)
+     + a bug report that's already been closed, it seems, #36147
+     + the send|get command will accept two digits, closes: #39063
+     + fixed reference to Debian in the copyright, closes: #39540
   * Provided a CNAME in control@ as well as submit@ for severity
+  * mailsummary mails $gSummaryList@$gListDomain now, closes: #36181.
+  * Ray's fixes are now included, one way or another, closes: #37210.
+    A bug's severity is set to default one before trying to merge it,
+    which fixes #47026 filed against bugs.debian.org, and closes: #50106.
+  * The ACKs now clearly says which addresses should be mailed,
+    closes: #48610.
+  * Fixed how /usr/lib/debbugs is prepended to $PATH, closes: #63216.
+  * The $gHTMLSeverityDesc variable is now properly terminated,
+    closes: #67702.
+  * Policy 3.2.1 compliance, includes Build-Depends: debhelper, which
+    closes: #70356.
+  * Doesn't install the Maintainers and pseudo-packages.description files
+    in the /etc/debbugs directory, it instead copies it from templates if
+    they don't exist, closes: #70749, #37120.
+  * A `priority' command now handles severities, closes: #45818.
+  * Fixes and additions to scripts by Adam Heath.
+  * Fixes and several new features in the CGI scripts by Anthony Towns.
+  * Small fixes and updates to scripts, build system and docs by Josip Rodin.
 
- -- Darren Benham <gecko@debian.org>  Tue, 24 Oct 1999 23:16:14 -0700
+ -- Darren Benham <gecko@debian.org>  Fri,  6 Oct 2000 18:53:14 +0200
 
 debbugs (2.3-1) unstable; urgency=low
 
