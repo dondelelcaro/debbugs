@@ -65,6 +65,7 @@ debbugs (2.4) experimental; urgency=low
   * The autoconfig thing in the description is gone, closes: #124537.
   * Fix viewing archived bugs by source package, closes: #121082, #146484.
     [Colin]
+  * Depends: libmailtools-perl rather than mailtools, closes: #113028.
   * Various other things, not worth mentioning here.
 
  -- Josip Rodin <jrodin@jagor.srce.hr>  UNRELEASED
