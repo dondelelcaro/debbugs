@@ -1,45 +1,53 @@
-MTA for Debbugs
-===============
+Setting up MTAs for Debbugs
+===========================
 
 Config
 ------
-Be sure to set the $gMailer variable correctly in /etc/debbugs/config.  The
-options are (all lower case) exim, qmail and sendmail.
+Be sure to set the $gMailer variable correctly in /etc/debbugs/config.
+The options are (all lower case) exim, qmail and sendmail.
 
 Exim
 ----
-I've seen two lines in Exim used.  If the machine is dedicated and all
-email goes to the debbugs script:
-(in the transport section)
+I've seen two types of setting up Exim used.
+
+ 1) If the machine is dedicated and all e-mail goes to the debbugs script,
+    add this in the transport section:
+
 debbugs_pipe:
   driver = pipe
-  user={some UID root is very unsafe and unsecure here}
-  group={some GID either uid or gid needs write access}
+  user = <some non-root user>
+  group = <some non-root group>
   command = /usr/lib/debbugs/receive
   return_output
 
-(and AT THE TOP of the directors)
+    Do not use root user/group, it is very unsafe. You could even add a new
+    (locked) account "debbugs", and use that. Either user or group needs
+    write access.
+
+    And AT THE TOP of the directors section, add this:
+
 debbugs:
   driver = smartuser
   transport = debbugs_pipe
+  local_parts = submit:bugs:maintonly:quiet:forwarded:done:close:request:submitter:control:^\\d+
 
-If the domain is a virtual host on a machine that needs it, there are many
-ways of handling it.  I think the neatest was:
+ 2) If the domain is a virtual host on a machine that needs it, there are
+    many ways of handling it.  I think the neatest was:
 
 debbugs:
   driver = aliasfile
-  domains={domain name eg: bugs.debian.org}
-  file=/usr/lib/debbugs/receive
-  user={some UID}
-  group={some GID}
-  current_directory=/var/lib/debbugs/spool
-  home_directory=/var/lib/debbugs/spool
+  domains = <domain name>
+  file = /usr/lib/debbugs/receive
+  user = <some user>
+  group = <some group>
+  current_directory = /var/lib/debbugs/spool
+  home_directory = /var/lib/debbugs/spool
 
 Qmail
 -----
-        
-Here's my (tv@debian.org) suggestion for safe & secure
-installation under qmail:
+From Tommi Virtanen (tv@debian.org):
+
+Here's my suggestion for safe & secure installation under qmail:
         
 Create a separate user for the debbugs system.
 	# adduser --system --group --home /home/misc/debbugs debbugs
@@ -124,7 +132,7 @@ restart sendmail with the new configuration. Your system should now
 be up and running. Congratulations!
 
 Postfix
---------
+-------
 It seems Bdale isn't around currently, so I'll just mail this
 here directly. This is a short description of how to get debbugs
 working with postfix. If someone can verify this and give me some
@@ -140,7 +148,7 @@ DNS setup: point the MX to the machine running debbugs:
 In /etc/postfix/master.cf enable the transport maps by inserting the
 following line:
 
-	transport_maps =3D hash:/etc/postfix/transport
+	transport_maps = hash:/etc/postfix/transport
 
 Now create /etc/postfix/transport and insert:
 
@@ -156,7 +164,7 @@ Now we need to teach postfix what the debbugs transport agent is. Edit
 /etc/postfix/master.cf and add:
 
 	debbugs   unix  -       n       n       -       -       pipe
-		flags=3DF user=3Ddebbugs argv=3D/usr/lib/debbugs/receive $recipient
+		flags=F user=debbugs argv=/usr/lib/debbugs/receive $recipient
 
 This assumes that you are running debbugs with uid debbugs (the package
 doesn't do that by default, but I generally chown /var/lib/debbugs/*
