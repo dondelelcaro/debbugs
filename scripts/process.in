@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.59 2003/01/28 23:52:08 cjwatson Exp $
+# $Id: process.in,v 1.60 2003/03/25 20:13:11 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -97,8 +97,7 @@ if ($entity and $entity->head->tags) {
 for my $hdr (@headerlines) {
     $_ = $hdr;
     s/\n\s/ /g;
-    &quit("looping detected")
-	if m/^x-loop: (\S+)$/i && $1 eq "$gMaintainerEmail";
+    &finish if m/^x-loop: (\S+)$/i && $1 eq "$gMaintainerEmail";
     my $ins = !m/^subject:/i && !m/^reply-to:/i && !m/^return-path:/i
            && !m/^From / && !m/^X-Debbugs-CC:/i && !m/^received:/i;
     $fwd .= $hdr."\n" if $ins;
