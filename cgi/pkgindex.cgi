@@ -80,7 +80,7 @@ if ($indexon eq "pkg") {
 my $result = "<ul>\n";
 foreach my $x (sort keys %count) {
   $result .= sprintf('<li><a href="pkgreport.cgi?%s=%s%s">%s</a> %d bugs</li>',
-		     $indexon, $x, ($archive ? "archive=yes" : ""), $x,
+		     $indexon, $x, ($archive ? "&archive=yes" : ""), $x,
                      $count{$x});
   $result .= "\n";
 }
