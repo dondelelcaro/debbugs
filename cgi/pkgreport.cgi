@@ -110,13 +110,21 @@ my $title;
 my @bugs;
 if (defined $pkg) {
   $title = "package $pkg";
+  my @pkgs = split /,/, $pkg;
   @bugs = @{getbugs(sub {my %d=@_;
-                         return grep($pkg eq $_, splitpackages($d{"pkg"}))
-                        }, 'package', $pkg)};
+                         foreach my $try (splitpackages($d{"pkg"})) {
+                           return 1 if grep($try eq $_, @pkgs);
+                         }
+                         return 0;
+                        }, 'package', @pkgs)};
 } elsif (defined $src) {
   $title = "source $src";
-  my @pkgs = getsrcpkgs($src);
-  push @pkgs, $src if ( !grep(/^\Q$src\E$/, @pkgs) );
+  my @pkgs = ();
+  my @srcs = split /,/, $src;
+  foreach my $try (@srcs) {
+    push @pkgs, getsrcpkgs($try);
+    push @pkgs, $try if ( !grep(/^\Q$try\E$/, @pkgs) );
+  }
   @bugs = @{getbugs(sub {my %d=@_;
                          foreach my $try (splitpackages($d{"pkg"})) {
                            return 1 if grep($try eq $_, @pkgs);
@@ -135,10 +143,13 @@ if (defined $pkg) {
                            return 0;
                           })};
   } else {
+    my @maints = split /,/, $maint;
     my @pkgs = ();
-    foreach my $p (keys %maintainers) {
-      my @me = getparsedaddrs($maintainers{$p});
-      push @pkgs, $p if grep { $_->address eq $maint } @me;
+    foreach my $try (@maints) {
+      foreach my $p (keys %maintainers) {
+        my @me = getparsedaddrs($maintainers{$p});
+        push @pkgs, $p if grep { $_->address eq $try } @me;
+      }
     }
     @bugs = @{getbugs(sub {my %d=@_; my $me; 
                            foreach my $try (splitpackages($d{"pkg"})) {
@@ -162,27 +173,32 @@ if (defined $pkg) {
                         })};
 } elsif (defined $submitter) {
   $title = "submitter $submitter";
+  my @submitters = split /,/, $submitter;
   @bugs = @{getbugs(sub {my %d=@_; my $se; 
 		       ($se = $d{"submitter"} || "") =~ s/\s*\(.*\)\s*//;
 		       $se = $1 if ($se =~ m/<(.*)>/);
-		       return $se eq $submitter;
-		     }, 'submitter-email', $submitter)};
+		       return 1 if grep($se eq $_, @submitters);
+		     }, 'submitter-email', @submitters)};
 } elsif (defined($severity) && defined($status)) {
   $title = "$status $severity bugs";
+  my @severities = split /,/, $severity;
+  my @statuses = split /,/, $status;
   @bugs = @{getbugs(sub {my %d=@_;
-		       return ($d{"severity"} eq $severity) 
-			 && ($d{"status"} eq $status);
+		       return (grep($d{"severity"} eq $_, @severities))
+			 && (grep($d{"status"} eq $_, @statuses));
 		     })};
 } elsif (defined($severity)) {
   $title = "$severity bugs";
+  my @severities = split /,/, $severity;
   @bugs = @{getbugs(sub {my %d=@_;
-		       return ($d{"severity"} eq $severity);
-		     }, 'severity', $severity)};
+		       return (grep($d{"severity"} eq $_, @severities));
+		     }, 'severity', @severities)};
 } elsif (defined($tag)) {
   $title = "bugs tagged $tag";
+  my @tags = split /,/, $tag;
   @bugs = @{getbugs(sub {my %d = @_;
                          my %tags = map { $_ => 1 } split ' ', $d{"tags"};
-                         return exists $tags{$tag};
+                         return grep(exists $tags{$_}, @tags);
                         })};
 }
 
