@@ -17,12 +17,17 @@ nice(5);
 my %param = readparse();
 
 my $indexon = $param{'indexon'} || 'pkg';
-if ($indexon !~ m/^(pkg|maint|submitter)/) {
+if ($indexon !~ m/^(pkg|maint|submitter)$/) {
     quit("You have to choose something to index on");
 }
 
 my $repeatmerged = ($param{'repeatmerged'} || "yes") eq "yes";
 my $archive = ($param{'archive'} || "no") eq "yes";
+my $sortby = $param{'sortby'} || 'alpha';
+if ($sortby !~ m/^(alpha|count)$/) {
+    quit("Don't know how to sort like that");
+}
+
 #my $include = $param{'include'} || "";
 #my $exclude = $param{'exclude'} || "";
 
@@ -104,7 +109,13 @@ if ($indexon eq "pkg") {
 }
 
 my $result = "<ul>\n";
-foreach my $x (sort { $sortkey{$a} cmp $sortkey{$b} } keys %count) {
+my @orderedentries;
+if ($sortby eq "count") {
+  @orderedentries = sort { $count{$a} <=> $count{$b} } keys %count;
+} else { # sortby alpha
+  @orderedentries = sort { $sortkey{$a} cmp $sortkey{$b} } keys %count;
+}
+foreach my $x (@orderedentries) {
   $result .= "<li>" . $htmldescrip{$x} . " has $count{$x} " .
             ($count{$x} == 1 ? "bug" : "bugs") . "</li>\n";
 }
