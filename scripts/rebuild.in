@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
-# $Id: rebuild.in,v 1.7 2003/05/24 22:34:16 cjwatson Exp $
+# $Id: rebuild.in,v 1.8 2003/05/25 12:38:58 cjwatson Exp $
 
-# Load modules and set envirnment
+# Load modules and set environment
 use File::Copy;
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
@@ -16,7 +16,7 @@ my $data;
 sub readreport {
     my $lref = shift;
     my $path = shift;
-	
+
     $data = readbug($lref);
     return 1;
 }
@@ -29,10 +29,11 @@ defined($startdate= time) || &quit("failed to get time: $!");
 $archive= shift(@ARGV);
 open IDXFILE, "> index.$archive" or &quit( "trying to reset index file: $!" );
 
-
-if ( $archive eq 'db' )
+#get list of bugs (ie, status files)
+for ($subdir=0; $subdir<100; $subdir++ )
 {
-    opendir(DIR,'db') || next; 
+    my $path = sprintf( "$archive/%.2d", $subdir );
+    opendir(DIR,$path) || next; 
     @list= grep(m/^\d+\.status$/,readdir(DIR));
     closedir DIR;
     grep(s/\.status$//,@list);
@@ -47,26 +48,5 @@ if ( $archive eq 'db' )
 	printf IDXFILE "%s %d %s\n", $data->{package}, $ref, $data->{subject};
     }
 }
-else
-{
-    #get list of bugs (ie, status files)
-    for ($subdir=0; $subdir<100; $subdir++ )
-    {
-	my $path = sprintf( "$archive/%.2d", $subdir );
-	opendir(DIR,$path) || next; 
-	@list= grep(m/^\d+\.status$/,readdir(DIR));
-	closedir DIR;
-	grep(s/\.status$//,@list);
-	@list= sort { $a <=> $b } @list;
 
-	#process each bug (ie, status file)
-	while ( defined( $list[0] )) 
-	{
-	    my $ref = shift @list;
-	    print STDERR "$ref considering\n" if $debug;
-	    readreport($ref, $path);
-	    printf IDXFILE "%s %d %s\n", $data->{package}, $ref, $data->{subject};
-	}
-    }
-}
 close IDXFILE;
