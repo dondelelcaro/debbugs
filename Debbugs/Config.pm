@@ -10,12 +10,12 @@ BEGIN
     $VERSION     = 1.00;
 
     @ISA         = qw(Exporter);
-    @EXPORT      = qw(%Globals %Strong %Severity );
+    @EXPORT      = qw(%Globals %GTags %Strong %Severity );
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
 
     # your exported package globals go here,
     # as well as any optionally exported functions
-    @EXPORT_OK   = qw(%Globals %Severity %Strong &ParseConfigFile &ParseXMLConfigFile);
+    @EXPORT_OK   = qw(%Globals %GTags %Severity %Strong &ParseConfigFile &ParseXMLConfigFile);
 }
 
 use vars      @EXPORT_OK;
@@ -26,6 +26,7 @@ use Debbugs::Email;
 %Severity = ();
 %Strong = ();
 $Severity{ 'Text' } = ();
+%GTags = ();
 %Globals = (	"debug" => 0,
 		"verbose" => 0,
 		"quiet" => 0,
@@ -85,27 +86,26 @@ my %ConfigMap = (
 		"Normal Severity" => "normal-severity",
 	);
 
-my %GTagMap = (
-		"Owner Email" => "OWNER_EMAIL",
-		"Owner Name" => "OWNER_NAME",
-		"Long Name" => "LONG_NAME",
-		"Short Name" => "SHORT_NAME",
-		"Email Domain" => "EMAIL_DOMAIN",
-		"List Domain" => "LIST_DOMAIN",
-		"Web Domain" => "WEB_DOMAIN",
-		"CGI Domain" => "CGI_DOMAIN",
-		"Submit List" => "SUBMIT_LIST",
-		"Maint List" => "MAINT_LIST",
-		"Quiet List" => "QUIET_LIST",
-		"Forwarded List" => "FORWARDED_LIST",
-		"Done List" => "DONE_LIST",
-		"Request List" => "REQUEST_LIST",
-		"Submitter List" => "SUBMITTER_LIST",
-		"Control List" => "CONTROL_LIST",
-		"Summary List" => "SUMMARY_LIST",
-		"Mirror List" => "MIRROR_LIST",
-		"Mirrors" => "MIRRORS",
-);
+my %GTagsMap = ( 
+		"email-domain" => "EMAIL_DOMAIN",
+		"list-domain" => "LIST_DOMAIN",
+		"web-domain" => "WEB_DOMAIN",
+		"cgi-domain" => "CGI_DOMAIN",
+		"project-short" => "SHORT_NAME",
+		"project-long" => "LONG_NAME",
+		"owner-name" => "OWNER_NAME",
+		"owner-email" => "OWNER_EMAIL",
+		"submit-list" => "SUBMIT_LIST",
+		"quiet-list" => "QUIET_LIST",
+		"forwarded-list" => "FORWARDED_LIST",
+		"done-list" => "DONE_LIST",
+		"request-list" => "REQUEST_LIST",
+		"submitter-list" => "SUBMITTER_LIST",
+		"control-list" => "CONTROL_LIST",
+		"summary-list" => "SUMMARY_LIST",
+		"mirror-list" => "MIRROR_LIST",
+		"mirrors" => "MIRRORS"
+	);
 
 sub strip
 {   my $string = $_[0];
@@ -167,12 +167,13 @@ sub ParseConfigFile
 		my $map = $ConfigMap{$key};
 		if(defined($map)) {
 		    $Globals{ $map } = $value;
-		    print "$key = '$value'\n" if $Globals{ 'debug' } > 1;
-		    my $tagmap = $GTagMap{$key};
-		    if(defined($tagmap)) {
-			$GTags{ $tagmap } = $value;
-			print "GTAG_$tagmap = $value from $key\n" if $Globals{ 'debug' } > 1;
+		    print "$key = '$value'" if $Globals{ 'debug' } > 1;
+		    my $gtag = $GTagsMap{ $map };
+		    if(defined($gtag)) {
+			$GTags{ $gtag } = $value;
+			print "GTag = '$gtag'" if $Globals{ 'debug' } > 1;
 		    }
+		    print "\n" if $Globals{ 'debug' } > 1;
 		    next;
 		} else {
 		    print "$key\n";
