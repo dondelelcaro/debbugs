@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.8 1999/12/01 18:04:01 gecko Exp $
+# $Id: text.in,v 1.9 2000/10/06 21:05:20 joy Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -134,7 +134,7 @@ $gHTMLTail = "<HR><ADDRESS>$gMaintainer /
  <!--timestamp-->
  SUBSTITUTE_DTIME
  <!--timestamp-->
- (<A HREF=\"http://$gWebDomain/ix/zstamp.html\">timestamp page</A> available).
+ (<A HREF=\"http://$gWebDomain/db/ix/zstamp.html\">timestamp page</A> available).
 	  
  <P>
  Debian $gBug tracking system<BR>
@@ -142,16 +142,16 @@ $gHTMLTail = "<HR><ADDRESS>$gMaintainer /
  1997 nCipher Corporation Ltd,
  1994-7 Ian Jackson,
  1995 Steven Brenner.<BR>
- <A HREF=\"http://www.chiark.greenend.org.uk/~ian/debbugs/\">
+ <A HREF=\"http://www.benham.net/debbugs/\">
  Available under the GPL.</A>
  </ADDRESS>
  </BODY>
  </HTML>";
 
 ############################################################################
-# Message on when reports are purged.  28 days is hardcoded.
+# Message on when reports are purged.
 ############################################################################
-$gHTMLExpireNote = "(Closed $gBugs are cleaned out 28 days after the last related message is received.)";
+$gHTMLExpireNote = "(Closed $gBugs are cleaned out $gRemoveAge days after the last related message is received.)";
 
 ############################################################################
 # Makeup of the stamp page
@@ -189,7 +189,7 @@ $gFullIndex = "<HTML><HEAD><TITLE>$gProject $gBugs - full index</TITLE>
 
 	This index gives access to $gBugs sent to <CODE>submit\@$gEmailDomain</CODE>
 	but not yet marked as done, and to $gBugs marked as done but not yet purged
-	from the database (this happens 28 days after the last message relating to
+	from the database (this happens $gRemoveAge days after the last message relating to
 	the report).
 	<P>
 	For other kinds of indices or for other information about $gProject and
@@ -257,6 +257,8 @@ $gSummaryIndex = "<HTML><HEAD><TITLE>$gProject $gBug report logs - summary index
 	For other kinds of indices or for other information about $gProject and
 	the $gBug system, see <A HREF=\"../../\">$gBug system top-level contents WWW
 	page</A>.
+
+	<P>The * column lists the first letter of the severity of the $gBug.
 
 
 	";
