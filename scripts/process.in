@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.75 2003/07/16 18:13:26 cjwatson Exp $
+# $Id: process.in,v 1.76 2003/07/18 14:41:11 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -871,7 +871,6 @@ Precedence: bulk
 X-$gProject-PR-Message: ack-info $ref
 X-$gProject-PR-Package: $data->{package}
 X-$gProject-PR-Keywords: $data->{keywords}
-Disabled-Doogie-Reply-To: $ref\@$gEmailDomain
 
 Thank you for the additional information you have supplied regarding
 this problem report.  It has been forwarded to the package maintainer(s)
@@ -886,6 +885,9 @@ $brokenness
 $gMaintainer
 (administrator, $gProject $gBugs database)
 END
+# Reply-To: in previous ack disabled by doogie due to mail loops.
+# Are these still a concern?
+# Reply-To: $ref\@$gEmailDomain
     }
 }
 
