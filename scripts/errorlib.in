@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.32 2003/06/23 11:23:35 cjwatson Exp $
+# $Id: errorlib.in,v 1.33 2003/08/06 18:45:41 cjwatson Exp $
 
 use Mail::Address;
 
@@ -101,46 +101,39 @@ sub lockreadbug {
     return $data;
 }
 
+sub makestatus {
+    my $data = shift;
+    my $contents = 
+          "$data->{originator}\n".
+          "$data->{date}\n".
+          "$data->{subject}\n".
+          "$data->{msgid}\n".
+          "$data->{package}\n".
+          "$data->{keywords}\n".
+          "$data->{done}\n".
+          "$data->{forwarded}\n".
+          "$data->{mergedwith}\n".
+          "$data->{severity}\n".
+          "$data->{versions}\n".
+          "$data->{fixed_versions}\n";
+    return $contents;
+}
+
 sub writebug {
     local ($ref, $data, $location) = @_;
     my $change;
     my $status = getbugcomponent($ref, 'status', $location);
     &quit("can't find location for $ref") unless defined $status;
     open(S,"> $status.new") || &quit("opening $status.new: $!");
-    print(S
-          "$data->{originator}\n".
-          "$data->{date}\n".
-          "$data->{subject}\n".
-          "$data->{msgid}\n".
-          "$data->{package}\n".
-          "$data->{keywords}\n".
-          "$data->{done}\n".
-          "$data->{forwarded}\n".
-          "$data->{mergedwith}\n".
-          "$data->{severity}\n".
-          "$data->{versions}\n".
-          "$data->{fixed_versions}\n") || &quit("writing $status.new: $!");
+    print(S makestatus($data)) || &quit("writing $status.new: $!");
     close(S) || &quit("closing $status.new: $!");
     if (-e $status) {
         $change = 'change';
     } else {
         $change = 'new';
     }
-    rename("$status.new",$status) ||
-        &quit("installing new $status: $!");
-        &bughook($change,$ref,
-          "$data->{originator}\n".
-          "$data->{date}\n".
-          "$data->{subject}\n".
-          "$data->{msgid}\n".
-          "$data->{package}\n".
-          "$data->{keywords}\n".
-          "$data->{done}\n".
-          "$data->{forwarded}\n".
-          "$data->{mergedwith}\n".
-          "$data->{severity}\n".
-          "$data->{versions}\n".
-          "$data->{fixed_versions}\n");
+    rename("$status.new",$status) || &quit("installing new $status: $!");
+    &bughook($change,$ref,$data);
 }
 
 sub unlockwritebug {
@@ -263,25 +256,23 @@ sub bughook_archive {
 }	
 
 sub bughook {
-	my ( $type, $ref ) = ( shift, shift );
+	my ( $type, $ref, $data ) = @_;
 	&filelock("debbugs.trace.lock");
 
-	&appendfile("debbugs.trace","$type $ref\n",@_);
-
-	my @stuff=split /\n/, "$_[0]\n\n\n\n\n\n\n";
+	&appendfile("debbugs.trace","$type $ref\n",makestatus($data));
 
 	my $whendone = "open";
 	my $severity = $gDefaultSeverity;
-	(my $pkglist = $stuff[4]) =~ s/[,\s]+/,/g;
+	(my $pkglist = $data->{package}) =~ s/[,\s]+/,/g;
 	$pkglist =~ s/^,+//;
 	$pkglist =~ s/,+$//;
-	$whendone = "forwarded" if length $stuff[7];
-	$whendone = "done" if length $stuff[6];
-	$severity = $stuff[9] if length $stuff[9];
+	$whendone = "forwarded" if length $data->{forwarded};
+	$whendone = "done" if length $data->{done};
+	$severity = $data->{severity} if length $data->{severity};
 
 	my $k = sprintf "%s %d %d %s [%s] %s %s\n",
-			$pkglist, $ref, $stuff[1], $whendone, $stuff[0],
-			$severity, $stuff[5];
+			$pkglist, $ref, $data->{date}, $whendone,
+			$data->{originator}, $severity, $data->{keywords};
 
 	update_realtime("$gSpoolDir/index.db.realtime", $ref, $k);
 
