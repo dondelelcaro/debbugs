@@ -1,6 +1,6 @@
 debbugs (2.3-2) unstable; urgency=low
 
-  * Tweeks to the [pkg|bug]report.cgi scripts
+  * Tweaks to the [pkg|bug]report.cgi scripts
   * Merged README and README.Debian (not quite yet)
   * Sundry of patchs from netgod.. see list archives for details :)
      + a bug report that's already been closed, it seems, #36147
