@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: expire.in,v 1.12 2002/11/07 11:42:35 ajt Exp $
+# $Id: expire.in,v 1.13 2002/11/17 21:04:34 cjwatson Exp $
 
 # Load modules and set envirnment
 use File::Copy;
@@ -37,7 +37,7 @@ while (length($ref=shift(@list))) {
     (&unlockreadbugmerge($bfound), next) unless length($s_done);
 	print "$ref read done\n" if $debug;
     @aref= ($ref);
-    if (length($s_mergedwith)) { push(@aref,split/ /,$s_mergedwith); }
+    if (length($s_mergedwith)) { push(@aref,split / /,$s_mergedwith); }
 	print "$ref aref @aref\n" if $debug;
     $oktoremove= 1;
     for $mref (@aref) {
