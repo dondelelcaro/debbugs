@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.28 2000/11/03 16:37:52 joy Exp $
+# $Id: service.in,v 1.29 2000/11/08 18:07:11 joy Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -344,6 +344,9 @@ END
             $printseverity= "$gDefaultSeverity" if $printseverity eq '';
 	    $action= "Severity set to \`$newseverity'.";
 	    do {
+#		if ( &newseverity eq 'fixed' && length( $gDoneList ) > 0 && length( $gListDomain ) > 0 ) {
+#			&addccaddress("$gDoneList\@$gListDomain");
+#		}
                 &addmaintainers($s_package);
                 $s_severity= $newseverity;
             } while (&getnextbug);
