@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.9 2002/10/20 13:21:15 cjwatson Exp $
+# $Id: errorlib.in,v 1.10 2002/10/27 13:40:17 ajt Exp $
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -28,7 +28,8 @@ sub lockreadbugmerge {
 sub lockreadbug {
     local ($lref) = @_;
     &filelock("lock/$lref");
-    if (!open(S,"db/$lref.status")) { &unfilelock; return 0; }
+    my $hash = get_hashname($lref);
+    if (!open(S,"db-h/$hash/$lref.status")) { &unfilelock; return 0; }
     chop($s_originator= <S>);
     chop($s_date= <S>);
     chop($s_subject= <S>);
