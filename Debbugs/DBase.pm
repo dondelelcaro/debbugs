@@ -32,8 +32,10 @@ use FileHandle;
 
 my $LoadedRecord = 0;
 my $OpenedRecord = 0;
+my $OpenedLog = 0;
 my $FileLocked = 0;
 my $FileHandle = new FileHandle;
+my $LogfileHandle = new FileHandle;
 
 sub ParseVersion1Record
 {
@@ -72,7 +74,7 @@ sub ParseVersion2Record
 sub ReadRecord
 {
     my $record = $_[0];
-    print "V: Reading $record\n" if $Globals{ 'verbose' };
+    print "V: Reading status $record\n" if $Globals{ 'verbose' };
     if ( $record ne $LoadedRecord )
     {
 	my @data;
@@ -97,6 +99,7 @@ sub WriteRecord
 {
     my @fields = ( "originator", "date", "subject", "msgid", "package",
 		"keywords", "done", "forwarded", "mergedwith", "severity" );
+    print "V: Writing status $LoadedRecord\n" if $Globals{ 'verbose' };
     seek( $FileHandle, 0, 0 );
     for( my $i = 0; $i < $#fields; $i++ )
     {
@@ -104,29 +107,33 @@ sub WriteRecord
 	{ print $FileHandle $Record{ $fields[$i] } . "\n"; }
 	else { print $FileHandle "\n"; }
     }
-    $LoadedRecord = 0;
 }
 
+sub OpenFile
+{
+    my $prePath = $_[0], my $stub = $_[1], my $postPath = $_[2], my $desc = $_[3];
+    my $path = "/db/".$stub.".status", my $handle = new FileHandle;
+    print "V: Opening $desc $stub\n" if $Globals{ 'verbose' };
+    print "D2: (DBase) $path found as data path\n" if $Globals{ 'debug' } > 1;
+    if( ! -r $Globals{ "work-dir" } . $path ) {
+	my $dir;
+	$path = $prePath.Number2Path($stub).$postPath;
+	$dir = basename($path);
+	if( ! -d $Globals{ "work-dir" } . $dir ) {
+	    print "D1 (DBase) making dir $dir\n" if $Globals{ 'debug' };
+	    mkdir $Globals{ "work-dir" } . $dir, umask();
+	}
+    }
+    open( $handle, $Globals{ "work-dir" } . $path ) 
+	|| &fail( "Unable to open $desc: ".$Globals{ "work-dir" }."$path\n");
+    return $handle;
+}
 sub OpenRecord
 {
     my $record = $_[0];
     if ( $record ne $OpenedRecord )
     {
-	my $path;
-	print "V: Opening $record\n" if $Globals{ 'verbose' };
-	$path = "/db/".$record.".status";
-	print "D2: (DBase) $path found as data path\n" if $Globals{ 'debug' } > 1;
-	if( ! -r $Globals{ "work-dir" } . $path ) {
-	    my $dir;
-	    $path = "/db/".Number2Path($record).".status";
-	    $dir = basename($path);
-	    if( ! -d $dir ) {
-		print "D1 (DBase) making dir $dir\n" if $Globals{ 'debug' };
-		mkdir $dir, umask();
-	    }
-	}
-	open( $FileHandle, $Globals{ "work-dir" } . $path ) 
-	    || &fail( "Unable to open record: ".$Globals{ "work-dir" }."$path\n");
+	$FileHandle = OpenFile("/db/", $record, ".status", "status");
 	flock( $FileHandle, LOCK_EX ) || &fail( "Unable to lock record $record\n" );
 	$OpenedRecord = $record;
     }
@@ -134,11 +141,28 @@ sub OpenRecord
 
 sub CloseRecord
 {
-    print "V: Closing $LoadedRecord\n" if $Globals{ 'verbose' };
+    print "V: Closing status $LoadedRecord\n" if $Globals{ 'verbose' };
     close $FileHandle;
     $OpenedRecord = 0;
 }
 
+sub OpenLogfile
+{
+    my $record = $_[0];
+    if ( $record ne $OpenedLog )
+    {
+	$LogfileHandle = OpenFile("/db/", $record, ".log", "log");
+	seek( $FileHandle, 0, 0 );
+	$OpenedLog = $record;
+    }
+}
+
+sub CloseLogfile
+{
+    print "V: Closing log $OpenedLog\n" if $Globals{ 'verbose' };
+    close $LogfileHandle;
+    $OpenedLog = 0;
+}
 1;
 
 END { }       # module clean-up code here (global destructor)
