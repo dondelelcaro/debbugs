@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.30 2001/07/15 09:46:16 doogie Exp $
+# $Id: process.in,v 1.31 2001/08/16 06:43:21 doogie Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -844,7 +844,7 @@ sub sendmessage {
 		#print DEBUG "mailing child forked again ok $c<\n";
         if (!$c) { # ie, we are the child process
 			#print DEBUG "mailing grandchild<\n";
-            exec '/usr/lib/sendmail','-f'."$gMaintainerEmail",'-odi','-oem','-oi',get_addresses(@recips);
+            exec '/usr/lib/sendmail','-f'."$gMaintainerEmail",'-odq','-oem','-oi',get_addresses(@recips);
 			#print DEBUG "mailing grandchild exec failed<\n";
             die $!;
 			#print DEBUG "mailing grandchild died !?<\n";
