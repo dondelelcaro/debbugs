@@ -684,6 +684,7 @@ sub getbugstatus {
     }
 
     $status{tags} = $status{keywords};
+    my %tags = map { $_ => 1 } split ' ', $status{tags};
 
     $status{"package"} =~ s/\s*$//;
     $status{"package"} = 'unknown' if ($status{"package"} eq '');
@@ -691,8 +692,8 @@ sub getbugstatus {
 
     $status{"pending"} = 'pending';
     $status{"pending"} = 'forwarded'	    if (length($status{"forwarded"}));
-    $status{"pending"} = 'pending-fixed'    if ($status{"tags"} =~ /\bpending\b/);
-    $status{"pending"} = 'fixed'	    if ($status{"tags"} =~ /\bfixed\b/);
+    $status{"pending"} = 'pending-fixed'    if ($tags{pending});
+    $status{"pending"} = 'fixed'	    if ($tags{fixed});
 
     my $version;
     if (defined $common_version) {
