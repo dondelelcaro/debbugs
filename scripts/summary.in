@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: summary.in,v 1.10 2003/08/23 15:12:57 cjwatson Exp $
+# $Id: summary.in,v 1.11 2004/04/17 17:31:04 cjwatson Exp $
 
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
@@ -35,13 +35,14 @@ close(M);
 defined($startdate= time) || &quit("failed to get time: $!");
 
 opendir(DIR,"db-h") || &quit("opendir db-h: $!\n");
-@dirs = sort { $a <=> $b } grep(s,^,db-h/,, grep(m/^\d+$/,readdir(DIR)));
+@dirs = grep(s,^,db-h/,, grep(m/^\d+$/,readdir(DIR)));
 closedir(DIR);
 foreach my $dir (@dirs) {
         opendir(DIR,$dir);
-        push @list, sort { $a <=> $b } grep(s/\.summary$//,grep(m/^\d+\.summary$/,readdir(DIR)));
+        push @list, grep(s/\.status$//,grep(m/^\d+\.status$/,readdir(DIR)));
         closedir(DIR);
 }
+@list = sort { $a <=> $b } @list;
 
 $head= $mode eq 'bymaint'
     ? ' Package     Ref    Subject'
