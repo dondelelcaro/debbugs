@@ -62,11 +62,18 @@ if (defined $pkg) {
 } elsif (defined $maint) {
   my %maintainers = getmaintainers();
   $tag = "maintainer $maint";
+  my @pkgs = ();
+  foreach my $p (keys %maintainers) {
+    my $me = $maintainers{$p};
+    $me =~ s/\s*\(.*\)\s*//;
+    $me = $1 if ($me =~ m/<(.*)>/);
+    push @pkgs, $p if ($me eq $maint);
+  }
   @bugs = getbugs(sub {my %d=@_; my $me; 
 		       ($me = $maintainers{$d{"pkg"}}||"") =~ s/\s*\(.*\)\s*//;
 		       $me = $1 if ($me =~ m/<(.*)>/);
 		       return $me eq $maint;
-		     })
+		     }, 'package', @pkgs);
 } elsif (defined $maintenc) {
   my %maintainers = getmaintainers();
   $tag = "encoded maintainer $maintenc";
