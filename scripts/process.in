@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.18 2000/10/09 00:32:23 ajt Exp $
+# $Id: process.in,v 1.19 2000/10/10 20:10:34 joy Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -452,8 +452,11 @@ END
 Your message specified a Severity: in the pseudo-header, but
 the severity value $s_severity was not recognised.
 The default severity $gDefaultSeverity is being used instead.
-The recognised values are: @gSeverityList.
+The recognised values are: $gShowSeverities.
 END
+# if we use @gSeverityList array in the above line, perl -c gives:
+# In string, @gSeverityList now must be written as \@gSeverityList at
+#          process line 452, near "$gDefaultSeverity is being used instead.
             $s_severity= '';
         }
     }
