@@ -16,6 +16,7 @@ debbugs (2.4.1) UNRELEASED; urgency=low
     - MIME-encoded messages to bugs are displayed in decoded form on the web
       interface (unless the "mime=no" parameter is used), closes: #136114.
     - Add facility to search by tag.
+    - Fix rebuild script and add it to the example crontab, closes: #139696.
   * Adam Heath:
     - Convert all code to use global read/write functions, instead of having
       it duplicated everwhere.

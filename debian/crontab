@@ -1,9 +1,11 @@
 # Example crontab for bugs system.
 MAILTO=owner@bugs.benham
 3,18,33,48 	*	* * *	/usr/lib/debbugs/processall >/dev/null
+7,22,37,52	*	* * *	/usr/lib/debbugs/rebuild db-h
 9,39 		*	* * *	/usr/lib/debbugs/html-control >/dev/null
 22 			7	* * *	touch /var/lib/debbugs/spool/db-h
 23 			7	* * 3	/usr/lib/debbugs/age-1
 24 			7	* * *	/usr/lib/debbugs/expire >/dev/null
+25			8	* * *	/usr/lib/debbugs/rebuild archive
 23 			16	* * 5	/usr/lib/debbugs/mailsummary undone >/dev/null
 23 			16	* * 2	/usr/lib/debbugs/mailsummary bymaint >/dev/null
