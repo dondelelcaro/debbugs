@@ -19,73 +19,119 @@ my %common_include = ();
 my %common_exclude = ();
 my $common_raw_sort = 0;
 my $common_bug_reverse = 0;
-my $common_pending_reverse = 0;
-my $common_severity_reverse = 0;
 
-my @common_pending_include = ();
-my @common_pending_exclude = ();
-my @common_severity_include = ();
-my @common_severity_exclude = ();
+my %common_reverse = (
+    'pending' => 0,
+    'severity' => 0,
+);
 
+sub exact_field_match {
+    my ($field, $values, $status) = @_; 
+    my @values = @$values;
+    my @ret = grep {$_ eq $status->{$field} } @values;
+    $#ret != -1;
+}
+sub contains_field_match {
+    my ($field, $values, $status) = @_; 
+    foreach my $data (@$values) {
+        return 1 if (index($status->{$field}, $data) > -1);
+    }
+    return 0;        
+}
+
+my %field_match = (
+    'subject' => \&contains_field_match,
+    'tags' => sub {
+        my ($field, $values, $status) = @_; 
+	my %values = map {$_=>1} @$values;
+	foreach my $t (split /\s+/, $status->{$field}) {
+            return 1 if (defined $values{$t});
+        }
+        return 0;
+    },
+    'severity' => \&exact_field_match,
+    'pending' => \&exact_field_match,
+    'originator' => \%contains_field_match,
+    'forwarded' => \%contains_field_match,
+    'owner' => \%contains_field_match,
+);
+my @common_grouping = ( 'severity', 'pending' );
+my %common_grouping_order = (
+    'pending' => [ qw( pending forwarded pending-fixed fixed done absent ) ],
+    'severity' => \@debbugs::gSeverityList,
+);
+my %common_headers = (
+    'pending' => {
+	"pending"	=> "outstanding",
+	"pending-fixed"	=> "pending upload",
+	"fixed"		=> "fixed in NMU",
+	"done"		=> "resolved",
+	"forwarded"	=> "forwarded to upstream software authors",
+	"absent"	=> "not applicable to this version",
+    },
+    'severity' => \%debbugs::gSeverityDisplay,
+);
+        
 my $common_version;
 my $common_dist;
 my $common_arch;
 
 my $debug = 0;
 
+sub array_option($) {
+    my ($val) = @_;
+    my @vals;
+    @vals = ( $val ) if (ref($val) eq "" && $val );
+    @vals = ( $$val ) if (ref($val) eq "SCALAR" && $$val );
+    @vals = @{$val} if (ref($val) eq "ARRAY" );
+    return @vals;
+}
+
+sub filter_include_exclude($\%) {
+    my ($val, $filter_map) = @_;
+    my @vals = array_option($val);
+    my @data = map {
+        if (/^([^:]*):(.*)$/) { if ($1 eq 'subj') { ['subject', $2]; } else { [$1, $2] } } else { ['tags', $_] }
+    } split /[\s,]+/, join ',', @vals;
+    foreach my $data (@data) {
+	&quitcgi("Invalid filter key: '$data->[0]'") if (!exists($filter_map->{$data->[0]}));
+        push @{$filter_map->{$data->[0]}}, $data->[1];
+    }
+}
+
+sub filter_option($$\%) {
+    my ($key, $val, $filter_map) = @_;
+    my @vals = array_option($val);
+    foreach $val (@vals) {
+        push @{$filter_map->{$key}}, $val;
+    }
+}
+
 sub set_option {
     my ($opt, $val) = @_;
     if ($opt eq "archive") { $common_archive = $val; }
     if ($opt eq "repeatmerged") { $common_repeatmerged = $val; }
     if ($opt eq "exclude") {
-	my @vals;
-	@vals = ( $val ) if (ref($val) eq "" && $val );
-	@vals = ( $$val ) if (ref($val) eq "SCALAR" && $$val );
-	@vals = @{$val} if (ref($val) eq "ARRAY" );
-	%common_exclude = map {
-	    if (/^([^:]*):(.*)$/) { ($1, $2) } else { ($_, 1) }
-	} split /[\s,]+/, join ',', @vals;
+	filter_include_exclude($val, %common_exclude);
     }
     if ($opt eq "include") {
-	my @vals;
-	@vals = ( $val, ) if (ref($val) eq "" && $val );
-	@vals = ( $$val, ) if (ref($val) eq "SCALAR" && $$val );
-	@vals = @{$val} if (ref($val) eq "ARRAY" );
-	%common_include = map {
-	    if (/^([^:]*):(.*)$/) { ($1, $2) } else { ($_, 1) }
-	} split /[\s,]+/, join ',', @vals;
+	filter_include_exclude($val, %common_include);
     }
     if ($opt eq "raw") { $common_raw_sort = $val; }
     if ($opt eq "bug-rev") { $common_bug_reverse = $val; }
-    if ($opt eq "pend-rev") { $common_pending_reverse = $val; }
-    if ($opt eq "sev-rev") { $common_severity_reverse = $val; }
+    if ($opt eq "pend-rev") { $common_reverse{pending} = $val; }
+    if ($opt eq "sev-rev") { $common_reverse{severity} = $val; }
     if ($opt eq "pend-exc") {
-	my @vals;
-	@vals = ( $val ) if (ref($val) eq "" && $val );
-	@vals = ( $$val ) if (ref($val) eq "SCALAR" && $$val );
-	@vals = @{$val} if (ref($val) eq "ARRAY" );
-	@common_pending_exclude = @vals if (@vals);
+	filter_option('pending', $val, %common_exclude);
     }
     if ($opt eq "pend-inc") {
-	my @vals;
-	@vals = ( $val, ) if (ref($val) eq "" && $val );
-	@vals = ( $$val, ) if (ref($val) eq "SCALAR" && $$val );
-	@vals = @{$val} if (ref($val) eq "ARRAY" );
-	@common_pending_include = @vals if (@vals);
+	filter_option('pending', $val, %common_include);
     }
     if ($opt eq "sev-exc") {
-	my @vals;
-	@vals = ( $val ) if (ref($val) eq "" && $val );
-	@vals = ( $$val ) if (ref($val) eq "SCALAR" && $$val );
-	@vals = @{$val} if (ref($val) eq "ARRAY" );
-	@common_severity_exclude = @vals if (@vals);
+	filter_option('severity', $val, %common_exclude);
     }
     if ($opt eq "sev-inc") {
-	my @vals;
-	@vals = ( $val ) if (ref($val) eq "" && $val );
-	@vals = ( $$val ) if (ref($val) eq "SCALAR" && $$val );
-	@vals = @{$val} if (ref($val) eq "ARRAY" );
-	@common_severity_include = @vals if (@vals);
+	filter_option('severity', $val, %common_include);
     }
     if ($opt eq "version") { $common_version = $val; }
     if ($opt eq "dist") { $common_dist = $val; }
@@ -393,19 +439,35 @@ sub allbugs {
     return @{getbugs(sub { 1 })};
 }
 
+sub bugmatches(\%\%) {
+    my ($hash, $status) = @_;
+    while ((my ($key, $value) = each(%$hash))) {
+	my $sub = $field_match{$key};
+	return 1 if ($sub->($key, $value, $status));
+    }
+    return 0;
+}
+sub bugfilter($%) {
+    my ($bug, %status) = @_;
+    local (%seenmerged);
+    if (%common_include) {
+	return 1 if (!bugmatches(%common_include, %status));
+    }
+    if (%common_exclude) {
+	return 1 if (bugmatches(%common_exclude, %status));
+    }
+    my @merged = sort {$a<=>$b} $bug, split(/ /, $status{mergedwith});
+    return 1 unless ($common_repeatmerged || !$seenmerged{$merged[0]});
+    $seenmerged{$merged[0]} = 1;
+    return 0;
+}
+
 sub htmlizebugs {
     $b = $_[0];
     my @bugs = @$b;
-    my @rawsort;
+    my $anydone = 0;
 
-    my %section = ();
-
-    my %displayshowpending = ("pending", "outstanding",
-			      "pending-fixed", "pending upload",
-			      "fixed", "fixed in NMU",
-                              "done", "resolved",
-                              "forwarded", "forwarded to upstream software authors",
-                              "absent", "not applicable to this version");
+    my @status = ();
 
     if (@bugs == 0) {
         return "<HR><H2>No reports found!</H2></HR>\n";
@@ -420,77 +482,49 @@ sub htmlizebugs {
     foreach my $bug (@bugs) {
 	my %status = %{getbugstatus($bug)};
         next unless %status;
-	if (%common_include) {
-	    my $okay = 0;
-	    foreach my $t (split /\s+/, $status{tags}) {
-		$okay = 1, last if (defined $common_include{$t});
-	    }
-	    if (defined $common_include{subj}) {
-                if (index($status{subject}, $common_include{subj}) > -1) {
-                    $okay = 1;
-                }
-            }
-	    next unless ($okay);
-        }
-	if (%common_exclude) {
-	    my $okay = 1;
-	    foreach my $t (split /\s+/, $status{tags}) {
-		$okay = 0, last if (defined $common_exclude{$t});
-	    }
-	    if (defined $common_exclude{subj}) {
-                if (index($status{subject}, $common_exclude{subj}) > -1) {
-                    $okay = 0;
-                }
-            }
-	    next unless ($okay);
-	}
-	next if @common_pending_include and
-	     not grep { $_ eq $status{pending} } @common_pending_include;
-	next if @common_severity_include and
-	     not grep { $_ eq $status{severity} } @common_severity_include;
-	next if grep { $_ eq $status{pending} } @common_pending_exclude;
-	next if grep { $_ eq $status{severity} } @common_severity_exclude;
-
-	my @merged = sort {$a<=>$b} ($bug, split(/ /, $status{mergedwith}));
-	next unless ($common_repeatmerged || !$seenmerged{$merged[0]});
-	$seenmerged{$merged[0]} = 1;
+	next if bugfilter($bug, %status);
 
 	my $html = sprintf "<li><a href=\"%s\">#%d: %s</a>\n<br>",
 	    bugurl($bug), $bug, htmlsanit($status{subject});
 	$html .= htmlindexentrystatus(\%status) . "\n";
-	$section{$status{pending} . "_" . $status{severity}} .= $html;
-	push @rawsort, $html if $common_raw_sort;
+	$section{join( '_', map( {$status{$_}} @common_grouping ) )} .= $html;
+	$anydone = 1 if $status{pending} eq 'done';
+	push @status, [ $bug, \%status, $html ];
     }
 
     my $result = "";
-    my $anydone = 0;
     if ($common_raw_sort) {
-	$result .= "<UL>\n" . join("", @rawsort ) . "</UL>\n";
+	$result .= "<UL>\n" . join("", map( { $_->[ 2 ] } @status ) ) . "</UL>\n";
     } else {
-	my @pendingList = qw(pending forwarded pending-fixed fixed done absent);
-	@pendingList = reverse @pendingList if $common_pending_reverse;
-#print STDERR join(",",@pendingList)."\n";
-#print STDERR join(",",@common_pending_include).":$#common_pending_include\n";
-    foreach my $pending (@pendingList) {
-	my @severityList = @debbugs::gSeverityList;
-	@severityList = reverse @severityList if $common_severity_reverse;
-#print STDERR join(",",@severityList)."\n";
-
-#        foreach my $severity(@debbugs::gSeverityList) {
-        foreach my $severity(@severityList) {
-            $severity = $debbugs::gDefaultSeverity if ($severity eq '');
-            next unless defined $section{${pending} . "_" . ${severity}};
-            $result .= "<HR><H2>$debbugs::gSeverityDisplay{$severity} - $displayshowpending{$pending}</H2>\n";
-            #$result .= "(A list of <a href=\"http://${debbugs::gWebDomain}/db/si/$pending$severity\">all such bugs</a> is available).\n";
-            #$result .= "(A list of all such bugs used to be available).\n";
-            $result .= "<UL>\n";
-	    $result .= $section{$pending . "_" . $severity}; 
+	my (@order, @headers);
+	for( my $i = 0; $i < @common_grouping; $i++ ) {
+	    my $grouping_name = $common_grouping[ $i ];
+	    my @items = @{ $common_grouping_order{ $grouping_name } };
+	    @items = reverse( @items ) if ( $common_reverse{ $grouping_name } );
+	    my @neworder = ();
+	    my @newheaders = ();
+	    if ( @order ) {
+		foreach my $grouping ( @items ) {
+		    push @neworder, map( { "${_}_$grouping" } @order );
+		    push @newheaders, map( { "$_ - $common_headers{$grouping_name}{$grouping}" } @headers );
+		}
+		@order = @neworder;
+		@headers = @newheaders;
+	    } else {
+		push @order, @items;
+		push @headers, map( { $common_headers{$common_grouping[$i]}{$_} } @items );
+	    }
+	}
+	for ( my $i = 0; $i < @order; $i++ ) {
+	    my $order = $order[ $i ];
+	    next unless defined $section{$order};
+	    $result .= "<HR><H2>$headers[$i]</H2>\n";
+	    $result .= "<UL>\n";
+	    $result .= $section{$order};
 	    $result .= "</UL>\n";
-            $anydone = 1 if ($pending eq "done");
-         }
+	}    
     }
 
-    }
     $result .= $debbugs::gHTMLExpireNote if $gRemoveAge and $anydone;
     return $result;
 }
