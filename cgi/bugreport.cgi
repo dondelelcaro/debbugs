@@ -185,7 +185,7 @@ while(my $line = <L>) {
 							if ($disposition && ( $disposition eq "attachment" || $disposition eq "inline" ) && $_->head->recommended_filename ) {
 								push @attachments, $_;
 								my $file = $_->head->recommended_filename;
-								$downloadHtml .= "Download Attachment: <a href=\"".dlurl($ref,"msg=$xmessage","att=$#attachments","filename=$file")."\">$file</a>\n";
+								$downloadHtml .= "View Attachment: <a href=\"".dlurl($ref,"msg=$xmessage","att=$#attachments","filename=$file")."\">$file</a>\n";
 								if ($msg && $att eq $#attachments) {
 									my $head = $_->head;
 									my $type;
@@ -317,7 +317,7 @@ print "<H1>" .  "$debbugs::gProject $debbugs::gBug report logs - <A HREF=\"mailt
       "<BR>" . htmlsanit($status{subject}) . "</H1>\n";
 
 print "$descriptivehead\n";
-printf "<br><a href=\"%s\">Download as mbox</a>\n", mboxurl($ref);
+printf "<p><a href=\"%s\">View</a> this report as an mbox folder.</p>", mboxurl($ref);
 print "<HR>";
 print "$log";
 print $tail_html;
