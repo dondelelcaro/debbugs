@@ -1,5 +1,5 @@
-#!/usr/bin/perl
-# $Id: service.in,v 1.2 1999/09/02 22:27:29 gecko Exp $
+#!/usr/bin/perl -w
+# $Id: service.in,v 1.3 1999/09/14 02:08:31 gecko Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -70,6 +70,7 @@ $state= 'idle';
 $lowstate= 'idle';
 $mergelowstate= 'idle';
 $midix=0;    
+$extras="";
 
 for ($procline=$i; $procline<=$#msg; $procline++) {
     $state eq 'idle' || "$state ?";
@@ -233,7 +234,7 @@ $replyto.
 
 You should be hearing from them with a substantive response shortly,
 if you have not already done so.  If not, please contact them
-directly, or email DB_SUBMIT_ADDRPQ or myself.
+directly or myself.
 
 $gMaintainer
 (administrator, $gProject $gBugs database)
@@ -776,7 +777,7 @@ sub addccaddress {
 sub addmaintainers {
     # Data structure is:
     #   maintainer email address &c -> assoc of packages -> assoc of bug#'s
-    my $p, $addmaint, $pshow;
+    my ($p, $addmaint, $pshow);
     &ensuremaintainersloaded;
     $anymaintfound=0; $anymaintnotfound=0;
     for $p (split(m/[ \t?,()]+/,$_[0])) {
@@ -794,7 +795,7 @@ print DEBUG "maintainer none >$p<\n";
 }
 
 sub ensuremaintainersloaded {
-    my $a,$b;
+    my ($a,$b);
     return if $maintainersloaded++;
     open(MAINT,"$gMaintainerFile") || die &quit("maintainers open: $!");
     while (<MAINT>) {
