@@ -77,6 +77,20 @@ also the <A href="db/ix/zstamp.html">timestamp page</A>.
 `Not found' means that that package does not exist or does not have
 any outstanding or recently closed $gBug reports.
 
+<h3>Find an archived bug report by reference number</h2>
+<form method="get" action="http://cgi.debian.org/cgi-bin/bugreport.cgi">
+<input type="hidden" name="archive" value="yes">
+<input type="text" size="10" name="bug" value="">
+<input type="submit" value="Fetch">
+</form>
+<h3>Find an archived bug report by package</h2>
+<form method="get" action="http://cgi.debian.org/cgi-bin/pkgarch.cgi">
+<input type="text" size="20" name="pkg" value="">
+<input type="submit" value="Fetch">
+</form>
+<A HREF="http://cgi.debian.org/cgi-bin/pkgarch.cgi">or get a list of
+packages</A>
+
 $gHTMLOtherPages
 
 $gHTMLTail

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.9 1999/10/14 19:56:58 gecko Exp $
+# $Id: process.in,v 1.10 1999/10/25 01:35:04 gecko Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -395,7 +395,6 @@ END
     }
     if (!defined($pheader{'package'}))
 	{ 	&htmllog("Warning","sent",$replyto,"Message not forwarded.");
-		print " sending no package header msg\n";
         &sendmessage(<<END, '');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
@@ -424,11 +423,8 @@ $gMaintainer
 (administrator, $gProject $gBugs database)
 
 END
-	print " append log\n";
 	&appendlog;
-	print " finish\n";
 	&finish;
-	print " done\n";
     } else { $s_package= $pheader{'package'}; }
     if (defined($pheader{'keywords'})) {
         $s_keywords= $pheader{'keywords'};
@@ -797,7 +793,7 @@ sub sendmessage {
 #	close AP;
 
 	#start mailing
-	$msg =~ /^Subject: (.*)$/;
+	$_ = '';
     $SIG{'CHLD'}='chldhandle';
 	#print DEBUG "mailing sigchild set up<\n";
 	$chldexit = 'no';

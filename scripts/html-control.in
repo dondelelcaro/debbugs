@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: html-control.in,v 1.3 1999/09/20 05:40:07 gecko Exp $
+# $Id: html-control.in,v 1.4 1999/10/25 01:35:04 gecko Exp $
 
 use POSIX;
 
@@ -77,15 +77,16 @@ close(MM) or nonawful("close html-data.mail: $!");
 runshell("/usr/lib/debbugs/db2html $args 2>&1 >html-data $gWebDir/db",
          sub { &nonawful; });
 runshell("/usr/lib/debbugs/html-install $gWebDir/db <html-data 2>&1",sub { &quit; });
-runshell("gzip -9 html-data 2>&1",sub { &quit; });
+#runshell("gzip -9 html-data 2>&1",sub { &quit; });
 #runshell("btoa 2>&1 <html-data.gz >>html-data.mail",sub { &quit; });
 #runshell('2>&1 '.join(' ',('/usr/lib/sendmail','-f'."$gMaintainerEmail")).' -oem -oi -t <html-data.mail',
 #         sub { &quit; });
 
 rename("stamp.html.new","stamp.html") or &quit("install new stamp.html: $!");
 
-unlink("html-data.gz") or warn "remove html-data.gz: $!";
-unlink("html-data.mail") or warn "remove html-data.mail: $!";
+unlink("html-data") or warn "remove html-data: $!";
+#unlink("html-data.gz") or warn "remove html-data.gz: $!";
+#unlink("html-data.mail") or warn "remove html-data.mail: $!";
 unlink("stamp.html.run") || $!==&ENOENT or warn "remove stamp.html.run: $!";
 
 print "sequences $lastmain $lastsub\n";

@@ -1,7 +1,7 @@
 /etc/debbugs/html
 usr/lib/debbugs
 usr/sbin
-usr/doc/debbugs/examples
+usr/share/doc/debbugs/examples
 var/lib/debbugs/indices
 var/lib/debbugs/www/cgi
 var/lib/debbugs/www/db

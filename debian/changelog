@@ -1,3 +1,25 @@
+debbugs (2.3-1) unstable; urgency=low
+
+  * Fixed the send message bug that resulted in the same words (subject)
+    being printed out over and over and over again
+  * Added CGI scripts to make retrieval of individual bug reports realtime
+  * Created upgrade notes from 2.2 to 2.3
+  * Added a variable for where the "mailsummary" reports go
+  * Added optional bug archiving for expired bugs
+  * Added "fixed" to the default severities
+  * Some scripts are now perl -w clean.
+  * Added "severity display" to "Summary of outstanding reports" 
+    (db/ix/summary.html and db/ix/psummary.html)
+  * Added a variable to allow for a uniformed <BODY> and starting text tag
+  * Send both message that closes and original bug to bug submitter
+  * Fixed X-Debbugs-CC header
+  * Improved ability to skip pgp signed and mime encoded messages when
+    looking for commands (control@ and request@) and pseudo headers
+    (submit@)
+  * Cosmetic changes...
+
+ -- Darren Benham <gecko@debian.org>  Tue, 27 Jul 1999 11:27:22 -0700
+
 debbugs (2.2-3) unstable; urgency=low
 
   * Perl Depends change

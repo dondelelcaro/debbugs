@@ -32,14 +32,15 @@ install-stamp: build-stamp
 	cp scripts/mailsummary.in `pwd`/debian/tmp/usr/lib/debbugs/mailsummary
 	cp scripts/processall.in `pwd`/debian/tmp/usr/lib/debbugs/processall
 	cp scripts/service.in `pwd`/debian/tmp/usr/lib/debbugs/service
-	cp scripts/config.in `pwd`/debian/tmp/usr/doc/debbugs/examples/config
-	cp scripts/text.in `pwd`/debian/tmp/usr/doc/debbugs/examples/text
-	cp debian/crontab `pwd`/debian/tmp/usr/doc/debbugs/examples/crontab
+	cp scripts/config.in `pwd`/debian/tmp/usr/share/doc/debbugs/examples/config
+	cp scripts/text.in `pwd`/debian/tmp/usr/share/doc/debbugs/examples/text
+	cp debian/crontab `pwd`/debian/tmp/usr/share/doc/debbugs/examples/crontab
 	cp scripts/errorlib.in `pwd`/debian/tmp/usr/lib/debbugs/errorlib
 	cp scripts/html-control.in `pwd`/debian/tmp/usr/lib/debbugs/html-control
 	cp scripts/process.in `pwd`/debian/tmp/usr/lib/debbugs/process
 	cp scripts/receive.in `pwd`/debian/tmp/usr/lib/debbugs/receive
 	cp scripts/summary.in `pwd`/debian/tmp/usr/lib/debbugs/summary
+	cp scripts/rebuild.in `pwd`/debian/tmp/usr/lib/debbugs/rebuild
 #	cp scripts/changeaddr  `pwd`/debian/tmp/usr/lib/debbugs/changeaddr
 #	cp scripts/initialise.out `pwd`/debian/tmp/usr/lib/debbugs/initialise
 #	cp scripts/badness.out `pwd`/debian/tmp/usr/lib/debbugs/badness
@@ -62,13 +63,16 @@ install-stamp: build-stamp
 	#install the CGI
 	cp cgi/bugs-fetch2.pl.in `pwd`/debian/tmp/var/lib/debbugs/www/cgi/bugs-fetch2.pl
 	cp cgi/cgi-lib.pl `pwd`/debian/tmp/var/lib/debbugs/www/cgi
+	cp cgi/bugreport.cgi `pwd`/debian/tmp/var/lib/debbugs/www/cgi/.
+	cp cgi/common.pl `pwd`/debian/tmp/var/lib/debbugs/www/cgi/.
+	cp cgi/pkgreport.cgi `pwd`/debian/tmp/var/lib/debbugs/www/cgi/.
 	cp debian/debbugsconfig `pwd`/debian/tmp/usr/sbin/debbugsconfig
 	cp debian/debbugs-maketxt `pwd`/debian/tmp/usr/sbin/debbugs-maketxt
 
 	#install the config files
 	cp misc/Maintainers `pwd`/debian/tmp/etc/debbugs/.
 	cp misc/pseudo-packages.description `pwd`/debian/tmp/etc/debbugs/.
-	cp misc/nextnumber `pwd`/debian/tmp/usr/doc/debbugs/examples/.
+	cp misc/nextnumber `pwd`/debian/tmp/usr/share/doc/debbugs/examples/.
 	cp misc/updateseqs `pwd`/debian/tmp/var/lib/debbugs/spool/.
 
 	touch install-stamp

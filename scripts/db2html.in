@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: db2html.in,v 1.4 1999/09/18 14:53:02 gecko Exp $
+# $Id: db2html.in,v 1.5 1999/10/25 01:35:04 gecko Exp $
 # usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
 
 #load the necessary libraries/configuration
@@ -330,7 +330,7 @@ for $f (@files)
               "<html><head><title>$gProject $gBug report logs - ".
               "$short, boring messages</title>\n".
               "<link rev=\"made\" href=\"mailto:$gMaintainerEmail)\">\n".
-              "</head><body><h1>$gProject $gBugreport logs -".
+              "</head>$gHTMLStart<h1>$gProject $gBugreport logs -".
               "\n <A href=\"../$linkto.html\">$short</A>,".
               " boring messages</h1>\n$boring\n<hr>\n".
               $tail_html."</body></html>\n");
@@ -339,7 +339,7 @@ for $f (@files)
           "<html><head><title>$gProject $gBug report logs - ".
           "$short</title>\n".
           "<link rev=\"made\" href=\"mailto:$gMaintainerEmail\">\n".
-          "</head><body><h1>$gProject $gBug report logs -  $short<br>\n".
+          "</head>$gHTMLStart<h1>$gProject $gBug report logs -  $short<br>\n".
           &sani($s_subject)."</h1>".
           "$descriptivehead\n".
           "\n<hr>\n".
@@ -456,7 +456,7 @@ for $pending (qw(pending forwarded done)) {
         &file("si/$pending$severity.html",'ref',
               "<html><head><title>$who_html $gBug reports: $headstring</title>\n".
               "<link rev=\"made\" href=\"mailto:".&sani($owner_addr)."\">\n".
-              "</head><body><h1>$who_html $gBug reports: $headstring</h1>\n".
+              "</head>$gHTMLStart<h1>$who_html $gBug reports: $headstring</h1>\n".
               $otherindex_html.
               ($pending eq 'done' ? "<P>\n$expirynote_html" : '').
               "<hr>\n".
@@ -504,7 +504,7 @@ sub individualindexes ($\@&\%&&$$$$$&&) {
         &file($tfilename,'ref',
               "<html><head><title>$gProject $gBug reports: $what $sani</title>\n".
               "<link rev=\"made\" href=\"mailto:$gMaintainerEmail\">\n".
-              "</head><body><h1>$gProject $gBug reports: $what $sani</h1>\n".
+              "</head>$gHTMLStart<h1>$gProject $gBug reports: $what $sani</h1>\n".
               &$getxinforef($tkey).
               $caveat.
               "See the <A href=\"../$filename\">listing of $whatplural</A>.\n".
