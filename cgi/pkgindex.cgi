@@ -6,8 +6,8 @@ use strict;
 use POSIX qw(strftime tzset nice);
 
 #require '/usr/lib/debbugs/errorlib';
-require '/usr/lib/debbugs/common.pl';
-#require '/debian/home/ajt/newajbug/common.pl';
+#require '/usr/lib/debbugs/common.pl';
+require '/debian/home/ajt/newajbug/common.pl';
 
 require '/etc/debbugs/config';
 require '/etc/debbugs/text';
@@ -28,7 +28,7 @@ my $archive = ($param{'archive'} || "no") eq "yes";
 
 my $Archived = $archive ? "Archived" : "";
 
-my %maintainer = &getmaintainers();
+my %maintainers = &getmaintainers();
 my %strings = ();
 
 $ENV{"TZ"} = 'UTC';
@@ -41,10 +41,10 @@ $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
 
 set_option("repeatmerged", $repeatmerged);
 set_option("archive", $archive);
-set_option("include", { map {($_,1)} (split /[\s,]+/, $include) })
-	if ($include);
-set_option("exclude", { map {($_,1)} (split /[\s,]+/, $exclude) })
-	if ($exclude);
+#set_option("include", { map {($_,1)} (split /[\s,]+/, $include) })
+#	if ($include);
+#set_option("exclude", { map {($_,1)} (split /[\s,]+/, $exclude) })
+#	if ($exclude);
 
 my %count;
 my $tag;
@@ -56,7 +56,7 @@ if ($indexon eq "pkg") {
   $note .= "reports filed under the different binary package names.</p>\n";
 } elsif ($indexon eq "maint") {
   $tag = "maintainer";
-  %@count = countbugs(sub {my %d=@_; my $me; 
+  %count = countbugs(sub {my %d=@_; my $me; 
 			   $me = $maintainers{$d{"pkg"}} || "";
 			   $me =~ s/\s*\(.*\)\s*//;
 			   $me = $1 if ($me =~ m/<(.*)>/);
@@ -69,7 +69,7 @@ if ($indexon eq "pkg") {
   $tag = "submitter";
   %count = countbugs(sub {my %d=@_; my $se; 
 			  ($se = $d{"submitter"} || "") =~ s/\s*\(.*\)\s*//;
-			  if ($se =~ m/<(.*)>/) { $me = $1 }
+			  $se = $1 if ($se =~ m/<(.*)>/);
 			  return $se;
 			});
   $note = "<p>Note that people may use different email accounts for\n";
@@ -79,8 +79,9 @@ if ($indexon eq "pkg") {
 
 my $result = "<ul>\n";
 foreach my $x (sort keys %count) {
-  $result .= sprintf('<li><a href="pkgreport.cgi?%s=%s">%s</a> %d bugs</li>\n',
+  $result .= sprintf('<li><a href="pkgreport.cgi?%s=%s">%s</a> %d bugs</li>',
 		     $indexon, $x, $x, $count{$x});
+  $result .= "\n";
 }
 $result .= "</ul>\n";
 
