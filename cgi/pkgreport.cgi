@@ -57,7 +57,13 @@ if (defined $pkg) {
 my $result = htmlizebugs(@bugs);
 
 print header;
-print start_html("$debbugs::gProject $Archived $debbugs::gBug report logs: $tag");
+print start_html(
+        -TEXT => "#000000",
+        -BGCOLOR=>"#FFFFFF",
+        -LINK => "#0000FF",
+        -VLINK => "#800080",
+        -title => "$debbugs::gProject $Archived $debbugs::gBug report logs: $tag");
+
 print h1("$debbugs::gProject $Archived $debbugs::gBug report logs: $tag");
 
 if (defined $maintainer{$pkg}) {
@@ -71,7 +77,7 @@ if (defined $pkg) {
     print "reports filed under the different binary package names.</p>\n";
 } else {
     print "<p>Note that maintainers may use different Maintainer fields for\n";
-    print "different packages, so there may be other reports filed under\n"
+    print "different packages, so there may be other reports filed under\n";
     print "different addresses.\n";
 }
 
