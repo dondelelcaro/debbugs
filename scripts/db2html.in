@@ -1,12 +1,15 @@
 #!/usr/bin/perl
-# $Id: db2html.in,v 1.6 2000/10/07 17:27:13 joy Exp $
+# $Id: db2html.in,v 1.7 2001/08/16 17:47:31 doogie Exp $
 # usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
 
 #load the necessary libraries/configuration
-require('/etc/debbugs/config');
-require('/etc/debbugs/text');
-require('/usr/lib/debbugs/errorlib');
-$ENV{'PATH'} = '/usr/lib/debbugs:'.$ENV{'PATH'};
+$config_path = '/org/bugs.debian.org/etc';
+$lib_path = '/org/bugs.debian.org/scripts';
+
+require("$config_path/config");
+require("$config_path/text");
+require("$lib_path/errorlib");
+$ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
 
 #set current working directory
 chdir("$gSpoolDir") || die "chdir spool: $!\n";

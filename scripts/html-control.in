@@ -1,13 +1,17 @@
 #!/usr/bin/perl
-# $Id: html-control.in,v 1.6 2001/01/27 22:09:01 joy Exp $
+# $Id: html-control.in,v 1.7 2001/08/16 17:43:45 doogie Exp $
 
 use POSIX;
 
-require '/etc/debbugs/config';
-require '/usr/lib/debbugs/errorlib';
-$ENV{'PATH'} = '/usr/lib/debbugs:'.$ENV{'PATH'};
+$config_path = '/org/bugs.debian.org/etc';
+$lib_path = '/org/bugs.debian.org/scripts';
+
+require("$config_path/config");
+require("$lib_path/errorlib");
+$ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
+
 chdir("$gSpoolDir") || die "chdir spool: $!\n";
-#push(@INC,'/usr/lib/debbugs');
+#push(@INC,"$lib_path");
 
 &filelock("html.fcntl-lock");
 
@@ -74,9 +78,9 @@ END
 }
 close(MM) or nonawful("close html-data.mail: $!");
 
-runshell("/usr/lib/debbugs/db2html $args 2>&1 >html-data $gWebDir/db",
+runshell("$lib_path/db2html $args 2>&1 >html-data $gWebDir/db",
          sub { &nonawful; });
-runshell("/usr/lib/debbugs/html-install $gWebDir/db <html-data 2>&1",sub { &quit; });
+runshell("$lib_path/html-install $gWebDir/db <html-data 2>&1",sub { &quit; });
 #runshell("gzip -9 html-data 2>&1",sub { &quit; });
 #runshell("btoa 2>&1 <html-data.gz >>html-data.mail",sub { &quit; });
 #runshell('2>&1 '.join(' ',('/usr/lib/sendmail','-f'."$gMaintainerEmail")).' -oem -oi -t <html-data.mail',
