@@ -1,66 +1,64 @@
 # This is the bugs.debian.org debbugs configuration file.
-# $Id: config.debian,v 1.4 2000/10/06 22:31:32 joy Exp $
+# $Id: config.debian,v 1.5 2000/10/07 17:14:02 joy Exp $
 
-$gAJDbDir = '/var/lib/debbugs/spool/db';
-$gAJIndex = '/debian/home/ajt/ajbug/pkgindex';
-
-#domains
-$gEmailDomain = "bugs.debian.org";	#bugs.debian.org
-$gListDomain = "lists.debian.org";	#lists.debian.org
-$gWebDomain = "bugs.debian.org";	#www.debian.org/Bugs
-$gCGIDomain = "http://bugs.debian.org/cgi-bin/";	#cgi.debian.org
+# Domains
+$gEmailDomain = "bugs.debian.org";
+$gListDomain = "lists.debian.org";
+$gWebDomain = "bugs.debian.org";
+$gCGIDomain = "http://bugs.debian.org/cgi-bin/";
 $gMirrors = "";						#comma seperated list
 
-#Identification
-$gBug = "Bug";
-$gBugs = "Bugs";
-$gProject = "Debian";				#Debian
-$gProjectTitle = "Debian GNU/Linux";		#Debian GNU/Linux
-
-#person responsible for this installation
-#$gMaintainer = "Debian Bug Tracking System"; #don't change this.. needed for emailing to debian-bugs-dist
+# Project identification
+$gProject = "Debian";
+$gProjectTitle = "Debian GNU/Linux";
+# Person(s) responsible for this installation
 $gMaintainer = "Darren Benham";
 $gMaintainerWebpage = "http://master.debian.org/~gecko";
 $gMaintainerEmail = "owner\@bugs.debian.org";
 
-#directories
-#don't change location of dirs.  They are currently hardcoded.  Variables are
-#for future expansion.
-$gSpoolDir = "/var/lib/debbugs/spool";	#working directory
-$gIncomingDir = "incoming";				#unprocessed emails
-$gWebDir = "/var/lib/debbugs/www";		#base location of web pages
-$gDocDir = "/debian/debian/doc";	#location of doc files
 
-#data files
-$gMaintainerFile = "/etc/debbugs/Maintainers";
-$gPseudoDescFile = "/etc/debbugs/pseudo-packages.description";
-
-#lists
-$gSubmitList = "debian-bugs-dist";			#debian-bugs-dist@lists
-$gMaintList = "debian-bugs-dist";			#debian-bugs-dist@lists
-$gQuietList = "debian-bugs-dist";			#debian-bugs-dist@lists
-$gFowardList = "debian-bugs-forwarded";			#debian-bugs-fowarded@lists
-$gDoneList = "debian-bugs-closed";			#debian-bugs-closed@lists
+# BTS mailing lists, at $gListDomain
+$gSubmitList = "debian-bugs-dist";
+$gMaintList = "debian-bugs-dist";
+$gQuietList = "debian-bugs-dist";
+$gFowardList = "debian-bugs-forwarded";
+$gDoneList = "debian-bugs-closed";
 $gRequestList = "debian-bugs-dist";
 $gSubmitterList = "debian-bugs-dist";
 $gControlList = "debian-bugs-dist";
-$gMirrorList = "debian-bugs-mirror";    #sends to all mirrors
+$gSummaryList = "debian-bugs-reports";
+$gMirrorList = "debian-bugs-mirror";			# sends to all mirrors
 
-#config
-$gMailer='exim';
-$gRemoveAge = 28;						#days
-$gSaveOldBugs = 1;
-$gDefaultSeverity = 'normal';
-$gShowSeverities = 'critical, grave, important, normal, minor, wishlist, fixed';
-@gStrongSeverities= ('critical','grave','important');
-@gSeverityList= ('critical','grave','important','normal', 'minor', 'wishlist', 'fixed');
-%gSeverityDisplay=('critical','Critical bugs',
-                   'grave','Grave bugs',
-		   'important','Important bugs',
-                   'normal','Normal bugs',
-		   'minor','Trivial bugs',
-                   'fixed', 'NMU Fixed bugs',
-                   'wishlist','Wishlist items');
+# Various configurable options
+$gMailer = "exim";				# valid: exim, qmail and sendmail
+$gBug = "Bug";					# how to spell `bug'
+$gBugs = "Bugs";				# how to spell `bugs'
+$gRemoveAge = 28;				# days after closed bugs are cleaned out
+$gSaveOldBugs = 1;				# whether to archive such bugs
+$gDefaultSeverity = "normal";
+$gShowSeverities = "critical, grave, important, normal, minor, wishlist, fixed";
+@gStrongSeverities = ( 'critical', 'grave', 'important' );
+@gSeverityList = ( 'critical', 'grave', 'important', 'normal', 'minor', 'wishlist', 'fixed');
+%gSeverityDisplay = ( 'critical', "Critical $gBugs",
+                      'grave', "Grave $gBugs",
+                      'important', "Important $gBugs",
+                      'normal', "Normal $gBugs",
+                      'minor', "Trivial $gBugs",
+                      'fixed', "NMU Fixed $gBugs",
+                      'wishlist', "Wishlist items" );
 
-#don't change
+# better don't change this
 $gBounceFroms = "^mailer|^da?emon|^post.*mast|^root|^wpuser|^mmdf|^smt.*|^mrgate|^vmmail|^mail.*system|^uucp|-maiser-|^mal\@|^mail.*agent|^tcpmail|^bitmail|^mailman";
+
+# Directories -- do _not_ change their locations.
+# They are currently hardcoded, variables are here for future expansion.
+$gSpoolDir = "/var/lib/debbugs/spool";			# working directory
+$gIncomingDir = "incoming";				# unprocessed e-mails
+$gWebDir = "/var/lib/debbugs/www";			# base location of web pages
+$gDocDir = "/debian/debian/doc";			# location of doc files
+$gAJDbDir = "/var/lib/debbugs/spool/db";		# AJ's database dir
+$gAJIndex = "/debian/home/ajt/ajbug/pkgindex";		# AJ's package index
+
+# Required data files
+$gMaintainerFile = "/etc/debbugs/Maintainers";
+$gPseudoDescFile = "/etc/debbugs/pseudo-packages.description";
