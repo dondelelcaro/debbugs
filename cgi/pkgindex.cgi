@@ -105,7 +105,8 @@ if ($indexon eq "pkg") {
 
 my $result = "<ul>\n";
 foreach my $x (sort { $sortkey{$a} cmp $sortkey{$b} } keys %count) {
-  $result .= "<li>" . $htmldescrip{$x} . " has $count{$x} bugs</li>\n";
+  $result .= "<li>" . $htmldescrip{$x} . " has $count{$x} " .
+            ($count{$x} == 1 ? "bug" : "bugs") . "</li>\n";
 }
 $result .= "</ul>\n";
 
