@@ -220,6 +220,8 @@ sub htmlindexentrystatus {
     $result .= $showseverity;
     $result .= "Reported by: <a href=\"" . submitterurl($status{originator})
                . "\">" . htmlsanit($status{originator}) . "</a>";
+    $result .= ";\nOwned by: " . htmlsanit($status{owner})
+               if length $status{owner};
     $result .= ";\nTags: <strong>" 
 		 . htmlsanit(join(", ", sort(split(/\s+/, $status{tags}))))
 		 . "</strong>"

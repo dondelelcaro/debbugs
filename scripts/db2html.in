@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: db2html.in,v 1.20 2003/08/23 13:17:32 cjwatson Exp $
+# $Id: db2html.in,v 1.21 2003/08/30 00:15:15 cjwatson Exp $
 # usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
 
 #load the necessary libraries/configuration
@@ -158,6 +158,8 @@ for $f (@files)
             if length($data->{package});
         $indexentry .= $showseverity;
         $indexentry .= "Reported by: ".&sani($data->{originator});
+        $indexentry .= ";\nOwned by: ".&sani($data->{owner})
+            if length($data->{owner});
         $indexentry .= ";\nKeywords: ".&sani($data->{keywords})
             if length($data->{keywords});
         $linkto= $ref; $linkto =~ s,^..,$&/$&,;

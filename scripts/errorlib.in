@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.39 2003/08/23 15:33:42 cjwatson Exp $
+# $Id: errorlib.in,v 1.40 2003/08/30 00:15:15 cjwatson Exp $
 
 use Mail::Address;
 
@@ -83,6 +83,7 @@ my %fields = (originator => 'submitter',
               forwarded => 'forwarded-to',
               mergedwith => 'merged-with',
               severity => 'severity',
+              owner => 'owner',
              );
 
 sub readbug {

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.89 2003/08/23 15:12:57 cjwatson Exp $
+# $Id: service.in,v 1.90 2003/08/30 00:15:15 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -137,6 +137,10 @@ my %limit_pkgs = ();
 my %clonebugs = ();
 my @bcc = ();
 
+sub addbcc {
+    push @bcc, $_[0] unless grep { $_ eq $_[0] } @bcc;
+}
+
 for ($procline=0; $procline<=$#bodylines; $procline++) {
     $state eq 'idle' || print "$state ?\n";
     $lowstate eq 'idle' || print "$lowstate ?\n";
@@ -248,7 +252,7 @@ END
             } else {
                 $action= "$gBug closed, send any further explanations to $data->{originator}";
                 do {
-                    &addmaintainers($data->{package}, $data->{severity});
+                    &addmaintainers(%data);
 					if ( length( $gDoneList ) > 0 && length( $gListDomain ) >
 					0 ) { &addccaddress("$gDoneList\@$gListDomain"); }
                     $data->{done}= $replyto;
@@ -299,9 +303,9 @@ END
                 $action= "$gBug assigned to package \`$newpackage'.";
             }
             do {
-                &addmaintainers($data->{package}, $data->{severity});
-                &addmaintainers($newpackage);
+                &addmaintainers(%data);
                 $data->{package}= $newpackage;
+                &addmaintainers(%data);
             } while (&getnextbug);
         }
     } elsif (m/^reopen\s+\#?(-?\d+)$/i ? ($noriginator='', 1) :
@@ -319,7 +323,7 @@ END
                     $noriginator eq '' ? "$gBug reopened, originator not changed." :
                         "$gBug reopened, originator set to $noriginator.";
                 do {
-                    &addmaintainers($data->{package}, $data->{severity});
+                    &addmaintainers(%data);
                     $data->{originator}= $noriginator eq '' ?  $data->{originator} : $noriginator;
                     $data->{done}= '';
                 } while (&getnextbug);
@@ -334,7 +338,7 @@ END
         }
         if (&getbug) {
             &foundbug;
-            &addmaintainers($data->{package}, $data->{severity});
+            &addmaintainers(%data);
             $oldsubmitter= $data->{originator};
             $data->{originator}= $newsubmitter;
             $action= "Changed $gBug submitter from $oldsubmitter to $newsubmitter.";
@@ -386,7 +390,7 @@ END
                 $extramessage= "(By the way, this $gBug is currently marked as done.)\n";
             }
             do {
-                &addmaintainers($data->{package}, $data->{severity});
+                &addmaintainers(%data);
 		if (length($gForwardList)>0 && length($gListDomain)>0 ) {
 		     &addccaddress("$gForwardList\@$gListDomain"); 
 		}
@@ -403,7 +407,7 @@ END
             } else {
     $action= "Removed annotation that $gBug had been forwarded to $data->{forwarded}.";
                 do {
-                    &addmaintainers($data->{package}, $data->{severity});
+                    &addmaintainers(%data);
                     $data->{forwarded}= '';
                 } while (&getnextbug);
             }
@@ -424,10 +428,9 @@ END
             $printseverity= "$gDefaultSeverity" if $printseverity eq '';
 	    $action= "Severity set to \`$newseverity'.";
 	    do {
-                &addmaintainers($data->{package}, $data->{severity});
+                &addmaintainers(%data);
                 if (defined $gStrongList and isstrongseverity($newseverity)) {
-                    my $addbcc = "$gStrongList\@$gListDomain";
-                    push @bcc, $addbcc unless grep { $_ eq $addbcc } @bccs;
+                    addbcc("$gStrongList\@$gListDomain");
                 }
                 $data->{severity}= $newseverity;
             } while (&getnextbug);
@@ -468,7 +471,7 @@ END
 		$action= "Tags removed: " . join(", ", @okaytags);
 	    }
 	    do {
-                &addmaintainers($data->{package}, $data->{severity});
+                &addmaintainers(%data);
 	        $data->{keywords} = '' if ($addsub eq "set");
 		if ($addsub eq "sub") {
 		    foreach my $t (@badtags) {
@@ -492,7 +495,7 @@ END
 	}
         if (&getbug) {
             &foundbug;
-            &addmaintainers($data->{package}, $data->{severity});
+            &addmaintainers(%data);
             $data->{subject}= $newtitle;
             $action= "Changed $gBug title.";
             &savebug;
@@ -517,7 +520,7 @@ END
 		@newmergelist= split(/ /,$data->{mergedwith});
                 $discref= $ref;
                 do {
-                    &addmaintainers($data->{package}, $data->{severity});
+                    &addmaintainers(%data);
 		    $data->{mergedwith}= ($ref == $discref) ? ''
                         : join(' ',grep($_ ne $ref,@newmergelist));
                 } while (&getnextbug);
@@ -560,7 +563,7 @@ END
             $action= "Merged @newmergelist.";
 	    for $ref (@newmergelist) {
 		&getbug || die "huh ?  $gBug $ref disappeared during merge";
-                &addmaintainers($data->{package}, $data->{severity});
+                &addmaintainers(%data);
 		$data->{mergedwith}= join(' ',grep($_ ne $ref,@newmergelist));
 		$data->{keywords}= join(' ', keys %tags);
 		&savebug;
@@ -623,6 +626,41 @@ END
 		%limit_pkgs = ();
 		&transcript("Not ignoring any bugs.\n\n");
 	}
+    } elsif (m/^owner\s+\#?(-?\d+)\s+!$/i ? ($newowner = $replyto, 1) :
+             m/^owner\s+\#?(-?\d+)\s+(\S.*\S)$/i ? ($newowner = $2, 1) : 0) {
+        $ok++;
+        $ref = $1;
+        if (&setbug) {
+            if (length $data->{owner}) {
+                $action = "Owner changed from $data->{owner} to $newowner.";
+            } else {
+                $action = "Owner recorded as $newowner.";
+            }
+            if (length $data->{done}) {
+                $extramessage = "(By the way, this $gBug is currently " .
+                                "marked as done.)\n";
+            }
+            do {
+                &addmaintainers(%data);
+                $data->{owner} = $newowner;
+            } while (&getnextbug);
+        }
+    } elsif (m/^noowner\s+\#?(-?\d+)$/i) {
+        $ok++;
+        $ref = $1;
+        if (&setbug) {
+            if (length $data->{owner}) {
+                $action = "Removed annotation that $gBug was owned by " .
+                          "$data->{owner}.";
+                do {
+                    &addmaintainers(%data);
+                    $data->{owner} = '';
+                } while (&getnextbug);
+            } else {
+                &transcript("$gBug is not marked as having an owner.\n\n");
+                &nochangebug;
+            }
+        }
     } else {
         &transcript("Unknown command or malformed arguments to command.\n\n");
         if (++$unknowns >= 5) {
@@ -1014,22 +1052,23 @@ sub addccaddress {
 sub addmaintainers {
     # Data structure is:
     #   maintainer email address &c -> assoc of packages -> assoc of bug#'s
+    my %data = @_;
     my ($p, $addmaint, $pshow);
     &ensuremaintainersloaded;
     $anymaintfound=0; $anymaintnotfound=0;
-    for $p (split(m/[ \t?,()]+/,$_[0])) {
+    for $p (split(m/[ \t?,()]+/, $data{package})) {
  	$p =~ y/A-Z/a-z/;
         $pshow= ($p =~ m/[-+.a-z0-9]+/ ? $& : '');
 	if (defined $gSubscriptionDomain) {
 	    if (defined($pkgsrc{$p})) {
-		push @bcc, "$pkgsrc{$p}\@$gSubscriptionDomain";
+		addbcc("$pkgsrc{$p}\@$gSubscriptionDomain");
 	    } else {
-		push @bcc, "$p\@$gSubscriptionDomain";
+		addbcc("$p\@$gSubscriptionDomain");
 	    }
 	}
-        if (defined $_[1] and defined $gStrongList and
-                isstrongseverity($_[1])) {
-            push @bcc, "$gStrongList\@$gListDomain";
+        if (defined $data{severity} and defined $gStrongList and
+                isstrongseverity($data{severity})) {
+            addbcc("$gStrongList\@$gListDomain");
         }
         if (defined($maintainerof{$p})) {
  	    $addmaint= $maintainerof{$p};
@@ -1042,6 +1081,13 @@ sub addmaintainers {
 	    &transcript("MR|unknown-package|$p|$ref|\n") if $dl>2;
             $maintccreasons{$gUnknownMaintainerEmail}{$p}{$ref}= 1;
 	}
+    }
+
+    if (length $data{owner}) {
+        $addmaint = $data{owner};
+        &transcript("MO|$addmaint|$data{package}|$ref|\n") if $dl>2;
+        $maintccreasons{$addmaint}{$data{package}}{$ref} = 1;
+        print "owner add >$data{package}|$addmaint<\n" if $debug;
     }
 }
 

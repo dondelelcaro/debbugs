@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.81 2003/08/23 13:50:45 cjwatson Exp $
+# $Id: process.in,v 1.82 2003/08/30 00:15:15 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -1107,5 +1107,12 @@ sub checkmaintainers {
             $anymaintnotfound++;
             last;
         }
+    }
+
+    if (length $data->{owner}) {
+        print DEBUG "owner add >$data->{package}|$data->{owner}<\n";
+        $addmaint = $data->{owner};
+        push(@maintaddrs, $addmaint) unless
+            $addmaint eq $replyto or grep($_ eq $addmaint, @maintaddrs);
     }
 }

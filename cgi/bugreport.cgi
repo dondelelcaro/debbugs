@@ -177,6 +177,9 @@ $indexentry .= htmlpackagelinks($status{package}, 0);
 $indexentry .= "Reported by: <a href=\"" . submitterurl($status{originator})
               . "\">" . htmlsanit($status{originator}) . "</a>;\n";
 
+$indexentry .= "Owned by: " . htmlsanit($status{owner}) . ";\n"
+              if length $status{owner};
+
 my $dummy = strftime "%a, %e %b %Y %T UTC", localtime($status{date});
 $indexentry .= "Date: ".$dummy.";\n<br>";
 
