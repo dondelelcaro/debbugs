@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.44 2001/09/18 20:04:41 joy Exp $
+# $Id: service.in,v 1.45 2001/12/31 04:39:24 ajt Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -24,8 +24,8 @@ $_=shift;
 m/^[RC]\.\d+$/ || &quit("bad argument");
 $control= m/C/;
 $nn= $_;
-if (!rename("incoming/G$nn","incoming/P$nn")) 
-{ 	$_=$!.'';  m/no such file or directory/i && exit 0;
+if (!rename("incoming/G$nn","incoming/P$nn")) {
+    $_=$!.'';  m/no such file or directory/i && exit 0;
     &quit("renaming to lock: $!");
 }    
 
@@ -43,28 +43,34 @@ $fwd= <<END;
 Received: via spool for service; $tdate
 END
 
-for ($i=0; $i<=$#msg; $i++) 
-{ 	$_ = $msg[$i];
+for ($i=0; $i<=$#msg; $i++) {
+     $_ = $msg[$i];
     last unless length($_);
     $fwd .= $_."\n";
-    while ($msg[$i+1] =~ m/^\s/) 
-	{ 	$i++;
+    while ($msg[$i+1] =~ m/^\s/) {
+	$i++;
         $fwd .= $msg[$i]."\n" if $ins; # Huh ? Where is ins set ?
         $_ .= ' '.$msg[$i];
     }
- 	print ">$_<\n" if $debug;
-    if (s/^(\S+):\s*//) 
-	{ 	$v= $1; $v =~ y/A-Z/a-z/;
-		print ">$v=$_<\n" if $debug;
+    print ">$_<\n" if $debug;
+    if (s/^(\S+):\s*//) {
+ 	$v= $1; $v =~ y/A-Z/a-z/;
+	print ">$v=$_<\n" if $debug;
         $header{$v}= $_;
-    } else { print "!>$_<\n" if $debug; }
+    } else {
+	print "!>$_<\n" if $debug; 
+    }
 }
 
 if (defined $header{'resent-from'} && !defined $header{'from'}) {
     $header{'from'} = $header{'resent-from'};
 }
+
 defined($header{'from'}) || &quit("no From header");
-delete $header{'reply-to'} if ( defined($header{'reply-to'}) && $header{'reply-to'} =~ m/^\s*$/ );
+
+delete $header{'reply-to'} 
+	if ( defined($header{'reply-to'}) && $header{'reply-to'} =~ m/^\s*$/ );
+
 if ( defined($header{'reply-to'}) && $header{'reply-to'} ne "" ) {
     $replyto = $header{'reply-to'};
 } else {
@@ -85,27 +91,43 @@ $extras="";
 #strip blank line(s) after header
 while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
 
-#strip, if exists, mime header
-if ( $msg[$i] =~ /^This is a multi-part message in MIME format./ )
-{ 	while ( $i <= $#msg && length( $msg[$i] ) ) { $fwd .= $msg[$i] . "\n"; $i++; }
-	while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
+my $quickabort = 0;
+
+my $fuckheads = "(" . join("|", @gFuckheads) . ")";
+if ($replyto =~ m/$fuckheads/) {
+	&transcript("This service is unavailable.\n\n");
+	$quickabort = 1;
 }
-if ( $msg[$i] =~ /^--/ || $msg[$i] =~ /^\s*$/ )
-{ 	while ( $i <= $#msg && length( $msg[$i] ) ) { $fwd .= $msg[$i]; $i++; }
-	while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
+
+#strip, if exists, mime header
+if ( $msg[$i] =~ /^This is a multi-part message in MIME format./ ) {
+    while ( $i <= $#msg && length( $msg[$i] ) ) {
+        $fwd .= $msg[$i] . "\n"; $i++; 
+    }
+    while ( $i <= $#msg && !length( $msg[$i] ) ) {
+        $fwd .= "\n"; $i++; 
+    }
+}
+if ( $msg[$i] =~ /^--/ || $msg[$i] =~ /^\s*$/ ) {
+    while ( $i <= $#msg && length( $msg[$i] ) ) { $fwd .= $msg[$i]; $i++; }
+    while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
 }	
+	
 
-
-for ($procline=$i; $procline<=$#msg; $procline++) 
-{ 	$state eq 'idle' || print "$state ?\n";
+for ($procline=$i; $procline<=$#msg; $procline++) {
+    $state eq 'idle' || print "$state ?\n";
     $lowstate eq 'idle' || print "$lowstate ?\n";
     $mergelowstate eq 'idle' || print "$mergelowstate ?\n";
+    if ($quickabort) {
+         &transcript("Stopping processing here.\n\n");
+	 last;
+    }
     $_= $msg[$procline]; s/\s+$//;
     next unless m/\S/; next if m/^\s*\#/;
     &transcript("> $_\n");
     $action= '';
-    if (m/^stop/i || m/^quit/i || m/^--/ || m/^thank/i) 
-	{ 	&transcript("Stopping processing here.\n\n");
+    if (m/^stop/i || m/^quit/i || m/^--/ || m/^thank/i) {
+	&transcript("Stopping processing here.\n\n");
         last;
     } elsif (m/^debug\s+(\d+)$/i && $1 >= 0 && $1 <= 1000) {
         $dl= $1+0;
@@ -527,7 +549,7 @@ END
 if ($procline>$#msg) {
     &transcript(">\nEnd of message, stopping processing here.\n\n");
 }
-if (!$ok) {
+if (!$ok && !quickabort) {
     &transcript("No commands successfully parsed; sending the help text(s).\n");
     &sendhelp;
     &transcript("\n");
@@ -907,8 +929,8 @@ sub addccaddress {
     $maintccreasons{$cca}{''}{$ref}= 1;
 }
 
-sub addmaintainers 
-{ 	# Data structure is:
+sub addmaintainers {
+    # Data structure is:
     #   maintainer email address &c -> assoc of packages -> assoc of bug#'s
     my ($p, $addmaint, $pshow);
     &ensuremaintainersloaded;
