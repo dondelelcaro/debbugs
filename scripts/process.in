@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.49 2002/10/06 22:54:48 cjwatson Exp $
+# $Id: process.in,v 1.50 2002/10/09 00:02:33 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -272,7 +272,7 @@ END
 		&finish;
     }
     &checkmaintainers;
-    $noticeccval.= join(', ', grep($_ ne $replyto,@maintaddrs));
+    $noticeccval.= join(', ', grep($_ ne $replyto,@maintaddrs,@addsrcaddrs));
     $noticeccval =~ s/\s+\n\s+/ /g; $noticeccval =~ s/^\s+/ /; $noticeccval =~ s/\s+$//;
     if (length($noticeccval)) { $noticecc= "Cc: $noticeccval\n"; }
 	if (length($generalcc)) { $noticecc.= "Bcc: $generalcc\n"; }
@@ -296,7 +296,7 @@ END
         $x= join('',<O>); close(O);
         if ($codeletter eq 'F') 
 		{ 	&htmllog("Reply","sent",$replyto,"You have marked $gBug as forwarded.");
-            &sendmessage(<<END, '');
+            &sendmessage(<<END."---------------------------------------\n".join( "\n", @msg ), '');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
 ${noticecc}Subject: $gBug#$ref: marked as forwarded ($s_subject)
