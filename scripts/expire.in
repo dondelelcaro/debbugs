@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: expire.in,v 1.16 2003/05/25 13:17:14 cjwatson Exp $
+# $Id: expire.in,v 1.17 2003/08/06 10:57:23 cjwatson Exp $
 
 # Load modules and set envirnment
 use File::Copy;
@@ -10,6 +10,9 @@ require("$config_path/config");
 require("$config_path/text");
 require("$lib_path/errorlib");
 $ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
+
+# No $gRemoveAge means "never expire".
+exit 0 unless $gRemoveAge;
 
 chdir("$gSpoolDir") || die "chdir spool: $!\n";
 

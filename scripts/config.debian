@@ -1,5 +1,5 @@
 # This is the bugs.debian.org debbugs configuration file.
-# $Id: config.debian,v 1.20 2003/06/05 08:26:59 cjwatson Exp $
+# $Id: config.debian,v 1.21 2003/08/06 10:57:23 cjwatson Exp $
 
 # Domains
 $gEmailDomain = "bugs.debian.org";
@@ -34,7 +34,8 @@ $gMirrorList = "debian-bugs-mirror";			# sends to all mirrors
 $gMailer = "exim";				# valid: exim, qmail and sendmail
 $gBug = "Bug";					# how to spell `bug'
 $gBugs = "Bugs";				# how to spell `bugs'
-$gRemoveAge = 28;				# days after closed bugs are cleaned out
+$gRemoveAge = 28;				# days after closed bugs are cleaned out,
+						# 0 disables
 $gSaveOldBugs = 1;				# whether to archive such bugs
 $gDefaultSeverity = "normal";
 $gShowSeverities = "critical, grave, serious, important, normal, minor, wishlist, fixed";

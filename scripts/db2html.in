@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: db2html.in,v 1.18 2003/05/25 14:43:30 joy Exp $
+# $Id: db2html.in,v 1.19 2003/08/06 10:57:23 cjwatson Exp $
 # usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
 
 #load the necessary libraries/configuration
@@ -22,7 +22,8 @@ chdir("$gSpoolDir") || die "chdir spool: $!\n";
 $diff = 0;
 $stampfile = 'stamp.html';
 $tail_html = $gHTMLTail; 
-$expirynote_html = $gHTMLExpireNote;
+$expirynote_html = '';
+$expirynote_html = $gHTMLExpireNote if $gRemoveAge;
 $shorthead = ' Ref   * Package    Keywords/Subject                    Submitter';
 $shortindex = ''; 
 $amonths = -1;

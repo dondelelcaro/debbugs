@@ -1,6 +1,6 @@
 # This is the template debbugs configuration file.
 # You *must* edit it in order for debbugs to work.
-# $Id: config.in,v 1.18 2003/06/04 18:05:51 cjwatson Exp $
+# $Id: config.in,v 1.19 2003/08/06 10:57:23 cjwatson Exp $
 
 # Domains
 $gEmailDomain = "bugs.something";			# e.g. bugs.debian.org
@@ -42,7 +42,8 @@ $gMirrorList = "bug-mirrors-list";		# sends to all mirrors
 $gMailer = "exim";				# valid: exim, qmail and sendmail
 $gBug = "bug";					# how to spell `bug'
 $gBugs = "bugs";				# how to spell `bugs'
-$gRemoveAge = 28;				# days after closed bugs are cleaned out
+$gRemoveAge = 28;				# days after closed bugs are cleaned out,
+						# 0 disables
 $gSaveOldBugs = 1;				# whether to archive such bugs
 $gDefaultSeverity = "normal";
 $gShowSeverities = "critical, grave, normal, minor, wishlist";

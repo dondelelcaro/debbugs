@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.76 2003/07/18 14:41:11 cjwatson Exp $
+# $Id: process.in,v 1.77 2003/08/06 10:57:23 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -188,6 +188,15 @@ if ($tryref >= 0)
         $ref= $tryref; 
     } else {
         &htmllog("Reply","sent", $replyto,"Unknown problem report number <code>$tryref</code>.");
+        my $archivenote = '';
+        if ($gRemoveAge) {
+            $archivenote = <<END;
+This may be because that $gBug report has been resolved for more than $gRemoveAge
+days, and the record of it has been expunged, or because you mistyped
+the $gBug report number.
+
+END
+        }
         &sendmessage(<<END, '');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
@@ -202,11 +211,7 @@ You sent a message to the $gBug tracking system which gave (in the
 Subject line or encoded into the recipient at $gEmailDomain),
 the number of a nonexistent $gBug report (#$tryref).
 
-This may be because that $gBug report has been resolved for more than $gRemoveAge
-days, and the record of it has been expunged, or because you mistyped
-the $gBug report number.
-
-Your message was dated $header{'date'} and was sent to
+${archivenote}Your message was dated $header{'date'} and was sent to
 $baddress\@$gEmailDomain.  It had
 Message-ID $header{'message-id'}
 and Subject $subject.
