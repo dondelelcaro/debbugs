@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.78 2003/08/07 13:57:06 cjwatson Exp $
+# $Id: process.in,v 1.79 2003/08/20 23:33:54 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -265,6 +265,10 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	} else { 
 	    $generalcc=''; 
 	}
+    }
+    if (grep { $_ eq $data->{severity} } @strongseverities and
+            defined $gStrongList) {
+        $generalcc = join ', ', $generalcc, "$gStrongList\@$gListDomain";
     }
     if ($ref<0) {
 	&htmllog("Warning","sent",$replyto,"Message ignored.");
@@ -618,6 +622,10 @@ END
 }
 
 @bccs = @addsrcaddrs;
+if (grep { $_ eq $data->{severity} } @gStrongSeverities and
+        defined $gStrongList) {
+    push @bccs, "$gStrongList\@$gListDomain";
+}
 
 $veryquiet= $codeletter eq 'Q';
 if ($codeletter eq 'M' && !@maintaddrs) {

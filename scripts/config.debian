@@ -1,5 +1,5 @@
 # This is the bugs.debian.org debbugs configuration file.
-# $Id: config.debian,v 1.21 2003/08/06 10:57:23 cjwatson Exp $
+# $Id: config.debian,v 1.22 2003/08/20 23:33:54 cjwatson Exp $
 
 # Domains
 $gEmailDomain = "bugs.debian.org";
@@ -29,6 +29,7 @@ $gSubmitterList = "debian-bugs-dist";
 $gControlList = "debian-bugs-dist";
 $gSummaryList = "debian-bugs-reports";
 $gMirrorList = "debian-bugs-mirror";			# sends to all mirrors
+$gStrongList = "debian-bugs-rc";
 
 # Various configurable options
 $gMailer = "exim";				# valid: exim, qmail and sendmail

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.84 2003/08/06 18:45:41 cjwatson Exp $
+# $Id: service.in,v 1.85 2003/08/20 23:33:54 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -248,7 +248,7 @@ END
             } else {
                 $action= "$gBug closed, send any further explanations to $data->{originator}";
                 do {
-                    &addmaintainers($data->{package});
+                    &addmaintainers($data->{package}, $data->{severity});
 					if ( length( $gDoneList ) > 0 && length( $gListDomain ) >
 					0 ) { &addccaddress("$gDoneList\@$gListDomain"); }
                     $data->{done}= $replyto;
@@ -299,7 +299,7 @@ END
                 $action= "$gBug assigned to package \`$newpackage'.";
             }
             do {
-                &addmaintainers($data->{package});
+                &addmaintainers($data->{package}, $data->{severity});
                 &addmaintainers($newpackage);
                 $data->{package}= $newpackage;
             } while (&getnextbug);
@@ -319,7 +319,7 @@ END
                     $noriginator eq '' ? "$gBug reopened, originator not changed." :
                         "$gBug reopened, originator set to $noriginator.";
                 do {
-                    &addmaintainers($data->{package});
+                    &addmaintainers($data->{package}, $data->{severity});
                     $data->{originator}= $noriginator eq '' ?  $data->{originator} : $noriginator;
                     $data->{done}= '';
                 } while (&getnextbug);
@@ -334,7 +334,7 @@ END
         }
         if (&getbug) {
             &foundbug;
-            &addmaintainers($data->{package});
+            &addmaintainers($data->{package}, $data->{severity});
             $oldsubmitter= $data->{originator};
             $data->{originator}= $newsubmitter;
             $action= "Changed $gBug submitter from $oldsubmitter to $newsubmitter.";
@@ -386,7 +386,7 @@ END
                 $extramessage= "(By the way, this $gBug is currently marked as done.)\n";
             }
             do {
-                &addmaintainers($data->{package});
+                &addmaintainers($data->{package}, $data->{severity});
 		if (length($gFowardList)>0 && length($gListDomain)>0 ) {
 		     &addccaddress("$gFowardList\@$gListDomain"); 
 		}
@@ -403,7 +403,7 @@ END
             } else {
     $action= "Removed annotation that $gBug had been forwarded to $data->{forwarded}.";
                 do {
-                    &addmaintainers($data->{package});
+                    &addmaintainers($data->{package}, $data->{severity});
                     $data->{forwarded}= '';
                 } while (&getnextbug);
             }
@@ -424,7 +424,12 @@ END
             $printseverity= "$gDefaultSeverity" if $printseverity eq '';
 	    $action= "Severity set to \`$newseverity'.";
 	    do {
-                &addmaintainers($data->{package});
+                &addmaintainers($data->{package}, $data->{severity});
+                if (defined $gStrongList and
+                        grep { $_ eq $newseverity } @strongseverities) {
+                    my $addbcc = "$gStrongList\@$gListDomain";
+                    push @bcc, $addbcc unless grep { $_ eq $addbcc } @bccs;
+                }
                 $data->{severity}= $newseverity;
             } while (&getnextbug);
         }
@@ -464,7 +469,7 @@ END
 		$action= "Tags removed: " . join(", ", @okaytags);
 	    }
 	    do {
-                &addmaintainers($data->{package});
+                &addmaintainers($data->{package}, $data->{severity});
 	        $data->{keywords} = '' if ($addsub eq "set");
 		if ($addsub eq "sub") {
 		    foreach my $t (@badtags) {
@@ -488,7 +493,7 @@ END
 	}
         if (&getbug) {
             &foundbug;
-            &addmaintainers($data->{package});
+            &addmaintainers($data->{package}, $data->{severity});
             $data->{subject}= $newtitle;
             $action= "Changed $gBug title.";
             &savebug;
@@ -513,7 +518,7 @@ END
 		@newmergelist= split(/ /,$data->{mergedwith});
                 $discref= $ref;
                 do {
-                    &addmaintainers($data->{package});
+                    &addmaintainers($data->{package}, $data->{severity});
 		    $data->{mergedwith}= ($ref == $discref) ? ''
                         : join(' ',grep($_ ne $ref,@newmergelist));
                 } while (&getnextbug);
@@ -556,7 +561,7 @@ END
             $action= "Merged @newmergelist.";
 	    for $ref (@newmergelist) {
 		&getbug || die "huh ?  $gBug $ref disappeared during merge";
-                &addmaintainers($data->{package});
+                &addmaintainers($data->{package}, $data->{severity});
 		$data->{mergedwith}= join(' ',grep($_ ne $ref,@newmergelist));
 		$data->{keywords}= join(' ', keys %tags);
 		&savebug;
@@ -1022,6 +1027,10 @@ sub addmaintainers {
 		push @bcc, "$p\@$gSubscriptionDomain";
 	    }
 	}
+        if (defined $_[1] and defined $gStrongList and
+                grep { $_ eq $_[1] } @strongseverities) {
+            push @bcc, "$gStrongList\@$gListDomain";
+        }
         if (defined($maintainerof{$p})) {
  	    $addmaint= $maintainerof{$p};
 	    &transcript("MR|$addmaint|$p|$ref|\n") if $dl>2;
