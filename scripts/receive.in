@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: receive.in,v 1.6 2000/10/07 18:17:02 joy Exp $
+# $Id: receive.in,v 1.7 2000/10/10 23:27:04 joy Exp $
 # usage: mail is piped directly into program
 
 #set umask in order to have group-writable incoming/*
@@ -88,7 +88,13 @@ $gBadEmailPrefix   http://$gWebDomain/
 $gBadEmailPrefix   http://$gWebDomain/Reporting.html
 $gBadEmailPrefix   http://$gWebDomain/Developer.html
 $gBadEmailPrefix   http://$gWebDomain/Access.html
-$gTextInstructions
+$gBadEmailPrefix
+$gBadEmailPrefix Instructions are available from ftp.debian.org in /debian
+$gBadEmailPrefix and at all Debian mirror sites, in the files:
+$gBadEmailPrefix  doc/bug-reporting.txt
+$gBadEmailPrefix  doc/bug-log-access.txt
+$gBadEmailPrefix  doc/bug-maint-info.txt
+$gBadEmailPrefix
 $gBadEmailPrefix For details of how to access $gBug report logs by email:
 $gBadEmailPrefix   send \`request\@$gEmailDomain' the word \`help'
 $gBadEmailPrefix
