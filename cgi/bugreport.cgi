@@ -165,7 +165,7 @@ my @tpacks = splitpackages($tpack);
 
 if  ($status{severity} eq 'normal') {
 	$showseverity = '';
-#} elsif (grep($status{severity} eq $_, @strongseverities)) {
+#} elsif (isstrongseverity($status{severity})) {
 #	$showseverity = "<strong>Severity: $status{severity}</strong>;\n";
 } else {
 	$showseverity = "Severity: <em>$status{severity}</em>;\n";

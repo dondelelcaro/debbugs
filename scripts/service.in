@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.86 2003/08/22 01:41:54 cjwatson Exp $
+# $Id: service.in,v 1.87 2003/08/23 13:17:32 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -425,8 +425,7 @@ END
 	    $action= "Severity set to \`$newseverity'.";
 	    do {
                 &addmaintainers($data->{package}, $data->{severity});
-                if (defined $gStrongList and
-                        grep { $_ eq $newseverity } @strongseverities) {
+                if (defined $gStrongList and isstrongseverity($newseverity)) {
                     my $addbcc = "$gStrongList\@$gListDomain";
                     push @bcc, $addbcc unless grep { $_ eq $addbcc } @bccs;
                 }
@@ -1029,7 +1028,7 @@ sub addmaintainers {
 	    }
 	}
         if (defined $_[1] and defined $gStrongList and
-                grep { $_ eq $_[1] } @strongseverities) {
+                isstrongseverity($_[1])) {
             push @bcc, "$gStrongList\@$gListDomain";
         }
         if (defined($maintainerof{$p})) {

@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.35 2003/08/22 01:41:54 cjwatson Exp $
+# $Id: errorlib.in,v 1.36 2003/08/23 13:17:32 cjwatson Exp $
 
 use Mail::Address;
 
@@ -379,11 +379,16 @@ sub escapelog {
 	return \@log;
 }
 
+sub isstrongseverity {
+    my $severity = shift;
+    $severity = $gDefaultSeverity if $severity eq '';
+    return grep { $_ eq $severity } @gStrongSeverities;
+}
+
 
 @severities= grep { not exists $gObsoleteSeverities{$_} } @gSeverityList;
 @showseverities= @severities;
 grep ($_= $_ eq '' ? $gDefaultSeverity : $_, @showseverities);
-@strongseverities= @gStrongSeverities;
 %displayshowseverities= %gSeverityDisplay;
 
 1;

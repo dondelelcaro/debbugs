@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: db2html.in,v 1.19 2003/08/06 10:57:23 cjwatson Exp $
+# $Id: db2html.in,v 1.20 2003/08/23 13:17:32 cjwatson Exp $
 # usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
 
 #load the necessary libraries/configuration
@@ -142,7 +142,7 @@ for $f (@files)
         if ($data->{severity} eq '' || $data->{severity} eq 'normal') 
 		{ 	$showseverity= '';
             $addseverity= $gDefaultSeverity;
-        } elsif (grep($data->{severity} eq $_, @strongseverities)) 
+        } elsif (isstrongseverity($data->{severity})) 
 		{ 	$showseverity= "<strong>Severity: $data->{severity}</strong>;\n";
             $addseverity= $data->{severity};
         } else 

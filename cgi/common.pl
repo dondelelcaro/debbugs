@@ -210,7 +210,7 @@ sub htmlindexentrystatus {
 
     if  ($status{severity} eq 'normal') {
         $showseverity = '';
-    } elsif (grep($status{severity} eq $_, @debbugs::gStrongSeverities)) {
+    } elsif (isstrongseverity($status{severity})) {
         $showseverity = "<strong>Severity: $status{severity}</strong>;\n";
     } else {
         $showseverity = "Severity: <em>$status{severity}</em>;\n";

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.79 2003/08/20 23:33:54 cjwatson Exp $
+# $Id: process.in,v 1.80 2003/08/23 13:17:32 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -266,8 +266,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	    $generalcc=''; 
 	}
     }
-    if (grep { $_ eq $data->{severity} } @strongseverities and
-            defined $gStrongList) {
+    if (defined $gStrongList and isstrongseverity($data->{severity})) {
         $generalcc = join ', ', $generalcc, "$gStrongList\@$gListDomain";
     }
     if ($ref<0) {
@@ -622,8 +621,7 @@ END
 }
 
 @bccs = @addsrcaddrs;
-if (grep { $_ eq $data->{severity} } @gStrongSeverities and
-        defined $gStrongList) {
+if (defined $gStrongList and isstrongseverity($data->{severity})) {
     push @bccs, "$gStrongList\@$gListDomain";
 }
 
