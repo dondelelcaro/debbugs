@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.22 2000/11/22 10:02:51 joy Exp $
+# $Id: process.in,v 1.23 2001/03/18 04:11:07 doogie Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -535,6 +535,7 @@ Resent-Message-ID: <handler.$ref.$nn\@$gEmailDomain>
 Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: report $ref
 X-$gProject-PR-Package: $s_package
+X-$gProject-PR-Keywords: $s_keywords
 $fwd
 END
 } elsif ($codeletter eq 'B') {
@@ -553,6 +554,7 @@ Resent-Message-ID: <handler.$ref.$nn\@$gEmailDomain>
 Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: report $ref
 X-$gProject-PR-Package: $s_package
+X-$gProject-PR-Keywords: $s_keywords
 $fwd
 END
 } elsif (@resentccs) {
@@ -574,6 +576,7 @@ Resent-Message-ID: <handler.$ref.$nn\@$gEmailDomain>
 Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: report $ref
 X-$gProject-PR-Package: $s_package
+X-$gProject-PR-Keywords: $s_keywords
 $fwd
 END
 }
