@@ -92,7 +92,7 @@ if  ($status{severity} eq 'normal') {
 }
 
 $indexentry .= "<p>$showseverity";
-$indexentry .= htmlpackagelinks($status{package});
+$indexentry .= htmlpackagelinks($status{package}, 0);
 
 $indexentry .= "Reported by: <a href=\"" . submitterurl($status{originator})
               . "\">" . htmlsanit($status{originator}) . "</a>;\n";

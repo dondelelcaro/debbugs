@@ -119,13 +119,17 @@ sub splitpackages {
 sub htmlpackagelinks {
     my $pkgs = shift;
     return unless defined $pkgs and $pkgs ne '';
+    my $strong = shift;
     my @pkglist = splitpackages($pkgs);
+
+    my $openstrong  = $strong ? '<strong>' : '';
+    my $closestrong = $strong ? '</strong>' : '';
 
     return 'Package' . (@pkglist > 1 ? 's' : '') . ': ' .
            join(', ',
                 map {
                     '<a href="' . pkgurl($_) . '">' .
-                    '<strong>' . htmlsanit($_) . '</strong></a>'
+                    $openstrong . htmlsanit($_) . $closestrong . '</a>'
                 } @pkglist
            ) . ";\n";
 }
@@ -151,7 +155,7 @@ sub htmlindexentrystatus {
         $showseverity = "Severity: <em>$status{severity}</em>;\n";
     }
 
-    $result .= htmlpackagelinks($status{"package"});
+    $result .= htmlpackagelinks($status{"package"}, 1);
     $result .= $showseverity;
     $result .= "Reported by: <a href=\"" . submitterurl($status{originator})
                . "\">" . htmlsanit($status{originator}) . "</a>";
