@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.83 2003/09/04 23:37:40 cjwatson Exp $
+# $Id: process.in,v 1.84 2003/09/18 17:31:48 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -1086,7 +1086,7 @@ sub checkmaintainers {
     }
     close(SOURCES);
     $anymaintfound=0; $anymaintnotfound=0;
-    for $p (split(m/[ \t?,()]+/,$data->{package})) {
+    for $p (split(m/[ \t?,():]+/,$data->{package})) {
         $p =~ y/A-Z/a-z/;
 	if (defined $gSubscriptionDomain) {
 	    if (defined($pkgsrc{$p})) {
