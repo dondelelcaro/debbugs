@@ -273,11 +273,12 @@ while(my $line = <L>) {
 	} elsif ($normstate eq 'autocheck') {
 		next if !m/^X-Debian-Bugs(-\w+)?: This is an autoforward from (\S+)/;
 		$normstate= 'autowait';
-		$this = "<h2>Message received at $2:</h2>\n";
+		$thisheader = "<h2>Message received at $2:</h2>\n";
+		$this = '';
+		$mail .= $_;
 	} elsif ($normstate eq 'autowait') {
 		next if !m/^$/;
 		$normstate= 'go-nox';
-		$this .= "<pre>\n";
 	} else {
 		&quit("$ref state $normstate line \`$_'");
 	}
