@@ -25,6 +25,9 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Add in a Table of Contents to pkgreport.cgi.
     - Display how long until a resolved bug will be archived in
       pkgreport.cgi.
+    - Add user-agent detection.  This currently doesn't change anything,
+      however.
+    - Add options show_list_(head|foot)er.
 
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
 

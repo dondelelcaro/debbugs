@@ -4,7 +4,7 @@ use DB_File;
 use Fcntl qw/O_RDONLY/;
 use Mail::Address;
 use MLDBM qw/DB_File/;
-use POSIX;
+use POSIX qw/ceil/;
 
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
@@ -25,6 +25,10 @@ my %common_reverse = (
     'pending' => 0,
     'severity' => 0,
 );
+my %common = (
+    'show_list_header' => 1,
+    'show_list_footer' => 1,
+);
 
 sub exact_field_match {
     my ($field, $values, $status) = @_; 
@@ -40,6 +44,15 @@ sub contains_field_match {
     return 0;        
 }
 
+sub detect_user_agent {
+    my $userAgent = $ENV{HTTP_USER_AGENT};
+    return { 'name' => 'links' } if ( $userAgent =~ m,^ELinks,);
+    return { 'name' => 'lynx' } if ( $userAgent =~ m,^Lynx,);
+    return { 'name' => 'wget' } if ( $userAgent =~ m,^Wget,);
+    return { 'name' => 'gecko' } if ( $userAgent =~ m,^Mozilla.* Gecko/,);
+    return { 'name' => 'ie' } if ( $userAgent =~ m,^.*MSIE.*,);
+    return { 'name' => 'unknown' };
+}
 my %field_match = (
     'subject' => \&contains_field_match,
     'tags' => sub {
@@ -114,6 +127,7 @@ sub filter_option($$\%) {
 
 sub set_option {
     my ($opt, $val) = @_;
+    if ($opt =~ m/^show_list_(foot|head)er$/) { $common{$opt} = $val; }
     if ($opt eq "archive") { $common_archive = $val; }
     if ($opt eq "repeatmerged") { $common_repeatmerged = $val; }
     if ($opt eq "exclude") {
@@ -563,9 +577,9 @@ sub htmlizebugs {
 	$footer .= "</ul>\n";
     }
 
-    $result = $header . $result;
+    $result = $header . $result if ( $common{show_list_header} );
     $result .= $debbugs::gHTMLExpireNote if $gRemoveAge and $anydone;
-    $result .= $footer;
+    $result .= $footer if ( $common{show_list_footer} );
     return $result;
 }
 

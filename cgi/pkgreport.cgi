@@ -20,6 +20,7 @@ if ($ENV{REQUEST_METHOD} eq 'HEAD') {
 
 nice(5);
 
+my $userAgent = detect_user_agent();
 my %param = readparse();
 
 my $repeatmerged = ($param{'repeatmerged'} || "yes") eq "yes";
@@ -37,6 +38,8 @@ my $sev_inc = $param{'&sev-inc'} || $param{'sev-inc'} || "";
 my $version = $param{'version'} || undef;
 my $dist = $param{'dist'} || undef;
 my $arch = $param{'arch'} || undef;
+my $show_list_header = ($param{'show_list_header'} || $userAgent->{'show_list_header'} || "yes" ) eq "yes";
+my $show_foot_header = ($param{'show_foot_header'} || $userAgent->{'show_list_footer'} || "yes" ) eq "yes";
 
 my ($pkg, $src, $maint, $maintenc, $submitter, $severity, $status, $tag);
 
@@ -111,6 +114,8 @@ set_option("sev-inc", $sev_inc);
 set_option("version", $version);
 set_option("dist", $dist);
 set_option("arch", $arch);
+set_option("show_list_header", $show_list_header);
+set_option("show_foot_header", $show_foot_header);
 
 my $title;
 my @bugs;
