@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# $Id: html-install.in,v 1.2 1999/09/02 22:27:29 gecko Exp $
 # Takes 1 argument - directory tree to install into
 # Tree _must_ be synch'd with one used by db2html to generate file
 

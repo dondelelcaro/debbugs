@@ -1,3 +1,4 @@
+# $Id: config.in,v 1.2 1999/09/02 22:27:29 gecko Exp $
 #domains
 $gEmailDomain = "bugs.benham";		#bugs.debian.org
 $gListDomain = "lists.benham";		#lists.debian.org
@@ -48,7 +49,8 @@ $gDefaultSeverity = 'normal';
 @gSeverityList= ('critical','grave','','wishlist');
 %gSeverityDisplay=('critical',"Critical $gBugs",
                                        'grave',"Grave $gBugs",
-                                       'normal',"Normal $gBugs",,
+                                       'normal',"Normal $gBugs",
+				       'fixed',"NMU Fixed $gBugs",
                                        'wishlist','Wishlist items');
 
 $gTextInstructions = "Instructions are available from ftp.debian.org 

@@ -1,3 +1,4 @@
+# $Id: config.debian,v 1.2 1999/09/02 22:27:29 gecko Exp $
 #domains
 $gEmailDomain = "bugs.benham";		#bugs.debian.org
 $gListDomain = "lists.benham";		#lists.debian.org

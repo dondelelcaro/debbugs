@@ -1,4 +1,6 @@
 #!/usr/bin/perl
+# $Id: receive.in,v 1.2 1999/09/02 22:27:29 gecko Exp $
+# usage: mail is piped directly into program
 
 #load configuration file
 require( '/etc/debbugs/config' );

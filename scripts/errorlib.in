@@ -1,4 +1,5 @@
 # -*- perl -*-
+# $Id: errorlib.in,v 1.2 1999/09/02 22:27:29 gecko Exp $
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.

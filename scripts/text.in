@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.3 1999/09/02 20:10:02 gecko Exp $
+# $Id: text.in,v 1.4 1999/09/02 22:27:29 gecko Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -101,9 +101,9 @@ $gCreateMaintainers = "";
 # Description of the severities
 ############################################################################
 $gHTMLSeverityDesc = "<DT><CODE>critical</CODE>
-	<DD>makes unrelated software on the system (or the whole system) break, or
-	causes serious data loss, or introduces a security hole on systems where
-	you install the package.
+	<DD>makes unrelated software on the system (or the whole system) break,
+	or causes serious data loss, or introduces a security hole on systems 
+	where you install the package.
 
 	<DT><CODE>grave</CODE>
 	<DD>makes the package in question unuseable or mostly so, or causes data
@@ -114,8 +114,12 @@ $gHTMLSeverityDesc = "<DT><CODE>critical</CODE>
 	<DD>the default value, for normal $gBugs.
 
 	<DT><CODE>wishlist</CODE>
-	<DD>for any feature request, and also for any $gBugs that are very difficult
-	to fix due to major design considerations.";
+	<DD>for any feature request, and also for any $gBugs that are very 
+	difficult to fix due to major design considerations.";
+
+	<DT><CODE>fixed</CODE>
+	<DD>fixed in the current version in the unstable archive but the fix has
+	not been fixed by the person responsible.
 
 ############################################################################
 # shows up at the end of (most) html pages.  You shouldn't have

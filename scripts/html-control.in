@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# $Id: html-control.in,v 1.2 1999/09/02 22:27:29 gecko Exp $
 
 use POSIX;
 

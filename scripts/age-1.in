@@ -1,4 +1,5 @@
 #!/bin/sh
+# $Id: age-1.in,v 1.2 1999/09/02 22:27:29 gecko Exp $
 set -e
 cd /var/lib/debbugs/spool
 test -f ./-3.log && rm ./-3.log

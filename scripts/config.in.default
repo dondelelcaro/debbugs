@@ -1,3 +1,4 @@
+# $Id: config.in.default,v 1.2 1999/09/02 22:27:29 gecko Exp $
 #domains
 $gEmailDomain = "bugs.top.domain";		#bugs.debian.org
 $gListDomain = "lists.top.domain";		#lists.debian.org
