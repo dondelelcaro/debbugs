@@ -88,9 +88,14 @@ sub display_entity ($$$$\$\@) {
 	    my $head = $entity->head;
 	    chomp(my $type = $entity->effective_type);
 	    my $body = $entity->stringify_body;
-	    print "Content-Type: $type";
-	    print "; name=$filename" if $filename ne '';
-	    print "\n\n";
+	    print "Content-Type: $type\n";
+	    if ($filename ne '') {
+		my $qf = $filename;
+		$qf =~ s/"/\\"/g;
+		$qf =~ s[.*/][];
+		print qq{Content-Disposition: attachment; filename="$qf"\n};
+	    }
+	    print "\n";
 	    my $decoder = new MIME::Decoder($head->mime_encoding);
 	    $decoder->decode(new IO::Scalar(\$body), \*STDOUT);
 	    exit(0);
