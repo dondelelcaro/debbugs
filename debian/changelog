@@ -6,6 +6,7 @@ debbugs (2.4.1) UNRELEASED; urgency=low
     [Colin]
   * Add a man page for debbugsconfig. [Colin]
   * Report original tags when changing them, closes: #170630. [Colin]
+  * Add missing <ul></ul> tags to db2html's output, closes: #50746. [Colin]
 
  -- Colin Watson <cjwatson@debian.org>  Mon, 25 Nov 2002 03:50:20 +0000
 
