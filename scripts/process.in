@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.71 2003/05/27 02:39:17 cjwatson Exp $
+# $Id: process.in,v 1.72 2003/06/23 11:23:35 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -8,7 +8,6 @@ use POSIX qw(strftime tzset);
 $ENV{"TZ"} = 'UTC';
 tzset();
 
-use Mail::Address;
 use MIME::Parser;
 
 $config_path = '/etc/debbugs';
@@ -928,12 +927,6 @@ sub htmllog {
           "\n\3\n") || &quit("writing db-h/$hash/$ref.log (lh): $!");
     close(AP) || &quit("closing db-h/$hash/$ref.log (lh): $!");
 }    
-
-sub get_addresses {
-	return
-   		map { $_->address() }
-   		map { Mail::Address->parse($_) } @_;
-}
 
 sub stripbccs {
     my $msg = shift;

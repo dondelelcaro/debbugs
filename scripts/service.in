@@ -1,11 +1,10 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.77 2003/06/05 08:26:59 cjwatson Exp $
+# $Id: service.in,v 1.78 2003/06/23 11:23:35 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
 
-use Mail::Address;
 use File::Copy;
 use MIME::Parser;
 
@@ -684,12 +683,6 @@ utime(time,time,"db-h");
 &sendmailmessage($reply,$replyto,@maintccaddrs,@bcc);
 
 unlink("incoming/P$nn") || &quit("unlinking incoming/P$nn: $!");
-
-sub get_addresses {
-    return
-       map { $_->address() }
-       map { Mail::Address->parse($_) } @_;
-}
 
 sub sendmailmessage {
     local ($message,@recips) = @_;

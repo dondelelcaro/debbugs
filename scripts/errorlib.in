@@ -1,5 +1,7 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.31 2003/06/10 01:18:59 cjwatson Exp $
+# $Id: errorlib.in,v 1.32 2003/06/23 11:23:35 cjwatson Exp $
+
+use Mail::Address;
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -319,6 +321,12 @@ sub getmailbody {
 		}
 	}
 	return undef;
+}
+
+sub get_addresses {
+	return
+	    map { $_->address() }
+	    map { Mail::Address->parse($_) } @_;
 }
 
 sub escapelog {
