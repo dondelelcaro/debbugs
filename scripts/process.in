@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.10 1999/10/25 01:35:04 gecko Exp $
+# $Id: process.in,v 1.11 1999/12/17 19:44:08 gecko Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -8,7 +8,6 @@ use Mail::Address;
 require( '/etc/debbugs/config' );
 require( '/usr/lib/debbugs/errorlib' );
 chdir( "$gSpoolDir" ) || die 'chdir spool: $!\n';
-@showseverities=();
 
 #open(DEBUG,"> /tmp/debbugs.debug");
 
@@ -407,7 +406,7 @@ X-$gProject-PR-Message: error
 
 Your message didn't have a Package: line at the start (in the
 pseudo-header following the real mail header), or didn't have a
-psuedo-header at all.
+pseudo-header at all.
 
 This makes it much harder for us to categorise and deal with your
 problem report. Please resubmit your report and tell us which package the
@@ -430,15 +429,17 @@ END
         $s_keywords= $pheader{'keywords'};
     }
     $s_severity= '';
-    if (defined($pheader{'severity'})) {
-        $s_severity= $pheader{'severity'};
-	if (!grep($_ eq $s_severity, @severities, "$gDefaultSeverity")) {
+	if (defined($pheader{'severity'}) || defined($pheader{'priority'})) 
+	{ 	$s_severity= $pheader{'severity'};
+	    $s_severity= $pheader{'priority'} unless ($s_severity);
+
+		if (!grep($_ eq $s_severity, @severities, "$gDefaultSeverity")) {
             $brokenness.= <<END;
 
-Your message specified a Severity: in the psuedo-header, but
+Your message specified a Severity: in the pseudo-header, but
 the severity value $s_severity was not recognised.
 The default severity $gDefaultSeverity is being used instead.
-The recognised values are: @showseverities.
+The recognised values are: @gSeverityList.
 END
             $s_severity= '';
         }
@@ -490,7 +491,7 @@ if ($codeletter eq 'M' && !@maintaddrs) {
 
 You requested that the message be sent to the package maintainer(s)
 but either the $gBug report is not associated with any package (probably
-because of a missing Package psuedo-header field in the original $gBug
+because of a missing Package pseudo-header field in the original $gBug
 report), or the package(s) specified do not have any maintainer(s).
 
 Your message has *not* been sent to any package maintainers; it has

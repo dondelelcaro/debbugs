@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.9 1999/12/01 18:04:01 gecko Exp $
+# $Id: service.in,v 1.10 1999/12/17 19:44:08 gecko Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -325,7 +325,8 @@ END
                 } while (&getnextbug);
             }
         }
-    } elsif (m/^severity\s+\#?(\d+)\s+([-0-9a-z]+)$/i) {
+    } elsif (m/^severity\s+\#?(\d+)\s+([-0-9a-z]+)$/i ||
+	m/^priority\s+\#?(\d+)\s+([-0-9a-z]+)$/i) {
         $ok++;
         $ref= $1;
         $newseverity= $2;
