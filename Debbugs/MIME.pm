@@ -2,17 +2,21 @@ package Debbugs::MIME;
 
 use strict;
 
-use File::Path;
-use MIME::Parser;
-use Exporter ();
-use vars qw($VERSION @ISA @EXPORT_OK);
+use base qw(Exporter);
+use vars qw($VERSION @EXPORT_OK);
 
 BEGIN {
     $VERSION = 1.00;
 
-    @ISA = qw(Exporter);
-    @EXPORT_OK = qw(parse);
+    @EXPORT_OK = qw(parse de_rfc1522);
 }
+
+use File::Path;
+use MIME::Parser;
+
+# for de_rfc1522
+use MIME::WordDecoder qw();
+use Unicode::MapUTF8 qw(to_utf8 utf8_supported_charset);
 
 sub getmailbody ($);
 sub getmailbody ($)
@@ -94,6 +98,40 @@ sub parse ($)
     }
 
     return { header => [@headerlines], body => [@bodylines]};
+}
+
+# Bug #61342 et al.
+
+=head2 de_rfc1522
+
+    de_rfc1522('=?iso-8859-1?Q?D=F6n_Armstr=F3ng?= <don@donarmstrong.com>')
+
+Turn RFC-1522 names into the UTF-8 equivalent.
+
+=cut
+
+BEGIN {
+    # Set up the default RFC1522 decoder, which turns all charsets that
+    # are supported into the appropriate UTF-8 charset.
+    MIME::WordDecoder->default(new MIME::WordDecoder(
+	['*' => sub {
+	    my ($data, $charset) = @_;
+	    $charset =~ s/^(UTF)\-(\d+)/$1$2/i;
+	    return $data unless utf8_supported_charset($charset);
+	    return to_utf8({
+		-string  => $data,
+		-charset => $charset,
+	    });
+	}]));
+}
+
+sub de_rfc1522 ($)
+{
+    my ($string) = @_;
+
+    # unmime calls the default MIME::WordDecoder handler set up at
+    # initialization time.
+    return MIME::WordDecoder::unmime($string);
 }
 
 1;
