@@ -131,7 +131,8 @@ sub htmlindexentrystatus {
                . "<strong>" . htmlsanit($status{"package"}) . "</strong></a>;\n"
                if (length($status{"package"}));
     $result .= $showseverity;
-    $result .= "Reported by: " . htmlsanit($status{originator});
+    $result .= "Reported by: <a href=\"" . submitterurl($status{originator})
+               . "\">" . htmlsanit($status{originator}) . "</a>";
     $result .= ";\nTags: <strong>" 
 		 . htmlsanit(join(", ", sort(split(/\s+/, $status{tags}))))
 		 . "</strong>"
