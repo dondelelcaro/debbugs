@@ -206,8 +206,8 @@ sub htmlindexentrystatus {
             $efont = "</$font>" if ($font);
             $font = "<$font>" if ($font);
 
-            my $yearsold = int($daysold / 364);
-            $daysold = $daysold - $yearsold * 364;
+            my $yearsold = int($daysold / 365);
+            $daysold -= $yearsold * 365;
 
             $result .= ";\n $font";
             my @age;
