@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.13 2001/02/18 14:35:02 joy Exp $
+# $Id: text.in,v 1.14 2001/09/18 20:55:10 joy Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -176,7 +176,7 @@ $gHTMLStart = "<BODY>";
 ############################################################################
 $gHTMLTail = "<HR>
  <ADDRESS>$gMaintainer /
- <A HREF=\"mailto:$gMaintainerEmail\">$gMaintainerEmail</A>.  Last modifed:
+ <A HREF=\"mailto:$gMaintainerEmail\">$gMaintainerEmail</A>.  Last modified:
  <!--timestamp-->
  SUBSTITUTE_DTIME
  <!--timestamp-->
