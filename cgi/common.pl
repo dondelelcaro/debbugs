@@ -106,6 +106,30 @@ sub quit {
 #    exit 0;
 #}
 
+# Split a package string from the status file into a list of package names.
+sub splitpackages {
+    my $pkgs = shift;
+    return unless defined $pkgs;
+    return split /[ \t?,()]+/, $pkgs;
+}
+
+# Generate a comma-separated list of HTML links to each package given in
+# $pkgs. $pkgs may be empty, in which case an empty string is returned, or
+# it may be a comma-separated list of package names.
+sub htmlpackagelinks {
+    my $pkgs = shift;
+    return unless defined $pkgs and $pkgs ne '';
+    my @pkglist = splitpackages($pkgs);
+
+    return 'Package' . (@pkglist > 1 ? 's' : '') . ': ' .
+           join(', ',
+                map {
+                    '<a href="' . pkgurl($_) . '">' .
+                    '<strong>' . htmlsanit($_) . '</strong></a>'
+                } @pkglist
+           ) . ";\n";
+}
+
 sub htmlindexentry {
     my $ref = shift;
     my %status = %{getbugstatus($ref)};
@@ -127,9 +151,7 @@ sub htmlindexentrystatus {
         $showseverity = "Severity: <em>$status{severity}</em>;\n";
     }
 
-    $result .= "Package: <a href=\"" . pkgurl($status{"package"}) . "\">"
-               . "<strong>" . htmlsanit($status{"package"}) . "</strong></a>;\n"
-               if (length($status{"package"}));
+    $result .= htmlpackagelinks($status{"package"});
     $result .= $showseverity;
     $result .= "Reported by: <a href=\"" . submitterurl($status{originator})
                . "\">" . htmlsanit($status{originator}) . "</a>";

@@ -81,7 +81,7 @@ EOF
 $|=1;
 
 $tpack = lc $status{'package'};
-$tpack =~ s/[^-+._a-z0-9()].*$//;
+my @tpacks = splitpackages($tpack);
 
 if  ($status{severity} eq 'normal') {
 	$showseverity = '';
@@ -92,8 +92,7 @@ if  ($status{severity} eq 'normal') {
 }
 
 $indexentry .= "<p>$showseverity";
-$indexentry .= "Package: <a href=\"" . pkgurl($status{package}) . "\">"
-	    .htmlsanit($status{package})."</a>;\n";
+$indexentry .= htmlpackagelinks($status{package});
 
 $indexentry .= "Reported by: <a href=\"" . submitterurl($status{originator})
               . "\">" . htmlsanit($status{originator}) . "</a>;\n";
@@ -127,14 +126,17 @@ if (length($status{done})) {
 
 $indexentry .= join(";\n", @descstates) . ";\n<br>" if @descstates;
 
-my ($tmaint, $tsrc);
-$tmaint = defined($maintainer{$tpack}) ? $maintainer{$tpack} : '(unknown)';
-$tsrc = defined($pkgsrc{$tpack}) ? $pkgsrc{$tpack} : '(unknown)';
-$descriptivehead= $indexentry."Maintainer for $status{package} is\n".
+$descriptivehead = $indexentry;
+foreach my $pkg (@tpacks) {
+    my $tmaint = defined($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)';
+    my $tsrc = defined($pkgsrc{$pkg}) ? $pkgsrc{$pkg} : '(unknown)';
+
+    $descriptivehead .= "Maintainer for $pkg is\n".
             '<a href="'.mainturl($tmaint).'">'.htmlsanit($tmaint).'</a>';
-$descriptivehead.= ";\nSource for $status{package} is\n".
-	    '<a href="'.srcurl($tsrc)."\">$tsrc</a>" if ($tsrc ne "(unknown)");
-$descriptivehead.= ".</p>";
+    $descriptivehead .= ";\nSource for $pkg is\n".
+            '<a href="'.srcurl($tsrc)."\">$tsrc</a>" if ($tsrc ne "(unknown)");
+    $descriptivehead .= ".\n<br>";
+}
 
 open L, "<$buglog" or &quit("open log for $ref: $!");
 if ($buglog !~ m#^\Q$gSpoolDir/db-h/#) {
