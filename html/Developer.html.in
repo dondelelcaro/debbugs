@@ -129,7 +129,7 @@ report.
 <p>When the $gBug tracking system gets a message at
 <var>nnn</var><code>-forwarded</code> it will mark the relevant $gBug as
 having been forwarded to the address(es) in the <code>To</code> field
-of the message it gets.
+of the message it gets, if the $gBug is not already marked as forwarded.
 
 <p>You can also manipulate the `forwarded to' information by sending
 messages to <a href="server-control.html"><code>control\@$gEmailDomain</code></a>.
