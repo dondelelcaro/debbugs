@@ -16,6 +16,11 @@ require '/etc/debbugs/text';
 
 use vars(qw($gEmailDomain $gHTMLTail $gSpoolDir));
 
+if ($ENV{REQUEST_METHOD} eq 'HEAD') {
+    print "Content-Type: text/html\n\n";
+    exit 0;
+}
+
 my %param = readparse();
 
 my $tail_html;

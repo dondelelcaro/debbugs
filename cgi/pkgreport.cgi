@@ -13,6 +13,11 @@ require '/etc/debbugs/text';
 
 use vars qw($gPackagePages $gWebDomain);
 
+if ($ENV{REQUEST_METHOD} eq 'HEAD') {
+    print "Content-Type: text/html\n\n";
+    exit 0;
+}
+
 nice(5);
 
 my %param = readparse();
