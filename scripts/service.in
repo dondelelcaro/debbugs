@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.95 2004/02/03 21:37:45 cjwatson Exp $
+# $Id: service.in,v 1.96 2004/02/27 02:05:17 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -1054,12 +1054,14 @@ sub addmaintainers {
     # Data structure is:
     #   maintainer email address &c -> assoc of packages -> assoc of bug#'s
     my $data = shift;
-    my ($p, $addmaint, $pshow);
+    my ($p, $addmaint);
     &ensuremaintainersloaded;
     $anymaintfound=0; $anymaintnotfound=0;
     for $p (split(m/[ \t?,():]+/, $data->{package})) {
  	$p =~ y/A-Z/a-z/;
-        $pshow= ($p =~ m/[-+.a-z0-9]+/ ? $& : '');
+	$p =~ /([a-z0-9.+-]+)/;
+	$p = $1;
+	next unless defined $p;
 	if (defined $gSubscriptionDomain) {
 	    if (defined($pkgsrc{$p})) {
 		addbcc("$pkgsrc{$p}\@$gSubscriptionDomain");

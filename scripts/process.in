@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.84 2003/09/18 17:31:48 cjwatson Exp $
+# $Id: process.in,v 1.85 2004/02/27 02:05:17 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -1088,6 +1088,9 @@ sub checkmaintainers {
     $anymaintfound=0; $anymaintnotfound=0;
     for $p (split(m/[ \t?,():]+/,$data->{package})) {
         $p =~ y/A-Z/a-z/;
+	$p =~ /([a-z0-9.+-]+)/;
+	$p = $1;
+	next unless defined $p;
 	if (defined $gSubscriptionDomain) {
 	    if (defined($pkgsrc{$p})) {
 		push @addsrcaddrs, "$pkgsrc{$p}\@$gSubscriptionDomain";
