@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.16 2000/10/07 17:27:13 joy Exp $
+# $Id: process.in,v 1.17 2000/10/08 10:06:32 doogie Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -525,7 +525,6 @@ END
              join(', ',"$gSubmitList\@$gListDomain",@resentccs),
              "<code>$gBug#$ref</code>".
              (length($s_package)? "; Package <code>".&sani($s_package)."</code>" : '').
-             (length($s_keywords)? "; Keywords <code>".&sani($s_keywords)."</code>":'').
              ".");
     &sendmessage(<<END,"$gSubmitList\@$gListDomain",@resentccs);
 Subject: $gBug#$ref: $newsubject
@@ -548,7 +547,6 @@ END
              $resentccval,
              "<code>$gBug#$ref</code>".
              (length($s_package)? "; Package <code>".&sani($s_package)."</code>" : '').
-             (length($s_keywords)? "; Keywords <code>".&sani($s_keywords)."</code>":'').
              ".");
     &sendmessage(<<END,@resentccs);
 Subject: $gBug#$ref: $newsubject
