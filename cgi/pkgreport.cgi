@@ -33,6 +33,7 @@ my $archive = ($param{'archive'} || "no") eq "yes";
 my $include = $param{'include'} || "";
 my $exclude = $param{'exclude'} || "";
 my $raw_sort = ($param{'raw'} || "no") eq "yes";
+my $bug_rev = ($param{'bug-rev'} || "no") eq "yes";
 
 my $Archived = $archive ? " Archived" : "";
 
@@ -56,6 +57,7 @@ set_option("include", { map {if (m/^(.*):(.*)$/) { ($1,$2) } else { ($_,1) }} (s
 set_option("exclude", { map {if (m/^(.*):(.*)$/) { ($1,$2) } else { ($_,1) }} (split /[\s,]+/, $exclude) })
 	if ($exclude);
 set_option("raw", $raw_sort);
+set_option("bug-rev", $bug_rev);
 
 my $tag;
 my @bugs;

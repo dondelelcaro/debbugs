@@ -8,6 +8,7 @@ my $common_repeatmerged = 1;
 my %common_include = ();
 my %common_exclude = ();
 my $common_raw_sort = 0;
+my $common_bug_reverse = 0;
 
 my $debug = 0;
 
@@ -18,6 +19,7 @@ sub set_option {
     if ($opt eq "exclude") { %common_exclude = %{$val}; }
     if ($opt eq "include") { %common_include = %{$val}; }
     if ($opt eq "raw") { $common_raw_sort = $val; }
+    if ($opt eq "bug-rev") { $common_bug_reverse = $val; }
 }
 
 sub readparse {
@@ -243,7 +245,12 @@ sub htmlizebugs {
         return "<HR><H2>No reports found!</H2></HR>\n";
     }
 
-    foreach my $bug (sort {$a<=>$b} @bugs) {
+    if ( $common_bug_reverse ) {
+	@bugs = sort {$b<=>$a} @bugs;
+    } else {
+	@bugs = sort {$a<=>$b} @bugs;
+    }
+    foreach my $bug (@bugs) {
 	my %status = %{getbugstatus($bug)};
         next unless %status;
 	my @merged = sort {$a<=>$b} ($bug, split(/ /, $status{mergedwith}));
