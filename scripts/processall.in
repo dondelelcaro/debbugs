@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: processall.in,v 1.8 2002/10/06 22:54:48 cjwatson Exp $
+# $Id: processall.in,v 1.9 2002/11/17 22:45:16 cjwatson Exp $
 #
 # Usage: processall
 #
@@ -8,8 +8,8 @@
 # Creates: incoming/E.nn
 # Stop;    process/stop
 
-$config_path = '/org/bugs.debian.org/etc';
-$lib_path = '/org/bugs.debian.org/scripts';
+$config_path = '/etc/debbugs';
+$lib_path = '/usr/lib/debbugs';
 
 require "$config_path/config";
 require "$lib_path/errorlib";

@@ -31,6 +31,8 @@ require "text";
 &template("sources", "$gConfigDir/indices");
 
 &template("nextnumber", $gSpoolDir);
+&touch("$gSpoolDir/index.archive.realtime");
+&touch("$gSpoolDir/index.db.realtime");
 
 # stuff used when testing (comment out the above)
 #unshift @INC, "../";
@@ -71,6 +73,15 @@ sub template {
   print "created $destdir/$name from template.\n";
   }
 } 
+
+sub touch {
+  my $name = shift;
+  unless (-f $name) {
+    open TOUCH, ">> $name" or die "open $name: $!";
+    close TOUCH;
+    print "created empty $name.\n";
+  }
+}
 
 sub writefiles {
   local ($html, $text, $name) = @_;

@@ -1,8 +1,8 @@
 #!/usr/bin/perl
-# $Id: mailsummary.in,v 1.9 2002/09/22 15:20:08 cjwatson Exp $
+# $Id: mailsummary.in,v 1.10 2002/11/17 22:45:16 cjwatson Exp $
 
-$config_path = '/org/bugs.debian.org/etc';
-$lib_path = '/org/bugs.debian.org/scripts';
+$config_path = '/etc/debbugs';
+$lib_path = '/usr/lib/debbugs';
 
 require("$config_path/config");
 require("$lib_path/errorlib");

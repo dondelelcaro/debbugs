@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.56 2002/11/11 10:19:44 joy Exp $
+# $Id: process.in,v 1.57 2002/11/17 22:45:16 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -7,8 +7,8 @@
 use Mail::Address;
 use MIME::Parser;
 
-$config_path = '/org/bugs.debian.org/etc';
-$lib_path = '/org/bugs.debian.org/scripts';
+$config_path = '/etc/debbugs';
+$lib_path = '/usr/lib/debbugs';
 
 require "$config_path/config";
 require "$lib_path/errorlib";
@@ -1000,10 +1000,12 @@ sub checkmaintainers {
     $anymaintfound=0; $anymaintnotfound=0;
     for $p (split(m/[ \t?,()]+/,$s_package)) {
         $p =~ y/A-Z/a-z/;
-	if (defined($pkgsrc{$p})) {
-	    push @addsrcaddrs, "$pkgsrc{$p}\@packages.qa.debian.org";
-	} else {
-	    push @addsrcaddrs, "$p\@packages.qa.debian.org";
+	if (defined $gSubscriptionDomain) {
+	    if (defined($pkgsrc{$p})) {
+		push @addsrcaddrs, "$pkgsrc{$p}\@$gSubscriptionDomain";
+	    } else {
+		push @addsrcaddrs, "$p\@$gSubscriptionDomain";
+	    }
 	}
         if (defined($maintainerof{$p})) {
 	    print DEBUG "maintainer add >$p|$maintainerof{$p}<\n";

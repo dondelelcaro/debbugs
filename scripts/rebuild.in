@@ -1,10 +1,10 @@
 #!/usr/bin/perl -w
-# $Id: rebuild.in,v 1.4 2001/08/16 17:51:33 doogie Exp $
+# $Id: rebuild.in,v 1.5 2002/11/17 22:45:16 cjwatson Exp $
 
 # Load modules and set envirnment
 use File::Copy;
-$config_path = '/org/bugs.debian.org/etc';
-$lib_path = '/org/bugs.debian.org/scripts';
+$config_path = '/etc/debbugs';
+$lib_path = '/usr/lib/debbugs';
 
 require("$config_path/config");
 require("$lib_path/errorlib");

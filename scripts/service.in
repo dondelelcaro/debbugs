@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.61 2002/11/08 14:01:33 ajt Exp $
+# $Id: service.in,v 1.62 2002/11/17 22:45:16 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -9,8 +9,8 @@ use Mail::Address;
 use File::Copy;
 use MIME::Parser;
 
-$config_path = '/org/bugs.debian.org/etc';
-$lib_path = '/org/bugs.debian.org/scripts';
+$config_path = '/etc/debbugs';
+$lib_path = '/usr/lib/debbugs';
 
 require "$config_path/config";
 require "$lib_path/errorlib";
@@ -962,10 +962,12 @@ sub addmaintainers {
     for $p (split(m/[ \t?,()]+/,$_[0])) {
  	$p =~ y/A-Z/a-z/;
         $pshow= ($p =~ m/[-+.a-z0-9]+/ ? $& : '');
-        if (defined($pkgsrc{$p})) {
-	    push @bcc, "$pkgsrc{$p}\@packages.qa.debian.org";
-	} else {
-	    push @bcc, "$p\@packages.qa.debian.org";
+	if (defined $gSubscriptionDomain) {
+	    if (defined($pkgsrc{$p})) {
+		push @bcc, "$pkgsrc{$p}\@$gSubscriptionDomain";
+	    } else {
+		push @bcc, "$p\@$gSubscriptionDomain";
+	    }
 	}
         if (defined($maintainerof{$p})) {
  	    $addmaint= $maintainerof{$p};

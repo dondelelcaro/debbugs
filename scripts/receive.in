@@ -1,16 +1,16 @@
 #!/usr/bin/perl
-# $Id: receive.in,v 1.13 2002/11/04 16:32:02 cjwatson Exp $
+# $Id: receive.in,v 1.14 2002/11/17 22:45:16 cjwatson Exp $
 # usage: mail is piped directly into program
 
 #set umask in order to have group-writable incoming/*
 #umask(002);
 
 #load configuration file
-$config_path = '/org/bugs.debian.org/etc';
-#$lib_path = '/org/bugs.debian.org/scripts';
+$config_path = '/etc/debbugs';
+#$lib_path = '/usr/lib/debbugs';
 
 require "$config_path/config";
-$ENV{'PATH'} = '/org/bugs.debian.org/scripts:'.$ENV{'PATH'};
+$ENV{'PATH'} = '/usr/lib/debbugs:'.$ENV{'PATH'};
 
 #set source of mail delivery
 #sets any prefix needed to get mailer to add it to error mail

@@ -13,11 +13,14 @@ $gWebHostBugDir = "Bugs";				# e.g. Bugs
 $gWebDomain = "$gWebHost/$gWebHostBugDir";
 $gCGIDomain = "$gWebDomain/Bugs/cgi";			# e.g. cgi.debian.org
 $gPackagePages = "packages.debian.org";                 # e.g. packages.debian.org
+$gSubscriptionDomain = "packages.something";		# e.g. packages.qa.debian.org
 $gMaintainerFileOverride = "$gConfigDir/Maintainers.override";
 $gUnknownMaintainerEmail = "$gMaintainerEmail";
 $gPackageSource = "$gConfigDir/indices/sources";
 
 $gWebDomain will probably exist already; change it as shown above.
+
+$gSubscriptionDomain is optional.
 
 $gMaintainerFileOverride is the name of a file used to manually override the
 Maintainers file (which is often automatically generated).

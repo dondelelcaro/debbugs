@@ -1,10 +1,10 @@
 #!/usr/bin/perl
-# $Id: db2html.in,v 1.10 2002/10/15 23:33:37 cjwatson Exp $
+# $Id: db2html.in,v 1.11 2002/11/17 22:45:16 cjwatson Exp $
 # usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
 
 #load the necessary libraries/configuration
-$config_path = '/org/bugs.debian.org/etc';
-$lib_path = '/org/bugs.debian.org/scripts';
+$config_path = '/etc/debbugs';
+$lib_path = '/usr/lib/debbugs';
 
 require("$config_path/config");
 require("$config_path/text");
