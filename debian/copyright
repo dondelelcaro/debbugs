@@ -1,12 +1,9 @@
-This package was debianized by Johnie Ingram (johnie@debian.org)
-on Tue Jan  6 10:20:12 EST 1998.
+This package was debianized by Johnie Ingram <johnie@debian.org> on
+Tue, Jan  6 10:20:12 EST 1998. It is maintained by Darren Benham
+<gecko@debian.org>.
 
-It was downloaded from:
+The sources can be found at:
 	http://benham.net/debbugs/
-
-Upstream Author(s): Darren Benham
-
-Copyright:
 
 Copyright 1999 Darren O. Benham <gecko@debian.org>
 Copyright 1994,1995,1996,1997 Ian Jackson <ijackson@chiark.greenend.org.uk>
@@ -27,5 +24,5 @@ with this program, or one should be available above; if not, write to the
 Free Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 02111-1307, USA.
 
-On Debian GNU/Linux systems, the text of the GPL can be found in
+On Debian systems, the full text of the GPL can be found in
 /usr/share/common-licenses/GPL.
