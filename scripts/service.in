@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.54 2002/10/06 22:54:48 cjwatson Exp $
+# $Id: service.in,v 1.55 2002/10/12 18:39:01 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -688,6 +688,7 @@ sub get_addresses {
 
 sub sendmailmessage {
     local ($message,@recips) = @_;
+    $message = "X-Loop: $gMaintainerEmail\n" . $message;
     print "mailing to >@recips<\n" if $debug;
     $c= open(D,"|-");
     defined($c) || &quit("mailing forking for sendmail: $!");
