@@ -28,6 +28,7 @@ my $short = "#$ref";
 my $msg = $param{'msg'} || "";
 my $att = $param{'att'};
 my $boring = ($param{'boring'} || 'no') eq 'yes'; 
+my $terse = ($param{'terse'} || 'no') eq 'yes';
 my $reverse = ($param{'reverse'} || 'no') eq 'yes';
 my $mbox = ($param{'mbox'} || 'no') eq 'yes'; 
 
@@ -253,7 +254,6 @@ while(my $line = <L>) {
 					$this .= htmlsanit($entity->stringify);
 				}
 				$this = "$downloadHtml\n$this$downloadHtml" if $downloadHtml;
-				$downloadHtml = '';
 #				if ($normstate eq 'go' || $normstate eq 'go-nox') {
 				if ($normstate ne 'html') {
 					$this = "<pre>\n$this</pre>\n";
@@ -262,11 +262,14 @@ while(my $line = <L>) {
 					$this .= "  <em><a href=\"" . bugurl($ref, "msg=$xmessage") . "\">Full text</a> available.</em>";
 				}
 				$this = "$thisheader$this" if $thisheader && !( $normstate eq 'html' );;
+				$this = "$downloadHtml" if ($terse && $normstate ne 'html');
+				$downloadHtml = '';
 				$thisheader = '';
+				my $delim = $terse ? "<p>" : "<hr>";
 				if ($reverse) {
-					$log = "$this\n<hr>$log";
+					$log = "$this\n$delim$log";
 				} else {
-					$log .= "$this\n<hr>\n";
+					$log .= "$this\n$delim\n";
 				}
 			}
 
