@@ -219,7 +219,7 @@ foreach my $pkg (@tpacks) {
 }
 
 open L, "<$buglog" or &quitcgi("open log for $ref: $!");
-if ($buglog !~ m#^\Q$gSpoolDir/db-h/#) {
+if ($buglog !~ m#^\Q$gSpoolDir/db#) {
     $descriptivehead .= "\n<p>Bug is <strong>archived</strong>. No further changes may be made.</p>";
 }
 
