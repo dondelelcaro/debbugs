@@ -9,126 +9,72 @@ $gIndexHtml = <<HTML_END
 
 <h1>$gProject $gBug tracking system main contents page</h1>
 
-<p>$gProjectTitle has a $gBug tracking system which files details of $gBugs
-reported by users and developers.  Each $gBug is given a number, and is kept
-on file until it is marked as having been dealt with.
+<p>$gProject has a $gBug tracking system (BTS) in which we file
+details of $gBugs reported by users and developers.  Each $gBug is given a
+number, and is kept on file until it is marked as having been dealt
+with.</p>
 
 $gHTMLCopies
 
 <h2>Documentation about the $gBug tracking system</h2>
 
 <ul>
-  <li><a href="Reporting.html">Instructions for reporting a $gBug.</a>
-  <li><a href="Access.html">Ways of accessing the $gBug reporting logs.</a>
-  <li><a href="server-request.html">Requesting $gBug reports by email.</a>
-  <li><a href="Developer.html">Developers' information on how to use the system.</a>
-  <li><a href="server-control.html">Developers' information on manipulating $gBugs by email.</a>
-  <li><a href="server-refcard.html">Mailservers' reference card.</a>
+  <li><a href="Reporting$gHTMLSuffix">Instructions for reporting a $gBug</a>
+  <li><a href="Access$gHTMLSuffix">Ways of accessing the $gBug report logs</a>
+  <li><a href="server-request$gHTMLSuffix">Requesting $gBug reports by email</a>
 </ul>
-
-<h2>Reviewing $gBug reports on the WWW</h2>
 
 <ul>
-  <li><a href="db/ix/full.html">Full list of outstanding and recent $gBug reports.</a>
-  <li><a href="db/ix/packages.html">Index of packages with $gBug reports.</a>
-  <li><a href="db/ix/maintainers.html">Index of maintainers of packages with $gBug reports.</a>
-  <li>Outstanding
-    <a href="db/si/pendingcritical.html">critical</a>,
-    <a href="db/si/pendinggrave.html">grave</a>,
-    <a href="db/si/pendingnormal.html">normal</a> and
-    <a href="db/si/pendingfixed.html">fixed</a> $gBugs and
-    <a href="db/si/pendingwishlist.html">wishlist</a> items.
-  <li>Forwarded
-    <a href="db/si/forwardedcritical.html">critical</a>,
-    <a href="db/si/forwardedgrave.html">grave</a>,
-    <a href="db/si/forwardednormal.html">normal</a> and
-    <a href="db/si/forwardedfixed.html">fixed</a> $gBugs and
-    <a href="db/si/forwardedwishlist.html">wishlist</a> items.
-  <li>Resolved
-    <a href="db/si/donecritical.html">critical</a>,
-    <a href="db/si/donegrave.html">grave</a>,
-    <a href="db/si/donenormal.html">normal</a> and
-    <a href="db/si/donefixed.html">fixed</a> $gBugs and
-    <a href="db/si/donewishlist.html">wishlist</a> items.
-  <li><a href="db/ix/psummary.html">Summary of outstanding reports, sorted by package.</a>
-  <li><a href="db/ix/summary.html">Summary of outstanding reports, sorted by number.</a>
-  <li><a href="db/ju/junk.html">Logs not associated with a particular $gBug report.</a>
-  <li><a href="db/ix/zstamp.html">Time stamp page (for checking that mirror is current).</a>
+  <li><a href="Developer$gHTMLSuffix">Developers' information on how to use the system</a>
+  <li><a href="server-control$gHTMLSuffix">Developers' information on manipulating $gBugs by email</a>
+  <li><a href="server-refcard$gHTMLSuffix">Mailservers' reference card</a>
 </ul>
 
-<p><small>Each closed $gBug report is expired from these logs $gRemoveAge
-days after the last message relating to it is received and filed.
-You can search the bug report archive through the forms below.</small>
+<h2>Viewing $gBug reports on the WWW</h2>
 
-<h3>Find $gBug reports</h3>
-
-<table border="0" width="100%" summary="$gBug report search forms">
-<tr>
-  <td valign="top" nowrap>
-  <form method="get" action="http://$gCGIDomain/cgi-bin/bugreport.cgi">
-  <font face="Arial,Helvetica"><b>
-  By number:
+<p>Find a bug by <strong>number</strong>:
   <br>
+  <form method="get" action="$gCGIDomain/cgi-bin/bugreport.cgi">
   <input type="text" size="9" name="bug" value="">
-  <input type="submit" value="Fetch">
-  </b>
-  </font>
+  <input type="submit" value="Find">
+  <input type="checkbox" name="mbox" value="yes"> as mbox
   </form>
-  </td>
 
-  <td valign="top" nowrap>
-  <form method="get" action="http://$gCGIDomain/cgi-bin/pkgreport.cgi">
-  <font face="Arial,Helvetica"><b>
-  By package:
-  <br>
-  <input type="text" size="35" name="pkg" value="">
-  <input type="submit" value="Fetch">
-  </b>
-  <br>
-  <small>
-  <input type="radio" name="archive" value="no" checked> active bugs
-  <input type="radio" name="archive" value="yes"> archived bugs
-  </small>
-  </font>
-  </form>
-  </td>
-</tr>
-<tr>
-  <td valign="top" nowrap>
-  <form method="get" action="http://$gCGIDomain/cgi-bin/pkgreport.cgi">
-  <font face="Arial,Helvetica"><b>
-  By maintainer e-mail:
-  <br>
-  <input type="text" size="35" name="maint" value="">
-  <input type="submit" value="Fetch">
-  </b>
-  <br>
-  <small>
-  <input type="radio" name="archive" value="no" checked> active bugs
-  <input type="radio" name="archive" value="yes"> archived bugs
-  </small>
-  </font>
-  </form>
-  </td>
+<form method="get" action="$gCGIDomain/cgi-bin/pkgreport.cgi">
+<p>Find bugs by:
+<input type="radio" name="which" value="pkg" checked><strong>package</strong>
+<input type="radio" name="which" value="src"><strong>source&nbsp;package</strong>
+<input type="radio" name="which" value="maint"><strong>maintainer&nbsp;email</strong>
+<input type="radio" name="which" value="submitter"><strong>submitter&nbsp;email</strong>
+<input type="radio" name="which" value="tag"><strong>tag</strong>
+<br>
+What to search for:<input type="text" name="data" value="" size="50">
+<input type="submit" value="Find">
+</form>
 
-  <td valign="top" nowrap>
-  <form method="get" action="http://$gCGIDomain/cgi-bin/pkgreport.cgi">
-  <font face="Arial,Helvetica"><b>
-  By submitter e-mail:
-  <br>
-  <input type="text" size="35" name="submitter" value="">
-  <input type="submit" value="Fetch">
-  </b>
-  <br>
-  <small>
-  <input type="radio" name="archive" value="no" checked> active bugs
-  <input type="radio" name="archive" value="yes"> archived bugs
-  </small>
-  </font>
-  </form>
-  </td>
-</tr>
-</table>
+<p>The following bug report indices are available:
+<ul>
+  <li>Packages with
+      <a href="$gCGIDomain/cgi-bin/pkgindex.cgi?indexon=pkg">active</a>
+      and
+      <a href="$gCGIDomain/cgi-bin/pkgindex.cgi?indexon=pkg&amp;archived=yes">archived</a>
+      bug reports.
+  <li>Source packages with
+      <a href="$gCGIDomain/cgi-bin/pkgindex.cgi?indexon=src">active</a>
+      and
+      <a href="$gCGIDomain/cgi-bin/pkgindex.cgi?indexon=src&amp;archived=yes">archived</a>
+      bug reports.
+  <li>Maintainers of packages with
+      <a href="$gCGIDomain/cgi-bin/pkgindex.cgi?indexon=maint">active</a>
+      and
+      <a href="$gCGIDomain/cgi-bin/pkgindex.cgi?indexon=maint&amp;archived=yes">archived</a>
+      bug reports.
+  <li>Submitters of
+      <a href="$gCGIDomain/cgi-bin/pkgindex.cgi?indexon=submitter">active</a>
+      and
+      <a href="$gCGIDomain/cgi-bin/pkgindex.cgi?indexon=submitter&amp;archived=yes">archived</a>
+      bug reports.
+</ul>
 
 $gHTMLOtherPages
 
