@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.4 1999/09/02 22:27:29 gecko Exp $
+# $Id: text.in,v 1.5 1999/09/14 22:33:48 gecko Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -177,9 +177,10 @@ $gHTMLStamp = "<HTML><HEAD><TITLE>$gProject $gBugs - timestamp page</TITLE>
 ############################################################################
 # Makeup of the indices pages
 ############################################################################
+$gHTMLStart = "<BODY>";
 $gFullIndex = "<HTML><HEAD><TITLE>$gProject $gBugs - full index</TITLE>
 	<LINK REV=\"make\" HREF=\"mailto:$gMaintainerEmail\">
-	</HEAD><BODY><H1>$gProject $gBug report logs - index</H1>
+	</HEAD>$gHTMLStart<H1>$gProject $gBug report logs - index</H1>
 
 	This index gives access to $gBugs sent to <CODE>submit\@$gEmailDomain</CODE>
 	but not yet marked as done, and to $gBugs marked as done but not yet purged
@@ -195,7 +196,7 @@ $gFullIndex = "<HTML><HEAD><TITLE>$gProject $gBugs - full index</TITLE>
 
 $gJunkIndex = "<HTML><HEAD><TITLE>$gProject $gBug reports - Junk</TITLE>
 	<LINK REV=\"made\" HREF=\"$gMaintainerEmail\">
-	</HEAD><BODY><H1>$gProject $gBug reports - Junk</H1>
+	</HEAD>$gHTMLStart<H1>$gProject $gBug reports - Junk</H1>
 
 	This is the index page for logs of messages not associated with a specific
 	$gBug report.
@@ -209,7 +210,7 @@ $gJunkIndex = "<HTML><HEAD><TITLE>$gProject $gBug reports - Junk</TITLE>
 
 $gMaintIndex = "<HTML><HEAD><TITLE>$gProject $gBug reports by maintainer</TITLE>
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
-	</HEAD><BODY><H1>$gProject $gBug reports by maintainer</H1>
+	</HEAD>$gHTMLStart<H1>$gProject $gBug reports by maintainer</H1>
 
 	This page lists the package maintainers against whose packages there are
 	outstanding, fowarded or recently-closed $gBug reports.  A maintainer who
@@ -227,7 +228,7 @@ $gMaintIndex = "<HTML><HEAD><TITLE>$gProject $gBug reports by maintainer</TITLE>
 
 $gPackageIndex = "<HTML><HEAD><TITLE>$gProject $gBug reports by package</TITLE>
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
-	</HEAD><BODY><H1>$gProject $gBug reports by package</H1>
+	</HEAD>$gHTMLStart<H1>$gProject $gBug reports by package</H1>
 
 	This page lists the package against which there are outstanding, fowarded or
 	recently-closed $gBug reports.  A multi-binary package may appear several
@@ -242,7 +243,7 @@ $gPackageIndex = "<HTML><HEAD><TITLE>$gProject $gBug reports by package</TITLE>
 
 $gSummaryIndex = "<HTML><HEAD><TITLE>$gProject $gBug report logs - summary index</TITLE>
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
-	</HEAD><BODY><H1>$gProject $gBug report logs - summary index</H1>
+	</HEAD>$gHTMLStart<H1>$gProject $gBug report logs - summary index</H1>
 
 	This summary index breiefly lists $gBugs sent to <CODE>submit\@$gEmailDomain
 	</CODE> but not yet marked as done, or as fowarded to an upstream author.  
@@ -257,7 +258,7 @@ $gSummaryIndex = "<HTML><HEAD><TITLE>$gProject $gBug report logs - summary index
 
 $gPackageLog = "<HTML><HEAD><TITLE>$gProject $gBug report logs - index by package</TITLE>
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
-	</HEAD><BODY><H1>$gProject $gBug report logs - index by package</H1>
+	</HEAD>$gHTMLStart<H1>$gProject $gBug report logs - index by package</H1>
 
 	This summary index breiefly lists $gBugs sent to <CODE>submit\@$gEmailDomain
 	</CODE> but not yet marked as done, or as fowarded to an upstream author.  
@@ -271,7 +272,7 @@ $gPackageLog = "<HTML><HEAD><TITLE>$gProject $gBug report logs - index by packag
 
 $gPseudoIndex = "<HTML><HEAD><TITLE>$gProject $gBug report pseudo-packages</TITLE>
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
-	</HEAD><BODY><H1>$gProject $gBug report pseudo-packages</H1>
+	</HEAD>$gHTMLStart<H1>$gProject $gBug report pseudo-packages</H1>
 
 	This page lists the pseudo-packages available for use in the
 	<CODE>Package:</CODE> line in $gBug reports.<P>
