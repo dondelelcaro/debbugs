@@ -100,7 +100,7 @@ sub display_entity ($$$$\$\@) {
     return if $disposition eq 'attachment' and not defined($att);
     return unless ($type =~ m[^text/?] and $type !~ m[^text/html(?:;|$)]) or
 		  $type =~ m[^application/pgp(?:;|$)] or
-		  $entity->is_multipart;
+		  $entity->parts;
 
     if ($entity->is_multipart) {
 	my @parts = $entity->parts;
@@ -109,6 +109,16 @@ sub display_entity ($$$$\$\@) {
 			   $$this, @$attachments);
 	    $$this .= "\n";
 	}
+    } elsif ($entity->parts) {
+	# We must be dealing with a nested message.
+	$$this .= "<blockquote>\n";
+	my @parts = $entity->parts;
+	foreach my $part (@parts) {
+	    display_entity($part, $ref, 1, $xmessage,
+			   $$this, @$attachments);
+	    $$this .= "\n";
+	}
+	$$this .= "</blockquote>\n";
     } else {
 	$$this .= htmlsanit($entity->bodyhandle->as_string) unless ($terse);
     }
