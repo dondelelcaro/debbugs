@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.12 2000/10/02 13:02:09 joy Exp $
+# $Id: service.in,v 1.13 2000/10/02 15:52:22 joy Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -397,7 +397,7 @@ END
 	    &checkmatch('severity','m_severity',$s_severity);
 	    &checkmatch('done mark','m_done',length($s_done) ? 'done' : 'open');
 	    if (length($mismatch)) {
-	        &transcript("Mismatch - only $Bugs in same state can be merged:\n".
+	        &transcript("Mismatch - only $gBugs in same state can be merged:\n".
                             $mismatch."\n");
 		&cancelbug; @newmergelist=(); last;
 	    }
