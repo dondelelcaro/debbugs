@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.82 2003/08/30 00:15:15 cjwatson Exp $
+# $Id: process.in,v 1.83 2003/09/04 23:37:40 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -192,8 +192,8 @@ if ($tryref >= 0)
         if ($gRemoveAge) {
             $archivenote = <<END;
 This may be because that $gBug report has been resolved for more than $gRemoveAge
-days, and the record of it has been expunged, or because you mistyped
-the $gBug report number.
+days, and the record of it has been archived and made read-only, or
+because you mistyped the $gBug report number.
 
 END
         }
