@@ -65,7 +65,7 @@ sub template {
   if (! -f "$gConfigDir/$name") {
   system("cp /usr/share/doc/debbugs/examples/$name $gConfigDir/$name") == 0 ||
 	die "$!";
-  print "created $gConfigDir/$name from template.";
+  print "created $gConfigDir/$name from template.\n";
   }
 } 
 
