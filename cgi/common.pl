@@ -493,20 +493,30 @@ sub getmaintainers {
 }
 
 my $_pkgsrc;
+my $_pkgcomponent;
 sub getpkgsrc {
     return $_pkgsrc if $_pkgsrc;
     my %pkgsrc;
+    my %pkgcomponent;
 
     open(MM,"$gPackageSource") or &quit("open $gPackageSource: $!");
     while(<MM>) {
-	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
-	($a,$b)=($1,$2);
+	next unless m/^(\S+)\s+(\S+)\s+(\S.*\S)\s*$/;
+	($a,$b,$c)=($1,$2,$3);
 	$a =~ y/A-Z/a-z/;
-	$pkgsrc{$a}= $b;
+	$pkgsrc{$a}= $c;
+	$pkgcomponent{$a}= $b;
     }
     close(MM);
     $_pkgsrc = \%pkgsrc;
+    $_pkgcomponent = \%pkgcomponent;
     return $_pkgsrc;
+}
+
+sub getpkgcomponent {
+    return $_pkgcomponent if $_pkgcomponent;
+    getpkgsrc();
+    return $_pkgcomponent;
 }
 
 sub getbugdir {
