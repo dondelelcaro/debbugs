@@ -303,7 +303,7 @@ sub getbugs {
         -e "$debbugs::gSpoolDir/by-$opt.idx") 
     {
         my %lookup;
-print STDERR "optimized" if ($debug);
+print STDERR "optimized\n" if ($debug);
         tie %lookup, DB_File => "$debbugs::gSpoolDir/by-$opt.idx", O_RDONLY
             or die "$0: can't open $debbugs::gSpoolDir/by-$opt.idx ($!)\n";
 	while ($key = shift) {
@@ -312,6 +312,8 @@ print STDERR "optimized" if ($debug);
                 push @result, (unpack 'N*', $bugs);
             }
         }
+	untie %lookup;
+print STDERR "done optimized\n" if ($debug);
     } else {
         if ( $common_archive ) {
             open I, "<$debbugs::gSpoolDir/index.archive" 
