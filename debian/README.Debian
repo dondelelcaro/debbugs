@@ -3,10 +3,9 @@ Debbugs, the Debian Bug Tracking System
 
 Configuration
 -------------
-Configuration is *not* complete.  Especially automatic configuration.
-For first time installations, copy the config and text files out of
-/usr/share/doc/debbugs/examples into /etc/debbugs.  Edit these files with
-the necessary information.  Run debbugsconfig.
+On initial installation, debbugsconfig will be run, and it will copy the
+basic configuration files to /etc/debbugs. Edit those files to suit your
+needs.
 
 WWW
 ---
