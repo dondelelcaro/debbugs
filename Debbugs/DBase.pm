@@ -74,14 +74,14 @@ sub ReadRecord
 	my $path = '';
 	my @data;
 
-        print "D1: (DBase) $record is being loaded\n" if $Globals{ 'debug' }; 
-	
-	#find proper directory to store in
-        #later, this will be for tree'd data directory the way
-        #expire is now,..
+	print "D1: (DBase) $record is being loaded\n" if $Globals{ 'debug' };
+
 	$path = "/db/".$record.".status";
+	if( ! -r $Globals{ "work-dir" } . $path ) {
+	    $path = "/db/".&NameToPathHash($record).".status";
+	}
 	print "D2: (DBase) $path found as data path\n" if $Globals{ 'debug' } > 1;
-    
+	
 	open( $FileHandle, $Globals{ "work-dir" } . $path ) 
 	    || &fail( "Unable to open record: ".$Globals{ "work-dir" }."$path\n");
 	flock( $FileHandle, LOCK_EX ) || &fail( "Unable to lock record $record\n" );

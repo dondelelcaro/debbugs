@@ -26,6 +26,20 @@ sub fail
 	print "$_[0]\n";
 	exit 1;
 }
+sub NameToPathHash
+{
+#   12345 -> 5/4/3/12345
+#   12 -> s/2/1/12
+    my $name = $_[0];
+    my $tmp = $name;
+    $name =~ /^.*?(.)(.)(.)$/ ;
+    if(!defined($1)) {
+	$name =~ /^(.*?)(.)(.)$/ ;
+	$tmp = "$1$2$3"."s";
+    }
+    $tmp =~ /^.*?(.)(.)(.)$/ ;
+    return "$3/$2/$1/$name";
+}
 
 1;
 END { }       # module clean-up code here (global destructor)
