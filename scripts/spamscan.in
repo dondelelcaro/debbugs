@@ -1,5 +1,5 @@
 #! /usr/bin/perl -T
-# $Id: spamscan.in,v 1.4 2004/01/13 20:17:57 cjwatson Exp $
+# $Id: spamscan.in,v 1.5 2004/01/14 00:54:46 cjwatson Exp $
 #
 # Usage: spamscan
 #
@@ -61,7 +61,7 @@ sub header_or_empty ($$) {
 &filelock('incoming-spamscan');
 for (;;) {
     if (-f 'spamscan-stop') {
-	print STDERR "spamscan-stop file created\n";
+	print "spamscan-stop file created\n";
 	last;
     }
     if (-e $user_prefs) {
