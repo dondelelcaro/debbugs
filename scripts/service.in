@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.45 2001/12/31 04:39:24 ajt Exp $
+# $Id: service.in,v 1.46 2002/01/19 05:39:28 ajt Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -112,7 +112,8 @@ if ( $msg[$i] =~ /^--/ || $msg[$i] =~ /^\s*$/ ) {
     while ( $i <= $#msg && length( $msg[$i] ) ) { $fwd .= $msg[$i]; $i++; }
     while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
 }	
-	
+
+my %clonebugs = ();
 
 for ($procline=$i; $procline<=$#msg; $procline++) {
     $state eq 'idle' || print "$state ?\n";
@@ -282,7 +283,8 @@ END
             &transcript("Too many unknown commands, stopping here.\n\n");
             last;
         }
-    } elsif (m/^close\s+\#?(\d+)$/i) {
+#### interesting ones start here
+    } elsif (m/^close\s+\#?(-?\d+)$/i) {
 	$ok++;
 	$ref= $1;
 	if (&setbug) {
@@ -324,7 +326,7 @@ END
                 } while (&getnextbug);
             }
         }
-    } elsif (m/^reassign\s+\#?(\d+)\s+(\S.*\S)$/i) {
+    } elsif (m/^reassign\s+\#?(-?\d+)\s+(\S.*\S)$/i) {
         $ok++;
         $ref= $1; $newpackage= $2;
     	$newpackage =~ y/A-Z/a-z/;
@@ -341,10 +343,10 @@ END
                 $s_package= $newpackage;
             } while (&getnextbug);
         }
-    } elsif (m/^reopen\s+\#?(\d+)$/i ? ($noriginator='', 1) :
-             m/^reopen\s+\#?(\d+)\s+\=$/i ? ($noriginator='', 1) :
-             m/^reopen\s+\#?(\d+)\s+\!$/i ? ($noriginator=$replyto, 1) :
-             m/^reopen\s+\#?(\d+)\s+(\S.*\S)$/i ? ($noriginator=$2, 1) : 0) {
+    } elsif (m/^reopen\s+\#?(-?\d+)$/i ? ($noriginator='', 1) :
+             m/^reopen\s+\#?(-?\d+)\s+\=$/i ? ($noriginator='', 1) :
+             m/^reopen\s+\#?(-?\d+)\s+\!$/i ? ($noriginator=$replyto, 1) :
+             m/^reopen\s+\#?(-?\d+)\s+(\S.*\S)$/i ? ($noriginator=$2, 1) : 0) {
         $ok++;
         $ref= $1;
         if (&setbug) {
@@ -362,7 +364,7 @@ END
                 } while (&getnextbug);
             }
         }
-    } elsif (m/^forwarded\s+\#?(\d+)\s+(\S.*\S)$/i) {
+    } elsif (m/^forwarded\s+\#?(-?\d+)\s+(\S.*\S)$/i) {
         $ok++;
         $ref= $1; $whereto= $2;
         if (&setbug) {
@@ -381,7 +383,7 @@ END
                 $s_forwarded= $whereto;
             } while (&getnextbug);
         }
-    } elsif (m/^notforwarded\s+\#?(\d+)$/i) {
+    } elsif (m/^notforwarded\s+\#?(-?\d+)$/i) {
         $ok++;
         $ref= $1;
         if (&setbug) {
@@ -396,8 +398,8 @@ END
                 } while (&getnextbug);
             }
         }
-    } elsif (m/^severity\s+\#?(\d+)\s+([-0-9a-z]+)$/i ||
-	m/^priority\s+\#?(\d+)\s+([-0-9a-z]+)$/i) {
+    } elsif (m/^severity\s+\#?(-?\d+)\s+([-0-9a-z]+)$/i ||
+	m/^priority\s+\#?(-?\d+)\s+([-0-9a-z]+)$/i) {
         $ok++;
         $ref= $1;
         $newseverity= $2;
@@ -413,7 +415,7 @@ END
                 $s_severity= $newseverity;
             } while (&getnextbug);
         }
-    } elsif (m/^tags?\s+\#?(\d+)\s+(([=+-])\s+)?(\S.*)?$/i) {
+    } elsif (m/^tags?\s+\#?(-?\d+)\s+(([=+-])\s+)?(\S.*)?$/i) {
 	$ok++;
 	$ref = $1; $addsubcode = $3; $tags = $4;
 	$addsub = "add";
@@ -460,7 +462,7 @@ END
 		$s_keywords =~ s/\s*$//;
             } while (&getnextbug);
 	}
-    } elsif (m/^retitle\s+\#?(\d+)\s+(\S.*\S)\s*$/i) {
+    } elsif (m/^retitle\s+\#?(-?\d+)\s+(\S.*\S)\s*$/i) {
         $ok++;
         $ref= $1; $newtitle= $2;
         if (&getbug) {
@@ -477,7 +479,7 @@ END
         } else {
             &notfoundbug;
         }
-    } elsif (m/^unmerge\s+\#?(\d+)$/i) {
+    } elsif (m/^unmerge\s+\#?(-?\d+)$/i) {
 	$ok++;
 	$ref= $1;
 	if (&setbug) {
@@ -496,7 +498,7 @@ END
                 } while (&getnextbug);
 	    }
 	}
-    } elsif (m/^merge\s+(\d+(\s+\d+)+)\s*$/i) {
+    } elsif (m/^merge\s+(-?\d+(\s+-?\d+)+)\s*$/i) {
 	$ok++;
         @tomerge= sort { $a <=> $b } split(/\s+/,$1);
         @newmergelist= ();
@@ -695,6 +697,14 @@ sub nochangebug {
 
 sub setbug {
     &dlen("setbug $ref");
+    if ($ref =~ m/^-\d+/) {
+        if (!defined $clonebugs{$ref}) {
+            &notfoundbug;
+            &dlex("setbug => noclone");
+            return 0;
+        }
+        $ref = $clonebugs{$ref};
+    }
     $state eq 'idle' || die "$state ?";
     if (!&getbug) {
         &notfoundbug;
