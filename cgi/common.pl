@@ -837,8 +837,9 @@ sub getsrcpkgs {
 sub buglog {
     my $bugnum = shift;
     my $location = getbuglocation($bugnum, 'log');
-    return undef unless defined $location;
-    return getbugcomponent($bugnum, 'log', $location);
+    return getbugcomponent($bugnum, 'log', $location) if ($location);
+    $location = getbuglocation($bugnum, 'log.gz');
+    return getbugcomponent($bugnum, 'log.gz', $location);
 }
 
 my %_versionobj;

@@ -239,7 +239,14 @@ foreach my $pkg (@tpacks) {
     $descriptivehead .= ".\n<br>";
 }
 
-open L, "<$buglog" or &quitcgi("open log for $ref: $!");
+if ($buglog =~ m/\.gz$/) {
+    my $oldpath = $ENV{'PATH'};
+    $ENV{'PATH'} = '/bin:/usr/bin';
+    open L, "zcat $buglog |" or &quitcgi("open log for $ref: $!");
+    $ENV{'PATH'} = $oldpath;
+} else {
+    open L, "<$buglog" or &quitcgi("open log for $ref: $!");
+}
 if ($buglog !~ m#^\Q$gSpoolDir/db#) {
     $descriptivehead .= "\n<p>Bug is <strong>archived</strong>. No further changes may be made.</p>";
 }
