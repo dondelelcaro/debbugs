@@ -84,6 +84,7 @@ the $gBug is submitted (see the
 <a href="Reporting.html#pseudoheader">instructions for reporting $gBugs</a>),
 or by using the <code>severity</code> command with the
 <a href="#requestserv">control request server</a>.
+Separate multiple tags with commas, spaces, or both.
 
 <p>The severity levels are:
 

@@ -205,6 +205,7 @@ Tags: &lt;<var>tags</var>&gt;
 <p>Replace &lt;<var>tags</var>&gt; with one or more of the available tags,
 as described in the
 <a href="Developer.html#tags">developers' documentation</a>.
+Separate multiple tags with commas, spaces, or both.
 
 
 <h2>Not forwarding to the mailing list - minor $gBug reports</h2>
