@@ -1,5 +1,6 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.33 2001/03/18 05:17:07 doogie Exp $
+# $Id: service.in,v 1.34 2001/03/18 05:59:43 doogie Exp $
+# ^ more or less ^
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -108,19 +109,35 @@ for ($procline=$i; $procline<=$#msg; $procline++)
         $ref= $2+0;
         &sendlynxdoc("$ref","logs for $gBug#$ref");
     } elsif (m/^send-detail\s+\#?(\d+)$/i) {
-        $ref= $1+0; $reffile= $ref; $reffile =~ s,^..,$&/$&,;
-        &sendlynxdoc("db/$reffile-b.html","additional logs for $gBug#$ref");
+	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	$ok++; # well, it's not really ok, but it fixes #81224 :)
+#        $ref= $1+0; $reffile= $ref; $reffile =~ s,^..,$&/$&,;
+#        &sendlynxdoc("db/$reffile-b.html","additional logs for $gBug#$ref");
     } elsif (m/^index(\s+full)?$/i) {
-        &sendlynxdoc("db/ix/full.html",'full index');
+	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	$ok++; # well, it's not really ok, but it fixes #81224 :)
+#        &sendlynxdoc("db/ix/full.html",'full index');
     } elsif (m/^index-summary\s+by-package$/i) {
-        &sendlynxdoc("db/ix/psummary.html",'summary index sorted by package/title');
+	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	$ok++; # well, it's not really ok, but it fixes #81224 :)
+#        &sendlynxdoc("db/ix/psummary.html",'summary index sorted by package/title');
     } elsif (m/^index-summary(\s+by-number)?$/i) {
-        &sendlynxdoc("db/ix/summary.html",'summary index sorted by number/date');
+	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	$ok++; # well, it's not really ok, but it fixes #81224 :)
+#        &sendlynxdoc("db/ix/summary.html",'summary index sorted by number/date');
     } elsif (m/^index(\s+|-)pack(age)?s?$/i) {
-        &sendlynxdoc("db/ix/packages.html",'index of packages');
+	&sendlynxdoc("cgi-bin/pkgindex.cgi?indexon=pkg",'index of packages');
     } elsif (m/^index(\s+|-)maints?$/i) {
-        &sendlynxdoc("db/ix/maintainers.html",'index of maintainers');
-    } elsif (m/^index(\s+|-)maint\s+(\S.*\S)$/i) {
+	&sendlynxdoc("cgi-bin/pkgindex.cgi?indexon=maint",'index of maintainers');
+    } elsif (m/^index(\s+|-)maint\s+(\S+)$/i) {
+	$maint = $2;
+# check for crap in $maint
+	if ($maint =~ m/^\./ || $maint !~ m/^[\d\w-+.@]+$/) {
+		&transcript("Invalid request $maint!\n");
+		next;
+	}
+	&sendlynxdoc("$maint","$gBug list for maintainer \`$maint'");
+if (0) {
         $substrg= $2; $matches=0;
         opendir(DBD,"$gWebDir/db/ma") || die $!;
         while (defined($_=readdir(DBD))) {
@@ -154,8 +171,17 @@ for ($procline=$i; $procline<=$#msg; $procline++)
             &transcript("No maintainers found containing \`$substrg'.\n".
                         "Use \`index-maint' to get list of maintainers.\n\n");
         }
+} # 0
         $ok++;
     } elsif (m/^index(\s+|-)pack(age)?s?\s+(\S.*\S)$/i) {
+	$package = $+;
+# check for crap in $package
+	if ($package =~ m/^\./ || $package !~ m/^[\d\w-+.@]+$/) {
+		&transcript("Invalid request $package!\n");
+		next;
+	}
+	&sendlynxdoc("$package","$gBug list for package $package sent.\n\n");
+if (0) {
         $substrg= $+; $matches=0;
         opendir(DBD,"$gWebDir/db/pa") || die $!;
         while (defined($_=readdir(DBD))) {
@@ -174,36 +200,43 @@ for ($procline=$i; $procline<=$#msg; $procline++)
             &transcript("No packages found containing \`$substrg'.\n".
                         "Use \`index-packages' to get list of packages.\n\n");
         }
+} # 0
         $ok++;
     } elsif (m/^send-unmatched(\s+this|\s+-?0)?$/i) {
-        &sendlynxdoc("db/ju/unmatched-1.html","junk (this week)");
+	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	$ok++; # well, it's not really ok, but it fixes #81224 :)
+#        &sendlynxdoc("db/ju/unmatched-1.html","junk (this week)");
     } elsif (m/^send-unmatched\s+(last|-1)$/i) {
-        &sendlynxdoc("db/ju/unmatched-2.html","junk (last week)");
+	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	$ok++; # well, it's not really ok, but it fixes #81224 :)
+#        &sendlynxdoc("db/ju/unmatched-2.html","junk (last week)");
     } elsif (m/^send-unmatched\s+(old|-2)$/i) {
-        &sendlynxdoc("db/ju/unmatched-3.html","junk (two weeks ago)");
-    } elsif (m/^getinfo\s+(\S+)$/i) {
-        $file= $1;
-        if ($file =~ m/^\./ || $file !~ m/^[-.0-9a-z]+$/ || $file =~ m/\.gz$/) {
-            &transcript("Filename $file is badly formatted.\n\n");
-        } elsif (open(P,"$gDocDir/$file")) {
-            $ok++;
-            &transcript("Info file $file appears below.\n\n");
-            $extras.= "\n---------- Info file $file follows:\n\n";
-            while(<P>) { $extras.= $_; }
-            close(P);
-        } else {
-            &transcript("Info file $file does not exist.\n\n");
-         }
+	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	$ok++; # well, it's not really ok, but it fixes #81224 :)
+#        &sendlynxdoc("db/ju/unmatched-3.html","junk (two weeks ago)");
+    } elsif (m/^getinfo\s+([\w-.]+)$/i) {
+# the following is basically a Debian-specific kludge, but who cares
+        $req = $1;
+	if ($req =~ /^maintainers$/i && -f "$gConfigDir/Maintainers") {
+	    &sendinfo("local", "$gConfigDir/Maintainers", "Maintainers file");
+	} elsif ($req =~ /^override\.(\w+)\.([\w-.]+)$/i) {
+	    $req =~ s/.gz$//;
+	    &sendinfo("ftp.d.o", "$req", "override file for $2 part of $1 distribution");
+	} elsif ($req =~ /^pseudo-packages\.(description|maintainers)$/i && -f "$gConfigDir/$req") {
+	    &sendinfo("local", "$gConfigDir/$req", "$req file");
+	} else {
+	    &transcript("Info file $req does not exist.\n\n");
+	}
     } elsif (m/^help/i) {
         &sendhelp;
         &transcript("\n");
         $ok++;
     } elsif (m/^refcard/i) {
-        &sendtxthelp("bug-mailserver-refcard.txt","mailservers' reference card");
+        &sendtxthelp("bug-mailserver-refcard.txt","mail servers' reference card");
     } elsif (m/^subscribe/i) {
         &transcript(<<END);
 There is no $gProject $gBug mailing list.  If you wish to review bug reports
-please do so via http://$gWebDomain/ or ask this mailserver
+please do so via http://$gWebDomain/ or ask this mail server
 to send them to you.
 soon: MAILINGLISTS_TEXT
 END
@@ -349,58 +382,57 @@ END
             $printseverity= "$gDefaultSeverity" if $printseverity eq '';
 	    $action= "Severity set to \`$newseverity'.";
 	    do {
-#		if ( &newseverity eq 'fixed' && length( $gDoneList ) > 0 && length( $gListDomain ) > 0 ) {
-#			&addccaddress("$gDoneList\@$gListDomain");
-#		}
                 &addmaintainers($s_package);
                 $s_severity= $newseverity;
             } while (&getnextbug);
         }
-    } elsif (m/^tags\s+\#?(\d+)\s+(([=+-])\s+)?(\S.*)?$/) {
-       $ok++;
-       $ref= $1; $addsubcode= $3; $tags= $4;
-       $addsub = "add";
-       $addsub = "sub" if ($addsubcode eq "-");
-       $addsub = "add" if ($addsubcode eq "+");
-       $addsub = "set" if ($addsubcode eq "=");
-       my @okaytags = ();
-       my @badtags = ();
-       foreach my $t (split /[\s,]+/, $tags) {
-           if (!grep($_ eq $t, @gTags)) {
-               push @badtags, $t;
-           } else {
-               push @okaytags, $t;
-           }
-       }
-       if (@badtags) {
+    } elsif (m/^tags?\s+\#?(\d+)\s+(([=+-])\s+)?(\S.*)?$/i) {
+	$ok++;
+	$ref = $1; $addsubcode = $3; $tags = $4;
+	$addsub = "add";
+	if (defined $addsubcode) {
+	    $addsub = "sub" if ($addsubcode eq "-");
+	    $addsub = "add" if ($addsubcode eq "+");
+	    $addsub = "set" if ($addsubcode eq "=");
+	}
+	my @okaytags = ();
+	my @badtags = ();
+	foreach my $t (split /[\s,]+/, $tags) {
+	    if (!grep($_ eq $t, @gTags)) {
+		push @badtags, $t;
+	    } else {
+		push @okaytags, $t;
+	    }
+	}
+	if (@badtags) {
             &transcript("Unknown tag/s: ".join(', ', @badtags).".\n".
-                       "Recognized are: ".join(' ', @gTags).".\n\n");
-       }
-       if (&setbug) {
-           if ($addsub eq "set") {
-               $action= "Tags set to: " . join(", ", @okaytags);
-           } elsif ($addsub eq "add") {
-               $action= "Tags added: " . join(", ", @okaytags);
-           } elsif ($addsub eq "sub") {
-               $action= "Tags removed: " . join(", ", @okaytags);
-           }
-           do {
+ 			"Recognized are: ".join(' ', @gTags).".\n\n");
+	}
+	if (&setbug) {
+	    if ($addsub eq "set") {
+		$action= "Tags set to: " . join(", ", @okaytags);
+	    } elsif ($addsub eq "add") {
+		$action= "Tags added: " . join(", ", @okaytags);
+	    } elsif ($addsub eq "sub") {
+		$action= "Tags removed: " . join(", ", @okaytags);
+	    }
+	    do {
                 &addmaintainers($s_package);
-               $s_keywords = '' if ($addsub eq "set");
-               if ($addsub eq "sub") {
-                   foreach my $t (@badtags) {
-                       $s_keywords = join ' ', grep $_ ne $t, 
-                           split ' ', $s_keywords;
-                   }
-               }
-               foreach my $t (@okaytags) {
-                   $s_keywords = join ' ', grep $_ ne $t, 
-                       split ' ', $s_keywords;
-                   $s_keywords = "$t $s_keywords" unless($addsub eq "sub");
-               }
-               $s_keywords =~ s/\s*$//;
+	        $s_keywords = '' if ($addsub eq "set");
+		if ($addsub eq "sub") {
+		    foreach my $t (@badtags) {
+	                $s_keywords = join ' ', grep $_ ne $t, 
+		            split ' ', $s_keywords;
+		    }
+		}
+	        foreach my $t (@okaytags) {
+	            $s_keywords = join ' ', grep $_ ne $t, 
+			split ' ', $s_keywords;
+	            $s_keywords = "$t $s_keywords" unless($addsub eq "sub");
+	        }
+		$s_keywords =~ s/\s*$//;
             } while (&getnextbug);
-       }
+	}
     } elsif (m/^retitle\s+\#?(\d+)\s+(\S.*\S)\s*$/i) {
         $ok++;
         $ref= $1; $newtitle= $2;
@@ -441,7 +473,7 @@ END
 	$ok++;
         @tomerge= sort { $a <=> $b } split(/\s+/,$1);
         @newmergelist= ();
-        my %tags = ();
+	my %tags = ();
         &getmerge;
         while (defined($ref= shift(@tomerge))) {
             &transcript("D| checking merge $ref\n") if $dl;
@@ -456,7 +488,7 @@ END
 	    $s_severity = '$gDefaultSeverity' if $s_severity eq '';
 	    &checkmatch('severity','m_severity',$s_severity);
 	    &checkmatch('done mark','m_done',length($s_done) ? 'done' : 'open');
-            foreach my $t (split /\s+/, $s_keywords) { $tags{$t} = 1; }
+	    foreach my $t (split /\s+/, $s_keywords) { $tags{$t} = 1; }
 	    if (length($mismatch)) {
 	        &transcript("Mismatch - only $gBugs in same state can be merged:\n".
                             $mismatch."\n");
@@ -473,7 +505,7 @@ END
 		&getbug || die "huh ?  $gBug $ref disappeared during merge";
                 &addmaintainers($s_package);
 		$s_mergedwith= join(' ',grep($_ ne $ref,@newmergelist));
-                $s_keywords= join(' ', keys %tags);
+		$s_keywords= join(' ', keys %tags);
 		&savebug;
 	    }
     	    &transcript("$action\n\n");
@@ -509,6 +541,9 @@ for $maint (keys %maintccreasons) {
         $reasonstring.= ', ' if length($reasonstring);
         $reasonstring.= $p.' ' if length($p);
         $reasonstring.= join(' ',map("#$_",sort keys %{$$reasonsref{$p}}));
+    }
+    if (length($reasonstring) > 40) {
+	(substr $reasonstring, 37) = "...";
     }
     $reasonstring = "" if (!defined($reasonstring));
     push(@maintccs,"$maint ($reasonstring)");
@@ -824,13 +859,9 @@ END
 
 sub sendlynxdocraw {
     local ($relpath,$description) = @_;
-# check for crap in $relpath
-    if ($relpath =~ m/^\./ || $relpath !~ m/^[\d\w-+.@]+$/) {
-      &transcript("Invalid request $relpath!\n");
-      return;
-    }
     $doc='';
-    open(L,"lynx -nolist -dump http://$gWebDomain/$relpath 2>&1 |") || &quit("fork for lynx: $!");
+# the below oughta use $gWebDomain but it can't
+    open(L,"lynx -nolist -dump http://bugs.debian.org/$relpath 2>&1 |") || &quit("fork for lynx: $!");
     while(<L>) { $doc.=$_; }
     $!=0; close(L);
     if ($? == 255 && $doc =~ m/^\n*lynx: Can\'t access start file/) {
@@ -865,15 +896,19 @@ sub addmaintainers
     my ($p, $addmaint, $pshow);
     &ensuremaintainersloaded;
     $anymaintfound=0; $anymaintnotfound=0;
-    for $p (split(m/[ \t?,()]+/,$_[0])) 
-	{ 	$p =~ y/A-Z/a-z/;
+    for $p (split(m/[ \t?,()]+/,$_[0])) {
+ 	$p =~ y/A-Z/a-z/;
         $pshow= ($p =~ m/[-+.a-z0-9]+/ ? $& : '');
-        if (defined($maintainerof{$p})) 
-		{ 	$addmaint= $maintainerof{$p};
-			&transcript("MR|$addmaint|$p|$ref|\n") if $dl>2;
+        if (defined($maintainerof{$p})) {
+ 	    $addmaint= $maintainerof{$p};
+	    &transcript("MR|$addmaint|$p|$ref|\n") if $dl>2;
             $maintccreasons{$addmaint}{$p}{$ref}= 1;
-			print "maintainer add >$p|$addmaint<\n" if $debug;
-        } else { print "maintainer none >$p<\n" if $debug; }
+	    print "maintainer add >$p|$addmaint<\n" if $debug;
+        } else { 
+	    print "maintainer none >$p<\n" if $debug; 
+	    &transcript("MR|unknown-package|$p|$ref|\n") if $dl>2;
+            $maintccreasons{$gUnknownMaintainerEmail}{$p}{$ref}= 1;
+	}
     }
 }
 
@@ -889,4 +924,40 @@ sub ensuremaintainersloaded {
         $maintainerof{$1}= $2;
     }
     close(MAINT);
+}
+
+sub sendinfo {
+    local ($wherefrom,$path,$description) = @_;
+    if ($wherefrom eq "ftp.d.o") {
+      $doc = `lynx -nolist -dump http://ftp.debian.org/debian/indices/$path.gz 2>&1 | gunzip -cf` or &quit("fork for lynx/gunzip: $!");
+      $! = 0;
+      if ($? == 255 && $doc =~ m/^\n*lynx: Can\'t access start file/) {
+          &transcript("$description is not available.\n");
+          $ok++; return;
+      } elsif ($?) {
+          &transcript("Error getting $description (code $? $!):\n$doc\n");
+          return;
+      }
+    } elsif ($wherefrom eq "local") {
+      open P, "$path";
+      $doc = do { local $/; <P> };
+      close P;
+    } else {
+      &transcript("internal errror: info files location unknown.\n");
+      $ok++; return;
+    }
+    &transcript("Sending $description.\n");
+    &sendmailmessage(<<END.$doc,$replyto);
+From: $gMaintainerEmail ($gProject $gBug Tracking System)
+To: $replyto
+Subject: $gProject $gBugs information: $description
+References: $header{'message-id'}
+In-Reply-To: $header{'message-id'}
+Message-ID: <handler.s.$nn.info.$midix\@$gEmailDomain>
+
+$description follows:
+
+END
+    $ok++;
+    &transcript("\n");
 }
