@@ -60,8 +60,9 @@ If you need a template, look in /usr/share/doc/debbugs/examples/ directory.
 FURTHER INFORMATION
 =============================================================================
 Web:  http://benham.net/debbugs/
-Email: debbugs@benham.net (mailing list)
-       debbugs-REQUEST@benham.net with the word subscribe in the body
+Email: debian-debbugs@lists.debian.org (mailing list)
+       debian-debbugs-request@lists.debian.org with the word subscribe in the
+       subject line
 
 =============================================================================
 COPYRIGHT AND LACK-OF-WARRANTY NOTICE
