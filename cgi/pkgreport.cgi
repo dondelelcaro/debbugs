@@ -147,12 +147,17 @@ if (defined $pkg) {
 		       $se = $1 if ($se =~ m/<(.*)>/);
 		       return $se eq $submitter;
 		     }, 'submitter-email', $submitter)};
-} elsif (defined $severity) {
+} elsif (defined($severity) && defined($status)) {
   $tag = "$status $severity bugs";
   @bugs = @{getbugs(sub {my %d=@_;
 		       return ($d{"severity"} eq $severity) 
 			 && ($d{"status"} eq $status);
 		     })};
+} elsif (defined($severity)) {
+  $tag = "$severity bugs";
+  @bugs = @{getbugs(sub {my %d=@_;
+		       return ($d{"severity"} eq $severity);
+		     }, 'severity', $severity)};
 }
 
 my $result = htmlizebugs(\@bugs);
