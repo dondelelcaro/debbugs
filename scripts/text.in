@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.17 2002/12/03 13:26:06 cjwatson Exp $
+# $Id: text.in,v 1.18 2003/02/16 12:55:36 cjwatson Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -175,29 +175,24 @@ $gHTMLStart = "<BODY>";
 # shows up at the end of (most) html pages.
 ############################################################################
 $gHTMLTail = "<HR>
- <ADDRESS>$gMaintainer /
- <A HREF=\"mailto:$gMaintainerEmail\">$gMaintainerEmail</A>.  Last modified:
+ <ADDRESS>$gMaintainer &lt;<A HREF=\"mailto:$gMaintainerEmail\">$gMaintainerEmail</A>&gt;.
+ Last modified:
  <!--timestamp-->
  SUBSTITUTE_DTIME
  <!--timestamp-->
- (<A HREF=\"http://$gWebDomain/db/ix/zstamp.html\">timestamp page</A> available).
 	  
- <P><A HREF=\"http://$gWebDomain/\">Debian $gBug tracking system</A>
- <BR>
+ <P>
+ <A HREF=\"http://$gWebDomain/\">Debian $gBug tracking system</A><BR>
  Copyright (C) 1999 Darren O. Benham,
  1997 nCipher Corporation Ltd,
  1994-97 Ian Jackson.
- <BR>
- <A HREF=\"http://www.benham.net/debbugs/\">Available under the GPL.</A>
  </ADDRESS>
-
- </BODY>
- </HTML>";
+";
 
 ############################################################################
 # Message on when reports are purged.
 ############################################################################
-$gHTMLExpireNote = "(Closed $gBugs are cleaned out $gRemoveAge days after the last related message is received.)";
+$gHTMLExpireNote = "(Closed $gBugs are archived $gRemoveAge days after the last related message is received.)";
 
 ############################################################################
 # Makeup of the stamp page
