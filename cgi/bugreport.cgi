@@ -320,7 +320,7 @@ while(my $line = <L>) {
 					$this = "<pre>\n$this</pre>\n";
 				}
 				if ($normstate eq 'html') {
-					$this .= "  <em><a href=\"" . bugurl($ref, "msg=$xmessage") . "\">Full text</a> available.</em>";
+					$this = "<a name=\"msg$xmessage\">$this  <em><a href=\"" . bugurl($ref, "msg=$xmessage") . "\">Full text</a> available.</em></a>";
 				}
 				$this = "$thisheader$this" if $thisheader && !( $normstate eq 'html' );;
 				$thisheader = '';
@@ -349,8 +349,9 @@ while(my $line = <L>) {
 		$pl =~ s/\n+$//;
 		m/^Received: \(at (\S+)\) by (\S+)\;/
 			|| &quitcgi("bad line \`$pl' in state incoming-recv");
-		$thisheader = "<h2>Message received at ".htmlsanit("$1\@$2")
-		        . ":</h2>\n";
+		$thisheader = "<h2><a name=\"msg$xmessage\">"
+			. "Message received at ".htmlsanit("$1\@$2")
+			. ":</a></h2>\n";
 		$this = '';
 		$normstate= 'go';
 		push @mail, $_;
