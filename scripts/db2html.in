@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: db2html.in,v 1.3 1999/09/14 16:13:13 gecko Exp $
+# $Id: db2html.in,v 1.4 1999/09/18 14:53:02 gecko Exp $
 # usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
 
 #load the necessary libraries/configuration
@@ -16,7 +16,7 @@ $diff = 0;
 $stampfile = 'stamp.html';
 $tail_html = $gHTMLTail; 
 $expirynote_html = $gHTMLExpireNote;
-$shorthead = ' Ref   Package    Keywords/Subject                    Submitter';
+$shorthead = ' Ref   * Package    Keywords/Subject                    Submitter';
 $shortindex = ''; 
 $amonths = -1;
 $indexunmatched = '';
@@ -187,7 +187,8 @@ for $f (@files)
             $thissient=
                 ($pad>0 ? ' 'x$pad : '').
                 sprintf("<A href=\"../%s.html\">%d</A>",$linkto,$ref).
-                &sani(sprintf(" %-10.10s %-35.35s %-.25s\n",
+                &sani(sprintf(" %-1.1s %-10.10s %-35.35s %-.25s\n",
+						$s_severity,
                         $s_package,
                         (length($s_keywords) ? $s_keywords.'/' : '').
                         $s_subject, $s_originator));

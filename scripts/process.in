@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.5 1999/09/17 22:07:34 gecko Exp $
+# $Id: process.in,v 1.6 1999/09/18 14:53:02 gecko Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -394,6 +394,7 @@ END
     }
     if (!defined($pheader{'package'}))
 	{ 	&htmllog("Warning","sent",$replyto,"Message not forwarded.");
+		print " sending no package header msg\n";
         &sendmessage(<<END, '');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
@@ -422,12 +423,12 @@ $gMaintainer
 (administrator, $gProject $gBugs database)
 
 END
+	print " append log\n";
 	&appendlog;
+	print " finish\n";
 	&finish;
-    } else {
-        $s_package= $pheader{'package'};
-		print "Package: $s_package\n";
-    }
+	print " done\n";
+    } else { $s_package= $pheader{'package'}; }
     if (defined($pheader{'keywords'})) {
         $s_keywords= $pheader{'keywords'};
     }
@@ -466,7 +467,7 @@ print DEBUG "maintainers >@maintaddrs<\n";
 $orgsender= defined($header{'sender'}) ? "Orignal-Sender: $header{'sender'}\n" : '';
 $newsubject= $subject;  $newsubject =~ s/^$gBug#$ref\W*\s*//;
 
-$xcchdr= $header{x-debbugs-cc};
+$xcchdr= $header{ 'x-debbugs-cc' };
 if ($xcchdr =~ m/\S/) {
     push(@resentccs,$xcchdr);
     $resentccexplain.= <<END;

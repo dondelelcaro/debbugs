@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.5 1999/09/16 19:42:50 gecko Exp $
+# $Id: service.in,v 1.6 1999/09/18 14:53:02 gecko Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -82,9 +82,9 @@ if ( $msg[$i] =~ /^--/ || $msg[$i] =~ /^\s*$/ )
 
 
 for ($procline=$i; $procline<=$#msg; $procline++) {
-    $state eq 'idle' || "$state ?";
-    $lowstate eq 'idle' || "$lowstate ?";
-    $mergelowstate eq 'idle' || "$mergelowstate ?";
+    $state eq 'idle' || print "$state ?\n";
+    $lowstate eq 'idle' || print "$lowstate ?\n";
+    $mergelowstate eq 'idle' || print "$mergelowstate ?\n";
     $_= $msg[$procline]; s/\s+$//;
     next unless m/\S/; next if m/^\s*\#/;
     &transcript("> $_\n");
