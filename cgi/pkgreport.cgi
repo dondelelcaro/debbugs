@@ -59,11 +59,9 @@ my $tag;
 my @bugs;
 if (defined $pkg) {
   $tag = "package $pkg";
-  #@bugs = pkgbugs($pkg);
   @bugs = getbugs(sub {my %d=@_; return $pkg eq $d{"pkg"}});
 } elsif (defined $maint) {
   $tag = "maintainer $maint";
-  #@bugs = maintbugs($maint);
   @bugs = getbugs(sub {my %d=@_; my $me; 
 		       ($me = $maintainers{$d{"pkg"}}||"") =~ s/\s*\(.*\)\s*//;
 		       $me = $1 if ($me =~ m/<(.*)>/);
@@ -71,14 +69,12 @@ if (defined $pkg) {
 		     })
 } elsif (defined $maintenc) {
   $tag = "encoded maintainer $maintenc";
-  #@bugs = maintencbugs($maintenc);
   @bugs = getbugs(sub {my %d=@_; 
 		       return maintencoded($maintainers{$d{"pkg"}} || "") 
 			 eq $maintenc
 		       });
 } elsif (defined $submitter) {
   $tag = "submitter $submitter";
-  #@bugs = submitterbugs($submitter);
   @bugs = getbugs(sub {my %d=@_; my $se; 
 		       ($se = $d{"submitter"} || "") =~ s/\s*\(.*\)\s*//;
 		       $se = $1 if ($se =~ m/<(.*)>/);
@@ -86,7 +82,6 @@ if (defined $pkg) {
 		     });
 } elsif (defined $severity) {
   $tag = "$status $severity bugs";
-  #@bugs = severitybugs($status, $severity);
   @bugs = getbugs(sub {my %d=@_;
 		       return ($d{"severity"} eq $severity) 
 			 && ($d{"status"} eq $status);

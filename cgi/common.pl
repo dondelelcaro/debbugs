@@ -5,6 +5,8 @@ my $common_repeatmerged = 1;
 my %common_include = ();
 my %common_exclude = ();
 
+my $debug = 0;
+
 sub set_option {
     my ($opt, $val) = @_;
     if ($opt eq "archive") { $common_archive = $val; }
@@ -31,6 +33,7 @@ sub readparse {
         $val=~s/%(..)/pack("c",hex($1))/ge;
         $ret{$key}=$val;
     }
+$debug = 1 if ($ret{"debug"} eq "aj");
     return %ret;
 }
 
@@ -266,50 +269,6 @@ sub htmlizebugs {
     return $result;
 }
 
-sub submitterbugs {
-    my $submitter = shift;
-    my $chk = sub {
-        my %d = @_;
-        ($subemail = $d{"submitter"}) =~ s/\s*\(.*\)\s*//;
-        if ($subemail =~ m/<(.*)>/) { $subemail = $1 }
-        return $subemail eq $submitter;
-    };
-    return getbugs($chk);
-}
-
-sub severitybugs {
-    my $status = shift;
-    my $severity = shift;
-    my $chk = sub {
-	my %d = @_; 
-	return ($d{"severity"} eq $severity) && ($d{"status"} eq $status); 
-    };
-    return getbugs($chk);
-}
-
-sub maintbugs {
-    my $maint = shift;
-    my %maintainers = getmaintainers();
-    my $chk = sub {
-        my %d = @_;
-        ($maintemail = $maintainers{$d{"pkg"}} || "") =~ s/\s*\(.*\)\s*//;
-        if ($maintemail =~ m/<(.*)>/) { $maintemail = $1 }
-        return $maintemail eq $maint;
-    };
-    return getbugs($chk);
-}
-
-sub maintencbugs {
-    my $maintenc = shift;
-    my %maintainers = getmaintainers();
-    return getbugs(sub {my %d=@_; return maintencoded($maintainers{$d{"pkg"}} || "") eq $maintenc});
-}
-
-sub pkgbugs {
-    my $inpkg = shift;
-    return getbugs( sub { my %d = @_; return $inpkg eq $d{"pkg"} });
-}
-
 sub countbugs {
     my $bugfunc = shift;
     if ($common_archive) {
@@ -341,6 +300,7 @@ sub getbugs {
     }
     
     my @result = ();
+print STDERR "here start getbugs\n" if ($debug);
     while(<I>) 
     {
         if (m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/) {
@@ -353,21 +313,8 @@ sub getbugs {
 	}
     }
     close I;
+print STDERR "here end getbugs\n" if ($debug);
     return sort {$a <=> $b} @result;
-}
-
-sub pkgbugsindex {
-    my %descstr = ();
-    if ( $common_archive ) {
-        open I, "<$debbugs::gSpoolDir/index.archive" or &quit("bugindex: $!");
-    } else {
-        open I, "<$debbugs::gSpoolDir/index.db" or &quit("bugindex: $!");
-    }
-    while(<I>) { 
-        $descstr{ $1 } = 1 if (m/^(\S+)/);
-    }
-    close(I);
-    return %descstr;
 }
 
 sub emailfromrfc822 {
