@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.96 2004/02/27 02:05:17 cjwatson Exp $
+# $Id: service.in,v 1.97 2004/10/26 13:55:26 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -272,6 +272,7 @@ References: $header{'message-id'} $data->{msgid}
 In-Reply-To: $data->{msgid}
 Message-ID: <handler.$ref.$nn.notifdonectrl.$midix\@$gEmailDomain>
 Reply-To: $ref\@$gEmailDomain
+X-$gProject-PR-Message: they-closed-control $ref
 
 This is an automatic notification regarding your $gBug report
 #$ref: $data->{subject},
@@ -357,6 +358,7 @@ References: $header{'message-id'} $data->{msgid}
 In-Reply-To: $data->{msgid}
 Message-ID: <handler.$ref.$nn.newsubmitter.$midix\@$gEmailDomain>
 Reply-To: $ref\@$gEmailDomain
+X-$gProject-PR-Message: submitter-changed $ref
 
 The submitter address recorded for your $gBug report
 #$ref: $data->{subject}
@@ -719,6 +721,7 @@ In-Reply-To: $header{'message-id'}
 References: $header{'message-id'}
 Message-ID: <handler.s.$nn.transcript\@$gEmailDomain>
 Precedence: bulk
+X-$gProject-PR-Message: transcript
 
 ${transcript}Please contact me if you need assistance.
 
@@ -1012,6 +1015,7 @@ References: $header{'message-id'}
 In-Reply-To: $header{'message-id'}
 Message-ID: <handler.s.$nn.help.$midix\@$gEmailDomain>
 Precedence: bulk
+X-$gProject-PR-Message: doc-text $relpath
 
 END
     $ok++;
@@ -1039,6 +1043,7 @@ References: $header{'message-id'}
 In-Reply-To: $header{'message-id'}
 Message-ID: <handler.s.$nn.info.$midix\@$gEmailDomain>
 Precedence: bulk
+X-$gProject-PR-Message: doc-html $relpath
 
 END
          $ok++;
@@ -1153,6 +1158,7 @@ References: $header{'message-id'}
 In-Reply-To: $header{'message-id'}
 Message-ID: <handler.s.$nn.info.$midix\@$gEmailDomain>
 Precedence: bulk
+X-$gProject-PR-Message: getinfo
 
 $description follows:
 

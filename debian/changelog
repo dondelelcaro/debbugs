@@ -20,6 +20,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - New standalone SpamAssassin queue runner, spamscan.
     - Allow # prefix on bug numbers in 'merge' command.
     - Fix some ordering issues in old-style package pages and summaries.
+    - Add X-$gProject-PR-Message: headers to all mails sent by service.
 
   * Adam Heath:
     - Rewrite filtering in cgi's common.pl, to make it completely generic.
