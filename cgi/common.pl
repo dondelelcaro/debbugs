@@ -303,6 +303,7 @@ sub getbugs {
         -e "$debbugs::gSpoolDir/by-$opt.idx") 
     {
         my %lookup;
+print STDERR "optimized" if ($debug);
         tie %lookup, DB_File => "$debbugs::gSpoolDir/by-$opt.idx", O_RDONLY
             or die "$0: can't open $debbugs::gSpoolDir/by-$opt.idx ($!)\n";
 	while ($key = shift) {
