@@ -62,6 +62,7 @@ debbugs (2.4) experimental; urgency=low
     [Anthony]
   * Added preliminary cloning support. [Anthony]
   * Link to submitter's web page, patch from Matt Kraai. [Josip]
+  * The autoconfig thing in the description is gone, closes: #124537.
   * Various other things, not worth mentioning here.
 
  -- Josip Rodin <jrodin@jagor.srce.hr>  UNRELEASED
