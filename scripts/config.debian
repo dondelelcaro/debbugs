@@ -1,5 +1,5 @@
 # This is the bugs.debian.org debbugs configuration file.
-# $Id: config.debian,v 1.12 2001/08/16 06:58:08 joy Exp $
+# $Id: config.debian,v 1.13 2001/11/17 00:40:03 doogie Exp $
 
 # Domains
 $gEmailDomain = "bugs.debian.org";
@@ -73,3 +73,4 @@ $gMaintainerFileOverride = "$gConfigDir/Maintainers.override";
 $gUnknownMaintainerEmail = "unknown-package\@qa.debian.org";
 
 $gPseudoDescFile = "$gConfigDir/pseudo-packages.description";
+$gPackageSource = "$gConfigDir/indices/sources";

@@ -154,6 +154,14 @@ sub pkgurl {
     return urlsanit($debbugs::gCGIDomain . "pkgreport.cgi" . "?" . "$params");
 }
 
+sub srcurl {
+    my $ref = shift;
+    my $params = "src=$ref";
+    $params .= "&archive=yes" if ($common_archive);
+    $params .= "&repeatmerged=yes" if ($common_repeatmerged);
+    return urlsanit($debbugs::gCGIDomain . "pkgreport.cgi" . "?" . "$params");
+}
+
 sub urlsanit {
     my $url = shift;
     $url =~ s/%/%25/g;
@@ -387,6 +395,21 @@ sub getmaintainers {
     close(MM);
 
     return \%maintainer;
+}
+
+sub getpkgsrc {
+    my %pkgsrc;
+
+    open(MM,"$gPackageSource") or &quit("open $gPackageSource: $!");
+    while(<MM>) {
+	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
+	($a,$b)=($1,$2);
+	$a =~ y/A-Z/a-z/;
+	$pkgsrc{$a}= $b;
+    }
+    close(MM);
+
+    return \%pkgsrc
 }
 
 sub getbugdir {

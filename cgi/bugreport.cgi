@@ -18,6 +18,7 @@ my %param = readparse();
 my $tail_html;
 
 my %maintainer = %{getmaintainers()};
+my %pkgsrc = %{getpkgsrc()};
 
 my $ref = $param{'bug'} || quit("No bug number");
 my $msg = $param{'msg'} || "";
@@ -82,11 +83,15 @@ if (length($status{done})) {
 	$indexentry .= ";\n<strong>Forwarded</strong> to ".htmlsanit($status{forwarded});
 }
 
-my ($short, $tmaint);
+my ($short, $tmaint, $tsrc);
 $short = $ref; $short =~ s/^\d+/#$&/;
 $tmaint = defined($maintainer{$tpack}) ? $maintainer{$tpack} : '(unknown)';
+$tsrc = defined($pkgsrc{$tpack}) ? $pkgsrc{$tpack} : '(unknown)';
 $descriptivehead= $indexentry.$submitted.";\nMaintainer for $status{package} is\n".
-            '<A href="http://'.$debbugs::gWebDomain.'/db/ma/l'.&maintencoded($tmaint).'.html">'.htmlsanit($tmaint).'</A>.';
+            '<A href="http://'.$debbugs::gWebDomain.'/db/ma/l'.&maintencoded($tmaint).'.html">'.htmlsanit($tmaint).'</A>';
+$descriptivehead.= ";\n<br>Source for $status{package} is\n".
+	    '<A href="'.srcurl($tsrc)."\">$tsrc</A>";
+$descriptivehead.= ".";
 
 my $buglog = buglog($ref);
 open L, "<$buglog" or &quit("open log for $ref: $!");

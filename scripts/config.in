@@ -1,6 +1,6 @@
 # This is the template debbugs configuration file.
 # You *must* edit it in order for debbugs to work.
-# $Id: config.in,v 1.13 2001/04/24 19:10:26 doogie Exp $
+# $Id: config.in,v 1.14 2001/11/17 00:40:03 doogie Exp $
 
 # Domains
 $gEmailDomain = "bugs.something";			# e.g. bugs.debian.org
@@ -69,3 +69,4 @@ $gAJIndex = "/debian/home/ajt/ajbug/pkgindex";		# AJ's package index
 $gMaintainerFile = "$gConfigDir/Maintainers";
 $gMaintainerFileOverride = "$gConfigDir/Maintainers.override";
 $gPseudoDescFile = "$gConfigDir/pseudo-packages.description";
+$gPackageSource = "$gConfigDir/indices/sources";

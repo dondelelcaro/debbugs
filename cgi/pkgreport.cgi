@@ -15,9 +15,10 @@ nice(5);
 
 my %param = readparse();
 
-my ($pkg, $maint, $maintenc, $submitter, $severity, $status);
+my ($pkg, $src, $maint, $maintenc, $submitter, $severity, $status);
 
 if (defined ($pkg = $param{'pkg'})) {
+} elsif (defined ($src = $param{'src'})) {
 } elsif (defined ($maint = $param{'maint'})) {
 } elsif (defined ($maintenc = $param{'maintenc'})) {
 } elsif (defined ($submitter= $param{'submitter'})) { 
@@ -59,6 +60,10 @@ my @bugs;
 if (defined $pkg) {
   $tag = "package $pkg";
   @bugs = @{getbugs(sub {my %d=@_; return $pkg eq $d{"pkg"}}, 'package', $pkg)};
+} elsif (defined $src) {
+  $tag = "source $src";
+  my %pkgsrc = %{getpkgsrc()};
+  @bugs = @{getbugs(sub { my %d=@_; return $src eq $d{"pkg"} || ( defined( $pkgsrc{$d{"pkg"}} ) && $src eq $pkgsrc{$d{"pkg"}} ) }, 'source', $src) };
 } elsif (defined $maint) {
   my %maintainers = %{getmaintainers()};
   $tag = "maintainer $maint";
@@ -117,18 +122,34 @@ print "<HTML><HEAD>\n" .
 print "<H1>" . "$debbugs::gProject$Archived $debbugs::gBug report logs: $tag" .
       "</H1>\n";
 
-if (defined $pkg) {
+if (defined $pkg || defined $src) {
     my %maintainers = %{getmaintainers()};
-    if (defined $maintainers{$pkg}) {
-        print "<p>Maintainer for $pkg is <a href=\"" 
-              . mainturl($maintainers{$pkg}) . "\">"
-              . htmlsanit($maintainers{$pkg}) . "</a>.</p>\n";
+    my $maint = $pkg ? $maintainers{$pkg} : $maintainers{$src} ? $maintainers{$src} : undef;
+    if (defined $maint) {
+        print "<p>Maintainer for " . ( defined($pkg) ? $pkg : "source package $src" ) . " is <a href=\"" 
+              . mainturl($maint) . "\">"
+              . htmlsanit($maint) . "</a>.</p>\n";
     }
-    print "<p>Note that with multi-binary packages there may be other\n";
-    print "reports filed under the different binary package names.</p>\n";
-    print "\n";
-my $stupidperl = ${debbugs::gPackagePages};
-    printf "<p>You might like to refer to the <a href=\"%s\">%s package page</a></p>\n", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
+    my %pkgsrc = %{getpkgsrc()};
+    my @pkgs;
+    $src = $pkgsrc{ $pkg } if ( $pkg && !$src );
+    foreach ( keys %pkgsrc ) {
+	push @pkgs, $_ if $pkgsrc{$_} eq $src && ( ( $pkg && !( $_ eq $pkg ) ) || ( !$pkg && $src ) );
+    }
+    if ( @pkgs ) {
+	@pkgs = sort @pkgs;
+	if ($pkg) {
+		print "You may want to refer to the following packages that are part of the same source:<br>\n";
+	} else {
+		print "You may want to refer to the following packages' individual bug pages:<br>\n";
+	}
+	print join( ", ", map( "<A href=\"" . pkgurl($_) . "\">$_</A>", @pkgs ) );
+	print "\n";
+    }
+    if ($pkg) {
+	my $stupidperl = ${debbugs::gPackagePages};
+	printf "<p>You might like to refer to the <a href=\"%s\">%s package page</a>, or to the source package <a href=\"%s\">%s</a>'s bug page.</p>\n", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg"), urlsanit(srcurl($src)), $src;
+    }
 } elsif (defined $maint || defined $maintenc) {
     print "<p>Note that maintainers may use different Maintainer fields for\n";
     print "different packages, so there may be other reports filed under\n";
