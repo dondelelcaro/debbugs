@@ -43,7 +43,7 @@ sub set_option {
 	@vals = ( $$val ) if (ref($val) eq "SCALAR" && $$val );
 	@vals = @{$val} if (ref($val) eq "ARRAY" );
 	%common_exclude = map {
-	    if (/^(.*):(.*)$/) { ($1, $2) } else { ($_, 1) }
+	    if (/^([^:]*):(.*)$/) { ($1, $2) } else { ($_, 1) }
 	} split /[\s,]+/, join ',', @vals;
     }
     if ($opt eq "include") {
@@ -52,7 +52,7 @@ sub set_option {
 	@vals = ( $$val, ) if (ref($val) eq "SCALAR" && $$val );
 	@vals = @{$val} if (ref($val) eq "ARRAY" );
 	%common_include = map {
-	    if (/^(.*):(.*)$/) { ($1, $2) } else { ($_, 1) }
+	    if (/^([^:]*):(.*)$/) { ($1, $2) } else { ($_, 1) }
 	} split /[\s,]+/, join ',', @vals;
     }
     if ($opt eq "raw") { $common_raw_sort = $val; }
