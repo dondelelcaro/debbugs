@@ -1,4 +1,4 @@
-/etc/debbugs/html
+etc/debbugs/html
 usr/lib/debbugs
 usr/sbin
 usr/share/doc/debbugs/examples
