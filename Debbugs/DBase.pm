@@ -1,3 +1,6 @@
+# TODO: Implement 'stale' checks, so that there is no need to explicitly
+#	write out a record, before closing.
+
 package Debbugs::DBase;  # assumes Some/Module.pm
 
 use strict;
@@ -28,6 +31,7 @@ use FileHandle;
 %Record = ();
 
 my $LoadedRecord = 0;
+my $OpenedRecord = 0;
 my $FileLocked = 0;
 my $FileHandle = new FileHandle;
 
@@ -71,20 +75,9 @@ sub ReadRecord
     print "V: Reading $record\n" if $Globals{ 'verbose' };
     if ( $record ne $LoadedRecord )
     {
-	my $path = '';
 	my @data;
 
-	print "D1: (DBase) $record is being loaded\n" if $Globals{ 'debug' };
-
-	$path = "/db/".$record.".status";
-	if( ! -r $Globals{ "work-dir" } . $path ) {
-	    $path = "/db/".&NameToPathHash($record).".status";
-	}
-	print "D2: (DBase) $path found as data path\n" if $Globals{ 'debug' } > 1;
-	
-	open( $FileHandle, $Globals{ "work-dir" } . $path ) 
-	    || &fail( "Unable to open record: ".$Globals{ "work-dir" }."$path\n");
-	flock( $FileHandle, LOCK_EX ) || &fail( "Unable to lock record $record\n" );
+	seek( $FileHandle, 0, 0 );
 	@data = <$FileHandle>;
 	if ( scalar( @data ) =~ /Version: (\d*)/ )
 	{
@@ -111,8 +104,39 @@ sub WriteRecord
 	{ print $FileHandle $Record{ $fields[$i] } . "\n"; }
 	else { print $FileHandle "\n"; }
     }
-    close $FileHandle;
     $LoadedRecord = 0;
+}
+
+sub OpenRecord
+{
+    my $record = $_[0];
+    if ( $record ne $OpenedRecord )
+    {
+	my $path;
+	print "V: Opening $record\n" if $Globals{ 'verbose' };
+	$path = "/db/".$record.".status";
+	print "D2: (DBase) $path found as data path\n" if $Globals{ 'debug' } > 1;
+	if( ! -r $Globals{ "work-dir" } . $path ) {
+	    my $dir;
+	    $path = "/db/".Number2Path($record).".status";
+	    $dir = basename($path);
+	    if( ! -d $dir ) {
+		print "D1 (DBase) making dir $dir\n" if $Globals{ 'debug' };
+		mkdir $dir, umask();
+	    }
+	}
+	open( $FileHandle, $Globals{ "work-dir" } . $path ) 
+	    || &fail( "Unable to open record: ".$Globals{ "work-dir" }."$path\n");
+	flock( $FileHandle, LOCK_EX ) || &fail( "Unable to lock record $record\n" );
+	$OpenedRecord = $record;
+    }
+}
+
+sub CloseRecord
+{
+    print "V: Closing $LoadedRecord\n" if $Globals{ 'verbose' };
+    close $FileHandle;
+    $OpenedRecord = 0;
 }
 
 1;

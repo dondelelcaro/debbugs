@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
 push(@INC,'/home/gecko/debian/debvote');
+push(@INC,'/debian/home/doogie/debian/debbugs/cvs');
 use strict;
 use Debbugs::Config qw(%Globals &ParseConfigFile);
 #use Debvote::Email qw(&InitEmailTags &LoadEmail &ProcessTags %gtags);
@@ -33,7 +34,7 @@ my %opthash = (# ------------------ actions
     "version|V" => \&banner,
     "verbose|v!" => \$verbose,
     "quiet|q!" => \$quiet,
-    "debug|d+" => \$debug,     # Count the -d flags
+    "debug|d" => \$debug,     # Count the -d flags
     );
 Getopt::Long::config('bundling', 'no_getopt_compat', 'no_auto_abbrev');
 GetOptions(%opthash) or &syntax( 1 );
@@ -57,15 +58,19 @@ print "D1: config file=$config\n" if $Globals{ 'debug' };
 
 ## Put Real Code Here
 
-Debbugs::DBase::ReadRecord( "59999" );
+Debbugs::DBase::OpenRecord( "59998" );
+Debbugs::DBase::ReadRecord( "59998" );
+Debbugs::DBase::CloseRecord();
 foreach my $key ( keys( %Record ) )
 {
- #   print "Key= $key   Value = ". $Record{ "$key" } . "\n";
+    print "Key= $key   Value = ". $Record{ "$key" } . "\n";
 }
-Debbugs::DBase::ReadRecord( "60000" );
+Debbugs::DBase::OpenRecord( "60003" );
+Debbugs::DBase::ReadRecord( "60003" );
+Debbugs::DBase::CloseRecord();
 foreach my $key ( keys( %Record ) )
 {
-#    print "Key= $key   Value = ". $Record{ "$key" } . "\n";
+    print "Key= $key   Value = ". $Record{ "$key" } . "\n";
 }
 
 
