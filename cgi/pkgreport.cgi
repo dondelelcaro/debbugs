@@ -157,6 +157,7 @@ if (defined $pkg || defined $src) {
 	} else {
 		print "You may want to refer to the following individual bug pages:<br>\n";
 	}
+	push @pkgs, $src if ( $src && !grep(/^\Q$src\E$/, @pkgs) );
 	print join( ", ", map( "<A href=\"" . pkgurl($_) . "\">$_</A>", @pkgs ) );
 	print ".\n";
     }
