@@ -115,7 +115,7 @@ sub merge ($@)
     }
     # Insert undef for the last version so that we can tell a known version
     # by seeing if it exists in $self->{parent}.
-    $self->{parent}{$_[$#_]} = undef;
+    $self->{parent}{$_[$#_]} = undef unless exists $self->{parent}{$_[$#_]};
 }
 
 =item load
