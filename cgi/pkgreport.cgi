@@ -35,7 +35,7 @@ my $pend_inc = $param{'&pend-inc'} || $param{'pend-inc'} || "";
 my $sev_exc = $param{'&sev-exc'} || $param{'sev-exc'} || "";
 my $sev_inc = $param{'&sev-inc'} || $param{'sev-inc'} || "";
 
-my ($pkg, $src, $maint, $maintenc, $submitter, $severity, $status);
+my ($pkg, $src, $maint, $maintenc, $submitter, $severity, $status, $tag);
 
 my %which = (
 	'pkg' => \$pkg,
@@ -44,6 +44,7 @@ my %which = (
 	'maintenc' => \$maintenc,
 	'submitter' => \$submitter,
 	'severity' => \$severity,
+	'tag' => \$tag,
 	);
 my @allowedEmpty = ( 'maint' );
 
@@ -105,15 +106,15 @@ set_option("pend-inc", $pend_inc);
 set_option("sev-exc", $sev_exc);
 set_option("sev-inc", $sev_inc);
 
-my $tag;
+my $title;
 my @bugs;
 if (defined $pkg) {
-  $tag = "package $pkg";
+  $title = "package $pkg";
   @bugs = @{getbugs(sub {my %d=@_;
                          return grep($pkg eq $_, splitpackages($d{"pkg"}))
                         }, 'package', $pkg)};
 } elsif (defined $src) {
-  $tag = "source $src";
+  $title = "source $src";
   my @pkgs = getsrcpkgs($src);
   push @pkgs, $src if ( !grep(/^\Q$src\E$/, @pkgs) );
   @bugs = @{getbugs(sub {my %d=@_;
@@ -124,7 +125,7 @@ if (defined $pkg) {
                         }, 'package', @pkgs)};
 } elsif (defined $maint) {
   my %maintainers = %{getmaintainers()};
-  $tag = "maintainer $maint";
+  $title = "maintainer $maint";
   my @pkgs = ();
   foreach my $p (keys %maintainers) {
     my $me = $maintainers{$p};
@@ -155,7 +156,7 @@ if (defined $pkg) {
   }
 } elsif (defined $maintenc) {
   my %maintainers = %{getmaintainers()};
-  $tag = "encoded maintainer $maintenc";
+  $title = "encoded maintainer $maintenc";
   @bugs = @{getbugs(sub {my %d=@_; 
                          foreach my $try (splitpackages($d{"pkg"})) {
                            return 1 if
@@ -165,23 +166,29 @@ if (defined $pkg) {
                          return 0;
                         })};
 } elsif (defined $submitter) {
-  $tag = "submitter $submitter";
+  $title = "submitter $submitter";
   @bugs = @{getbugs(sub {my %d=@_; my $se; 
 		       ($se = $d{"submitter"} || "") =~ s/\s*\(.*\)\s*//;
 		       $se = $1 if ($se =~ m/<(.*)>/);
 		       return $se eq $submitter;
 		     }, 'submitter-email', $submitter)};
 } elsif (defined($severity) && defined($status)) {
-  $tag = "$status $severity bugs";
+  $title = "$status $severity bugs";
   @bugs = @{getbugs(sub {my %d=@_;
 		       return ($d{"severity"} eq $severity) 
 			 && ($d{"status"} eq $status);
 		     })};
 } elsif (defined($severity)) {
-  $tag = "$severity bugs";
+  $title = "$severity bugs";
   @bugs = @{getbugs(sub {my %d=@_;
 		       return ($d{"severity"} eq $severity);
 		     }, 'severity', $severity)};
+} elsif (defined($tag)) {
+  $title = "bugs tagged $tag";
+  @bugs = @{getbugs(sub {my %d = @_;
+                         my %tags = map { $_ => 1 } split ' ', $d{"tags"};
+                         return exists $tags{$tag};
+                        })};
 }
 
 my $result = htmlizebugs(\@bugs);
@@ -190,11 +197,11 @@ print "Content-Type: text/html\n\n";
 
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
 print "<HTML><HEAD>\n" . 
-    "<TITLE>$debbugs::gProject$Archived $debbugs::gBug report logs: $tag</TITLE>\n" .
+    "<TITLE>$debbugs::gProject$Archived $debbugs::gBug report logs: $title</TITLE>\n" .
     "</HEAD>\n" .
     '<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#800080">' .
     "\n";
-print "<H1>" . "$debbugs::gProject$Archived $debbugs::gBug report logs: $tag" .
+print "<H1>" . "$debbugs::gProject$Archived $debbugs::gBug report logs: $title" .
       "</H1>\n";
 
 my $showresult = 1;
