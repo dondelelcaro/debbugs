@@ -139,10 +139,10 @@ sub pkgbugs {
 	else { open I, "<$debbugs::gSpoolDir/index.db" || &quit("bugindex: $!"); } 
     
     while(<I>) 
-	{ 	if (/^$pkg\s+(\d+)\s+(.+)/)
+	{ 	if (m/^(\S+)\s+(\d+)\s+(.+)/ && $1 eq $pkg)
 		{ 	
-		 	my $tmpstr = sprintf( "%d: %s", $1, $2 );
-			$descstr{ $1 } = $tmpstr;
+		 	my $tmpstr = sprintf( "%d: %s", $2, $3 );
+			$descstr{ $2 } = $tmpstr;
 		}
     }
     return %descstr;
@@ -153,7 +153,7 @@ sub pkgbugsindex {
     my @bugs = ();
 	if ( $archive ) { open I, "<$debbugs::gSpoolDir/index.archive" || &quit("bugindex: $!"); } 
 	else { open I, "<$debbugs::gSpoolDir/index.db" || &quit("bugindex: $!"); } 
-    while(<I>) { $descstr{ $1 } = 1 if (/^(\S+)/); }
+    while(<I>) { $descstr{ $1 } = 1 if (m/^(\S+)/); }
     return %descstr;
 }
 
