@@ -202,20 +202,20 @@ sub GetBugList
 	foreach (grep { /^[s0-9]$/ } @files) {
 	    my $_1 = $_;
 	    opendir $dir, $prefix . $_1;
-	    @files = grep { /^\d$/ } readdir($dir);
+	    my @files = grep { /^\d$/ } readdir($dir);
 	    closedir $dir;
 	    foreach (@files) {
 		my $_2 = $_;
-		opendir $dir, $prefix . $_1 . "/" .$_2;
-		@files = grep { /^\d$/ } readdir($dir);
+		opendir $dir, "$prefix$_1/$_2";
+		my @files = grep { /^\d$/ } readdir($dir);
 		close $dir;
 		foreach (@files) {
 		    my $_3 = $_;
-		    opendir $dir, $prefix . $_1 . "/" . $_2 . "/" .$_3;
-		    @files = grep { /\d*\d\d.status/ } readdir($dir);
+		    opendir $dir, "$prefix$_1/$_2/$_3";
+		    my @files = grep { /\d*\d\d.status/ } readdir($dir);
 		    close $dir;
 		    foreach (@files) {
-			next if ( ! -s $prefix . $_1 . "/" . $_2 . "/" .$_3 . "/" . $_ );
+			next if ( -s "$prefix$_1/$_2/$_3/$_" );
 			s/.status$//;
 			push @ret, $_;
 #			print "$_ -> $_1/$_2/$_3/$_\n";
