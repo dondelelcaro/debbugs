@@ -1,6 +1,7 @@
 # Example crontab for bugs system. Install this as a user crontab for the
 # user who owns /var/lib/debbugs/spool (for example, debbugs).
 MAILTO=owner@bugs.example.org
+*		*	* * *	/usr/lib/debbugs/spamscan >/dev/null
 3,18,33,48 	*	* * *	/usr/lib/debbugs/processall >/dev/null
 7,22,37,52	*	* * *	/usr/lib/debbugs/rebuild db-h
 9,39 		*	* * *	/usr/lib/debbugs/html-control >/dev/null

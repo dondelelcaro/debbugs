@@ -10,6 +10,7 @@ Package: debbugs
 Architecture: all
 Depends: perl5 | perl, exim | mail-transport-agent, libmailtools-perl, ed, libmime-perl, libio-stringy-perl, libmldbm-perl
 Recommends: httpd, links | lynx
+Suggests: spamassassin
 Description: The bug tracking system based on the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
  users and developers. Each bug is given a number, and is kept on file until

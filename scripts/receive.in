@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: receive.in,v 1.15 2003/01/28 23:52:08 cjwatson Exp $
+# $Id: receive.in,v 1.16 2004/01/13 18:55:53 cjwatson Exp $
 # usage: mail is piped directly into program
 
 #set umask in order to have group-writable incoming/*
@@ -121,7 +121,13 @@ printf(FILE "Received: (at %s) by $gEmailDomain; %d %s %d %02d:%02d:%02d +0000\n
 while(<STDIN>) { print(FILE) || &failure("write temporary file: $!"); }
 close(FILE) || &failure("close temporary file: $!");
 
-rename("T.$id","I$queue.$id") || &failure("rename spool message: $!");
+my $prefix;
+if ($gSpamScan) {
+    $prefix = 'S';
+} else {
+    $prefix = 'I';
+}
+rename("T.$id","$prefix$queue.$id") || &failure("rename spool message: $!");
 
 exit(0);
 

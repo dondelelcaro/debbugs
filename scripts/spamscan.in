@@ -1,0 +1,139 @@
+#! /usr/bin/perl
+# $Id: spamscan.in,v 1.1 2004/01/13 18:55:53 cjwatson Exp $
+#
+# Usage: spamscan
+#
+# Performs SpamAssassin checks on a message before allowing it through to
+# the main incoming queue.
+#
+# Uses up: incoming/S<code><bugnum>.nn
+# Temps:   incoming/R.nn
+# Creates: incoming/I.nn
+# Stop:    spamscan-stop
+
+$config_path = '/etc/debbugs';
+$lib_path = '/usr/lib/debbugs';
+
+require "$config_path/config";
+require "$lib_path/errorlib";
+$ENV{PATH} = $lib_path . ':' . $ENV{PATH};
+
+chdir $gSpoolDir or die "chdir spool: $!\n";
+push @INC, $lib_path;
+
+use Mail::SpamAssassin;
+use Mail::SpamAssassin::NoMailAudit;
+
+umask 002;
+
+my $user_prefs = "$ENV{HOME}/.spamassassin/user_prefs";
+my $user_prefs_time;
+if (-e $user_prefs) {
+    $user_prefs_time = (stat $user_prefs)[9];
+}
+
+my $spam = Mail::SpamAssassin->new({
+    dont_copy_prefs => 1,
+    site_rules_filename => $gSpamRulesDir,
+    userprefs_filename => $user_prefs,
+    local_tests_only => ($gSpamLocalTestsOnly || 0),
+    debug => ($ENV{DEBBUGS_SPAM_DEBUG} || 0),
+});
+$spam->compile_now(1); # use all user preferences
+
+$| = 1;
+
+my @ids;
+my %fudged;
+
+sub header_or_empty ($$) {
+    my ($mail, $hdr) = @_;
+    my $value = $mail->get_header($hdr);
+    if (defined $value) {
+	chomp $value;
+	return $value;
+    }
+    return '';
+}
+
+&filelock('incoming-spamscan');
+for (;;) {
+    if (-f 'spamscan-stop') {
+	print STDERR "spamscan-stop file created\n";
+	last;
+    }
+    if (-e $user_prefs) {
+	if ($user_prefs_time != (stat $user_prefs)[9]) {
+	    # stop and wait to be re-invoked from cron
+	    last;
+	}
+    }
+
+    if (!@ids) {
+	opendir DIR, 'incoming' or die "opendir incoming: $!";
+	while (defined($_ = readdir DIR)) {
+	    push @ids, $_ if s/^S//;
+	}
+	last unless @ids;
+	@ids = sort @ids;
+    }
+
+    my $nf = @ids;
+    my $id = shift @ids;
+    unless (rename "incoming/S$id", "incoming/R$id") {
+	if ($fudged{$id}) {
+	    die "$id already fudged once! $!\n";
+	}
+	$fudged{$id} = 1;
+	next;
+    }
+
+    print "[$nf] $id scanning ...\n" or die "print log: $!";
+
+    open MESSAGE, "< incoming/R$id" or die "open incoming/R$id: $!";
+    my @textarray;
+    # Kludge to work around Received: then From_ weirdness in receive;
+    # remove when receive is fixed? We may continue to need it for
+    # reprocessing old messages.
+    $textarray[0] = <MESSAGE>;
+    if ($textarray[0] =~ /^Received:/) {
+	my $maybefrom = <MESSAGE>;
+	if ($maybefrom =~ /^From /) {
+	    $textarray[1] = $textarray[0];
+	    $textarray[0] = $maybefrom;
+	} else {
+	    $textarray[1] = $maybefrom;
+	}
+    }
+    push @textarray, <MESSAGE>;
+    close MESSAGE;
+    my $mail = Mail::SpamAssassin::NoMailAudit->new(data => \@textarray);
+    $mail->{noexit} = 1;
+
+    print "  From: ", header_or_empty($mail, 'From'), "\n";
+    print "  Subject: ", header_or_empty($mail, 'Subject'), "\n";
+    print "  Message-Id: ", header_or_empty($mail, 'Message-Id'), "\n";
+    my $status = $spam->check($mail);
+    $status->rewrite_mail();
+
+    if ($status->is_spam()) {
+	$mail->accept($gSpamMailbox);
+	unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
+	printf "  spam %.1f/%.1f\n",
+	       $status->get_hits(), $status->get_required_hits()
+	    or die "printf log: $!";
+    } else {
+	open OUT, "> incoming/I$id" or die "open incoming/I$id: $!";
+	print OUT $mail->as_string() or die "print incoming/I$id: $!";
+	close OUT or die "close incoming/I$id: $!";
+	unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
+	printf "  ok %.1f/%.1f\n",
+	       $status->get_hits(), $status->get_required_hits()
+	    or die "printf log: $!";
+    }
+
+    $status->finish();
+}
+&unfilelock;
+
+exit 0;
