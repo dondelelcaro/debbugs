@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.80 2003/07/15 13:03:33 ajt Exp $
+# $Id: service.in,v 1.81 2003/07/15 13:04:33 ajt Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -782,7 +782,7 @@ sub setbug {
         return 0;
     }
 
-    if (keys %limit_pkgs && not defined $limit_pkgs{$data->{package}}) {
+    if (keys(%limit_pkgs) && not defined $limit_pkgs{$data->{package}}) {
 	&transcript("$gBug number $ref belongs to package $data->{package}, skipping.\n\n");
 	&cancelbug;
 	return 0;
