@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.5 1999/09/14 22:33:48 gecko Exp $
+# $Id: text.in,v 1.6 1999/09/16 19:42:50 gecko Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -124,7 +124,7 @@ $gHTMLSeverityDesc = "<DT><CODE>critical</CODE>
 ############################################################################
 # shows up at the end of (most) html pages.  You shouldn't have
 ############################################################################
-$gHTMLTail = "<HR><ADDRESS><A HREF=\"$gMaintainerWebpage\">$gMaintainer</A> /
+$gHTMLTail = "<HR><ADDRESS>$gMaintainer /
  <A HREF=\"mailto:$gMaintainerEmail\">$gMaintainerEmail</A>.  Last modifed:
  <!--timestamp-->
  SUBSTITUTE_DTIME
@@ -133,9 +133,10 @@ $gHTMLTail = "<HR><ADDRESS><A HREF=\"$gMaintainerWebpage\">$gMaintainer</A> /
 	  
  <P>
  Debian $gBug tracking system<BR>
- copyright 1997 nCipher Corporation Ltd,<BR>
- copyright 1994-1997 Ian Jackson,<BR>
- copyright 1995 Steven Brenner.<BR>
+ copyright 1999 Darren O. Benham,
+ 1997 nCipher Corporation Ltd,
+ 1994-7 Ian Jackson,
+ 1995 Steven Brenner.<BR>
  <A HREF=\"http://www.chiark.greenend.org.uk/~ian/debbugs/\">
  Available under the GPL.</A>
  </ADDRESS>

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.4 1999/09/16 07:16:47 gecko Exp $
+# $Id: service.in,v 1.5 1999/09/16 19:42:50 gecko Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -34,7 +34,7 @@ grep((s/\n$//,s/\s+$//),@msg);
 
 print DEBUG "###\n",join("##\n",@msg),"\n###\n";
 
-chop($tdate= `date -u '+%a, %d %h 19%y %T GMT'`);
+chop($tdate= `date -u '+%a, %d %h %Y %T GMT'`);
 $fwd= <<END;
 Received: via spool for service; $tdate
 END

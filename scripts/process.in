@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.3 1999/09/16 07:16:47 gecko Exp $
+# $Id: process.in,v 1.4 1999/09/16 19:42:50 gecko Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -75,9 +75,18 @@ for ($i=0; $i<=$#msg; $i++) {
 
 #remove blank lines
 while ($i <= $#msg && !length($msg[$i])) { $fwd .= "\n"; $i++; }
+
+#skips the "this is mime" message and any blank space after it
+if ( $msg[$i] =~ /^This is a multi-part message in MIME format./ )
+{
+	while ( $i <= $#msg && length( $msg[$i] ) ) { $fwd .= $msg[$i] . "\n"; $i++; }
+	while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
+}
+#if the lines starts with -- or is nothing but blank space...
+#skip to the next blank line(s) then skip past the blank line(s)
 if ( $msg[$i] =~ /^--/ || $msg[$i] =~ /^\s*$/ )
 {
-	while ( $i <= $#msg && length( $msg[$i] ) ) { $fwd .= $msg[$i]; $i++; }
+	while ( $i <= $#msg && length( $msg[$i] ) ) { $fwd .= $msg[$i] . "\n"; $i++; }
 	while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
 }		
 
