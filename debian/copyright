@@ -2,11 +2,15 @@ This package was debianized by Johnie Ingram <johnie@debian.org> on
 Tue, Jan  6 10:20:12 EST 1998. It is maintained by the Debbugs developers
 <debian-debbugs@lists.debian.org>, who are currently:
 
-	Darren Benham <gecko@debian.org>
 	Adam Heath <doogie@debian.org>
 	Josip Rodin <jrodin@jagor.srce.hr>
 	Anthony Towns <ajt@debian.org>
 	Colin Watson <cjwatson@debian.org>
+
+Former developers have been:
+
+	Ian Jackson <ijackson@chiark.greenend.org.uk>
+	Darren Benham <gecko@debian.org>
 
 The sources can be found at:
 	http://cvs.debian.org/?cvsroot=debbugs
