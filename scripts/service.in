@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.79 2003/07/15 12:20:32 ajt Exp $
+# $Id: service.in,v 1.80 2003/07/15 13:03:33 ajt Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -601,13 +601,13 @@ END
 		}
 	    }
 	}
-    } elsif (m/^package\s+(\S.*\S)$/i) {
+    } elsif (m/^package\s*(\S.*\S)?\s*$/i) {
         $ok++;
-	my @pkgs = split /\s+/ $1;
+	my @pkgs = split /\s+/, $1;
 	if (scalar(@pkgs) > 0) {
 		%limit_pkgs = map { ($_, 1) } @pkgs;
 		&transcript("Ignoring bugs not assigned to: " . 
-			join(" ", keys(%limit_pkgs) . "\n\n");
+			join(" ", keys(%limit_pkgs)) . "\n\n");
 	} else {
 		%limit_pkgs = ();
 		&transcript("Not ignoring any bugs.\n\n");
@@ -782,8 +782,8 @@ sub setbug {
         return 0;
     }
 
-    if ($keys %limit_pkgs && not defined $limit_pkgs{$s_package}) {
-	&transcript("$gBug number $ref belongs to package $s_package, skipping.");
+    if (keys %limit_pkgs && not defined $limit_pkgs{$data->{package}}) {
+	&transcript("$gBug number $ref belongs to package $data->{package}, skipping.\n\n");
 	&cancelbug;
 	return 0;
     } 
