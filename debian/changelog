@@ -1,11 +1,50 @@
-debbugs (UNRELEASED VERSION) unstable; urgency=low
+debbugs (2.4-1) experimental; urgency=medium
 
+  * Updating the package with what's in CVS, even though this might
+    completely break things for people who've been using the previous also
+    broken package. <shrug> :) Upped the minor version since the changes
+    are noticeable, and uploaded to experimental, just in case.
   * Applied speedup patch, that uses references, instead of copies.
-    Closes: #87176.
+    Thanks to Thomas Smith. Closes: #87176. [Adam]
+  * Reverted some parts of the speedup patch because it breaks the API.
+    [Anthony]
   * Bugs that are tagged fixed are now listed in a separate section in the
-    web pages.  Closes: #86922.
+    web pages. Patch from Colin Watson. Closes: #86922. [Adam]
+  * Added support for an additional Maintainers.override file, which is read
+    after the normal one. This allows the normal one to be externally
+    updated, but still have local overrides. [Adam]
+  * Put <title> and </title> on the same line as the title since some lame
+    browsers don't seem to like it otherwise. [Josip]
+  * Include a mailto: URI in the header for a bug report. [Adam]
+  * Added support for filtering on subject with include=subj:foo (exact
+    match, case sensitive). [Anthony]
+  * Added a missing http://, thanks to Julian Gilbey. [Anthony]
+  * Use by-*.idx indices to speed up pkgreport.cgi. [Anthony]
+  * Support "maint=" in pkgreport to give packages without a maintainer.
+    [Anthony]
+  * Updated Postfix documentation. [Darren]
+  * Use two variables in order to reduce the amount of path hard-coding.
+  * Added support for storing the files in a hashed directory (db-h), with
+    the same hash layout as archive/. [Adam]
+  * Added support for tracing of bug state changes. This date is in
+    $gSpoolDir/debbugs.trace. It is locked (as debbugs.trace.lock) while
+    accessed, and appended to. Currently, nothing uses this trace file and
+    it isn't even cleaned up, which can be easily fixed with a simple cron
+    job. [Adam]
+  * Tell sendmail to queue outgoing mail for later delivery, instead of
+    immediate delivery. [Adam]
+  * Added a keywords header to outgoing email responses. [Adam]
+  * Use Resent-From: if From: doesn't exist. [Adam]
+  * Added appropriate Reply-To: lines for the ACK messages that could use
+    them. [Josip]
+  * Add $gUnknownMaintainerEmail to the list of maintainers to mail in case
+    an package with no maintainer is referenced. [Adam]
+  * processall locks 'incoming-cleaner' before starting, so we don't have
+    multiple copies of it running at the same time. [Adam]
+  * Added myself to the Uploaders: field. [Josip]
+  * Various other things, not worth mentioning here.
 
- -- UNRELEASED MAINTAINER  UNRELEASED DATE
+ -- Josip Rodin <jrodin@jagor.srce.hr>  UNRELEASED
 
 debbugs (2.3-4) unstable; urgency=low
 
