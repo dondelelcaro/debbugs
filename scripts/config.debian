@@ -1,20 +1,21 @@
 # This is the bugs.debian.org debbugs configuration file.
-# $Id: config.debian,v 1.13 2001/11/17 00:40:03 doogie Exp $
+# $Id: config.debian,v 1.14 2002/10/03 12:49:43 cjwatson Exp $
 
 # Domains
 $gEmailDomain = "bugs.debian.org";
 $gListDomain = "lists.debian.org";
 $gWebDomain = "www.debian.org/Bugs";
 $gPackagePages = "packages.debian.org";
-$gCGIDomain = "http://bugs.debian.org/cgi-bin/";
+$gCGIHost = "bugs.debian.org";
+$gCGIPath = "/cgi-bin/";
+$gCGIDomain = "http://$gCGIHost$gCGIPath";
 $gMirrors = "";						# comma separated list
 
 # Project identification
 $gProject = "Debian";
 $gProjectTitle = "Debian GNU/Linux";
 # Person(s) responsible for this installation
-$gMaintainer = "Darren Benham";
-$gMaintainerWebpage = "http://master.debian.org/~gecko";
+$gMaintainer = "Debian bug tracking system administrator"; # should be plural but that would require changes to other scripts
 $gMaintainerEmail = "owner\@bugs.debian.org";
 
 # BTS mailing lists, at $gListDomain
@@ -52,7 +53,7 @@ $gShowSeverities = "critical, grave, serious, important, normal, minor, wishlist
                     );
 @gTags = ( "patch", "wontfix", "moreinfo", "unreproducible", "fixed",
            "potato", "woody", "sid", "help", "security", "upstream",
-           "pending"
+           "pending", "sarge", "experimental"
          );
 
 # better don't change this
