@@ -148,6 +148,8 @@ my $log='';
 
 my $xmessage = 1;
 my $suppressnext = 0;
+my $found_msgid = 0;
+my %seen_msgid = ();
 
 my $thisheader = '';
 my $this = '';
@@ -276,6 +278,7 @@ while(my $line = <L>) {
 			$xmessage++ if ($normstate ne 'html');
 
 			$suppressnext = $normstate eq 'html';
+			$found_msgid = 0;
 		}
 		
 		$normstate = $newstate;
@@ -298,6 +301,16 @@ while(my $line = <L>) {
 		$this .= $_;
 	} elsif ($normstate eq 'go') {
 		s/^\030//;
+		if (!$suppressnext && !$found_msgid &&
+		    /^Message-ID: <(.*)>/i) {
+			my $msgid = $1;
+			$found_msgid = 1;
+			if ($seen_msgid{$msgid}) {
+				$suppressnext = 1;
+			} else {
+				$seen_msgid{$msgid} = 1;
+			}
+		}
 		if (@mail) {
 			push @mail, $_;
 		} else {
@@ -305,6 +318,16 @@ while(my $line = <L>) {
 		}
 	} elsif ($normstate eq 'go-nox') {
 		next if !s/^X//;
+		if (!$suppressnext && !$found_msgid &&
+		    /^Message-ID: <(.*)>/i) {
+			my $msgid = $1;
+			$found_msgid = 1;
+			if ($seen_msgid{$msgid}) {
+				$suppressnext = 1;
+			} else {
+				$seen_msgid{$msgid} = 1;
+			}
+		}
 		if (@mail) {
 			push @mail, $_;
 		} else {
