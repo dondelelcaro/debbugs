@@ -1,5 +1,5 @@
 # This is the bugs.debian.org debbugs configuration file.
-# $Id: config.debian,v 1.24 2004/01/13 19:24:02 cjwatson Exp $
+# $Id: config.debian,v 1.25 2004/02/03 21:50:24 cjwatson Exp $
 
 # Domains
 $gEmailDomain = "bugs.debian.org";
@@ -58,7 +58,7 @@ $gShowSeverities = "critical, grave, serious, important, normal, minor, wishlist
            "potato", "woody", "sid", "help", "security", "upstream",
            "pending", "sarge", "sarge-ignore", "experimental", "d-i",
            "confirmed", "ipv6", "lfs", "fixed-in-experimental",
-           "fixed-upstream"
+           "fixed-upstream", "l10n"
          );
 
 # better don't change this
