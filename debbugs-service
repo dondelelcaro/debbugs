@@ -27,7 +27,8 @@ my $control;                                 #call to control or request
 
 my @body;				    #list of commands
 my $replyto;				    #address of to send reply to
-my $transcript;				    #building of return message
+my $transcript = '';			    #building of return message
+my %LTags;				    #Tags Local to this email
 my @message;				    #holds copy of msg to apply tags
 
 #############################################################################
@@ -110,12 +111,30 @@ $inputmail->head->count('From') || &fail( "no From header" );
 ############################################################################
 #  Determine Reply To address
 ############################################################################
-$replyto= $inputmail->head->count( "Reply-to" ) ? $inputmail->head->get( "Reply-to" ) : $inputmail->head->get( "From" );
+my $header = $input->mail->head;
+$replyto= $header->count( "Reply-to" ) ? $header->get( "Reply-to" ) : $header->get( "From" );
+
+############################################################################
+#  Add Email info to Local Tags (LTags)
+############################################################################
+$LTags{ 'REPLY_TO' ) = $replyto;
+$LTags{ 'CC_TO' ) = $header->get( 'CC' ) if $header->count( 'CC' );
+$LTags{ 'MESSAGE_ID' } = $header->get( 'Message-id' ) if $header->count( 'Message-id' );
+$LTags{ 'MESSAGE_BODY' } = join( '\n', @body );
+$LTags( 'MESSAGE_DATA' } = "control";
+$LTags{ 'MESSAGE_DATE' } = $header->get( 'Date' ) if $header->count( 'Date');
+if ( $header->count( 'Subject' ) )
+{   $LTags{ 'MESSAGE_SUBJECT' } = $header->get( 'Subject' ); }
+else { &transcript( <<END ); }
+Your email does not include a Subject line in the header.  This is a 
+violation of the specifications and may cause your email to be rejected at
+some later date.
+
+END
 
 ############################################################################
 #  Start processing of commands 
 ############################################################################
-$transcript='';
 if ( $control ) { &transcript("Processing commands for control message:\n\n"); }
 else { &transcript("Processing commands for request message:\n\n"); }
 
@@ -278,13 +297,17 @@ END
             } else {
                 $action= "$gBug closed, ack sent to submitter - they'd better know why !";
                 do {
+		    Load the Bug Record
+		    Close the Bug
                     &addmaintainers($s_package);
 		    if ( length( $gDoneList ) > 0 && length( $gListDomain ) > 0 ) 
 		    { &addccaddress("$gDoneList\@$gListDomain"); }
                     $s_done= $replyto;
 		    @message = @notify_done_email;
-		    &Debbugs::Email::ProcessTags( ... );
+		    &Debbugs::Email::ProcessTags( \@message, \@BTags, "BTAG" );
+		    &Debbugs::Email::ProcessTags( \@message, \@LTags, "LTAG" );
                     &sendmailmessage( join( "\n", @message), $s_originator );
+		    Save the bug record
                 } while (&getnextbug);
             }
         }
