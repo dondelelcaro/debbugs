@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.32 2001/01/27 21:46:27 joy Exp $
+# $Id: service.in,v 1.33 2001/03/18 05:17:07 doogie Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -54,6 +54,9 @@ for ($i=0; $i<=$#msg; $i++)
     } else { print "!>$_<\n" if $debug; }
 }
 
+if (defined $header{'resent-from'} && !defined $header{'from'}) {
+    $header{'from'} = $header{'resent-from'};
+}
 defined($header{'from'}) || &quit("no From header");
 delete $header{'reply-to'} if ( defined($header{'reply-to'}) && $header{'reply-to'} =~ m/^\s*$/ );
 if ( defined($header{'reply-to'}) && $header{'reply-to'} ne "" ) {
