@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: db2html.in,v 1.2 1999/09/09 03:17:57 gecko Exp $
+# $Id: db2html.in,v 1.3 1999/09/14 16:13:13 gecko Exp $
 # usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
 
 #load the necessary libraries/configuration
@@ -337,8 +337,8 @@ for $f (@files)
     &file("$linkto.html",'non',
           "<html><head><title>$gProject $gBug report logs - ".
           "$short</title>\n".
-          "<link rev=\"made\" href=\"mailto:$gMaintainerEmail)\">\n".
-          "</head><body><h1>$gProject) $gBug report logs -  $short<br>\n".
+          "<link rev=\"made\" href=\"mailto:$gMaintainerEmail\">\n".
+          "</head><body><h1>$gProject $gBug report logs -  $short<br>\n".
           &sani($s_subject)."</h1>".
           "$descriptivehead\n".
           "\n<hr>\n".
