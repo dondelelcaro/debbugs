@@ -1,5 +1,5 @@
 # This is the bugs.debian.org debbugs configuration file.
-# $Id: config.debian,v 1.9 2000/12/05 21:05:31 joy Exp $
+# $Id: config.debian,v 1.10 2000/12/05 22:20:15 joy Exp $
 
 # Domains
 $gEmailDomain = "bugs.debian.org";
@@ -35,17 +35,23 @@ $gBugs = "Bugs";				# how to spell `bugs'
 $gRemoveAge = 28;				# days after closed bugs are cleaned out
 $gSaveOldBugs = 1;				# whether to archive such bugs
 $gDefaultSeverity = "normal";
-$gShowSeverities = "critical, grave, important, normal, minor, wishlist, fixed";
-@gStrongSeverities = ( 'critical', 'grave', 'important' );
-@gSeverityList = ( 'critical', 'grave', 'important', 'normal', 'minor', 'wishlist', 'fixed');
-%gSeverityDisplay = ( 'critical', "Critical $gBugs",
-                      'grave', "Grave $gBugs",
-                      'important', "Important $gBugs",
-                      'normal', "Normal $gBugs",
-                      'minor', "Trivial $gBugs",
-                      'fixed', "NMU Fixed $gBugs",
-                      'wishlist', "Wishlist items" );
-@gTags = ( 'patch', 'wontfix', 'moreinfo', 'unreproducible', 'fixed', 'stable' );
+$gShowSeverities = "critical, grave, serious, important, normal, minor, wishlist, fixed";
+@gStrongSeverities = ( "critical", "grave", "serious" );
+@gSeverityList = ( "critical", "grave", "serious", "important", "normal",
+                   "minor", "wishlist", "fixed"
+                 );
+%gSeverityDisplay = ( "critical", "Critical bugs",
+                      "grave", "Grave functionality bugs",
+                      "serious", "Serious policy violations",
+                      "important", "Important bugs",
+                      "normal", "Normal bugs",
+                      "minor", "Minor bugs",
+                      "fixed", "NMU Fixed bugs",
+                      "wishlist", "Wishlist items"
+                    );
+@gTags = ( "patch", "wontfix", "moreinfo", "unreproducible", "fixed",
+           "potato", "woody", "sid", "help", "security"
+         );
 
 # better don't change this
 $gBounceFroms = "^mailer|^da?emon|^post.*mast|^root|^wpuser|^mmdf|^smt.*|^mrgate|^vmmail|^mail.*system|^uucp|-maiser-|^mal\@|^mail.*agent|^tcpmail|^bitmail|^mailman";
