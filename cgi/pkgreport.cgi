@@ -34,6 +34,12 @@ my $include = $param{'include'} || "";
 my $exclude = $param{'exclude'} || "";
 my $raw_sort = ($param{'raw'} || "no") eq "yes";
 my $bug_rev = ($param{'bug-rev'} || "no") eq "yes";
+my $pend_rev = ($param{'pend-rev'} || "no") eq "yes";
+my $sev_rev = ($param{'sev-rev'} || "no") eq "yes";
+my $pend_exc = $param{'&pend-exc'} || $param{'pend-exc'} || "";
+my $pend_inc = $param{'&pend-inc'} || $param{'pend-inc'} || "";
+my $sev_exc = $param{'&sev-exc'} || $param{'sev-exc'} || "";
+my $sev_inc = $param{'&sev-inc'} || $param{'sev-inc'} || "";
 
 my $Archived = $archive ? " Archived" : "";
 
@@ -58,6 +64,12 @@ set_option("exclude", { map {if (m/^(.*):(.*)$/) { ($1,$2) } else { ($_,1) }} (s
 	if ($exclude);
 set_option("raw", $raw_sort);
 set_option("bug-rev", $bug_rev);
+set_option("pend-rev", $pend_rev);
+set_option("sev-rev", $sev_rev);
+set_option("pend-exc", $pend_exc);
+set_option("pend-inc", $pend_inc);
+set_option("sev-exc", $sev_exc);
+set_option("sev-inc", $sev_inc);
 
 my $tag;
 my @bugs;

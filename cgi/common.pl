@@ -9,6 +9,13 @@ my %common_include = ();
 my %common_exclude = ();
 my $common_raw_sort = 0;
 my $common_bug_reverse = 0;
+my $common_pending_reverse = 0;
+my $common_severity_reverse = 0;
+
+my @common_pending_include = ();
+my @common_pending_exclude = ();
+my @common_severity_include = ();
+my @common_severity_exclude = ();
 
 my $debug = 0;
 
@@ -20,6 +27,36 @@ sub set_option {
     if ($opt eq "include") { %common_include = %{$val}; }
     if ($opt eq "raw") { $common_raw_sort = $val; }
     if ($opt eq "bug-rev") { $common_bug_reverse = $val; }
+    if ($opt eq "pend-rev") { $common_pending_reverse = $val; }
+    if ($opt eq "sev-rev") { $common_severity_reverse = $val; }
+    if ($opt eq "pend-exc") {
+	my @vals;
+	@vals = ( $val ) if (ref($val) eq "" && $val );
+	@vals = ( $$val ) if (ref($val) eq "SCALAR" && $$val );
+	@vals = @{$val} if (ref($val) eq "ARRAY" );
+	@common_pending_exclude = @vals if (@vals);
+    }
+    if ($opt eq "pend-inc") {
+	my @vals;
+	@vals = ( $val, ) if (ref($val) eq "" && $val );
+	@vals = ( $$val, ) if (ref($val) eq "SCALAR" && $$val );
+	@vals = @{$val} if (ref($val) eq "ARRAY" );
+	@common_pending_include = @vals if (@vals);
+    }
+    if ($opt eq "sev-exc") {
+	my @vals;
+	@vals = ( $val ) if (ref($val) eq "" && $val );
+	@vals = ( $$val ) if (ref($val) eq "SCALAR" && $$val );
+	@vals = @{$val} if (ref($val) eq "ARRAY" );
+	@common_severity_exclude = @vals if (@vals);
+    }
+    if ($opt eq "sev-inc") {
+	my @vals;
+	@vals = ( $val ) if (ref($val) eq "" && $val );
+	@vals = ( $$val ) if (ref($val) eq "SCALAR" && $$val );
+	@vals = @{$val} if (ref($val) eq "ARRAY" );
+	@common_severity_include = @vals if (@vals);
+    }
 }
 
 sub readparse {
@@ -292,8 +329,21 @@ sub htmlizebugs {
     if ($common_raw_sort) {
 	$result .= "<UL>\n" . join("", @rawsort ) . "</UL>\n";
     } else {
-    foreach my $pending (qw(pending forwarded pending-fixed fixed done)) {
-        foreach my $severity(@debbugs::gSeverityList) {
+	my @pendingList = qw(pending forwarded pending-fixed fixed done);
+	@pendingList = @common_pending_include if @common_pending_include;
+	@pendingList = reverse @pendingList if $common_pending_reverse;
+#print STDERR join(",",@pendingList)."\n";
+#print STDERR join(",",@common_pending_include).":$#common_pending_include\n";
+    foreach my $pending (@pendingList) {
+	next if grep( /^$pending$/, @common_pending_exclude);
+	my @severityList = @debbugs::gSeverityList;
+	@severityList = @common_severity_include if @common_severity_include;
+	@severityList = reverse @severityList if $common_severity_reverse;
+#print STDERR join(",",@severityList)."\n";
+
+#        foreach my $severity(@debbugs::gSeverityList) {
+        foreach my $severity(@severityList) {
+	    next if grep( /^$severity$/, @common_severity_exclude);
             $severity = $debbugs::gDefaultSeverity if ($severity eq '');
             next unless defined $section{${pending} . "_" . ${severity}};
             $result .= "<HR><H2>$debbugs::gSeverityDisplay{$severity} - $displayshowpending{$pending}</H2>\n";
