@@ -45,7 +45,8 @@ debbugs:
 
 Qmail
 -----
-From Tommi Virtanen (tv@debian.org):
+From Tommi Virtanen (tv@debian.org), amended by Daniel Ruoso
+(daniel@ruoso.com):
 
 Here's my suggestion for safe & secure installation under qmail:
         
@@ -56,7 +57,7 @@ Give control of a virtual domain to that user
 Give the user access to the bug databases
 	# chown -R debbugs:debbugs /var/lib/debbugs/*
 Set the BTS owner address
-	# echo 'me@my.example.com' >~debbugs/.qmail-owner
+	# echo '&me@my.example.com' >~debbugs/.qmail-owner
 Make the BTS handle it's mail
 	# echo '|/usr/lib/debbugs/receive' >~debbugs/.qmail-default
 Reload the virtualdomains config file
