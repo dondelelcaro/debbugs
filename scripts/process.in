@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.61 2003/03/27 19:37:21 cjwatson Exp $
+# $Id: process.in,v 1.62 2003/03/27 23:29:19 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -191,6 +191,7 @@ Subject: Unknown problem report $gBug#$tryref ($subject)
 Message-ID: <handler.x.$nn.unknown\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
 References: $header{'message-id'} $s_msgid
+Precedence: bulk
 X-$gProject-PR-Message: error
 
 You sent a message to the $gBug tracking system which gave (in the
@@ -266,6 +267,7 @@ Subject: Message with no $gBug number ignored by $receivedat
 Message-ID: <header.x.$nn.warnignore\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
 References: $header{'message-id'} $s_msgid
+Precedence: bulk
 X-$gProject-PR-Message: error
 
 You sent a message to the $gProject $gBug tracking system old-style
@@ -338,6 +340,7 @@ ${noticecc}Subject: $gBug#$ref: marked as forwarded ($s_subject)
 Message-ID: <header.$ref.$nn.ackfwdd\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
 References: $header{'message-id'} $s_msgid
+Precedence: bulk
 X-$gProject-PR-Message: forwarded $ref
 
 Your message dated $header{'date'}
@@ -365,6 +368,7 @@ ${noticecc}Subject: $gBug#$ref: marked as done ($s_subject)
 Message-ID: <handler.$ref.$nn.ackdone\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
 References: $header{'message-id'} $s_msgid
+Precedence: bulk
 X-$gProject-PR-Message: closed $ref
 
 Your message dated $header{'date'}
@@ -429,6 +433,7 @@ Subject: Message with no $gBug number cannot be sent to submitter !
 Message-ID: <handler.x.$nn.nonumnosub\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
 References: $header{'message-id'} $s_msgid
+Precedence: bulk
 X-$gProject-PR-Message: error
 
 You sent a message to the $gProject $gBug tracking system send to $gBug 
@@ -473,6 +478,7 @@ Subject: Message with no Package: tag cannot be processed!
 Message-ID: <handler.x.$nn.nonumnosub\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
 References: $header{'message-id'} $s_msgid
+Precedence: bulk
 X-$gProject-PR-Message: error
 
 Your message didn't have a Package: line at the start (in the
@@ -693,6 +699,7 @@ Subject: $gBug#$ref: Acknowledgement of QUIET report
 Message-ID: <handler.$ref.$nn.ackquiet\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
 References: $header{'message-id'}
+Precedence: bulk
 X-$gProject-PR-Message: ack-quiet $ref
 Reply-To: $ref-quiet\@$gEmailDomain
 
@@ -720,6 +727,7 @@ Subject: $gBug#$ref: Acknowledgement of maintainer-only report
 Message-ID: <handler.$ref.$nn.ackmaint\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
 References: $header{'message-id'}
+Precedence: bulk
 X-$gProject-PR-Message: ack-maintonly $ref
 Reply-To: $ref-maintonly\@$gEmailDomain
 
@@ -744,6 +752,7 @@ Subject: $gBug#$ref: Acknowledgement ($subject)
 Message-ID: <handler.$ref.$nn.ack\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
 References: $header{'message-id'}
+Precedence: bulk
 X-$gProject-PR-Message: ack $ref
 Reply-To: $ref\@$gEmailDomain
 
@@ -776,6 +785,7 @@ Subject: $gBug#$ref: Info received and FILED only
 Message-ID: <handler.$ref.$nn.ackinfoquiet\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
 References: $header{'message-id'}
+Precedence: bulk
 X-$gProject-PR-Message: ack-info-quiet $ref
 Reply-To: $ref-quiet\@$gEmailDomain
 
@@ -801,6 +811,7 @@ Subject: $gBug#$ref: Info received for maintainer only
 Message-ID: <handler.$ref.$nn.ackinfomaint\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
 References: $header{'message-id'}
+Precedence: bulk
 X-$gProject-PR-Message: ack-info-maintonly $ref
 Reply-To: $ref-maintonly\@$gEmailDomain
 
@@ -823,6 +834,7 @@ Subject: $gBug#$ref: Info received (was $subject)
 Message-ID: <handler.$ref.$nn.ackinfo\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
 References: $header{'message-id'}
+Precedence: bulk
 X-$gProject-PR-Message: ack-info $ref
 Disabled-Doogie-Reply-To: $ref\@$gEmailDomain
 

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.71 2003/03/10 00:45:37 cjwatson Exp $
+# $Id: service.in,v 1.72 2003/03/27 23:29:19 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -654,6 +654,7 @@ ${maintccs}Subject: Processed: $header{'subject'}
 In-Reply-To: $header{'message-id'}
 References: $header{'message-id'}
 Message-ID: <handler.s.$nn.transcript\@$gEmailDomain>
+Precedence: bulk
 
 ${transcript}Please contact me if you need assistance.
 
@@ -975,6 +976,7 @@ Subject: $gProject $gBug help: $description
 References: $header{'message-id'}
 In-Reply-To: $header{'message-id'}
 Message-ID: <handler.s.$nn.help.$midix\@$gEmailDomain>
+Precedence: bulk
 
 END
     $ok++;
@@ -1001,6 +1003,7 @@ Subject: $gProject $gBugs information: $description
 References: $header{'message-id'}
 In-Reply-To: $header{'message-id'}
 Message-ID: <handler.s.$nn.info.$midix\@$gEmailDomain>
+Precedence: bulk
 
 END
          $ok++;
@@ -1099,6 +1102,7 @@ Subject: $gProject $gBugs information: $description
 References: $header{'message-id'}
 In-Reply-To: $header{'message-id'}
 Message-ID: <handler.s.$nn.info.$midix\@$gEmailDomain>
+Precedence: bulk
 
 $description follows:
 
