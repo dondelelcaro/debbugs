@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.11 2000/10/30 16:24:22 joy Exp $
+# $Id: text.in,v 1.12 2000/10/30 19:07:29 joy Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -147,7 +147,7 @@ $gHTMLTagDesc = "
 
 <dt><code>moreinfo</code>
   <dd>This $gBug can\'t be addressed until more information is provided by the
-  submitter. The $gBug will be closed if the submitter doesn\'t provide ore
+  submitter. The $gBug will be closed if the submitter doesn\'t provide more
   information in a reasonable (few months) timeframe. This is for $gBugs like
   \"It doesn\'t work\". What doesn\'t work?
 
@@ -174,22 +174,24 @@ $gHTMLStart = "<BODY>";
 ############################################################################
 # shows up at the end of (most) html pages.
 ############################################################################
-$gHTMLTail = "<HR><ADDRESS>$gMaintainer /
+$gHTMLTail = "<HR>
+ <ADDRESS>$gMaintainer /
  <A HREF=\"mailto:$gMaintainerEmail\">$gMaintainerEmail</A>.  Last modifed:
  <!--timestamp-->
  SUBSTITUTE_DTIME
  <!--timestamp-->
  (<A HREF=\"http://$gWebDomain/db/ix/zstamp.html\">timestamp page</A> available).
 	  
- <P>
- Debian $gBug tracking system<BR>
- copyright 1999 Darren O. Benham,
+ <P>Debian $gBug tracking system
+ <BR>
+ Copyright (C) 1999 Darren O. Benham,
  1997 nCipher Corporation Ltd,
- 1994-7 Ian Jackson,
- 1995 Steven Brenner.<BR>
- <A HREF=\"http://www.benham.net/debbugs/\">
- Available under the GPL.</A>
+ 1994-97 Ian Jackson,
+ 1995 Steven Brenner.
+ <BR>
+ <A HREF=\"http://www.benham.net/debbugs/\">Available under the GPL.</A>
  </ADDRESS>
+
  </BODY>
  </HTML>";
 
