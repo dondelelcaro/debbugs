@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: expire.in,v 1.15 2003/05/03 20:01:20 doogie Exp $
+# $Id: expire.in,v 1.16 2003/05/25 13:17:14 cjwatson Exp $
 
 # Load modules and set envirnment
 use File::Copy;
@@ -72,11 +72,6 @@ while (length($ref=shift(@list))) {
 			link( "db-h/$dir/$mref.log", "archive/$dir/$mref.log" ) || copy( "db-h/$dir/$mref.log", "archive/$dir/$mref.log" );
 			link( "db-h/$dir/$mref.status", "archive/$dir/$mref.status" ) || copy( "db-h/$dir/$mref.status", "archive/$dir/$mref.status" );
 			link( "db-h/$dir/$mref.report", "archive/$dir/$mref.report" ) || copy( "db-h/$dir/$mref.report", "archive/$dir/$mref.report" );
-			if ( open( IDXFILE, ">>archive/index" ) ) {
-				printf IDXFILE "%s %d %s\n", $data->{package}, $mref, $data->{subject};
-				close IDXFILE;
-			} else { print "Unable to write to index file\n"; }
-				
             		print("archived $mref to archive/$dir (from $ref)\n") || &quit("output old: $!");
 		}
 		unlink("db-h/$dir/$mref.log", "db-h/$dir/$mref.status", "db-h/$dir/$mref.report");
