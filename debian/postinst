@@ -4,20 +4,18 @@ if [ "$1" = "configure" ]; then
   /usr/sbin/debbugsconfig
   if dpkg --compare-versions "$2" lt 2.4; then
     spool=`perl -e 'require "/etc/debbugs/config"; print $gSpoolDir;'`
-    if [ -d "$spool/db" ] && [ ! -d "$spool/db-h" ]; then
-      echo "Migrating bug database to hashed format." >&2
-      /usr/sbin/debbugs-dbhash "$spool/db" "$spool/db-h"
-      echo "You can remove bug logs from $spool/db" >&2
-      echo "after ensuring that the new database works." >&2
-    else
-      echo "Cannot migrate bug database to hashed format, because:" >&2
-      if [ -d "$spool/db" ]; then
-	echo "$spool/db-h already exists."
+    if [ -d "$spool/db" ]; then
+      if [ -d "$spool/db-h" ]; then
+        echo "Cannot migrate bug database to hashed format, because" >&2
+        echo "$spool/db-h already exists." >&2
+        echo "Rectify the situation and run the following command by hand:" >&2
+        echo "  /usr/sbin/debbugs-dbhash \"$spool/db\" \"$spool/db-h\"" >&2
       else
-	echo "$spool/db is missing."
+        echo "Migrating bug database to hashed format." >&2
+        /usr/sbin/debbugs-dbhash "$spool/db" "$spool/db-h"
+        echo "You can remove bug logs from $spool/db" >&2
+        echo "after ensuring that the new database works." >&2
       fi
-      echo "Rectify the situation and run the following command by hand:" >&2
-      echo "  /usr/sbin/debbugs-dbhash \"$spool/db\" \"$spool/db-h\"" >&2
     fi
   fi
 fi
