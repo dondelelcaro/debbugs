@@ -220,10 +220,14 @@ if (defined $pkg || defined $src) {
 		push @references, sprintf "to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
 	    }
 	    if ($srcforpkg) {
+		if (defined $debbugs::gSubscriptionDomain) {
+		    push @references, "to the <a href=\"http://$debbugs::gSubscriptionDomain/$srcforpkg\">Package Tracking System</a>";
+		}
 		push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($srcforpkg), htmlsanit($srcforpkg);
 	    }
 	    if (@references) {
-		print "<p>You might like to refer ", join(", or ", @references), ".</p>\n";
+		$references[$#references] = "or $references[$#references]" if @references > 1;
+		print "<p>You might like to refer ", join(", ", @references), ".</p>\n";
 	    }
 	}
 	print "<p>If you find a bug not listed here, please\n";
