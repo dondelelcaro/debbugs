@@ -228,7 +228,7 @@ sub getbugs {
     my @result = ();
     while(<I>) 
     {
-        if (m/^(\S+)\s+(\d+)\s+(\S+)\s+(\d+)\s+\[\s*([^]]*[^]\s])\s*\]\s+(\w+)\s+(.+)$/) {
+        if (m/^(\S+)\s+(\d+)\s+(\S+)\s+(\d+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.+)$/) {
             if ($bugfunc->(pkg => $1, bug => $2, maint => $5,
 			   severity => $6, title => $7))
 	    {
