@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.60 2002/11/02 09:21:43 ajt Exp $
+# $Id: service.in,v 1.61 2002/11/08 14:01:33 ajt Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -850,7 +850,9 @@ sub savebug {
           "$s_done\n".
           "$s_forwarded\n".
           "$s_mergedwith\n".
-	  "$s_severity\n") || &quit("writing db-h/$hash/$ref.status.new: $!");
+          "$s_severity\n".
+          "$s_versions\n".
+	  "$s_fixed_versions\n") || &quit("writing db-h/$hash/$ref.status.new: $!");
     close(S) || &quit("closing db-h/$hash/$ref.status.new: $!");
     rename("db-h/$hash/$ref.status.new","db-h/$hash/$ref.status") ||
         &quit("installing new db-h/$hash/$ref.status: $!");
@@ -864,7 +866,9 @@ sub savebug {
           "$s_done\n".
           "$s_forwarded\n".
           "$s_mergedwith\n".
-	  "$s_severity\n");
+	  "$s_severity\n".
+	  "$s_versions\n".
+	  "$s_fixed_versions\n");
     &unfilelock;
     $lowstate= "idle";
     &dlex("savebug");

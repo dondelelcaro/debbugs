@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.54 2002/10/27 14:54:02 ajt Exp $
+# $Id: process.in,v 1.55 2002/11/08 14:01:33 ajt Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -500,6 +500,20 @@ END
     } else {
 	$s_package= $pheader{'package'}; 
     }
+
+    $s_versions= '';
+    if (defined($pheader{'version'})) {
+        $s_versions = $pheader{'version'};
+        $s_versions ~= s/\s+/ /;
+	# BUG: need to bounce unknown versions back to submitter here
+    }
+
+    $s_fixed_versions= '';
+    if (defined($pheader{'fixed-in-version'})) {
+        $s_fixed_versions = $pheader{'fixed-in-version'};
+        $s_fixed_versions ~= s/\s+/ /;
+    }
+
     $s_keywords= '';
     if (defined($pheader{'keywords'})) {
         $s_keywords= $pheader{'keywords'};
@@ -543,10 +557,12 @@ END
     &overwrite("db-h/$hash/$ref.log",'');
     &overwrite("db-h/$hash/$ref.status",
                "$replyto\n$intdate\n$subject\n$header{'message-id'}\n".
-               "$s_package\n$s_keywords\n\n\n\n$s_severity\n");
+               "$s_package\n$s_keywords\n\n\n\n$s_severity\n$s_versions\n".
+               "$s_fixed_versions\n");
     &bughook('new',$ref,
                "$replyto\n$intdate\n$subject\n$header{'message-id'}\n".
-               "$s_package\n$s_keywords\n\n\n\n$s_severity\n");
+               "$s_package\n$s_keywords\n\n\n\n$s_severity\n$s_versions\n".
+               "$s_fixed_versions\n");
     &overwrite("db-h/$hash/$ref.report",
                join("\n",@msg)."\n");
 }
