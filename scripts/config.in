@@ -1,6 +1,6 @@
 # This is the template debbugs configuration file.
 # You *must* edit it in order for debbugs to work.
-# $Id: config.in,v 1.19 2003/08/06 10:57:23 cjwatson Exp $
+# $Id: config.in,v 1.20 2003/08/06 11:27:11 cjwatson Exp $
 
 # Domains
 $gEmailDomain = "bugs.something";			# e.g. bugs.debian.org
@@ -65,8 +65,6 @@ $gSpoolDir = "/var/lib/debbugs/spool";			# working directory
 $gIncomingDir = "incoming";				# unprocessed e-mails
 $gWebDir = "/var/lib/debbugs/www";			# base location of web pages
 $gDocDir = "/var/lib/debbugs/www/txt";			# location of text doc files
-$gAJDbDir = "/var/lib/debbugs/spool/db";		# AJ's database dir
-$gAJIndex = "/debian/home/ajt/ajbug/pkgindex";		# AJ's package index
 
 # Required data files
 $gMaintainerFile = "$gConfigDir/Maintainers";
