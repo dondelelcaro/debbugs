@@ -436,9 +436,10 @@ sub countbugs {
     while(<I>) 
     {
         if (m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/) {
-            my $x = $bugfunc->(pkg => $1, bug => $2, status => $4, 
+            my @x = $bugfunc->(pkg => $1, bug => $2, status => $4, 
                                submitter => $5, severity => $6, tags => $7);
-	    $count{$x}++;
+            local $_;
+            $count{$_}++ foreach @x;
 	}
     }
     close I;

@@ -57,7 +57,7 @@ my %htmldescrip = ();
 my %sortkey = ();
 if ($indexon eq "pkg") {
   $tag = "package";
-  %count = countbugs(sub {my %d=@_; return $d{"pkg"}});
+  %count = countbugs(sub {my %d=@_; return splitpackages($d{"pkg"})});
   $note = "<p>Note that with multi-binary packages there may be other\n";
   $note .= "reports filed under the different binary package names.</p>\n";
   foreach my $pkg (keys %count) {
@@ -72,7 +72,9 @@ if ($indexon eq "pkg") {
 } elsif ($indexon eq "maint") {
   $tag = "maintainer";
   %count = countbugs(sub {my %d=@_; 
-                          return emailfromrfc822($maintainers{$d{"pkg"}} || "");
+                          return map {
+                            emailfromrfc822($maintainers{$_}) || ()
+                          } splitpackages($d{"pkg"});
 			 });
   $note = "<p>Note that maintainers may use different Maintainer fields for\n";
   $note .= "different packages, so there may be other reports filed under\n";

@@ -109,12 +109,19 @@ my $tag;
 my @bugs;
 if (defined $pkg) {
   $tag = "package $pkg";
-  @bugs = @{getbugs(sub {my %d=@_; return $pkg eq $d{"pkg"}}, 'package', $pkg)};
+  @bugs = @{getbugs(sub {my %d=@_;
+                         return grep($pkg eq $_, splitpackages($d{"pkg"}))
+                        }, 'package', $pkg)};
 } elsif (defined $src) {
   $tag = "source $src";
   my @pkgs = getsrcpkgs($src);
   push @pkgs, $src if ( !grep(/^\Q$src\E$/, @pkgs) );
-  @bugs = @{getbugs(sub {my %d=@_; return grep($d{"pkg"} eq $_, @pkgs)}, 'package', @pkgs)};
+  @bugs = @{getbugs(sub {my %d=@_;
+                         foreach my $try (splitpackages($d{"pkg"})) {
+                           return 1 if grep($try eq $_, @pkgs);
+                         }
+                         return 0;
+                        }, 'package', @pkgs)};
 } elsif (defined $maint) {
   my %maintainers = %{getmaintainers()};
   $tag = "maintainer $maint";
@@ -127,24 +134,36 @@ if (defined $pkg) {
   }
   if ($maint eq "") {
     @bugs = @{getbugs(sub {my %d=@_; my $me; 
-		       ($me = $maintainers{$d{"pkg"}}||"") =~ s/\s*\(.*\)\s*//;
-		       $me = $1 if ($me =~ m/<(.*)>/);
-		       return $me eq $maint;
-		     })};
+                           foreach my $try (splitpackages($d{"pkg"})) {
+                             ($me = $maintainers{$try} || "")
+                                  =~ s/\s*\(.*\)\s*//;
+                             $me = $1 if ($me =~ m/<(.*)>/);
+                             return 1 if $me eq $maint;
+                           }
+                           return 0;
+                          })};
   } else {
     @bugs = @{getbugs(sub {my %d=@_; my $me; 
-		       ($me = $maintainers{$d{"pkg"}}||"") =~ s/\s*\(.*\)\s*//;
-		       $me = $1 if ($me =~ m/<(.*)>/);
-		       return $me eq $maint;
-		     }, 'package', @pkgs)};
+                           foreach my $try (splitpackages($d{"pkg"})) {
+                             ($me = $maintainers{$try} || "")
+                                  =~ s/\s*\(.*\)\s*//;
+                             $me = $1 if ($me =~ m/<(.*)>/);
+                             return 1 if $me eq $maint;
+                           }
+                           return 0;
+                          }, 'package', @pkgs)};
   }
 } elsif (defined $maintenc) {
   my %maintainers = %{getmaintainers()};
   $tag = "encoded maintainer $maintenc";
   @bugs = @{getbugs(sub {my %d=@_; 
-		       return maintencoded($maintainers{$d{"pkg"}} || "") 
-			 eq $maintenc
-		       })};
+                         foreach my $try (splitpackages($d{"pkg"})) {
+                           return 1 if
+                               maintencoded($maintainers{$try} || "") eq
+                               $maintenc;
+                         }
+                         return 0;
+                        })};
 } elsif (defined $submitter) {
   $tag = "submitter $submitter";
   @bugs = @{getbugs(sub {my %d=@_; my $se; 
