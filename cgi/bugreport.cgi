@@ -11,6 +11,7 @@ require '/usr/lib/debbugs/common.pl';
 require '/etc/debbugs/config';
 require '/etc/debbugs/text';
 
+use vars(qw($gHTMLTail $gWebDomain));
 my $dtime;
 my $tail_html;
 
@@ -18,11 +19,13 @@ my %maintainer = getmaintainers();
 
 my $ref= param('bug') || die("No bug number");
 my $archive = (param('archive') || 'no') eq 'yes';
-my %status = getbugstatus($ref, $archive);
-
 my $msg = param('msg') || "";
 my $boring = (param('boring') || 'no') eq 'yes'; 
 my $reverse = (param('reverse') || 'no') eq 'yes';
+
+set_option("archive", $archive);
+
+my %status = getbugstatus($ref);
 
 my $indexentry;
 my $descriptivehead;
@@ -52,7 +55,10 @@ if  ($status{severity} eq 'normal') {
 }
 
 $indexentry .= $showseverity;
-$indexentry .= "Reported by: ".&sani($status{originator});
+$indexentry .= "Package: <A HREF=\"" . pkgurl($status{package}) . "\">"
+	    .htmlsanit($status{package})."</A>;\n";
+
+$indexentry .= "Reported by: ".&sani($status{originator})."; ";
 $indexentry .= ";\nKeywords: ".&sani($status{keywords}) 
 			if length($status{keywords});
 
@@ -65,9 +71,11 @@ if (@merged) {
 	}
 }
 
-$submitted = `TZ=GMT LANG=C \\
+my $dummy = `TZ=GMT LANG=C \\
 		date -d '1 Jan 1970 00:00:00 + $status{date} seconds' \\
-		'+ %a, %d %b %Y %T %Z'`;
+		'+ %a, %e %b %Y %T %Z'`;
+chomp($dummy);
+$submitted = "dated ".$dummy;
 
 if (length($status{done})) {
 	$indexentry .= ";\n<strong>Done:</strong> ".&sani($status{done});
@@ -132,7 +140,7 @@ while(my $line = <L>) {
 				if $normstate eq 'go' || $normstate eq 'go-nox';
 
 			if ($normstate eq 'html') {
-				$this .= "  <em><A href=\"" . bugurl($ref, "msg=$xmessage", "archive=$archive") . "\">Full text</A> available.</em>";
+				$this .= "  <em><A href=\"" . bugurl($ref, $archive, "msg=$xmessage") . "\">Full text</A> available.</em>";
 			}
 
 			my $show = 1;
@@ -198,7 +206,12 @@ while(my $line = <L>) {
 close(L);
 
 print header;
-print start_html("$debbugs::gProject $debbugs::gBug report logs - $short");
+print start_html(
+	-TEXT => "#000000",
+	-BGCOLOR=>"#FFFFFF",
+	-LINK => "#0000FF",
+	-VLINK => "#800080",
+	-title => "$debbugs::gProject $debbugs::gBug report logs - $short");
 
 print h1("$debbugs::gProject $debbugs::gBug report logs -  $short<br>\n"
 	. sani($status{subject}));
