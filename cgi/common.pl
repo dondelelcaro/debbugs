@@ -34,6 +34,12 @@ sub readparse {
         ($key, $val) = split(/=/,$_,2);
         $key=~s/%(..)/pack("c",hex($1))/ge;
         $val=~s/%(..)/pack("c",hex($1))/ge;
+	if ( exists $ret{$key} ) {
+	    if ( !exists $ret{"&$key"} ) {
+		$ret{"&$key"} = [ $ret{$key} ];
+	    }
+	    push @{$ret{"&$key"}},$val;
+	}
         $ret{$key}=$val;
     }
 $debug = 1 if (defined $ret{"debug"} && $ret{"debug"} eq "aj");
