@@ -6,8 +6,8 @@ use strict;
 use POSIX qw(strftime tzset);
 
 #require '/usr/lib/debbugs/errorlib';
-#require '/usr/lib/debbugs/common.pl';
-require '/debian/home/ajt/newajbug/common.pl';
+require '/usr/lib/debbugs/common.pl';
+#require '/debian/home/ajt/newajbug/common.pl';
 
 require '/etc/debbugs/config';
 require '/etc/debbugs/text';
