@@ -290,15 +290,14 @@ END
     } elsif (m/^close\s+\#?(\d+)$/i) {
 	$ok++;
 	$ref= $1;
-	if (&setbug) {
-	    if (length($s_done)) {
+	if ( &setbug ) {
+	    if(length($s_done)) {
 		&transcript("$gBug is already closed, cannot re-close.\n\n");
                 &nochangebug;
             } else {
                 $action= "$gBug closed, ack sent to submitter - they'd better know why !";
                 do {
-		    Load the Bug Record
-		    Close the Bug
+		    CLOSE BUG RECORD
                     &addmaintainers($s_package);
 		    if ( length( $gDoneList ) > 0 && length( $gListDomain ) > 0 ) 
 		    { &addccaddress("$gDoneList\@$gListDomain"); }

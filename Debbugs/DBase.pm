@@ -13,12 +13,12 @@ BEGIN {
 	$VERSION     = 1.00;
 
 	@ISA         = qw(Exporter);
-	@EXPORT      = qw( %Record %BTags);
+	@EXPORT      = qw();
 	%EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
 
 	# your exported package globals go here,
 	# as well as any optionally exported functions
-	@EXPORT_OK   = qw( %Record %BTags);
+	@EXPORT_OK   = qw();
 }
 
 use vars      @EXPORT_OK;
@@ -35,14 +35,9 @@ use FileHandle;
 use File::Basename qw(&dirname);
 use File::Path;
 
-%Record = ();
-%BTags= ( );
-
-my $LoadedRecord = 0;
 my $OpenedRecord = 0;
 my $OpenedLog = 0;
-my $FileLocked = 0;
-my $FileHandle = new FileHandle;
+my $FileHandle;
 my $LogfileHandle = new FileHandle;
 
 sub ParseVersion1Record
@@ -52,27 +47,29 @@ sub ParseVersion1Record
 		"keywords", "done", "forwarded", "mergedwith", "severity" );
     my $i = 0;
     my $tag;
+    my (%record, %btags);
 
     print "D2: (DBase) Record Fields:\n" if $Globals{ 'debug' } > 1;
     foreach my $line ( @data )
     {
 	chop( $line );
 	$tag = $fields[$i];
-	$Record{ $tag } = $line;
+	$record{ $tag } = $line;
     	print "\t $tag = $line\n" if $Globals{ 'debug' } > 1;
 	$i++;
-	$BTags{ "BUG_$tag" } = $line;
+	$btags{ "BUG_$tag" } = $line;
     }
+    return ( \%record, \%btags );
 }
 
 sub ParseVersion2Record
 {
     # I envision the next round of records being totally different in
     # meaning.  In order to maintain compatability, version tagging will be
-    # implemented in thenext go around and different versions will be sent
+    # implemented in the next go around and different versions will be sent
     # off to different functions to be parsed and interpreted into a format
     # that the rest of the system will understand.  All data will be saved
-    # in whatever 'new" format ixists.  The difference will be a "Version: x"
+    # in whatever 'new" format exists.  The difference will be a "Version: x"
     # at the top of the file.
 
     print "No version 2 records are understood at this time\n";
@@ -81,38 +78,87 @@ sub ParseVersion2Record
 
 sub ReadRecord
 {
-    my $record = $_[0];
-    print "V: Reading status $record\n" if $Globals{ 'verbose' };
-    if ( $record ne $LoadedRecord )
+    my ($recordnum, $with_log, $new) = (shift, shift, shift);
+    my @data;
+    my $record;
+    my $btags;
+
+    #Open Status File
+    print "V: Reading status $recordnum\n" if $Globals{ 'verbose' };
+    if( $OpenedRecord != $recordnum )
     {
-	my @data;
-
-	seek( $FileHandle, 0, 0 );
-	@data = <$FileHandle>;
-	if ( scalar( @data ) =~ /Version: (\d*)/ )
+	if( defined( $FileHandle ) )
 	{
-	    if ( $1 == 2 )
-	    { &ParseVersion2Record( @data ); }
-	    else
-	    { &fail( "Unknown record version: $1\n"); }
+	    print "D1: Closing status $recordnum\n" if $Globals{ 'debug' };
+	    $OpenedRecord = 0;
+	    close $FileHandle;
+	    $FileHandle = undef;
 	}
-	else { &ParseVersion1Record( @data ); }
-	$LoadedRecord = $record;
+	print "D1: Opening status $recordnum\n" if $Globals{ 'debug' };
+	$FileHandle = &OpenFile( ["db", "archive"], $recordnum, ".status", "status", $new );
+	if( !defined( $FileHandle ) ) { return undef; }
     }
-    else { print "D1: (DBase) $record is already loaded\n" if $Globals{ 'debug' }; }
+    else { print "D1: Reusing status $recordnum\n" if $Globals{ 'debug' }; }
 
+    #Lock status file
+    print "D1: Locking status $recordnum\n" if $Globals{ 'debug' };
+    flock( $FileHandle, LOCK_EX ) || &fail( "Unable to lock record $recordnum\n" );
+
+    #Read in status file contents
+    print "D1: Loading status $recordnum\n" if $Globals{ 'debug' };
+    seek( $FileHandle, 0, 0 );
+    @data = <$FileHandle>;
+
+    #Parse Status File Contents
+    if ( scalar( @data ) =~ /Version: (\d*)/ )
+    {
+	if ( $1 == 2 )
+	{ &ParseVersion2Record( @data ); }
+	else
+	{ &fail( "Unknown record version: $1\n"); }
+    }
+    else { ($record, $btags) = &ParseVersion1Record( @data ); }
+    if( $with_log )
+    {
+	#DO READ IN LOG RECORD DATA STUFF
+    }
+    return ($record, $btags);
 }
 
 sub WriteRecord
 {
+    my ($recordnum, %record) = @_;
     my @fields = ( "originator", "date", "subject", "msgid", "package",
 		"keywords", "done", "forwarded", "mergedwith", "severity" );
-    print "V: Writing status $LoadedRecord\n" if $Globals{ 'verbose' };
+
+    #Open Status File
+    print "V: Writing status $recordnum\n" if $Globals{ 'verbose' };
+    if( $OpenedRecord != $recordnum )
+    {
+	if( defined( $FileHandle ) )
+	{
+	    print "D1: Closing status $recordnum\n" if $Globals{ 'debug' };
+	    $OpenedRecord = 0;
+	    close $FileHandle;
+	    $FileHandle = undef;
+	}
+	print "D1: Opening status $recordnum\n" if $Globals{ 'debug' };
+	$FileHandle = &OpenFile( ["db", "archive"], $recordnum, ".status", "status", "old" );
+	if( !defined( $FileHandle ) ) { return undef; }
+    }
+    else { print "D1: Reusing status $recordnum\n" if $Globals{ 'debug' }; }
+
+    #Lock status file
+    print "D1: Locking status $recordnum\n" if $Globals{ 'debug' };
+    flock( $FileHandle, LOCK_EX ) || &fail( "Unable to lock record $recordnum\n" );
+
+    #Read in status file contents
+    print "D1: Saving status $recordnum\n" if $Globals{ 'debug' };
     seek( $FileHandle, 0, 0 );
     for( my $i = 0; $i < $#fields; $i++ )
     {
-	if ( defined( $fields[$i] ) )
-	{ print $FileHandle $Record{ $fields[$i] } . "\n"; }
+	if ( defined( $record{ $fields[$i] } ) )
+	{ print $FileHandle $record{ $fields[$i] } . "\n"; }
 	else { print $FileHandle "\n"; }
     }
 }
@@ -145,6 +191,7 @@ sub GetFileName
     }
     return undef;
 }
+
 sub OpenFile
 {
     my ($prePaths, $stub, $postPath, $desc, $new) = (shift, shift, shift, shift, shift);
@@ -152,24 +199,6 @@ sub OpenFile
     my $handle = new FileHandle;
     open( $handle, $Globals{ "work-dir" } . $fileName ) && return $handle;
     return undef;
-}
-
-sub OpenRecord
-{
-    my $record = $_[0];
-    if ( $record ne $OpenedRecord )
-    {
-	$FileHandle = OpenFile ["db", "archive"], $record, ".status", "status", $_[1];
-	flock( $FileHandle, LOCK_EX ) || &fail( "Unable to lock record $record\n" );
-	$OpenedRecord = $record;
-    }
-}
-
-sub CloseRecord
-{
-    print "V: Closing status $LoadedRecord\n" if $Globals{ 'verbose' };
-    close $FileHandle;
-    $OpenedRecord = 0;
 }
 
 sub OpenLogfile
