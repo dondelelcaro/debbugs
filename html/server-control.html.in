@@ -247,6 +247,13 @@ mailservers is available via the WWW, in
   <dd>Forgets any idea that the $gBug has an owner other than the usual
   maintainer.  If the $gBug had no owner recorded then this will do nothing.
 
+<dt><code>#</code>...
+
+  <dd>One-line comment. The <code>#</code> must be at the start of the line.
+  The text of comments will be included in the acknowledgement sent to the
+  sender and to affected maintainers, so you can use this to document the
+  reasons for your commands.
+
 <dt><code>quit</code>
 <dt><code>stop</code>
 <dt><code>thank</code>...
@@ -255,10 +262,6 @@ mailservers is available via the WWW, in
   <dd>Tells the control server to stop processing the message; the remainder
       of the message can include explanations, signatures or anything else,
       none of it will be detected by the control server.
-
-<dt><code>#</code>...
-
-  <dd>One-line comment. The <code>#</code> must be at the start of the line.
 
 </dl>
 
