@@ -1,5 +1,5 @@
 #! /usr/bin/perl -T
-# $Id: spamscan.in,v 1.5 2004/01/14 00:54:46 cjwatson Exp $
+# $Id: spamscan.in,v 1.6 2004/01/14 01:39:01 cjwatson Exp $
 #
 # Usage: spamscan
 #
@@ -58,7 +58,11 @@ sub header_or_empty ($$) {
     return '';
 }
 
-&filelock('incoming-spamscan');
+eval {
+    &filelock('incoming-spamscan');
+};
+exit if $@;
+
 for (;;) {
     if (-f 'spamscan-stop') {
 	print "spamscan-stop file created\n";
@@ -114,6 +118,7 @@ for (;;) {
 
     print "  From: ", header_or_empty($mail, 'From'), "\n";
     print "  Subject: ", header_or_empty($mail, 'Subject'), "\n";
+    print "  Date: ", header_or_empty($mail, 'Date'), "\n";
     print "  Message-Id: ", header_or_empty($mail, 'Message-Id'), "\n";
     my $status = $spam->check($mail);
     $status->rewrite_mail();
