@@ -7,6 +7,7 @@ use POSIX qw(strftime tzset);
 use MIME::Parser;
 use MIME::Decoder;
 use IO::Scalar;
+use IO::Lines;
 
 #require '/usr/lib/debbugs/errorlib';
 require './common.pl';
@@ -152,7 +153,7 @@ my $cmsg = 1;
 
 my $normstate= 'kill-init';
 my $linenum = 0;
-my $mail = '';
+my @mail = ();
 my @mails = ();
 while(my $line = <L>) {
 	$linenum++;
@@ -193,18 +194,18 @@ while(my $line = <L>) {
 
 			$show = ($xmessage == $msg) if ($msg);
 
-			push @mails, $mail if ( $mbox && $mail );
+			push @mails, join( '', @mail ) if ( $mbox && @mail );
 			if ($show) {
 				my $downloadHtml = '';
-				if ($mail) {
+				if (@mail) {
 					my $parser = new MIME::Parser;
 					$parser->tmp_to_core(1);
 					$parser->output_to_core(1);
 #					$parser->output_under("/tmp");
-					my $entity = $parser->parse_data($mail);
+					my $entity = $parser->parse( new IO::Lines \@mail );
 					# TODO: make local subdir, clean it outselves
 					# the following does NOT delete the msg dirs in /tmp
-					END { $entity->purge; $parser->filer->purge; }
+					END { if ( $entity ) { $entity->purge; } if ( $parser ) { $parser->filer->purge; } }
 					my @attachments = ();
 					if ( $entity->is_multipart ) {
 						my @parts = $entity->parts_DFS;
@@ -270,7 +271,7 @@ while(my $line = <L>) {
 		}
 		
 		$normstate = $newstate;
-		$mail = '';
+		@mail = ();
 		next;
 	}
 
@@ -284,20 +285,20 @@ while(my $line = <L>) {
 		        . ":</h2>\n";
 		$this = '';
 		$normstate= 'go';
-		$mail .= $_;
+		push @mail, $_;
 	} elsif ($normstate eq 'html') {
 		$this .= $_;
 	} elsif ($normstate eq 'go') {
 		s/^\030//;
-		if ($mail) {
-			$mail .= $_;
+		if (@mail) {
+			push @mail, $_;
 		} else {
 			$this .= htmlsanit($_);
 		}
 	} elsif ($normstate eq 'go-nox') {
 		next if !s/^X//;
-		if ($mail) {
-			$mail .= $_;
+		if (@mail) {
+			push @mail, $_;
 		} else {
 			$this .= htmlsanit($_);
 		}
@@ -314,7 +315,7 @@ while(my $line = <L>) {
 		$normstate= 'autowait';
 		$thisheader = "<h2>Message received at $2:</h2>\n";
 		$this = '';
-		$mail .= $_;
+		push @mail, $_;
 	} elsif ($normstate eq 'autowait') {
 		next if !m/^$/;
 		$normstate= 'go-nox';
