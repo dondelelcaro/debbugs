@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.14 2000/10/05 21:02:36 joy Exp $
+# $Id: service.in,v 1.15 2000/10/06 05:34:29 doogie Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -758,7 +758,7 @@ END
 sub sendlynxdocraw {
     local ($relpath,$description) = @_;
     $doc='';
-    open(L,"lynx -nolist -dump $wwwbase/$relpath 2>&1 |") || &quit("fork for lynx: $!");
+    open(L,"lynx -nolist -dump http://$gWebDomain/$relpath 2>&1 |") || &quit("fork for lynx: $!");
     while(<L>) { $doc.=$_; }
     $!=0; close(L);
     if ($? == 255 && $doc =~ m/^\n*lynx: Can\'t access start file/) {
