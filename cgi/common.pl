@@ -2,6 +2,7 @@
 
 use DB_File;
 use Fcntl qw/O_RDONLY/;
+use Mail::Address;
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
 require "$lib_path/errorlib";
@@ -132,6 +133,15 @@ sub splitpackages {
     return map lc, split /[ \t?,()]+/, $pkgs;
 }
 
+my %_parsedaddrs;
+sub getparsedaddrs {
+    my $addr = shift;
+    return () unless defined $addr;
+    return @{$_parsedaddrs{$addr}} if exists $_parsedaddrs{$addr};
+    @{$_parsedaddrs{$addr}} = Mail::Address->parse($addr);
+    return @{$_parsedaddrs{$addr}};
+}
+
 # Generate a comma-separated list of HTML links to each package given in
 # $pkgs. $pkgs may be empty, in which case an empty string is returned, or
 # it may be a comma-separated list of package names.
@@ -151,6 +161,25 @@ sub htmlpackagelinks {
                     $openstrong . htmlsanit($_) . $closestrong . '</a>'
                 } @pkglist
            ) . ";\n";
+}
+
+# Generate a comma-separated list of HTML links to each maintainer given in
+# $maints, which should be a comma-separated list of RFC822 addresses.
+sub htmlmaintlinks {
+    my ($prefixfunc, $maints) = @_;
+    if (defined $maints and $maints ne '') {
+        my @maintaddrs = getparsedaddrs($maints);
+        my $prefix = (ref $prefixfunc) ? $prefixfunc->(scalar @maintaddrs)
+                                       : $prefixfunc;
+        return $prefix .
+               join ', ', map { sprintf '<a href="%s">%s</a>',
+                                        mainturl($_->address),
+                                        htmlsanit($_->format) || '(unknown)'
+                              } @maintaddrs;
+    } else {
+        my $prefix = (ref $prefixfunc) ? $prefixfunc->(1) : $prefixfunc;
+        return sprintf '%s<a href="%s">(unknown)</a>', $prefix, mainturl('');
+    }
 }
 
 sub htmlindexentry {

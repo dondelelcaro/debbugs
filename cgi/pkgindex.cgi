@@ -62,12 +62,12 @@ if ($indexon eq "pkg") {
   $note .= "reports filed under the different binary package names.</p>\n";
   foreach my $pkg (keys %count) {
     $sortkey{$pkg} = lc $pkg;
-    $htmldescrip{$pkg} = sprintf('<a href="%s">%s</a> ' 
-                           . '(maintainer: <a href="%s">%s</a>)',
+    $htmldescrip{$pkg} = sprintf('<a href="%s">%s</a> (%s)',
                            pkgurl($pkg),
                            htmlsanit($pkg),
-                           mainturl($maintainers{$pkg}),
-			   htmlsanit($maintainers{$pkg} || "(unknown)"));
+                           htmlmaintlinks(sub { $_[0] == 1 ? 'maintainer: '
+                                                           : 'maintainers: ' },
+                                          $maintainers{$pkg}));
   }
 } elsif ($indexon eq "src") {
   $tag = "source package";
@@ -80,33 +80,32 @@ if ($indexon eq "pkg") {
   $note = "";
   foreach my $src (keys %count) {
     $sortkey{$src} = lc $src;
-    $htmldescrip{$src} = sprintf('<a href="%s">%s</a> '
-                           . '(maintainer: <a href="%s">%s</a>)',
+    $htmldescrip{$src} = sprintf('<a href="%s">%s</a> (%s)',
                            srcurl($src),
                            htmlsanit($src),
-                           mainturl($maintainers{$src}),
-                           htmlsanit($maintainers{$src} || "(unknown)"));
+                           htmlmaintlinks(sub { $_[0] == 1 ? 'maintainer: '
+                                                           : 'maintainers: ' },
+                                          $maintainers{$src}));
   }
 } elsif ($indexon eq "maint") {
   $tag = "maintainer";
-  %count = countbugs(sub {my %d=@_; 
+  my %email2maint = ();
+  %count = countbugs(sub {my %d=@_;
                           return map {
-                            emailfromrfc822($maintainers{$_}) || ()
+                            my @me = getparsedaddrs($maintainers{$_});
+                            foreach my $addr (@me) {
+                              $email2maint{$addr->address} = $addr->format
+                                unless exists $email2maint{$addr->address};
+                            }
+                            map { $_->address } @me;
                           } splitpackages($d{"pkg"});
-			 });
+                         });
   $note = "<p>Note that maintainers may use different Maintainer fields for\n";
   $note .= "different packages, so there may be other reports filed under\n";
   $note .= "different addresses.</p>\n";
-  my %email2maint = ();
-  for my $x (values %maintainers) {
-    my $y = emailfromrfc822($x);
-    $email2maint{$y} = $x unless (defined $email2maint{$y});
-  }
   foreach my $maint (keys %count) {
     $sortkey{$maint} = lc $email2maint{$maint} || "(unknown)";
-    $htmldescrip{$maint} = sprintf('<a href="%s">%s</a>',
-                           mainturl($maint),
-			   htmlsanit($email2maint{$maint}) || "(unknown)")
+    $htmldescrip{$maint} = htmlmaintlinks('', $email2maint{$maint});
   }
 } elsif ($indexon eq "submitter") {
   $tag = "submitter";

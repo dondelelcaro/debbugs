@@ -211,8 +211,10 @@ foreach my $pkg (@tpacks) {
     my $tmaint = defined($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)';
     my $tsrc = defined($pkgsrc{$pkg}) ? $pkgsrc{$pkg} : '(unknown)';
 
-    $descriptivehead .= "Maintainer for $pkg is\n".
-            '<a href="'.mainturl($tmaint).'">'.htmlsanit($tmaint).'</a>';
+    $descriptivehead .=
+            htmlmaintlinks(sub { $_[0] == 1 ? "Maintainer for $pkg is\n"
+                                            : "Maintainers for $pkg are\n" },
+                           $tmaint);
     $descriptivehead .= ";\nSource for $pkg is\n".
             '<a href="'.srcurl($tsrc)."\">$tsrc</a>" if ($tsrc ne "(unknown)");
     $descriptivehead .= ".\n<br>";

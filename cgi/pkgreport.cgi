@@ -126,30 +126,24 @@ if (defined $pkg) {
 } elsif (defined $maint) {
   my %maintainers = %{getmaintainers()};
   $title = "maintainer $maint";
-  my @pkgs = ();
-  foreach my $p (keys %maintainers) {
-    my $me = $maintainers{$p};
-    $me =~ s/\s*\(.*\)\s*//;
-    $me = $1 if ($me =~ m/<(.*)>/);
-    push @pkgs, $p if ($me eq $maint);
-  }
   if ($maint eq "") {
     @bugs = @{getbugs(sub {my %d=@_; my $me; 
                            foreach my $try (splitpackages($d{"pkg"})) {
-                             ($me = $maintainers{$try} || "")
-                                  =~ s/\s*\(.*\)\s*//;
-                             $me = $1 if ($me =~ m/<(.*)>/);
-                             return 1 if $me eq $maint;
+                             my @me = getparsedaddrs($maintainers{$try});
+                             return 1 if grep { $_->address eq $maint } @me;
                            }
                            return 0;
                           })};
   } else {
+    my @pkgs = ();
+    foreach my $p (keys %maintainers) {
+      my @me = getparsedaddrs($maintainers{$p});
+      push @pkgs, $p if grep { $_->address eq $maint } @me;
+    }
     @bugs = @{getbugs(sub {my %d=@_; my $me; 
                            foreach my $try (splitpackages($d{"pkg"})) {
-                             ($me = $maintainers{$try} || "")
-                                  =~ s/\s*\(.*\)\s*//;
-                             $me = $1 if ($me =~ m/<(.*)>/);
-                             return 1 if $me eq $maint;
+                             my @me = getparsedaddrs($maintainers{$try});
+                             return 1 if grep { $_->address eq $maint } @me;
                            }
                            return 0;
                           }, 'package', @pkgs)};
@@ -159,9 +153,10 @@ if (defined $pkg) {
   $title = "encoded maintainer $maintenc";
   @bugs = @{getbugs(sub {my %d=@_; 
                          foreach my $try (splitpackages($d{"pkg"})) {
-                           return 1 if
-                               maintencoded($maintainers{$try} || "") eq
-                               $maintenc;
+                           my @me = getparsedaddrs($maintainers{$try});
+                           return 1 if grep {
+                             maintencoded($_->address) eq $maintenc
+                           } @me;
                          }
                          return 0;
                         })};
@@ -210,9 +205,13 @@ if (defined $pkg || defined $src) {
     my %maintainers = %{getmaintainers()};
     my $maint = $pkg ? $maintainers{$pkg} : $maintainers{$src} ? $maintainers{$src} : undef;
     if (defined $maint) {
-        print "<p>Maintainer for " . ( defined($pkg) ? $pkg : "source package $src" ) . " is <a href=\"" 
-              . mainturl($maint) . "\">"
-              . htmlsanit($maint) . "</a>.</p>\n";
+        print '<p>';
+        my $showpkg = (defined $pkg) ? $pkg : "source package $src";
+        print htmlmaintlinks(sub { $_[0] == 1 ? "Maintainer for $showpkg is "
+                                              : "Maintainers for $showpkg are "
+                                 },
+                             $maint);
+        print ".</p>\n";
     }
     if (defined $maint or @bugs) {
 	my %pkgsrc = %{getpkgsrc()};
