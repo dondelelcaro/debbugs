@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.42 2002/01/06 10:46:24 ajt Exp $
+# $Id: process.in,v 1.43 2002/01/06 12:06:19 ajt Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -126,14 +126,19 @@ $replytocompare= $_;
 print DEBUG "replytocompare >$replytocompare<\n";
     
 if (!defined($header{'subject'})) 
-{	$brokenness.= <<END;
+{
+#	$brokenness.= <<END;
 
-Your message did not contain a Subject field.  This is broken, I am
-afraid - the Subject: line is a Required Header according to RFC822.
-Please remember to include a Subject field in your messages in future.
-If you did so the fact that it got lost probably indicates a poorly
-configured mail system at your site or an intervening one.
-END
+#
+#Your message did not contain a Subject field.  This is broken, I am
+#afraid - the Subject: line is a Required Header according to RFC822.
+#Please remember to include a Subject field in your messages in future.
+#If you did so the fact that it got lost probably indicates a poorly
+#configured mail system at your site or an intervening one.
+#END
+#
+# RFC822 actually lists it as an `optional-field'.
+
     $subject= '(no subject)';
 } else { $subject= $header{'subject'}; }
 
