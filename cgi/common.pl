@@ -143,7 +143,7 @@ sub packageurl {
 sub allbugs {
     my @bugs = ();
 
-    opendir(D, "$debbugs::gSpoolDir/db") || &quit("opendir db: $!");
+    opendir(D, "$debbugs::gSpoolDir/db") or &quit("opendir db: $!");
     @bugs = sort {$a<=>$b} grep s/\.status$//,
 		 (grep m/^[0-9]+\.status$/,
 		 (readdir(D)));
@@ -220,9 +220,9 @@ sub getbugs {
     my $bugfunc = shift;
 
     if ( $common_archive ) {
-        open I, "<$debbugs::gSpoolDir/index.archive" || &quit("bugindex: $!");
+        open I, "<$debbugs::gSpoolDir/index.archive" or &quit("bugindex: $!");
     } else {
-        open I, "<$debbugs::gSpoolDir/index.db" || &quit("bugindex: $!");
+        open I, "<$debbugs::gSpoolDir/index.db" or &quit("bugindex: $!");
     }
     
     my @result = ();
@@ -243,9 +243,9 @@ sub getbugs {
 sub pkgbugsindex {
     my %descstr = ();
     if ( $common_archive ) {
-        open I, "<$debbugs::gSpoolDir/index.archive" || &quit("bugindex: $!");
+        open I, "<$debbugs::gSpoolDir/index.archive" or &quit("bugindex: $!");
     } else {
-        open I, "<$debbugs::gSpoolDir/index.db" || &quit("bugindex: $!");
+        open I, "<$debbugs::gSpoolDir/index.db" or &quit("bugindex: $!");
     }
     while(<I>) { 
         $descstr{ $1 } = 1 if (m/^(\S+)/);
@@ -274,9 +274,9 @@ sub maintencoded {
 sub getmaintainers {
     my %maintainer;
 
-    open(MM,"$gMaintainerFile") || &quit("open $gMaintainerFile: $!");
+    open(MM,"$gMaintainerFile") or &quit("open $gMaintainerFile: $!");
     while(<MM>) {
-	m/^(\S+)\s+(\S.*\S)\s*$/ || &quit("$gMaintainerFile: \`$_'");
+	m/^(\S+)\s+(\S.*\S)\s*$/ or &quit("$gMaintainerFile: \`$_'");
 	($a,$b)=($1,$2);
 	$a =~ y/A-Z/a-z/;
 	$maintainer{$a}= $b;
@@ -293,9 +293,9 @@ sub getbugstatus {
 
     if ( $common_archive ) {
         my $archdir = sprintf "%02d", $bugnum % 100;
-	open(S,"$gSpoolDir/archive/$archdir/$bugnum.status" ) || return undef;
+	open(S,"$gSpoolDir/archive/$archdir/$bugnum.status" ) or return ();
     } else {
-        open(S,"$gSpoolDir/db/$bugnum.status") || return undef;
+        open(S,"$gSpoolDir/db/$bugnum.status") or return ();
     }
     my @lines = qw(originator date subject msgid package keywords done
 			forwarded mergedwith severity);

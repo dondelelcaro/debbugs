@@ -26,7 +26,7 @@ my $reverse = (param('reverse') || 'no') eq 'yes';
 
 set_option("archive", $archive);
 
-my %status = getbugstatus($ref);
+my %status = getbugstatus($ref) or &quit("Couldn't get bug status: $!");
 
 my $indexentry;
 my $descriptivehead;
@@ -90,8 +90,8 @@ $tmaint = defined($maintainer{$tpack}) ? $maintainer{$tpack} : '(unknown)';
 $descriptivehead= $indexentry.$submitted.";\nMaintainer for $status{package} is\n".
             '<A href="http://'.$debbugs::gWebDomain.'/db/ma/l'.&maintencoded($tmaint).'.html">'.&sani($tmaint).'</A>.';
 
-my $buglog = buglog($ref, $archive);
-open L, "<$buglog" || &quit("open log for $ref: $!");
+my $buglog = buglog($ref);
+open L, "<$buglog" or &quit("open log for $ref: $!");
 
 my $log='';
 
@@ -141,7 +141,7 @@ while(my $line = <L>) {
 				if $normstate eq 'go' || $normstate eq 'go-nox';
 
 			if ($normstate eq 'html') {
-				$this .= "  <em><A href=\"" . bugurl($ref, $archive, "msg=$xmessage") . "\">Full text</A> available.</em>";
+				$this .= "  <em><A href=\"" . bugurl($ref, "msg=$xmessage") . "\">Full text</A> available.</em>";
 			}
 
 			my $show = 1;
