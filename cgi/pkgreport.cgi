@@ -69,7 +69,7 @@ if (defined $pkg) {
     $me = $1 if ($me =~ m/<(.*)>/);
     push @pkgs, $p if ($me eq $maint);
   }
-  @bugs = @{getbugs(sub {my %d=@_}; my $me; 
+  @bugs = @{getbugs(sub {my %d=@_; my $me; 
 		       ($me = $maintainers{$d{"pkg"}}||"") =~ s/\s*\(.*\)\s*//;
 		       $me = $1 if ($me =~ m/<(.*)>/);
 		       return $me eq $maint;
