@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: rebuild.in,v 1.10 2003/05/25 15:51:51 cjwatson Exp $
+# $Id: rebuild.in,v 1.11 2003/05/31 13:41:39 cjwatson Exp $
 
 # Load modules and set environment
 use File::Copy;
@@ -8,6 +8,8 @@ $lib_path = '/usr/lib/debbugs';
 
 require("$config_path/config");
 require("$lib_path/errorlib");
+use vars qw($gSpoolDir);
+
 $ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
 
 chdir("$gSpoolDir") || die "chdir spool: $!\n";
