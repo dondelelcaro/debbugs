@@ -446,7 +446,7 @@ sub htmlizebugs {
     }
 
     }
-    $result .= $debbugs::gHTMLExpireNote if ($anydone);
+    $result .= $debbugs::gHTMLExpireNote if $gRemoveAge and $anydone;
     return $result;
 }
 
