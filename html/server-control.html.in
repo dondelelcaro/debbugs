@@ -12,40 +12,29 @@ $gControlHtml = <<HTML_END
 <p>In addition to the mailserver on <code>request\@$gEmailDomain</code>
 which allows the retrieval of $gBug data and documentation by email,
 there is another server on <code>control\@$gEmailDomain</code> which
-also allows $gBug reports to be manipulated in various ways.
+also allows $gBug reports to be manipulated in various ways.</p>
 
 <p>The control server works just like the request server, except that it
 has some additional commands; in fact, it's the same program.  The two
 addresses are only separated to avoid users making mistakes and
-causing problems while merely trying to request information.
+causing problems while merely trying to request information.</p>
 
 <p>Please see the
 <a href="server-request.html#introduction">introduction to the request
 server</a> available on the World Wide Web, in the file
-<code>bug-maint-mailcontrol.txt</code>, or by sending
+<code>bug-log-mailserver.txt</code>, or by sending
 <code>help</code> to either mailserver, for details of the basics of
 operating the mailservers and the common commands available when
-mailing either address.
+mailing either address.</p>
 
 <p>The <a href="server-refcard.html">reference card</a> for the
 mailservers is available via the WWW, in
 <code>bug-mailserver-refcard.txt</code> or by email using the
-<code>refcard</code> command).
+<code>refcard</code> command.</p>
 
-<h1>Commands available only at the control mailserver</h1>
+<h1>Commands available at the control mailserver</h1>
 
 <dl>
-
-<dt><code>close</code> <var>bugnumber</var>
-
-  <dd>Close $gBug report #<var>bugnumber</var>.
-
-  <p>A notification is sent to the user who reported the $gBug, but (in
-  contrast to mailing <var>bugnumber</var><code>-done@$gEmailDomain</code>) the
-  text of the mail which caused the $gBug to be closed is <em>not</em>
-  included in that notification.  The maintainer who closes a report
-  should ensure, probably by sending a separate message, that the user
-  who reported the $gBug knows why it is being closed.
 
 <dt><code>reassign</code> <var>bugnumber</var> <var>package</var>
 
@@ -97,7 +86,7 @@ mailservers is available via the WWW, in
 <dt><code>retitle</code> <var>bugnumber</var> <var>new-title</var>
 
   <dd>Changes the title of a $gBug report to that specified (the default is
-  the <code>Subject</code> mail header from the original report.
+  the <code>Subject</code> mail header from the original report).
 
   <p>Unlike most of the other $gBug-manipulation commands when used on one of
   a set of merged reports this will change the title of only the
@@ -112,6 +101,30 @@ mailservers is available via the WWW, in
   <p>For <a href="Developer.html#severities">their meanings</a> please
   consult the general developers' documentation for the $gBug system.
 
+<dt><code>clone</code> <var>bugnumber</var> [ <var>new IDs</var> ]
+
+  <dd>The clone control command allows you to duplicate a $gBug report. It is
+  useful in the case where a single report actually indicates that multiple
+  distinct $gBugs have occurred. "<var>New IDs</var>" are negative numbers,
+  separated by spaces, which may be used in subsequent control commands to
+  refer to the newly duplicated $gBugs. A new report is generated for each
+  new ID.
+
+  <p>Example usage:</p>
+
+  <pre>
+        clone 12345 -1 -2
+        reassign -1 foo
+        retitle -1 foo: foo sucks
+        reassign -2 bar
+        retitle -2 bar: bar sucks when used with foo
+        severity -2 wishlist
+        clone 123456 -2
+        reassign -2 foo
+        retitle -2 foo: foo sucks
+        merge -1 -2
+  </pre>
+
 <dt><code>merge</code> <var>bugnumber</var> <var>bugnumber</var> ...
 
   <dd>Merges two or more $gBug reports.  When reports are merged opening,
@@ -121,12 +134,12 @@ mailservers is available via the WWW, in
 
   <p>Before $gBugs can be merged they must be in exactly the same state:
   either all open or all closed, with the same forwarded-to upstream
-  author address or all not marked as forwarded, and all assigned to the
+  author address or all not marked as forwarded, all assigned to the
   same package or package(s) (an exact string comparison is done on the
-  package to which the $gBug is assigned).  If they don't start out in the
-  same state you should use <code>reassign</code>, <code>reopen</code>
-  and so forth to make sure that they are before using
-  <code>merge</code>.
+  package to which the $gBug is assigned), and all of the same severity.
+  If they don't start out in the same state you should use
+  <code>reassign</code>, <code>reopen</code> and so forth to make sure
+  that they are before using <code>merge</code>.
 
   <p>If any of the $gBugs listed in a <code>merge</code> command is already
   merged with another $gBug then all the reports merged with any of the
@@ -134,7 +147,7 @@ mailservers is available via the WWW, in
   is reflexive, transitive and symmetric.
 
   <p>Merging reports causes a note to appear on each report's logs; on the
-  WWW pages this is includes links to the other $gBugs.
+  WWW pages this includes links to the other $gBugs.
 
   <p>Merged reports are all expired simultaneously, and only when all of
   the reports each separately meet the criteria for expiry.
@@ -164,11 +177,39 @@ mailservers is available via the WWW, in
   The default action is adding.
 
   <p>Available tags currently include <code>patch</code>, <code>wontfix</code>,
-  <code>moreinfo</code>, <code>unreproducible</code>, <code>fixed</code>,
-  and <code>stable</code>.
+  <code>moreinfo</code>, <code>unreproducible</code>, <code>help</code>,
+  <code>pending</code>, <code>fixed</code>, <code>security</code>,
+  <code>upstream</code>, <code>potato</code>, <code>woody</code>,
+  <code>sarge</code>,
+  <code>sid</code> and <code>experimental</code>.
 
   <p>For <a href="Developer.html#tags">their meanings</a> please consult the
   general developers' documentation for the $gBug system.
+
+<dt><code>close</code> <var>bugnumber</var>
+
+  <dd>Close $gBug report #<var>bugnumber</var>.
+
+  <p>A notification is sent to the user who reported the $gBug, but (in
+  contrast to mailing <var>bugnumber</var><code>-done@$gEmailDomain</code>) the
+  text of the mail which caused the $gBug to be closed is <strong>not</strong>
+  included in that notification.  The maintainer who closes a report
+  should ensure, probably by sending a separate message, that the user
+  who reported the $gBug knows why it is being closed.
+  The use of this command is therefore deprecated.
+
+<dt><code>quit</code>
+<dt><code>stop</code>
+<dt><code>thank</code>...
+<dt><code>--</code>...
+
+  <dd>Tells the control server to stop processing the message; the remainder
+      of the message can include explanations, signatures or anything else,
+      none of it will be detected by the control server.
+
+<dt><code>#</code>...
+
+  <dd>One-line comment. The <code>#</code> must be at the start of the line.
 
 </dl>
 
