@@ -8,13 +8,13 @@ use vars qw($VERSION @EXPORT_OK);
 BEGIN {
     $VERSION = 1.00;
 
-    @EXPORT_OK = qw(parse de_rfc1522);
+    @EXPORT_OK = qw(parse decode_rfc1522);
 }
 
 use File::Path;
 use MIME::Parser;
 
-# for de_rfc1522
+# for decode_rfc1522
 use MIME::WordDecoder qw();
 use Unicode::MapUTF8 qw(to_utf8 utf8_supported_charset);
 
@@ -102,9 +102,9 @@ sub parse ($)
 
 # Bug #61342 et al.
 
-=head2 de_rfc1522
+=head2 decode_rfc1522
 
-    de_rfc1522('=?iso-8859-1?Q?D=F6n_Armstr=F3ng?= <don@donarmstrong.com>')
+    decode_rfc1522('=?iso-8859-1?Q?D=F6n_Armstr=F3ng?= <don@donarmstrong.com>')
 
 Turn RFC-1522 names into the UTF-8 equivalent.
 
@@ -125,7 +125,7 @@ BEGIN {
 	}]));
 }
 
-sub de_rfc1522 ($)
+sub decode_rfc1522 ($)
 {
     my ($string) = @_;
 
