@@ -32,16 +32,42 @@ debbugs:
   local_parts = submit:bugs:maintonly:quiet:forwarded:done:close:request:submitter:control:^\\d+
 
  2) If the domain is a virtual host on a machine that needs it, there are
-    many ways of handling it.  I think the neatest was:
+    many ways of handling it.  I think the neatest was to use the above
+    transport and director, except to add the following line to the
+    director's options:
 
-debbugs:
-  driver = aliasfile
   domains = <domain name>
-  file = /usr/lib/debbugs/receive
-  user = <some user>
-  group = <some group>
-  current_directory = /var/lib/debbugs/spool
+
+    Alternatively, Chad Miller <cmiller@surfsouth.com> suggests:
+
+    The method I discovered involved adding at the top of the routers section:
+
+debbugs_router:
+  driver = domainlist
+  transport = debbugs_transport
+  route_list = "bugs.foo.bar;bugs.baz.quux"
+
+    where bugs.foo.bar and bugs.baz.quux are mail-domains for which I want to
+    receive bug requests only.
+    Next, add anywhere in the transports section:
+
+debbugs_transport:
+  driver = pipe
+  command = /usr/lib/debbugs/receive
+  user = <some non-root user>
+  group = <some non-root group>
+  current_directory = /etc/debbugs
   home_directory = /var/lib/debbugs/spool
+
+    (current_directory may need to be /var/lib/debbugs/spool, depending on
+    your setup.)
+
+    Next, the mail domains MUST NOT be in the "local_domains" list!
+    Instead, we MUST put them in the "relay_domains" list.
+
+    Essentially, this tells exim that we agree ("relay_domains") to relay
+    mail for those zones ("debbugs_router") and "send" the mail using a pipe
+    ("debbugs_transport").
 
 Qmail
 -----

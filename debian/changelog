@@ -79,6 +79,8 @@ debbugs (2.4) experimental; urgency=low
     supports it. [Colin]
   * Prevent people from reading the first line of arbitrary files through
     bugreport.cgi, thanks to Max <rusmir@tula.net>. [Colin]
+  * Add working-for-me instructions for exim setup on non-dedicated sites,
+    together with Chad Miller's suggestions, closes: #78688. [Colin]
   * Fix a few typos, closes: #146745, #152751.
   * Various other things, not worth mentioning here.
 
