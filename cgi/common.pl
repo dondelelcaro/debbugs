@@ -386,7 +386,7 @@ sub getbugstatus {
 
     unless (open(S,"$gSpoolDir/db/$bugnum.status")) {
         my $archdir = sprintf "%02d", $bugnum % 100;
-	open(S,"$gSpoolDir/archive/$archdir/$bugnum.status" ) or return ();
+	open(S,"$gSpoolDir/archive/$archdir/$bugnum.status" ) or return {};
     }
     my @lines = qw(originator date subject msgid package tags done
 			forwarded mergedwith severity);
