@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.94 2003/10/02 13:48:38 cjwatson Exp $
+# $Id: service.in,v 1.95 2004/02/03 21:37:45 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -526,9 +526,9 @@ END
                 } while (&getnextbug);
 	    }
 	}
-    } elsif (m/^merge\s+(-?\d+(\s+-?\d+)+)\s*$/i) {
+    } elsif (m/^merge\s+#?(-?\d+(\s+#?-?\d+)+)\s*$/i) {
 	$ok++;
-        @tomerge= sort { $a <=> $b } split(/\s+/,$1);
+        @tomerge= sort { $a <=> $b } split(/\s+#?/,$1);
         @newmergelist= ();
 	my %tags = ();
         &getmerge;
