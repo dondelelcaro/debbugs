@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: receive.in,v 1.5 2000/10/06 21:47:36 joy Exp $
+# $Id: receive.in,v 1.6 2000/10/07 18:17:02 joy Exp $
 # usage: mail is piped directly into program
 
 #set umask in order to have group-writable incoming/*
@@ -88,7 +88,7 @@ $gBadEmailPrefix   http://$gWebDomain/
 $gBadEmailPrefix   http://$gWebDomain/Reporting.html
 $gBadEmailPrefix   http://$gWebDomain/Developer.html
 $gBadEmailPrefix   http://$gWebDomain/Access.html
-$gBadEmailPrefix $gTextInstructions
+$gTextInstructions
 $gBadEmailPrefix For details of how to access $gBug report logs by email:
 $gBadEmailPrefix   send \`request\@$gEmailDomain' the word \`help'
 $gBadEmailPrefix
