@@ -175,6 +175,8 @@ print "<HTML><HEAD>\n" .
 print "<H1>" . "$debbugs::gProject$Archived $debbugs::gBug report logs: $tag" .
       "</H1>\n";
 
+my $showresult = 1;
+
 if (defined $pkg || defined $src) {
     my %maintainers = %{getmaintainers()};
     my $maint = $pkg ? $maintainers{$pkg} : $maintainers{$src} ? $maintainers{$src} : undef;
@@ -183,31 +185,38 @@ if (defined $pkg || defined $src) {
               . mainturl($maint) . "\">"
               . htmlsanit($maint) . "</a>.</p>\n";
     }
-    my %pkgsrc = %{getpkgsrc()};
-    my @pkgs = getsrcpkgs($pkg ? $pkgsrc{ $pkg } : $src);
-    @pkgs = grep( !/^\Q$pkg\E$/, @pkgs ) if ( $pkg );
-    if ( @pkgs ) {
-	@pkgs = sort @pkgs;
+    if (defined $maint or @bugs) {
+	my %pkgsrc = %{getpkgsrc()};
+	my @pkgs = getsrcpkgs($pkg ? $pkgsrc{ $pkg } : $src);
+	@pkgs = grep( !/^\Q$pkg\E$/, @pkgs ) if ( $pkg );
+	if ( @pkgs ) {
+	    @pkgs = sort @pkgs;
+	    if ($pkg) {
+		    print "You may want to refer to the following packages that are part of the same source:<br>\n";
+	    } else {
+		    print "You may want to refer to the following individual bug pages:<br>\n";
+	    }
+	    push @pkgs, $src if ( $src && !grep(/^\Q$src\E$/, @pkgs) );
+	    print join( ", ", map( "<A href=\"" . pkgurl($_) . "\">$_</A>", @pkgs ) );
+	    print ".\n";
+	}
 	if ($pkg) {
-		print "You may want to refer to the following packages that are part of the same source:<br>\n";
-	} else {
-		print "You may want to refer to the following individual bug pages:<br>\n";
+	    printf "<p>You might like to refer to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
+	    if ($pkgsrc{ $pkg }) {
+		printf ", or to the source package <a href=\"%s\">%s</a>'s bug page.</p>\n", srcurl($pkgsrc{$pkg}), htmlsanit($pkgsrc{$pkg});
+	    } else {
+		printf ".\n";
+	    }
 	}
-	push @pkgs, $src if ( $src && !grep(/^\Q$src\E$/, @pkgs) );
-	print join( ", ", map( "<A href=\"" . pkgurl($_) . "\">$_</A>", @pkgs ) );
-	print ".\n";
+	print "<p>If you find a bug not listed here, please\n";
+	printf "<a href=\"%s\">report it</a>.</p>\n",
+	       urlsanit("http://${debbugs::gWebDomain}/Reporting.html");
+    } else {
+	print "<p>There is no record of the " .
+	      (defined($pkg) ? "$pkg package" : "$src source package") .
+	      ", and no bugs have been filed against it.</p>";
+	$showresult = 0;
     }
-    if ($pkg) {
-	printf "<p>You might like to refer to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
-	if ($pkgsrc{ $pkg }) {
-	    printf ", or to the source package <a href=\"%s\">%s</a>'s bug page.</p>\n", srcurl($pkgsrc{$pkg}), htmlsanit($pkgsrc{$pkg});
-	} else {
-	    printf ".\n";
-	}
-    }
-    print "<p>If you find a bug not listed here, please\n";
-    printf "<a href=\"%s\">report it</a>.</p>\n",
-	   urlsanit("http://${debbugs::gWebDomain}/Reporting.html");
 } elsif (defined $maint || defined $maintenc) {
     print "<p>Note that maintainers may use different Maintainer fields for\n";
     print "different packages, so there may be other reports filed under\n";
@@ -218,7 +227,7 @@ if (defined $pkg || defined $src) {
     print "different addresses.\n";
 }
 
-print $result;
+print $result if $showresult;
 
 print "<hr>\n";
 print "$tail_html";

@@ -73,6 +73,8 @@ debbugs (2.4) experimental; urgency=low
   * Be more careful about loop detection, closes: #113514. [Adam, Colin]
   * Relax the syntax for 'tags' slightly, since people seem to use it that
     way accidentally a lot, closes: #96164. [Colin]
+  * Give better feedback from pkgreport.cgi when querying a non-existent
+    package name, closes: #93433. [Colin]
   * Fix a few typos, closes: #146745, #152751.
   * Various other things, not worth mentioning here.
 
