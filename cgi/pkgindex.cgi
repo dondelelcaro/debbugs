@@ -49,29 +49,54 @@ set_option("archive", $archive);
 my %count;
 my $tag;
 my $note;
+my $linksub;
 if ($indexon eq "pkg") {
   $tag = "package";
   %count = countbugs(sub {my %d=@_; return $d{"pkg"}});
   $note = "<p>Note that with multi-binary packages there may be other\n";
   $note .= "reports filed under the different binary package names.</p>\n";
+  $linksub = sub {
+                   my $pkg = shift; 
+                   sprintf('<a href="%s">%s</a> ' 
+                            . '(maintained by <a href="%s">%s</a>',
+                           pkgurl($pkg),
+                           htmlsanit($pkg),
+                           mainturl($maintainers{$pkg}),
+			   htmlsanit($maintainers{$pkg}));
+                  };
 } elsif ($indexon eq "maint") {
   $tag = "maintainer";
-  %count = countbugs(sub {my %d=@_; my $me; 
-			   $me = $maintainers{$d{"pkg"}} || "";
-			   $me =~ s/\s*\(.*\)\s*//;
-			   $me = $1 if ($me =~ m/<(.*)>/);
-			   return $me;
+  %count = countbugs(sub {my %d=@_; 
+                          return emailfromrfc822($maintainers{$d{"pkg"}} || "");
 			 });
   $note = "<p>Note that maintainers may use different Maintainer fields for\n";
   $note .= "different packages, so there may be other reports filed under\n";
   $note .= "different addresses.</p>\n";
+  $linksub = sub {
+                   my $maint = shift; my $maintfull = $maint;
+		   foreach my $x (values %maintainers) {
+                       if (emailfromrfc822($x) eq $maint) {
+			  $maintfull = $x; last;
+		       }
+                   }
+                   sprintf('<a href="%s">%s</a>',
+                           mainturl($maint),
+			   htmlsanit($maintfull));
+                  };
 } elsif ($indexon eq "submitter") {
   $tag = "submitter";
-  %count = countbugs(sub {my %d=@_; my $se; 
-			  ($se = $d{"submitter"} || "") =~ s/\s*\(.*\)\s*//;
-			  $se = $1 if ($se =~ m/<(.*)>/);
-			  return $se;
+  my %fullname = ();
+  %count = countbugs(sub {my %d=@_; my $f = $d{"submitter"} || "";
+                          my $em = emailfromrfc822($f);
+                          $fullname{$em} = $f if (!defined $fullname{$em});
+			  return $em;
 			});
+  $linksub = sub {
+                   my $sub = shift;
+                   sprintf('<a href="%s">%s</a>',
+                           submitterurl($sub),
+			   htmlsanit($fullname{$sub}));
+                  };
   $note = "<p>Note that people may use different email accounts for\n";
   $note .= "different bugs, so there may be other reports filed under\n";
   $note .= "different addresses.</p>\n";
@@ -79,10 +104,7 @@ if ($indexon eq "pkg") {
 
 my $result = "<ul>\n";
 foreach my $x (sort keys %count) {
-  $result .= sprintf('<li><a href="pkgreport.cgi?%s=%s%s">%s</a> %d bugs</li>',
-		     $indexon, $x, ($archive ? "&archive=yes" : ""), $x,
-                     $count{$x});
-  $result .= "\n";
+  $result .= "<li>" . $linksub->($x) . " has $count{$x} bugs</li>\n";
 }
 $result .= "</ul>\n";
 

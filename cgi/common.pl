@@ -123,9 +123,17 @@ sub htmlindexentrystatus {
     return $result;
 }
 
+sub submitterurl {
+    my $ref = shift;
+    my $params = "submitter=" . emailfromrfc822($ref);
+    $params .= "&archive=yes" if ($common_archive);
+    $params .= "&repeatmerged=yes" if ($common_repeatmerged);
+    return $debbugs::gCGIDomain . "pkgreport.cgi" . "?" . $params;
+}
+
 sub mainturl {
     my $ref = shift;
-    my $params = "maintenc=" . maintencoded($ref);
+    my $params = "maint=" . emailfromrfc822($ref);
     $params .= "&archive=yes" if ($common_archive);
     $params .= "&repeatmerged=yes" if ($common_repeatmerged);
     return $debbugs::gCGIDomain . "pkgreport.cgi" . "?" . $params;
@@ -343,6 +351,13 @@ sub pkgbugsindex {
     }
     close(I);
     return %descstr;
+}
+
+sub emailfromrfc822 {
+    my $email = shift;
+    $email =~ s/\s*\(.*\)\s*//;
+    $email = $1 if ($email =~ m/<(.*)>/);
+    return $email;
 }
 
 sub maintencoded {
