@@ -131,10 +131,10 @@ mailservers is available via the WWW, in
         reassign -2 bar
         retitle -2 bar: bar sucks when used with foo
         severity -2 wishlist
-        clone 123456 -2
-        reassign -2 foo
-        retitle -2 foo: foo sucks
-        merge -1 -2
+        clone 123456 -3
+        reassign -3 foo
+        retitle -3 foo: foo sucks
+        merge -1 -3
   </pre>
 
 <dt><code>merge</code> <var>bugnumber</var> <var>bugnumber</var> ...
