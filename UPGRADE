@@ -7,11 +7,11 @@ From 2.4.1 to 2.4.2
 
 The file format used to store the status of a bug (package, severity, etc.)
 has changed; it is now in an RFC822-like format in order to be more
-extensible, and is written to .db files rather than the old .status files.
-Before accepting any mail with the new version of debbugs, you must run the
-'debbugs-upgradestatus' program over your bug spool. The old .status files
-will be left intact, and will continue to be written in sync with the .db
-files for compatibility with external tools.
+extensible, and is written to .summary files rather than the old .status
+files. Before accepting any mail with the new version of debbugs, you must
+run the 'debbugs-upgradestatus' program over your bug spool. The old .status
+files will be left intact, and will continue to be written in sync with the
+.summary files for compatibility with external tools.
 
 From 2.4 to 2.4.1
 -----------------

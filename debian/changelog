@@ -11,8 +11,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
       acknowledgements.
     - Document how to deliver mail to debbugs via procmail and SpamAssassin.
     - Implement new .status format that's extensible and easier to read; it
-      now lives in .db rather than .status. Use debbugs-upgradestatus to
-      convert existing bug databases.
+      now lives in .summary rather than .status. Use debbugs-upgradestatus
+      to convert existing bug databases.
 
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
 

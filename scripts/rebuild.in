@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: rebuild.in,v 1.12 2003/08/22 01:41:54 cjwatson Exp $
+# $Id: rebuild.in,v 1.13 2003/08/23 15:12:57 cjwatson Exp $
 
 # Load modules and set environment
 use File::Copy;
@@ -29,9 +29,9 @@ for ($subdir=0; $subdir<100; $subdir++ )
 {
     my $path = sprintf( "$archive/%.2d", $subdir );
     opendir(DIR,$path) || next; 
-    my @list= grep(m/^\d+\.db$/,readdir(DIR));
+    my @list= grep(m/^\d+\.summary$/,readdir(DIR));
     closedir DIR;
-    grep(s/\.db$//,@list);
+    grep(s/\.summary$//,@list);
     push @files, @list;
 }
 

@@ -16,7 +16,7 @@ Usage: $0 db-h|archive (relative to $gSpoolDir)
 
 debbugs-upgradestatus converts a debbugs database in-place to use version 2
 of the bug status file format. Version 1 metadata files were stored in
-.status files; version 2 metadata files are written to .db files.
+.status files; version 2 metadata files are written to .summary files.
 
 EOF
     exit 0;
@@ -87,20 +87,21 @@ for my $ref (@files) {
             unlockwritebug($ref, $data, $archive, 2, 'disable bughook');
         }
 
-        # Test new .db file
+        # Test new .summary file
         my $newdata = readbug($ref, $archive);
         my %jointkeys = map { $_ => 1 } (keys %$data), (keys %$newdata);
         for my $key (keys %jointkeys) {
             unless (exists $data->{$key}) {
-                die "BUG: $ref: key '$key' in .db but not .status!\n";
+                die "BUG: $ref: key '$key' in .summary but not .status!\n";
             }
             unless (exists $newdata->{$key}) {
-                die "BUG: $ref: key '$key' in .status but not .db!\n";
+                die "BUG: $ref: key '$key' in .status but not .summary!\n";
             }
             if ($data->{$key} ne $newdata->{$key}) {
-                die "BUG: $ref: key '$key' different in .status and .db:\n" .
+                die "BUG: $ref: key '$key' different in " .
+                    ".status and .summary\n" .
                     "     .status has '$data->{$key}';\n" .
-                    "     .db has '$newdata->{$key}'!\n";
+                    "     .summary has '$newdata->{$key}'!\n";
             }
         }
 

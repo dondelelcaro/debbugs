@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.37 2003/08/23 13:50:45 cjwatson Exp $
+# $Id: errorlib.in,v 1.38 2003/08/23 15:12:57 cjwatson Exp $
 
 use Mail::Address;
 
@@ -87,7 +87,7 @@ my %fields = (originator => 'submitter',
 
 sub readbug {
     my ($lref, $location) = @_;
-    my $status = getbugcomponent($lref, 'db', $location);
+    my $status = getbugcomponent($lref, 'summary', $location);
     return undef unless defined $status;
     if (!open(S,$status)) { return undef; }
 
@@ -167,7 +167,7 @@ sub writebug {
     my ($ref, $data, $location, $minversion, $disablebughook) = @_;
     my $change;
 
-    my %outputs = (1 => 'status', 2 => 'db');
+    my %outputs = (1 => 'status', 2 => 'summary');
     for my $version (keys %outputs) {
         next if defined $minversion and $version < $minversion;
         my $status = getbugcomponent($ref, $outputs{$version}, $location);
