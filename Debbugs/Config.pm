@@ -15,12 +15,13 @@ BEGIN
 
     # your exported package globals go here,
     # as well as any optionally exported functions
-    @EXPORT_OK   = qw(%Globals &ParseConfigFile);
+    @EXPORT_OK   = qw(%Globals %Severities &ParseConfigFile);
 }
 
 use vars      @EXPORT_OK;
 
 # initialize package globals, first exported ones
+%Severities = ();
 %Globals = (	"debug" => 0,
 		"verbose" => 0,
 		"quiet" => 0,
@@ -35,12 +36,17 @@ use vars      @EXPORT_OK;
 		"owner-name" => "Fred Flintstone",
 		"owner-email" => "owner@bugs.domain.com",
 		##### directories
-		"data-dir" => "/var/lib/debbugs/spool",
+		"work-dir" => "/var/lib/debbugs/spool",
 		"spool-dir" => "/var/lib/debbugs/spool/incoming",
 		"www-dir" => "/var/lib/debbugs/www",
 		"doc-dir" => "/var/lib/debbugs/www/txt",
-		"maintainer-file" => "/etc/debbugs/Maintainers",
-		"database" => "debvote.db" );
+		"maintainer-file" => "/etc/debbugs/Maintainers" );
+
+sub strip
+{   my $string = $_[0];
+    chop $string while $string =~ /\s$/; 
+    return $string;
+}
 
 #############################################################################
 #  Read Config File and parse
@@ -65,22 +71,73 @@ sub ParseConfigFile
 	chop $_;
 	next unless length $_;
 	next if /^#/;
-	if ( /^Ballot Type\s*[:=]\s*([^#]*)\s*(#.*)?/i )
-	{   my $ballottype = $1;
-	    chop $ballottype while $ballottype =~ /\s$/;
-	    $ballottype =~ y/A-Z/a-z/;
-	    $Globals{ 'ballottype' } = $ballottype;
-	}
-	elsif ( /^Database\s*[:=]\s*(\S+)/i )
-	{ $Globals{ 'database' } = $1; }
-	elsif( /^Ballot Ack\s*[:=]\s*([^#]*)/i )
-	{ $Globals{ "response" } = $1; }
-	elsif( /^Ballot Template\s*[:=]\s*([^#]*)/i )
-	{ $Globals{ "ballot" } = $1; }
-	elsif( /^No Ballot Letter\s*[:=]\s*([^#]*)/i )
-	{ $Globals{ "noballot" } = $1; }
-	elsif ( /^Title\s*[:=]\s*([^#]*)/i )
-	{ $Globals{ 'title' } = $1; }
+
+	if ( /^Email Domain\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'email-domain' } = strip( $1 ); }
+	elsif ( /^List Domain\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'list-domain' } = strip( $1 ); }
+	elsif ( /^Web Domain\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'web-domain' } = strip( $1 ); }
+	elsif ( /^CGI Domain\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'cgi-domain' } = strip( $1 ); }
+	elsif ( /^Short Name\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'project-short' } = strip( $1 ); }
+	elsif ( /^Long Name\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'project-long' } = strip( $1 ); }
+	elsif ( /^Owner Name\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'owner-name' } = strip( $1 ); }
+	elsif ( /^Owner Email\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'owner-email' } = strip( $1 ); }
+	elsif ( /^Spool Dir\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'spool-dir' } = strip( $1 ); }
+	elsif ( /^Work Dir\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'work-dir' } = strip( $1 ); }
+	elsif ( /^Web Dir\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'www-dir' } = strip( $1 ); }
+	elsif ( /^Doc Dir\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'doc-dir' } = strip( $1 ); }
+	elsif ( /^Maintainer File\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'maintainer-file' } = strip( $1 ); }
+	elsif ( /^Submit List\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'submit-list' } = strip( $1 ); }
+	elsif ( /^Maint List\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'maint-list' } = strip( $1 ); }
+	elsif ( /^Quiet List\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'quiet-list' } = strip( $1 ); }
+	elsif ( /^Forwarded List\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'forwarded-list' } = strip( $1 ); }
+	elsif ( /^Done List\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'done-list' } = strip( $1 ); }
+	elsif ( /^Request List\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'request-list' } = strip( $1 ); }
+	elsif ( /^Submitter List\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'submitter-list' } = strip( $1 ); }
+	elsif ( /^Control List\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'control-list' } = strip( $1 ); }
+	elsif ( /^Summary List\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'summary-list' } = strip( $1 ); }
+	elsif ( /^Mirror List\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'mirror-list' } = strip( $1 ); }
+	elsif ( /^Mailer\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'mailer' } = strip( $1 ); }
+	elsif ( /^Singular Term\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'singular' } = strip( $1 ); }
+	elsif ( /^Plural Term\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'plural' } = strip( $1 ); }
+	elsif ( /^Expire Age\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'expire-age' } = strip( $1 ); }
+	elsif ( /^Save Expired Bugs\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'save-expired' } = strip( $1 ); }
+	elsif ( /^Mirrors\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'mirrors' } = strip( $1 ); }
+	elsif ( /^Default Severity\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'default-severity' } = strip( $1 ); }
+	elsif ( /^Normal Severity\s*[:=]\s*([^#]*)/i )
+	{ $Globals{ 'normal-severity' } = strip( $1 ); }
+        elsif ( /^Severity\s+#*(\d+)\s*[:=]\s*([^#]*)/i )
+        {   $Severity{ $1 } = $2;
+            print "D2: (config) Severity $1=$choice{$1}\n" if $Globals{ 'debug' } > 1;
+        }
     }
     if( $Globals{ "debug" } )
     {
