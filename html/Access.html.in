@@ -1,40 +1,38 @@
 $gAccessHtml = <<HTML_END
-<HTML>
-<HEAD>
-	<TITLE>$gProject $gBugs - Accessing the logs</TITLE>
-	<LINK REV="made" HREF="mailto:$gMaintainerEmail">
-</HEAD>
-<BODY>
-<A NAME="developers"> 
-	<H1>Accessing $gBug reports in the tracking system logs</H1>
-</A>
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+  <title>$gProject $gBugs - Accessing the logs</title>
+  <link rev="made" href="mailto:$gMaintainerEmail">
+</head>
+<body>
 
-Each message received at or sent by the $gBug processing system is
+<h1><a name="developers">Accessing $gBug reports in the tracking system
+logs</a></h1>
+
+<p>Each message received at or sent by the $gBug processing system is
 logged and made available in a number of ways.
-<P>
 
 $gHTMLCopies
 
-There is a <A HREF="server-request.html">mailserver</A> which can send
+<p>There is a <a href="server-request.html">mailserver</a> which can send
 $gBug reports as plain text on request.  To use it send the word
-<CODE>help</CODE> as the sole contents of an email to
-<CODE>request</CODE> (the <CODE>Subject</CODE> of the
+<code>help</code> as the sole contents of an email to
+<code>request</code> (the <code>Subject</code> of the
 message is ignored), or read the instructions on the World Wide Web or
-in the file <CODE>bug-log-mailserver.txt</CODE>.
+in the file <code>bug-log-mailserver.txt</code>.
 
-<HR>
+<hr>
 
-Other pages:
-<UL>
-	<LI><A href="./">$gBug tracking system main contents page.</A>
-	<LI><A href="Reporting.html">Instructions for reporting $gBugs.</A>
-	<LI><A href="Developer.html">Developers' information regarding the $gBug processing system.</A>
-	<LI><A href="db/ix/full.html">Full list of outstanding and recent $gBug reports.</A>
-	<LI><A href="db/ix/packages.html">Packages with $gBug reports.</A>
-	<LI><A href="db/ix/maintainers.html">Maintainers of packages with $gBug reports.</A>
-
+<p>Other pages:
+<ul>
+  <li><a href="./">$gBug tracking system main contents page.</a>
+  <li><a href="Reporting.html">Instructions for reporting $gBugs.</a>
+  <li><a href="Developer.html">Developers' information regarding the $gBug processing system.</a>
+  <li><a href="db/ix/full.html">Full list of outstanding and recent $gBug reports.</a>
+  <li><a href="db/ix/packages.html">Packages with $gBug reports.</a>
+  <li><a href="db/ix/maintainers.html">Maintainers of packages with $gBug reports.</a>
 $gHTMLOtherPageList
-
 </ul>
 
 $gHTMLTail

@@ -1,87 +1,93 @@
 $gRefcardHtml = <<HTML_END
-<html><head>
-<title>$gProject $gBug system - mail servers' reference card</title>
-<link rev="made" href="mailto:$gMaintainerEmail">
-</head><body>
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+  <title>$gProject $gBug system - mail servers' reference card</title>
+  <link rev="made" href="mailto:$gMaintainerEmail">
+</head>
+<body>
+
 <h1>Mail servers' reference card</h1>
 
-Full documentation of the mail servers is available on the WWW, in the
+<p>Full documentation of the mail servers is available on the WWW, in the
 files
-<A href="server-request.html">bug-log-mailserver.txt</A> and
-<A href="server-control.html">bug-maint-mailcontrol.txt</A> or by
+<a href="server-request.html">bug-log-mailserver.txt</a> and
+<a href="server-control.html">bug-maint-mailcontrol.txt</a> or by
 sending the word <code>help</code> to each mailserver.
 
 <h2>Synopsis of commands available at <code>request@$gEmailDomain</code></h2>
 
 <ul compact>
-<li><code>send</code> <var>bugnumber</var>
-<li><code>send-detail</code> <var>bugnumber</var>
-<li><code>index</code> [<code>full</code>]
-<li><code>index-summary by-package</code>
-<li><code>index-summary by-number</code>
-<li><code>index-maint</code>
-<li><code>index maint</code> <var>maintainer-substring</var>
-<li><code>index-packages</code>
-<li><code>index packages</code> <var>package-substring</var>
-<li><code>send-unmatched</code> [<code>this</code>|<code>0</code>]
-<li><code>send-unmatched</code> <code>last</code>|<code>-1</code>
-<li><code>send-unmatched</code> <code>old</code>|<code>-2</code>
-<li><code>getinfo</code> <var>filename</var> <em>(see below)</em>
-<li><code>help</code>
-<li><code>refcard</code>
-<li><code>quit</code>|<code>stop</code>|<code>thank</code>...|<code>--</code>...
-<li><code>#</code>... <em>(comment)</em>
-<li><code>debug</code> <var>level</var>
+  <li><code>send</code> <var>bugnumber</var>
+  <li><code>send-detail</code> <var>bugnumber</var>
+  <li><code>index</code> [<code>full</code>]
+  <li><code>index-summary by-package</code>
+  <li><code>index-summary by-number</code>
+  <li><code>index-maint</code>
+  <li><code>index maint</code> <var>maintainer-substring</var>
+  <li><code>index-packages</code>
+  <li><code>index packages</code> <var>package-substring</var>
+  <li><code>send-unmatched</code> [<code>this</code>|<code>0</code>]
+  <li><code>send-unmatched</code> <code>last</code>|<code>-1</code>
+  <li><code>send-unmatched</code> <code>old</code>|<code>-2</code>
+  <li><code>getinfo</code> <var>filename</var> <em>(see below)</em>
+  <li><code>help</code>
+  <li><code>refcard</code>
+  <li><code>quit</code>|<code>stop</code>|<code>thank</code>...|<code>--</code>...
+  <li><code>#</code>... <em>(comment)</em>
+  <li><code>debug</code> <var>level</var>
 </ul>
 
 <h3>List of info files for <code>getinfo</code></h3>
 <ul compact>
-<li><code>maintainers</code>
-<li><code>override.stable</code>
-<li><code>override.development</code>
-<li><code>override.contrib</code>
-<li><code>override.non-free</code>
-<li><code>override.experimental</code>
-<li><code>override.</code><var>codeword</var>
-<li><code>pseudo-packages.description</code>
-<li><code>pseudo-packages.maintainers</code>
+  <li><code>maintainers</code>
+  <li><code>override.stable</code>
+  <li><code>override.development</code>
+  <li><code>override.contrib</code>
+  <li><code>override.non-free</code>
+  <li><code>override.experimental</code>
+  <li><code>override.</code><var>codeword</var>
+  <li><code>pseudo-packages.description</code>
+  <li><code>pseudo-packages.maintainers</code>
 </ul>
 
 <h2>Synopsis of extra commands available at control mailserver</h2>
 
 <ul compact>
-<li><code>close</code> <var>bugnumber</var>
- <em>(you must separately tell originator why)</em>
-<li><code>reassign</code> <var>bugnumber</var> <var>package</var>
-<li><code>severity</code> <var>bugnumber</var> <var>severity</var>
-<li><code>reopen</code> <var>bugnumber</var>
- [ <var>originator-address</var> | <code>=</code> | <code>!</code> ]
-<li><code>forwarded</code> <var>bugnumber</var> <var>address</var>
-<li><code>notforwarded</code> <var>bugnumber</var>
-<li><code>retitle</code> <var>bugnumber</var> <var>new-title</var>
-<li><code>merge</code> <var>bugnumber</var> <var>bugnumber</var> ...
-<li><code>unmerge</code> <var>bugnumber</var>
+  <li><code>close</code> <var>bugnumber</var>
+      <em>(you must separately tell originator why)</em>
+  <li><code>reassign</code> <var>bugnumber</var> <var>package</var>
+  <li><code>severity</code> <var>bugnumber</var> <var>severity</var>
+  <li><code>reopen</code> <var>bugnumber</var>
+      [ <var>originator-address</var> | <code>=</code> | <code>!</code> ]
+  <li><code>forwarded</code> <var>bugnumber</var> <var>address</var>
+  <li><code>notforwarded</code> <var>bugnumber</var>
+  <li><code>retitle</code> <var>bugnumber</var> <var>new-title</var>
+  <li><code>merge</code> <var>bugnumber</var> <var>bugnumber</var> ...
+  <li><code>unmerge</code> <var>bugnumber</var>
 </ul>
-<code>reopen</code> with <code>=</code> or no originator address leaves
+
+<p><code>reopen</code> with <code>=</code> or no originator address leaves
 the originator as the original submitter; <code>!</code> sets it to
 you, the person doing the reopen.
-<p>
 
+<dl>
 $gHTMLSeverityDesc
+</dl>
 
 <hr>
-Other pages:
+
+<p>Other pages:
 <ul>
-<li><A href="./">$gBug tracking system main contents page.</A>
-<li><A href="server-request.html">Full documentation of the request mailserver.</A>
-<li><A href="server-control.html">Full documentation of the control mailserver.</A>
-<li><A href="Reporting.html">Instructions for reporting $gBugs.</A>
-<li><A href="Access.html">Accessing the $gBug tracking logs other than by WWW.</A>
-<li><A href="Developer.html">Developers'
-information regarding the $gBug processing system.</A>
-<li><A href="db/ix/full.html">Full list of outstanding and recent $gBug reports.</A>
-<li><A href="db/ix/packages.html">Packages with $gBug reports.</A>
-<li><A href="db/ix/maintainers.html">Maintainers of packages with $gBug reports.</A>
+  <li><a href="./">$gBug tracking system main contents page.</a>
+  <li><a href="server-request.html">Full documentation of the request mailserver.</a>
+  <li><a href="server-control.html">Full documentation of the control mailserver.</a>
+  <li><a href="Reporting.html">Instructions for reporting $gBugs.</a>
+  <li><a href="Access.html">Accessing the $gBug tracking logs other than by WWW.</a>
+  <li><a href="Developer.html">Developers' information regarding the $gBug processing system.</a>
+  <li><a href="db/ix/full.html">Full list of outstanding and recent $gBug reports.</a>
+  <li><a href="db/ix/packages.html">Packages with $gBug reports.</a>
+  <li><a href="db/ix/maintainers.html">Maintainers of packages with $gBug reports.</a>
 $gHTMLOtherPageList
 </ul>
 

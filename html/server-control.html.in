@@ -1,34 +1,33 @@
 $gControlHtml = <<HTML_END
-<html><head>
-<html><head>
-<title>$gProject $gBug system - control mail server commands</title>
-<link rev="made" href="mailto:$gMaintainerEmail">
-</head><body>
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+  <title>$gProject $gBug system - control mail server commands</title>
+  <link rev="made" href="mailto:$gMaintainerEmail">
+</head>
+<body>
+
 <h1>Introduction to the $gBug control and manipulation mailserver</h1>
 
-In addition to the mailserver on <code>request\@$gEmailDomain</code>
+<p>In addition to the mailserver on <code>request\@$gEmailDomain</code>
 which allows the retrieval of $gBug data and documentation by email,
 there is another server on <code>control\@$gEmailDomain</code> which
 also allows $gBug reports to be manipulated in various ways.
-<p>
 
-The control server works just like the request server, except that it
+<p>The control server works just like the request server, except that it
 has some additional commands; in fact, it's the same program.  The two
 addresses are only separated to avoid users making mistakes and
 causing problems while merely trying to request information.
-<p>
 
-Please see the
-<A href="server-request.html#introduction">introduction to
-the request server</A>
-available on the World Wide Web, in the file
+<p>Please see the
+<a href="server-request.html#introduction">introduction to the request
+server</a> available on the World Wide Web, in the file
 <code>bug-maint-mailcontrol.txt</code>, or by sending
 <code>help</code> to either mailserver, for details of the basics of
 operating the mailservers and the common commands available when
 mailing either address.
-<p>
 
-The <A href="server-refcard.html">reference card</A> for the
+<p>The <a href="server-refcard.html">reference card</a> for the
 mailservers is available via the WWW, in
 <code>bug-mailserver-refcard.txt</code> or by email using the
 <code>refcard</code> command).
@@ -38,163 +37,140 @@ mailservers is available via the WWW, in
 <dl>
 
 <dt><code>close</code> <var>bugnumber</var>
-<dd>
 
-Close $gBug report #<var>bugnumber</var>.
-<p>
+  <dd>Close $gBug report #<var>bugnumber</var>.
 
-A notification is sent to the user who reported the $gBug, but (in
-contrast to mailing <var>bugnumber</var><code>-done@$gEmailDomain</code>) the
-text of the mail which caused the $gBug to be closed is <em>not</em>
-included in that notification.  The maintainer who closes a report
-should ensure, probably by sending a separate message, that the user
-who reported the $gBug knows why it is being closed.
+  <p>A notification is sent to the user who reported the $gBug, but (in
+  contrast to mailing <var>bugnumber</var><code>-done@$gEmailDomain</code>) the
+  text of the mail which caused the $gBug to be closed is <em>not</em>
+  included in that notification.  The maintainer who closes a report
+  should ensure, probably by sending a separate message, that the user
+  who reported the $gBug knows why it is being closed.
 
 <dt><code>reassign</code> <var>bugnumber</var> <var>package</var>
-<dd>
 
-Records that $gBug #<var>$gBugnumber</var> is a $gBug in <var>package</var>.
-This can be used to set the package if the user forgot the
-pseudo-header, or to change an earlier assignment.  No notifications
-are sent to anyone (other than the usual information in the processing
-transcript).
+  <dd>Records that $gBug #<var>${gBug}number</var> is a $gBug in <var>package</var>.
+  This can be used to set the package if the user forgot the
+  pseudo-header, or to change an earlier assignment.  No notifications
+  are sent to anyone (other than the usual information in the processing
+  transcript).
 
 <dt><code>reopen</code> <var>bugnumber</var>
  [ <var>originator-address</var> | <code>=</code> | <code>!</code> ]
-<dd>
 
-Reopens #<var>bugnumber</var> if it is closed.
-<p>
+  <dd>Reopens #<var>bugnumber</var> if it is closed.
 
-By default, or if you specify <code>=</code>, the original submitter is
-still as the originator of the report, so that they will get the ack
-when it is closed again.
-<p>
+  <p>By default, or if you specify <code>=</code>, the original submitter is
+  still as the originator of the report, so that they will get the ack
+  when it is closed again.
 
-If you supply an <var>originator-address</var> the originator will be
-set to the address you supply.  If you wish to become the new
-originator of the reopened report you can use the <code>!</code>
-shorthand or specify your own email address.
-<p>
+  <p>If you supply an <var>originator-address</var> the originator will be
+  set to the address you supply.  If you wish to become the new
+  originator of the reopened report you can use the <code>!</code>
+  shorthand or specify your own email address.
 
-It is usually a good idea to tell the person who is about to be
-recorded as the originator that you're reopening the report, so that
-they will know to expect the ack which they'll get when it is closed
-again.
-<p>
+  <p>It is usually a good idea to tell the person who is about to be
+  recorded as the originator that you're reopening the report, so that
+  they will know to expect the ack which they'll get when it is closed
+  again.
 
-If the $gBug is not closed then reopen won't do anything, not even
-change the originator.  There is no way to change the originator of an
-open $gBug report (this is deliberate, so that you can't have a $gBug be
-closed and then deleted $gRemoveAge days later without someone being told about
-it).
+  <p>If the $gBug is not closed then reopen won't do anything, not even
+  change the originator.  There is no way to change the originator of an
+  open $gBug report (this is deliberate, so that you can't have a $gBug be
+  closed and then deleted $gRemoveAge days later without someone being told about
+  it).
 
 <dt><code>forwarded</code> <var>bugnumber</var> <var>address</var>
-<dd>
 
-Notes that <var>bugnumber</var> has been forwarded to the upstream
-maintainer at <var>address</var>.  This does not actually forward the
-report.  This can be used to change an existing incorrect forwarded-to
-address, or to record a new one for a $gBug that wasn't previously noted
-as having been forwarded.
+  <dd>Notes that <var>bugnumber</var> has been forwarded to the upstream
+  maintainer at <var>address</var>.  This does not actually forward the
+  report.  This can be used to change an existing incorrect forwarded-to
+  address, or to record a new one for a $gBug that wasn't previously noted
+  as having been forwarded.
 
 <dt><code>notforwarded</code> <var>bugnumber</var>
-<dd>
 
-Forgets any idea that <var>bugnumber</var> has been forwarded to any
-upstream maintainer.  If the $gBug was not recorded as having been
-forwarded then this will do nothing.
+  <dd>Forgets any idea that <var>bugnumber</var> has been forwarded to any
+  upstream maintainer.  If the $gBug was not recorded as having been
+  forwarded then this will do nothing.
 
 <dt><code>retitle</code> <var>bugnumber</var> <var>new-title</var>
-<dd>
 
-Changes the title of a $gBug report to that specified (the default is
-the <code>Subject</code> mail header from the original report.
-<p>
+  <dd>Changes the title of a $gBug report to that specified (the default is
+  the <code>Subject</code> mail header from the original report.
 
-Unlike most of the other $gBug-manipulation commands when used on one of
-a set of merged reports this will change the title of only the
-individual $gBug requested, and not all those with which it is merged.
+  <p>Unlike most of the other $gBug-manipulation commands when used on one of
+  a set of merged reports this will change the title of only the
+  individual $gBug requested, and not all those with which it is merged.
 
 <dt><code>severity</code> <var>bugnumber</var> <var>severity</var>
-<dd>
 
-Set the severity level for $gBug report #<var>bugnumber</var> to
-<var>severity</var>.  No notification is sent to the user who reported
-the $gBug.
-<p>
+  <dd>Set the severity level for $gBug report #<var>bugnumber</var> to
+  <var>severity</var>.  No notification is sent to the user who reported
+  the $gBug.
 
-For <A href="Developer.html#severities">their meanings</A> please
-consult the general developers' documentation for the $gBug system.
+  <p>For <a href="Developer.html#severities">their meanings</a> please
+  consult the general developers' documentation for the $gBug system.
 
 <dt><code>merge</code> <var>bugnumber</var> <var>bugnumber</var> ...
-<dd>
 
-Merges two or more $gBug reports.  When reports are merged opening,
-closing, marking or unmarking as forwarded and reassigning any of the
-$gBugs to a new package will have an identical effect on all of the
-merged reports.
-<p>
+  <dd>Merges two or more $gBug reports.  When reports are merged opening,
+  closing, marking or unmarking as forwarded and reassigning any of the
+  $gBugs to a new package will have an identical effect on all of the
+  merged reports.
 
-Before $gBugs can be merged they must be in exactly the same state:
-either all open or all closed, with the same forwarded-to upstream
-author address or all not marked as forwarded, and all assigned to the
-same package or package(s) (an exact string comparison is done on the
-package to which the $gBug is assigned).  If they don't start out in the
-same state you should use <code>reassign</code>, <code>reopen</code>
-and so forth to make sure that they are before using
-<code>merge</code>.
-<p>
+  <p>Before $gBugs can be merged they must be in exactly the same state:
+  either all open or all closed, with the same forwarded-to upstream
+  author address or all not marked as forwarded, and all assigned to the
+  same package or package(s) (an exact string comparison is done on the
+  package to which the $gBug is assigned).  If they don't start out in the
+  same state you should use <code>reassign</code>, <code>reopen</code>
+  and so forth to make sure that they are before using
+  <code>merge</code>.
 
-If any of the $gBugs listed in a <code>merge</code> command is already
-merged with another $gBug then all the reports merged with any of the
-ones listed will all be merged together.  Merger is like equality: it
-is reflexive, transitive and symmetric.
-<p>
+  <p>If any of the $gBugs listed in a <code>merge</code> command is already
+  merged with another $gBug then all the reports merged with any of the
+  ones listed will all be merged together.  Merger is like equality: it
+  is reflexive, transitive and symmetric.
 
-Merging reports causes a note to appear on each report's logs; on the
-WWW pages this is includes links to the other $gBugs.
-<p>
+  <p>Merging reports causes a note to appear on each report's logs; on the
+  WWW pages this is includes links to the other $gBugs.
 
-Merged reports are all expired simultaneously, and only when all of
-the reports each separately meet the criteria for expiry.
+  <p>Merged reports are all expired simultaneously, and only when all of
+  the reports each separately meet the criteria for expiry.
 
 <dt><code>unmerge</code> <var>bugnumber</var>
-<dd>
 
-Disconnects a $gBug report from any other reports with which it may have
-been merged.  If the report listed is merged with several others then
-they are all left merged with each other; only their associations with
-the $gBug explicitly named are removed.
-<p>
+  <dd>Disconnects a $gBug report from any other reports with which it may have
+  been merged.  If the report listed is merged with several others then
+  they are all left merged with each other; only their associations with
+  the $gBug explicitly named are removed.
 
-If many $gBug reports are merged and you wish to split them into two
-separate groups of merged reports you must unmerge each report in one
-of the new groups separately and then merge them into the required new
-group.
-<p>
+  <p>If many $gBug reports are merged and you wish to split them into two
+  separate groups of merged reports you must unmerge each report in one
+  of the new groups separately and then merge them into the required new
+  group.
 
-You can only unmerge one report with each <code>unmerge</code>
-command; if you want to disconnect more than one $gBug simply include
-several <code>unmerge</code> commands in your message.
+  <p>You can only unmerge one report with each <code>unmerge</code>
+  command; if you want to disconnect more than one $gBug simply include
+  several <code>unmerge</code> commands in your message.
 
 </dl>
 
 <hr>
-Other pages:
+
+<p>Other pages:
 <ul>
-<li><A href="./">$gBug tracking system main contents page.</A>
-<li><A href="Reporting.html">Instructions for reporting $gBugs.</A>
-<li><A href="Access.html">Accessing the $gBug tracking logs other than by WWW.</A>
-<li><A href="Developer.html">Developers'
-information regarding the $gBug processing system.</A>
-<li><A href="server-request.html">Fundamentals of the mailserver
-and commands for retrieving $gBugs.</A>
-<li><A href="server-refcard.html">Mailservers' reference card.</A>
-<li><A href="db/ix/full.html">Full list of outstanding and recent $gBug reports.</A>
-<li><A href="db/ix/packages.html">Packages with $gBug reports.</A>
-<li><A href="db/ix/maintainers.html">Maintainers of packages with $gBug reports.</A>
- $gHTMLOtherPageList
+  <li><a href="./">$gBug tracking system main contents page.</a>
+  <li><a href="Reporting.html">Instructions for reporting $gBugs.</a>
+  <li><a href="Access.html">Accessing the $gBug tracking logs other than by WWW.</a>
+  <li><a href="Developer.html">Developers' information regarding the $gBug processing system.</a>
+  <li><a href="server-request.html">Fundamentals of the mailserver and commands for retrieving $gBugs.</a>
+  <li><a href="server-refcard.html">Mailservers' reference card.</a>
+  <li><a href="db/ix/full.html">Full list of outstanding and recent $gBug reports.</a>
+  <li><a href="db/ix/packages.html">Packages with $gBug reports.</a>
+  <li><a href="db/ix/maintainers.html">Maintainers of packages with $gBug reports.</a>
+$gHTMLOtherPageList
 </ul>
 
 $gHTMLTail

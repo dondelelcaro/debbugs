@@ -1,29 +1,29 @@
 $gDeveloperHtml = <<HTML_END
-<HTML>
-<HEAD>
-	<title>$gProject - Developers' information</title>
-	<link rev="made" href="mailto:$gMaintainerEmail">
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+  <title>$gProject - Developers' information</title>
+  <link rev="made" href="mailto:$gMaintainerEmail">
 </head>
 <body>
-	<h1><A name="developers">Developers' information regarding the $gBug processing system</A></h1>
 
-Initially, a $gBug report is submitted by a user as an ordinary mail
+<h1><A name="developers">Developers' information regarding the $gBug processing system</a></h1>
+
+<p>Initially, a $gBug report is submitted by a user as an ordinary mail
 message to <code>submit\@$gEmailDomain</code>.  This will then be
 given a number, acknowledged to the user, and forwarded to a mailing 
 list (if configured).  If the submitter included a <code>Package</code>
 line listing a package with a known maintainer the maintainer will get
 a copy too.
-<p>
 
-The <code>Subject</code> line will have
+<p>The <code>Subject</code> line will have
 <code>$gBug#</code><var>nnn</var><code>:</code> added, and the
 <code>Reply-To</code> will be set to include both the submitter of the
 report and <var>nnn</var><code>\@$gEmailDomain</code>.
-<p>
 
 <h2>Closing $gBug reports</h2>
 
-A developer who receives a $gBug from the tracking system, or sees it on
+<p>A developer who receives a $gBug from the tracking system, or sees it on
 the mailing list, and takes responsibility for it should hit Reply in
 their favourite mailreader,
 and then edit the <code>To</code> field to say
@@ -31,161 +31,147 @@ and then edit the <code>To</code> field to say
 <var>nnn</var><code>\@$gEmailDomain</code>
 (<var>nnn</var><code>-close</code> is provided as an alias for
 <var>nnn</var><code>-done</code>).
-<p>
 
-The address of the original submitter of the $gBug report will be
+<p>The address of the original submitter of the $gBug report will be
 included in the default <code>To</code> field, because the $gBug system
 included it in the <code>Reply-To</code>.
-<p>
 
-`Done' messages are forwarded to a mailing list if the mailing list has been
-set up.
-<P>
+<p>`Done' messages are automatically forwarded to the <code>$gDoneList</code>
+mailing list, if the mailing list has been set up.
 
-The person closing the $gBug and the person who submitted it will each
+<p>The person closing the $gBug and the person who submitted it will each
 get a notification about the change in status of the report.
 
 <h2>Followup messages</h2>
 
-If a developer wishes to reply to a $gBug report without marking the $gBug
-as done they may simply reply to the message.  Their reply will (by
-default) go to <var>nnn</var><code>\@$gEmailDomain</code> and to the original
-submitter of the $gBug report.  The $gBug tracking system will file the
-reply with the rest of the logs for that $gBug report and forward it to
-a designated mailing list.  The $gBug will not be marked as done.
-<p>
+<p>If a developer wishes to reply to a $gBug report they may simply reply
+to the message (that will <b>not</b> mark the bug as done). Their reply will
+(by default, if they respect the Reply-To: header) go to
+<var>nnn</var><code>\@$gEmailDomain</code>, and to the original submitter of
+the $gBug report (note: this is two distinct addresses). The $gBug tracking
+system will receive the message at <var>nnn</var><code>\@$gEmailDomain</code>,
+pass it on to the package maintainer, file the reply with the rest of the
+logs for that bug report and forward it to a designated mailing list
+(<code>$gSubmitList\@$gEmailDomain</code>).
 
-If you wish to send a followup message which is not appropriate for
+<p>A developer may explicitly mail the bug's submitter with an email to
+<var>nnn</var><code>-submitter\@$gEmailDomain</code>.
+
+<p>If you wish to send a followup message which is not appropriate for
 any mailing list you can do so by sending it to
 <var>nnn</var><code>-quiet\@$gEmailDomain</code> or
-<var>nnn</var><code>-maintonly\@$gEmailDomain</code>, which only file it (not
-forwarding it anywhere) and send it on only to the maintainer of the
-package in question, respectively.
-<p>
+<var>nnn</var><code>-maintonly\@$gEmailDomain</code>.
+Mail to <var>nnn</var><code>-quiet\@$gEmailDomain</code> is filed in the
+$gBug Tracking System but is not delivered to any individuals or mailing
+lists. Mail to <var>nnn</var><code>-maintonly\@$gEmailDomain</code> is
+filed in the $gBug Tracking System and is delivered only to the maintainer
+of the package in question.
 
-Do <em>not</em> use the `reply to all recipients' or `followup'
+<p>Do <em>not</em> use the `reply to all recipients' or `followup'
 feature of your mailer unless you intend to edit down the recipients
-substantially.  In particular, don't send a followup message both to
-<var>nnn</var><code>\@$gEmailDomain</code> and to
+substantially.  In particular, see that you don't send followup messages
+both to <var>nnn</var><code>\@$gEmailDomain</code> and to
 <code>submit\@$gEmailDomain</code>, because the $gBug system will then
 get two copies of it and each one will be forwarded to the designated
 mailing list separately.
-<p>
 
-<h2><A name="severities">Severity levels</A></h2>
+<h2><A name="severities">Severity levels</a></h2>
 
-The $gBug system records a severity level with each $gBug report.  This is
-set to <code>$gDefaultSeverity</code> by default, but can be overridden either by
-supplying a <code>Severity</code> line in the pseudo-header when the
-$gBug is submitted (see the
-<A href="Reporting.html#pseudoheader">instructions for reporting
-$gBugs</A>), or by using the <code>severity</code> command with the
-<A href="#requestserv">control request server</A>.
+<p>The $gBug system records a severity level with each $gBug report.  This
+is set to <code>$gDefaultSeverity</code> by default, but can be overridden
+either by supplying a <code>Severity</code> line in the pseudo-header when
+the $gBug is submitted (see the
+<a href="Reporting.html#pseudoheader">instructions for reporting $gBugs</a>),
+or by using the <code>severity</code> command with the
+<a href="#requestserv">control request server</a>.
 
-<p>
-
-The severity levels are:
+<p>The severity levels are:
 
 <dl>
 $gHTMLSeverityDesc
 </dl>
 
-<h2><A name="forward">Recording that you have passed on a $gBug report</A></h2>
+<h2><A name="forward">Recording that you have passed on a $gBug report</a></h2>
 
-When a developer forwards a $gBug report to the developer of the
+<p>When a developer forwards a $gBug report to the developer of the
 upstream source package from which the $gProject package is derived,
 they should note this in the $gBug tracking system as follows:
-<p>
 
-Make sure that the <code>To</code> field of your message to the author
+<p>Make sure that the <code>To</code> field of your message to the author
 to has only the author(s) address(es) in it; put both the person who
 reported the $gBug and
 <var>nnn</var><code>-forwarded\@$gEmailDomain</code> in the
 <code>CC</code> field.
-<p>
 
-Ask the author to preserve the <code>CC</code> to
+<p>Ask the author to preserve the <code>CC</code> to
 <var>nnn</var><code>-forwarded\@$gEmailDomain</code> when they reply, so that
 the $gBug tracking system will file their reply with the original
 report.
-<p>
 
-When the $gBug tracking system gets a message at
+<p>When the $gBug tracking system gets a message at
 <var>nnn</var><code>-forwarded</code> it will mark the relevant $gBug as
 having been forwarded to the address(es) in the <code>To</code> field
 of the message it gets.
-<p>
 
-You can also manipulate the `forwarded to' information by sending messages to
-<A href="server-control.html"><code>control\@$gEmailDomain</code></A>.
+<p>You can also manipulate the `forwarded to' information by sending
+messages to <a href="server-control.html"><code>control\@$gEmailDomain</code></a>.
 
 <h2>Summary postings</h2>
 
-Every Friday, a list of outstanding $gBug reports is posted to a summary mailing
-list (if set up), sorted by age of report.
-Every Tuesday, a list of $gBug reports that have gone unanswered too long is
-posted, sorted by package maintainer.
-<p>
+<p>Every Friday, a list of outstanding $gBug reports is posted to a summary
+mailing list (if set up), sorted by age of report. Every Tuesday, a list of
+$gBug reports that have gone unanswered too long is posted, sorted by
+package maintainer.
 
 $gBadMaintHtml
 
-<h2><A name="requestserv">Reopening, reassigning and manipulating $gBugs</A></h2>
+<h2><A name="requestserv">Reopening, reassigning and manipulating $gBugs</a></h2>
 
-It is possible to reassign $gBug reports to other packages, to reopen
+<p>It is possible to reassign $gBug reports to other packages, to reopen
 erroneously-closed ones, to modify the information saying to where, if
 anywhere, a $gBug report has been forwarded, to change the severities
 and titles of reports and to merge and unmerge $gBug reports.  This is
 done by sending mail to <code>control\@$gEmailDomain</code>.
-<p>
 
-The <A href="server-control.html">format of these messages</A> is
+<p>The <a href="server-control.html">format of these messages</a> is
 described in another document available on the World Wide Web or in
 the file <code>bug-maint-mailcontrol.txt</code>.  A plain text version
 can also be obtained by mailing the word <code>help</code> to the
 server at the address above.
 
 <h2>More-or-less obsolete subject-scanning feature</h2>
-(this is likely to be removed the next version)<BR>
-Messages that arrive at <code>submit</code> or <code>$gBugs</code> whose
+
+<!-- (this is likely to be removed the next version?) -->
+
+<p>Messages that arrive at <code>submit</code> or <code>$gBugs</code> whose
 Subject starts <code>Bug#</code><var>nnn</var> will be treated as
 having been sent to <var>nnn</var><code>\@$gEmailDomain</code>.  This is both
 for backwards compatibility with mail forwarded from the old
 addresses, and to catch followup mail sent to <code>submit</code> by
 mistake (for example, by using reply to all recipients).
 
-<p>
-
-A similar scheme operates for <code>maintonly</code>,
+<p>A similar scheme operates for <code>maintonly</code>,
 <code>done</code>, <code>quiet</code> and <code>forwarded</code>,
 which treat mail arriving with a Subject tag as having been sent to
 the corresponding <var>nnn-whatever</var><code>\@$gEmailDomain</code> address.
 
-<p>
-
-Messages arriving at plain <code>forwarded</code> and
+<p>Messages arriving at plain <code>forwarded</code> and
 <code>done</code> - ie, with no $gBug report number in the address - and
 without a $gBug number in the Subject will be filed under `junk' and
 kept for a few weeks, but otherwise ignored.
 
-<h2><A name="future">Future plans</A></h2>
-
-At some point the <code>Package:</code> secondary header field may
-become mandatory - at the moment omitting it just produces a warning
-message.
-
 <hr>
-Other pages:
+
+<p>Other pages:
 <ul>
-<li><A href="./">$gBug tracking system main contents page.</A>
-<li><A href="Reporting.html">Instructions for reporting $gBugs.</A>
-<li><A href="Access.html">Accessing the $gBug tracking logs other than by WWW.</A>
-<li><A href="server-refcard.html">Mailservers' reference card.</A>
-<li><A href="db/ix/full.html">Full list of outstanding and recent $gBug reports.</A>
-<li><A href="db/ix/packages.html">Packages with $gBug reports.</A>
-<li><A href="db/ix/maintainers.html">Maintainers of packages with $gBug reports.</A>
-
+  <li><a href="./">$gBug tracking system main contents page.</a>
+  <li><a href="Reporting.html">Instructions for reporting $gBugs.</a>
+  <li><a href="Access.html">Accessing the $gBug tracking logs other than by WWW.</a>
+  <li><a href="server-refcard.html">Mailservers' reference card.</a>
+  <li><a href="db/ix/full.html">Full list of outstanding and recent $gBug reports.</a>
+  <li><a href="db/ix/packages.html">Packages with $gBug reports.</a>
+  <li><a href="db/ix/maintainers.html">Maintainers of packages with $gBug reports.</a>
 $gHTMLOtherPageList
-
 </ul>
 
 $gHTMLTail

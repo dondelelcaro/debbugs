@@ -1,30 +1,29 @@
 $gRequestHtml = <<HTML_END
-<html><head>
-<title>$gProject $gBug system - $gBug logs by mail server</title>
-<link rev="made" href="mailto:$gMaintainerEmail">
-</head><body>
-<A name="introduction">
-<h1>Introduction to the $gBug system request server</h1>
-</A>
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+  <title>$gProject $gBug system - $gBug logs by mail server</title>
+  <link rev="made" href="mailto:$gMaintainerEmail">
+</head>
+<body>
 
-There is a mailserver which can send the $gBug reports and
+<h1><a name="introduction">Introduction to the $gBug system request server</a></h1>
+
+<p>There is a mailserver which can send the $gBug reports and
 indices as plain text on request.
-<p>
 
-To use it you send a mail message to
-<A href="mailto:request\@$gEmailDomain"><code>request\@$gEmailDomain</code></A>.
+<p>To use it you send a mail message to
+<a href="mailto:request\@$gEmailDomain"><code>request\@$gEmailDomain</code></a>.
 The <code>Subject</code> of the message is ignored, except
 for generating the <code>Subject</code> of the reply.
-<p>
 
-The body you send should be a series of commands, one per line.
+<p>The body you send should be a series of commands, one per line.
 You'll receive a reply which looks like a transcript of your message
 being interpreted, with a response to each command.  No notifications
 are sent to anyone for most commands; however, the messages are logged
 and made available in the WWW pages.
-<p>
 
-Any text on a line starting with a hash sign <code>#</code> is
+<p>Any text on a line starting with a hash sign <code>#</code> is
 ignored; the server will stop processing when it finds a line starting
 with <code>quit</code>, <code>stop</code>, <code>thank</code> or two
 hyphens (to avoid parsing a signature).  It will also stop if it
@@ -37,151 +36,137 @@ server.
 <dl>
 <dt><code>send</code> <var>bugnumber</var>
 <dt><code>send-detail</code> <var>bugnumber</var>
-<dd>
 
-Requests the transcript for the $gBug report in question.
-<code>send-detail</code> sends all of the `boring' messages in the
-transcript, such as the various auto-acks (you should usually use
-<code>send</code> as well, as the interesting messages are not sent by
-<code>send-detail</code>).
+  <dd>Requests the transcript for the $gBug report in question.
+  <code>send-detail</code> sends all of the `boring' messages in the
+  transcript, such as the various auto-acks (you should usually use
+  <code>send</code> as well, as the interesting messages are not sent by
+  <code>send-detail</code>).
 
 <dt><code>index</code> [<code>full</code>]
 <dt><code>index-summary by-package</code>
 <dt><code>index-summary by-number</code>
-<dd>
 
-Request the full index (with full details, and including done and
-forwarded reports), or the summary sorted by package or by number,
-respectively.
+  <dd>Request the full index (with full details, and including done and
+  forwarded reports), or the summary sorted by package or by number,
+  respectively.
 
 <dt><code>index-maint</code>
-<dd>
 
-Requests the index page giving the list of maintainers with $gBugs (open
-and recently-closed) in the tracking sytem.
+  <dd>Requests the index page giving the list of maintainers with $gBugs
+  (open and recently-closed) in the tracking sytem.
 
 <dt><code>index maint</code> <var>maintainer</var>
-<dd>
 
-Requests the index pages of $gBugs in the system for all maintainers
-containing the string <var>maintainer</var>.  The search term is a
-case insensitive substring.  The $gBug index for each matching
-maintainer will be sent in a separate message.
+  <dd>Requests the index pages of $gBugs in the system for all maintainers
+  containing the string <var>maintainer</var>.  The search term is a
+  case insensitive substring.  The $gBug index for each matching
+  maintainer will be sent in a separate message.
 
 <dt><code>index-packages</code>
-<dd>
 
-Requests the index page giving the list of packages with $gBugs (open
-and recently-closed) in the tracking sytem.
+  <dd>Requests the index page giving the list of packages with $gBugs (open
+  and recently-closed) in the tracking sytem.
 
 <dt><code>index packages</code> <var>package</var>
-<dd>
 
-Requests the index pages of $gBugs in the system for all packages
-containing the string <var>package</var>.  The search term is a case
-insensitive substring.  The $gBug index for each matching package will
-be sent in a separate message.
+  <dd>Requests the index pages of $gBugs in the system for all packages
+  containing the string <var>package</var>.  The search term is a case
+  insensitive substring.  The $gBug index for each matching package will
+  be sent in a separate message.
 
 <dt><code>send-unmatched</code> [<code>this</code>|<code>0</code>]
 <dt><code>send-unmatched</code> <code>last</code>|<code>-1</code>
 <dt><code>send-unmatched</code> <code>old</code>|<code>-2</code>
-<dd>
 
-Requests logs of messages not matched to a particular $gBug report, for
-this week, last week and the week before.  (Each week ends on a
-Wednesday.)
+  <dd>Requests logs of messages not matched to a particular $gBug report,
+  for this week, last week and the week before.  (Each week ends on a
+  Wednesday.)
 
 <dt><code>getinfo</code> <var>filename</var>
-<dd>
 
-Request a file containing information about package(s) and or
-maintainer(s) - the files available are:
-<dl compact>
-<dt><code>maintainers</code>
-<dd>
-The unified list of packages' maintainers, as used by the tracking
-system.
+  <dd>Request a file containing information about package(s) and or
+  maintainer(s) - the files available are:
 
-$gCreateMaintainers
+  <dl compact>
+  <dt><code>maintainers</code>
+    <dd>The unified list of packages' maintainers, as used by the tracking
+    system.
 
-<!-- Override file quivilent information -->
+    $gCreateMaintainers
 
-<dt><code>pseudo-packages.description</code>
-<dt><code>pseudo-packages.maintainers</code>
-<dd>
-List of descriptions and maintainers respectively for pseudo-packages.
-</dl>
+    <!-- Override file quivilent information -->
 
-<dt><code>refcards</code>
-<dd>
-Requests that the mailservers' reference card be sent in plain ASCII.
+  <dt><code>pseudo-packages.description</code>
+  <dt><code>pseudo-packages.maintainers</code>
+    <dd>List of descriptions and maintainers respectively for
+    pseudo-packages.
+  </dl>
+
+<dt><code>refcard</code>
+
+  <dd>Requests that the mailservers' reference card be sent in plain ASCII.
 
 <dt><code>help</code>
-<dd>
-Requests that this help document be sent by email in plain ASCII.
+
+  <dd>Requests that this help document be sent by email in plain ASCII.
 
 <dt><code>quit</code>
 <dt><code>stop</code>
 <dt><code>thank</code>...
 <dt><code>--</code>...
-<dd>
 
-Stops processing at this point of the message.  After this you may
-include any text you like, and it will be ignored.  You can use this
-to include longer comments than are suitable for <code>#</code>, for
-example for the benefit of human readers of your message (reading it
-via the tracking system logs or due to a <code>CC</code> or
-<code>BCC</code>).
+  <dd>Stops processing at this point of the message.  After this you may
+  include any text you like, and it will be ignored.  You can use this
+  to include longer comments than are suitable for <code>#</code>, for
+  example for the benefit of human readers of your message (reading it
+  via the tracking system logs or due to a <code>CC</code> or
+  <code>BCC</code>).
 
 <dt><code>#</code>...
-<dd>
 
-One-line comment.  The <code>#</code> must be at the start of the
-line.
+  <dd>One-line comment.  The <code>#</code> must be at the start of the
+  line.
 
 <dt><code>debug</code> <var>level</var>
-<dd>
 
-Sets the debugging level to <var>level</var>, which should be a
-nonnegative integer.  0 is no debugging; 1 is usually sufficient.  The
-debugging output appears in the transcript.  It is not likely to be
-useful to general users of the $gBug system.
+  <dd>Sets the debugging level to <var>level</var>, which should be a
+  nonnegative integer.  0 is no debugging; 1 is usually sufficient.  The
+  debugging output appears in the transcript.  It is not likely to be
+  useful to general users of the $gBug system.
 
 </dl>
 
-There is a <A href="server-refcard.html">reference card</A> for the
+<p>There is a <a href="server-refcard.html">reference card</a> for the
 mailservers, available via the WWW, in
 <code>bug-mailserver-refcard.txt</code> or by email using the
 <code>refcard</code> command (see above).
-<p>
 
-If you wish to manipulate $gBug reports you should use the
+<p>If you wish to manipulate $gBug reports you should use the
 <code>control\@gEmailDomain</code> address, which understands a
-<A href="server-control.html">superset of the commands listed
-above</A>.  This is described in another document, available on the
-WWW</A>, in the file <code>bug-maint-mailcontrol.txt</code>, or by
+<a href="server-control.html">superset of the commands listed
+above</a>.  This is described in another document, available on the
+<a href="server-control.html">WWW</a>, in the file
+<code>bug-maint-mailcontrol.txt</code>, or by
 sending <code>help</code> to <code>control\@$gEmailDomain</code>.
-<p>
 
-In case you are reading this as a plain text file or via email: an
+<p>In case you are reading this as a plain text file or via email: an
 HTML version is available via the $gBug system main contents page
 <code>http://$gWebDomain/</code>.
-<p>
 
 <hr>
-Other pages:
+
+<p>Other pages:
 <ul>
-<li><A href="./">$gBug tracking system main contents page.</A>
-<li><A href="Reporting.html">Instructions for reporting $gBugs.</A>
-<li><A href="Access.html">Accessing the $gBug tracking logs other than by WWW.</A>
-<li><A href="Developer.html">Developers'
-information regarding the $gBug processing system.</A>
-<li><A href="server-control.html">Developers'
-information - $gBug manipulation using the email control interface.</A>
-<li><A href="server-refcard.html">Mailservers' reference card.</A>
-<li><A href="db/ix/full.html">Full list of outstanding and recent $gBug reports.</A>
-<li><A href="db/ix/packages.html">Packages with $gBug reports.</A>
-<li><A href="db/ix/maintainers.html">Maintainers of packages with $gBug reports.</A>
+  <li><a href="./">$gBug tracking system main contents page.</a>
+  <li><a href="Reporting.html">Instructions for reporting $gBugs.</a>
+  <li><a href="Access.html">Accessing the $gBug tracking logs other than by WWW.</a>
+  <li><a href="Developer.html">Developers' information regarding the $gBug processing system.</a>
+  <li><a href="server-control.html">Developers' information - $gBug manipulation using the email control interface.</a>
+  <li><a href="server-refcard.html">Mailservers' reference card.</a>
+  <li><a href="db/ix/full.html">Full list of outstanding and recent $gBug reports.</a>
+  <li><a href="db/ix/packages.html">Packages with $gBug reports.</a>
+  <li><a href="db/ix/maintainers.html">Maintainers of packages with $gBug reports.</a>
 $gHTMLOtherPageList
 </ul>
 
