@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.7 1999/11/22 01:35:10 gecko Exp $
+# $Id: text.in,v 1.8 1999/12/01 18:04:01 gecko Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -122,14 +122,19 @@ $gHTMLSeverityDesc = "<DT><CODE>critical</CODE>
 	not been fixed by the person responsible.";
 
 ############################################################################
-# shows up at the end of (most) html pages.  You shouldn't have
+# shows up at the start of (most) html pages.
+############################################################################
+$gHTMLStart = "<BODY>";
+
+############################################################################
+# shows up at the end of (most) html pages.
 ############################################################################
 $gHTMLTail = "<HR><ADDRESS>$gMaintainer /
  <A HREF=\"mailto:$gMaintainerEmail\">$gMaintainerEmail</A>.  Last modifed:
  <!--timestamp-->
  SUBSTITUTE_DTIME
  <!--timestamp-->
- (<A HREF=\"$gWebDomain/ix/zstamp.html\">timestamp page</A> available).
+ (<A HREF=\"http://$gWebDomain/ix/zstamp.html\">timestamp page</A> available).
 	  
  <P>
  Debian $gBug tracking system<BR>
@@ -153,7 +158,7 @@ $gHTMLExpireNote = "(Closed $gBugs are cleaned out 28 days after the last relate
 ############################################################################
 $gHTMLStamp = "<HTML><HEAD><TITLE>$gProject $gBugs - timestamp page</TITLE>
 	<LINK REV=\"made\" HREF=\"mailto:$gMaintainerEmail\">
-	</HEAD><BODY><H1>Is this $gBug log or mirror up to date?</H1>
+	</HEAD>$gHTMLStart<H1>Is this $gBug log or mirror up to date?</H1>
 
 	Unlike all the other $gBug pages, this small timestamp page is updated every
 	time the update check job runs.  If the timestamp here is recent it\'s
@@ -178,7 +183,6 @@ $gHTMLStamp = "<HTML><HEAD><TITLE>$gProject $gBugs - timestamp page</TITLE>
 ############################################################################
 # Makeup of the indices pages
 ############################################################################
-$gHTMLStart = "<BODY>";
 $gFullIndex = "<HTML><HEAD><TITLE>$gProject $gBugs - full index</TITLE>
 	<LINK REV=\"make\" HREF=\"mailto:$gMaintainerEmail\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug report logs - index</H1>

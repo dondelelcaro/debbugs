@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.8 1999/09/20 05:40:07 gecko Exp $
+# $Id: service.in,v 1.9 1999/12/01 18:04:01 gecko Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -90,29 +90,29 @@ for ($procline=$i; $procline<=$#msg; $procline++)
     next unless m/\S/; next if m/^\s*\#/;
     &transcript("> $_\n");
     $action= '';
-    if (m/^stop$/ || m/^quit$/ || m/^--/ || m/^thank/) 
+    if (m/^stop\s/i || m/^quit\s/i || m/^--/ || m/^thank\s/i) 
 	{ 	&transcript("Stopping processing here.\n\n");
         last;
-    } elsif (m/^debug\s+(\d+)$/ && $1 >= 0 && $1 <= 1000) {
+    } elsif (m/^debug\s+(\d+)$/i && $1 >= 0 && $1 <= 1000) {
         $dl= $1+0;
         &transcript("Debug level $dl.\n\n");
-    } elsif (m/^(send|get)\s+\#?(\d{3,})$/) {
+    } elsif (m/^(send|get)\s+\#?(\d{2,})$/i) {
         $ref= $2+0; $reffile= $ref; $reffile =~ s,^..,$&/$&,;
         &sendlynxdoc("db/$reffile.html","logs for $gBug#$ref");
-    } elsif (m/^send-detail\s+\#?(\d+)$/) {
+    } elsif (m/^send-detail\s+\#?(\d+)$/i) {
         $ref= $1+0; $reffile= $ref; $reffile =~ s,^..,$&/$&,;
         &sendlynxdoc("db/$reffile-b.html","additional logs for $gBug#$ref");
-    } elsif (m/^index(\s+full)?$/) {
+    } elsif (m/^index(\s+full)?$/i) {
         &sendlynxdoc("db/ix/full.html",'full index');
-    } elsif (m/^index-summary\s+by-package$/) {
+    } elsif (m/^index-summary\s+by-package$/i) {
         &sendlynxdoc("db/ix/psummary.html",'summary index sorted by package/title');
-    } elsif (m/^index-summary(\s+by-number)?$/) {
+    } elsif (m/^index-summary(\s+by-number)?$/i) {
         &sendlynxdoc("db/ix/summary.html",'summary index sorted by number/date');
-    } elsif (m/^index(\s+|-)pack(age)?s?$/) {
+    } elsif (m/^index(\s+|-)pack(age)?s?$/i) {
         &sendlynxdoc("db/ix/packages.html",'index of packages');
-    } elsif (m/^index(\s+|-)maints?$/) {
+    } elsif (m/^index(\s+|-)maints?$/i) {
         &sendlynxdoc("db/ix/maintainers.html",'index of maintainers');
-    } elsif (m/^index(\s+|-)maint\s+(\S.*\S)$/) {
+    } elsif (m/^index(\s+|-)maint\s+(\S.*\S)$/i) {
         $substrg= $2; $matches=0;
         opendir(DBD,"$gWebDir/db/ma") || die $!;
         while (defined($_=readdir(DBD))) {
@@ -147,7 +147,7 @@ for ($procline=$i; $procline<=$#msg; $procline++)
                         "Use \`index-maint' to get list of maintainers.\n\n");
         }
         $ok++;
-    } elsif (m/^index(\s+|-)pack(age)?s?\s+(\S.*\S)$/) {
+    } elsif (m/^index(\s+|-)pack(age)?s?\s+(\S.*\S)$/i) {
         $substrg= $+; $matches=0;
         opendir(DBD,"$gWebDir/db/pa") || die $!;
         while (defined($_=readdir(DBD))) {
@@ -167,13 +167,13 @@ for ($procline=$i; $procline<=$#msg; $procline++)
                         "Use \`index-packages' to get list of packages.\n\n");
         }
         $ok++;
-    } elsif (m/^send-unmatched(\s+this|\s+-?0)?$/) {
+    } elsif (m/^send-unmatched(\s+this|\s+-?0)?$/i) {
         &sendlynxdoc("db/ju/unmatched-1.html","junk (this week)");
-    } elsif (m/^send-unmatched\s+(last|-1)$/) {
+    } elsif (m/^send-unmatched\s+(last|-1)$/i) {
         &sendlynxdoc("db/ju/unmatched-2.html","junk (last week)");
-    } elsif (m/^send-unmatched\s+(old|-2)$/) {
+    } elsif (m/^send-unmatched\s+(old|-2)$/i) {
         &sendlynxdoc("db/ju/unmatched-3.html","junk (two weeks ago)");
-    } elsif (m/^getinfo\s+(\S+)$/) {
+    } elsif (m/^getinfo\s+(\S+)$/i) {
         $file= $1;
         if ($file =~ m/^\./ || $file !~ m/^[-.0-9a-z]+$/ || $file =~ m/\.gz$/) {
             &transcript("Filename $file is badly formatted.\n\n");
@@ -186,20 +186,20 @@ for ($procline=$i; $procline<=$#msg; $procline++)
         } else {
             &transcript("Info file $file does not exist.\n\n");
          }
-    } elsif (m/^help$/) {
+    } elsif (m/^help$/i) {
         &sendhelp;
         &transcript("\n");
         $ok++;
-    } elsif (m/^refcard$/) {
+    } elsif (m/^refcard$/i) {
         &sendtxthelp("bug-mailserver-refcard.txt","mailservers' reference card");
-    } elsif (m/^subscribe/) {
+    } elsif (m/^subscribe/i) {
         &transcript(<<END);
 There is no $gProject $gBug mailing list.  If you wish to review bug reports
 please do so via http://$gWebUrl/ or ask this mailserver
 to send them to you.
 soon: MAILINGLISTS_TEXT
 END
-    } elsif (m/^unsubscribe/) {
+    } elsif (m/^unsubscribe/i) {
         &transcript(<<END);
 soon: UNSUBSCRIBE_TEXT
 soon: MAILINGLISTS_TEXT
@@ -214,7 +214,7 @@ END
             &transcript("Too many unknown commands, stopping here.\n\n");
             last;
         }
-    } elsif (m/^close\s+\#?(\d+)$/) {
+    } elsif (m/^close\s+\#?(\d+)$/i) {
 	$ok++;
 	$ref= $1;
 	if (&setbug) {
@@ -253,7 +253,7 @@ END
                 } while (&getnextbug);
             }
         }
-    } elsif (m/^reassign\s+\#?(\d+)\s+(\S.*\S)$/) {
+    } elsif (m/^reassign\s+\#?(\d+)\s+(\S.*\S)$/i) {
         $ok++;
         $ref= $1; $newpackage= $2;
     	$newpackage =~ y/A-Z/a-z/;
@@ -270,10 +270,10 @@ END
                 $s_package= $newpackage;
             } while (&getnextbug);
         }
-    } elsif (m/^reopen\s+\#?(\d+)$/ ? ($noriginator='', 1) :
-             m/^reopen\s+\#?(\d+)\s+\=$/ ? ($noriginator='', 1) :
-             m/^reopen\s+\#?(\d+)\s+\!$/ ? ($noriginator=$replyto, 1) :
-             m/^reopen\s+\#?(\d+)\s+(\S.*\S)$/ ? ($noriginator=$2, 1) : 0) {
+    } elsif (m/^reopen\s+\#?(\d+)$/i ? ($noriginator='', 1) :
+             m/^reopen\s+\#?(\d+)\s+\=$/i ? ($noriginator='', 1) :
+             m/^reopen\s+\#?(\d+)\s+\!$/i ? ($noriginator=$replyto, 1) :
+             m/^reopen\s+\#?(\d+)\s+(\S.*\S)$/i ? ($noriginator=$2, 1) : 0) {
         $ok++;
         $ref= $1;
         if (&setbug) {
@@ -291,7 +291,7 @@ END
                 } while (&getnextbug);
             }
         }
-    } elsif (m/^forwarded\s+\#?(\d+)\s+(\S.*\S)$/) {
+    } elsif (m/^forwarded\s+\#?(\d+)\s+(\S.*\S)$/i) {
         $ok++;
         $ref= $1; $whereto= $2;
         if (&setbug) {
@@ -310,7 +310,7 @@ END
                 $s_forwarded= $whereto;
             } while (&getnextbug);
         }
-    } elsif (m/^notforwarded\s+\#?(\d+)$/) {
+    } elsif (m/^notforwarded\s+\#?(\d+)$/i) {
         $ok++;
         $ref= $1;
         if (&setbug) {
@@ -325,7 +325,7 @@ END
                 } while (&getnextbug);
             }
         }
-    } elsif (m/^severity\s+\#?(\d+)\s+([-0-9a-z]+)$/) {
+    } elsif (m/^severity\s+\#?(\d+)\s+([-0-9a-z]+)$/i) {
         $ok++;
         $ref= $1;
         $newseverity= $2;
@@ -341,7 +341,7 @@ END
                 $s_severity= $newseverity;
             } while (&getnextbug);
         }
-    } elsif (m/^retitle\s+\#?(\d+)\s+(\S.*\S)\s*$/) {
+    } elsif (m/^retitle\s+\#?(\d+)\s+(\S.*\S)\s*$/i) {
         $ok++;
         $ref= $1; $newtitle= $2;
         if (&getbug) {
@@ -358,7 +358,7 @@ END
         } else {
             &notfoundbug;
         }
-    } elsif (m/^unmerge\s+\#?(\d+)$/) {
+    } elsif (m/^unmerge\s+\#?(\d+)$/i) {
 	$ok++;
 	$ref= $1;
 	if (&setbug) {
@@ -377,7 +377,7 @@ END
                 } while (&getnextbug);
 	    }
 	}
-    } elsif (m/^merge\s(\d+(\s+\d+)+)\s*$/) {
+    } elsif (m/^merge\s+(\d+(\s+\d+)+)\s*$/i) {
 	$ok++;
         @tomerge= sort { $a <=> $b } split(/\s+/,$1);
         @newmergelist= ();

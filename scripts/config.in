@@ -1,4 +1,4 @@
-# $Id: config.in,v 1.5 1999/11/22 01:35:10 gecko Exp $
+# $Id: config.in,v 1.6 1999/12/01 18:04:01 gecko Exp $
 #domains
 $gEmailDomain = "bugs.benham";		#bugs.debian.org
 $gListDomain = "lists.benham";		#lists.debian.org
@@ -67,4 +67,4 @@ and at all Debian mirror sites, in the files:
 
 
 #dont change
-$gBounceFroms = "^mailer|^da?emon|^post.*mast|^root|^wpuser|^mmdf|^smt.*|\\$emd|^mrgate|^vmmail|^mail.*system|^uucp|-maiser-|^mal\@|^mail.*agent|^tcpmail|^bitmail|^mailman";
+$gBounceFroms = "^mailer|^da?emon|^post.*mast|^root|^wpuser|^mmdf|^smt.*|^mrgate|^vmmail|^mail.*system|^uucp|-maiser-|^mal\@|^mail.*agent|^tcpmail|^bitmail|^mailman";

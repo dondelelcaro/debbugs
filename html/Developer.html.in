@@ -76,9 +76,9 @@ mailing list separately.
 
 The $gBug system records a severity level with each $gBug report.  This is
 set to <code>$gDefaultSeverity</code> by default, but can be overridden either by
-supplying a <code>Severity</code> line in the psuedo-header when the
+supplying a <code>Severity</code> line in the pseudo-header when the
 $gBug is submitted (see the
-<A href="Reporting.html#psuedoheader">instructions for reporting
+<A href="Reporting.html#pseudoheader">instructions for reporting
 $gBugs</A>), or by using the <code>severity</code> command with the
 <A href="#requestserv">control request server</A>.
 

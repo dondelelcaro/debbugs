@@ -2,11 +2,11 @@ Source: debbugs
 Section: misc
 Priority: optional
 Maintainer: Darren Benham <gecko@debian.org>
-Standards-Version: 2.5.0.0
+Standards-Version: 3.1.0.0
 
 Package: debbugs
 Architecture: all
-Depends: perl|perl5, lynx, mail-transport-agent, mailtools
+Depends: perl|perl5, lynx, mail-transport-agent, mailtools, ed
 Recommends: httpd
 Description: The bug tracking system based on the active Debian BTS
  This is an email based bug tracking system.  It is the same system used by
