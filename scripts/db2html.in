@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: db2html.in,v 1.15 2003/05/25 13:19:13 joy Exp $
+# $Id: db2html.in,v 1.16 2003/05/25 13:25:51 joy Exp $
 # usage: db2html [-diff] [-stampfile=<stampfile>] [-lastrun=<days>] <wwwbase>
 
 #load the necessary libraries/configuration
@@ -30,7 +30,7 @@ $indexunmatched = '';
                        'forwarded','forwarded to upstream software authors');
 
 #set timestamp for html files
-$dtime = strftime "%a, %e %b %Y %T UTC", localtime;
+$dtime = strftime "%a, %e %b %Y %T UTC", gmtime;
 $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
 
 #check for commandline switches

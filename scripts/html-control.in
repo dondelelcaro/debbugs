@@ -1,7 +1,7 @@
 #!/usr/bin/perl
-# $Id: html-control.in,v 1.8 2002/11/17 22:45:16 cjwatson Exp $
+# $Id: html-control.in,v 1.9 2003/05/25 13:25:51 joy Exp $
 
-use POSIX;
+use POSIX qw(strftime);
 
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
@@ -32,7 +32,7 @@ if (open(US,'updateseqs') && -f 'stamp.html') {
     rename("stamp.html","stamp.html.run") or &quit("rename stamp.html: $!");
 } else {
     $lastsub=0;
-    chop($lastmain=`TZ=GMT date '+%Y%m%d%H%M%S'`);
+    $lastmain = strftime "%Y%m%d%H%M%S", gmtime;
     $args= '-full';
     unlink('stamp.html') || $!==&ENOENT or &quit("excise stale stamp.html: $!");
 }
