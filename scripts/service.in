@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.26 2000/10/14 22:22:01 joy Exp $
+# $Id: service.in,v 1.27 2000/10/21 18:35:58 joy Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -11,6 +11,7 @@ $ENV{'PATH'} = '/usr/lib/debbugs:'.$ENV{'PATH'};
 chdir("$gSpoolDir") || die "chdir spool: $!\n";
 
 # open(DEBUG,">&4");
+open DEBUG, ">/dev/null";
 $debug = 0;
 
 $_=shift;
