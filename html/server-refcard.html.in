@@ -64,6 +64,9 @@ sending the word <code>help</code> to each mailserver.
       <var>originator-address</var> | <code>!</code>
   <li><code>forwarded</code> <var>bugnumber</var> <var>address</var>
   <li><code>notforwarded</code> <var>bugnumber</var>
+  <li><code>owner</code> <var>bugnumber</var>
+      <var>address</var> | <code>!</code>
+  <li><code>noowner</code> <var>bugnumber</var>
   <li><code>retitle</code> <var>bugnumber</var> <var>new-title</var>
   <li><code>merge</code> <var>bugnumber</var> <var>bugnumber</var> ...
   <li><code>unmerge</code> <var>bugnumber</var>
