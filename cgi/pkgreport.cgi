@@ -135,7 +135,7 @@ if (defined $pkg) {
   my %maintainers = %{getmaintainers()};
   $title = "maintainer $maint";
   if ($maint eq "") {
-    @bugs = @{getbugs(sub {my %d=@_; my $me; 
+    @bugs = @{getbugs(sub {my %d=@_;
                            foreach my $try (splitpackages($d{"pkg"})) {
                              my @me = getparsedaddrs($maintainers{$try});
                              return 1 if grep { $_->address eq $maint } @me;
@@ -151,7 +151,7 @@ if (defined $pkg) {
         push @pkgs, $p if grep { $_->address eq $try } @me;
       }
     }
-    @bugs = @{getbugs(sub {my %d=@_; my $me; 
+    @bugs = @{getbugs(sub {my %d=@_;
                            foreach my $try (splitpackages($d{"pkg"})) {
                              my @me = getparsedaddrs($maintainers{$try});
                              return 1 if grep { $_->address eq $maint } @me;
