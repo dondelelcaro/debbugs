@@ -1,5 +1,5 @@
-#!/usr/bin/perl -w
-# $Id: expire.in,v 1.3 1999/09/14 02:08:31 gecko Exp $
+#!/usr/bin/perl
+# $Id: expire.in,v 1.4 1999/09/16 07:16:47 gecko Exp $
 
 # Load modules and set envirnment
 require('/etc/debbugs/config');
@@ -16,7 +16,8 @@ sub get_archivename
 {	my $bugnum = shift;
 	my $archivename = "";
 
-	while( $bugnum > 99 ) { $bugnum = int $bugnum/10; }
+#	while( $bugnum > 99 ) { $bugnum = int $bugnum/10; }
+	$bugnum = $bugnum % 100;
 	$archivename = sprintf "%02d", $bugnum;
 	return $archivename;
 }
@@ -69,10 +70,10 @@ while (length($ref=shift(@list)))
 				my $dir;
 				$dir = "archive/" . get_archivename $mref;
 				`mkdir -p "$dir"`;
-				print( "archiving $mref (from $ref)\n" );
 				copy( "db/$mref.log", "$dir/$mref.log" );
 				copy( "db/$mref.status", "$dir/$mref.status" );
 				copy( "db/$mref.report", "$dir/$mref.report" );
+            	print("archived $mref to $dir (from $ref)\n") || &quit("output old: $!");
 			}
             unlink("db/$mref.log", "db/$mref.status", "db/$mref.report");
             print("deleted $mref (from $ref)\n") || &quit("output old: $!");
