@@ -25,6 +25,8 @@ unshift @INC, $gConfigDir;
 &template("text");
 require "text";
 
+&template("Maintainers");
+&template("pseudo-packages.description");
 &template("nextnumber");
 
 # stuff used when testing (comment out the above)
