@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.25 2001/03/18 05:06:00 doogie Exp $
+# $Id: process.in,v 1.26 2001/03/18 05:13:52 doogie Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -109,6 +109,9 @@ $fwd .= join("\n",@msg[$i..$#msg]);
 
 print DEBUG "***\n$fwd\n***\n";
 
+if (defined $header{'resent-from'} && !defined $header{'from'}) {
+    $header{'from'} = $header{'resent-from'};
+}
 defined($header{'from'}) || &quit("no From header");
 $replyto= defined($header{'reply-to'}) ? $header{'reply-to'} : $header{'from'};
 
