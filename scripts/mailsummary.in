@@ -1,9 +1,13 @@
 #!/usr/bin/perl
-# $Id: mailsummary.in,v 1.6 2000/10/14 21:01:22 joy Exp $
+# $Id: mailsummary.in,v 1.7 2001/08/16 17:39:03 doogie Exp $
 
-require( '/etc/debbugs/config' );
+$config_path = '/org/bugs.debian.org/etc';
+$lib_path = '/org/bugs.debian.org/scripts';
 
-$ENV{'PATH'} = '/usr/lib/debbugs:'.$ENV{'PATH'};
+require("$config_path/config");
+require("$lib_path/errorlib");
+$ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
+
 chdir("$gSpoolDir") || die "chdir spool: $!\n";
 
 #open(DEBUG,">&4");
@@ -50,7 +54,7 @@ $gBug reports is posted periodically - this is a partial list only!)
     die "urgk, wrong argument @ARGV";
 }
 
-$v=`/usr/lib/debbugs/summary $ARGV[0]`; $? && die "undone failed $?: $!\n";
+$v=`$lib_path/summary $ARGV[0]`; $? && die "undone failed $?: $!\n";
 
 $v= $vdef if $v eq '';
 exit 0 if $v eq '';
