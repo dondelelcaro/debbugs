@@ -9,6 +9,8 @@ debbugs (2.4.1) UNRELEASED; urgency=low
   * Add missing <ul></ul> tags to db2html's output, closes: #50746. [Colin]
   * Add a 'submitter' command to service, based on a patch by Matt Kraai.
     [Colin]
+  * Remove the final use of cgi-lib.pl, so it's gone. Remove copyright
+    notices that were there due to using it. [Colin]
 
  -- Colin Watson <cjwatson@debian.org>  Mon, 25 Nov 2002 03:50:20 +0000
 

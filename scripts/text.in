@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.16 2002/12/03 12:30:18 cjwatson Exp $
+# $Id: text.in,v 1.17 2002/12/03 13:26:06 cjwatson Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -186,8 +186,7 @@ $gHTMLTail = "<HR>
  <BR>
  Copyright (C) 1999 Darren O. Benham,
  1997 nCipher Corporation Ltd,
- 1994-97 Ian Jackson,
- 1995 Steven Brenner.
+ 1994-97 Ian Jackson.
  <BR>
  <A HREF=\"http://www.benham.net/debbugs/\">Available under the GPL.</A>
  </ADDRESS>

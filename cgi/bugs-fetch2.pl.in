@@ -1,11 +1,12 @@
 #!/usr/bin/perl
 
+require './common.pl';
+
 require '/etc/debbugs/config';
-require './cgi-lib.pl';
 
 %map= ($gMirrors);
 
-ReadParse() or CgiDie("need form data");
+my %in = readparse();
 
 if ($in{'type'} eq 'ref') {
     $_= $in{'ref'};
