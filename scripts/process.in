@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.73 2003/07/16 10:08:04 cjwatson Exp $
+# $Id: process.in,v 1.74 2003/07/16 12:01:09 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -724,10 +724,10 @@ Reply-To: $ref-quiet\@$gEmailDomain
 
 Thank you for the problem report you have sent regarding $gProject.
 This is an automatically generated reply, to let you know your message
-has been received.  It has not been forwarded to the developers or
-their mailing list; you should ensure that the developers are aware of
-the problem you have entered into the system - preferably quoting the
-$gBug reference number, #$ref.
+has been received.  It has not been forwarded to the package maintainers
+or other interested parties; you should ensure that the developers are
+aware of the problem you have entered into the system - preferably
+quoting the $gBug reference number, #$ref.
 $resentccexplain
 If you wish to submit further information on your problem, please send it
 to $ref-$baddressroot\@$gEmailDomain (and *not*
@@ -754,8 +754,9 @@ Reply-To: $ref-maintonly\@$gEmailDomain
 
 Thank you for the problem report you have sent regarding $gProject.
 This is an automatically generated reply, to let you know your message has
-been received.  It is being forwarded to the developers (but not the mailing
-list, as you requested) for their attention; they will reply in due course.
+been received.  It is being forwarded to the package maintainers (but not
+other interested parties, as you requested) for their attention; they will
+reply in due course.
 $resentccexplain
 If you wish to submit further information on your problem, please send
 it to $ref-$baddressroot\@$gEmailDomain (and *not*
@@ -781,8 +782,8 @@ Reply-To: $ref\@$gEmailDomain
 
 Thank you for the problem report you have sent regarding $gProject.
 This is an automatically generated reply, to let you know your message has
-been received.  It is being forwarded to the developers mailing list for
-their attention; they will reply in due course.
+been received.  It is being forwarded to the package maintainers and other
+interested parties for their attention; they will reply in due course.
 $resentccexplain
 If you wish to submit further information on your problem, please send
 it to $ref\@$gEmailDomain (and *not* to
@@ -815,10 +816,10 @@ X-$gProject-PR-Keywords: $data->{keywords}
 Reply-To: $ref-quiet\@$gEmailDomain
 
 Thank you for the additional information you have supplied regarding
-this problem report.  It has NOT been forwarded to the developers, but
-will accompany the original report in the $gBug tracking system.  Please
-ensure that you yourself have sent a copy of the additional
-information to any relevant developers or mailing lists.
+this problem report.  It has NOT been forwarded to the package
+maintainers, but will accompany the original report in the $gBug
+tracking system.  Please ensure that you yourself have sent a copy of
+the additional information to any relevant developers or mailing lists.
 $resentccexplain
 If you wish to continue to submit further information on your problem,
 please send it to $ref-$baddressroot\@$gEmailDomain, as before.
@@ -843,8 +844,8 @@ X-$gProject-PR-Keywords: $data->{keywords}
 Reply-To: $ref-maintonly\@$gEmailDomain
 
 Thank you for the additional information you have supplied regarding
-this problem report.  It has been forwarded to the developer(s) (but
-not to the mailing list) to accompany the original report.
+this problem report.  It has been forwarded to the package maintainer(s)
+(but not to other interested parties) to accompany the original report.
 $resentccexplain
 If you wish to continue to submit further information on your problem,
 please send it to $ref-$baddressroot\@$gEmailDomain, as before.
@@ -868,8 +869,8 @@ X-$gProject-PR-Keywords: $data->{keywords}
 Disabled-Doogie-Reply-To: $ref\@$gEmailDomain
 
 Thank you for the additional information you have supplied regarding
-this problem report.  It has been forwarded to the developer(s) and
-to the developers mailing list to accompany the original report.
+this problem report.  It has been forwarded to the package maintainer(s)
+and to other interested parties to accompany the original report.
 $resentccexplain
 If you wish to continue to submit further information on your problem,
 please send it to $ref\@$gEmailDomain, as before.
