@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.75 2003/05/26 12:30:04 cjwatson Exp $
+# $Id: service.in,v 1.76 2003/05/31 11:17:16 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -513,7 +513,7 @@ END
                 } while (&getnextbug);
 	    }
 	}
-    } elsif (m/^merge\s+(\d+(\s+\d+)+)\s*$/i) {
+    } elsif (m/^merge\s+(-?\d+(\s+-?\d+)+)\s*$/i) {
 	$ok++;
         @tomerge= sort { $a <=> $b } split(/\s+/,$1);
         @newmergelist= ();
@@ -522,6 +522,9 @@ END
         while (defined($ref= shift(@tomerge))) {
             &transcript("D| checking merge $ref\n") if $dl;
 	    $ref+= 0;
+	    if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
+		$ref = $clonebugs{$ref};
+	    }
 	    next if grep($_ eq $ref,@newmergelist);
 	    if (!&getbug) { &notfoundbug; @newmergelist=(); last }
             &foundbug;
