@@ -111,11 +111,12 @@ sub WriteRecord
     }
 }
 
-sub OpenFile
+sub GetFileName
 {
     my ($prePaths, $stub, $postPath, $desc, $new) = (shift, shift, shift, shift, shift);
+    my $path;
     foreach my $prePath (@$prePaths) {
-	my $path = "/" . $prePath . "/" . $stub . $postPath, my $handle = new FileHandle;
+	$path = "/" . $prePath . "/" . $stub . $postPath;
 	print "V: Opening $desc $stub\n" if $Globals{ 'verbose' };
 	print "D2: (DBase) trying $path\n" if $Globals{ 'debug' } > 1;
 	if( ! -r $Globals{ "work-dir" } . $path ) {
@@ -125,17 +126,28 @@ sub OpenFile
 		next if( !$new =~ "new" );
 	    }
 	}
-	open( $handle, $Globals{ "work-dir" } . $path ) && return $handle;
-	if(defined($new) && $new =~ "new") {
+	if( -r $Globals{ "work-dir" } . $path ) {
+	    return $path;
+	}
+	if( ( ! -r $Globals{ "work-dir" } . $path ) && defined($new) && $new =~ "new") {
 	    my $dir = dirname( $path );
 	    if ( ! -d $Globals{ "work-dir" } . $dir ) {
 		mkpath($Globals{ "work-dir" } . $dir);
 	    }
-	    open( $handle, ">" . $Globals{ "work-dir" } . $path ) && return $handle;
+	    return $path;
 	}
     }
-    return;
+    return undef;
 }
+sub OpenFile
+{
+    my ($prePaths, $stub, $postPath, $desc, $new) = (shift, shift, shift, shift, shift);
+    my $fileName = GetFileName($prePaths, $stub, $postPath, $desc, $new);
+    my $handle = new FileHandle;
+    open( $handle, $Globals{ "work-dir" } . $fileName ) && return $handle;
+    return undef;
+}
+
 sub OpenRecord
 {
     my $record = $_[0];
@@ -159,8 +171,7 @@ sub OpenLogfile
     my $record = $_[0];
     if ( $record ne $OpenedLog )
     {
-	$LogfileHandle = OpenFile("db", $record, ".log", "log");
-	seek( $FileHandle, 0, 2 );
+	$LogfileHandle = OpenFile(["db", "archive"], $record, ".log", "log");
 	$OpenedLog = $record;
     }
 }
