@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.92 2003/09/01 01:19:24 cjwatson Exp $
+# $Id: service.in,v 1.93 2003/10/01 14:40:40 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -1056,7 +1056,7 @@ sub addmaintainers {
     my ($p, $addmaint, $pshow);
     &ensuremaintainersloaded;
     $anymaintfound=0; $anymaintnotfound=0;
-    for $p (split(m/[ \t?,()]+/, $data->{package})) {
+    for $p (split(m/[ \t?,():]+/, $data->{package})) {
  	$p =~ y/A-Z/a-z/;
         $pshow= ($p =~ m/[-+.a-z0-9]+/ ? $& : '');
 	if (defined $gSubscriptionDomain) {
