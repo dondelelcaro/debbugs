@@ -1,10 +1,10 @@
 # This is the bugs.debian.org debbugs configuration file.
-# $Id: config.debian,v 1.8 2000/10/10 23:42:14 joy Exp $
+# $Id: config.debian,v 1.9 2000/12/05 21:05:31 joy Exp $
 
 # Domains
 $gEmailDomain = "bugs.debian.org";
 $gListDomain = "lists.debian.org";
-$gWebDomain = "bugs.debian.org";
+$gWebDomain = "www.debian.org/Bugs";
 $gCGIDomain = "http://bugs.debian.org/cgi-bin/";
 $gMirrors = "";						# comma separated list
 
