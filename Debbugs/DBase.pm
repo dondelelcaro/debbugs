@@ -164,6 +164,48 @@ sub CloseLogfile
     close $LogfileHandle;
     $OpenedLog = 0;
 }
+sub GetBugList
+{
+# TODO: This is ugly, but the easiest for me to implement.
+#	If you have a better way, then please send a patch.
+#
+    my $dir = new FileHandle;
+
+    my @ret;
+    opendir $dir, $Globals{ "work-dir" } . "/db";
+    my @files = readdir($dir);
+    closedir $dir;
+    foreach (grep { /\d*\d\d.status/ } @files) {
+	s/.status$//;
+	push @ret, $_;
+#	print "$_ -> $_\n";
+    }
+    foreach (grep { /^[s0-9]$/ } @files) {
+	my $_1 = $_;
+	opendir $dir, $Globals{ "work-dir" } . "/db/".$_1;
+	@files = grep { /^\d$/ } readdir($dir);
+	closedir $dir;
+	foreach (@files) {
+	    my $_2 = $_;
+	    opendir $dir, $Globals{ "work-dir" } . "/db/".$_1."/".$_2;
+	    @files = grep { /^\d$/ } readdir($dir);
+	    close $dir;
+	    foreach (@files) {
+		my $_3 = $_;
+		opendir $dir, $Globals{ "work-dir" } . "/db/".$_1."/".$_2."/".$_3;
+		@files = grep { /\d*\d\d.status/ } readdir($dir);
+		close $dir;
+		foreach (@files) {
+		    s/.status$//;
+		    push @ret, $_;
+#		    print "$_ -> $_1/$_2/$_3/$_\n";
+		}
+	    }
+	}
+    }
+    return @ret;
+}
+
 1;
 
 END { }       # module clean-up code here (global destructor)
