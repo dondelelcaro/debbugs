@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: rebuild.in,v 1.1 1999/09/20 05:40:07 gecko Exp $
+# $Id: rebuild.in,v 1.2 1999/10/25 06:18:14 gecko Exp $
 
 # Load modules and set envirnment
 use File::Copy;
@@ -31,12 +31,34 @@ sub readreport {
 $debug = 0;
 defined($startdate= time) || &quit("failed to get time: $!");
 
-open IDXFILE, ">archive/index" or &quit( "trying to reset index file: $!" );
+@ARGV==0 or &quit( "no archive given on the commandline" );
+$archive= shift(@ARGV);
+open IDXFILE, "> index.$archive" or &quit( "trying to reset index file: $!" );
+
+
+if ( $archive eq 'db' )
+{
+	opendir(DIR,'db') || next; 
+	@list= grep(m/^\d+\.status$/,readdir(DIR));
+	closedir DIR;
+	grep(s/\.status$//,@list);
+	@list= sort { $a <=> $b } @list;
+
+	#process each bug (ie, status file)
+	while ( defined( $list[0] )) 
+	{ 	my $ref = shift @list;
+		print STDERR "$ref considering\n" if $debug;
+    	readreport($ref, $path);
+		printf IDXFILE "%s %d %s\n", $s_package, $ref, $s_subject;
+    }
+}
+else
+{
 
 #get list of bugs (ie, status files)
 for ($subdir=0; $subdir<100; $subdir++ )
 {
-	my $path = sprintf( "archive/%.2d", $subdir );
+	my $path = sprintf( "$archive/%.2d", $subdir );
 	opendir(DIR,$path) || next; 
 	@list= grep(m/^\d+\.status$/,readdir(DIR));
 	closedir DIR;
@@ -52,4 +74,5 @@ for ($subdir=0; $subdir<100; $subdir++ )
     }
 }
 
+}
 close IDXFILE;

@@ -9,6 +9,15 @@ sub quit {
 	exit 0;
 }
 
+sub abort {
+	my $msg = shift;
+	my $archive = shift;
+	print header . start_html("Sorry");
+	print "Sorry bug #$msg doesn't seem to be in the $archive database.\n";
+	print end_html;
+	exit 0;
+}
+
 sub htmlindexentry {
     my $ref = shift;
 	my $archive = shift;
@@ -125,7 +134,10 @@ sub allbugs {
 
 sub pkgbugs {
     my $pkg = shift;
-    open I, "<$debbugs::gSpoolDir/archive/index" || &quit("bugindex: $!");
+	my $archive = shift;
+	if ( $archive ) { open I, "<$debbugs::gSpoolDir/index.archive" || &quit("bugindex: $!"); } 
+	else { open I, "<$debbugs::gSpoolDir/index.db" || &quit("bugindex: $!"); } 
+    
     while(<I>) 
 	{ 	if (/^$pkg\s+(\d+)\s+(.+)/)
 		{ 	
@@ -137,13 +149,30 @@ sub pkgbugs {
 }
 
 sub pkgbugsindex {
-    my $pkg = shift;
+	my $archive = shift;
     my @bugs = ();
-    open I, "<$debbugs::gSpoolDir/archive/index" || &quit("bugindex: $!");
+	if ( $archive ) { open I, "<$debbugs::gSpoolDir/index.archive" || &quit("bugindex: $!"); } 
+	else { open I, "<$debbugs::gSpoolDir/index.db" || &quit("bugindex: $!"); } 
     while(<I>) { $descstr{ $1 } = 1 if (/^(\S+)/); }
     return %descstr;
 }
 
+sub maintencoded {
+    my $input = $_;
+	my $encoded = '';
+
+    while ($input =~ m/\W/) 
+	{ 	$encoded.=$`.sprintf("-%02x_",unpack("C",$&));
+        $input= $';
+    }
+    $encoded.= $input;
+    $encoded =~ s/-2e_/\./g;
+    $encoded =~ s/^([^,]+)-20_-3c_(.*)-40_(.*)-3e_/$1,$2,$3,/;
+    $encoded =~ s/^(.*)-40_(.*)-20_-28_([^,]+)-29_$/,$1,$2,$3/;
+    $encoded =~ s/-20_/_/g;
+    $encoded =~ s/-([^_]+)_-/-$1/g;
+	return $input;
+}
 sub getmaintainers {
     my %maintainer;
 
@@ -167,9 +196,9 @@ sub getbugstatus {
 
 	if ( $archive )
 	{	my $archdir = $bugnum % 100;
-		open(S,"$gSpoolDir/archive/$archdir/$bugnum.status" ) || &quit("open $bugnum.status: $!");
+		open(S,"$gSpoolDir/archive/$archdir/$bugnum.status" ) || &abort("$bugnum", "archive" );
 	} else
-		{ open(S,"$gSpoolDir/db/$bugnum.status") || &quit("open $bugnum.status: $!"); }
+		{ open(S,"$gSpoolDir/db/$bugnum.status") || &abort("$bugnum"); }
 	my @lines = qw(originator date subject msgid package keywords done
 			forwarded mergedwith severity);
 	while(<S>) {

@@ -12,8 +12,11 @@ require '/etc/debbugs/config';
 require '/etc/debbugs/text';
 
 my $pkg = param('pkg');
+my $archive = (param('archive') || 'no') eq 'yes';
+my $arc = 'yes';
 
 $pkg = 'ALL' unless defined( $pkg );
+$arc = 'no' unless $archive;
 
 my $repeatmerged = (param('repeatmerged') || 'yes') eq 'yes';
 my $this = "";
@@ -33,8 +36,13 @@ $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
 
 
 print header;
-print start_html("$debbugs::gProject Archived $debbugs::gBug report logs: package $pkg");
-print h1("$debbugs::gProject Archived $debbugs::gBug report logs: package $pkg");
+if( $archive )
+{ 	print start_html("$debbugs::gProject Archived $debbugs::gBug report logs: package $pkg");
+	print h1("$debbugs::gProject Archived $debbugs::gBug report logs: package $pkg");
+} else
+{ 	print start_html("$debbugs::gProject $debbugs::gBug report logs: package $pkg");
+	print h1("$debbugs::gProject $debbugs::gBug report logs: package $pkg");
+}
 
 #if (defined $maintainer{$pkg}) {
 #	print "<p>Maintainer for $pkg is <a href=\"" 
@@ -46,16 +54,16 @@ print "<p>Note that with multi-binary packages there may be other reports\n";
 print "filed under the different binary package names.</p>\n";
 
 if ( $pkg ne 'ALL' )
-{ 	%strings = pkgbugs($pkg);
+{ 	%strings = pkgbugs($pkg, $archive);
 	foreach my $bug ( keys %strings ) 
-	{ $this .= "  <LI><A href=\"" . bugurl($bug, "archive=1") . "\">". $strings{ $bug } ."\n"; }
+	{ $this .= "  <LI><A href=\"" . bugurl($bug, "archive=$archive") . "\">". $strings{ $bug } ."</A>\n"; }
 } else 
-{	%strings = pkgbugsindex();
+{	%strings = pkgbugsindex( $archive );
 	my @bugs = ();
 	foreach my $bug ( keys %strings ) { push @bugs, $bug; }
 	@bugs = sort { $a cmp $b } @bugs;
 	foreach my $bug ( @bugs )
-	{ $this .= "   <LI><A HREF=\"http://cgi.debian.org/cgi-bin/pkgarch.cgi?pkg=". $bug ."\">". $bug . "\n"; }
+	{ $this .= "   <LI><A HREF=\"http://cgi.debian.org/cgi-bin/pkgreport.cgi?pkg=". $bug ."&archive=$arc\">". $bug . "\n"; }
 }
 
 if ( length( $this ) )

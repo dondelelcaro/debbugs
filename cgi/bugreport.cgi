@@ -40,7 +40,7 @@ $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
 
 $|=1;
 
-$tpack = lc $status{package};
+$tpack = lc $status{'package'};
 $tpack =~ s/[^-+._a-z0-9()].*$//;
 
 if  ($status{severity} eq 'normal') {
@@ -79,7 +79,7 @@ my ($short, $tmaint);
 $short = $ref; $short =~ s/^\d+/#$&/;
 $tmaint = defined($maintainer{$tpack}) ? $maintainer{$tpack} : '(unknown)';
 $descriptivehead= $indexentry.$submitted.";\nMaintainer for $status{package} is\n".
-            '<A href="http://'.$debbugs::gWebDomain.'/ma/l'.&maintencoded($tmaint).'.html">'.&sani($tmaint).'</A>.';
+            '<A href="http://'.$debbugs::gWebDomain.'/db/ma/l'.&maintencoded($tmaint).'.html">'.&sani($tmaint).'</A>.';
 
 my $buglog = buglog($ref, $archive);
 open L, "<$buglog" || &quit("open log for $ref: $!");
@@ -209,9 +209,5 @@ print "$log";
 print $tail_html;
 
 print end_html;
-
-sub maintencoded {
-	return "";
-}
 
 exit 0;
