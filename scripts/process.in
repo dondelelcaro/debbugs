@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.43 2002/01/06 12:06:19 ajt Exp $
+# $Id: process.in,v 1.44 2002/01/18 07:31:33 ajt Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -527,6 +527,8 @@ Your message has been sent to the package maintainer(s):
 END
 }
 
+push(@resentccs, @addsrcaddrs);
+
 $veryquiet= $codeletter eq 'Q';
 if ($codeletter eq 'M' && !@maintaddrs) {
     $veryquiet= 1;
@@ -919,9 +921,20 @@ sub checkmaintainers {
         $maintainerof{$1}= $2;
     }
     close(MAINT);
+    open(SOURCES,"$gPackageSource") || &quit("pkgsrc open: $!");
+    while (<SOURCES>) {
+        next unless m/^(\S+)\s+(\S.*\S)\s*$/;
+	($a,$b)=($1,$2);
+	$a =~ y/A-Z/a-z/;
+	$pkgsrc{$a} = $b;
+    }
+    close(SOURCES);
     $anymaintfound=0; $anymaintnotfound=0;
     for $p (split(m/[ \t?,()]+/,$s_package)) {
         $p =~ y/A-Z/a-z/;
+	if (defined($pkgsrc{$p})) {
+	    push @addsrcaddrs, "$pkgsrc{$p}@packages.qa.debian.org";
+	}
         if (defined($maintainerof{$p})) {
 print DEBUG "maintainer add >$p|$maintainerof{$p}<\n";
             $addmaint= $maintainerof{$p};
