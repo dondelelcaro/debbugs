@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.74 2003/07/16 12:01:09 cjwatson Exp $
+# $Id: process.in,v 1.75 2003/07/16 18:13:26 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -330,6 +330,11 @@ END
 	}
         $data->{done}= $set_done if defined($set_done);
         $data->{forwarded}= $set_forwarded if defined($set_forwarded);
+        if ($codeletter eq 'D') {
+            $data->{keywords} = join ' ', grep $_ ne 'pending',
+                                     split ' ', $data->{keywords};
+        }
+
 	writebug($ref, $data);
 
 	my $hash = get_hashname($ref);
