@@ -16,7 +16,7 @@ nice(5);
 my %param = readparse();
 
 my $indexon = $param{'indexon'} || 'pkg';
-if ($indexon !~ m/^(pkg|src|maint|submitter)$/) {
+if ($indexon !~ m/^(pkg|src|maint|submitter|tag)$/) {
     quitcgi("You have to choose something to index on");
 }
 
@@ -124,6 +124,16 @@ if ($indexon eq "pkg") {
   $note = "<p>Note that people may use different email accounts for\n";
   $note .= "different bugs, so there may be other reports filed under\n";
   $note .= "different addresses.</p>\n";
+} elsif ($indexon eq "tag") {
+  $tag = "tag";
+  %count = countbugs(sub {my %d=@_; return split ' ', $d{tags}; });
+  $note = "";
+  foreach my $keyword (keys %count) {
+    $sortkey{$keyword} = lc $keyword;
+    $htmldescrip{$keyword} = sprintf('<a href="%s">%s</a>',
+                               tagurl($keyword),
+                               htmlsanit($keyword));
+  }
 }
 
 my $result = "<ul>\n";

@@ -287,6 +287,14 @@ sub srcurl {
     return urlsanit("pkgreport.cgi" . "?" . "$params");
 }
 
+sub tagurl {
+    my $ref = shift;
+    my $params = "tag=$ref";
+    $params .= "&archive=yes" if ($common_archive);
+    $params .= "&repeatmerged=no" unless ($common_repeatmerged);
+    return urlsanit("pkgreport.cgi" . "?" . "$params");
+}
+
 sub urlsanit {
     my $url = shift;
     $url =~ s/%/%25/g;
