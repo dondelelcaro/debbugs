@@ -11,8 +11,9 @@ sub quit {
 
 sub htmlindexentry {
     my $ref = shift;
+	my $archive = shift;
 
-    my %status = getbugstatus($ref);
+    my %status = getbugstatus($ref, $archive );
     my $result = "";
 
     if  ($status{severity} eq 'normal') {
@@ -23,9 +24,9 @@ sub htmlindexentry {
         $showseverity = "Severity: <em>$status{severity}</em>;\n";
     }
 
-    $result .= "Package: <a href=\"" . pkgurl($status{package}) . "\"><strong>"
-               . htmlsanit($status{package}) . "</strong></a>;\n"
-                       if (length($status{package}));
+    $result .= "Package: <a href=\"" . pkgurl($status{"package"}) . "\"><strong>"
+               . htmlsanit($status{"package"}) . "</strong></a>;\n"
+                       if (length($status{"package"}));
     $result .= $showseverity;
     $result .= "Reported by: " . htmlsanit($status{originator});
     $result .= ";\nKeywords: " . htmlsanit($status{keywords})
@@ -97,7 +98,8 @@ sub bugurl {
     my $ref = shift;
     my $params = "bug=$ref";
     foreach my $val (@_) {
-	$params .= "\&msg=$1" if ($val =~ /^msg=([0-9]+)$/);
+	$params .= "\&msg=$1" if ($val =~ /^msg=([0-9]+)/);
+	$params .= "\&archive=yes" if ($val =~ /^archive=1/);
     }
 	
     return $debbugs::gCGIDomain . "bugreport.cgi" . "?" . "$params";
@@ -111,7 +113,7 @@ sub packageurl {
 sub allbugs {
     my @bugs = ();
 
-    opendir(D, $debbugs::gSpoolDir/db) || &quit("opendir db: $!");
+    opendir(D, "$debbugs::gSpoolDir/db") || &quit("opendir db: $!");
     @bugs = sort { $a <=> $b }
 		 grep s/\.status$//,
 		 (grep m/^[0-9]+\.status$/,
@@ -123,13 +125,23 @@ sub allbugs {
 
 sub pkgbugs {
     my $pkg = shift;
-    my @bugs = ();
-    open I, "<$gAJIndex" || &quit("bugindex: $!");
-    while(<I>) {
-        push @bugs, $1 if (/^([0-9]+) $pkg$/);
+    open I, "<$debbugs::gSpoolDir/archive/index" || &quit("bugindex: $!");
+    while(<I>) 
+	{ 	if (/^$pkg\s+(\d+)\s+(.+)/)
+		{ 	
+		 	my $tmpstr = sprintf( "%d: %s", $1, $2 );
+			$descstr{ $1 } = $tmpstr;
+		}
     }
-    @bugs = sort { $a <=> $b } @bugs;
-    return @bugs;
+    return %descstr;
+}
+
+sub pkgbugsindex {
+    my $pkg = shift;
+    my @bugs = ();
+    open I, "<$debbugs::gSpoolDir/archive/index" || &quit("bugindex: $!");
+    while(<I>) { $descstr{ $1 } = 1 if (/^(\S+)/); }
+    return %descstr;
 }
 
 sub getmaintainers {
@@ -149,10 +161,15 @@ sub getmaintainers {
 
 sub getbugstatus {
 	my $bugnum = shift;
+	my $archive = shift;
 
 	my %status;
 
-	open(S,"$gSpoolDir/db/$bugnum.status") || &quit("open $bugnum.status: $!");
+	if ( $archive )
+	{	my $archdir = $bugnum % 100;
+		open(S,"$gSpoolDir/archive/$archdir/$bugnum.status" ) || &quit("open $bugnum.status: $!");
+	} else
+		{ open(S,"$gSpoolDir/db/$bugnum.status") || &quit("open $bugnum.status: $!"); }
 	my @lines = qw(originator date subject msgid package keywords done
 			forwarded mergedwith severity);
 	while(<S>) {
@@ -175,7 +192,11 @@ sub getbugstatus {
 
 sub buglog {
 	my $bugnum = shift;
-	return "$gSpoolDir/db/$bugnum.log";
+	my $archive = shift;
+	if ( $archive )
+	{	my $archdir = $bugnum % 100;
+		return "$gSpoolDir/archive/$archdir/$bugnum.log";
+	} else { return "$gSpoolDir/db/$bugnum.log"; }
 }
 
 1

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.7 1999/09/18 21:01:27 gecko Exp $
+# $Id: service.in,v 1.8 1999/09/20 05:40:07 gecko Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -229,7 +229,7 @@ END
 					0 ) { &addccaddress("$gDoneList\@$gListDomain"); }
                     $s_done= $replyto;
 		    $message= <<END;
-From: $gMaintainerEmail ($gMaintainer)
+From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $s_originator
 Subject: $gBug#$ref acknowledged by developer
          ($s_subject)
@@ -455,7 +455,7 @@ if (@maintccs) {
 } else { $maintccs = ""; }
 
 $reply= <<END;
-From: $gMaintainerEmail ($gMaintainer)
+From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
 ${maintccs}Subject: Processed: $header{'subject'}
 In-Reply-To: $header{'message-id'}
@@ -742,7 +742,7 @@ sub sendtxthelpraw {
     close(D);
     &transcript("Sending $description in separate message.\n");
     &sendmailmessage(<<END.$doc,$replyto);
-From: $gMaintainerEmail ($gMaintainer)
+From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
 Subject: $gProject $gBug help: $description
 References: $header{'message-id'}
@@ -768,7 +768,7 @@ sub sendlynxdocraw {
     } else {
         &transcript("Sending $description.\n");
         &sendmailmessage(<<END.$doc,$replyto);
-From: $gMaintainerEmail ($gMaintainer)
+From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
 Subject: $gProject $gBugs information: $description
 References: $header{'message-id'}

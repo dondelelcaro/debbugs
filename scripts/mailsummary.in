@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: mailsummary.in,v 1.3 1999/09/14 22:33:48 gecko Exp $
+# $Id: mailsummary.in,v 1.4 1999/09/20 05:40:07 gecko Exp $
 
 require( '/etc/debbugs/config' );
 
@@ -59,7 +59,7 @@ open(D, '| '.join(' ',('/usr/lib/sendmail','-f'.$gMaintainerEmail)).' -odi -oem 
     die "start sendmail: $!";
 
 print D <<END || die "complete sendmail";
-From: $gMaintainerEmail ($gMaintainer)
+From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $gSummaryList\@$gListDomain
 Subject: $subject
 

@@ -1,0 +1,25 @@
+This file is to document changes I've made until I change the version in
+the changelog file.
+
+*	Fixed X-Project-CC header to specify additional addresses to send bug
+	info to.  The header has been changed to X-Project-CC to make it
+	generic, too.
+
+*	Cleaned service and processall scripts to be -w clean.
+
+*	Added a column to the ./db/ix/summary.html that gives an indication of
+	the severity of the bug -- if set.  For the moment, if the severity has
+	been set to "normal" we'll see "n".  If severity wasn't set, there'd be
+	no letter.  We might want to make "blank" to "n" or "n" to blank
+
+*	Removed the case in package names so that netscap4 and Netscape4 are
+	the same package.
+
+*	Added option archiving of bugs (move instead of remove).  When
+	archived, the bugs will be left in /var/lib/debbugs/spool/archive.
+	Added the necessary CGI scripts to access the archived bugs.
+
+*	Changed the message sent back to the developer (and to the
+	debian-bugs-closed list) to include the message used to close the bug.
+
+*	Changed scripts to ignore mime and clearsigned pgp/gpg signed messages

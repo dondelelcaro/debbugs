@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.7 1999/09/18 21:01:27 gecko Exp $
+# $Id: process.in,v 1.8 1999/09/20 05:40:07 gecko Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -94,7 +94,7 @@ while (defined ($msg[$i] ) )
 {
 	last if ( $msg[$i] !~ m/^([\w]+):\s*(\S+)/ );
 	$i++;
-	$fn = $1; $fv $2;
+	$fn = $1; $fv = $2;
 	print DEBUG ">$fn|$'|\n";
     $fwd .= $fn.': '.$fv."\n";
     $fn =~ y/A-Z/a-z/;
@@ -781,12 +781,23 @@ sub get_addresses {
 sub sendmessage {
     local ($msg,@recips) = @_;
     if ($recips[0] eq '' && $#recips == 0) { @recips= ('-t'); }
+
+	#save email to the log
     open(AP,">>db/$ref.log") || &quit("opening db/$ref.log (lo): $!");
     print(AP "\2\n",join("\4",@recips),"\n\5\n$msg\n\3\n") ||
         &quit("writing db/$ref.log (lo): $!");
     close(AP) || &quit("closing db/$ref.log (lo): $!");
     
-    print DEBUG "mailing to >",join('|',@recips),"<\n";
+	#if debbuging.. save email to a log
+#	open AP, ">>debug";
+#	print AP join( '|', @recips )."\n>>";
+#	print AP get_addresses( @recips );
+#	print AP "<<\n".$msg;
+#	print AP "\n--------------------------------------------------------\n";
+#	close AP;
+
+	#start mailing
+	$msg =~ /^Subject: (.*)$/;
     $SIG{'CHLD'}='chldhandle';
 	#print DEBUG "mailing sigchild set up<\n";
 	$chldexit = 'no';

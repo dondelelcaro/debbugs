@@ -1,0 +1,55 @@
+#!/usr/bin/perl -w
+# $Id: rebuild.in,v 1.1 1999/09/20 05:40:07 gecko Exp $
+
+# Load modules and set envirnment
+use File::Copy;
+require('/etc/debbugs/config');
+require('/usr/lib/debbugs/errorlib');
+$ENV{'PATH'}= '/usr/lib/debbugs'.$ENV{'PATH'};
+chdir("$gSpoolDir") || die "chdir spool: $!\n";
+
+sub readreport {
+    my $lref = shift;
+	my $path = shift;
+	
+    open(S,"$path/$lref.status") || die "unable to open $path/$lref: $!\n";
+    chop($s_originator= <S>);
+    chop($s_date= <S>);
+    chop($s_subject= <S>);
+    chop($s_msgid= <S>);
+    chop($s_package= <S>);
+    chop($s_keywords= <S>);
+    chop($s_done= <S>);
+    chop($s_forwarded= <S>);
+    chop($s_mergedwith= <S>);
+    chop($s_severity= <S>);
+    close(S);
+    return 1;
+}
+
+#global variables
+$debug = 0;
+defined($startdate= time) || &quit("failed to get time: $!");
+
+open IDXFILE, ">archive/index" or &quit( "trying to reset index file: $!" );
+
+#get list of bugs (ie, status files)
+for ($subdir=0; $subdir<100; $subdir++ )
+{
+	my $path = sprintf( "archive/%.2d", $subdir );
+	opendir(DIR,$path) || next; 
+	@list= grep(m/^\d+\.status$/,readdir(DIR));
+	closedir DIR;
+	grep(s/\.status$//,@list);
+	@list= sort { $a <=> $b } @list;
+
+	#process each bug (ie, status file)
+	while ( defined( $list[0] )) 
+	{ 	my $ref = shift @list;
+		print STDERR "$ref considering\n" if $debug;
+    	readreport($ref, $path);
+		printf IDXFILE "%s %d %s\n", $s_package, $ref, $s_subject;
+    }
+}
+
+close IDXFILE;

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: expire.in,v 1.4 1999/09/16 07:16:47 gecko Exp $
+# $Id: expire.in,v 1.5 1999/09/20 05:40:07 gecko Exp $
 
 # Load modules and set envirnment
 require('/etc/debbugs/config');
@@ -30,7 +30,7 @@ grep(s/\.status$//,@list);
 
 #process each bug (ie, status file)
 while (length($ref=shift(@list))) 
-{ 	print STDERR "$ref $considering\n" if $debug;
+{ 	print STDERR "$ref considering\n" if $debug;
     $bfound= &lockreadbugmerge($ref);
 	print STDERR "$ref read $bfound\n" if $debug;
     $bfound || next;
@@ -73,6 +73,11 @@ while (length($ref=shift(@list)))
 				copy( "db/$mref.log", "$dir/$mref.log" );
 				copy( "db/$mref.status", "$dir/$mref.status" );
 				copy( "db/$mref.report", "$dir/$mref.report" );
+				if ( open( IDXFILE, ">>archive/index" ) )
+				{	printf IDXFILE "%s %d %s\n", $s_package, $mref, $s_subject;
+					close IDXFILE;
+				} else { print "Unable to write to index file\n"; }
+				
             	print("archived $mref to $dir (from $ref)\n") || &quit("output old: $!");
 			}
             unlink("db/$mref.log", "db/$mref.status", "db/$mref.report");

@@ -6,7 +6,7 @@ use strict;
 use CGI qw/:standard/;
 
 require '/usr/lib/debbugs/errorlib';
-require '/debian/home/ajt/ajbug/common.pl';
+require '/usr/lib/debbugs/common.pl';
 
 require '/etc/debbugs/config';
 require '/etc/debbugs/text';
@@ -17,7 +17,8 @@ my $tail_html;
 my %maintainer = getmaintainers();
 
 my $ref= param('bug') || die("No bug number");
-my %status = getbugstatus($ref);
+my $archive = (param('archive') || 'no') eq 'yes';
+my %status = getbugstatus($ref, $archive);
 
 my $msg = param('msg') || "";
 my $boring = (param('boring') || 'no') eq 'yes'; 
@@ -78,9 +79,9 @@ my ($short, $tmaint);
 $short = $ref; $short =~ s/^\d+/#$&/;
 $tmaint = defined($maintainer{$tpack}) ? $maintainer{$tpack} : '(unknown)';
 $descriptivehead= $indexentry.$submitted.";\nMaintainer for $status{package} is\n".
-            '<A href="../ma/l'.&maintencoded($tmaint).'.html">'.&sani($tmaint).'</A>.';
+            '<A href="http://'.$debbugs::gWebDomain.'/ma/l'.&maintencoded($tmaint).'.html">'.&sani($tmaint).'</A>.';
 
-my $buglog = buglog($ref);
+my $buglog = buglog($ref, $archive);
 open L, "<$buglog" || &quit("open log for $ref: $!");
 
 my $log='';
@@ -131,7 +132,7 @@ while(my $line = <L>) {
 				if $normstate eq 'go' || $normstate eq 'go-nox';
 
 			if ($normstate eq 'html') {
-				$this .= "  <em><A href=\"" . bugurl($ref,"msg=$xmessage") . "\">Full text</A> available.</em>";
+				$this .= "  <em><A href=\"" . bugurl($ref, "msg=$xmessage", "archive=$archive") . "\">Full text</A> available.</em>";
 			}
 
 			my $show = 1;
