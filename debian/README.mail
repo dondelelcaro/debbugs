@@ -145,7 +145,7 @@ DNS setup: point the MX to the machine running debbugs:
 
 	bugs.domain.net		MX	50	master.domain.net.
 
-In /etc/postfix/master.cf enable the transport maps by inserting the
+In /etc/postfix/main.cf enable the transport maps by inserting the
 following line:
 
 	transport_maps = hash:/etc/postfix/transport
@@ -169,6 +169,10 @@ Now we need to teach postfix what the debbugs transport agent is. Edit
 This assumes that you are running debbugs with uid debbugs (the package
 doesn't do that by default, but I generally chown /var/lib/debbugs/*
 to a new debbugs account just to be safe).
+
+Finally add bugs.domain.net to mydestination in main.cf:
+
+	mydestination = $myhostname localhost.$mydomain bugs.domain.org
 
 Now that all this is done, restart postfix and it should be working..
 
