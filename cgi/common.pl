@@ -733,6 +733,7 @@ sub getsrcpkgs {
 sub buglog {
     my $bugnum = shift;
     my $location = getbuglocation($bugnum, 'log');
+    return undef unless defined $location;
     return getbugcomponent($bugnum, 'log', $location);
 }
 
