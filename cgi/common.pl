@@ -211,7 +211,7 @@ sub submitterurl {
     my $params = "submitter=" . emailfromrfc822($ref);
     $params .= "&archive=yes" if ($common_archive);
     $params .= "&repeatmerged=no" unless ($common_repeatmerged);
-    return urlsanit($debbugs::gCGIDomain . "pkgreport.cgi" . "?" . $params);
+    return urlsanit("pkgreport.cgi" . "?" . $params);
 }
 
 sub mainturl {
@@ -219,7 +219,7 @@ sub mainturl {
     my $params = "maint=" . emailfromrfc822($ref);
     $params .= "&archive=yes" if ($common_archive);
     $params .= "&repeatmerged=no" unless ($common_repeatmerged);
-    return urlsanit($debbugs::gCGIDomain . "pkgreport.cgi" . "?" . $params);
+    return urlsanit("pkgreport.cgi" . "?" . $params);
 }
 
 sub pkgurl {
@@ -228,7 +228,7 @@ sub pkgurl {
     $params .= "&archive=yes" if ($common_archive);
     $params .= "&repeatmerged=no" unless ($common_repeatmerged);
     
-    return urlsanit($debbugs::gCGIDomain . "pkgreport.cgi" . "?" . "$params");
+    return urlsanit("pkgreport.cgi" . "?" . "$params");
 }
 
 sub srcurl {
@@ -236,7 +236,7 @@ sub srcurl {
     my $params = "src=$ref";
     $params .= "&archive=yes" if ($common_archive);
     $params .= "&repeatmerged=no" unless ($common_repeatmerged);
-    return urlsanit($debbugs::gCGIDomain . "pkgreport.cgi" . "?" . "$params");
+    return urlsanit("pkgreport.cgi" . "?" . "$params");
 }
 
 sub urlsanit {
@@ -265,7 +265,7 @@ sub bugurl {
     $params .= "&archive=yes" if ($common_archive);
     $params .= "&repeatmerged=no" unless ($common_repeatmerged);
 
-    return urlsanit($debbugs::gCGIDomain . "bugreport.cgi" . "?" . "$params");
+    return urlsanit("bugreport.cgi" . "?" . "$params");
 }
 
 sub dlurl {
@@ -278,12 +278,12 @@ sub dlurl {
     }
     $params .= "&archive=yes" if ($common_archive);
 
-    return urlsanit($debbugs::gCGIDomain . "bugreport.cgi/$filename?$params");
+    return urlsanit("bugreport.cgi/$filename?$params");
 }
 
 sub mboxurl {
     my $ref = shift;
-    return urlsanit($debbugs::gCGIDomain . "bugreport.cgi" . "?" . "bug=$ref&mbox=yes");
+    return urlsanit("bugreport.cgi" . "?" . "bug=$ref&mbox=yes");
 }
 
 sub allbugs {
