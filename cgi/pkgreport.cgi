@@ -7,7 +7,7 @@ use CGI qw/:standard/;
 
 require '/debian/home/ajt/newajbug/common.pl';
 #require '/usr/lib/debbugs/common.pl';
-require '/usr/lib/debbugs/errorlib';
+#require '/usr/lib/debbugs/errorlib';
 
 require '/etc/debbugs/config';
 require '/etc/debbugs/text';
@@ -32,6 +32,7 @@ my %strings = ();
 my $dtime=`date -u '+%H:%M:%S GMT %a %d %h'`;
 chomp($dtime);
 my $tail_html = $debbugs::gHTMLTail;
+$tail_html = $debbugs::gHTMLTail;
 $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
 
 my $tag;
@@ -71,13 +72,12 @@ print start_html(
 
 print h1("$debbugs::gProject $Archived $debbugs::gBug report logs: $tag");
 
-if (defined $maintainer{$pkg}) {
-    print "<p>Maintainer for $pkg is <a href=\"" 
-          . mainturl($maintainer{$pkg}) . "\">"
-          . htmlsanit($maintainer{$pkg}) . "</a>.</p>\n";
-}
-
 if (defined $pkg) {
+    if (defined $maintainer{$pkg}) {
+        print "<p>Maintainer for $pkg is <a href=\"" 
+              . mainturl($maintainer{$pkg}) . "\">"
+              . htmlsanit($maintainer{$pkg}) . "</a>.</p>\n";
+    }
     print "<p>Note that with multi-binary packages there may be other\n";
     print "reports filed under the different binary package names.</p>\n";
 } elsif (defined $maint || defined $maintenc) {

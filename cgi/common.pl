@@ -213,7 +213,7 @@ sub maintbugs {
     my %maintainers = getmaintainers();
     my $chk = sub {
         my %d = @_;
-        ($maintemail = $maintainers{$d{"pkg"}}) =~ s/\s*\(.*\)\s*//;
+        ($maintemail = $maintainers{$d{"pkg"}} || "") =~ s/\s*\(.*\)\s*//;
         if ($maintemail =~ m/<(.*)>/) { $maintemail = $1 }
         return $maintemail eq $maint;
     };
@@ -223,7 +223,7 @@ sub maintbugs {
 sub maintencbugs {
     my $maint = shift;
     my %maintainers = getmaintainers();
-    return getbugs(sub {my %d=@_; return maintencoded($maintainers{$d{"pkg"}}) eq $maint});
+    return getbugs(sub {my %d=@_; return maintencoded($maintainers{$d{"pkg"}} || "") eq $maint});
 }
 
 sub pkgbugs {

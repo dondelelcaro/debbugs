@@ -5,7 +5,7 @@ package debbugs;
 use strict;
 use CGI qw/:standard/;
 
-require '/usr/lib/debbugs/errorlib';
+#require '/usr/lib/debbugs/errorlib';
 #require '/usr/lib/debbugs/common.pl';
 require '/debian/home/ajt/newajbug/common.pl';
 
@@ -59,8 +59,8 @@ $indexentry .= $showseverity;
 $indexentry .= "Package: <A HREF=\"" . pkgurl($status{package}) . "\">"
 	    .htmlsanit($status{package})."</A>;\n";
 
-$indexentry .= ";Reported by: ".&sani($status{originator});
-$indexentry .= ";\nKeywords: ".&sani($status{keywords}) 
+$indexentry .= ";Reported by: ".htmlsanit($status{originator});
+$indexentry .= ";\nKeywords: ".htmlsanit($status{keywords}) 
 			if length($status{keywords});
 
 my @merged= split(/ /,$status{mergedwith});
@@ -79,16 +79,16 @@ chomp($dummy);
 $submitted = ";\ndated ".$dummy;
 
 if (length($status{done})) {
-	$indexentry .= ";\n<strong>Done:</strong> ".&sani($status{done});
+	$indexentry .= ";\n<strong>Done:</strong> ".htmlsanit($status{done});
 } elsif (length($status{forwarded})) {
-	$indexentry .= ";\n<strong>Forwarded</strong> to ".&sani($status{forwarded});
+	$indexentry .= ";\n<strong>Forwarded</strong> to ".htmlsanit($status{forwarded});
 }
 
 my ($short, $tmaint);
 $short = $ref; $short =~ s/^\d+/#$&/;
 $tmaint = defined($maintainer{$tpack}) ? $maintainer{$tpack} : '(unknown)';
 $descriptivehead= $indexentry.$submitted.";\nMaintainer for $status{package} is\n".
-            '<A href="http://'.$debbugs::gWebDomain.'/db/ma/l'.&maintencoded($tmaint).'.html">'.&sani($tmaint).'</A>.';
+            '<A href="http://'.$debbugs::gWebDomain.'/db/ma/l'.&maintencoded($tmaint).'.html">'.htmlsanit($tmaint).'</A>.';
 
 my $buglog = buglog($ref);
 open L, "<$buglog" or &quit("open log for $ref: $!");
@@ -173,22 +173,22 @@ while(my $line = <L>) {
 		$pl =~ s/\n+$//;
 		m/^Received: \(at (\S+)\) by (\S+)\;/
 			|| &quit("bad line \`$pl' in state incoming-recv");
-		$this = "<h2>Message received at ".&sani("$1\@$2")
+		$this = "<h2>Message received at ".htmlsanit("$1\@$2")
 		        . ":</h2><br>\n<pre>\n$_";
 		$normstate= 'go';
 	} elsif ($normstate eq 'html') {
 		$this .= $_;
 	} elsif ($normstate eq 'go') {
-		$this .= &sani($_);
+		$this .= htmlsanit($_);
 	} elsif ($normstate eq 'go-nox') {
 		next if !s/^X//;
-		$this .= &sani($_);
+		$this .= htmlsanit($_);
         } elsif ($normstate eq 'recips') {
 		if (m/^-t$/) {
 			$this = "<h2>Message sent:</h2><br>\n";
 		} else {
 			s/\04/, /g; s/\n$//;
-			$this = "<h2>Message sent to ".&sani($_).":</h2><br>\n";
+			$this = "<h2>Message sent to ".htmlsanit($_).":</h2><br>\n";
 		}
 		$normstate= 'kill-body';
 	} elsif ($normstate eq 'autocheck') {
@@ -215,7 +215,7 @@ print start_html(
 	-title => "$debbugs::gProject $debbugs::gBug report logs - $short");
 
 print h1("$debbugs::gProject $debbugs::gBug report logs -  $short<br>\n"
-	. sani($status{subject}));
+	. htmlsanit($status{subject}));
 
 print "$descriptivehead\n";
 print hr;
