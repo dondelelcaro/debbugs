@@ -110,6 +110,7 @@ if (defined $pkg) {
     print "<p>Note that with multi-binary packages there may be other\n";
     print "reports filed under the different binary package names.</p>\n";
     print "\n";
+my $stupidperl = ${debbugs::gPackagePages};
     printf "<p>You might like to refer to the <a href=\"%s\">%s package page</a></p>\n", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
 } elsif (defined $maint || defined $maintenc) {
     print "<p>Note that maintainers may use different Maintainer fields for\n";
