@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.29 2003/06/06 17:56:05 cjwatson Exp $
+# $Id: errorlib.in,v 1.30 2003/06/10 00:59:36 cjwatson Exp $
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -49,7 +49,14 @@ sub getlocationpath {
 sub getbugcomponent {
     my ($bugnum, $ext, $location) = @_;
 
-    $location = getbuglocation($bugnum, $ext) unless defined $location;
+    unless (defined $location) {
+	$location = getbuglocation($bugnum, $ext);
+	# Default to non-archived bugs only for now; CGI scripts want
+	# archived bugs but most of the backend scripts don't. For now,
+	# anything that is prepared to accept archived bugs should call
+	# getbuglocation() directly first.
+	return undef unless $location eq 'db' or $location eq 'db-h';
+    }
     my $dir = getlocationpath($location);
     return undef unless $dir;
     if ($location eq 'db') {

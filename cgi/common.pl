@@ -621,7 +621,8 @@ sub getsrcpkgs {
    
 sub buglog {
     my $bugnum = shift;
-    return getbugcomponent($bugnum, 'log');
+    my $location = getbuglocation($bugnum, 'log');
+    return getbugcomponent($bugnum, 'log', $location);
 }
 
 1;
