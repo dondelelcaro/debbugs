@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.65 2003/02/10 01:57:46 cjwatson Exp $
+# $Id: service.in,v 1.66 2003/02/14 18:01:12 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -336,7 +336,7 @@ END
             &addmaintainers($s_package);
             $oldsubmitter= $s_originator;
             $s_originator= $newsubmitter;
-            $action= "Changed $gBug submitter to $newsubmitter.";
+            $action= "Changed $gBug submitter from $oldsubmitter to $newsubmitter.";
             &savebug;
             &transcript("$action\n");
             if (length($s_done)) {
