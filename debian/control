@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Debbugs developers <debian-debbugs@lists.debian.org>
 Uploaders: Darren Benham <gecko@debian.org>, Josip Rodin <jrodin@jagor.srce.hr>
 Standards-Version: 3.2.1
-Build-Depends: debhelper
+Build-Depends-Indep: debhelper
 
 Package: debbugs
 Architecture: all
