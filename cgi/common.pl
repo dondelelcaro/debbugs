@@ -217,25 +217,15 @@ sub urlsanit {
     $url =~ s/%/%25/g;
     $url =~ s/\+/%2b/g;
     my %saniarray = ('<','lt', '>','gt', '&','amp', '"','quot');
-    my $out;
-    while ($url =~ m/[<>&"]/) {
-        $out .= $`. '&'. $saniarray{$&}. ';';
-        $url = $';
-    }
-    $out .= $url;
-    return $out;
+    $url =~ s/([<>&"])/\&$saniarray{$1};/g;
+    return $url;
 }
 
 sub htmlsanit {
     my %saniarray = ('<','lt', '>','gt', '&','amp', '"','quot');
     my $in = shift || "";
-    my $out;
-    while ($in =~ m/[<>&"]/) {
-        $out .= $`. '&'. $saniarray{$&}. ';';
-        $in = $';
-    }
-    $out .= $in;
-    return $out;
+    $in =~ s/([<>&"])/\&$saniarray{$1};/g;
+    return $in;
 }
 
 sub bugurl {
