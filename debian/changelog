@@ -1,3 +1,12 @@
+debbugs (UNRELEASED VERSION) unstable; urgency=low
+
+  * Applied speedup patch, that uses references, instead of copies.
+    Closes: #87176.
+  * Bugs that are tagged fixed are now listed in a separate section in the
+    web pages.  Closes: #86922.
+
+ -- UNRELEASED MAINTAINER  UNRELEASED DATE
+
 debbugs (2.3-4) unstable; urgency=low
 
   * Added a check for unwanted characters in the part of request passed on
