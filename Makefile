@@ -52,7 +52,5 @@ $(scripts_dir) $(examples_dir); \
 	$(install_exec) debian/debbugsconfig $(sbin_dir)
 
 	# install the config files
-	$(install_data) misc/Maintainers $(etc_dir)
-	$(install_data) misc/pseudo-packages.description $(etc_dir)
 	$(install_data) misc/nextnumber $(examples_dir)
 	$(install_data) misc/updateseqs $(var_dir)/spool
