@@ -192,7 +192,13 @@ if (defined $pkg || defined $src) {
     }
     if (defined $maint or @bugs) {
 	my %pkgsrc = %{getpkgsrc()};
-	my @pkgs = getsrcpkgs($pkg ? $pkgsrc{ $pkg } : $src);
+	my $srcforpkg;
+	if (defined $pkg) {
+	    $srcforpkg = $pkgsrc{$pkg};
+	    defined $srcforpkg or $srcforpkg = $pkg;
+	}
+	my @pkgs = getsrcpkgs($pkg ? $srcforpkg : $src);
+	undef $srcforpkg unless @pkgs;
 	@pkgs = grep( !/^\Q$pkg\E$/, @pkgs ) if ( $pkg );
 	if ( @pkgs ) {
 	    @pkgs = sort @pkgs;
@@ -213,8 +219,8 @@ if (defined $pkg || defined $src) {
 	    } else {
 		push @references, sprintf "to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
 	    }
-	    if ($pkgsrc{ $pkg }) {
-		push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($pkgsrc{$pkg}), htmlsanit($pkgsrc{$pkg});
+	    if ($srcforpkg) {
+		push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($srcforpkg), htmlsanit($srcforpkg);
 	    }
 	    if (@references) {
 		print "<p>You might like to refer ", join(", or ", @references), ".</p>\n";
