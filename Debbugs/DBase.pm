@@ -1,4 +1,4 @@
-package Debvote::Rank;  # assumes Some/Module.pm
+package Debbugs::DBase;  # assumes Some/Module.pm
 
 use strict;
 
@@ -10,48 +10,99 @@ BEGIN {
 	$VERSION     = 1.00;
 
 	@ISA         = qw(Exporter);
-	@EXPORT      = qw(&func1 &func2 &func4);
+	@EXPORT      = qw( %Record );
 	%EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
 
 	# your exported package globals go here,
 	# as well as any optionally exported functions
-	@EXPORT_OK   = qw($Var1 %Hashit &func3);
+	@EXPORT_OK   = qw( %Record );
 }
 
 use vars      @EXPORT_OK;
+use Fcntl ':flock';
+use Debbugs::Config qw(%Globals);
+use Debbugs::Common;
+use FileHandle;
 
-# non-exported package globals go here
-use vars      qw(@more $stuff);
+%Record = ();
 
-# initialize package globals, first exported ones
-$Var1   = '';
-%Hashit = ();
+my $LoadedRecord = 0;
+my $FileLocked = 0;
+my $FileHandle = new FileHandle;
 
-# then the others (which are still accessible as
-# $Some::Module::stuff)
-$stuff  = '';
-@more   = ();
+sub ParseVersion1Record
+{
+    my @data = @_;
+    my @fields = ( "originator", "date", "subject", "msgid", "package",
+		"keywords", "done", "forwarded", "mergedwith", "severity" );
+    my $i = 0;
+    foreach my $line ( @data )
+    {
+	chop( $line );
+	$Record{ $fields[$i] } = $line;
+	$i++;
+    }
+}
 
-# all file-scoped lexicals must be created before
-# the functions below that use them.
+sub ParseVersion2Record
+{
+    # I envision the next round of records being totally different in
+    # meaning.  In order to maintain compatability, version tagging will be
+    # implemented in thenext go around and different versions will be sent
+    # off to different functions to be parsed and interpreted into a format
+    # that the rest of the system will understand.  All data will be saved
+    # in whatever 'new" format ixists.  The difference will be a "Version: x"
+    # at the top of the file.
 
-# file-private lexicals go here
-my $priv_var    = '';
-my %secret_hash = ();
+    print "No version 2 records are understood at this time\n";
+    exit 1;
+}
 
-# here's a file-private function as a closure,
-# callable as &$priv_func;  it cannot be prototyped.
-my $priv_func = sub {
-# stuff goes here.
-};
+sub ReadRecord
+{
+    my $record = $_[0];
+    if ( $record ne $LoadedRecord )
+    {
+	my $path = '';
+	my @data;
+	
+	#find proper directory to store in
+        #later, this will be for tree'd data directory the way
+        #expire is now,..
+	$path = "/db/".$record.".status";
+    
+	open( $FileHandle, $Globals{ "work-dir" } . $path ) 
+	    || &fail( "Unable to open record: ".$Globals{ "work-dir" }."$path\n");
+	flock( $FileHandle, LOCK_EX ) || &fail( "Unable to lock record $record\n" );
+	@data = <$FileHandle>;
+	if ( scalar( @data ) =~ /Version: (\d*)/ )
+	{
+	    if ( $1 == 2 )
+	    { &ParseVersion2Record( @data ); }
+	    else
+	    { &fail( "Unknown record version: $1\n"); }
+	}
+	else { &ParseVersion1Record( @data ); }
+	$LoadedRecord = $record;
+    }
 
-# make all your functions, whether exported or not;
-# remember to put something interesting in the {} stubs
-sub func1      {}    # no prototype
-sub func2()    {}    # proto'd void
-sub func3($$)  {}    # proto'd to 2 scalars
+}
 
-# this one isn't exported, but could be called!
-sub func4(\%)  {}    # proto'd to 1 hash ref
+sub WriteRecord
+{
+    my @fields = ( "originator", "date", "subject", "msgid", "package",
+		"keywords", "done", "forwarded", "mergedwith", "severity" );
+    seek( $FileHandle, 0, 0 );
+    for( my $i = 0; $i < $#fields; $i++ )
+    {
+	if ( defined( $fields[$i] ) )
+	{ print $FileHandle $Record{ $fields[$i] } . "\n"; }
+	else { print $FileHandle "\n"; }
+    }
+    close $FileHandle;
+    $LoadedRecord = 0;
+}
+
+1;
 
 END { }       # module clean-up code here (global destructor)

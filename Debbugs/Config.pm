@@ -1,4 +1,4 @@
-package Debvote::Config;  # assumes Some/Module.pm
+package Debbugs::Config;  # assumes Some/Module.pm
 
 use strict;
 
@@ -15,13 +15,14 @@ BEGIN
 
     # your exported package globals go here,
     # as well as any optionally exported functions
-    @EXPORT_OK   = qw(%Globals %Severities &ParseConfigFile);
+    @EXPORT_OK   = qw(%Globals %Severity &ParseConfigFile);
 }
 
 use vars      @EXPORT_OK;
+use Debbugs::Common;
 
 # initialize package globals, first exported ones
-%Severities = ();
+%Severity = ();
 %Globals = (	"debug" => 0,
 		"verbose" => 0,
 		"quiet" => 0,
@@ -34,7 +35,7 @@ use vars      @EXPORT_OK;
 		"project-short" => "debbugs",
 		"project-long" => "Debbugs Test Project",
 		"owner-name" => "Fred Flintstone",
-		"owner-email" => "owner@bugs.domain.com",
+		"owner-email" => "owner\@bugs.domain.com",
 		##### directories
 		"work-dir" => "/var/lib/debbugs/spool",
 		"spool-dir" => "/var/lib/debbugs/spool/incoming",
@@ -59,7 +60,7 @@ sub ParseConfigFile
 
     #load config file
     print "V: Loading Config File\n" if $Globals{ "verbose" };
-    open(CONFIG,$configfile) or &::fail( "E: Unable to open `$configfile'" );
+    open(CONFIG,$configfile) or &fail( "E: Unable to open `$configfile'" );
     @config = <CONFIG>;
     close CONFIG;
 
@@ -136,7 +137,7 @@ sub ParseConfigFile
 	{ $Globals{ 'normal-severity' } = strip( $1 ); }
         elsif ( /^Severity\s+#*(\d+)\s*[:=]\s*([^#]*)/i )
         {   $Severity{ $1 } = $2;
-            print "D2: (config) Severity $1=$choice{$1}\n" if $Globals{ 'debug' } > 1;
+            print "D2: (config) Severity $1=$Severity{$1}\n" if $Globals{ 'debug' } > 1;
         }
     }
     if( $Globals{ "debug" } )
