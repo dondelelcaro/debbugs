@@ -4,6 +4,7 @@ use DB_File;
 use Fcntl qw/O_RDONLY/;
 use Mail::Address;
 use MLDBM qw/DB_File/;
+use POSIX;
 
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
@@ -301,6 +302,8 @@ sub htmlindexentrystatus {
         }
     } elsif (length($status{done})) {
         $result .= ";\n<strong>Done:</strong> " . htmlsanit($status{done});
+        $days = ceil($debbugs::gRemoveAge - -M buglog($status{id}));
+	$result .= ";\n<strong>Will Be Archived:</strong>" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" );
     }
 
     unless (length($status{done})) {
@@ -734,6 +737,7 @@ sub getbugstatus {
     my $location = getbuglocation( $bugnum, 'summary' );
     return {} if ( !$location );
     %status = %{ readbug( $bugnum, $location ) };
+    $status{ id } = $bugnum;
 
     $status{found_versions} = [];
     $status{fixed_versions} = [];
