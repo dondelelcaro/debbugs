@@ -117,7 +117,7 @@ upstream source package from which the $gProject package is derived,
 they should note this in the $gBug tracking system as follows:
 
 <p>Make sure that the <code>To</code> field of your message to the author
-to has only the author(s) address(es) in it; put both the person who
+has only the author(s) address(es) in it; put both the person who
 reported the $gBug and
 <var>nnn</var><code>-forwarded\@$gEmailDomain</code> in the
 <code>CC</code> field.
