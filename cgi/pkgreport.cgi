@@ -32,6 +32,7 @@ my $repeatmerged = ($param{'repeatmerged'} || "yes") eq "yes";
 my $archive = ($param{'archive'} || "no") eq "yes";
 my $include = $param{'include'} || "";
 my $exclude = $param{'exclude'} || "";
+my $raw_sort = ($param{'raw'} || "no") eq "yes";
 
 my $Archived = $archive ? " Archived" : "";
 
@@ -54,6 +55,7 @@ set_option("include", { map {if (m/^(.*):(.*)$/) { ($1,$2) } else { ($_,1) }} (s
 	if ($include);
 set_option("exclude", { map {if (m/^(.*):(.*)$/) { ($1,$2) } else { ($_,1) }} (split /[\s,]+/, $exclude) })
 	if ($exclude);
+set_option("raw", $raw_sort);
 
 my $tag;
 my @bugs;

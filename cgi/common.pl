@@ -7,6 +7,7 @@ my $common_archive = 0;
 my $common_repeatmerged = 1;
 my %common_include = ();
 my %common_exclude = ();
+my $common_raw_sort = 0;
 
 my $debug = 0;
 
@@ -16,6 +17,7 @@ sub set_option {
     if ($opt eq "repeatmerged") { $common_repeatmerged = $val; }
     if ($opt eq "exclude") { %common_exclude = %{$val}; }
     if ($opt eq "include") { %common_include = %{$val}; }
+    if ($opt eq "raw") { $common_raw_sort = $val; }
 }
 
 sub readparse {
@@ -227,6 +229,7 @@ sub allbugs {
 sub htmlizebugs {
     $b = $_[0];
     my @bugs = @$b;
+    my @rawsort;
 
     my %section = ();
 
@@ -270,15 +273,18 @@ sub htmlizebugs {
 	    next unless ($okay);
 	}
 	    
-	$section{$status{pending} . "_" . $status{severity}} .=
-	    sprintf "<li><a href=\"%s\">#%d: %s</a>\n<br>",
-		bugurl($bug), $bug, htmlsanit($status{subject});
-	$section{$status{pending} . "_" . $status{severity}} .=
-	    htmlindexentrystatus(\%status) . "\n";
+	my $html = sprintf "<li><a href=\"%s\">#%d: %s</a>\n<br>",
+	    bugurl($bug), $bug, htmlsanit($status{subject});
+	$html .= htmlindexentrystatus(\%status) . "\n";
+	$section{$status{pending} . "_" . $status{severity}} .= $html;
+	push @rawsort, $html if $common_raw_sort;
     }
 
     my $result = "";
     my $anydone = 0;
+    if ($common_raw_sort) {
+	$result .= "<UL>\n" . join("", @rawsort ) . "</UL>\n";
+    } else {
     foreach my $pending (qw(pending forwarded pending-fixed fixed done)) {
         foreach my $severity(@debbugs::gSeverityList) {
             $severity = $debbugs::gDefaultSeverity if ($severity eq '');
@@ -293,6 +299,7 @@ sub htmlizebugs {
          }
     }
 
+    }
     $result .= $debbugs::gHTMLExpireNote if ($anydone);
     return $result;
 }
