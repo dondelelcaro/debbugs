@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.74 2003/05/03 21:10:40 doogie Exp $
+# $Id: service.in,v 1.75 2003/05/26 12:30:04 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -891,7 +891,7 @@ sub savebug {
           "\3\n".
           "\7\n",@{escapelog(@log)},"\n\3\n") || &quit("writing db-h/$hash/$ref.log: $!");
     close(L) || &quit("closing db-h/$hash/$ref.log: $!");
-    writebug($ref, $data);
+    unlockwritebug($ref, $data);
     $lowstate= "idle";
     &dlex("savebug");
 }
