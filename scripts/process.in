@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.57 2002/11/17 22:45:16 cjwatson Exp $
+# $Id: process.in,v 1.58 2003/01/05 17:54:23 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -504,14 +504,14 @@ END
     $s_versions= '';
     if (defined($pheader{'version'})) {
         $s_versions = $pheader{'version'};
-        $s_versions ~= s/\s+/ /;
+        $s_versions =~ s/\s+/ /;
 	# BUG: need to bounce unknown versions back to submitter here
     }
 
     $s_fixed_versions= '';
     if (defined($pheader{'fixed-in-version'})) {
         $s_fixed_versions = $pheader{'fixed-in-version'};
-        $s_fixed_versions ~= s/\s+/ /;
+        $s_fixed_versions =~ s/\s+/ /;
     }
 
     $s_keywords= '';
