@@ -580,7 +580,7 @@ sub htmlizebugs {
 
     $result = $header . $result if ( $common{show_list_header} );
     $result .= $debbugs::gHTMLExpireNote if $gRemoveAge and $anydone;
-    $result .= $footer if ( $common{show_list_footer} );
+    $result .= "<hr>" . $footer if ( $common{show_list_footer} );
     return $result;
 }
 
