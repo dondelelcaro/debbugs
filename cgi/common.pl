@@ -238,7 +238,7 @@ sub htmlizebugs {
 	if (%common_exclude) {
 	    my $okay = 1;
 	    foreach my $t (split /\s+/, $status{tags}) {
-		$okay = 0, last if (defined $comon_exclude{$t});
+		$okay = 0, last if (defined $common_exclude{$t});
 	    }
 	    if (defined $common_exclude{subj}) {
                 if (index($status{subject}, $common_exclude{subj}) > -1) {
