@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.38 2003/08/23 15:12:57 cjwatson Exp $
+# $Id: errorlib.in,v 1.39 2003/08/23 15:33:42 cjwatson Exp $
 
 use Mail::Address;
 
@@ -99,7 +99,7 @@ sub readbug {
     while (<S>) {
         chomp;
         push @lines, $_;
-        $version = $1 if /^Format-Version: (.*)/i;
+        $version = $1 if /^Format-Version: ([0-9]+)/i;
     }
 
     # Version 2 is the latest format version currently supported.
