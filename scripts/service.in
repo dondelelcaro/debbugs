@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.51 2002/09/25 16:19:08 doogie Exp $
+# $Id: service.in,v 1.52 2002/09/25 17:19:34 cjwatson Exp $
 # ^ more or less ^
 #
 # Usage: service <code>.nn
@@ -636,7 +636,7 @@ if (@maintccs) {
 }
 if (@bcc) {
     &transcript("BCC|@bcc|\n") if $dl>2;
-    $maintccs .= "Bcc: " . join(,\n   ", @bcc) . "\n";
+    $maintccs .= "Bcc: " . join(",\n   ", @bcc) . "\n";
 }
 
 if (!defined $header{'subject'} || $header{'subject'} eq "") {
