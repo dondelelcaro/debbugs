@@ -1,5 +1,5 @@
-#! /usr/bin/perl
-# $Id: spamscan.in,v 1.1 2004/01/13 18:55:53 cjwatson Exp $
+#! /usr/bin/perl -T
+# $Id: spamscan.in,v 1.2 2004/01/13 19:01:13 cjwatson Exp $
 #
 # Usage: spamscan
 #
@@ -72,7 +72,7 @@ for (;;) {
     if (!@ids) {
 	opendir DIR, 'incoming' or die "opendir incoming: $!";
 	while (defined($_ = readdir DIR)) {
-	    push @ids, $_ if s/^S//;
+	    push @ids, $1 if /^S(.*)/;
 	}
 	last unless @ids;
 	@ids = sort @ids;
