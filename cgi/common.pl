@@ -176,7 +176,7 @@ sub htmlindexentrystatus {
     } else {
         if (length($status{forwarded})) {
             $result .= ";\n<strong>Forwarded</strong> to "
-                       . htmlsanit($status{forwarded});
+                       . maybelink($status{forwarded});
         }
         my $daysold = int((time - $status{date}) / 86400);   # seconds to days
         if ($daysold >= 7) {
@@ -253,6 +253,15 @@ sub htmlsanit {
     my $in = shift || "";
     $in =~ s/([<>&"])/\&$saniarray{$1};/g;
     return $in;
+}
+
+sub maybelink {
+    my $in = shift;
+    if ($in =~ /^[a-zA-Z0-9+.-]+:/) { # RFC 1738 scheme
+	return qq{<a href="$in">} . htmlsanit($in) . '</a>';
+    } else {
+	return htmlsanit($in);
+    }
 }
 
 sub bugurl {

@@ -121,7 +121,7 @@ if (@merged) {
 if (length($status{done})) {
 	push @descstates, "<strong>Done:</strong> ".htmlsanit($status{done});
 } elsif (length($status{forwarded})) {
-	push @descstates, "<strong>Forwarded</strong> to ".htmlsanit($status{forwarded});
+	push @descstates, "<strong>Forwarded</strong> to ".maybelink($status{forwarded});
 }
 
 $indexentry .= join(";\n", @descstates) . ";\n<br>" if @descstates;
