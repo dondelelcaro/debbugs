@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.17 2000/10/08 10:06:32 doogie Exp $
+# $Id: process.in,v 1.18 2000/10/09 00:32:23 ajt Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -427,8 +427,19 @@ END
 	&appendlog;
 	&finish;
     } else { $s_package= $pheader{'package'}; }
+    $s_keywords= '';
     if (defined($pheader{'keywords'})) {
         $s_keywords= $pfullheader{'keywords'};
+    } elsif (defined($pheader{'tags'})) {
+        $s_keywords= $pfullheader{'tags'};
+    }
+    if (length($s_keywords)) {
+        my @kws;
+        my %gkws = map { (%_, 1) } @gTags;
+        foreach my $kw (sort split(/[,\s]+/, lc($s_keywords))) {
+            push @kws, $kw if (defined $gkws{$kw});
+        }
+        $s_keywords = join(" ", @kws);
     }
     $s_severity= '';
 	if (defined($pheader{'severity'}) || defined($pheader{'priority'})) 
@@ -517,7 +528,6 @@ Resent-Message-ID: <handler.$ref.$nn\@$gEmailDomain>
 Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: report $ref
 X-$gProject-PR-Package: $s_package
-X-$gProject-PR-Keywords: $s_keywords
 $fwd
 END
 } elsif ($codeletter eq 'B') {
@@ -536,7 +546,6 @@ Resent-Message-ID: <handler.$ref.$nn\@$gEmailDomain>
 Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: report $ref
 X-$gProject-PR-Package: $s_package
-X-$gProject-PR-Keywords: $s_keywords
 $fwd
 END
 } elsif (@resentccs) {
@@ -558,7 +567,6 @@ Resent-Message-ID: <handler.$ref.$nn\@$gEmailDomain>
 Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: report $ref
 X-$gProject-PR-Package: $s_package
-X-$gProject-PR-Keywords: $s_keywords
 $fwd
 END
 }

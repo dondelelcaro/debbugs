@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.20 2000/10/07 17:27:13 joy Exp $
+# $Id: service.in,v 1.21 2000/10/09 00:32:23 ajt Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -348,6 +348,51 @@ END
                 $s_severity= $newseverity;
             } while (&getnextbug);
         }
+    } elsif (m/^tags\s+\#?(\d+)\s+(([=+-])\s+)?(\S.*)?$/) {
+       $ok++;
+       $ref= $1; $addsubcode= $3; $tags= $4;
+       $addsub = "add";
+       $addsub = "sub" if ($addsubcode eq "-");
+       $addsub = "add" if ($addsubcode eq "+");
+       $addsub = "set" if ($addsubcode eq "=");
+       my @okaytags = ();
+       my @badtags = ();
+       foreach my $t (split /[\s,]+/, $tags) {
+           if (!grep($_ eq $t, @gTags)) {
+               push @badtags, $t;
+           } else {
+               push @okaytags, $t;
+           }
+       }
+       if (@badtags) {
+            &transcript("Unknown tag/s: ".join(', ', @badtags).".\n".
+                       "Recognised are: ".join(' ', @gTags).".\n\n");
+       }
+       if (&setbug) {
+           if ($addsub eq "set") {
+               $action= "Tags set to: " . join(", ", @okaytags);
+           } elsif ($addsub eq "add") {
+               $action= "Tags added: " . join(", ", @okaytags);
+           } elsif ($addsub eq "sub") {
+               $action= "Tags removed: " . join(", ", @okaytags);
+           }
+           do {
+                &addmaintainers($s_package);
+               $s_keywords = '' if ($addsub eq "set");
+               if ($addsub eq "sub") {
+                   foreach my $t (@badtags) {
+                       $s_keywords = join ' ', grep $_ ne $t, 
+                           split ' ', $s_keywords;
+                   }
+               }
+               foreach my $t (@okaytags) {
+                   $s_keywords = join ' ', grep $_ ne $t, 
+                       split ' ', $s_keywords;
+                   $s_keywords = "$t $s_keywords" unless($addsub eq "sub");
+               }
+               $s_keywords =~ s/\s*$//;
+            } while (&getnextbug);
+       }
     } elsif (m/^retitle\s+\#?(\d+)\s+(\S.*\S)\s*$/i) {
         $ok++;
         $ref= $1; $newtitle= $2;
@@ -388,6 +433,7 @@ END
 	$ok++;
         @tomerge= sort { $a <=> $b } split(/\s+/,$1);
         @newmergelist= ();
+        my %tags = ();
         &getmerge;
         while (defined($ref= shift(@tomerge))) {
             &transcript("D| checking merge $ref\n") if $dl;
@@ -395,13 +441,14 @@ END
 	    next if grep($_ eq $ref,@newmergelist);
 	    if (!&getbug) { &notfoundbug; @newmergelist=(); last }
             &foundbug;
-            &transcript("D| adding $ref ($s_mergewith)\n") if $dl;
+            &transcript("D| adding $ref ($s_mergedwith)\n") if $dl;
 	    $mismatch= '';
 	    &checkmatch('package','m_package',$s_package);
 	    &checkmatch('forwarded addr','m_forwarded',$s_forwarded);
 	    $s_severity = '$gDefaultSeverity' if $s_severity eq '';
 	    &checkmatch('severity','m_severity',$s_severity);
 	    &checkmatch('done mark','m_done',length($s_done) ? 'done' : 'open');
+            foreach my $t (split /\s+/, $s_keywords) { $tags{$t} = 1; }
 	    if (length($mismatch)) {
 	        &transcript("Mismatch - only $gBugs in same state can be merged:\n".
                             $mismatch."\n");
@@ -418,6 +465,7 @@ END
 		&getbug || die "huh ?  $gBug $ref disappeared during merge";
                 &addmaintainers($s_package);
 		$s_mergedwith= join(' ',grep($_ ne $ref,@newmergelist));
+                $s_keywords= join(' ', keys %tags);
 		&savebug;
 	    }
     	    &transcript("$action\n\n");
