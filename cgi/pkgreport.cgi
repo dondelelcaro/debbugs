@@ -32,7 +32,7 @@ my $archive = ($param{'archive'} || "no") eq "yes";
 my $include = $param{'include'} || "";
 my $exclude = $param{'exclude'} || "";
 
-my $Archived = $archive ? "Archived" : "";
+my $Archived = $archive ? " Archived" : "";
 
 my $this = "";
 
@@ -102,11 +102,11 @@ print "Content-Type: text/html\n\n";
 
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
 print "<HTML><HEAD><TITLE>\n" . 
-    "$debbugs::gProject $Archived $debbugs::gBug report logs: $tag\n" .
+    "$debbugs::gProject$Archived $debbugs::gBug report logs: $tag\n" .
     "</TITLE></HEAD>\n" .
     '<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#800080">' .
     "\n";
-print "<H1>" . "$debbugs::gProject $Archived $debbugs::gBug report logs: $tag" .
+print "<H1>" . "$debbugs::gProject$Archived $debbugs::gBug report logs: $tag" .
       "</H1>\n";
 
 if (defined $pkg) {
