@@ -1,4 +1,4 @@
-# $Id: text.in,v 1.18 2003/02/16 12:55:36 cjwatson Exp $
+# $Id: text.in,v 1.19 2003/04/28 23:51:15 cjwatson Exp $
 
 ############################################################################
 #  Here is a blurb to point people to ftp archive of directions.  It is
@@ -263,7 +263,7 @@ $gMaintIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"
 	</HEAD>$gHTMLStart<H1>$gProject $gBug reports by maintainer</H1>
 
 	This page lists the package maintainers against whose packages there are
-	outstanding, fowarded or recently-closed $gBug reports.  A maintainer who
+	outstanding, forwarded or recently-closed $gBug reports.  A maintainer who
 	has several versions of their email address in the <CODE>Maintainer</CODE>
 	package control file field may appear several times.<P>
 	If the maintainers information here is not accurate, please see 
@@ -281,7 +281,7 @@ $gPackageIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug reports by package</H1>
 
-	This page lists the package against which there are outstanding, fowarded or
+	This page lists the package against which there are outstanding, forwarded or
 	recently-closed $gBug reports.  A multi-binary package may appear several
 	times, once for each binary package name and once for the source package
 	name (if it is different).<P>
@@ -297,8 +297,8 @@ $gSummaryIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug report logs - summary index</H1>
 
-	This summary index breiefly lists $gBugs sent to <CODE>submit\@$gEmailDomain
-	</CODE> but not yet marked as done, or as fowarded to an upstream author.  
+	This summary index briefly lists $gBugs sent to <CODE>submit\@$gEmailDomain
+	</CODE> but not yet marked as done, or as forwarded to an upstream author.  
 	Here they are sorted by reference number (and therefore by submission date, 
 	too).<P>
 	For other kinds of indices or for other information about $gProject and
@@ -315,8 +315,8 @@ $gPackageLog = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug report logs - index by package</H1>
 
-	This summary index breiefly lists $gBugs sent to <CODE>submit\@$gEmailDomain
-	</CODE> but not yet marked as done, or as fowarded to an upstream author.  
+	This summary index briefly lists $gBugs sent to <CODE>submit\@$gEmailDomain
+	</CODE> but not yet marked as done, or as forwarded to an upstream author.  
 	Here they are sorted by package name.<P>
 	For other kinds of indices or for other information about $gProject and
 	the $gBug system, see <A HREF=\"../../\">$gBug system top-level contents WWW

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: mailsummary.in,v 1.10 2002/11/17 22:45:16 cjwatson Exp $
+# $Id: mailsummary.in,v 1.11 2003/04/28 23:51:15 cjwatson Exp $
 
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
@@ -18,7 +18,7 @@ if ($ARGV[0] eq 'undone') {
     $intro=
 "The following problem reports have not yet been marked as `taken up\' by a
 message to done\@$gEmailDomain or or `forwarded\' by a
-message to fowarded\@$gEmailDomain."
+message to forwarded\@$gEmailDomain."
     ;
 } elsif ($ARGV[0] eq 'bymaint') {
     $vdef= "(no outstanding $gBug reports on file, or problem running script)\n";
@@ -35,7 +35,7 @@ and do not expect to issue a new version soon.
 Variant versions of the Maintainer field for the same actual package
 maintainer will be listed separately.
 
-Maintainers with few outstanding $gBug appear first, to avoid those with few
+Maintainers with few outstanding $gBugs appear first, to avoid those with few
 $gBugs being lost deep in the message.
 "
     ;
@@ -45,7 +45,7 @@ $gBugs being lost deep in the message.
     $intro=
 "The following problem reports are very old but have not yet been marked
 as `taken up\' by a message to done\@$gEmailDomain as forwarded
-to a developer by CCing a message to fowarded\@$gEmailDomain.
+to a developer by CCing a message to forwarded\@$gEmailDomain.
 Please help ensure that these $gBugs are dealt with quickly, even if you
 are not the package maintainer in question.  (NB a full list of outstanding
 $gBug reports is posted periodically - this is a partial list only!)
