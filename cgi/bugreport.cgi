@@ -14,7 +14,7 @@ require './common.pl';
 require '/etc/debbugs/config';
 require '/etc/debbugs/text';
 
-use vars(qw($gEmailDomain $gHTMLTail $gSpoolDir));
+use vars(qw($gEmailDomain $gHTMLTail $gSpoolDir $gWebDomain));
 
 if ($ENV{REQUEST_METHOD} eq 'HEAD') {
     print "Content-Type: text/html\n\n";
@@ -63,7 +63,7 @@ Content-Type: text/html
 <body>
 <h1>$debbugs::gProject $debbugs::gBug report logs - $short</h1>
 <p>There is no record of $debbugs::gBug $short.
-Try the <a href="http://$debbugs::gWebDomain/">search page</a> instead.</p>
+Try the <a href="http://$gWebDomain/">search page</a> instead.</p>
 $tail_html</body></html>
 EOF
     exit 0;
