@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.13 2000/10/02 15:52:22 joy Exp $
+# $Id: service.in,v 1.14 2000/10/05 21:02:36 joy Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -810,6 +810,8 @@ sub ensuremaintainersloaded {
     return if $maintainersloaded++;
     open(MAINT,"$gMaintainerFile") || die &quit("maintainers open: $!");
     while (<MAINT>) {
+	m/^\n$/ && next;
+	m/^\s*$/ && next;
         m/^(\S+)\s+(\S.*\S)\n$/ || &quit("maintainers bogus \`$_'");
         $a= $1; $b= $2; $a =~ y/A-Z/a-z/;
         $maintainerof{$1}= $2;
