@@ -1,4 +1,5 @@
 etc/debbugs/html
+etc/debbugs/indices
 usr/lib/debbugs
 usr/sbin
 usr/share/doc/debbugs/examples

@@ -26,7 +26,9 @@ unshift @INC, $gConfigDir;
 require "text";
 
 &template("Maintainers", $gConfigDir);
+&template("Maintainers.override", $gConfigDir);
 &template("pseudo-packages.description", $gConfigDir);
+&template("sources", "$gConfigDir/indices");
 
 &template("nextnumber", $gSpoolDir);
 

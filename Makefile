@@ -26,10 +26,10 @@ install: install_mostfiles
 
 install_mostfiles:
 	# create the directories if they aren't there
-	for dir in $(sbin_dir) $(etc_dir)/html $(var_dir)/indices \
-$(var_dir)/www/cgi $(var_dir)/www/db $(var_dir)/www/txt $(var_dir)/spool/lock \
-$(var_dir)/spool/archive $(var_dir)/spool/incoming $(var_dir)/spool/db-h \
-$(scripts_dir) $(examples_dir) $(man8_dir); \
+	for dir in $(sbin_dir) $(etc_dir)/html $(etc_dir)/indices \
+$(var_dir)/indices $(var_dir)/www/cgi $(var_dir)/www/db $(var_dir)/www/txt \
+$(var_dir)/spool/lock $(var_dir)/spool/archive $(var_dir)/spool/incoming \
+$(var_dir)/spool/db-h $(scripts_dir) $(examples_dir) $(man8_dir); \
           do test -d $$dir || $(install_exec) -d $$dir; done
 
 	# install the scripts
@@ -40,7 +40,8 @@ $(scripts_dir) $(examples_dir) $(man8_dir); \
 	$(install_data) scripts/config.in $(examples_dir)/config
 	$(install_data) scripts/text.in $(examples_dir)/text
 	$(install_data) debian/crontab misc/nextnumber misc/Maintainers \
-          misc/pseudo-packages.description $(examples_dir)
+	  misc/Maintainers.override misc/pseudo-packages.description \
+	  misc/sources $(examples_dir)
 
 	# install the HTML pages etc
 	$(foreach html, $(htmls_in), $(install_data) $(html) $(etc_dir)/html;)
