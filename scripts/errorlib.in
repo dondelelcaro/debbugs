@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.21 2003/05/03 21:32:09 doogie Exp $
+# $Id: errorlib.in,v 1.22 2003/05/21 19:27:15 cjwatson Exp $
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -190,7 +190,7 @@ sub update_realtime {
 	my $line;
 	while($line = <IDXDB>) {
 		my @line = split /\s/, $line;
-		last if ($line[1] == $ref);
+		last if ($line[1] == $bug);
 		print IDXNEW $line;
 	}
 
