@@ -26,6 +26,11 @@ use Fcntl ':flock';
 use Debbugs::Config;
 use Debbugs::Email;
 use Debbugs::Common;
+use Debbugs::DBase::Log;
+use Debbugs::DBase::Log::Html;
+use Debbugs::DBase::Log::Message;
+use Debbugs::DBase::Log::Mail;
+
 use FileHandle;
 use File::Basename qw(&dirname);
 use File::Path;
@@ -173,6 +178,17 @@ sub OpenLogfile
     {
 	$LogfileHandle = OpenFile(["db", "archive"], $record, ".log", "log");
 	$OpenedLog = $record;
+    }
+}
+
+sub ReadLogfile
+{
+    my $record = $_[0];
+    if ( $record eq $OpenedLog )
+    {
+	seek( $LogfileHandle, 0, 0 );
+	my $log = new Debbugs::DBase::Log;
+	$log->Load($LogfileHandle);
     }
 }
 
