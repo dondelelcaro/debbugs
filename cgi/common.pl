@@ -1,5 +1,8 @@
 #!/usr/bin/perl -w
 
+use DB_File;
+use Fcntl qw/O_RDONLY/;
+
 my $common_archive = 0;
 my $common_repeatmerged = 1;
 my %common_include = ();
@@ -33,7 +36,7 @@ sub readparse {
         $val=~s/%(..)/pack("c",hex($1))/ge;
         $ret{$key}=$val;
     }
-$debug = 1 if ($ret{"debug"} eq "aj");
+$debug = 1 if (defined $ret{"debug"} && $ret{"debug"} eq "aj");
     return %ret;
 }
 
@@ -299,7 +302,8 @@ sub getbugs {
     if (!$common_archive && defined $opt && 
         -e "$debbugs::gSpoolDir/by-$opt.idx") 
     {
-        tie my %lookup, DB_File => "$debbugs::gSpoolDir/by-$opt.idx", O_RDONLY
+        my %lookup;
+        tie %lookup, DB_File => "$debbugs::gSpoolDir/by-$opt.idx", O_RDONLY
             or die "$0: can't open $debbugs::gSpoolDir/by-$opt.idx ($!)\n";
 	while ($key = shift) {
             my $bugs = $lookup{$key};

@@ -80,7 +80,7 @@ if (defined $pkg) {
 		       ($se = $d{"submitter"} || "") =~ s/\s*\(.*\)\s*//;
 		       $se = $1 if ($se =~ m/<(.*)>/);
 		       return $se eq $submitter;
-		     }, 'submitter', $submitter);
+		     }, 'submitter-email', $submitter);
 } elsif (defined $severity) {
   $tag = "$status $severity bugs";
   @bugs = getbugs(sub {my %d=@_;
