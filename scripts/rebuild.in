@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: rebuild.in,v 1.6 2003/05/03 20:01:20 doogie Exp $
+# $Id: rebuild.in,v 1.7 2003/05/24 22:34:16 cjwatson Exp $
 
 # Load modules and set envirnment
 use File::Copy;
@@ -15,7 +15,7 @@ my $data;
 
 sub readreport {
     my $lref = shift;
-	my $path = shift;
+    my $path = shift;
 	
     $data = readbug($lref);
     return 1;
@@ -32,26 +32,26 @@ open IDXFILE, "> index.$archive" or &quit( "trying to reset index file: $!" );
 
 if ( $archive eq 'db' )
 {
-	opendir(DIR,'db') || next; 
-	@list= grep(m/^\d+\.status$/,readdir(DIR));
-	closedir DIR;
-	grep(s/\.status$//,@list);
-	@list= sort { $a <=> $b } @list;
+    opendir(DIR,'db') || next; 
+    @list= grep(m/^\d+\.status$/,readdir(DIR));
+    closedir DIR;
+    grep(s/\.status$//,@list);
+    @list= sort { $a <=> $b } @list;
 
-	#process each bug (ie, status file)
-	while ( defined( $list[0] )) 
-	{ 	my $ref = shift @list;
-		print STDERR "$ref considering\n" if $debug;
-    	readreport($ref, $path);
-		printf IDXFILE "%s %d %s\n", $data->{package}, $ref, $data->{subject};
+    #process each bug (ie, status file)
+    while ( defined( $list[0] )) 
+    {
+	my $ref = shift @list;
+	print STDERR "$ref considering\n" if $debug;
+	readreport($ref, $path);
+	printf IDXFILE "%s %d %s\n", $data->{package}, $ref, $data->{subject};
     }
 }
 else
 {
-
-#get list of bugs (ie, status files)
-for ($subdir=0; $subdir<100; $subdir++ )
-{
+    #get list of bugs (ie, status files)
+    for ($subdir=0; $subdir<100; $subdir++ )
+    {
 	my $path = sprintf( "$archive/%.2d", $subdir );
 	opendir(DIR,$path) || next; 
 	@list= grep(m/^\d+\.status$/,readdir(DIR));
@@ -61,12 +61,12 @@ for ($subdir=0; $subdir<100; $subdir++ )
 
 	#process each bug (ie, status file)
 	while ( defined( $list[0] )) 
-	{ 	my $ref = shift @list;
-		print STDERR "$ref considering\n" if $debug;
-    	readreport($ref, $path);
-		printf IDXFILE "%s %d %s\n", $data->{package}, $ref, $data->{subject};
+	{
+	    my $ref = shift @list;
+	    print STDERR "$ref considering\n" if $debug;
+	    readreport($ref, $path);
+	    printf IDXFILE "%s %d %s\n", $data->{package}, $ref, $data->{subject};
+	}
     }
-}
-
 }
 close IDXFILE;
