@@ -60,6 +60,10 @@ my %common_grouping_order = (
     'pending' => [ qw( pending forwarded pending-fixed fixed done absent ) ],
     'severity' => \@debbugs::gSeverityList,
 );
+my %common_grouping_display = (
+    'pending' => 'Status',
+    'severity' => 'Severity',
+);
 my %common_headers = (
     'pending' => {
 	"pending"	=> "outstanding",
@@ -71,7 +75,7 @@ my %common_headers = (
     },
     'severity' => \%debbugs::gSeverityDisplay,
 );
-        
+
 my $common_version;
 my $common_dist;
 my $common_arch;
@@ -468,6 +472,7 @@ sub htmlizebugs {
     my $anydone = 0;
 
     my @status = ();
+    my %count;
 
     if (@bugs == 0) {
         return "<HR><H2>No reports found!</H2></HR>\n";
@@ -487,7 +492,12 @@ sub htmlizebugs {
 	my $html = sprintf "<li><a href=\"%s\">#%d: %s</a>\n<br>",
 	    bugurl($bug), $bug, htmlsanit($status{subject});
 	$html .= htmlindexentrystatus(\%status) . "\n";
-	$section{join( '_', map( {$status{$_}} @common_grouping ) )} .= $html;
+	my $key = join( '_', map( {$status{$_}} @common_grouping ) );
+	$section{$key} .= $html;
+	$count{"_$key"}++;
+	foreach my $grouping ( @common_grouping ) {
+	    $count{"${grouping}_$status{$grouping}"}++;
+	}
 	$anydone = 1 if $status{pending} eq 'done';
 	push @status, [ $bug, \%status, $html ];
     }
@@ -515,10 +525,34 @@ sub htmlizebugs {
 		push @headers, map( { $common_headers{$common_grouping[$i]}{$_} } @items );
 	    }
 	}
+	$result .= "<table border=\"0\"><tr><td valign=\"top\">\n";
+	$result .= "<ul>\n";
 	for ( my $i = 0; $i < @order; $i++ ) {
 	    my $order = $order[ $i ];
 	    next unless defined $section{$order};
-	    $result .= "<HR><H2>$headers[$i]</H2>\n";
+	    my $count = $count{"_$order"};
+	    my $bugs = $count == 1 ? "bug" : "bugs";
+	    $result .= "<li><a href=\"#$order\">$headers[$i]</a> ($count $bugs)</li>\n";
+	}
+	$result .= "</ul>\n</td>\n<td valign=\"top\">\n<ul>\n";
+	foreach my $grouping ( @common_grouping ) {
+	    my $local_result = '';
+	    foreach my $key ( @{$common_grouping_order{ $grouping }} ) {
+		my $count = $count{"${grouping}_$key"};
+		next if !$count;
+		$local_result .= "<li>$count $common_headers{$grouping}{$key}</li>\n";
+	    }
+	    if ( $local_result ) {
+		$result .= "<li>$common_grouping_display{$grouping}<ul>\n$local_result</ul></li>\n";
+	    }
+	}
+	$result .= "</ul>\n</td></tr></table>";
+	for ( my $i = 0; $i < @order; $i++ ) {
+	    my $order = $order[ $i ];
+	    next unless defined $section{$order};
+	    my $count = $count{"_$order"};
+	    my $bugs = $count == 1 ? "bug" : "bugs";
+	    $result .= "<HR><H2><a name=\"$order\"></a>$headers[$i] ($count $bugs)</H2>\n";
 	    $result .= "<UL>\n";
 	    $result .= $section{$order};
 	    $result .= "</UL>\n";

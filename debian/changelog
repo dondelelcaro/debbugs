@@ -22,6 +22,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Rewrite grouping logic in cgi's common.pl, to make it completely
       generic.  There is now no longer 2 nested loops, to do the grouping.
       This makes adding new grouping levels simpler for the future.
+    - Add in a Table of Contents to pkgreport.cgi.
 
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
 
