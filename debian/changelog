@@ -70,6 +70,7 @@ debbugs (2.4) experimental; urgency=low
     result, closes: #36813. [Colin]
   * Trim Bug#12345: from the Subject:, not "Bug#12345: [", closes: #78123.
     [Anthony]
+  * Be more careful about loop detection, closes: #113514. [Adam, Colin]
   * Fix a few typos, closes: #146745, #152751.
   * Various other things, not worth mentioning here.
 
