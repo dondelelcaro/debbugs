@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.33 2001/08/16 07:06:16 doogie Exp $
+# $Id: process.in,v 1.34 2001/08/16 07:07:53 doogie Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -10,6 +10,7 @@ require( '/usr/lib/debbugs/errorlib' );
 chdir( "$gSpoolDir" ) || die 'chdir spool: $!\n';
 
 #open(DEBUG,"> /tmp/debbugs.debug");
+umask(002);
 open DEBUG, ">/dev/null";
 
 defined( $intdate= time ) || &quit( "failed to get time: $!" );
