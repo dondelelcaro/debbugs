@@ -20,7 +20,8 @@ BEGIN {
 
 use vars      @EXPORT_OK;
 use Fcntl ':flock';
-use Debbugs::Config qw(%Globals);
+use Debbugs::Config;
+use Debbugs::Email;
 use Debbugs::Common;
 use FileHandle;
 
@@ -36,11 +37,17 @@ sub ParseVersion1Record
     my @fields = ( "originator", "date", "subject", "msgid", "package",
 		"keywords", "done", "forwarded", "mergedwith", "severity" );
     my $i = 0;
+    my $tag;
+
+    print "D2: (DBase) Record Fields:\n" if $Globals{ 'debug' } > 1;
     foreach my $line ( @data )
     {
 	chop( $line );
-	$Record{ $fields[$i] } = $line;
+	$tag = $fields[$i];
+	$Record{ $tag } = $line;
+    	print "\t $tag = $line\n" if $Globals{ 'debug' } > 1;
 	$i++;
+	$GTags{ "BUG_$tag" } = $line;
     }
 }
 
@@ -61,15 +68,19 @@ sub ParseVersion2Record
 sub ReadRecord
 {
     my $record = $_[0];
+    print "V: Reading $record\n" if $Globals{ 'verbose' };
     if ( $record ne $LoadedRecord )
     {
 	my $path = '';
 	my @data;
+
+        print "D1: (DBase) $record is being loaded\n" if $Globals{ 'debug' }; 
 	
 	#find proper directory to store in
         #later, this will be for tree'd data directory the way
         #expire is now,..
 	$path = "/db/".$record.".status";
+	print "D2: (DBase) $path found as data path\n" if $Globals{ 'debug' } > 1;
     
 	open( $FileHandle, $Globals{ "work-dir" } . $path ) 
 	    || &fail( "Unable to open record: ".$Globals{ "work-dir" }."$path\n");
@@ -85,6 +96,7 @@ sub ReadRecord
 	else { &ParseVersion1Record( @data ); }
 	$LoadedRecord = $record;
     }
+    else { print "D1: (DBase) $record is already loaded\n" if $Globals{ 'debug' }; }
 
 }
 

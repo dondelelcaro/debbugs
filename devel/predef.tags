@@ -15,10 +15,26 @@ SHORT_NAME		Short Name		Globals->project-short
 Tag                     Meaining/Source
 ----------------------- ----------------------------------------------------
 REPLY_TO                Person who sent the email being processed
+CC_TO                   CC addresses
+MESSAGE_ID              ID of email being processed
+MESSAGE_BODY		Body of the message being processed
+MESSAGE_DATE		Date of message being processed
+MESSAGE_SUBJECT		Subject of message being processed
+MESSAGE_DATA            Location for what ever data is being generated (normally services script)
+
 
 ############################################################################
 # Tags that draw data out from the various fields of the bug Record        #
 ############################################################################
 Tag                     Record Field
 ----------------------- ----------------------------------------------------
-ORIGINATOR              Record->originator
+BUG_ORIGINATOR          Record->originator
+BUG_DATE                Record->date
+BUG_SUBJECT		Record->subject
+BUG_MSGID		Record->msgid
+BUG_PACKAGE		Record->package
+BUG_KEYWORDS		Record->keywords
+BUG_DONE                Record->done
+BUG_FORWARDED           Record->forwarded
+BUG_MERGEDWITH          Record->mergedwith
+BUG_SEVERITY            Record->severity

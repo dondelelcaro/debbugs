@@ -1,0 +1,879 @@
+#!/usr/bin/perl -w
+# Usage: service <code>.nn
+# Temps:  incoming/P<code>.nn
+
+
+use strict;
+use Debbugs::Config;
+use Debbugs::Email;
+use Debbugs::DBase;
+use Debbugs::Common;
+use Getopt::Long;
+use Mail::Address;
+
+#############################################################################
+#  Gloabal Variable Declaration
+#############################################################################
+my $VERSION = '3.01';						#External Version number
+my $BANNER = "DebBugs v$VERSION";			#Version Banner - text form
+my $FILE = 'debbugs-service1';					#File name
+my $config = '';
+my @config = undef;
+
+my $inputfilename;			#file specified on commandline
+my @inputfile;
+my @imputlog;
+my $control;				#call to control or request
+
+#############################################################################
+#  Commandline parsing
+#############################################################################
+# Hash used to process commandline options
+my $verbose = 0;
+my $quiet = 0;
+my $debug = 0;
+my %opthash = (# ------------------ actions
+    "config|c=s" => \$config,
+    "help|h" => \&syntax,
+    "version|V" => \&banner,
+    "verbose|v!" => \$verbose,
+    "quiet|q!" => \$quiet,
+    "debug|d+" => \$debug,     # Count the -d flags
+    );
+Getopt::Long::config('bundling', 'no_getopt_compat', 'no_auto_abbrev');
+GetOptions(%opthash) or &syntax( 1 );
+if ( $debug > 1 )
+{ 	print "D2: Commandline:\n";
+	print "\tconfig = $config\n" unless $config eq '';
+	print "\tverbos\n" if $verbose;
+	print "\tquiet\n" if $quiet;
+	print "\tdebug  = $debug\n";
+}
+$Globals{ 'debug' } = $debug;
+$Globals{ 'quiet' } = $quiet;
+$Globals{ 'verbose' } = $verbose;
+
+#############################################################################
+#  Read Config File and parse
+#############################################################################
+$config = "./debbugs.cfg" if( $config eq '' );
+print "D1: config file=$config\n" if $Globals{ 'debug' };
+@config = ParseConfigFile( $config );
+
+#############################################################################
+#  Find file name and load input file
+#############################################################################
+$_=shift;
+m/^[RC]\.\d+$/ || &quit("bad argument");
+$control= m/C/;
+$inputfilename = $_;
+if (!rename( $Globals{ 'spool-dir' }."G$inputfilename", $Globals{ 'spool-dir' }."P$inputfilename")) 
+{	$_=$!.'';  
+	m/no such file or directory/i && exit 0;
+	&fail("renaming to lock: $!");
+}    
+open( M, "P$inputfilename" );
+@inputfile=<M>;
+@inputlog = @inputfile;
+close( M );
+
+####################################### HERE ###############################
+grep((s/\n$//,s/\s+$//),@msg); #remove blank lines
+
+## DEBUG ## print "###\n",join("##\n",@msg),"\n###\n" if $debug;
+
+
+
+
+for ($i=0; $i<=$#msg; $i++) 
+{ 	$_ = $msg[$i];
+    last unless length($_);
+    $fwd .= $_."\n";
+    while ($msg[$i+1] =~ m/^\s/) 
+	{ 	$i++;
+        $_ .= ' '.$msg[$i];
+    }
+ 	print ">$_<\n" if $debug;
+    if (s/^(\S+):\s*//) 
+	{ 	$v= $1; $v =~ y/A-Z/a-z/;
+		print ">$v=$_<\n" if $debug;
+        $header{$v}= $_;
+    } else { print "!>$_<\n" if $debug; }
+}
+
+defined($header{'from'}) || &quit("no From header");
+$replyto= defined($header{'reply-to'}) ? $header{'reply-to'} : $header{'from'};
+
+$controlrequestaddr= $control ? "control\@$gEmailDomain" : "request\@$gEmailDomain";
+$transcript='';
+&transcript("Processing commands for $controlrequestaddr:\n\n");
+
+$dl= 0;
+$state= 'idle';
+$lowstate= 'idle';
+$mergelowstate= 'idle';
+$midix=0;    
+$extras="";
+
+#strip blank line(s) after header
+while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
+
+#strip, if exists, mime header
+if ( $msg[$i] =~ /^This is a multi-part message in MIME format./ )
+{ 	while ( $i <= $#msg && length( $msg[$i] ) ) { $fwd .= $msg[$i] . "\n"; $i++; }
+	while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
+}
+if ( $msg[$i] =~ /^--/ || $msg[$i] =~ /^\s*$/ )
+{ 	while ( $i <= $#msg && length( $msg[$i] ) ) { $fwd .= $msg[$i]; $i++; }
+	while ( $i <= $#msg && !length( $msg[$i] ) ) { $fwd .= "\n"; $i++; }
+}	
+
+
+for ($procline=$i; $procline<=$#msg; $procline++) 
+{ 	$state eq 'idle' || print "$state ?\n";
+    $lowstate eq 'idle' || print "$lowstate ?\n";
+    $mergelowstate eq 'idle' || print "$mergelowstate ?\n";
+    $_= $msg[$procline]; s/\s+$//;
+    next unless m/\S/; next if m/^\s*\#/;
+    &transcript("> $_\n");
+    $action= '';
+    if (m/^stop\s/i || m/^quit\s/i || m/^--/ || m/^thank\s/i) 
+	{ 	&transcript("Stopping processing here.\n\n");
+        last;
+    } elsif (m/^debug\s+(\d+)$/i && $1 >= 0 && $1 <= 1000) {
+        $dl= $1+0;
+        &transcript("Debug level $dl.\n\n");
+    } elsif (m/^(send|get)\s+\#?(\d{2,})$/i) {
+        $ref= $2+0; $reffile= $ref; $reffile =~ s,^..,$&/$&,;
+        &sendlynxdoc("db/$reffile.html","logs for $gBug#$ref");
+    } elsif (m/^send-detail\s+\#?(\d+)$/i) {
+        $ref= $1+0; $reffile= $ref; $reffile =~ s,^..,$&/$&,;
+        &sendlynxdoc("db/$reffile-b.html","additional logs for $gBug#$ref");
+    } elsif (m/^index(\s+full)?$/i) {
+        &sendlynxdoc("db/ix/full.html",'full index');
+    } elsif (m/^index-summary\s+by-package$/i) {
+        &sendlynxdoc("db/ix/psummary.html",'summary index sorted by package/title');
+    } elsif (m/^index-summary(\s+by-number)?$/i) {
+        &sendlynxdoc("db/ix/summary.html",'summary index sorted by number/date');
+    } elsif (m/^index(\s+|-)pack(age)?s?$/i) {
+        &sendlynxdoc("db/ix/packages.html",'index of packages');
+    } elsif (m/^index(\s+|-)maints?$/i) {
+        &sendlynxdoc("db/ix/maintainers.html",'index of maintainers');
+    } elsif (m/^index(\s+|-)maint\s+(\S.*\S)$/i) {
+        $substrg= $2; $matches=0;
+        opendir(DBD,"$gWebDir/db/ma") || die $!;
+        while (defined($_=readdir(DBD))) {
+            next unless m/^l/ && m/\.html$/;
+            &transcript("F|$_\n") if $dl>1;
+            $filename= $_; s/^l//; s/\.html$//;
+            &transcript("P|$_\n") if $dl>2;
+            while (s/-(..)([^_])/-$1_-$2/) { }
+            &transcript("P|$_\n") if $dl>2;
+            s/^(.{0,2})_/$1-20_/g; while (s/([^-]..)_/$1-20_/) { };
+            &transcript("P|$_\n") if $dl>2;
+            s/^,(.*),(.*),([^,]+)$/$1-40_$2-20_-28_$3-29_/;
+            &transcript("P|$_\n") if $dl>2;
+            s/^([^,]+),(.*),(.*),$/$1-20_-3c_$2-40_$3-3e_/;
+            &transcript("P|$_\n") if $dl>2;
+            s/\./-2e_/g;
+            &transcript("P|$_\n") if $dl>2;
+            $out='';
+            while (m/-(..)_/) { $out.= $`.sprintf("%c",hex($1)); $_=$'; }
+            $out.=$_;
+            &transcript("M|$out\n") if $dl>1;
+            next unless index(lc $out, lc $substrg)>=0;
+            &transcript("S|$filename\n") if $dl>0;
+            &transcript("S|$out\n") if $dl>0;
+            $matches++;
+            &sendlynxdocraw("db/ma/$filename","$gBug list for maintainer \`$out'");
+        }
+        if ($matches) {
+            &transcript("$gBug list(s) for $matches maintainer(s) sent.\n\n");
+        } else {
+            &transcript("No maintainers found containing \`$substrg'.\n".
+                        "Use \`index-maint' to get list of maintainers.\n\n");
+        }
+        $ok++;
+    } elsif (m/^index(\s+|-)pack(age)?s?\s+(\S.*\S)$/i) {
+        $substrg= $+; $matches=0;
+        opendir(DBD,"$gWebDir/db/pa") || die $!;
+        while (defined($_=readdir(DBD))) {
+            next unless m/^l/ && m/\.html$/;
+            &transcript("F|$_\n") if $dl>1;
+            $filename= $_; s/^l//; s/\.html$//;
+            next unless index(lc $_, lc $substrg)>=0;
+            &transcript("S|$filename\n") if $dl>0;
+            &transcript("S|$out\n") if $dl>0;
+            $matches++;
+            &sendlynxdocraw("db/pa/$filename","$gBug list for package \`$_'");
+        }
+        if ($matches) {
+            &transcript("$gBug list(s) for $matches package(s) sent.\n\n");
+        } else {
+            &transcript("No packages found containing \`$substrg'.\n".
+                        "Use \`index-packages' to get list of packages.\n\n");
+        }
+        $ok++;
+    } elsif (m/^send-unmatched(\s+this|\s+-?0)?$/i) {
+        &sendlynxdoc("db/ju/unmatched-1.html","junk (this week)");
+    } elsif (m/^send-unmatched\s+(last|-1)$/i) {
+        &sendlynxdoc("db/ju/unmatched-2.html","junk (last week)");
+    } elsif (m/^send-unmatched\s+(old|-2)$/i) {
+        &sendlynxdoc("db/ju/unmatched-3.html","junk (two weeks ago)");
+    } elsif (m/^getinfo\s+(\S+)$/i) {
+        $file= $1;
+        if ($file =~ m/^\./ || $file !~ m/^[-.0-9a-z]+$/ || $file =~ m/\.gz$/) {
+            &transcript("Filename $file is badly formatted.\n\n");
+        } elsif (open(P,"$gDocDir/$file")) {
+            $ok++;
+            &transcript("Info file $file appears below.\n\n");
+            $extras.= "\n---------- Info file $file follows:\n\n";
+            while(<P>) { $extras.= $_; }
+            close(P);
+        } else {
+            &transcript("Info file $file does not exist.\n\n");
+         }
+    } elsif (m/^help$/i) {
+        &sendhelp;
+        &transcript("\n");
+        $ok++;
+    } elsif (m/^refcard$/i) {
+        &sendtxthelp("bug-mailserver-refcard.txt","mailservers' reference card");
+    } elsif (m/^subscribe/i) {
+        &transcript(<<END);
+There is no $gProject $gBug mailing list.  If you wish to review bug reports
+please do so via http://$gWebUrl/ or ask this mailserver
+to send them to you.
+soon: MAILINGLISTS_TEXT
+END
+    } elsif (m/^unsubscribe/i) {
+        &transcript(<<END);
+soon: UNSUBSCRIBE_TEXT
+soon: MAILINGLISTS_TEXT
+END
+    } elsif (!$control) {
+        &transcript(<<END);
+Unknown command or malformed arguments to command.
+(Use control\@$gEmailDomain to manipulate reports.)
+
+END
+        if (++$unknowns >= 3) {
+            &transcript("Too many unknown commands, stopping here.\n\n");
+            last;
+        }
+    } elsif (m/^close\s+\#?(\d+)$/i) {
+	$ok++;
+	$ref= $1;
+	if (&setbug) {
+	    if (length($s_done)) {
+		&transcript("$gBug is already closed, cannot re-close.\n\n");
+                &nochangebug;
+            } else {
+                $action= "$gBug closed, ack sent to submitter - they'd better know why !";
+                do {
+                    &addmaintainers($s_package);
+					if ( length( $gDoneList ) > 0 && length( $gListDomain ) >
+					0 ) { &addccaddress("$gDoneList\@$gListDomain"); }
+                    $s_done= $replyto;
+		    $message= <<END;
+From: $gMaintainerEmail ($gProject $gBug Tracking System)
+To: $s_originator
+Subject: $gBug#$ref acknowledged by developer
+         ($s_subject)
+References: $header{'message-id'} $s_msgid
+In-Reply-To: $s_msgid
+Message-ID: <handler.$ref.$nn.notifdonectrl.$midix\@$gEmailDomain>
+
+This is an automatic notification regarding your $gBug report.
+
+It has been marked as closed by one of the developers, namely
+$replyto.
+
+You should be hearing from them with a substantive response shortly,
+if you have not already done so.  If not, please contact them
+directly or myself.
+
+$gMaintainer
+(administrator, $gProject $gBugs database)
+END
+                    &sendmailmessage($message,$s_originator);
+                } while (&getnextbug);
+            }
+        }
+    } elsif (m/^reassign\s+\#?(\d+)\s+(\S.*\S)$/i) {
+        $ok++;
+        $ref= $1; $newpackage= $2;
+    	$newpackage =~ y/A-Z/a-z/;
+        if (&setbug) {
+            if (length($s_package)) {
+                $action= "$gBug reassigned from package \`$s_package'".
+                         " to \`$newpackage'.";
+            } else {
+                $action= "$gBug assigned to package \`$newpackage'.";
+            }
+            do {
+                &addmaintainers($s_package);
+                &addmaintainers($newpackage);
+                $s_package= $newpackage;
+            } while (&getnextbug);
+        }
+    } elsif (m/^reopen\s+\#?(\d+)$/i ? ($noriginator='', 1) :
+             m/^reopen\s+\#?(\d+)\s+\=$/i ? ($noriginator='', 1) :
+             m/^reopen\s+\#?(\d+)\s+\!$/i ? ($noriginator=$replyto, 1) :
+             m/^reopen\s+\#?(\d+)\s+(\S.*\S)$/i ? ($noriginator=$2, 1) : 0) {
+        $ok++;
+        $ref= $1;
+        if (&setbug) {
+            if (!length($s_done)) {
+                &transcript("$gByg is already open, cannot reopen.\n\n");
+                &nochangebug;
+            } else {
+                $action=
+                    $noriginator eq '' ? "$gBug reopened, originator not changed." :
+                        "$gBug reopened, originator set to $noriginator.";
+                do {
+                    &addmaintainers($s_package);
+                    $s_originator= $noriginator eq '' ?  $s_originator : $noriginator;
+                    $s_done= '';
+                } while (&getnextbug);
+            }
+        }
+    } elsif (m/^forwarded\s+\#?(\d+)\s+(\S.*\S)$/i) {
+        $ok++;
+        $ref= $1; $whereto= $2;
+        if (&setbug) {
+            if (length($s_forwarded)) {
+    $action= "Forwarded-to-address changed from $s_forwarded to $whereto.";
+            } else {
+    $action= "Noted your statement that $gBug has been forwarded to $whereto.";
+            }
+            if (length($s_done)) {
+                $extramessage= "(By the way, this $gBug is currently marked as done.)\n";
+            }
+            do {
+                &addmaintainers($s_package);
+				if (length($gFowardList)>0 && length($gListDomain)>0 )
+                { &addccaddress("$gFowardList\@$gListDomain"); }
+                $s_forwarded= $whereto;
+            } while (&getnextbug);
+        }
+    } elsif (m/^notforwarded\s+\#?(\d+)$/i) {
+        $ok++;
+        $ref= $1;
+        if (&setbug) {
+            if (!length($s_forwarded)) {
+                &transcript("$gBug is not marked as having been forwarded.\n\n");
+                &nochangebug;
+            } else {
+    $action= "Removed annotation that $gBug had been forwarded to $s_forwarded.";
+                do {
+                    &addmaintainers($s_package);
+                    $s_forwarded= '';
+                } while (&getnextbug);
+            }
+        }
+    } elsif (m/^severity\s+\#?(\d+)\s+([-0-9a-z]+)$/i ||
+	m/^priority\s+\#?(\d+)\s+([-0-9a-z]+)$/i) {
+        $ok++;
+        $ref= $1;
+        $newseverity= $2;
+        if (!grep($_ eq $newseverity, @severities, "$gDefaultSeverity")) {
+            &transcript("Severity level \`$newseverity' is not known.\n".
+ 			"Recognised are: ".join(' ',@showseverities).".\n\n");
+        } elsif (&setbug) {
+            $printseverity= $s_severity;
+            $printseverity= "$gDefaultSeverity" if $printseverity eq '';
+	    $action= "Severity set to \`$newseverity'.";
+	    do {
+                &addmaintainers($s_package);
+                $s_severity= $newseverity;
+            } while (&getnextbug);
+        }
+    } elsif (m/^retitle\s+\#?(\d+)\s+(\S.*\S)\s*$/i) {
+        $ok++;
+        $ref= $1; $newtitle= $2;
+        if (&getbug) {
+            &foundbug;
+            &addmaintainers($s_package);
+            $s_subject= $newtitle;
+            $action= "Changed $gBug title.";
+            &savebug;
+            &transcript("$action\n");
+            if (length($s_done)) {
+                &transcript("(By the way, that $gBug is currently marked as done.)\n");
+            }
+            &transcript("\n");
+        } else {
+            &notfoundbug;
+        }
+    } elsif (m/^unmerge\s+\#?(\d+)$/i) {
+	$ok++;
+	$ref= $1;
+	if (&setbug) {
+	    if (!length($s_mergedwith)) {
+		&transcript("$gBug is not marked as being merged with any others.\n\n");
+		&nochangebug;
+	    } else {
+                $mergelowstate eq 'locked' || die "$mergelowstate ?";
+		$action= "Disconnected #$ref from all other report(s).";
+		@newmergelist= split(/ /,$s_mergedwith);
+                $discref= $ref;
+                do {
+                    &addmaintainers($s_package);
+		    $s_mergedwith= ($ref == $discref) ? ''
+                        : join(' ',grep($_ ne $ref,@newmergelist));
+                } while (&getnextbug);
+	    }
+	}
+    } elsif (m/^merge\s+(\d+(\s+\d+)+)\s*$/i) {
+	$ok++;
+        @tomerge= sort { $a <=> $b } split(/\s+/,$1);
+        @newmergelist= ();
+        &getmerge;
+        while (defined($ref= shift(@tomerge))) {
+            &transcript("D| checking merge $ref\n") if $dl;
+	    $ref+= 0;
+	    next if grep($_ eq $ref,@newmergelist);
+	    if (!&getbug) { &notfoundbug; @newmergelist=(); last }
+            &foundbug;
+            &transcript("D| adding $ref ($s_mergewith)\n") if $dl;
+	    $mismatch= '';
+	    &checkmatch('package','m_package',$s_package);
+	    &checkmatch('forwarded addr','m_forwarded',$s_forwarded);
+	    &checkmatch('severity','m_severity',$s_severity);
+	    &checkmatch('done mark','m_done',length($s_done) ? 'done' : 'open');
+	    if (length($mismatch)) {
+	        &transcript("Mismatch - only $Bugs in same state can be merged:\n".
+                            $mismatch."\n");
+		&cancelbug; @newmergelist=(); last;
+	    }
+            push(@newmergelist,$ref);
+            push(@tomerge,split(/ /,$s_mergedwith));
+	    &cancelbug;
+	}
+	if (@newmergelist) {
+            @newmergelist= sort { $a <=> $b } @newmergelist;
+            $action= "Merged @newmergelist.";
+	    for $ref (@newmergelist) {
+		&getbug || die "huh ?  $gBug $ref disappeared during merge";
+                &addmaintainers($s_package);
+		$s_mergedwith= join(' ',grep($_ ne $ref,@newmergelist));
+		&savebug;
+	    }
+    	    &transcript("$action\n\n");
+	}
+        &endmerge;
+    } else {
+        &transcript("Unknown command or malformed arguments to command.\n\n");
+        if (++$unknowns >= 5) {
+            &transcript("Too many unknown commands, stopping here.\n\n");
+            last;
+        }
+    }
+}
+if ($procline>$#msg) {
+    &transcript(">\nEnd of message, stopping processing here.\n\n");
+}
+if (!$ok) {
+    &transcript("No commands successfully parsed; sending the help text(s).\n");
+    &sendhelp;
+    &transcript("\n");
+}
+
+&transcript("MC\n") if $dl>1;
+@maintccs= ();
+for $maint (keys %maintccreasons) {
+&transcript("MM|$maint|\n") if $dl>1;
+    next if $maint eq $replyto;
+    $reasonstring= '';
+    $reasonsref= $maintccreasons{$maint};
+&transcript("MY|$maint|\n") if $dl>2;
+    for $p (sort keys %$reasonsref) {
+&transcript("MP|$p|\n") if $dl>2;
+        $reasonstring.= ', ' if length($reasonstring);
+        $reasonstring.= $p.' ' if length($p);
+        $reasonstring.= join(' ',map("#$_",sort keys %{$$reasonsref{$p}}));
+    }
+    push(@maintccs,"$maint ($reasonstring)");
+    push(@maintccaddrs,"$maint");
+}
+if (@maintccs) {
+    &transcript("MC|@maintccs|\n") if $dl>2;
+    $maintccs= "Cc: ".join(",\n    ",@maintccs)."\n";
+} else { $maintccs = ""; }
+
+$reply= <<END;
+From: $gMaintainerEmail ($gProject $gBug Tracking System)
+To: $replyto
+${maintccs}Subject: Processed: $header{'subject'}
+In-Reply-To: $header{'message-id'}
+References: $header{'message-id'}
+Message-ID: <handler.s.$nn.transcript\@$gEmailDomain>
+
+${transcript}Please contact me if you need assistance.
+
+$gMaintainer
+(administrator, $gProject $gBugs database)
+$extras
+END
+
+$repliedshow= join(', ',$replyto,@maintccaddrs);
+&filelock("lock/-1");
+open(AP,">>db/-1.log") || &quit("open db/-1.log: $!");
+print(AP
+      "\2\n$repliedshow\n\5\n$reply\n\3\n".
+      "\6\n".
+      "<strong>Request received</strong> from <code>".
+      &sani($header{'from'})."</code>\n".
+      "to <code>".&sani($controlrequestaddr)."</code>\n".
+      "\3\n".
+      "\7\n",@log,"\n\3\n") || &quit("writing db/-1.log: $!");
+close(AP) || &quit("open db/-1.log: $!");
+&unfilelock;
+utime(time,time,"db");
+
+&sendmailmessage($reply,$replyto,@maintccaddrs);
+
+unlink("incoming/P$nn") || &quit("unlinking incoming/P$nn: $!");
+
+sub get_addresses {
+    return
+       map { $_->address() }
+       map { Mail::Address->parse($_) } @_;
+}
+
+sub sendmailmessage {
+    local ($message,@recips) = @_;
+    print "mailing to >@recips<\n" if $debug;
+    $c= open(D,"|-");
+    defined($c) || &quit("mailing forking for sendmail: $!");
+    if (!$c) { # ie, we are the child process
+        exec '/usr/lib/sendmail','-f'."$gMaintainerEmail",'-odi','-oem','-oi',get_addresses(@recips);
+        die $!;
+    }
+    print(D $message) || &quit("writing to sendmail process: $!");
+    $!=0; close(D); $? && &quit("sendmail gave exit status $? ($!)");
+    $midix++;
+}
+
+sub sendhelp {
+        &sendtxthelpraw("bug-log-mailserver.txt","instructions for request\@$gEmailDomain");
+        &sendtxthelpraw("bug-maint-mailcontrol.txt","instructions for control\@$gEmailDomain")
+            if $control;
+}
+
+#sub unimplemented {
+#    &transcript("Sorry, command $_[0] not yet implemented.\n\n");
+#}
+
+sub checkmatch {
+    local ($string,$mvarname,$svarvalue) = @_;
+    local ($mvarvalue);
+    if (@newmergelist) {
+        eval "\$mvarvalue= \$$mvarname";
+        &transcript("D| checkmatch \`$string' /$mvarname/$mvarvalue/$svarvalue/\n")
+            if $dl;
+        $mismatch .=
+            "Values for \`$string' don't match:\n".
+            " #$newmergelist[0] has \`$mvarvalue';\n".
+            " #$ref has \`$svarvalue'\n"
+            if $mvarvalue ne $svarvalue;
+    } else {
+        &transcript("D| setupmatch \`$string' /$mvarname/$svarvalue/\n")
+            if $dl;
+        eval "\$$mvarname= \$svarvalue";
+    }
+}
+
+# High-level bug manipulation calls
+# Do announcements themselves
+#
+# Possible calling sequences:
+#    setbug (returns 0)
+#    
+#    setbug (returns 1)
+#    &transcript(something)
+#    nochangebug
+#
+#    setbug (returns 1)
+#    $action= (something)
+#    do {
+#      (modify s_* variables)
+#    } while (getnextbug);
+
+sub nochangebug {
+    &dlen("nochangebug");
+    $state eq 'single' || $state eq 'multiple' || die "$state ?";
+    &cancelbug;
+    &endmerge if $manybugs;
+    $state= 'idle';
+    &dlex("nochangebug");
+}
+
+sub setbug {
+    &dlen("setbug $ref");
+    $state eq 'idle' || die "$state ?";
+    if (!&getbug) {
+        &notfoundbug;
+        &dlex("setbug => 0s");
+        return 0;
+    }
+    @thisbugmergelist= split(/ /,$s_mergedwith);
+    if (!@thisbugmergelist) {
+        &foundbug;
+        $manybugs= 0;
+        $state= 'single';
+        $sref=$ref;
+        &dlex("setbug => 1s");
+        return 1;
+    }
+    &cancelbug;
+    &getmerge;
+    $manybugs= 1;
+    if (!&getbug) {
+        &notfoundbug;
+        &endmerge;
+        &dlex("setbug => 0mc");
+        return 0;
+    }
+    &foundbug;
+    $state= 'multiple'; $sref=$ref;
+    &dlex("setbug => 1m");
+    return 1;
+}
+
+sub getnextbug {
+    &dlen("getnextbug");
+    $state eq 'single' || $state eq 'multiple' || die "$state ?";
+    &savebug;
+    if (!$manybugs || !@thisbugmergelist) {
+        length($action) || die;
+        &transcript("$action\n$extramessage\n");
+        &endmerge if $manybugs;
+        $state= 'idle';
+        &dlex("getnextbug => 0");
+        return 0;
+    }
+    $ref= shift(@thisbugmergelist);
+    &getbug || die "bug $ref disappeared";
+    &foundbug;
+    &dlex("getnextbug => 1");
+    return 1;
+}
+
+# Low-level bug-manipulation calls
+# Do no announcements
+#
+#    getbug (returns 0)
+#
+#    getbug (returns 1)
+#    cancelbug
+#
+#    getmerge
+#    $action= (something)
+#    getbug (returns 1)
+#    savebug/cancelbug
+#    getbug (returns 1)
+#    savebug/cancelbug
+#    [getbug (returns 0)]
+#    &transcript("$action\n\n")
+#    endmerge
+
+sub notfoundbug { &transcript("$gBug number $ref not found.\n\n"); }
+sub foundbug { &transcript("$gBug#$ref: $s_subject\n"); }
+
+sub getmerge {
+    &dlen("getmerge");
+    $mergelowstate eq 'idle' || die "$mergelowstate ?";
+    &filelock('lock/merge');
+    $mergelowstate='locked';
+    &dlex("getmerge");
+}
+
+sub endmerge {
+    &dlen("endmerge");
+    $mergelowstate eq 'locked' || die "$mergelowstate ?";
+    &unfilelock;
+    $mergelowstate='idle';
+    &dlex("endmerge");
+}
+
+sub getbug {
+    &dlen("getbug $ref");
+    $lowstate eq 'idle' || die "$state ?";
+    if (&lockreadbug($ref)) {
+        $sref= $ref;
+        $lowstate= "open";
+        &dlex("getbug => 1");
+        $extramessage='';
+        return 1;
+    }
+    $lowstate= 'idle';
+    &dlex("getbug => 0");
+    return 0;
+}
+
+sub cancelbug {
+    &dlen("cancelbug");
+    $lowstate eq 'open' || die "$state ?";
+    &unfilelock;
+    $lowstate= 'idle';
+    &dlex("cancelbug");
+}
+
+sub savebug {
+    &dlen("savebug $ref");
+    $lowstate eq 'open' || die "$lowstate ?";
+    length($action) || die;
+    $ref == $sref || die "read $sref but saving $ref ?";
+    open(L,">>db/$ref.log") || &quit("opening db/$ref.log: $!");
+    print(L
+          "\6\n".
+          "<strong>".&sani($action)."</strong>\n".
+          "Request was from <code>".&sani($header{'from'})."</code>\n".
+          "to <code>".&sani($controlrequestaddr)."</code>. \n".
+          "\3\n".
+          "\7\n",@log,"\n\3\n") || &quit("writing db/$ref.log: $!");
+    close(L) || &quit("closing db/$ref.log: $!");
+    open(S,">db/$ref.status.new") || &quit("opening db/$ref.status.new: $!");
+    print(S
+          "$s_originator\n".
+          "$s_date\n".
+          "$s_subject\n".
+          "$s_msgid\n".
+          "$s_package\n".
+          "$s_keywords\n".
+          "$s_done\n".
+          "$s_forwarded\n".
+          "$s_mergedwith\n".
+	  "$s_severity\n") || &quit("writing db/$ref.status.new: $!");
+    close(S) || &quit("closing db/$ref.status.new: $!");
+    rename("db/$ref.status.new","db/$ref.status") ||
+        &quit("installing new db/$ref.status: $!");
+    &unfilelock;
+    $lowstate= "idle";
+    &dlex("savebug");
+}
+
+sub dlen {
+    return if !$dl;
+    &transcript("C> @_ ($state $lowstate $mergelowstate)\n");
+}
+
+sub dlex {
+    return if !$dl;
+    &transcript("R> @_ ($state $lowstate $mergelowstate)\n");
+}
+
+sub transcript {
+    print $_[0] if $debug;
+    $transcript.= $_[0];
+}
+
+sub sendlynxdoc {
+    &sendlynxdocraw;
+    &transcript("\n");
+    $ok++;
+}
+
+sub sendtxthelp {
+    &sendtxthelpraw;
+    &transcript("\n");
+    $ok++;
+}
+
+sub sendtxthelpraw {
+    local ($relpath,$description) = @_;
+    $doc='';
+    open(D,"$gDocDir/$relpath") || &quit("open doc file $relpath: $!");
+    while(<D>) { $doc.=$_; }
+    close(D);
+    &transcript("Sending $description in separate message.\n");
+    &sendmailmessage(<<END.$doc,$replyto);
+From: $gMaintainerEmail ($gProject $gBug Tracking System)
+To: $replyto
+Subject: $gProject $gBug help: $description
+References: $header{'message-id'}
+In-Reply-To: $header{'message-id'}
+Message-ID: <handler.s.$nn.help.$midix\@$gEmailDomain>
+
+END
+    $ok++;
+}
+
+sub sendlynxdocraw {
+    local ($relpath,$description) = @_;
+    $doc='';
+    open(L,"lynx -nolist -dump $wwwbase/$relpath 2>&1 |") || &quit("fork for lynx: $!");
+    while(<L>) { $doc.=$_; }
+    $!=0; close(L);
+    if ($? == 255 && $doc =~ m/^\n*lynx: Can\'t access start file/) {
+        &transcript("Information ($description) is not available -\n".
+                    "perhaps the $gBug does not exist or is not on the WWW yet.\n");
+         $ok++;
+    } elsif ($?) {
+        &transcript("Error getting $description (code $? $!):\n$doc\n");
+    } else {
+        &transcript("Sending $description.\n");
+        &sendmailmessage(<<END.$doc,$replyto);
+From: $gMaintainerEmail ($gProject $gBug Tracking System)
+To: $replyto
+Subject: $gProject $gBugs information: $description
+References: $header{'message-id'}
+In-Reply-To: $header{'message-id'}
+Message-ID: <handler.s.$nn.info.$midix\@$gEmailDomain>
+
+END
+         $ok++;
+    }
+}
+
+sub addccaddress {
+    my ($cca) = @_;
+    $maintccreasons{$cca}{''}{$ref}= 1;
+}
+
+sub addmaintainers 
+{ 	# Data structure is:
+    #   maintainer email address &c -> assoc of packages -> assoc of bug#'s
+    my ($p, $addmaint, $pshow);
+    &ensuremaintainersloaded;
+    $anymaintfound=0; $anymaintnotfound=0;
+    for $p (split(m/[ \t?,()]+/,$_[0])) 
+	{ 	$p =~ y/A-Z/a-z/;
+        $pshow= ($p =~ m/[-+.a-z0-9]+/ ? $& : '');
+        if (defined($maintainerof{$p})) 
+		{ 	$addmaint= $maintainerof{$p};
+			&transcript("MR|$addmaint|$p|$ref|\n") if $dl>2;
+            $maintccreasons{$addmaint}{$p}{$ref}= 1;
+			print "maintainer add >$p|$addmaint<\n" if $debug;
+        } else { print "maintainer none >$p<\n" if $debug; }
+    }
+}
+
+sub ensuremaintainersloaded {
+    my ($a,$b);
+    return if $maintainersloaded++;
+    open(MAINT,"$gMaintainerFile") || die &quit("maintainers open: $!");
+    while (<MAINT>) {
+        m/^(\S+)\s+(\S.*\S)\n$/ || &quit("maintainers bogus \`$_'");
+        $a= $1; $b= $2; $a =~ y/A-Z/a-z/;
+        $maintainerof{$1}= $2;
+    }
+    close(MAINT);
+}
+
+sub syntax {
+  print "$BANNER\n";
+  print <<"EOT-EOT-EOT";
+Syntax: $FILE [options]
+    -c, --config CFGFILE      read CFGFILE for configuration (default=./debvote.cfg)
+    -h, --help                display this help text
+    -v, --verbose             verbose messages
+    -q, --quiet               cancels verbose in a config file
+    -V, --version             display Debvote version and exit
+    -d, --debug               turn debug messages ON (multiple -d for more verbose)
+EOT-EOT-EOT
+
+  exit $_[0];
+}

@@ -10,7 +10,7 @@ BEGIN
     $VERSION     = 1.00;
 
     @ISA         = qw(Exporter);
-    @EXPORT      = qw( );
+    @EXPORT      = qw( %Globals );
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
 
     # your exported package globals go here,
@@ -20,6 +20,7 @@ BEGIN
 
 use vars      @EXPORT_OK;
 use Debbugs::Common;
+use Debbugs::Email;
 
 # initialize package globals, first exported ones
 %Severity = ();
@@ -174,52 +175,54 @@ sub ParseConfigFile
 	{   $Globals{ 'control-list' } = strip( $1 ); 
 	    $GTags{ 'CONTROL_LIST' } = $Globals{ 'control-list' };
 	    print "\tControl List = $Globals{ 'control-list' }\n" if $Globals{ 'debug' };
-	    $GTags{ '' } = $Globals{ '' };
-	    print "\t = $Globals{ '' }\n" if $Globals{ 'debug' };
 	}
 	elsif ( /^Summary List\s*[:=]\s*([^#]*)/i )
 	{   $Globals{ 'summary-list' } = strip( $1 ); 
+	    $GTags{ 'SUMMARY_LIST' } = $Globals{ 'summary-list' };
+	    print "\tSUMMARY_LIST = $Globals{ 'summary-list' }\n" if $Globals{ 'debug' };
 	}
 	elsif ( /^Mirror List\s*[:=]\s*([^#]*)/i )
 	{   $Globals{ 'mirror-list' } = strip( $1 ); 
+	    $GTags{ 'MIRROR_LIST' } = $Globals{ 'mirror-list' };
+	    print "\tMirror List = $Globals{ 'mirror-list' }\n" if $Globals{ 'debug' };
 	}
 	elsif ( /^Mailer\s*[:=]\s*([^#]*)/i )
 	{   $Globals{ 'mailer' } = strip( $1 ); 
+	    print "\tMailer = $Globals{ 'mailer' }\n" if $Globals{ 'debug' };
 	}
 	elsif ( /^Singular Term\s*[:=]\s*([^#]*)/i )
 	{   $Globals{ 'singular' } = strip( $1 ); 
+	    print "\tSingular Term = $Globals{ 'singular' }\n" if $Globals{ 'debug' };
 	}
 	elsif ( /^Plural Term\s*[:=]\s*([^#]*)/i )
 	{   $Globals{ 'plural' } = strip( $1 ); 
+	    print "\tPlural Term = $Globals{ 'plural-term' }\n" if $Globals{ 'debug' };
 	}
 	elsif ( /^Expire Age\s*[:=]\s*([^#]*)/i )
 	{   $Globals{ 'expire-age' } = strip( $1 ); 
+	    print "\tExpire Age = $Globals{ 'expire-age' }\n" if $Globals{ 'debug' };
 	}
 	elsif ( /^Save Expired Bugs\s*[:=]\s*([^#]*)/i )
 	{   $Globals{ 'save-expired' } = strip( $1 ); 
+	    print "\tSave Expire = $Globals{ 'save-expire' }\n" if $Globals{ 'debug' };
 	}
 	elsif ( /^Mirrors\s*[:=]\s*([^#]*)/i )
 	{   $Globals{ 'mirrors' } = strip( $1 ); 
+	    $GTags{ 'MIRRORS' } = $Globals{ 'mirrors' };
+	    print "\tMirrors = $Globals{ 'mirrors' }\n" if $Globals{ 'debug' };
 	}
 	elsif ( /^Default Severity\s*[:=]\s*([^#]*)/i )
 	{   $Globals{ 'default-severity' } = strip( $1 ); 
+	    print "\tDefault Severity = $Globals{ 'default-severity' }\n" if $Globals{ 'debug' };
 	}
 	elsif ( /^Normal Severity\s*[:=]\s*([^#]*)/i )
 	{   $Globals{ 'normal-severity' } = strip( $1 ); 
+	    print "\tNormal Severity = $Globals{ 'normal-severity' }\n" if $Globals{ 'debug' };
 	}
         elsif ( /^Severity\s+#*(\d+)\s*[:=]\s*([^#]*)/i )
         {   $Severity{ $1 } = $2;
             print "D2: (config) Severity $1=$Severity{$1}\n" if $Globals{ 'debug' } > 1;
         }
-    }
-    if( $Globals{ "debug" } )
-    {
-	print "D1: Configuration\n";
-	print "\tBallot Type = $Globals{ 'ballottype' }\n";
-	print "\tDatabase = $Globals{ 'database' }\n";
-	print "\tBallot Ack = $Globals{ 'response' }\n";
-	print "\tBallot Template = $Globals{ 'ballot' }\n";
-	print "\tTitle = $Globals{ 'title' }\n";
     }
     return @config;
 }

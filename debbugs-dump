@@ -60,12 +60,12 @@ print "D1: config file=$config\n" if $Globals{ 'debug' };
 Debbugs::DBase::ReadRecord( "59999" );
 foreach my $key ( keys( %Record ) )
 {
-    print "Key= $key   Value = ". $Record{ "$key" } . "\n";
+ #   print "Key= $key   Value = ". $Record{ "$key" } . "\n";
 }
 Debbugs::DBase::ReadRecord( "60000" );
 foreach my $key ( keys( %Record ) )
 {
-    print "Key= $key   Value = ". $Record{ "$key" } . "\n";
+#    print "Key= $key   Value = ". $Record{ "$key" } . "\n";
 }
 
 

@@ -10,24 +10,19 @@ BEGIN {
 	$VERSION     = 1.00;
 
 	@ISA         = qw(Exporter);
-	@EXPORT      = qw( );
+	@EXPORT      = qw( %GTags );
 	%EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
 
 	# your exported package globals go here,
 	# as well as any optionally exported functions
-	@EXPORT_OK   = qw( );
+	@EXPORT_OK   = qw( %GTags );
 }
 
 use vars @EXPORT_OK;
 use Debbugs::Config qw(%Globals);
 
 # initialize package globals, first exported ones
-%gtags= (	"SECRETARY_TITLE" => "Debian Project Secretary",
-		"SECRETARY_NAME" => "Darren Benham",
-		"ERRORS_TITLE" => "Nobody",
-		"ERRORS_EMAIL" => "errors\@benham.net",
-		"VOTE_TITLE" => "Set Vote Title",
-		"SECRETARY_EMAIL" => "secretary\@debian.org");
+%GTags= ( );
 
 #############################################################################
 #  Initialize Global Tags
@@ -42,8 +37,8 @@ sub InitEmailTags
 	next unless length $_;
 	next if /^#/;
 	if ( /^GTAG\s*[:=]\s*(\S)+\s*[:=]\s*([^#]*)/i )
-	{   $gtags{ $1 } = $2;
-	    print "D2: (email) GTag $1=$gtags{$1}\n" if $Globals{ 'debug' } > 1;
+	{   $GTags{ $1 } = $2;
+	    print "D2: (email) GTag $1=$GTags{$1}\n" if $Globals{ 'debug' } > 1;
 	}
     }
 }
@@ -58,7 +53,7 @@ sub LoadEmail
     open( LETTER, $emailfile ) or &::fail( "Unable to open $emailfile: $!" );
     @email = <LETTER>;
     close LETTER;
-    &ProcessTags( \@email, \%gtags, "GTAG" );
+    &ProcessTags( \@email, \%GTags, "GTAG" );
     return @email;
 }
 #############################################################################
