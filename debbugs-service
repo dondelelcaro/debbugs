@@ -28,6 +28,7 @@ my $control;                                 #call to control or request
 my @body;				    #list of commands
 my $replyto;				    #address of to send reply to
 my $transcript;				    #building of return message
+my @message;				    #holds copy of msg to apply tags
 
 #############################################################################
 #  Commandline parsing
@@ -67,7 +68,7 @@ print "D1: config file=$config\n" if $Globals{ 'debug' };
 #############################################################################
 #  Load in template emails
 #############################################################################
-@notify_done_email = Debbugs::Email::LoadEmail( 
+@notify_done_email = Debbugs::Email::LoadEmail( $Globals{ 'template-dir' }.'/'.$Globals{ 'not-don-con' } );
 
 #############################################################################
 #  Find file name and load input file
@@ -278,31 +279,12 @@ END
                 $action= "$gBug closed, ack sent to submitter - they'd better know why !";
                 do {
                     &addmaintainers($s_package);
-					if ( length( $gDoneList ) > 0 && length( $gListDomain ) >
-					0 ) { &addccaddress("$gDoneList\@$gListDomain"); }
+		    if ( length( $gDoneList ) > 0 && length( $gListDomain ) > 0 ) 
+		    { &addccaddress("$gDoneList\@$gListDomain"); }
                     $s_done= $replyto;
-		    $message= <<END;
-From: $gMaintainerEmail ($gProject $gBug Tracking System)
-To: $s_originator
-Subject: $gBug#$ref acknowledged by developer
-         ($s_subject)
-References: $header{'message-id'} $s_msgid
-In-Reply-To: $s_msgid
-Message-ID: <handler.$ref.$nn.notifdonectrl.$midix\@$gEmailDomain>
-
-This is an automatic notification regarding your $gBug report.
-
-It has been marked as closed by one of the developers, namely
-$replyto.
-
-You should be hearing from them with a substantive response shortly,
-if you have not already done so.  If not, please contact them
-directly or myself.
-
-$gMaintainer
-(administrator, $gProject $gBugs database)
-END
-                    &sendmailmessage($message,$s_originator);
+		    @message = @notify_done_email;
+		    &Debbugs::Email::ProcessTags( ... );
+                    &sendmailmessage( join( "\n", @message), $s_originator );
                 } while (&getnextbug);
             }
         }
