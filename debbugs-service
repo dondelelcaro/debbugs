@@ -127,10 +127,11 @@ for ( my $procline=0; $procline<=$#body; $procline++)
     $lowstate eq 'idle' || print "$lowstate ?\n";
     $mergelowstate eq 'idle' || print "$mergelowstate ?\n";
 
-    #get first line
+    #get line
     $_= $msg[$procline]; 
     s/\s+$//;	#strip ending white space, including newlines
 
+    #cleanup line
     next unless m/\S/;	    #skip blank lines
     next if m/^\s*\#/;	    #skip comment-only lines
     &transcript("> $_\n");
@@ -143,9 +144,9 @@ for ( my $procline=0; $procline<=$#body; $procline++)
     } elsif (m/^debug\s+(\d+)$/i && $1 >= 0 && $1 <= 1000) 
     {	$debug= $1+0;
         &transcript("Debug level $debug.\n\n");
-    } elsif (m/^(send|get)\s+\#?(\d{2,})$/i) {
-        $ref= $2+0; $reffile= $ref; $reffile =~ s,^..,$&/$&,;
-        &sendlynxdoc("db/$reffile.html","logs for $gBug#$ref");
+    } elsif (m/^(send|get)\s+\#?(\d{2,})$/i) 
+    {	$ref= $2+0; $reffile= $ref; $reffile =~ s,^..,$&/$&,;
+        &sendlynxdoc( "db/$reffile.html", "logs for $gBug#$ref" );
     } elsif (m/^send-detail\s+\#?(\d+)$/i) {
         $ref= $1+0; $reffile= $ref; $reffile =~ s,^..,$&/$&,;
         &sendlynxdoc("db/$reffile-b.html","additional logs for $gBug#$ref");

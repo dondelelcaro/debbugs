@@ -57,6 +57,7 @@ my %ConfigMap = (
 		"Long Name" => "project-long",
 		"Owner Name" => "owner-name",
 		"Owner Email" => "owner-email",
+		"Errors Email" => "errors-email",
 		"Owner Webpage" => "owner-webpage",
 		"Spool Dir" => "spool-dir",
 		"Work Dir" => "work-dir",
