@@ -263,7 +263,6 @@ if (defined $pkg || defined $src) {
 	}
 	my @pkgs = getsrcpkgs($pkg ? $srcforpkg : $src);
 	undef $srcforpkg unless @pkgs;
-	my @references;
 	@pkgs = grep( !/^\Q$pkg\E$/, @pkgs ) if ( $pkg );
 	if ( @pkgs ) {
 	    @pkgs = sort @pkgs;
@@ -275,23 +274,22 @@ if (defined $pkg || defined $src) {
 	    push @pkgs, $src if ( $src && !grep(/^\Q$src\E$/, @pkgs) );
 	    print join( ", ", map( "<A href=\"" . pkgurl($_) . "\">$_</A>", @pkgs ) );
 	    print ".\n";
+	}
+	my @references;
+	my $pseudodesc = getpseudodesc();
+	if ($pkg and defined($pseudodesc) and exists($pseudodesc->{$pkg})) {
+	    push @references, "to the <a href=\"http://${debbugs::gWebDomain}/pseudo-packages${debbugs::gHTMLSuffix}\">list of other pseudo-packages</a>";
+	} else {
+	    if ($pkg) {
+		push @references, sprintf "to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
+	    }
 	    if (defined $debbugs::gSubscriptionDomain) {
 		my $ptslink = $pkg ? $srcforpkg : $src;
 		push @references, "to the <a href=\"http://$debbugs::gSubscriptionDomain/$ptslink\">Package Tracking System</a>";
 	    }
-	}
-	if ($pkg) {
-	    my $pseudodesc = getpseudodesc();
-	    if (defined($pseudodesc) and exists($pseudodesc->{$pkg})) {
-		push @references, "to the <a href=\"http://${debbugs::gWebDomain}/pseudo-packages${debbugs::gHTMLSuffix}\">list of other pseudo-packages</a>";
-	    } else {
-		push @references, sprintf "to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
-	    }
-	    if ($srcforpkg) {
-		# Only output this if the source listing is non-trivial.
-		if (@pkgs or $pkg ne $srcforpkg) {
-		    push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($srcforpkg), htmlsanit($srcforpkg);
-		}
+	    # Only output this if the source listing is non-trivial.
+	    if ($pkg and $srcforpkg and (@pkgs or $pkg ne $srcforpkg)) {
+		push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($srcforpkg), htmlsanit($srcforpkg);
 	    }
 	}
 	if (@references) {
