@@ -55,11 +55,7 @@ END
     exit(0);
 }
 
-if (exists $in{'base'}) {
-    $base= $in{'base'};
-} else {
-    $base= $gCGIDomain;
-}
+$base= $gCGIDomain;
 
 $newurl= "http://$base/$suburl";
 print <<END;
