@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.60 2003/03/25 20:13:11 cjwatson Exp $
+# $Id: process.in,v 1.61 2003/03/27 19:37:21 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -762,7 +762,8 @@ $brokenness
 $gMaintainer
 (administrator, $gProject $gBugs database)
 END
-} elsif ($codeletter ne 'U') {
+} elsif ($codeletter ne 'U' and
+         $header{'precedence'} !~ /\b(?:bulk|junk|list)\b/) {
     &htmllog("Acknowledgement","sent",$replyto,
              ($veryquiet ? "Extra info received and filed, but not forwarded." :
               $codeletter eq 'M' ? "Extra info received and forwarded to maintainer." :
