@@ -128,7 +128,7 @@ sub submitterurl {
     my $params = "submitter=" . emailfromrfc822($ref);
     $params .= "&archive=yes" if ($common_archive);
     $params .= "&repeatmerged=yes" if ($common_repeatmerged);
-    return $debbugs::gCGIDomain . "pkgreport.cgi" . "?" . $params;
+    return urlsanit($debbugs::gCGIDomain . "pkgreport.cgi" . "?" . $params);
 }
 
 sub mainturl {
@@ -136,7 +136,7 @@ sub mainturl {
     my $params = "maint=" . emailfromrfc822($ref);
     $params .= "&archive=yes" if ($common_archive);
     $params .= "&repeatmerged=yes" if ($common_repeatmerged);
-    return $debbugs::gCGIDomain . "pkgreport.cgi" . "?" . $params;
+    return urlsanit($debbugs::gCGIDomain . "pkgreport.cgi" . "?" . $params);
 }
 
 sub pkgurl {
@@ -145,7 +145,14 @@ sub pkgurl {
     $params .= "&archive=yes" if ($common_archive);
     $params .= "&repeatmerged=yes" if ($common_repeatmerged);
     
-    return $debbugs::gCGIDomain . "pkgreport.cgi" . "?" . "$params";
+    return urlsanit($debbugs::gCGIDomain . "pkgreport.cgi" . "?" . "$params");
+}
+
+sub urlsanit {
+    my $url = shift;
+    $url =~ s/%/%25/g;
+    $url =~ s/\+/%2b/g;
+    return $url;
 }
 
 sub htmlsanit {

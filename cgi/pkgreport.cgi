@@ -114,7 +114,7 @@ if (defined $pkg) {
     print "<p>Note that with multi-binary packages there may be other\n";
     print "reports filed under the different binary package names.</p>\n";
     print "\n";
-    printf "<p>You might like to refer to the <a href=\"%s\">%s package page</a></p>\n", "http://packages.debian.org/$pkg", "$pkg";
+    printf "<p>You might like to refer to the <a href=\"%s\">%s package page</a></p>\n", urlsanit("http://packages.debian.org/$pkg"), htmlsanit("$pkg");
 } elsif (defined $maint || defined $maintenc) {
     print "<p>Note that maintainers may use different Maintainer fields for\n";
     print "different packages, so there may be other reports filed under\n";
