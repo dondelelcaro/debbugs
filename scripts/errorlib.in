@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.20 2003/05/03 20:40:56 doogie Exp $
+# $Id: errorlib.in,v 1.21 2003/05/03 21:32:09 doogie Exp $
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -42,10 +42,10 @@ sub getlocationpath {
         return "$gSpoolDir/archive";
     } elsif ($location eq 'db') {
         return "$gSpoolDir/db";
-    } elsif ($location eq 'db-h') {
-        return "$gSpoolDir/db-h";
-    } else {
+    } elsif ($location eq 'infomagic-95') {
         return "/org/bugs.debian.org/joeyh-old/infomagic-95";
+    } else {
+        return "$gSpoolDir/db-h";
     }
 }
 
