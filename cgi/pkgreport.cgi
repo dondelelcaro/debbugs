@@ -263,6 +263,7 @@ if (defined $pkg || defined $src) {
 	}
 	my @pkgs = getsrcpkgs($pkg ? $srcforpkg : $src);
 	undef $srcforpkg unless @pkgs;
+	my @references;
 	@pkgs = grep( !/^\Q$pkg\E$/, @pkgs ) if ( $pkg );
 	if ( @pkgs ) {
 	    @pkgs = sort @pkgs;
@@ -274,9 +275,11 @@ if (defined $pkg || defined $src) {
 	    push @pkgs, $src if ( $src && !grep(/^\Q$src\E$/, @pkgs) );
 	    print join( ", ", map( "<A href=\"" . pkgurl($_) . "\">$_</A>", @pkgs ) );
 	    print ".\n";
+	    if (defined $debbugs::gSubscriptionDomain) {
+		push @references, "to the <a href=\"http://$debbugs::gSubscriptionDomain/$src\">Package Tracking System</a>";
+	    }
 	}
 	if ($pkg) {
-	    my @references;
 	    my $pseudodesc = getpseudodesc();
 	    if (defined($pseudodesc) and exists($pseudodesc->{$pkg})) {
 		push @references, "to the <a href=\"http://${debbugs::gWebDomain}/pseudo-packages${debbugs::gHTMLSuffix}\">list of other pseudo-packages</a>";
@@ -292,10 +295,10 @@ if (defined $pkg || defined $src) {
 		    push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($srcforpkg), htmlsanit($srcforpkg);
 		}
 	    }
-	    if (@references) {
-		$references[$#references] = "or $references[$#references]" if @references > 1;
-		print "<p>You might like to refer ", join(", ", @references), ".</p>\n";
-	    }
+	}
+	if (@references) {
+	    $references[$#references] = "or $references[$#references]" if @references > 1;
+	    print "<p>You might like to refer ", join(", ", @references), ".</p>\n";
 	}
 	print "<p>If you find a bug not listed here, please\n";
 	printf "<a href=\"%s\">report it</a>.</p>\n",
