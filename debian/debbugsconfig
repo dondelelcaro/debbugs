@@ -1,0 +1,59 @@
+#!/usr/bin/perl
+
+@file_flag = stat( '/etc/debbugs/config');
+if ( !@file_flag ) 
+{
+	system( '/bin/cp', '/usr/doc/debbugs/examples/config', '/etc/debbugs/config' );
+	print( "copying config file" );
+} else { print( "skipping config file" ); }
+
+@file_flag = stat( '/etc/debbugs/text');
+if ( !@file_flag ) 
+{
+	system( '/bin/cp', '/usr/doc/debbugs/examples/text', '/etc/debbugs/text' );
+	print( "copying text file" );
+} else { print( "skipping text file" ); }
+
+@file_flag = stat( '/var/lib/debbugs/spool/nextnumber');
+if ( !@file_flag ) 
+{
+	system( '/bin/cp', '/usr/doc/debbugs/examples/nextnumber', '/var/lib/debbugs/spool/nextnumber' );
+	print( "copying next file" );
+} else { print( "skipping next file" ); }
+
+require('/etc/debbugs/config');
+require('/etc/debbugs/text');
+
+chop($dtime=`date -u '+%H:%M:%S GMT %a %d %h'`);
+$gHTMLTail =~ s/SUBSTITUTE_DTIME/$dtime/;
+
+require('/etc/debbugs/html/Access.html');
+require('/etc/debbugs/html/Developer.html');
+require('/etc/debbugs/html/Reporting.html');
+require('/etc/debbugs/html/index.html');
+require('/etc/debbugs/html/server-control.html');
+require('/etc/debbugs/html/server-refcard.html');
+require('/etc/debbugs/html/server-request.html');
+
+&file( 'Access.html', 'bug-log-access.txt', $gAccessHtml );
+&file( 'Developer.html', 'bug-maint-info.txt', $gDeveloperHtml );
+&file( 'Reporting.html', 'bug-reporting.txt', $gReportingHtml );
+&file( 'index.html', '', $gIndexHtml );
+&file( 'server-control.html', 'bug-maint-mailcontrol.txt', $gControlHtml );
+&file( 'server-refcard.html', 'bug-mailserver-refcard.txt', $gRefcardHtml );
+&file( 'server-request.html', 'bug-log-mailserver.txt', $gRequestHtml );
+
+exec( '/usr/sbin/debbugs-maketxt' );
+quit(0);
+
+sub file {
+    local ($name,$txtname,$file)= @_;
+    unlink( "$gWebDir/$name" );
+    if( open( ORIG, ">$gWebDir/$name" ) ) {
+    	print ORIG $file;
+		close( ORIG );
+		print "wrote $gWebDir/$name\n";
+    } else {
+    	print "unable to write $gWebDir/$name\n";
+    }
+}

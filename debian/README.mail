@@ -1,0 +1,125 @@
+MTA for Debbugs
+===============
+
+Config
+------
+Be sure to set the $gMailer variable correctly in /etc/debbugs/config.  The
+options are (all lower case) exim, qmail and sendmail.
+
+Exim
+----
+I've seen two lines in Exim used.  If the machine is dedicated and all
+email goes to the debbugs script:
+(in the transport section)
+debbugs_pipe:
+  driver = pipe
+  user={some UID root is very unsafe and unsecure here}
+  group={some GID either uid or gid needs write access}
+  command = /usr/lib/debbugs/receive
+  return_output
+
+(and AT THE TOP of the directors)
+debbugs:
+  driver = smartuser
+  transport = debbugs_pipe
+
+If the domain is a virtual host on a machine that needs it, there are many
+ways of handling it.  I think the neatest was:
+
+debbugs:
+  driver = aliasfile
+  domains={domain name eg: bugs.debian.org}
+  file=/usr/lib/debbugs/receive
+  user={some UID}
+  group={some GID}
+  current_directory=/var/lib/debbugs/spool
+  home_directory=/var/lib/debbugs/spool
+
+Qmail
+-----
+        
+Here's my (tv@debian.org) suggestion for safe & secure
+installation under qmail:
+        
+Create a separate user for the debbugs system.
+	# adduser --system --group --home /home/misc/debbugs debbugs
+Give control of a virtual domain to that user
+	# echo bugs.example.com:debbugs >>/etc/qmail/virtualdomains
+Give the user access to the bug databases
+	# chown -R debbugs:debbugs /var/lib/debbugs/*
+Set the BTS owner address
+	# echo 'me@my.example.com' >~debbugs/.qmail-owner
+Make the BTS handle it's mail
+	# echo '|/usr/lib/debbugs/receive' >~debbugs/.qmail-default
+Reload the virtualdomains config file
+	# /etc/init.d/qmail reload
+That's it!
+        
+Sendmail
+--------
+From Wichert Akkerman (wakkerma@debian.org):
+
+First of all make sure that debbugs is configured for sendmail: look
+at /etc/debbugs/config for the $gMailer variable and make sure it is
+set to 'sendmail'.
+
+Next make sure that your DNS is configured properly. For sendmail
+this means you cannot use a CNAME for the debbugs-domain, since that
+gets remapped to the canonical name and thus bypasses the mailertable
+we need. This is an example of a working DNS entry:
+
+        bugs            IN      192.168.2.100
+                                0 MX mailgate.mors.net
+                                HINFO "PC Pentium" "Debbugs 2.0"
+
+Now that that is finished it is time to configure sendmail itself. First
+make sure that sendmail does not consider the debbugs-domain as local by
+making sure it is not listed in /etc/mail/sendmail.cw . Now start your
+favourite editor and load /etc/mail/sendmail.mc . We need to make two
+changes
+there: add a mailertable and define the debbugs delivery agent.  The
+mailertable is needed to tell sendmail to use the debbugs to deliver mail
+destined for your debbugs server.
+
+To enable the mailertable put the following line in your sendmail.mc file:
+
+        FEATURE(mailertable, `text -o /etc/mail/mailertable')dnl
+
+This tells sendmail to use the textfile /etc/mail/mailertable as the
+database containing the table. You can also use a db database if you
+want to add a lot of entries in there since that is faster. If you
+want to do that use the following line instead:
+
+        FEATURE(mailertable, `hash -o /etc/mail/mailertable.db')dnl
+
+You can create the database using the following command:
+
+        makemap hash mailertable.db < mailertable
+
+Where mailertable is the textfile containing the data.
+
+The next thing we need to do is tell sendmail about the debbugs delivery
+agent. To do this add the following two lines to your sendmail.mc file,
+preferably just after the MAILER commands:
+
+Mdebbugs,       P=/usr/lib/debbugs/receive, F=SDFMlhudb80, U=<uid>:<gid>,
+                S=10/30, R=20/30, D=/tmp, T=DNS/RFC822/X-Unix, A=receive $u
+
+Where <uid> and <gid> should be replaced with the user and group you
+use for debbugs.
+
+Okay, we are now done with sendmail.mc and are ready to add the entry
+in your mailertable. Save sendmail.mc and load /etc/mail/mailertable in
+your editor. Put a single line in there just like this one:
+
+        bugs.your.net           debbugs:yournet
+
+(please note there are tabs between those words). This tells sendmail that
+mail destined for the host bugs.your.net should be handled by the debbugs
+delivery agent using yournet as the hostname. If you decided to use a db
+database instead of the plain textfile don't forget to run makemap now!
+
+Now the final step: run sendmailconfig to regenerate sendmail.cf and
+restart sendmail with the new configuration. Your system should now
+be up and running. Congratulations!
+

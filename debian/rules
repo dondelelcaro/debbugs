@@ -1,0 +1,109 @@
+#!/usr/bin/make -f
+# MAde with the aid of dh_make, by Craig Small
+# Sample debian/rules that uses debhelper. GNU copyright 1997 by Joey Hess.
+# Some lines taken from debmake, by Cristoph Lameter.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+build: build-stamp
+build-stamp:
+	touch build-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp install-stamp
+	#something to remove all *~ and trace and *.trace files
+	dh_clean
+
+install: install-stamp
+install-stamp: build-stamp
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+
+	#install the scripts
+	cp scripts/age-1.in `pwd`/debian/tmp/usr/lib/debbugs/age-1
+	cp scripts/db2html.in  `pwd`/debian/tmp/usr/lib/debbugs/db2html
+	cp scripts/expire.in `pwd`/debian/tmp/usr/lib/debbugs/expire
+	cp scripts/html-install.in `pwd`/debian/tmp/usr/lib/debbugs/html-install
+	cp scripts/mailsummary.in `pwd`/debian/tmp/usr/lib/debbugs/mailsummary
+	cp scripts/processall.in `pwd`/debian/tmp/usr/lib/debbugs/processall
+	cp scripts/service.in `pwd`/debian/tmp/usr/lib/debbugs/service
+	cp scripts/config.in `pwd`/debian/tmp/usr/doc/debbugs/examples/config
+	cp scripts/text.in `pwd`/debian/tmp/usr/doc/debbugs/examples/text
+	cp debian/crontab `pwd`/debian/tmp/usr/doc/debbugs/examples/crontab
+	cp scripts/errorlib.in `pwd`/debian/tmp/usr/lib/debbugs/errorlib
+	cp scripts/html-control.in `pwd`/debian/tmp/usr/lib/debbugs/html-control
+	cp scripts/process.in `pwd`/debian/tmp/usr/lib/debbugs/process
+	cp scripts/receive.in `pwd`/debian/tmp/usr/lib/debbugs/receive
+	cp scripts/summary.in `pwd`/debian/tmp/usr/lib/debbugs/summary
+#	cp scripts/changeaddr  `pwd`/debian/tmp/usr/lib/debbugs/changeaddr
+#	cp scripts/initialise.out `pwd`/debian/tmp/usr/lib/debbugs/initialise
+#	cp scripts/badness.out `pwd`/debian/tmp/usr/lib/debbugs/badness
+	
+	#install the text documents
+	#install the html pages
+	cp html/Access.html.in `pwd`/debian/tmp/etc/debbugs/html/Access.html
+	cp html/Reporting.html.in `pwd`/debian/tmp/etc/debbugs/html/Reporting.html
+	cp html/Developer.html.in `pwd`/debian/tmp/etc/debbugs/html/Developer.html
+	cp html/index.html.in `pwd`/debian/tmp/etc/debbugs/html/index.html
+	cp html/server-control.html.in `pwd`/debian/tmp/etc/debbugs/html/server-control.html
+	cp html/server-request.html.in `pwd`/debian/tmp/etc/debbugs/html/server-request.html
+	cp html/server-refcard.html.in `pwd`/debian/tmp/etc/debbugs/html/server-refcard.html
+	cp html/lynx-cfg `pwd`/debian/tmp/etc/debbugs/lynx-cfg
+	cp html/htaccess `pwd`/debian/tmp/var/lib/debbugs/www/db/.htaccess
+
+	#install the text documents
+	#later
+
+	#install the CGI
+	cp cgi/bugs-fetch2.pl.in `pwd`/debian/tmp/var/lib/debbugs/www/cgi/bugs-fetch2.pl
+	cp cgi/cgi-lib.pl `pwd`/debian/tmp/var/lib/debbugs/www/cgi
+	cp debian/debbugsconfig `pwd`/debian/tmp/usr/sbin/debbugsconfig
+	cp debian/debbugs-maketxt `pwd`/debian/tmp/usr/sbin/debbugs-maketxt
+
+	#install the config files
+	cp misc/Maintainers `pwd`/debian/tmp/etc/debbugs/.
+	cp misc/pseudo-packages.description `pwd`/debian/tmp/etc/debbugs/.
+	cp misc/nextnumber `pwd`/debian/tmp/usr/doc/debbugs/examples/.
+	cp misc/updateseqs `pwd`/debian/tmp/var/lib/debbugs/spool/.
+
+	touch install-stamp
+
+# Build architecture-dependent files here.
+binary-arch: build install
+# We have nothing to do.
+
+# Build architecture-independent files here.
+binary-indep: build install
+	dh_testdir
+	dh_testroot
+	dh_installdocs
+#	dh_installinit
+	dh_installcron
+#	dh_installmanpages
+	dh_undocumented
+	dh_installchangelogs 
+	dh_strip
+	dh_compress -X examples/text
+	dh_fixperms
+	#chown bugs.bugs `pwd`/debian/tmp/var/lib/debbugs/spool/incoming
+	chmod 755 `pwd`/debian/tmp/var/lib/debbugs/www/cgi/bugs-fetch2.pl
+	chmod 755 `pwd`/debian/tmp/var/lib/debbugs/www/cgi/cgi-lib.pl
+	chmod a+rX,go-w,u+w -R `pwd`/debian/tmp/etc/debbugs/*
+	chmod 644 `pwd`/debian/tmp/usr/lib/debbugs/errorlib
+	dh_suidregister
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+source diff:                                                                  
+	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary

@@ -1,0 +1,42 @@
+Debbugs for DEBIAN
+======================
+
+Configuration
+-------------
+Configuration is *not* complete.  Especially automatic configuration.  For
+first time installations, copy the config and text files out of
+/usr/doc/debbugs/examples into /etc/debbugs.  Edit these files with the
+necessary information.  Run debbugsconfig.
+
+WWW
+----
+It's up to you to set up the httpd.  The basics: web files are located into 
+/var/lib/debbugs/www and the cgi scripts are in /var/lib/debbugs/www/cgi.  Point
+your server's configuration to these places.
+
+Mail
+----
+It's up to you to set up the MTA.  The basics: mail has to be DELIVERED to
+the script /usr/lib/debbugs/receive via stdin.  Important environment
+variables set by the MTA are used so it has to be processed from within the
+MTA.
+
+Cron
+----
+Check the sample cron in /usr/doc/debbugs/examples for what should be run,
+in what order and how often.
+
+Summary
+-------
+This was released into the distro NOW in order to start getting feed back.
+The system is stable enough to use in mission critical situations.  The
+bugs that will show up will be in appearance.  Variables that didn't expand
+right when discribing how to "foobar" or some such.  
+
+Also, people have already been asking for mods and changes and I'm having
+trouble keeping track.  This way, people can start submitting bug and
+wishlist reports to the BTS.
+
+Darren O. Benham <gecko@debian.org>, Sat, 27 Mar 1999 10:45:35 -0800
+
+
