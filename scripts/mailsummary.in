@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: mailsummary.in,v 1.5 2000/10/07 17:27:13 joy Exp $
+# $Id: mailsummary.in,v 1.6 2000/10/14 21:01:22 joy Exp $
 
 require( '/etc/debbugs/config' );
 
@@ -70,7 +70,7 @@ Every Frideay, the listing by age of the report is posted.
 
 Please see the documentation for more information about how to
 use the $gBug tracking system.  It is available on the WWW at
-<A HREF=\"http://$gWebUrl/txt/\">$gWebUrl/txt</A>
+<A HREF=\"http://$gWebDomain/txt/\">$gWebDomain/txt</A>
 END
 
 close(D);

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: service.in,v 1.24 2000/10/14 20:54:34 joy Exp $
+# $Id: service.in,v 1.25 2000/10/14 21:01:22 joy Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -199,7 +199,7 @@ for ($procline=$i; $procline<=$#msg; $procline++)
     } elsif (m/^subscribe/i) {
         &transcript(<<END);
 There is no $gProject $gBug mailing list.  If you wish to review bug reports
-please do so via http://$gWebUrl/ or ask this mailserver
+please do so via http://$gWebDomain/ or ask this mailserver
 to send them to you.
 soon: MAILINGLISTS_TEXT
 END
