@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.31 2001/08/16 06:43:21 doogie Exp $
+# $Id: process.in,v 1.32 2001/08/16 06:55:17 doogie Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -890,7 +890,7 @@ sub checkmaintainers {
     while (<MAINT>) {
 	m/^\n$/ && next;
 	m/^\s*$/ && next;
-        m/^(\S+)\s+(\S.*\S)\n$/ || &quit("maintainers.override bogus \`$_'");
+        m/^(\S+)\s+(\S.*\S)\s*\n$/ || &quit("maintainers.override bogus \`$_'");
         $a= $1; $b= $2; $a =~ y/A-Z/a-z/;
         $maintainerof{$1}= $2;
     }
