@@ -43,7 +43,7 @@ set_option('repeatmerged', $repeatmerged);
 my $buglog = buglog($ref);
 
 if ($ENV{REQUEST_METHOD} eq 'HEAD' and not defined($att) and not $mbox) {
-    print "Content-Type: text/html\n";
+    print "Content-Type: text/html; charset=utf-8\n";
     my @stat = stat $buglog;
     if (@stat) {
 	my $mtime = strftime '%a, %d %b %Y %T GMT', gmtime($stat[9]);
@@ -70,7 +70,8 @@ sub display_entity ($$$$\$\@) {
     $filename = '' unless defined $filename;
 
     if ($top) {
-	$$this .= htmlsanit($entity->stringify_header) unless ($terse);
+	$$this .= htmlsanit(decode_rfc1522($entity->stringify_header))
+	    unless ($terse);
 	$$this .= "\n";
     }
 
@@ -150,7 +151,7 @@ $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
 my %status = %{getbugstatus($ref)};
 unless (%status) {
     print <<EOF;
-Content-Type: text/html
+Content-Type: text/html; charset=utf-8
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
@@ -448,7 +449,7 @@ if ( $mbox ) {
 	print join("", @mails );
 	exit 0;
 }
-print "Content-Type: text/html\n\n";
+print "Content-Type: text/html; charset=utf-8\n\n";
 
 my $title = htmlsanit($status{subject});
 

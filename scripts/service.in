@@ -1,11 +1,12 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.98 2005/03/15 21:40:41 cjwatson Exp $
+# $Id: service.in,v 1.99 2005/04/09 16:21:02 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
 
 use File::Copy;
 use MIME::Parser;
+use Debbugs::MIME qw(decode_rfc1522);
 
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
@@ -76,7 +77,7 @@ for (@headerlines) {
     if (s/^(\S+):\s*//) {
 	my $v = lc $1;
 	print ">$v=$_<\n" if $debug;
-	$header{$v} = $_;
+	$header{$v} = decode_rfc1522($_);
     } else {
 	print "!>$_<\n" if $debug;
     }

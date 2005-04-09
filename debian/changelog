@@ -23,6 +23,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Add X-$gProject-PR-Message: headers to all mails sent by service.
     - debbugsconfig creates required directories in $gSpoolDir
       (closes: #222077).
+    - Decode RFC1522 mail headers for display in the web interface.
+      bugreport.cgi and pkgreport.cgi now output UTF-8.
 
   * Adam Heath:
     - Rewrite filtering in cgi's common.pl, to make it completely generic.

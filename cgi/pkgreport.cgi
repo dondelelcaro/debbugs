@@ -14,7 +14,7 @@ require '/etc/debbugs/text';
 use vars qw($gPackagePages $gWebDomain);
 
 if (defined $ENV{REQUEST_METHOD} and $ENV{REQUEST_METHOD} eq 'HEAD') {
-    print "Content-Type: text/html\n\n";
+    print "Content-Type: text/html; charset=utf-8\n\n";
     exit 0;
 }
 
@@ -234,7 +234,7 @@ if (defined $pkg) {
 
 my $result = htmlizebugs(\@bugs);
 
-print "Content-Type: text/html\n\n";
+print "Content-Type: text/html; charset=utf-8\n\n";
 
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
 print "<HTML><HEAD>\n" . 

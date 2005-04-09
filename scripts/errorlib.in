@@ -1,7 +1,8 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.41 2004/02/15 16:12:00 cjwatson Exp $
+# $Id: errorlib.in,v 1.42 2005/04/09 16:21:02 cjwatson Exp $
 
 use Mail::Address;
+use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -86,6 +87,9 @@ my %fields = (originator => 'submitter',
               owner => 'owner',
              );
 
+# Fields which need to be RFC1522-decoded in format versions earlier than 3.
+my @rfc1522_fields = qw(originator subject done forwarded owner);
+
 sub readbug {
     my ($lref, $location) = @_;
     my $status = getbugcomponent($lref, 'summary', $location);
@@ -103,8 +107,8 @@ sub readbug {
         $version = $1 if /^Format-Version: ([0-9]+)/i;
     }
 
-    # Version 2 is the latest format version currently supported.
-    return undef if $version > 2;
+    # Version 3 is the latest format version currently supported.
+    return undef if $version > 3;
 
     my %namemap = reverse %fields;
     for my $line (@lines) {
@@ -120,6 +124,12 @@ sub readbug {
     close(S);
 
     $data{severity} = 'normal' if $data{severity} eq '';
+
+    if ($version < 3) {
+	for my $field (@rfc1522_fields) {
+	    $data{$field} = decode_rfc1522($data{$field});
+	}
+    }
 
     return \%data;
 }
@@ -139,24 +149,31 @@ sub makestatus {
 
     my $contents = '';
 
+    my %newdata = %$data;
+    if ($version < 3) {
+        for my $field (@rfc1522_fields) {
+            $newdata{$field} = encode_rfc1522($newdata{$field});
+        }
+    }
+
     if ($version == 1) {
         for my $field (@v1fieldorder) {
-            if (exists $data->{$field}) {
-                $contents .= "$data->{$field}\n";
+            if (exists $newdata{$field}) {
+                $contents .= "$newdata{$field}\n";
             } else {
                 $contents .= "\n";
             }
         }
-    } elsif ($version == 2) {
-        # Version 2. Add a file format version number for the sake of
+    } elsif ($version == 2 or $version == 3) {
+        # Version 2 or 3. Add a file format version number for the sake of
         # further extensibility in the future.
-        $contents .= "Format-Version: 2\n";
+        $contents .= "Format-Version: $version\n";
         for my $field (keys %fields) {
-            if (exists $data->{$field} and $data->{$field} ne '') {
+            if (exists $newdata{$field} and $newdata{$field} ne '') {
                 # Output field names in proper case, e.g. 'Merged-With'.
                 my $properfield = $fields{$field};
                 $properfield =~ s/(?:^|(?<=-))([a-z])/\u$1/g;
-                $contents .= "$properfield: $data->{$field}\n";
+                $contents .= "$properfield: $newdata{$field}\n";
             }
         }
     }

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.88 2005/01/02 19:08:12 cjwatson Exp $
+# $Id: process.in,v 1.89 2005/04/09 16:21:02 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -9,6 +9,7 @@ $ENV{"TZ"} = 'UTC';
 tzset();
 
 use MIME::Parser;
+use Debbugs::MIME qw(decode_rfc1522);
 
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
@@ -108,7 +109,7 @@ for my $hdr (@headerlines) {
     if (s/^(\S+):\s*//) {
 	my $v = lc $1;
 	print DEBUG ">$v=$_<\n";
-	$header{$v} = $_;
+	$header{$v} = decode_rfc1522($_);
     } else {
 	print DEBUG "!>$_<\n";
     }

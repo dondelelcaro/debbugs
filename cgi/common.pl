@@ -11,6 +11,7 @@ $lib_path = '/usr/lib/debbugs';
 require "$lib_path/errorlib";
 
 use Debbugs::Versions;
+use Debbugs::MIME qw(decode_rfc1522);
 
 $MLDBM::RemoveTaint = 1;
 
