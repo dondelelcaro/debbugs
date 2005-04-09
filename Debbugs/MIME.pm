@@ -8,7 +8,7 @@ use vars qw($VERSION @EXPORT_OK);
 BEGIN {
     $VERSION = 1.00;
 
-    @EXPORT_OK = qw(parse decode_rfc1522);
+    @EXPORT_OK = qw(parse decode_rfc1522 encode_rfc1522);
 }
 
 use File::Path;
@@ -17,6 +17,9 @@ use MIME::Parser;
 # for decode_rfc1522
 use MIME::WordDecoder qw();
 use Unicode::MapUTF8 qw(to_utf8 utf8_supported_charset);
+
+# for encode_rfc1522
+use MIME::Words qw();
 
 sub getmailbody ($);
 sub getmailbody ($)
@@ -132,6 +135,13 @@ sub decode_rfc1522 ($)
     # unmime calls the default MIME::WordDecoder handler set up at
     # initialization time.
     return MIME::WordDecoder::unmime($string);
+}
+
+sub encode_rfc1522 ($)
+{
+    my ($string) = @_;
+
+    return MIME::Words::encode_mimewords($string, Charset => 'UTF-8');
 }
 
 1;
