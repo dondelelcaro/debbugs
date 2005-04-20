@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.89 2005/04/09 16:21:02 cjwatson Exp $
+# $Id: process.in,v 1.90 2005/04/20 04:36:56 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -467,7 +467,7 @@ References: $header{'message-id'} $data->{msgid}
 Precedence: bulk
 X-$gProject-PR-Message: error
 
-You sent a message to the $gProject $gBug tracking system send to $gBug 
+You sent a message to the $gProject $gBug tracking system's $gBug 
 report submitter address $baddress\@$gEmailDomain, without a
 recognisable $gBug number in the Subject.  Your message has been filed
 under junk but otherwise ignored.
