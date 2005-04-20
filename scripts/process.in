@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.90 2005/04/20 04:36:56 cjwatson Exp $
+# $Id: process.in,v 1.91 2005/04/20 04:40:18 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -514,7 +514,8 @@ X-$gProject-PR-Message: error
 
 Your message didn't have a Package: line at the start (in the
 pseudo-header following the real mail header), or didn't have a
-pseudo-header at all.
+pseudo-header at all.  Your message has been filed under junk but
+otherwise ignored.
 
 This makes it much harder for us to categorise and deal with your
 problem report. Please _resubmit_ your report to $baddress\@$gEmailDomain
