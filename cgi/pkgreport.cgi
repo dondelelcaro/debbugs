@@ -248,16 +248,18 @@ print "<H1>" . "$debbugs::gProject$Archived $debbugs::gBug report logs: $title" 
 my $showresult = 1;
 
 if (defined $pkg || defined $src) {
+    my $showpkg = (defined $pkg) ? $pkg : "source package $src";
     my %maintainers = %{getmaintainers()};
     my $maint = $pkg ? $maintainers{$pkg} : $maintainers{$src} ? $maintainers{$src} : undef;
     if (defined $maint) {
         print '<p>';
-        my $showpkg = (defined $pkg) ? $pkg : "source package $src";
         print htmlmaintlinks(sub { $_[0] == 1 ? "Maintainer for $showpkg is "
                                               : "Maintainers for $showpkg are "
                                  },
                              $maint);
         print ".</p>\n";
+    } else {
+        print "<p>No maintainer for $showpkg. Please do not report new bugs against this package.</p>\n";
     }
     if (defined $maint or @bugs) {
 	my %pkgsrc = %{getpkgsrc()};
