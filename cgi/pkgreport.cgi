@@ -201,11 +201,12 @@ if (defined $pkg) {
   $title = "submitter $submitter";
   $title .= " in $dist" if defined $dist;
   my @submitters = split /,/, $submitter;
-  @bugs = @{getbugs(sub {my %d=@_; my $se; 
-		       ($se = $d{"submitter"} || "") =~ s/\s*\(.*\)\s*//;
-		       $se = $1 if ($se =~ m/<(.*)>/);
-		       return 1 if grep($se eq $_, @submitters);
-		     }, 'submitter-email', @submitters)};
+  @bugs = @{getbugs(sub {my %d=@_;
+                         my @se = getparsedaddrs($d{"submitter"} || "");
+                         foreach my $try (@submitters) {
+                           return 1 if grep { $_->address eq $try } @se;
+                         }
+                        }, 'submitter-email', @submitters)};
 } elsif (defined($severity) && defined($status)) {
   $title = "$status $severity bugs";
   $title .= " in $dist" if defined $dist;
