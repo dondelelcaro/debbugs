@@ -25,6 +25,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
       (closes: #222077).
     - Decode RFC1522 mail headers for display in the web interface.
       bugreport.cgi and pkgreport.cgi now output UTF-8.
+    - Properly support multiple submitter addresses on a single bug.
 
   * Adam Heath:
     - Rewrite filtering in cgi's common.pl, to make it completely generic.

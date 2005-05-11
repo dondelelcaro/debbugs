@@ -244,23 +244,32 @@ sub htmlpackagelinks {
            ) . ";\n";
 }
 
+# Generate a comma-separated list of HTML links to each address given in
+# $addresses, which should be a comma-separated list of RFC822 addresses.
+# $urlfunc should be a reference to a function like mainturl or submitterurl
+# which returns the URL for each individual address.
+sub htmladdresslinks {
+    my ($prefixfunc, $urlfunc, $addresses) = @_;
+    if (defined $addresses and $addresses ne '') {
+        my @addrs = getparsedaddrs($addresses);
+        my $prefix = (ref $prefixfunc) ? $prefixfunc->(scalar @addrs)
+                                       : $prefixfunc;
+        return $prefix .
+               join ', ', map { sprintf '<a href="%s">%s</a>',
+                                        $urlfunc->($_->address),
+                                        htmlsanit($_->format) || '(unknown)'
+                              } @addrs;
+    } else {
+        my $prefix = (ref $prefixfunc) ? $prefixfunc->(1) : $prefixfunc;
+        return sprintf '%s<a href="%s">(unknown)</a>', $prefix, $urlfunc->('');
+    }
+}
+
 # Generate a comma-separated list of HTML links to each maintainer given in
 # $maints, which should be a comma-separated list of RFC822 addresses.
 sub htmlmaintlinks {
     my ($prefixfunc, $maints) = @_;
-    if (defined $maints and $maints ne '') {
-        my @maintaddrs = getparsedaddrs($maints);
-        my $prefix = (ref $prefixfunc) ? $prefixfunc->(scalar @maintaddrs)
-                                       : $prefixfunc;
-        return $prefix .
-               join ', ', map { sprintf '<a href="%s">%s</a>',
-                                        mainturl($_->address),
-                                        htmlsanit($_->format) || '(unknown)'
-                              } @maintaddrs;
-    } else {
-        my $prefix = (ref $prefixfunc) ? $prefixfunc->(1) : $prefixfunc;
-        return sprintf '%s<a href="%s">(unknown)</a>', $prefix, mainturl('');
-    }
+    return htmladdresslinks($prefixfunc, \&mainturl, $maints);
 }
 
 sub htmlindexentry {
@@ -286,8 +295,8 @@ sub htmlindexentrystatus {
 
     $result .= htmlpackagelinks($status{"package"}, 1);
     $result .= $showseverity;
-    $result .= "Reported by: <a href=\"" . submitterurl($status{originator})
-               . "\">" . htmlsanit($status{originator}) . "</a>";
+    $result .= htmladdresslinks("Reported by: ", \&submitterurl,
+                                $status{originator});
     $result .= ";\nOwned by: " . htmlsanit($status{owner})
                if length $status{owner};
     $result .= ";\nTags: <strong>" 

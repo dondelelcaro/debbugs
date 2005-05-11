@@ -181,8 +181,8 @@ if  ($status{severity} eq 'normal') {
 $indexentry .= "<p>$showseverity";
 $indexentry .= htmlpackagelinks($status{package}, 0);
 
-$indexentry .= "Reported by: <a href=\"" . submitterurl($status{originator})
-              . "\">" . htmlsanit($status{originator}) . "</a>;\n";
+$indexentry .= htmladdresslinks("Reported by: ", \&submitterurl,
+                                $status{originator}) . ";\n";
 
 $indexentry .= "Owned by: " . htmlsanit($status{owner}) . ";\n"
               if length $status{owner};

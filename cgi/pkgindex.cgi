@@ -110,11 +110,14 @@ if ($indexon eq "pkg") {
 } elsif ($indexon eq "submitter") {
   $tag = "submitter";
   my %fullname = ();
-  %count = countbugs(sub {my %d=@_; my $f = $d{"submitter"} || "";
-                          my $em = emailfromrfc822($f);
-                          $fullname{$em} = $f if (!defined $fullname{$em});
-			  return $em;
-			});
+  %count = countbugs(sub {my %d=@_;
+                          my @se = getparsedaddrs($d{"submitter"} || "");
+                          foreach my $addr (@se) {
+                            $fullname{$addr->address} = $addr->format
+                              unless exists $fullname{$addr->address};
+                          }
+                          map { $_->address } @se;
+                         });
   foreach my $sub (keys %count) {
     $sortkey{$sub} = lc $fullname{$sub};
     $htmldescrip{$sub} = sprintf('<a href="%s">%s</a>',
