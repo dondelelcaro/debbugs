@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.99 2005/04/09 16:21:02 cjwatson Exp $
+# $Id: service.in,v 1.100 2005/05/26 13:30:21 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -339,18 +339,19 @@ END
             $ref = $clonebugs{$ref};
         }
         if (&getbug) {
-            &foundbug;
-            &addmaintainers($data);
-            $oldsubmitter= $data->{originator};
-            $data->{originator}= $newsubmitter;
-            $action= "Changed $gBug submitter from $oldsubmitter to $newsubmitter.";
-            &savebug;
-            &transcript("$action\n");
-            if (length($data->{done})) {
-                &transcript("(By the way, that $gBug is currently marked as done.)\n");
-            }
-            &transcript("\n");
-            $message= <<END;
+            if (&checkpkglimit) {
+                &foundbug;
+                &addmaintainers($data);
+                $oldsubmitter= $data->{originator};
+                $data->{originator}= $newsubmitter;
+                $action= "Changed $gBug submitter from $oldsubmitter to $newsubmitter.";
+                &savebug;
+                &transcript("$action\n");
+                if (length($data->{done})) {
+                    &transcript("(By the way, that $gBug is currently marked as done.)\n");
+                }
+                &transcript("\n");
+                $message= <<END;
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $oldsubmitter
 Subject: $gBug#$ref submitter address changed
@@ -376,7 +377,10 @@ $gMaintainer
 (administrator, $gProject $gBugs database)
 
 END
-            &sendmailmessage($message,$oldsubmitter);
+                &sendmailmessage($message,$oldsubmitter);
+            } else {
+                &cancelbug;
+            }
         } else {
             &notfoundbug;
         }
@@ -499,16 +503,20 @@ END
 	    $ref = $clonebugs{$ref};
 	}
         if (&getbug) {
-            &foundbug;
-            &addmaintainers($data);
-            $data->{subject}= $newtitle;
-            $action= "Changed $gBug title.";
-            &savebug;
-            &transcript("$action\n");
-            if (length($data->{done})) {
-                &transcript("(By the way, that $gBug is currently marked as done.)\n");
+            if (&checkpkglimit) {
+                &foundbug;
+                &addmaintainers($data);
+                $data->{subject}= $newtitle;
+                $action= "Changed $gBug title.";
+                &savebug;
+                &transcript("$action\n");
+                if (length($data->{done})) {
+                    &transcript("(By the way, that $gBug is currently marked as done.)\n");
+                }
+                &transcript("\n");
+            } else {
+                &cancelbug;
             }
-            &transcript("\n");
         } else {
             &notfoundbug;
         }
@@ -545,6 +553,7 @@ END
 	    }
 	    next if grep($_ eq $ref,@newmergelist);
 	    if (!&getbug) { &notfoundbug; @newmergelist=(); last }
+            if (!&checkpkglimit) { &cancelbug; @newmergelist=(); last; }
             &foundbug;
             &transcript("D| adding $ref ($data->{mergedwith})\n") if $dl;
 	    $mismatch= '';
@@ -796,6 +805,14 @@ sub checkmatch {
     }
 }
 
+sub checkpkglimit {
+    if (keys %limit_pkgs and not defined $limit_pkgs{$data->{package}}) {
+        &transcript("$gBug number $ref belongs to package $data->{package}, skipping.\n\n");
+        return 0;
+    }
+    return 1;
+}
+
 # High-level bug manipulation calls
 # Do announcements themselves
 #
@@ -838,11 +855,10 @@ sub setbug {
         return 0;
     }
 
-    if (keys(%limit_pkgs) && not defined $limit_pkgs{$data->{package}}) {
-	&transcript("$gBug number $ref belongs to package $data->{package}, skipping.\n\n");
-	&cancelbug;
-	return 0;
-    } 
+    if (!&checkpkglimit) {
+        &cancelbug;
+        return 0;
+    }
 
     @thisbugmergelist= split(/ /,$data->{mergedwith});
     if (!@thisbugmergelist) {
