@@ -68,6 +68,7 @@ sub display_entity ($$$$\$\@) {
     my $type = $entity->effective_type;
     my $filename = $entity->head->recommended_filename;
     $filename = '' unless defined $filename;
+    $filename = decode_rfc1522($filename);
 
     if ($top) {
 	$$this .= htmlsanit(decode_rfc1522($entity->stringify_header))

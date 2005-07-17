@@ -8,7 +8,7 @@ Build-Depends-Indep: debhelper
 
 Package: debbugs
 Architecture: all
-Depends: perl5 | perl, exim | mail-transport-agent, libmailtools-perl, ed, libmime-perl, libio-stringy-perl, libmldbm-perl, libunicode-maputf8-perl
+Depends: perl5 | perl, exim | mail-transport-agent, libmailtools-perl, ed, libmime-perl, libio-stringy-perl, libmldbm-perl, libunicode-maputf8-perl, liburi-perl
 Recommends: httpd, links | lynx
 Suggests: spamassassin
 Description: The bug tracking system based on the active Debian BTS

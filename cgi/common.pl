@@ -6,6 +6,8 @@ use Mail::Address;
 use MLDBM qw/DB_File/;
 use POSIX qw/ceil/;
 
+use URI::Escape;
+
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
 require "$lib_path/errorlib";
@@ -463,7 +465,7 @@ sub dlurl {
     }
     $params .= "&archive=yes" if ($common_archive);
     my $pathinfo = '';
-    $pathinfo = "/$filename" if $filename ne '';
+    $pathinfo = '/'.uri_escape($filename) if $filename ne '';
 
     return urlsanit("bugreport.cgi$pathinfo?$params");
 }
