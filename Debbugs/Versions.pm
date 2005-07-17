@@ -157,7 +157,13 @@ sub save ($*)
     for my $v (@vers) {
 	delete $leaf{$parent->{$v}} if defined $parent->{$v};
     }
-    my @leaves = reverse sort { $self->{vercmp}->($a, $b) } keys %leaf;
+    # TODO: breaks with tcp-wrappers/1.0-1 tcpd/2.0-1 case
+    my @leaves = reverse sort {
+	my ($x, $y) = ($a, $b);
+	$x =~ s{.*/}{};
+	$y =~ s{.*/}{};
+	$self->{vercmp}->($x, $y);
+    } keys %leaf;
 
     my %seen;
     for my $lf (@leaves) {
@@ -205,6 +211,16 @@ sub buggy ($$$$)
 	# lists have no common entries.
 	return 'found' if $found{$node};
 	return 'fixed' if $fixed{$node};
+    }
+
+    unless (@$found) {
+	# We don't know when it was found. Was it fixed in a descendant of
+	# this version? If so, this one should be considered buggy.
+	for my $f (@$fixed) {
+	    for (my $node = $f; defined $node; $node = $parent->{$node}) {
+		return 'found' if $node eq $version;
+	    }
+	}
     }
 
     # Nothing in the requested version's ancestor chain can be confirmed as

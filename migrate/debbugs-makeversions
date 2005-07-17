@@ -18,7 +18,6 @@ EOF
 sub getbuginfo ($)
 {
     my $log = shift;
-    print "Processing $log ...\n";
 
     open LOG, "< $log" or die "Can't open $log: $!";
     my @records = read_log_records(*LOG);
@@ -56,27 +55,46 @@ sub getbuginfo ($)
 
 	# Get Version: pseudo-headers.
 	my $i;
+	my ($source, $sourcever, $ver);
 	for ($i = 0; $i < @{$decoded->{body}}; ++$i) {
 	    last if $decoded->{body}[$i] !~ /^(\S+):\s*(.*)/;
 	    my ($fn, $fv) = (lc $1, $2);
-	    next if $fn ne 'version';
-	    next if $fv !~ /^(\d[^,\s]*(?:[,\s]+|$))+/;
-	    if ($closing) {
-		for my $v (split /[,\s]+/, $fv) {
-		    push @fixed_versions, $v
-			unless exists $fixed_versions{$v};
-		    $fixed_versions{$v} = 1;
-		    @found_versions = grep { $_ ne $v } @found_versions;
-		    delete $found_versions{$v};
-		}
-	    } else {
-		for my $v (split /[,\s]+/, $fv) {
-		    push @found_versions, $v
-			unless exists $found_versions{$v};
-		    $found_versions{$v} = 1;
-		    @fixed_versions = grep { $_ ne $v } @fixed_versions;
-		    delete $fixed_versions{$v};
-		}
+	    if ($fn eq 'source') {
+		$source = $fv;
+	    } elsif ($fn eq 'source-version' and
+		     $fv =~ /^(\d[^,\s]*(?:[,\s]+|$))+/) {
+		$sourcever = $fv;
+	    } elsif ($fn eq 'version' and $fv =~ /^(\d[^,\s]*(?:[,\s]+|$))+/) {
+		# Deal with reportbug brain-damage.
+		next if $fv =~ /^unavailable/i;
+		$fv =~ s/;.*//;
+		$fv =~ s/ *\(.*\)//;
+		$ver = $fv;
+	    }
+	}
+
+	my @parsedvers;
+	if (defined $ver) {
+	    push @parsedvers, split /[,\s]+/, $ver;
+	} elsif (defined $source and defined $sourcever) {
+	    push @parsedvers, map "$source/$_", split /[,\s]+/, $sourcever;
+	}
+
+	if ($closing) {
+	    for my $v (@parsedvers) {
+		push @fixed_versions, $v
+		    unless exists $fixed_versions{$v};
+		$fixed_versions{$v} = 1;
+		@found_versions = grep { $_ ne $v } @found_versions;
+		delete $found_versions{$v};
+	    }
+	} else {
+	    for my $v (@parsedvers) {
+		push @found_versions, $v
+		    unless exists $found_versions{$v};
+		$found_versions{$v} = 1;
+		@fixed_versions = grep { $_ ne $v } @fixed_versions;
+		delete $fixed_versions{$v};
 	    }
 	}
 
@@ -84,13 +102,13 @@ sub getbuginfo ($)
 	    # Look for Debian changelogs.
 	    for (; $i < @{$decoded->{body}}; ++$i) {
 		if ($decoded->{body}[$i] =~
-			/\S+ \(([^)]+)\) \S+; urgency=\S+/i) {
-		    my $v = $1;
-		    push @fixed_versions, $v
-			unless exists $fixed_versions{$v};
-		    $fixed_versions{$v} = 1;
-		    @found_versions = grep { $_ ne $v } @found_versions;
-		    delete $found_versions{$v};
+			/(\w[-+0-9a-z.]+) \(([^\(\) \t]+)\) \S+; urgency=\S+/i) {
+		    my ($p, $v) = ($1, $2);
+		    push @fixed_versions, "$p/$v"
+			unless exists $fixed_versions{"$p/$v"};
+		    $fixed_versions{"$p/$v"} = 1;
+		    @found_versions = grep { $_ ne "$p/$v" } @found_versions;
+		    delete $found_versions{"$p/$v"};
 		    last;
 		}
 	    }
@@ -128,9 +146,12 @@ while (defined(my $dir = readdir DB)) {
 
 	$bug =~ /(..)$/;
 	my $bughash = $1;
-	next if -e "$verdb/$bughash/$bug.versions" and
-		(stat "$verdb/$bughash/$bug.versions")[9] >=
-		    (stat "$db/$dir/$file")[9];
+	# For incremental updates.
+	#next if -e "$verdb/$bughash/$bug.versions" and
+	#	(stat "$verdb/$bughash/$bug.versions")[9] >=
+	#	    (stat "$db/$dir/$file")[9];
+
+	print "Processing $bug ...\n" if $ENV{DEBBUGS_VERBOSE};
 
 	open STATUS, "$db/$dir/$bug.status" or next;
 	<STATUS> for 1 .. 6;	# done is field 7

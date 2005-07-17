@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.92 2005/07/16 21:13:16 don Exp $
+# $Id: process.in,v 1.93 2005/07/17 16:06:26 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -349,6 +349,11 @@ END
         if ($codeletter eq 'D') {
             $data->{keywords} = join ' ', grep $_ ne 'pending',
                                      split ' ', $data->{keywords};
+            if (defined $pheader{'source-version'}) {
+                addfixedversions($data, $pheader{source}, $pheader{'source-version'});
+            } elsif (defined $pheader{version}) {
+                addfixedversions($data, undef, $pheader{version});
+            }
         }
 
 	writebug($ref, $data);
@@ -499,7 +504,15 @@ END
 	&appendlog;
 	&finish;
     }
-    if (!defined($pheader{'package'})) {
+
+    $data->{found_versions} = [];
+    $data->{fixed_versions} = [];
+
+    if (defined $pheader{source}) {
+        $data->{package} = $pheader{source};
+    } elsif (defined $pheader{package}) {
+        $data->{package} = $pheader{package};
+    } else {
  	&htmllog("Warning","sent",$replyto,"Message not forwarded.");
         &sendmessage(<<END."---------------------------------------------------------------------------\n".join("\n", @msg), '');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
@@ -535,21 +548,6 @@ $gMaintainer
 END
 	&appendlog;
 	&finish;
-    } else {
-	$data->{package}= $pheader{'package'}; 
-    }
-
-    $data->{versions}= '';
-    if (defined($pheader{'version'})) {
-        $data->{versions} = $pheader{'version'};
-        $data->{versions} =~ s/\s+/ /;
-	# BUG: need to bounce unknown versions back to submitter here
-    }
-
-    $data->{fixed_versions}= '';
-    if (defined($pheader{'fixed-in-version'})) {
-        $data->{fixed_versions} = $pheader{'fixed-in-version'};
-        $data->{fixed_versions} =~ s/\s+/ /;
     }
 
     $data->{keywords}= '';
@@ -635,6 +633,22 @@ END
 @bccs = @addsrcaddrs;
 if (defined $gStrongList and isstrongseverity($data->{severity})) {
     push @bccs, "$gStrongList\@$gListDomain";
+}
+
+if (defined $pheader{source}) {
+    # Prefix source versions with the name of the source package. They
+    # appear that way in version trees so that we can deal with binary
+    # packages moving from one source package to another.
+    if (defined $pheader{'source-version'}) {
+        addfoundversions($data, $pheader{source}, $pheader{'source-version'});
+    } elsif (defined $pheader{version}) {
+        addfoundversions($data, $pheader{source}, $pheader{version});
+    }
+    writebug($ref, $data);
+} elsif (defined $pheader{package}) {
+    # TODO: could handle Source-Version: by looking up the source package?
+    addfoundversions($data, undef, $pheader{version}) if defined($pheader{version});
+    writebug($ref, $data);
 }
 
 $veryquiet= $codeletter eq 'Q';

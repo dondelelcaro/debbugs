@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.42 2005/04/09 16:21:02 cjwatson Exp $
+# $Id: errorlib.in,v 1.43 2005/07/17 16:06:26 cjwatson Exp $
 
 use Mail::Address;
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
@@ -85,6 +85,8 @@ my %fields = (originator => 'submitter',
               mergedwith => 'merged-with',
               severity => 'severity',
               owner => 'owner',
+              found_versions => 'found-in',
+              fixed_versions => 'fixed-in',
              );
 
 # Fields which need to be RFC1522-decoded in format versions earlier than 3.
@@ -123,7 +125,9 @@ sub readbug {
 
     close(S);
 
-    $data{severity} = 'normal' if $data{severity} eq '';
+    $data{severity} = $gDefaultSeverity if $data{severity} eq '';
+    $data{found_versions} = [split ' ', $data{found_versions}];
+    $data{fixed_versions} = [split ' ', $data{fixed_versions}];
 
     if ($version < 3) {
 	for my $field (@rfc1522_fields) {
@@ -146,6 +150,9 @@ sub makestatus {
     my $data = shift;
     my $version = shift;
     $version = 2 unless defined $version;
+
+    local $data->{found_versions} = join ' ', @{$data->{found_versions}};
+    local $data->{fixed_versions} = join ' ', @{$data->{fixed_versions}};
 
     my $contents = '';
 
@@ -252,6 +259,68 @@ sub unfilelock {
     pop(@cleanups);
     eval 'close(FLOCK'.($#filelocks+1).');' || warn "failed to close lock file $lockfile: $!";
     unlink($lockfile) || warn "failed to remove lock file $lockfile: $!";
+}
+
+sub addfoundversions {
+    my $data = shift;
+    my $source = shift;
+    my $version = shift;
+    return unless defined $version;
+    undef $source if $source =~ m[(?:\s|/)];
+
+    foreach my $ver (split /[,\s]+/, $version) {
+        $ver = "$source/$ver" if defined $source;
+        unless (grep { $_ eq $ver } @{$data->{found_versions}}) {
+            push @{$data->{found_versions}}, $ver;
+        }
+        @{$data->{fixed_versions}} =
+            grep { $_ ne $ver } @{$data->{fixed_versions}};
+    }
+}
+
+sub removefoundversions {
+    my $data = shift;
+    my $source = shift;
+    my $version = shift;
+    return unless defined $version;
+    undef $source if $source =~ m[(?:\s|/)];
+
+    foreach my $ver (split /[,\s]+/, $version) {
+        $ver = "$source/$ver" if defined $source;
+        @{$data->{found_versions}} =
+            grep { $_ ne $ver } @{$data->{found_versions}};
+    }
+}
+
+sub addfixedversions {
+    my $data = shift;
+    my $source = shift;
+    my $version = shift;
+    return unless defined $version;
+    undef $source if $source =~ m[(?:\s|/)];
+
+    foreach my $ver (split /[,\s]+/, $version) {
+        $ver = "$source/$ver" if defined $source;
+        unless (grep { $_ eq $ver } @{$data->{fixed_versions}}) {
+            push @{$data->{fixed_versions}}, $ver;
+        }
+        @{$data->{found_versions}} =
+            grep { $_ ne $ver } @{$data->{found_versions}};
+    }
+}
+
+sub removefixedversions {
+    my $data = shift;
+    my $source = shift;
+    my $version = shift;
+    return unless defined $version;
+    undef $source if $source =~ m[(?:\s|/)];
+
+    foreach my $ver (split /[,\s]+/, $version) {
+        $ver = "$source/$ver" if defined $source;
+        @{$data->{fixed_versions}} =
+            grep { $_ ne $ver } @{$data->{fixed_versions}};
+    }
 }
 
 sub quit {

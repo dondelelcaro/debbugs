@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.100 2005/05/26 13:30:21 cjwatson Exp $
+# $Id: service.in,v 1.101 2005/07/17 16:06:26 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -242,16 +242,21 @@ END
             last;
         }
 #### interesting ones start here
-    } elsif (m/^close\s+\#?(-?\d+)$/i) {
+    } elsif (m/^close\s+\#?(-?\d+)(?:\s+(\d.*))?$/i) {
 	$ok++;
 	$ref= $1;
+	$version= $2;
 	if (&setbug) {
 	    &transcript("'close' is deprecated; see http://$gWebDomain/Developer$gHTMLSuffix#closing.\n");
-	    if (length($data->{done})) {
+	    if (length($data->{done}) and not defined($version)) {
 		&transcript("$gBug is already closed, cannot re-close.\n\n");
                 &nochangebug;
             } else {
-                $action= "$gBug closed, send any further explanations to $data->{originator}";
+                $action= "$gBug " .
+                    (defined($version) ?
+                        "marked as fixed in version $version" :
+                        "closed") .
+                    ", send any further explanations to $data->{originator}";
                 do {
                     &addmaintainers($data);
 					if ( length( $gDoneList ) > 0 && length( $gListDomain ) >
@@ -263,6 +268,7 @@ END
                         $data->{keywords}= join ' ', grep $_ ne 'pending',
                                                 @keywords;
                     }
+                    addfixedversions($data, undef, $version);
 
 		    $message= <<END;
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
@@ -293,9 +299,10 @@ END
                 } while (&getnextbug);
             }
         }
-    } elsif (m/^reassign\s+\#?(-?\d+)\s+(\S.*\S)$/i) {
+    } elsif (m/^reassign\s+\#?(-?\d+)\s+(\S+)(?:\s+(\d.*))?$/i) {
         $ok++;
         $ref= $1; $newpackage= $2;
+        $version= $3;
     	$newpackage =~ y/A-Z/a-z/;
         if (&setbug) {
             if (length($data->{package})) {
@@ -307,6 +314,10 @@ END
             do {
                 &addmaintainers($data);
                 $data->{package}= $newpackage;
+                $data->{found_versions}= [];
+                $data->{fixed_versions}= [];
+                # TODO: what if $newpackage is a source package?
+                addfoundversions($data, undef, $version) if defined $version;
                 &addmaintainers($data);
             } while (&getnextbug);
         }
@@ -317,6 +328,9 @@ END
         $ok++;
         $ref= $1;
         if (&setbug) {
+            if (@{$data->{fixed_versions}}) {
+                &transcript("'reopen' is deprecated when a bug has been closed with a version;\nuse 'found' or 'submitter' as appropriate instead.\n");
+            }
             if (!length($data->{done})) {
                 &transcript("$gBug is already open, cannot reopen.\n\n");
                 &nochangebug;
@@ -328,6 +342,46 @@ END
                     &addmaintainers($data);
                     $data->{originator}= $noriginator eq '' ?  $data->{originator} : $noriginator;
                     $data->{done}= '';
+                } while (&getnextbug);
+            }
+        }
+    } elsif (m/^found\s+\#?(-?\d+)(?:\s+(\d.*))?$/i) {
+        $ok++;
+        $ref= $1;
+        $version= $2;
+        if (&setbug) {
+            if (!length($data->{done})) {
+                &transcript("$gBug is already open, cannot reopen.\n\n");
+                &nochangebug;
+            } else {
+                $action=
+                    defined($version) ?
+                        "$gBug marked as found in version $version." :
+                        "$gBug reopened.";
+                do {
+                    &addmaintainers($data);
+                    # The 'done' field gets a bit weird with version
+                    # tracking, because a bug may be closed by multiple
+                    # people in different branches. Until we have something
+                    # more flexible, we set it every time a bug is fixed,
+                    # and clear it precisely when a found command is
+                    # received for the rightmost fixed-in version, which
+                    # equates to the most recent fixing of the bug, or when
+                    # a versionless found command is received.
+                    if (defined $version) {
+                        my $lastfixed =
+                            (reverse @{$data->{fixed_versions}})[0];
+                        # TODO: what if $data->{package} is a source package?
+                        addfoundversions($data, undef, $version);
+                        if (defined $lastfixed and $version eq $lastfixed) {
+                            $data->{done} = '';
+                        }
+                    } else {
+                        # Versionless found; assume old-style "not fixed at
+                        # all".
+                        $data->{fixed_versions} = [];
+                        $data->{done} = '';
+                    }
                 } while (&getnextbug);
             }
         }

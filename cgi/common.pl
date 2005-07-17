@@ -243,7 +243,7 @@ sub htmlpackagelinks {
                     '<a href="' . pkgurl($_) . '">' .
                     $openstrong . htmlsanit($_) . $closestrong . '</a>'
                 } @pkglist
-           ) . ";\n";
+           );
 }
 
 # Generate a comma-separated list of HTML links to each address given in
@@ -296,6 +296,25 @@ sub htmlindexentrystatus {
     }
 
     $result .= htmlpackagelinks($status{"package"}, 1);
+
+    my $showversions = '';
+    if (@{$status{found_versions}}) {
+        my @found = @{$status{found_versions}};
+        local $_;
+        s{/}{ } foreach @found;
+        $showversions .= join ', ', map htmlsanit($_), @found;
+    }
+    if (@{$status{fixed_versions}}) {
+        $showversions .= '; ' if length $showversions;
+        $showversions .= '<strong>fixed</strong>: ';
+        my @fixed = @{$status{fixed_versions}};
+        local $_;
+        s{/}{ } foreach @fixed;
+        $showversions .= join ', ', map htmlsanit($_), @fixed;
+    }
+    $result .= " ($showversions)" if length $showversions;
+    $result .= ";\n";
+
     $result .= $showseverity;
     $result .= htmladdresslinks("Reported by: ", \&submitterurl,
                                 $status{originator});
@@ -313,22 +332,7 @@ sub htmlindexentrystatus {
         $mseparator= ", ";
     }
 
-    if (@{$status{found_versions}}) {
-        $result .= ";\nfound in ";
-        $result .= (@{$status{found_versions}} == 1) ? 'version '
-                                                     : 'versions ';
-        $result .= join ', ', map htmlsanit($_), @{$status{found_versions}};
-    }
-
-    if (@{$status{fixed_versions}}) {
-        $result .= ";\n<strong>fixed</strong> in ";
-        $result .= (@{$status{fixed_versions}} == 1) ? 'version '
-                                                     : 'versions ';
-        $result .= join ', ', map htmlsanit($_), @{$status{fixed_versions}};
-        if (length($status{done})) {
-            $result .= ' by ' . htmlsanit($status{done});
-        }
-    } elsif (length($status{done})) {
+    if (length($status{done})) {
         $result .= ";\n<strong>Done:</strong> " . htmlsanit($status{done});
         $days = ceil($debbugs::gRemoveAge - -M buglog($status{id}));
         if ($days >= 0) {
@@ -811,24 +815,40 @@ sub getbugstatus {
     $status{"pending"} = 'pending-fixed'    if ($tags{pending});
     $status{"pending"} = 'fixed'	    if ($tags{fixed});
 
-    my $version;
+    my @versions;
     if (defined $common_version) {
-        $version = $common_version;
+        @versions = ($common_version);
     } elsif (defined $common_dist) {
-        $version = getversion($status{package}, $common_dist, $common_arch);
+        @versions = getversions($status{package}, $common_dist, $common_arch);
     }
 
-    if (defined $version) {
-        my $buggy = buggyversion($bugnum, $version, \%status);
-        if ($buggy eq 'absent') {
+    # TODO: This should probably be handled further out for efficiency and
+    # for more ease of distinguishing between pkg= and src= queries.
+    my @sourceversions = makesourceversions($status{package}, $common_arch,
+                                            @versions);
+
+    if (@sourceversions) {
+        # Resolve bugginess states (we might be looking at multiple
+        # architectures, say). Found wins, then fixed, then absent.
+        my $maxbuggy = 'absent';
+        for my $version (@sourceversions) {
+            my $buggy = buggyversion($bugnum, $version, \%status);
+            if ($buggy eq 'found') {
+                $maxbuggy = 'found';
+                last;
+            } elsif ($buggy eq 'fixed' and $maxbuggy ne 'found') {
+                $maxbuggy = 'fixed';
+            }
+        }
+        if ($maxbuggy eq 'absent') {
             $status{"pending"} = 'absent';
-        } elsif ($buggy eq 'fixed') {
+        } elsif ($maxbuggy eq 'fixed') {
             $status{"pending"} = 'done';
         }
     }
     
     if (length($status{done}) and
-            (not defined $version or not @{$status{fixed_versions}})) {
+            (not @sourceversions or not @{$status{fixed_versions}})) {
         $status{"pending"} = 'done';
     }
 
@@ -854,6 +874,29 @@ sub buglog {
     return getbugcomponent($bugnum, 'log.gz', $location);
 }
 
+# Canonicalize versions into source versions, which have an explicitly
+# named source package. This is used to cope with source packages whose
+# names have changed during their history, and with cases where source
+# version numbers differ from binary version numbers.
+sub makesourceversions {
+    my $pkg = shift;
+    my $arch = shift;
+    my %sourceversions;
+
+    for my $version (@_) {
+        if ($version =~ m[/]) {
+            # Already a source version.
+            $sourceversions{$version} = 1;
+        } else {
+            my @srcinfo = binarytosource($pkg, $version, $arch);
+            next unless @srcinfo;
+            $sourceversions{"$_->[0]/$_->[1]"} = 1 foreach @srcinfo;
+        }
+    }
+
+    return sort keys %sourceversions;
+}
+
 my %_versionobj;
 sub buggyversion {
     my ($bug, $ver, $status) = @_;
@@ -866,30 +909,136 @@ sub buggyversion {
         $tree = $_versionobj{$src};
     } else {
         $tree = Debbugs::Versions->new(\&DpkgVer::vercmp);
-        if (open VERFILE, "< $gVersionPackagesDir/$src") {
+        my $srchash = substr $src, 0, 1;
+        if (open VERFILE, "< $gVersionPackagesDir/$srchash/$src") {
             $tree->load(\*VERFILE);
             close VERFILE;
         }
         $_versionobj{$src} = $tree;
     }
 
-    return $tree->buggy($ver, $status->{found_versions},
-                        $status->{fixed_versions});
+    my @found = makesourceversions($status->{package}, undef,
+                                   @{$status->{found_versions}});
+    my @fixed = makesourceversions($status->{package}, undef,
+                                   @{$status->{fixed_versions}});
+
+    return $tree->buggy($ver, \@found, \@fixed);
 }
 
 my %_versions;
-sub getversion {
+sub getversions {
     my ($pkg, $dist, $arch) = @_;
-    return undef unless defined $gVersionIndex;
+    return () unless defined $gVersionIndex;
     $dist = 'unstable' unless defined $dist;
-    $arch = 'i386' unless defined $arch;
 
     unless (tied %_versions) {
         tie %_versions, 'MLDBM', $gVersionIndex, O_RDONLY
             or die "can't open versions index: $!";
     }
 
-    return $_versions{$pkg}{$dist}{$arch};
+    if (defined $arch) {
+        my $ver = $_versions{$pkg}{$dist}{$arch};
+        return $ver if defined $ver;
+        return ();
+    } else {
+        my %uniq;
+        for my $ar (keys %{$_versions{$pkg}{$dist}}) {
+            $uniq{$_versions{$pkg}{$dist}{$ar}} = 1 unless $ar eq 'source';
+        }
+        return keys %uniq;
+    }
+}
+
+sub getversiondesc {
+    my $pkg = shift;
+
+    if (defined $common_version) {
+        return "version $common_version";
+    } elsif (defined $common_dist) {
+        my @distvers = getversions($pkg, $common_dist, $common_arch);
+        @distvers = sort @distvers;
+        local $" = ', ';
+        if (@distvers > 1) {
+            return "versions @distvers";
+        } elsif (@distvers == 1) {
+            return "version @distvers";
+        }
+    }
+
+    return undef;
+}
+
+# Returns an array of zero or more references to (srcname, srcver) pairs.
+# If $binarch is undef, returns results for all architectures.
+my %_binarytosource;
+sub binarytosource {
+    my ($binname, $binver, $binarch) = @_;
+
+    # TODO: This gets hit a lot, especially from buggyversion() - probably
+    # need an extra cache for speed here.
+
+    if (tied %_binarytosource or
+	    tie %_binarytosource, 'MLDBM', $gBinarySourceMap, O_RDONLY) {
+	# avoid autovivification
+	if (exists $_binarytosource{$binname} and
+		exists $_binarytosource{$binname}{$binver}) {
+	    if (defined $binarch) {
+		my $src = $_binarytosource{$binname}{$binver}{$binarch};
+		return () unless defined $src; # not on this arch
+		# Copy the data to avoid tiedness problems.
+		return [@$src];
+	    } else {
+		# Get (srcname, srcver) pairs for all architectures and
+		# remove any duplicates. This involves some slightly tricky
+		# multidimensional hashing; sorry. Fortunately there'll
+		# usually only be one pair returned.
+		my %uniq;
+		for my $ar (keys %{$_binarytosource{$binname}{$binver}}) {
+		    my $src = $_binarytosource{$binname}{$binver}{$ar};
+		    next unless defined $src;
+		    $uniq{$src->[0]}{$src->[1]} = 1;
+		}
+		my @uniq;
+		for my $sn (sort keys %uniq) {
+		    push @uniq, [$sn, $_] for sort keys %{$uniq{$sn}};
+		}
+		return @uniq;
+	    }
+	}
+    }
+
+    # No $gBinarySourceMap, or it didn't have an entry for this name and
+    # version. Try $gPackageSource (unversioned) instead.
+    my $pkgsrc = getpkgsrc();
+    if (exists $pkgsrc->{$binname}) {
+	return [$pkgsrc->{$binname}, $binver];
+    } else {
+	return ();
+    }
+}
+
+# Returns an array of zero or more references to
+# (binname, binver[, binarch]) triplets.
+my %_sourcetobinary;
+sub sourcetobinary {
+    my ($srcname, $srcver) = @_;
+
+    if (tied %_sourcetobinary or
+	    tie %_sourcetobinary, 'MLDBM', $gSourceBinaryMap, O_RDONLY) {
+	# avoid autovivification
+	if (exists $_sourcetobinary{$srcname} and
+		exists $_sourcetobinary{$srcname}{$srcver}) {
+	    my $bin = $_sourcetobinary{$srcname}{$srcver};
+	    return () unless defined $bin;
+	    # Copy the data to avoid tiedness problems.
+	    return @$bin;
+	}
+    }
+
+    # No $gSourceBinaryMap, or it didn't have an entry for this name and
+    # version. Try $gPackageSource (unversioned) instead.
+    my @srcpkgs = getsrcpkgs($srcname);
+    return map [$_, $srcver], @srcpkgs;
 }
 
 1;

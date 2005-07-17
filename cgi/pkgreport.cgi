@@ -125,8 +125,8 @@ if (defined $pkg) {
     $title .= " (version $version)";
   } elsif (defined $dist) {
     $title .= " in $dist";
-    my $distver = getversion($pkg, $dist, $arch);
-    $title .= " (version $distver)" if defined $distver;
+    my $verdesc = getversiondesc($pkg);
+    $title .= " ($verdesc)" if defined $verdesc;
   }
   my @pkgs = split /,/, $pkg;
   @bugs = @{getbugs(sub {my %d=@_;
@@ -137,12 +137,13 @@ if (defined $pkg) {
                         }, 'package', @pkgs)};
 } elsif (defined $src) {
   $title = "source $src";
+  set_option('arch', 'source');
   if (defined $version) {
     $title .= " (version $version)";
   } elsif (defined $dist) {
     $title .= " in $dist";
-    my $distver = getversion($src, $dist, 'source');
-    $title .= " (version $distver)" if defined $distver;
+    my $verdesc = getversiondesc($src);
+    $title .= " ($verdesc)" if defined $verdesc;
   }
   my @pkgs = ();
   my @srcs = split /,/, $src;

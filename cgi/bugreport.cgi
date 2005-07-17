@@ -180,7 +180,7 @@ if  ($status{severity} eq 'normal') {
 }
 
 $indexentry .= "<p>$showseverity";
-$indexentry .= htmlpackagelinks($status{package}, 0);
+$indexentry .= htmlpackagelinks($status{package}, 0) . ";\n";
 
 $indexentry .= htmladdresslinks("Reported by: ", \&submitterurl,
                                 $status{originator}) . ";\n";
