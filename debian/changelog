@@ -40,6 +40,19 @@ debbugs (2.4.2) UNRELEASED; urgency=low
       however.
     - Add options show_list_(head|foot)er.
 
+  * Don Armstrong:
+
+    - Don't remove the maintainer address if the message was sent by the
+      maintainer and we're submitting to maintonly (closes: #140061)
+    - Use uri_escape to escape URI's before sending them back out so the
+      name of the file doesn't munge the query string. [#301606 pt. 1]
+    - call decode_rfc1522 on the filename returned so that encoded
+      filenames get decoded to something "reasonable." (closes: #301606)
+    - We now require URI::Escape
+    - Added apache.conf to examples, which is a sample apache
+      configuration file which implements the rewrite rules that are
+      currently used on bugs.debian.org. (closes: #222264)
+  
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
 
 debbugs (2.4.1) unstable; urgency=low

@@ -45,6 +45,7 @@ $(var_dir)/spool/db-h $(scripts_dir) $(perl_dir) $(examples_dir) $(man8_dir); \
 	$(install_data) debian/crontab misc/nextnumber misc/Maintainers \
 	  misc/Maintainers.override misc/pseudo-packages.description \
 	  misc/sources $(examples_dir)
+	$(install_data) examples/apache.conf $(examples_dir)
 
 	# install the HTML pages etc
 	$(foreach html, $(htmls_in), $(install_data) $(html) $(etc_dir)/html;)

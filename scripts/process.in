@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.91 2005/04/20 04:40:18 cjwatson Exp $
+# $Id: process.in,v 1.92 2005/07/16 21:13:16 don Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -1114,7 +1114,8 @@ sub checkmaintainers {
 	    print DEBUG "maintainer add >$p|$maintainerof{$p}<\n";
             $addmaint= $maintainerof{$p};
             push(@maintaddrs,$addmaint) unless
-                $addmaint eq $replyto || grep($_ eq $addmaint, @maintaddrs);
+                ($addmaint eq $replyto and $codeletter ne 'M') || 
+		     grep($_ eq $addmaint, @maintaddrs);
             $anymaintfound++;
         } else {
 	    print DEBUG "maintainer none >$p<\n";
