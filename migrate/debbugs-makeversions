@@ -189,7 +189,7 @@ while (defined(my $dir = readdir DB)) {
 	    my $outstatus = readbug($out, $db);
 	    $outstatus->{found_versions} = [@$found_versions];
 	    $outstatus->{fixed_versions} = [@$fixed_versions];
-	    writebug($out, $outstatus);
+	    writebug($out, $outstatus, $db);
 	    if ($out != $bug) {
 		unfilelock();
 	    }
