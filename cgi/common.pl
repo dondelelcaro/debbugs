@@ -785,24 +785,6 @@ sub getbugstatus {
     %status = %{ readbug( $bugnum, $location ) };
     $status{ id } = $bugnum;
 
-    $status{found_versions} = [];
-    $status{fixed_versions} = [];
-    if (defined $gVersionBugsDir and
-            (defined $common_version or defined $common_dist)) {
-        my $bughash = get_hashname($bugnum);
-        if (open BUGVER, "< $gVersionBugsDir/$bughash/$bugnum.versions") {
-            local $_;
-            while (<BUGVER>) {
-                if (/^Found-in: (.*)/i) {
-                    $status{found_versions} = [split ' ', $1];
-                } elsif (/^Fixed-in: (.*)/i) {
-                    $status{fixed_versions} = [split ' ', $1];
-                }
-            }
-            close BUGVER;
-        }
-    }
-
     $status{tags} = $status{keywords};
     my %tags = map { $_ => 1 } split ' ', $status{tags};
 
