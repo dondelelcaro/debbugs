@@ -136,17 +136,18 @@ sub mergeinto ($$)
     }
 }
 
+chdir $gSpoolDir or die "Can't chdir $gSpoolDir: $!";
+
 my $db = $ARGV[0];
-opendir DB, "$gSpoolDir/$db" or die "Can't opendir $db: $!";
+opendir DB, $db or die "Can't opendir $db: $!";
 
 while (defined(my $dir = readdir DB)) {
-    next if $dir =~ /^\.\.?$/ or not -d "$gSpoolDir/$db/$dir";
-    opendir HASH, "$gSpoolDir/$db/$dir"
-	or die "Can't opendir $gSpoolDir/$db/$dir: $!";
+    next if $dir =~ /^\.\.?$/ or not -d "$db/$dir";
+    opendir HASH, "$db/$dir" or die "Can't opendir $db/$dir: $!";
 
     while (defined(my $file = readdir HASH)) {
 	next unless $file =~ /\.log$/;
-	next if -z "$gSpoolDir/$db/$dir/$file";
+	next if -z "$db/$dir/$file";
 	(my $bug = $file) =~ s/\..*//;
 
 	$bug =~ /(..)$/;
@@ -160,8 +161,7 @@ while (defined(my $dir = readdir DB)) {
 	    next;
 	}
 
-	my ($found_versions, $fixed_versions) =
-	    getbuginfo("$gSpoolDir/$db/$dir/$file");
+	my ($found_versions, $fixed_versions) = getbuginfo("$db/$dir/$file");
 
 	if (length $status->{mergedwith}) {
 	    @merges = sort { $a <=> $b } split ' ', $status->{mergedwith};
@@ -174,7 +174,7 @@ while (defined(my $dir = readdir DB)) {
 		$merge =~ /(..)$/;
 		my $mergehash = $1;
 		my ($mfound, $mfixed) =
-		    getbuginfo("$gSpoolDir/$db/$mergehash/$merge.log");
+		    getbuginfo("$db/$mergehash/$merge.log");
 		mergeinto($found_versions, $mfound);
 		mergeinto($fixed_versions, $mfixed);
 	    }
