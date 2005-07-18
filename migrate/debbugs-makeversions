@@ -193,7 +193,7 @@ while (defined(my $dir = readdir DB)) {
 	    my $outstatus = readbug($out, $db);
 	    $outstatus->{found_versions} = [@$found_versions];
 	    $outstatus->{fixed_versions} = [@$fixed_versions];
-	    writebug($out, $outstatus, $db);
+	    writebug($out, $outstatus, $db, 2, 'disable bughook');
 	    if ($out != $bug) {
 		unfilelock();
 	    }
