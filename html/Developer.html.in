@@ -38,7 +38,7 @@ included it in the <code>Reply-To</code>.
 
 <p>Where applicable, please supply a <code>Version</code> line in the
 <a href="Reporting.html#pseudoheader">pseudo-header</a> of your message when
-closing a bug, so that the $gBug tracking system knows which releases of the
+closing a $gBug, so that the $gBug tracking system knows which releases of the
 package contain the fix.</p>
 
 <p>`Done' messages are automatically forwarded to the <code>$gDoneList</code>
@@ -169,8 +169,8 @@ $gBadMaintHtml
 <p>It is possible to reassign $gBug reports to other packages, to reopen
 erroneously-closed ones, to modify the information saying to where, if
 anywhere, a $gBug report has been forwarded, to change the severities
-and titles of reports, to set the ownership of bugs, to merge and unmerge
-$gBug reports, and to record the versions of packages in which bugs were
+and titles of reports, to set the ownership of $gBugs, to merge and unmerge
+$gBug reports, and to record the versions of packages in which $gBugs were
 found and in which they were fixed.  This is done by sending mail to
 <code>control\@$gEmailDomain</code>.
 
