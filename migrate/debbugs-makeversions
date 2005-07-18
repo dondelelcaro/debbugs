@@ -81,7 +81,7 @@ sub getbuginfo ($)
 		$fv =~ s/;.*//;
 		$fv =~ s/ *\(.*\)//;
 		# Strip off other random junk at the end of a version.
-		$fv =~ s/ *[A-Za-z].*//;
+		$fv =~ s/ +[A-Za-z].*//;
 		$ver = $fv;
 	    }
 	}
