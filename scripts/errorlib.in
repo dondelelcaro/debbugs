@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.43 2005/07/17 16:06:26 cjwatson Exp $
+# $Id: errorlib.in,v 1.44 2005/07/17 18:04:01 cjwatson Exp $
 
 use Mail::Address;
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
@@ -22,7 +22,7 @@ sub lockreadbugmerge {
     local ($lref, $location) = @_;
     local $data;
     if (!($data = &lockreadbug($lref, $location))) { return ( 0, undef ); }
-    if (!length($data{mergedwith})) { return ( 1, $data ); }
+    if (!length($data->{mergedwith})) { return ( 1, $data ); }
     &unfilelock;
     &filelock('lock/merge');
     if (!&lockreadbug($lref, $location)) { &unfilelock; return ( 0, undef ); }
