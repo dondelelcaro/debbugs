@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.103 2005/07/18 02:22:49 cjwatson Exp $
+# $Id: service.in,v 1.104 2005/07/18 11:52:33 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -351,7 +351,7 @@ END
         $ref= $1;
         $version= $2;
         if (&setbug) {
-            if (!length($data->{done})) {
+            if (!length($data->{done}) and not defined($version)) {
                 &transcript("$gBug is already open, cannot reopen.\n\n");
                 &nochangebug;
             } else {
