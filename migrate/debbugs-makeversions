@@ -12,9 +12,9 @@ require "$lib_path/errorlib";
 use Debbugs::Log;
 use Debbugs::MIME;
 
-if (@ARGV != 2) {
+if (@ARGV != 1) {
     print <<EOF;
-Usage: $0 db-type versions-directory
+Usage: $0 db-type
 
 EOF
     exit 0;
@@ -136,11 +136,8 @@ sub mergeinto ($$)
     }
 }
 
-my ($db, $verdb) = @ARGV[0, 1];
+my $db = $ARGV[0];
 opendir DB, "$gSpoolDir/$db" or die "Can't opendir $db: $!";
-unless (-d $verdb) {
-    mkdir $verdb or die "Can't mkdir $verdb: $!";
-}
 
 while (defined(my $dir = readdir DB)) {
     next if $dir =~ /^\.\.?$/ or not -d "$gSpoolDir/$db/$dir";
@@ -154,21 +151,26 @@ while (defined(my $dir = readdir DB)) {
 
 	$bug =~ /(..)$/;
 	my $bughash = $1;
-	# For incremental updates.
-	#next if -e "$verdb/$bughash/$bug.versions" and
-	#	(stat "$verdb/$bughash/$bug.versions")[9] >=
-	#	    (stat "$gSpoolDir/$db/$dir/$file")[9];
 
 	print "Processing $bug ...\n" if $ENV{DEBBUGS_VERBOSE};
 
-	my $status = readbug($bug, $db);
-	next unless defined $status;
+	my ($locks, $status) = lockreadbugmerge($bug, $db);
+	unless (defined $status) {
+	    unlockreadbugmerge($locks);
+	    next;
+	}
 
 	my ($found_versions, $fixed_versions) =
 	    getbuginfo("$gSpoolDir/$db/$dir/$file");
 
 	if (length $status->{mergedwith}) {
-	    for my $merge (split ' ', $status->{mergedwith}) {
+	    @merges = sort { $a <=> $b } split ' ', $status->{mergedwith};
+	    if ($merges[0] < $bug) {
+		# already processed
+		unlockreadbugmerge($locks);
+		next;
+	    }
+	    for my $merge (@merges) {
 		$merge =~ /(..)$/;
 		my $mergehash = $1;
 		my ($mfound, $mfixed) =
@@ -181,19 +183,19 @@ while (defined(my $dir = readdir DB)) {
 	@$fixed_versions = () unless length $status->{done};
 
 	for my $out ($bug, (split ' ', $status->{mergedwith})) {
-	    $out =~ /(..)$/;
-	    my $outhash = $1;
-
-	    unless (-d "$verdb/$outhash") {
-		mkdir "$verdb/$outhash" or die "Can't mkdir $verdb/$outhash: $!";
+	    if ($out != $bug) {
+		filelock("lock/$out");
 	    }
-
-	    open VERSIONS, "> $verdb/$outhash/$out.versions"
-		or die "Can't open $verdb/$outhash/$out.versions: $!";
-	    print VERSIONS "Found-in: @$found_versions\n";
-	    print VERSIONS "Fixed-in: @$fixed_versions\n";
-	    close VERSIONS;
+	    my $outstatus = readbug($out, $db);
+	    $outstatus->{found_versions} = [@$found_versions];
+	    $outstatus->{fixed_versions} = [@$fixed_versions];
+	    writebug($out, $mergestatus);
+	    if ($out != $bug) {
+		unfilelock();
+	    }
 	}
+
+	unlockreadbugmerge($locks);
     }
 
     closedir HASH;
