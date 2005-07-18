@@ -918,7 +918,7 @@ sub getversions {
             or die "can't open versions index: $!";
     }
 
-    if (defined $arch) {
+    if (defined $arch and exists $_versions{$pkg}{$dist}{$arch}) {
         my $ver = $_versions{$pkg}{$dist}{$arch};
         return $ver if defined $ver;
         return ();
