@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.102 2005/07/18 02:04:44 cjwatson Exp $
+# $Id: service.in,v 1.103 2005/07/18 02:22:49 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -599,6 +599,8 @@ END
         @tomerge= sort { $a <=> $b } split(/\s+#?/,$1);
         @newmergelist= ();
 	my %tags = ();
+	my %found = ();
+	my %fixed = ();
         &getmerge;
         while (defined($ref= shift(@tomerge))) {
             &transcript("D| checking merge $ref\n") if $dl;
@@ -619,6 +621,8 @@ END
 	    &checkmatch('done mark','m_done',length($data->{done}) ? 'done' : 'open');
 	    &checkmatch('owner','m_owner',$data->{owner});
 	    foreach my $t (split /\s+/, $data->{keywords}) { $tags{$t} = 1; }
+	    foreach my $f (@{$data->{found_versions}}) { $found{$f} = 1; }
+	    foreach my $f (@{$data->{fixed_versions}}) { $fixed{$f} = 1; }
 	    if (length($mismatch)) {
 	        &transcript("Mismatch - only $gBugs in same state can be merged:\n".
                             $mismatch."\n");
@@ -631,11 +635,14 @@ END
 	if (@newmergelist) {
             @newmergelist= sort { $a <=> $b } @newmergelist;
             $action= "Merged @newmergelist.";
+	    delete @fixed{keys %found};
 	    for $ref (@newmergelist) {
 		&getbug || die "huh ?  $gBug $ref disappeared during merge";
                 &addmaintainers($data);
 		$data->{mergedwith}= join(' ',grep($_ ne $ref,@newmergelist));
 		$data->{keywords}= join(' ', keys %tags);
+		$data->{found_versions}= [sort keys %found];
+		$data->{fixed_versions}= [sort keys %fixed];
 		&savebug;
 	    }
     	    &transcript("$action\n\n");
