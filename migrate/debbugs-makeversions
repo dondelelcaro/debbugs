@@ -161,15 +161,19 @@ while (defined(my $dir = readdir DB)) {
 	    next;
 	}
 
-	my ($found_versions, $fixed_versions) = getbuginfo("$db/$dir/$file");
-
+	my @merges = ();
+	# Only process the lowest of each set of merged bugs.
 	if (length $status->{mergedwith}) {
 	    @merges = sort { $a <=> $b } split ' ', $status->{mergedwith};
 	    if ($merges[0] < $bug) {
-		# already processed
 		unlockreadbugmerge($locks);
 		next;
 	    }
+	}
+
+	my ($found_versions, $fixed_versions) = getbuginfo("$db/$dir/$file");
+
+	if (length $status->{mergedwith}) {
 	    for my $merge (@merges) {
 		$merge =~ /(..)$/;
 		my $mergehash = $1;
@@ -182,7 +186,7 @@ while (defined(my $dir = readdir DB)) {
 
 	@$fixed_versions = () unless length $status->{done};
 
-	for my $out ($bug, (split ' ', $status->{mergedwith})) {
+	for my $out ($bug, @merges) {
 	    if ($out != $bug) {
 		filelock("lock/$out");
 	    }
