@@ -77,7 +77,10 @@ has the $gBug.</p>
 Version: &lt;something&gt;
 </pre>
 
-<p>Replace <code>&lt;something&gt;</code> with the version of the package.</p>
+<p>Replace <code>&lt;something&gt;</code> with the version of the package.
+Please don't include any text here other than the version itself, as the
+$gBug tracking system relies on this field to work out which releases are
+affected by the bug.</p>
 
 <p>You need to supply a correct <code>Package</code> line in the
 pseudo-header in order for the $gBug tracking system to deliver the message

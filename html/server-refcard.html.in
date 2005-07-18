@@ -54,12 +54,14 @@ sending the word <code>help</code> to each mailserver.
 <h2>Synopsis of extra commands available at control mailserver</h2>
 
 <ul compact>
-  <li><code>close</code> <var>bugnumber</var>
+  <li><code>close</code> <var>bugnumber</var> [ <var>fixed-version</var> ]
       <em>(you must separately tell originator why)</em>
   <li><code>reassign</code> <var>bugnumber</var> <var>package</var>
+      [ <var>version</var> ]
   <li><code>severity</code> <var>bugnumber</var> <var>severity</var>
   <li><code>reopen</code> <var>bugnumber</var>
       [ <var>originator-address</var> | <code>=</code> | <code>!</code> ]
+  <li><code>found</code> <var>bugnumber</var> [ <var>version</var> ]
   <li><code>submitter</code> <var>bugnumber</var>
       <var>originator-address</var> | <code>!</code>
   <li><code>forwarded</code> <var>bugnumber</var> <var>address</var>

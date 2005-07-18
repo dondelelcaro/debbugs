@@ -36,6 +36,11 @@ and then edit the <code>To</code> field to say
 included in the default <code>To</code> field, because the $gBug system
 included it in the <code>Reply-To</code>.
 
+<p>Where applicable, please supply a <code>Version</code> line in the
+<a href="Reporting.html#pseudoheader">pseudo-header</a> of your message when
+closing a bug, so that the $gBug tracking system knows which releases of the
+package contain the fix.</p>
+
 <p>`Done' messages are automatically forwarded to the <code>$gDoneList</code>
 mailing list, if the mailing list has been set up.
 
@@ -164,8 +169,9 @@ $gBadMaintHtml
 <p>It is possible to reassign $gBug reports to other packages, to reopen
 erroneously-closed ones, to modify the information saying to where, if
 anywhere, a $gBug report has been forwarded, to change the severities
-and titles of reports, to set the ownership of bugs and to merge and
-unmerge $gBug reports.  This is done by sending mail to
+and titles of reports, to set the ownership of bugs, to merge and unmerge
+$gBug reports, and to record the versions of packages in which bugs were
+found and in which they were fixed.  This is done by sending mail to
 <code>control\@$gEmailDomain</code>.
 
 <p>The <a href="server-control.html">format of these messages</a> is
