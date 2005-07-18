@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.101 2005/07/17 16:06:26 cjwatson Exp $
+# $Id: service.in,v 1.102 2005/07/18 02:04:44 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -341,6 +341,7 @@ END
                 do {
                     &addmaintainers($data);
                     $data->{originator}= $noriginator eq '' ?  $data->{originator} : $noriginator;
+                    $data->{fixed_versions}= [];
                     $data->{done}= '';
                 } while (&getnextbug);
             }
