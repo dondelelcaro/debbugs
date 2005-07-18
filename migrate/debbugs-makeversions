@@ -3,6 +3,12 @@
 # guesswork, based on Version: pseudo-headers and closing mails that look
 # like Debian changelogs. The latter in particular is somewhat heuristic.
 
+# <@aj> Hackin' on the BTS, Feelin' like it'll take forever; Oh you better
+#       hold it's hand, when it dies on names so clever. These are the best
+#       bugs of our life. It's up to archive-slash-69, man we were killin'
+#       time, we were young and resltess, we needed to unwind. I guess
+#       nothin' can last forever - forever, no...
+
 my $config_path = '/etc/debbugs';
 my $lib_path = '/usr/lib/debbugs';
 
