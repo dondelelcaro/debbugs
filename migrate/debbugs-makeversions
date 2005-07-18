@@ -161,6 +161,11 @@ while (defined(my $dir = readdir DB)) {
 	    next;
 	}
 
+	if (@{$status->{found_versions}} or @{$status->{fixed_versions}}) {
+	    unlockreadbugmerge($locks);
+	    next;
+	}
+
 	my @merges = ();
 	# Only process the lowest of each set of merged bugs.
 	if (length $status->{mergedwith}) {
