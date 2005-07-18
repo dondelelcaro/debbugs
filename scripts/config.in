@@ -1,6 +1,6 @@
 # This is the template debbugs configuration file.
 # You *must* edit it in order for debbugs to work.
-# $Id: config.in,v 1.22 2003/08/24 16:10:18 cjwatson Exp $
+# $Id: config.in,v 1.23 2005/07/17 19:07:01 cjwatson Exp $
 
 # Domains
 $gEmailDomain = "bugs.something";			# e.g. bugs.debian.org
@@ -71,3 +71,5 @@ $gMaintainerFile = "$gConfigDir/Maintainers";
 $gMaintainerFileOverride = "$gConfigDir/Maintainers.override";
 $gPseudoDescFile = "$gConfigDir/pseudo-packages.description";
 $gPackageSource = "$gConfigDir/indices/sources";
+
+1;
