@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.94 2005/07/19 10:59:26 cjwatson Exp $
+# $Id: process.in,v 1.95 2005/07/19 11:00:28 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -486,7 +486,7 @@ If you don't know what I'm talking about then probably either:
 
 (a) you unwittingly sent a message to $baddress\@$gEmailDomain
 because you replied to all recipients of the message a developer sent
-to a $gBug's submitter and you modified the Subject.  In this case,
+to a $gBug\'s submitter and you modified the Subject.  In this case,
 please do not be alarmed.  To avoid confusion do not do it again, but
 there is no need to apologise or mail anyone asking for an
 explanation.
