@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.93 2005/07/17 16:06:26 cjwatson Exp $
+# $Id: process.in,v 1.94 2005/07/19 10:59:26 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -264,7 +264,12 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	    $generalcc=''; 
         }
     } else {
- 	(&appendlog,&finish) if length($data->{done});
+        if (length($data->{done}) and
+                not defined $pheader{'source-version'} and
+                not defined $pheader{'version'}) {
+            &appendlog;
+            &finish;
+        }
         $receivedat= "done\@$gEmailDomain";
         $markaswhat= 'done';
         $set_done= $header{'from'};
