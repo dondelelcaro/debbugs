@@ -52,7 +52,11 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Added apache.conf to examples, which is a sample apache
       configuration file which implements the rewrite rules that are
       currently used on bugs.debian.org. (closes: #222264)
-  
+    - Change spamscan.in to work with SA 3.0; This is an incompatible
+      change with SA 2.6, and as such, we now Suggests: spamassassin 
+      (>=3.0) (closes: #290501)
+    - Update MTA to exim4 (closes: #228597)
+
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
 
 debbugs (2.4.1) unstable; urgency=low

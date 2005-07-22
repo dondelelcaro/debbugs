@@ -1,5 +1,5 @@
 #! /usr/bin/perl -T
-# $Id: spamscan.in,v 1.8 2005/02/01 07:54:01 blarson Exp $
+# $Id: spamscan.in,v 1.9 2005/07/21 21:24:09 don Exp $
 #
 # Usage: spamscan
 #
@@ -24,7 +24,6 @@ chdir $gSpoolDir or die "chdir spool: $!\n";
 push @INC, $lib_path;
 
 use Mail::SpamAssassin;
-use Mail::SpamAssassin::NoMailAudit;
 
 use lib '/usr/lib/debbugs';
 use Mail::CrossAssassin;
@@ -51,8 +50,8 @@ my $spam = Mail::SpamAssassin->new({
     site_rules_filename => $gSpamRulesDir,
     userprefs_filename => $user_prefs,
     local_tests_only => ($gSpamLocalTestsOnly || 0),
-    debug => ($ENV{DEBBUGS_SPAM_DEBUG} || 0),
-    check_mx_delay => 2, # bit of a hack until we have parallelization
+#    debug => ($ENV{DEBBUGS_SPAM_DEBUG} || 0),
+#    check_mx_delay => 2, # bit of a hack until we have parallelization
 });
 $spam->compile_now(1); # use all user preferences
 
@@ -121,8 +120,7 @@ for (;;) {
     }
     push @textarray, <MESSAGE>;
     close MESSAGE;
-    my $mail = Mail::SpamAssassin::NoMailAudit->new(data => \@textarray);
-    $mail->{noexit} = 1;
+    my $mail = $spam->parse(\@textarray);
 
     my $messageid = header_or_empty($mail, 'Message-Id');
     print "  From: ", header_or_empty($mail, 'From'), "\n";
@@ -131,52 +129,61 @@ for (;;) {
     print "  Message-Id: $messageid\n";
     my $ca_score = ca_set(ca_keys($mail->get_body));
     if (exists $spamseen{$messageid}) {
-	$mail->accept($gSpamMailbox);
+	# XXX THIS DOES NOT DO LOCKING
+	open OUT, ">> $gSpamMailbox" or die "open $gSpamMailbox failed: $!";
+	print OUT $munged_mail or die "print $gSpamMailbox failed: $!";
+	close OUT  or die "close $gSpamMailbox failed: $!";
 	unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
 	print "  spam $spamseen{$messageid} duplicate\n"
 	    or die "printf log: $!";
     } else {
 	my $status = $spam->check($mail);
-	$status->rewrite_mail();
+	my $munged_mail = $status->rewrite_mail();
 
 	if ($status->is_spam()) {
-	    $mail->accept($gSpamMailbox);
+	    # XXX THIS DOES NOT DO LOCKING
+	    open OUT, ">> $gSpamMailbox" or die "open $gSpamMailbox failed: $!";
+	    print OUT $munged_mail or die "print $gSpamMailbox failed: $!";
+	    close OUT  or die "close $gSpamMailbox failed: $!";
 	    unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
 	    my $score = sprintf "%.1f/%.1f %d",
-	        $status->get_hits(), $status->get_required_hits(), $ca_score;
+	        $status->get_score(), $status->get_required_score(), $ca_score;
 	    print "  spam $score\n" or die "print log: $!";
 	    $spamseen{$messageid} = $score;
-	} elsif ($status->get_hits() > 0 && $ca_score >= 4) {
-	    $mail->accept($gCrossMailbox);
+	} elsif ($status->get_score() > 0 && $ca_score >= 4) {
+	    # XXX THIS DOES NOT DO LOCKING
+	    open OUT, ">> $gCrossMailbox" or die "open $gCrossMailbox failed: $!";
+	    print OUT $munged_mail or die "print $gCrossMailbox failed: $!";
+	    close OUT  or die "close $gCrossMailbox failed: $!";
 	    unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
 	    my $score = sprintf "%.1f/%.1f %d",
-	        $status->get_hits(), $status->get_required_hits(), $ca_score;
+	        $status->get_score(), $status->get_required_score(), $ca_score;
 	    printf "  spam $score\n" or die "printf log: $!";
 	    $spamseen{$messageid} = $score;
 	} else {
 	    open OUT, "> incoming/I$id" or die "open incoming/I$id: $!";
-	    my @headers = $mail->get_all_headers();
-	    if ($headers[0] =~ /^From /) {
-		my $from = $headers[0];
-		$headers[0] = $headers[1];
-		$headers[1] = $from;
+	    my ($received,$from,$rest_of_message) = split /\n/, $munged_mail, 3;
+	    my ($headers,$body) = split /\n\n/, $rest_of_message, 2;
+	    if ($received =~ /^From /) {
+		($received,$from) = ($from,$received);
 	    }
-	    print OUT join '', @headers or die "print incoming/I$id: $!";
+	    print OUT map { "$_\n"} ($received,$from,$headers) or die "print incoming/I$id: $!";
 	    if ($ca_score > 1) {
 		print OUT "X-CrossAssassin-Score: $ca_score\n"
 		    or die "print incoming/I$id: $!";
 	    }
 	    print OUT "\n" or die "print incoming/I$id: $!";
-	    print OUT @{$mail->get_body()} or die "print incoming/I$id: $!";
+	    print OUT $body or die "print incoming/I$id: $!";
 	    close OUT or die "close incoming/I$id: $!";
 	    unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
 	    printf "  ok %.1f/%.1f %d\n",
-	    	$status->get_hits(), $status->get_required_hits(), $ca_score
+	    	$status->get_score(), $status->get_required_score(), $ca_score
 	        or die "printf log: $!";
 	}
 
 	$status->finish();
     }
+    $mail->finish;
 }
 &unfilelock;
 
