@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.95 2005/07/19 11:00:28 cjwatson Exp $
+# $Id: process.in,v 1.96 2005/07/22 03:49:44 don Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -8,6 +8,7 @@ use POSIX qw(strftime tzset);
 $ENV{"TZ"} = 'UTC';
 tzset();
 
+use IO::File;
 use MIME::Parser;
 use Debbugs::MIME qw(decode_rfc1522);
 
@@ -27,7 +28,7 @@ open DEBUG, ">/dev/null";
 defined( $intdate= time ) || &quit( "failed to get time: $!" );
 
 $_=shift;
-m/^([BMQFDU])(\d*)\.\d+$/ || &quit("bad argument");
+m/^([BMQFDUL])(\d*)\.\d+$/ || &quit("bad argument");
 $codeletter= $1;
 $tryref= length($2) ? $2+0 : -1;
 $nn= $_;
@@ -44,6 +45,7 @@ $baddress= 'quiet' if $codeletter eq 'Q';
 $baddress= 'forwarded' if $codeletter eq 'F';
 $baddress= 'done' if $codeletter eq 'D';
 $baddress= 'submitter' if $codeletter eq 'U';
+bug_list_forward($nn) if $codeletter eq 'L';
 $baddress || &quit("bad codeletter $codeletter");
 $baddressroot= $baddress;
 $baddress= "$tryref-$baddress" if $tryref>=0;
@@ -329,12 +331,16 @@ END
 
     &checkmaintainers;
 
+    # Add bug mailing lists as appropriate
+    my @bug_mailing_lists;
+    push @bug_mailing_lists, map {"bugs=$_\@$gListDomain"} ($ref, split (/ /, $data->{mergedwith}));
+
     $noticeccval.= join(', ', grep($_ ne $replyto,@maintaddrs));
     $noticeccval =~ s/\s+\n\s+/ /g; 
     $noticeccval =~ s/^\s+/ /; $noticeccval =~ s/\s+$//;
 
-    $generalcc = join(', ', $generalcc, @addsrcaddrs);
-    $generalcc =~ s/\s+\n\s+/ /g; 
+    $generalcc = join(', ', $generalcc, @addsrcaddrs, @bug_mailing_lists);
+    $generalcc =~ s/\s+\n\s+/ /g;
     $generalcc =~ s/^\s+/ /; $generalcc =~ s/\s+$//;
 
     if (length($noticeccval)) { $noticecc= "Cc: $noticeccval\n"; }
@@ -639,6 +645,9 @@ END
 if (defined $gStrongList and isstrongseverity($data->{severity})) {
     push @bccs, "$gStrongList\@$gListDomain";
 }
+
+# Send mail to the per bug list subscription too
+push @bccs, "bugs=$ref\@$gListDomain";
 
 if (defined $pheader{source}) {
     # Prefix source versions with the name of the source package. They
@@ -1024,67 +1033,7 @@ sub sendmessage {
         push @$recips, @$bcc;
     }
 
-#if debugging.. save email to a log
-#    open AP, ">>debug";
-#    print AP join( '|', @$recips )."\n>>";
-#    print AP get_addresses( @$recips );
-#    print AP "<<\n".$msg;
-#    print AP "\n--------------------------------------------------------\n";
-#    close AP;
-
-    #start mailing
-    $_ = '';
-    $SIG{'CHLD'}='chldhandle';
-    #print DEBUG "mailing sigchild set up<\n";
-    $chldexit = 'no';
-    $c= open(U,"-|");
-    #print DEBUG "mailing opened pipe fork<\n";
-    defined($c) || die $!;
-    #print DEBUG "mailing opened pipe fork ok $c<\n";
-    if (!$c) { # ie, we are in the child process
-	#print DEBUG "mailing child<\n";
-        unless (open(STDERR,">&STDOUT")) {
-	    #print DEBUG "mailing child opened stderr<\n";
-            print STDOUT "redirect stderr: $!\n";
-	    #print DEBUG "mailing child opened stderr fail<\n";
-            exit 1;
-	    #print DEBUG "mailing child opened stderr fail exit !?<\n";
-        }
-	#print DEBUG "mailing child opened stderr ok<\n";
-        $c= open(D,"|-");
-	#print DEBUG "mailing child forked again<\n";
-        defined($c) || die $!;
-	#print DEBUG "mailing child forked again ok $c<\n";
-        if (!$c) { # ie, we are the child process
-	    #print DEBUG "mailing grandchild<\n";
-            exec '/usr/lib/sendmail','-f'."$gMaintainerEmail",'-odq','-oem','-oi',get_addresses(@$recips);
-	    #print DEBUG "mailing grandchild exec failed<\n";
-            die $!;
-	    #print DEBUG "mailing grandchild died !?<\n";
-        }
-	#print DEBUG "mailing child not grandchild<\n";
-        print(D $msg) || die $!;
-	#print DEBUG "mailing child printed msg<\n";
-        close(D);
-	#print DEBUG "mailing child closed pipe<\n";
-        die "\n*** command returned exit status $?\n" if $?;
-	#print DEBUG "mailing child exit status ok<\n";
-        exit 0;
-	#print DEBUG "mailing child exited ?!<\n";
-    }
-    #print DEBUG "mailing parent<\n";
-    $results='';
-    #print DEBUG "mailing parent results emptied<\n";
-    while( $chldexit eq 'no' ) { $results.= $_; }
-    #print DEBUG "mailing parent results read >$results<\n";
-    close(U);
-    #print DEBUG "mailing parent results closed<\n";
-    $results.= "\n*** child returned exit status $?\n" if $?;
-    #print DEBUG "mailing parent exit status ok<\n";
-    $SIG{'CHLD'}='DEFAULT';
-    #print DEBUG "mailing parent sigchild default<\n";
-    if (length($results)) { &quit("running sendmail: $results"); }
-    #print DEBUG "mailing parent results ok<\n";
+    send_mail_message($msg,$recips);
 }
 
 sub checkmaintainers {
@@ -1150,4 +1099,120 @@ sub checkmaintainers {
         push(@maintaddrs, $addmaint) unless
             $addmaint eq $replyto or grep($_ eq $addmaint, @maintaddrs);
     }
+}
+
+=head2 send_mail_message
+
+     send_mail_message($message,[@recipients],$envelope_from)
+
+Sends a mail message out to a set of recepients with envelope sender
+$envelope_from; if $envelope_from is not set, defaults to
+$gMaintainerEmail.
+
+=cut
+
+sub send_mail_message{
+     my ($message,$recipients,$envelope_from) = @_;
+
+     # Default to $gMaintainerEmail
+     $envelope_from ||= $gMaintainerEmail;
+
+     print DEBUG "sending mail to ".join(', ',@$recipients)." with -f $envelope_from";
+     local $_ = '';
+     $SIG{'CHLD'}='chldhandle';
+     #print DEBUG "mailing sigchild set up<\n";
+     our $chldexit = 'no';
+     our $c= open(U,"-|");
+     #print DEBUG "mailing opened pipe fork<\n";
+     defined($c) || die $!;
+     #print DEBUG "mailing opened pipe fork ok $c<\n";
+     if (!$c) { # ie, we are in the child process
+	  #print DEBUG "mailing child<\n";
+	  unless (open(STDERR,">&STDOUT")) {
+	       #print DEBUG "mailing child opened stderr<\n";
+	       print STDOUT "redirect stderr: $!\n";
+	       #print DEBUG "mailing child opened stderr fail<\n";
+	       exit 1;
+	       #print DEBUG "mailing child opened stderr fail exit !?<\n";
+	  }
+	  #print DEBUG "mailing child opened stderr ok<\n";
+	  $c= open(D,"|-");
+	  #print DEBUG "mailing child forked again<\n";
+	  defined($c) || die $!;
+	  #print DEBUG "mailing child forked again ok $c<\n";
+	  if (!$c) { # ie, we are the child process
+	       #print DEBUG "mailing grandchild<\n";
+	       exec '/usr/lib/sendmail', (defined $envelope_from?'-f'.$envelope_from:''),'-odq','-oem','-oi',
+		    @{$recipients};
+	       #print DEBUG "mailing grandchild exec failed<\n";
+	       die $!;
+	       #print DEBUG "mailing grandchild died !?<\n";
+	  }
+	  #print DEBUG "mailing child not grandchild<\n";
+	  print(D $message) || die $!;
+	  #print DEBUG "mailing child printed msg<\n";
+	  close(D);
+	  #print DEBUG "mailing child closed pipe<\n";
+	  die "\n*** command returned exit status $?\n" if $?;
+	  #print DEBUG "mailing child exit status ok<\n";
+	  exit 0;
+	  #print DEBUG "mailing child exited ?!<\n";
+     }
+     #print DEBUG "mailing parent<\n";
+     $results='';
+     #print DEBUG "mailing parent results emptied<\n";
+     while( $chldexit eq 'no' ) { $results.= $_; }
+     #print DEBUG "mailing parent results read >$results<\n";
+     close(U);
+     #print DEBUG "mailing parent results closed<\n";
+     $results.= "\n*** child returned exit status $?\n" if $?;
+     #print DEBUG "mailing parent exit status ok<\n";
+     $SIG{'CHLD'}='DEFAULT';
+     #print DEBUG "mailing parent sigchild default<\n";
+     if (length($results)) { &quit("running sendmail: $results"); }
+     #print DEBUG "mailing parent results ok<\n";
+
+
+}
+
+=head2 bug_list_forward
+
+     bug_list_forward($spool_filename) if $codeletter eq 'L';
+
+
+Given the spool file, will forward a bug to the per bug mailing list
+subscription system.
+
+=cut
+
+sub bug_list_forward{
+     my ($bug_fn) = @_;
+     my $bug_fh = new IO::File "incoming/P$bug_fn" or die "Unable to open incoming/P$bug_fn $!";
+
+     local $/ = undef;
+     my $bug_message = <$bug_fh>;
+     my ($bug_address) = $bug_message =~ /^Received: \(at ([^\)]+)\) by/;
+     $bug_message =~ s/\nFrom\s+([^\s]+)[^\n]+\n/\n/;
+     my $envelope_from = $1;
+     if (not defined $envelope_from) {
+	  # Try to use the From: header or something to set it 
+          ($envelope_from) = $bug_message =~ /\nFrom:\s+(.+?)\n/;
+	  # Kludgy, and should really be using a full scale header
+	  # parser to do this.
+	  $envelope_from =~ s/^.+?<([^>]+)>.+$/$1/;
+     }
+     print STDERR "Tried to loop me with $envelope_from\n"
+	  and exit 1 if $envelope_from =~ /\Q$gListDomain\E|\Q$gEmailDomain\E/;
+     print DEBUG $envelope_from,qq(\n);
+     # If we don't have a bug address, something has gone horribly wrong.
+     print STDERR "Doesn't match: $bug_address\n" and exit 1 unless defined $bug_address;
+     $bug_address =~ s/\@.+//;
+     print DEBUG "Sending message to bugs=$bug_address\@$gListDomain\n";
+     print DEBUG $bug_message;
+     send_mail_message($bug_message,
+		       ["bugs=$bug_address\@$gListDomain"],
+		       $envelope_from,
+		      );
+     unlink("incoming/P$bug_fn") || &quit("unlinking incoming/P$bug_fn: $!");
+     exit 0;
 }

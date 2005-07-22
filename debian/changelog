@@ -56,6 +56,9 @@ debbugs (2.4.2) UNRELEASED; urgency=low
       change with SA 2.6, and as such, we now Suggests: spamassassin 
       (>=3.0) (closes: #290501)
     - Update MTA to exim4 (closes: #228597)
+    - Added per bug subscription support to debbugs, which relies on an
+      external MLM to actually deal with the requests; currently works with
+      eoc and sends messages to bugnum\@$gListDomain. (closes: #34071)
 
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
 
