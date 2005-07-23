@@ -1,5 +1,5 @@
 #! /usr/bin/perl -T
-# $Id: spamscan.in,v 1.9 2005/07/21 21:24:09 don Exp $
+# $Id: spamscan.in,v 1.10 2005/07/22 21:37:31 don Exp $
 #
 # Usage: spamscan
 #
@@ -130,9 +130,9 @@ for (;;) {
     my $ca_score = ca_set(ca_keys($mail->get_body));
     if (exists $spamseen{$messageid}) {
 	# XXX THIS DOES NOT DO LOCKING
-	open OUT, ">> $gSpamMailbox" or die "open $gSpamMailbox failed: $!";
-	print OUT $munged_mail or die "print $gSpamMailbox failed: $!";
-	close OUT  or die "close $gSpamMailbox failed: $!";
+	open  OUT, ">> $gSpamMailbox" or die "open $gSpamMailbox failed: $!";
+	print OUT $mail->get_pristine or die "print $gSpamMailbox failed: $!";
+	close OUT or die "close $gSpamMailbox failed: $!";
 	unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
 	print "  spam $spamseen{$messageid} duplicate\n"
 	    or die "printf log: $!";
