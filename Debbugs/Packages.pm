@@ -5,6 +5,8 @@ use strict;
 # TODO: move config handling to a separate module
 my $config_path = '/etc/debbugs';
 require "$config_path/config";
+# Allow other modules to load config into their namespace.
+delete $INC{"$config_path/config"};
 
 use Exporter ();
 use vars qw($VERSION @ISA @EXPORT);
