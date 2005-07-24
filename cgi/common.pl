@@ -12,6 +12,7 @@ $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
 require "$lib_path/errorlib";
 
+use Debbugs::Packages;
 use Debbugs::Versions;
 use Debbugs::MIME qw(decode_rfc1522);
 
@@ -732,34 +733,6 @@ sub getmaintainers {
     return $_maintainer;
 }
 
-my $_pkgsrc;
-my $_pkgcomponent;
-sub getpkgsrc {
-    return $_pkgsrc if $_pkgsrc;
-    return {} unless defined $gPackageSource;
-    my %pkgsrc;
-    my %pkgcomponent;
-
-    open(MM,"$gPackageSource") or &quitcgi("open $gPackageSource: $!");
-    while(<MM>) {
-	next unless m/^(\S+)\s+(\S+)\s+(\S.*\S)\s*$/;
-	($a,$b,$c)=($1,$2,$3);
-	$a =~ y/A-Z/a-z/;
-	$pkgsrc{$a}= $c;
-	$pkgcomponent{$a}= $b;
-    }
-    close(MM);
-    $_pkgsrc = \%pkgsrc;
-    $_pkgcomponent = \%pkgcomponent;
-    return $_pkgsrc;
-}
-
-sub getpkgcomponent {
-    return $_pkgcomponent if $_pkgcomponent;
-    getpkgsrc();
-    return $_pkgcomponent;
-}
-
 my $_pseudodesc;
 sub getpseudodesc {
     return $_pseudodesc if $_pseudodesc;
@@ -837,17 +810,6 @@ sub getbugstatus {
     return \%status;
 }
 
-sub getsrcpkgs {
-    my $src = shift;
-    return () if !$src;
-    my %pkgsrc = %{getpkgsrc()};
-    my @pkgs;
-    foreach ( keys %pkgsrc ) {
-	push @pkgs, $_ if $pkgsrc{$_} eq $src;
-    }
-    return @pkgs;
-}
-   
 sub buglog {
     my $bugnum = shift;
     my $location = getbuglocation($bugnum, 'log');
@@ -948,79 +910,6 @@ sub getversiondesc {
     }
 
     return undef;
-}
-
-# Returns an array of zero or more references to (srcname, srcver) pairs.
-# If $binarch is undef, returns results for all architectures.
-my %_binarytosource;
-sub binarytosource {
-    my ($binname, $binver, $binarch) = @_;
-
-    # TODO: This gets hit a lot, especially from buggyversion() - probably
-    # need an extra cache for speed here.
-
-    if (tied %_binarytosource or
-	    tie %_binarytosource, 'MLDBM', $gBinarySourceMap, O_RDONLY) {
-	# avoid autovivification
-	if (exists $_binarytosource{$binname} and
-		exists $_binarytosource{$binname}{$binver}) {
-	    if (defined $binarch) {
-		my $src = $_binarytosource{$binname}{$binver}{$binarch};
-		return () unless defined $src; # not on this arch
-		# Copy the data to avoid tiedness problems.
-		return [@$src];
-	    } else {
-		# Get (srcname, srcver) pairs for all architectures and
-		# remove any duplicates. This involves some slightly tricky
-		# multidimensional hashing; sorry. Fortunately there'll
-		# usually only be one pair returned.
-		my %uniq;
-		for my $ar (keys %{$_binarytosource{$binname}{$binver}}) {
-		    my $src = $_binarytosource{$binname}{$binver}{$ar};
-		    next unless defined $src;
-		    $uniq{$src->[0]}{$src->[1]} = 1;
-		}
-		my @uniq;
-		for my $sn (sort keys %uniq) {
-		    push @uniq, [$sn, $_] for sort keys %{$uniq{$sn}};
-		}
-		return @uniq;
-	    }
-	}
-    }
-
-    # No $gBinarySourceMap, or it didn't have an entry for this name and
-    # version. Try $gPackageSource (unversioned) instead.
-    my $pkgsrc = getpkgsrc();
-    if (exists $pkgsrc->{$binname}) {
-	return [$pkgsrc->{$binname}, $binver];
-    } else {
-	return ();
-    }
-}
-
-# Returns an array of zero or more references to
-# (binname, binver[, binarch]) triplets.
-my %_sourcetobinary;
-sub sourcetobinary {
-    my ($srcname, $srcver) = @_;
-
-    if (tied %_sourcetobinary or
-	    tie %_sourcetobinary, 'MLDBM', $gSourceBinaryMap, O_RDONLY) {
-	# avoid autovivification
-	if (exists $_sourcetobinary{$srcname} and
-		exists $_sourcetobinary{$srcname}{$srcver}) {
-	    my $bin = $_sourcetobinary{$srcname}{$srcver};
-	    return () unless defined $bin;
-	    # Copy the data to avoid tiedness problems.
-	    return @$bin;
-	}
-    }
-
-    # No $gSourceBinaryMap, or it didn't have an entry for this name and
-    # version. Try $gPackageSource (unversioned) instead.
-    my @srcpkgs = getsrcpkgs($srcname);
-    return map [$_, $srcver], @srcpkgs;
 }
 
 1;

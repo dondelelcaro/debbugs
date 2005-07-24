@@ -14,7 +14,7 @@ examples_dir	:= $(doc_dir)/examples
 scripts_in	:= $(filter-out scripts/config.in scripts/errorlib.in scripts/text.in, $(wildcard scripts/*.in))
 htmls_in	:= $(wildcard html/*.html.in)
 cgis		:= $(wildcard cgi/*.cgi cgi/*.pl)
-perls		:= $(foreach name,Log MIME Versions,Debbugs/$(name).pm)
+perls		:= $(foreach name,Log MIME Packages Versions,Debbugs/$(name).pm)
 
 install_exec	:= install -m755 -p
 install_data	:= install -m644 -p
