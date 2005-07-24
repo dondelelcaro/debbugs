@@ -150,13 +150,8 @@ sub binarytosource {
     }
 
     # No $gBinarySourceMap, or it didn't have an entry for this name and
-    # version. Try $gPackageSource (unversioned) instead.
-    my $pkgsrc = getpkgsrc();
-    if (exists $pkgsrc->{$binname}) {
-	return [$pkgsrc->{$binname}, $binver];
-    } else {
-	return ();
-    }
+    # version.
+    return ();
 }
 
 =item sourcetobinary

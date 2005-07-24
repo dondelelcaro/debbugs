@@ -833,7 +833,20 @@ sub makesourceversions {
             $sourceversions{$version} = 1;
         } else {
             my @srcinfo = binarytosource($pkg, $version, $arch);
-            next unless @srcinfo;
+            unless (@srcinfo) {
+                # We don't have explicit information about the
+                # binary-to-source mapping for this version (yet). Since
+                # this is a CGI script and our output is transient, we can
+                # get away with just looking in the unversioned map; if it's
+                # wrong (as it will be when binary and source package
+                # versions differ), too bad.
+                my $pkgsrc = getpkgsrc();
+                if (exists $pkgsrc->{$pkg}) {
+                    @srcinfo = ([$pkgsrc->{$pkg}, $version]);
+                } else {
+                    next;
+                }
+            }
             $sourceversions{"$_->[0]/$_->[1]"} = 1 foreach @srcinfo;
         }
     }
