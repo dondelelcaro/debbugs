@@ -608,7 +608,7 @@ sub htmlizebugs {
     }
 
     $result = $header . $result if ( $common{show_list_header} );
-    $result .= $debbugs::gHTMLExpireNote if $gRemoveAge and $anydone;
+    $result .= $debbugs::gHTMLExpireNote if $debbugs::gRemoveAge and $anydone;
     $result .= "<hr>" . $footer if ( $common{show_list_footer} );
     return $result;
 }
@@ -711,7 +711,7 @@ sub getmaintainers {
     return $_maintainer if $_maintainer;
     my %maintainer;
 
-    open(MM,"$gMaintainerFile") or &quitcgi("open $gMaintainerFile: $!");
+    open(MM,"$debbugs::gMaintainerFile") or &quitcgi("open $debbugs::gMaintainerFile: $!");
     while(<MM>) {
 	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
 	($a,$b)=($1,$2);
@@ -719,8 +719,8 @@ sub getmaintainers {
 	$maintainer{$a}= $b;
     }
     close(MM);
-    if (defined $gMaintainerFileOverride) {
-	open(MM,"$gMaintainerFileOverride") or &quitcgi("open $gMaintainerFileOverride: $!");
+    if (defined $debbugs::gMaintainerFileOverride) {
+	open(MM,"$debbugs::gMaintainerFileOverride") or &quitcgi("open $debbugs::gMaintainerFileOverride: $!");
 	while(<MM>) {
 	    next unless m/^(\S+)\s+(\S.*\S)\s*$/;
 	    ($a,$b)=($1,$2);
@@ -738,7 +738,7 @@ sub getpseudodesc {
     return $_pseudodesc if $_pseudodesc;
     my %pseudodesc;
 
-    open(PSEUDO, "< $gPseudoDescFile") or &quitcgi("open $gPseudoDescFile: $!");
+    open(PSEUDO, "< $debbugs::gPseudoDescFile") or &quitcgi("open $debbugs::gPseudoDescFile: $!");
     while(<PSEUDO>) {
 	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
 	$pseudodesc{lc $1} = $2;
@@ -844,7 +844,7 @@ sub makesourceversions {
 my %_versionobj;
 sub buggyversion {
     my ($bug, $ver, $status) = @_;
-    return '' unless defined $gVersionPackagesDir;
+    return '' unless defined $debbugs::gVersionPackagesDir;
     my $src = getpkgsrc()->{$status->{package}};
     $src = $status->{package} unless defined $src;
 
@@ -854,7 +854,7 @@ sub buggyversion {
     } else {
         $tree = Debbugs::Versions->new(\&DpkgVer::vercmp);
         my $srchash = substr $src, 0, 1;
-        if (open VERFILE, "< $gVersionPackagesDir/$srchash/$src") {
+        if (open VERFILE, "< $debbugs::gVersionPackagesDir/$srchash/$src") {
             $tree->load(\*VERFILE);
             close VERFILE;
         }
@@ -872,11 +872,11 @@ sub buggyversion {
 my %_versions;
 sub getversions {
     my ($pkg, $dist, $arch) = @_;
-    return () unless defined $gVersionIndex;
+    return () unless defined $debbugs::gVersionIndex;
     $dist = 'unstable' unless defined $dist;
 
     unless (tied %_versions) {
-        tie %_versions, 'MLDBM', $gVersionIndex, O_RDONLY
+        tie %_versions, 'MLDBM', $debbugs::gVersionIndex, O_RDONLY
             or die "can't open versions index: $!";
     }
 
