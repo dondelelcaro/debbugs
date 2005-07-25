@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.96 2005/07/22 03:49:44 don Exp $
+# $Id: process.in,v 1.97 2005/07/24 17:31:18 cjwatson Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -361,9 +361,9 @@ END
             $data->{keywords} = join ' ', grep $_ ne 'pending',
                                      split ' ', $data->{keywords};
             if (defined $pheader{'source-version'}) {
-                addfixedversions($data, $pheader{source}, $pheader{'source-version'});
+                addfixedversions($data, $pheader{source}, $pheader{'source-version'}, '');
             } elsif (defined $pheader{version}) {
-                addfixedversions($data, undef, $pheader{version});
+                addfixedversions($data, $pheader{package}, $pheader{version}, 'binary');
             }
         }
 
@@ -654,14 +654,14 @@ if (defined $pheader{source}) {
     # appear that way in version trees so that we can deal with binary
     # packages moving from one source package to another.
     if (defined $pheader{'source-version'}) {
-        addfoundversions($data, $pheader{source}, $pheader{'source-version'});
+        addfoundversions($data, $pheader{source}, $pheader{'source-version'}, '');
     } elsif (defined $pheader{version}) {
-        addfoundversions($data, $pheader{source}, $pheader{version});
+        addfoundversions($data, $pheader{source}, $pheader{version}, '');
     }
     writebug($ref, $data);
 } elsif (defined $pheader{package}) {
     # TODO: could handle Source-Version: by looking up the source package?
-    addfoundversions($data, undef, $pheader{version}) if defined($pheader{version});
+    addfoundversions($data, $pheader{package}, $pheader{version}, 'binary');
     writebug($ref, $data);
 }
 

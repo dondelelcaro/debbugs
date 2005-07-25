@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.104 2005/07/18 11:52:33 cjwatson Exp $
+# $Id: service.in,v 1.105 2005/07/24 17:31:18 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -268,7 +268,7 @@ END
                         $data->{keywords}= join ' ', grep $_ ne 'pending',
                                                 @keywords;
                     }
-                    addfixedversions($data, undef, $version);
+                    addfixedversions($data, $data->{package}, $version, 'binary');
 
 		    $message= <<END;
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
@@ -317,7 +317,7 @@ END
                 $data->{found_versions}= [];
                 $data->{fixed_versions}= [];
                 # TODO: what if $newpackage is a source package?
-                addfoundversions($data, undef, $version) if defined $version;
+                addfoundversions($data, $data->{package}, $version, 'binary');
                 &addmaintainers($data);
             } while (&getnextbug);
         }
@@ -373,7 +373,7 @@ END
                         my $lastfixed =
                             (reverse @{$data->{fixed_versions}})[0];
                         # TODO: what if $data->{package} is a source package?
-                        addfoundversions($data, undef, $version);
+                        addfoundversions($data, $data->{package}, $version, 'binary');
                         if (defined $lastfixed and $version eq $lastfixed) {
                             $data->{done} = '';
                         }

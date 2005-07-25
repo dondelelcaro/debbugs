@@ -1,8 +1,9 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.46 2005/07/18 03:09:09 cjwatson Exp $
+# $Id: errorlib.in,v 1.47 2005/07/24 17:31:18 cjwatson Exp $
 
 use Mail::Address;
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
+use Debbugs::Packages;
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -263,10 +264,22 @@ sub unfilelock {
 
 sub addfoundversions {
     my $data = shift;
-    my $source = shift;
+    my $package = shift;
     my $version = shift;
+    my $isbinary = shift;
     return unless defined $version;
-    undef $source if $source =~ m[(?:\s|/)];
+    undef $package if $package =~ m[(?:\s|/)];
+    my $source = $package;
+
+    if (defined $package and $isbinary) {
+        my @srcinfo = binarytosource($package, $version, undef);
+        if (@srcinfo) {
+            # We know the source package(s). Use a fully-qualified version.
+            addfoundversions($data, $_->[0], $_->[1], '') foreach @srcinfo;
+            return;
+        }
+        # Otherwise, an unqualified version will have to do.
+    }
 
     # Strip off various kinds of brain-damage.
     $version =~ s/;.*//;
@@ -274,12 +287,12 @@ sub addfoundversions {
     $version =~ s/ +[A-Za-z].*//;
 
     foreach my $ver (split /[,\s]+/, $version) {
-        $ver = "$source/$ver" if defined $source;
-        unless (grep { $_ eq $ver } @{$data->{found_versions}}) {
-            push @{$data->{found_versions}}, $ver;
+        my $sver = defined($source) ? "$source/$ver" : '';
+        unless (grep { $_ eq $ver or $_ eq $sver } @{$data->{found_versions}}) {
+            push @{$data->{found_versions}}, defined($source) ? $sver : $ver;
         }
         @{$data->{fixed_versions}} =
-            grep { $_ ne $ver } @{$data->{fixed_versions}};
+            grep { $_ ne $ver and $_ ne $sver } @{$data->{fixed_versions}};
     }
 }
 
@@ -291,18 +304,30 @@ sub removefoundversions {
     undef $source if $source =~ m[(?:\s|/)];
 
     foreach my $ver (split /[,\s]+/, $version) {
-        $ver = "$source/$ver" if defined $source;
+        my $sver = defined($source) ? "$source/$ver" : '';
         @{$data->{found_versions}} =
-            grep { $_ ne $ver } @{$data->{found_versions}};
+            grep { $_ ne $ver and $_ ne $sver } @{$data->{found_versions}};
     }
 }
 
 sub addfixedversions {
     my $data = shift;
-    my $source = shift;
+    my $package = shift;
     my $version = shift;
+    my $isbinary = shift;
     return unless defined $version;
-    undef $source if $source =~ m[(?:\s|/)];
+    undef $package if $package =~ m[(?:\s|/)];
+    my $source = $package;
+
+    if (defined $package and $isbinary) {
+        my @srcinfo = binarytosource($package, $version, undef);
+        if (@srcinfo) {
+            # We know the source package(s). Use a fully-qualified version.
+            addfixedversions($data, $_->[0], $_->[1], '') foreach @srcinfo;
+            return;
+        }
+        # Otherwise, an unqualified version will have to do.
+    }
 
     # Strip off various kinds of brain-damage.
     $version =~ s/;.*//;
@@ -310,12 +335,12 @@ sub addfixedversions {
     $version =~ s/ +[A-Za-z].*//;
 
     foreach my $ver (split /[,\s]+/, $version) {
-        $ver = "$source/$ver" if defined $source;
-        unless (grep { $_ eq $ver } @{$data->{fixed_versions}}) {
-            push @{$data->{fixed_versions}}, $ver;
+        my $sver = (defined($source) ? "$source/$ver" : '';
+        unless (grep { $_ eq $ver or $_ eq $sver } @{$data->{fixed_versions}}) {
+            push @{$data->{fixed_versions}}, defined($source) ? $sver : $ver;
         }
         @{$data->{found_versions}} =
-            grep { $_ ne $ver } @{$data->{found_versions}};
+            grep { $_ ne $ver and $_ ne $sver } @{$data->{found_versions}};
     }
 }
 
@@ -327,9 +352,9 @@ sub removefixedversions {
     undef $source if $source =~ m[(?:\s|/)];
 
     foreach my $ver (split /[,\s]+/, $version) {
-        $ver = "$source/$ver" if defined $source;
+        my $sver = defined($source) ? "$source/$ver" : '';
         @{$data->{fixed_versions}} =
-            grep { $_ ne $ver } @{$data->{fixed_versions}};
+            grep { $_ ne $ver and $_ ne $sver } @{$data->{fixed_versions}};
     }
 }
 
