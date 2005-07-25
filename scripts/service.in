@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.105 2005/07/24 17:31:18 cjwatson Exp $
+# $Id: service.in,v 1.106 2005/07/24 18:01:52 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -374,7 +374,7 @@ END
                             (reverse @{$data->{fixed_versions}})[0];
                         # TODO: what if $data->{package} is a source package?
                         addfoundversions($data, $data->{package}, $version, 'binary');
-                        if (defined $lastfixed and $version eq $lastfixed) {
+                        if (defined $lastfixed and not grep { $_ eq $lastfixed } @{$data->{fixed_versions}}) {
                             $data->{done} = '';
                         }
                     } else {
