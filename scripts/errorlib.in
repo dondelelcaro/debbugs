@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.47 2005/07/24 17:31:18 cjwatson Exp $
+# $Id: errorlib.in,v 1.48 2005/07/24 17:39:09 cjwatson Exp $
 
 use Mail::Address;
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
@@ -335,7 +335,7 @@ sub addfixedversions {
     $version =~ s/ +[A-Za-z].*//;
 
     foreach my $ver (split /[,\s]+/, $version) {
-        my $sver = (defined($source) ? "$source/$ver" : '';
+        my $sver = defined($source) ? "$source/$ver" : '';
         unless (grep { $_ eq $ver or $_ eq $sver } @{$data->{fixed_versions}}) {
             push @{$data->{fixed_versions}}, defined($source) ? $sver : $ver;
         }
