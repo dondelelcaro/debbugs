@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.106 2005/07/24 18:01:52 cjwatson Exp $
+# $Id: service.in,v 1.107 2005/07/24 18:42:41 don Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -47,6 +47,9 @@ my $entity = eval { $parser->parse_data(join('',@log)) };
 
 # header and decoded body respectively
 my (@headerlines, @bodylines);
+# Bug numbers to send e-mail to, hash so that we don't send to the
+# same bug twice.
+my (%bug_affected);
 
 if ($entity and $entity->head->tags) {
     @headerlines = @{$entity->head->header};
@@ -245,6 +248,7 @@ END
     } elsif (m/^close\s+\#?(-?\d+)(?:\s+(\d.*))?$/i) {
 	$ok++;
 	$ref= $1;
+	$bug_affected{$ref}=1;
 	$version= $2;
 	if (&setbug) {
 	    &transcript("'close' is deprecated; see http://$gWebDomain/Developer$gHTMLSuffix#closing.\n");
@@ -302,6 +306,7 @@ END
     } elsif (m/^reassign\s+\#?(-?\d+)\s+(\S+)(?:\s+(\d.*))?$/i) {
         $ok++;
         $ref= $1; $newpackage= $2;
+	$bug_affected{$ref}=1;
         $version= $3;
     	$newpackage =~ y/A-Z/a-z/;
         if (&setbug) {
@@ -327,6 +332,7 @@ END
              m/^reopen\s+\#?(-?\d+)\s+(\S.*\S)$/i ? ($noriginator=$2, 1) : 0) {
         $ok++;
         $ref= $1;
+	$bug_affected{$ref}=1;
         if (&setbug) {
             if (@{$data->{fixed_versions}}) {
                 &transcript("'reopen' is deprecated when a bug has been closed with a version;\nuse 'found' or 'submitter' as appropriate instead.\n");
@@ -390,6 +396,7 @@ END
              m/^submitter\s+\#?(-?\d+)\s+(\S.*\S)$/i ? ($newsubmitter=$2, 1) : 0) {
         $ok++;
         $ref= $1;
+	$bug_affected{$ref}=1;
         if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
             $ref = $clonebugs{$ref};
         }
@@ -442,6 +449,7 @@ END
     } elsif (m/^forwarded\s+\#?(-?\d+)\s+(\S.*\S)$/i) {
         $ok++;
         $ref= $1; $whereto= $2;
+	$bug_affected{$ref}=1;
         if (&setbug) {
             if (length($data->{forwarded})) {
     $action= "Forwarded-to-address changed from $data->{forwarded} to $whereto.";
@@ -462,6 +470,7 @@ END
     } elsif (m/^notforwarded\s+\#?(-?\d+)$/i) {
         $ok++;
         $ref= $1;
+	$bug_affected{$ref}=1;
         if (&setbug) {
             if (!length($data->{forwarded})) {
                 &transcript("$gBug is not marked as having been forwarded.\n\n");
@@ -478,6 +487,7 @@ END
 	m/^priority\s+\#?(-?\d+)\s+([-0-9a-z]+)$/i) {
         $ok++;
         $ref= $1;
+	$bug_affected{$ref}=1;
         $newseverity= $2;
         if (!grep($_ eq $newseverity, @gSeverityList, "$gDefaultSeverity")) {
             &transcript("Severity level \`$newseverity' is not known.\n".
@@ -500,6 +510,7 @@ END
     } elsif (m/^tags?\s+\#?(-?\d+)\s+(([=+-])\s*)?(\S.*)?$/i) {
 	$ok++;
 	$ref = $1; $addsubcode = $3; $tags = $4;
+	$bug_affected{$ref}=1;
 	$addsub = "add";
 	if (defined $addsubcode) {
 	    $addsub = "sub" if ($addsubcode eq "-");
@@ -554,6 +565,7 @@ END
     } elsif (m/^retitle\s+\#?(-?\d+)\s+(\S.*\S)\s*$/i) {
         $ok++;
         $ref= $1; $newtitle= $2;
+	$bug_affected{$ref}=1;
 	if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
 	    $ref = $clonebugs{$ref};
 	}
@@ -578,6 +590,7 @@ END
     } elsif (m/^unmerge\s+\#?(-?\d+)$/i) {
 	$ok++;
 	$ref= $1;
+	$bug_affected{$ref} = 1;
 	if (&setbug) {
 	    if (!length($data->{mergedwith})) {
 		&transcript("$gBug is not marked as being merged with any others.\n\n");
@@ -587,6 +600,7 @@ END
 		$action= "Disconnected #$ref from all other report(s).";
 		@newmergelist= split(/ /,$data->{mergedwith});
                 $discref= $ref;
+		@bug_affected{@newmergelist} = 1 x @newmergelist;
                 do {
                     &addmaintainers($data);
 		    $data->{mergedwith}= ($ref == $discref) ? ''
@@ -639,6 +653,7 @@ END
 	    for $ref (@newmergelist) {
 		&getbug || die "huh ?  $gBug $ref disappeared during merge";
                 &addmaintainers($data);
+		@bug_affected{@newmergelist} = 1 x @newmergelist;
 		$data->{mergedwith}= join(' ',grep($_ ne $ref,@newmergelist));
 		$data->{keywords}= join(' ', keys %tags);
 		$data->{found_versions}= [sort keys %found];
@@ -656,6 +671,7 @@ END
 	$newbugsneeded = scalar(@newclonedids);
 
 	$ref = $origref;
+	$bug_affected{$ref} = 1;
 	if (&setbug) {
 	    if (length($data->{mergedwith})) {
 		&transcript("$gBug is marked as being merged with others.\n\n");
@@ -678,6 +694,7 @@ END
 		&getnextbug;
 		my $ohash = get_hashname($origref);
 		$ref = $firstref;
+		@bug_affected{@newclonedids} = 1 x @newclonedids;
 		for $newclonedid (@newclonedids) {
 		    $clonebugs{$newclonedid} = $ref;
 	    
@@ -707,6 +724,7 @@ END
              m/^owner\s+\#?(-?\d+)\s+(\S.*\S)$/i ? ($newowner = $2, 1) : 0) {
         $ok++;
         $ref = $1;
+	$bug_affected{$ref} = 1;
         if (&setbug) {
             if (length $data->{owner}) {
                 $action = "Owner changed from $data->{owner} to $newowner.";
@@ -725,6 +743,7 @@ END
     } elsif (m/^noowner\s+\#?(-?\d+)$/i) {
         $ok++;
         $ref = $1;
+	$bug_affected{$ref} = 1;
         if (&setbug) {
             if (length $data->{owner}) {
                 $action = "Removed annotation that $gBug was owned by " .
@@ -782,6 +801,9 @@ if (@maintccs) {
     &transcript("MC|@maintccs|\n") if $dl>2;
     $maintccs .= "Cc: " . join(",\n    ",@maintccs) . "\n";
 }
+
+# Add Bcc's to subscribed bugs
+push @bcc, map {"bugs=$_\@$gListDomain"} keys %bug_affected;
 
 if (!defined $header{'subject'} || $header{'subject'} eq "") {
   $header{'subject'} = "your mail";

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: receive.in,v 1.16 2004/01/13 18:55:53 cjwatson Exp $
+# $Id: receive.in,v 1.17 2005/07/24 18:42:41 don Exp $
 # usage: mail is piped directly into program
 
 #set umask in order to have group-writable incoming/*
@@ -45,7 +45,10 @@ y/A-Z/a-z/;
                    '-done',       'D',
                    '-close',      'D',
 		   '-request',    'R',
-                   '-submitter',  'U');
+                   '-submitter',  'U',
+		   # Used for bug subscription
+		   #'-list-nothing-will-match-this', 'L',
+		    );
 
 %withpkgaddressmap= ('-request',     'R');
 
@@ -63,7 +66,16 @@ y/A-Z/a-z/;
 #determine command
 if (s/^(\d{1,9})\b//) {
     $bugnumber= $1;
-    $map= $withbugaddressmap{$_};
+    if (not exists $withbugaddressmap{$_} and
+/-(?:(?:un)?subscribe|subhelp|ignore|(?:sub(?:yes|approve|reject)
+ |unsubyes|bounce|probe|approve|reject|
+ setlistyes|setlistsilentyes).*)/x
+       ) {
+	 $map = 'L';
+    }
+    else {
+	 $map= $withbugaddressmap{$_};
+    }
     $addrrec= "$bugnumber$_";
 } elsif (s/^(\w+)-//) {
     $bugnumber= $1;
