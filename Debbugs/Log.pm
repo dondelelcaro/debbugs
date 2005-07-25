@@ -83,6 +83,17 @@ different format.)
 No other types of records are permitted, and the file must end with a ^C
 line.
 
+=cut
+
+my %states = (
+    1 => 'autocheck',
+    2 => 'recips',
+    3 => 'kill-end',
+    5 => 'go',
+    6 => 'html',
+    7 => 'incoming-recv',
+);
+
 =head2 Perl Record Representation
 
 Each record is a hash. The C<type> field is C<incoming-recv>, C<autocheck>,
@@ -93,6 +104,112 @@ C<[html]> as above; C<recips> is a reference to an array of recipients
 =head1 FUNCTIONS
 
 =over 4
+
+=item new
+
+Creates a new log reader based on a .log filehandle.
+
+=cut
+
+sub new
+{
+    my $this = shift;
+    my $class = ref($this) || $this;
+    my $self = {};
+    bless $self, $class;
+    $self->{logfh} = shift;
+    $self->{state} = 'kill-init';
+    $self->{linenum} = 0;
+    return $self;
+}
+
+=item read_record
+
+Reads and returns a single record from a log reader object. At end of file,
+returns undef. Throws exceptions using die(), so you may want to wrap this
+in an eval().
+
+=cut
+
+sub read_record
+{
+    my $this = shift;
+    my $logfh = $this->{logfh};
+
+    # This comes from bugreport.cgi, but is much simpler since it doesn't
+    # worry about the details of output.
+
+    my $record = {};
+
+    while (defined (my $line = <$logfh>)) {
+	chomp $line;
+	++$this->{linenum};
+	if (length($line) == 1 and exists $states{ord($line)}) {
+	    # state transitions
+	    my $newstate = $states{ord($line)};
+
+	    # disallowed transitions
+	    $_ = "$this->{state} $newstate";
+	    unless (/^(go|go-nox|html) kill-end$/ or
+		    /^(kill-init|kill-end) (incoming-recv|autocheck|recips|html)$/ or
+		    /^kill-body go$/) {
+		die "transition from $this->{state} to $newstate at $this->{linenum} disallowed";
+	    }
+
+	    $this->{state} = $newstate;
+
+	    if ($this->{state} =~ /^(autocheck|recips|html|incoming-recv)$/) {
+		$record->{type} = $this->{state};
+	    } elsif ($this->{state} eq 'kill-end') {
+		return $record;
+	    }
+
+	    next;
+	}
+
+	$_ = $line;
+	if ($this->{state} eq 'incoming-recv') {
+	    my $pl = $_;
+	    unless (/^Received: \(at \S+\) by \S+;/) {
+		die "bad line '$pl' in state incoming-recv";
+	    }
+	    $this->{state} = 'go';
+	    $record->{text} .= "$_\n";
+	} elsif ($this->{state} eq 'html') {
+	    $record->{text} .= "$_\n";
+	} elsif ($this->{state} eq 'go') {
+	    s/^\030//;
+	    $record->{text} .= "$_\n";
+	} elsif ($this->{state} eq 'go-nox') {
+	    $record->{text} .= "$_\n";
+	} elsif ($this->{state} eq 'recips') {
+	    if (/^-t$/) {
+		undef $record->{recips};
+	    } else {
+		# preserve trailing null fields, e.g. #2298
+		$record->{recips} = [split /\04/, $_, -1];
+	    }
+	    $this->{state} = 'kill-body';
+	} elsif ($this->{state} eq 'autocheck') {
+	    $record->{text} .= "$_\n";
+	    next if !/^X-Debian-Bugs(-\w+)?: This is an autoforward from (\S+)/;
+	    $this->{state} = 'autowait';
+	} elsif ($this->{state} eq 'autowait') {
+	    $record->{text} .= "$_\n";
+	    next if !/^$/;
+	    $this->{state} = 'go-nox';
+	} else {
+	    die "state $this->{state} at line $this->{linenum} ('$_')";
+	}
+    }
+    die "state $this->{state} at end" unless $this->{state} eq 'kill-end';
+
+    if (keys %$record) {
+	return $record;
+    } else {
+	return undef;
+    }
+}
 
 =item read_log_records
 
@@ -106,87 +223,11 @@ sub read_log_records (*)
 {
     my $logfh = shift;
 
-    # This comes from bugreport.cgi, but is much simpler since it doesn't
-    # worry about the details of output.
-
-    my %states = (
-	1 => 'autocheck',
-	2 => 'recips',
-	3 => 'kill-end',
-	5 => 'go',
-	6 => 'html',
-	7 => 'incoming-recv',
-    );
-
     my @records;
-
-    my $normstate = 'kill-init';
-    my $linenum = 0;
-    my $record = {};
-
-    while (defined (my $line = <$logfh>)) {
-	chomp $line;
-	++$linenum;
-	if (length($line) == 1 and exists $states{ord($line)}) {
-	    # state transitions
-	    my $newstate = $states{ord($line)};
-
-	    # disallowed transitions
-	    $_ = "$normstate $newstate";
-	    unless (/^(go|go-nox|html) kill-end$/ or
-		    /^(kill-init|kill-end) (incoming-recv|autocheck|recips|html)$/ or
-		    /^kill-body go$/) {
-		die "transition from $normstate to $newstate at $linenum disallowed";
-	    }
-
-	    if ($newstate =~ /^(autocheck|recips|html|incoming-recv)$/) {
-		$record->{type} = $newstate;
-	    } elsif ($newstate eq 'kill-end') {
-		push @records, $record;
-		$record = {};
-	    }
-
-	    $normstate = $newstate;
-	    next;
-	}
-
-	$_ = $line;
-	if ($normstate eq 'incoming-recv') {
-	    my $pl = $_;
-	    unless (/^Received: \(at \S+\) by \S+;/) {
-		die "bad line '$pl' in state incoming-recv";
-	    }
-	    $normstate = 'go';
-	    $record->{text} .= "$_\n";
-	} elsif ($normstate eq 'html') {
-	    $record->{text} .= "$_\n";
-	} elsif ($normstate eq 'go') {
-	    s/^\030//;
-	    $record->{text} .= "$_\n";
-	} elsif ($normstate eq 'go-nox') {
-	    $record->{text} .= "$_\n";
-	} elsif ($normstate eq 'recips') {
-	    if (/^-t$/) {
-		undef $record->{recips};
-	    } else {
-		# preserve trailing null fields, e.g. #2298
-		$record->{recips} = [split /\04/, $_, -1];
-	    }
-	    $normstate = 'kill-body';
-	} elsif ($normstate eq 'autocheck') {
-	    $record->{text} .= "$_\n";
-	    next if !/^X-Debian-Bugs(-\w+)?: This is an autoforward from (\S+)/;
-	    $normstate = 'autowait';
-	} elsif ($normstate eq 'autowait') {
-	    $record->{text} .= "$_\n";
-	    next if !/^$/;
-	    $normstate = 'go-nox';
-	} else {
-	    die "state $normstate at line $linenum ('$_')";
-	}
+    my $reader = Debbugs::Log->new($logfh);
+    while (defined(my $record = $reader->read_record())) {
+	push @records, $record;
     }
-    die "state $normstate at end" unless $normstate eq 'kill-end';
-
     return @records;
 }
 
