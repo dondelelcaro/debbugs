@@ -8,6 +8,7 @@ use MIME::Parser;
 use MIME::Decoder;
 use IO::Scalar;
 use IO::Lines;
+use IO::File;
 
 #require '/usr/lib/debbugs/errorlib';
 require './common.pl';
@@ -16,6 +17,12 @@ require '/etc/debbugs/config';
 require '/etc/debbugs/text';
 
 use vars(qw($gEmailDomain $gHTMLTail $gSpoolDir $gWebDomain));
+
+# for read_log_records
+use Debbugs::Log;
+use Debbugs::MIME qw(convert_to_utf8 decode_rfc1522);
+
+use Scalar::Util qw(looks_like_number);
 
 my %param = readparse();
 
@@ -32,6 +39,8 @@ my $terse = ($param{'terse'} || 'no') eq 'yes';
 my $reverse = ($param{'reverse'} || 'no') eq 'yes';
 my $mbox = ($param{'mbox'} || 'no') eq 'yes'; 
 my $mime = ($param{'mime'} || 'yes') eq 'yes';
+
+my $trim_headers = ($param{trim} || ($msg?'no':'yes')) eq 'yes';
 
 # Not used by this script directly, but fetch these so that pkgurl() and
 # friends can propagate them correctly.
@@ -71,9 +80,21 @@ sub display_entity ($$$$\$\@) {
     $filename = decode_rfc1522($filename);
 
     if ($top) {
-	$$this .= htmlsanit(decode_rfc1522($entity->stringify_header))
-	    unless ($terse);
-	$$this .= "\n";
+	 my $header = $entity->head;
+	 if ($trim_headers and not $terse) {
+	      my @headers;
+	      foreach (qw(From To Subject Date)) {
+		   my $head_field = $head->get($_);
+		   next unless defined $head_field and $head_field ne '';
+		   push @headers, qq($_: ) . htmlsanit(decode_rfc1522($head_field));
+	      }
+	      $$this .= join(qq(), @headers) unless $terse;
+	      $$this .= qq(\n);
+	 }
+	 elsif (not $terse) {
+	      $$this .= htmlsanit(decode_rfc1522($entity->head->stringify));
+	      $$this .= qq(\n);
+	 }
     }
 
     unless (($top and $type =~ m[^text(?:/plain)?(?:;|$)]) or
@@ -128,7 +149,13 @@ sub display_entity ($$$$\$\@) {
 	}
 	$$this .= "</blockquote>\n";
     } else {
-	$$this .= htmlsanit($entity->bodyhandle->as_string) unless ($terse);
+	 if (not $terse) {
+	      my $content_type = $entity->head->get('Content-Type:');
+	      my ($charset) = $content_type =~ m/charset\s*=\s*\"?([\w-]+)\"?/i;
+	      my $body = $entity->bodyhandle->as_string;
+	      $body = convert_to_utf8($body,$charset) if defined $charset;
+	      $$this .= htmlsanit($body);
+	 }
     }
 }
 
@@ -221,11 +248,11 @@ if (@{$status{fixed_versions}}) {
     $fixedtext .= (@{$status{fixed_versions}} == 1) ? 'version ' : 'versions ';
     $fixedtext .= join ', ', map htmlsanit($_), @{$status{fixed_versions}};
     if (length($status{done})) {
-	$fixedtext .= ' by ' . htmlsanit($status{done});
+	$fixedtext .= ' by ' . htmlsanit(decode_rfc1522($status{done}));
     }
     push @descstates, $fixedtext;
 } elsif (length($status{done})) {
-	push @descstates, "<strong>Done:</strong> ".htmlsanit($status{done});
+	push @descstates, "<strong>Done:</strong> ".htmlsanit(decode_rfc1522($status{done}));
 } elsif (length($status{forwarded})) {
 	push @descstates, "<strong>Forwarded</strong> to ".maybelink($status{forwarded});
 }
@@ -246,210 +273,153 @@ foreach my $pkg (@tpacks) {
     $descriptivehead .= ".\n<br>";
 }
 
+my $buglogfh;
 if ($buglog =~ m/\.gz$/) {
     my $oldpath = $ENV{'PATH'};
     $ENV{'PATH'} = '/bin:/usr/bin';
-    open L, "zcat $buglog |" or &quitcgi("open log for $ref: $!");
+    $buglogfh = new IO::File "zcat $buglog |" or &quitcgi("open log for $ref: $!");
     $ENV{'PATH'} = $oldpath;
 } else {
-    open L, "<$buglog" or &quitcgi("open log for $ref: $!");
+    $buglogfh = new IO::File "<$buglog" or &quitcgi("open log for $ref: $!");
 }
 if ($buglog !~ m#^\Q$gSpoolDir/db#) {
     $descriptivehead .= "\n<p>Bug is <strong>archived</strong>. No further changes may be made.</p>";
 }
 
-my $log='';
 
-my $xmessage = 1;
-my $suppressnext = 0;
-my $found_msgid = 0;
-my %seen_msgid = ();
+my @records = read_log_records($buglogfh);
+undef $buglogfh;
 
-my $thisheader = '';
-my $this = '';
+=head2 handle_email_message
 
-my $cmsg = 1;
+     handle_email_message($record->{text},
+			  ref        => $bug_number,
+			  msg_number => $msg_number,
+			 );
 
-my $normstate= 'kill-init';
-my $linenum = 0;
-my @mail = ();
-my @mails = ();
-while(my $line = <L>) {
-	$linenum++;
-	if ($line =~ m/^.$/ and 1 <= ord($line) && ord($line) <= 7) {
-		# state transitions
-		my $newstate;
-		my $statenum = ord($line);
+Returns a decoded e-mail message and displays entities/attachments as
+appropriate.
 
-		$newstate = 'autocheck'     if ($statenum == 1);
-		$newstate = 'recips'        if ($statenum == 2);
-		$newstate = 'kill-end'      if ($statenum == 3);
-		$newstate = 'go'            if ($statenum == 5);
-		$newstate = 'html'          if ($statenum == 6);
-		$newstate = 'incoming-recv' if ($statenum == 7);
 
-		# disallowed transitions:
-		$_ = "$normstate $newstate";
-		unless (m/^(go|go-nox|html) kill-end$/
-		    || m/^(kill-init|kill-end) (incoming-recv|autocheck|recips|html)$/
-		    || m/^kill-body go$/)
-		{
-			&quitcgi("$ref: Transition from $normstate to $newstate at $linenum disallowed");
-		}
+=cut
 
-#$this .= "\n<br>states: $normstate $newstate<br>\n";
+sub handle_email_message{
+     my ($email,%options) = @_;
 
-#		if ($newstate eq 'go') {
-#			$this .= "<pre>\n";
-#		}
-		if ($newstate eq 'html') {
-			$this = '';
-		}
+     my $output = '';
+     my $parser = new MIME::Parser;
+     $parser->tmp_to_core(1);
+     $parser->output_to_core(1);
+     # $parser->output_under("/tmp");
+     my $entity = $parser->parse_data( $email);
+     # TODO: make local subdir, clean it ourselves
+     # the following does NOT delete the msg dirs in /tmp
+     END { if ( $entity ) { $entity->purge; } if ( $parser ) { $parser->filer->purge; } }
+     my @attachments = ();
+     display_entity($entity, $options{ref}, 1, $options{msg_number}, $output, @attachments);
+     return $output;
 
-		if ($newstate eq 'kill-end') {
-
-			my $show = 1;
-			$show = $boring
-				if ($suppressnext && $normstate ne 'html');
-
-			$show = ($xmessage == $msg) if ($msg);
-
-			push @mails, join( '', @mail ) if ( $mbox && @mail );
-			if ($show) {
-				if (not $mime and @mail) {
-					$this .= htmlsanit(join '', @mail);
-				} elsif (@mail) {
-					my $parser = new MIME::Parser;
-					$parser->tmp_to_core(1);
-					$parser->output_to_core(1);
-#					$parser->output_under("/tmp");
-					my $entity = $parser->parse( new IO::Lines \@mail );
-					# TODO: make local subdir, clean it ourselves
-					# the following does NOT delete the msg dirs in /tmp
-					END { if ( $entity ) { $entity->purge; } if ( $parser ) { $parser->filer->purge; } }
-					my @attachments = ();
-					display_entity($entity, $ref, 1, $xmessage, $this, @attachments);
-				}
-#				if ($normstate eq 'go' || $normstate eq 'go-nox') {
-				if ($normstate ne 'html') {
-					$this = "<pre>\n$this</pre>\n";
-				}
-				if ($normstate eq 'html') {
-					$this = "<a name=\"msg$xmessage\">$this  <em><a href=\"" . bugurl($ref, "msg=$xmessage") . "\">Full text</a> available.</em></a>";
-				}
-				$this = "$thisheader$this" if $thisheader && !( $normstate eq 'html' );;
-				$thisheader = '';
-				my $delim = $terse ? "<p>" : "<hr>";
-				if ($reverse) {
-					$log = "$this\n$delim$log";
-				} else {
-					$log .= "$this\n$delim\n";
-				}
-			}
-
-			$xmessage++ if ($normstate ne 'html');
-
-			$suppressnext = $normstate eq 'html';
-			$found_msgid = 0;
-		}
-		
-		$normstate = $newstate;
-		@mail = ();
-		next;
-	}
-
-	$_ = $line;
-	if ($normstate eq 'incoming-recv') {
-		my $pl= $_;
-		$pl =~ s/\n+$//;
-		m/^Received: \(at (\S+)\) by (\S+)\;/
-			|| &quitcgi("bad line \`$pl' in state incoming-recv");
-		$thisheader = "<h2><a name=\"msg$xmessage\">"
-			. "Message received at ".htmlsanit("$1\@$2")
-			. ":</a></h2>\n";
-		$this = '';
-		$normstate= 'go';
-		push @mail, $_;
-	} elsif ($normstate eq 'html') {
-		$this .= $_;
-	} elsif ($normstate eq 'go') {
-		s/^\030//;
-		if (!$suppressnext && !$found_msgid &&
-		    /^Message-ID: <(.*)>/i) {
-			my $msgid = $1;
-			$found_msgid = 1;
-			if ($seen_msgid{$msgid}) {
-				$suppressnext = 1;
-			} else {
-				$seen_msgid{$msgid} = 1;
-			}
-		}
-		if (@mail) {
-			push @mail, $_;
-		} else {
-			$this .= htmlsanit($_);
-		}
-	} elsif ($normstate eq 'go-nox') {
-		next if !s/^X//;
-		if (!$suppressnext && !$found_msgid &&
-		    /^Message-ID: <(.*)>/i) {
-			my $msgid = $1;
-			$found_msgid = 1;
-			if ($seen_msgid{$msgid}) {
-				$suppressnext = 1;
-			} else {
-				$seen_msgid{$msgid} = 1;
-			}
-		}
-		if (@mail) {
-			push @mail, $_;
-		} else {
-			$this .= htmlsanit($_);
-		}
-        } elsif ($normstate eq 'recips') {
-		if (m/^-t$/) {
-			$thisheader = "<h2>Message sent:</h2>\n";
-		} else {
-			s/\04/, /g; s/\n$//;
-			$thisheader = "<h2>Message sent to ".htmlsanit($_).":</h2>\n";
-		}
-		$this = "";
-		$normstate= 'kill-body';
-	} elsif ($normstate eq 'autocheck') {
-		next if !m/^X-Debian-Bugs(-\w+)?: This is an autoforward from (\S+)/;
-		$normstate= 'autowait';
-		$thisheader = "<h2>Message received at $2:</h2>\n";
-		$this = '';
-		push @mail, $_;
-	} elsif ($normstate eq 'autowait') {
-		next if !m/^$/;
-		$normstate= 'go-nox';
-	} else {
-		&quitcgi("$ref state $normstate line \`$_'");
-	}
 }
-&quitcgi("$ref state $normstate at end") unless $normstate eq 'kill-end';
-close(L);
 
+=head2 handle_record
+
+     push @log, handle_record($record,$ref,$msg_num);
+
+Deals with a record in a bug log as returned by
+L<Debbugs::Log::read_log_records>; returns the log information that
+should be output to the browser.
+
+=cut
+
+sub handle_record{
+     my ($record,$bug_number,$msg_number) = @_;
+
+     my $output = '';
+     local $_ = $record->{type};
+     if (/html/) {
+	  $output .= decode_rfc1522($record->{text});
+	  $output .= '<a href="' . bugurl($ref, 'msg='.($msg_number+1)) . '">Full text</a> and <a href="' .
+	       bugurl($ref, 'msg='.($msg_number+1)) . '&mbox=yes">rfc822 format</a> available.</em>';
+     }
+     elsif (/recips/) {
+	  $output .= 'View this message in <a href="' . bugurl($ref, "msg=$msg_number") . '&mbox=yes">rfc822 format</a></em>';
+	  $output .= '<pre class="message">' .
+	       handle_email_message($record->{text},
+				    ref        => $bug_number,
+				    msg_number => $msg_number,
+				   ) . '</pre>';
+     }
+     elsif (/autocheck/) {
+	  # Do nothing
+     }
+     elsif (/incoming-recv/) {
+	  # Incomming Mail Message
+	  my ($received,$hostname) = $record->{text} =~ m/Received: \(at (\S+)\) by (\S+)\;/;
+	  $output .= qq|<h2><a name="msg$msg_number">Message received at |.
+	       htmlsanit("$received\@$hostname") . q| (<a href="| . bugurl($ref, "msg=$msg_number") . '">full text</a>'.q|, <a href="| . bugurl($ref, "msg=$msg_number") . '&mbox=yes">mbox</a>)'.":</a></h2>\n";
+	  $output .= '<pre class="message">' .
+	       handle_email_message($record->{text},
+				    ref        => $bug_number,
+				    msg_number => $msg_number,
+				   ) . '</pre>';
+     }
+     else {
+	  die "Unknown record type $_";
+     }
+     return $output;
+}
+
+my $log='';
+my $msg_num = 0;
+my $skip_next = 0;
+if (looks_like_number($msg) and ($msg-1) <= $#records) {
+     @records = ($records[$msg-1]);
+     $msg_num = $msg - 1;
+}
+my @log;
 if ( $mbox ) {
-	print "Content-Type: text/plain\n\n";
-	foreach ( @mails ) {
-		my @lines = split( "\n", $_, -1 );
-		if ( $lines[ 1 ] =~ m/^From / ) {
-			my $tmp = $lines[ 0 ];
-			$lines[ 0 ] = $lines[ 1 ];
-			$lines[ 1 ] = $tmp;
-		}
-		if ( !( $lines[ 0 ] =~ m/^From / ) ) {
-			my $date = strftime "%a %b %d %T %Y", localtime;
-			unshift @lines, "From unknown $date";
-		}
-		map { s/^(>*From )/>$1/ } @lines[ 1 .. $#lines ];
-		$_ = join( "\n", @lines ) . "\n";
+     if (@records > 1) {
+	  print qq(Content-Disposition: attachment; filename="bug_${ref}.mbox"\n);
+	  print "Content-Type: text/plain\n\n";
+     }
+     else {
+	  print qq(Content-Disposition: attachment; filename="bug_${ref}_message_${msg_num}.mbox"\n);
+	  print "Content-Type: message/rfc822\n\n";
+     }
+	for my $record (@records) {
+	     next if $record->{type} !~ /^(?:recips|incoming-recv)$/;
+	     my @lines = split( "\n", $record->{text}, -1 );
+	     if ( $lines[ 1 ] =~ m/^From / ) {
+		  my $tmp = $lines[ 0 ];
+		  $lines[ 0 ] = $lines[ 1 ];
+		  $lines[ 1 ] = $tmp;
+	     }
+	     if ( !( $lines[ 0 ] =~ m/^From / ) ) {
+		  my $date = strftime "%a %b %d %T %Y", localtime;
+		  unshift @lines, "From unknown $date";
+	     }
+	     map { s/^(>*From )/>$1/ } @lines[ 1 .. $#lines ];
+	     print join( "\n", @lines ) . "\n";
 	}
-	print join("", @mails );
 	exit 0;
 }
+
+else {
+     for my $record (@records) {
+	  $msg_num++;
+	  if ($skip_next) {
+	       $skip_next = 0;
+	       next;
+	  }
+	  $skip_next = 1 if $record->{type} eq 'html' and not $boring;
+	  push @log, handle_record($record,$ref,$msg_num);
+     }
+}
+
+@log = reverse @log if $reverse;
+$log = join('<hr>',@log);
+
+
 print "Content-Type: text/html; charset=utf-8\n\n";
 
 my $title = htmlsanit($status{subject});
@@ -457,8 +427,9 @@ my $title = htmlsanit($status{subject});
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
 print "<HTML><HEAD>\n" . 
     "<TITLE>$debbugs::gProject $debbugs::gBug report logs - $short - $title</TITLE>\n" .
+#    "<link rel=\"stylesheet\" href=\"$debbugs::gWebHostBugDir/bugs.css\" type=\"text/css\">" .
     "</HEAD>\n" .
-    '<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#800080">' .
+    '<BODY>' .
     "\n";
 print "<H1>" . "$debbugs::gProject $debbugs::gBug report logs - <A HREF=\"mailto:$ref\@$gEmailDomain\">$short</A>" .
       "<BR>" . $title . "</H1>\n";

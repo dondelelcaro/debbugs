@@ -8,7 +8,7 @@ use vars qw($VERSION @EXPORT_OK);
 BEGIN {
     $VERSION = 1.00;
 
-    @EXPORT_OK = qw(parse decode_rfc1522 encode_rfc1522);
+    @EXPORT_OK = qw(parse decode_rfc1522 encode_rfc1522 convert_to_utf8);
 }
 
 use File::Path;
@@ -105,6 +105,17 @@ sub parse ($)
 
 # Bug #61342 et al.
 
+sub convert_to_utf8 {
+     my ($data, $charset) = @_;
+     $charset =~ s/^(UTF)\-(\d+)/$1$2/i;
+     return $data unless utf8_supported_charset($charset);
+     return to_utf8({
+		     -string  => $data,
+		     -charset => $charset,
+		    });
+}
+
+
 =head2 decode_rfc1522
 
     decode_rfc1522('=?iso-8859-1?Q?D=F6n_Armstr=F3ng?= <don@donarmstrong.com>')
@@ -117,15 +128,8 @@ BEGIN {
     # Set up the default RFC1522 decoder, which turns all charsets that
     # are supported into the appropriate UTF-8 charset.
     MIME::WordDecoder->default(new MIME::WordDecoder(
-	['*' => sub {
-	    my ($data, $charset) = @_;
-	    $charset =~ s/^(UTF)\-(\d+)/$1$2/i;
-	    return $data unless utf8_supported_charset($charset);
-	    return to_utf8({
-		-string  => $data,
-		-charset => $charset,
-	    });
-	}]));
+	['*' => \&convert_to_utf8,
+	]));
 }
 
 sub decode_rfc1522 ($)

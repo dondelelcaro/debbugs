@@ -59,6 +59,19 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Added per bug subscription support to debbugs, which relies on an
       external MLM to actually deal with the requests; currently works with
       eoc and sends messages to bugnum\@$gListDomain. (closes: #34071)
+    - Change bugreport.cgi to use Debbugs::Log and greately simplify the
+      process of outputing the bug log.
+    - All RFC1522 subject lines are decoded, both in the html information
+      and the message headers. All messages are converted to UTF-8 whereever
+      possible; all bugreport.cgi pages are now completely in UTF-8 to the
+      degree possible. (closes: #46848, #238984)
+    - Add a convert_to_utf8 function to Debbugs::Mime to make the above
+      possible; abstracts functionality that was already present in the
+      decode_rfc1522 fucntionality.
+    - Individual messages can now be downloaded from each bug report
+      (closes: #95373)
+    - Uninteresting headers are now hidden by default, can be renabled
+      with &trim=no (closes: #188561)
 
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
 
