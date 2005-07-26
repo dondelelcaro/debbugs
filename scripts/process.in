@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.97 2005/07/24 17:31:18 cjwatson Exp $
+# $Id: process.in,v 1.98 2005/07/26 04:30:53 don Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -1187,13 +1187,16 @@ subscription system.
 
 sub bug_list_forward{
      my ($bug_fn) = @_;
+     # Read the bug information and package information for passing to
+     # the mailing list
+     my ($bug_number) = $bug_fn =~ /^L(\d+)\./;
+     my ($bfound, $data)= lockreadbugmerge($bug_number);
      my $bug_fh = new IO::File "incoming/P$bug_fn" or die "Unable to open incoming/P$bug_fn $!";
 
      local $/ = undef;
      my $bug_message = <$bug_fh>;
      my ($bug_address) = $bug_message =~ /^Received: \(at ([^\)]+)\) by/;
-     $bug_message =~ s/\nFrom\s+([^\s]+)[^\n]+\n/\n/;
-     my $envelope_from = $1;
+     my ($envelope_from) = $bug_message =~ s/\nFrom\s+([^\s]+)[^\n]+\n/\n/;
      if (not defined $envelope_from) {
 	  # Try to use the From: header or something to set it 
           ($envelope_from) = $bug_message =~ /\nFrom:\s+(.+?)\n/;
@@ -1201,6 +1204,12 @@ sub bug_list_forward{
 	  # parser to do this.
 	  $envelope_from =~ s/^.+?<([^>]+)>.+$/$1/;
      }
+     my ($header,$body) = split /\n\n/, $bug_message, 2;
+     # Add X-$gProject-PR-Message: list bug_number, package name, and bug title headers
+     $header .= qq(\nX-$gProject-PR-Message: list $bug_number\n).
+	  qq(X-$gProject-PR-Package: $data->{package}\n).
+	       qq(X-$gProject-PR-Title: $data->{subject})
+	       if defined $data;
      print STDERR "Tried to loop me with $envelope_from\n"
 	  and exit 1 if $envelope_from =~ /\Q$gListDomain\E|\Q$gEmailDomain\E/;
      print DEBUG $envelope_from,qq(\n);
@@ -1208,8 +1217,8 @@ sub bug_list_forward{
      print STDERR "Doesn't match: $bug_address\n" and exit 1 unless defined $bug_address;
      $bug_address =~ s/\@.+//;
      print DEBUG "Sending message to bugs=$bug_address\@$gListDomain\n";
-     print DEBUG $bug_message;
-     send_mail_message($bug_message,
+     print DEBUG $header.qq(\n\n).$body;
+     send_mail_message($header.qq(\n\n).$body,
 		       ["bugs=$bug_address\@$gListDomain"],
 		       $envelope_from,
 		      );
