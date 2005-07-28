@@ -6,9 +6,62 @@ Config
 Be sure to set the $gMailer variable correctly in /etc/debbugs/config.
 The options are (all lower case) exim, qmail and sendmail.
 
-Exim
+Exim 4
+------
+The exim 4 setup supports virtual domains. This doesn't hurt on a
+dedicated system. File names are for systems that use exim4's split
+config scheme. If you use something else, you'll need to put the
+configuration options in yourself at the appropriate place (most
+likely /etc/exim4/exim4.conf or /etc/exim4/exim4.conf.template).
+
+Create a non-root user with a non-root group as its primary group.
+We'll use Debian-debbugs as the user and group:
+ # adduser --system --group --home /var/lib/debbugs \
+   --no-create-home --disabled-login --force-badname Debian-debbugs
+
+This user needs to be able to write to /var/lib/debbugs.
+
+/etc/exim4/conf.d/main/03_debbugs:
+DEBBUGS_DOMAIN = <domain name>
+DEBBUGS_USER = Debian-debbugs
+DEBBUGS_GROUP = Debian-debbugs
+
+/etc/exim4/conf.d/transport/30_debbugs:
+debbugs_pipe:
+  debug_print = "T: debbugs_pipe for $local_part@$domain"
+  driver = pipe
+  user = DEBBUGS_USER
+  group = DEBBUGS_GROUP
+  command = /usr/lib/debbugs/receive
+  return_output
+
+/etc/exim4/conf.d/router/250_debbugs:
+debbugs:
+  debug_print = "R: debbugs for $local_part@$domain"
+  driver = accept
+  transport = debbugs_pipe
+  local_parts = submit : bugs : maintonly : quiet : forwarded : \
+                done : close : request : submitter : control : ^\\d+
+  domains = DEBBUGS_DOMAIN
+
+bounce_debbugs:
+  debug_print = "R: bounce_debbugs for $local_part@$domain"
+  driver = redirect
+  allow_fail
+  data = :fail: Unknown user
+  domains = DEBBUGS_DOMAIN
+
+The bounce_debbugs router bounces all mail for the DEBBUGS_DOMAIN that
+hasn't been picked up by the debbugs router. If you want addresses
+from that domain that do not belong to debbugs to be handled normally,
+simply omit that router. However, since the pattern on deb debbugs
+router match a significant subset of the domain's local parts, it is
+strongly recommended to use a dedicated domain for debbugs.
+
+
+Exim 3
 ----
-I've seen two types of setting up Exim used.
+I've seen two types of Exim 3 set ups being used:
 
  1) If the machine is dedicated and all e-mail goes to the debbugs script,
     add this in the transport section:
