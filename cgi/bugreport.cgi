@@ -400,22 +400,23 @@ if ( $mbox ) {
 	  print qq(Content-Disposition: attachment; filename="bug_${ref}_message_${msg_num}.mbox"\n);
 	  print "Content-Type: message/rfc822\n\n";
      }
-	for my $record (@records) {
-	     next if $record->{type} !~ /^(?:recips|incoming-recv)$/;
-	     my @lines = split( "\n", $record->{text}, -1 );
-	     if ( $lines[ 1 ] =~ m/^From / ) {
-		  my $tmp = $lines[ 0 ];
-		  $lines[ 0 ] = $lines[ 1 ];
-		  $lines[ 1 ] = $tmp;
-	     }
-	     if ( !( $lines[ 0 ] =~ m/^From / ) ) {
-		  my $date = strftime "%a %b %d %T %Y", localtime;
-		  unshift @lines, "From unknown $date";
-	     }
-	     map { s/^(>*From )/>$1/ } @lines[ 1 .. $#lines ];
-	     print join( "\n", @lines ) . "\n";
-	}
-	exit 0;
+     for my $record (@records) {
+	  next if $record->{type} !~ /^(?:recips|incoming-recv)$/;
+	  next if not $boring and $record->{type} eq 'recips';
+	  my @lines = split( "\n", $record->{text}, -1 );
+	  if ( $lines[ 1 ] =~ m/^From / ) {
+	       my $tmp = $lines[ 0 ];
+	       $lines[ 0 ] = $lines[ 1 ];
+	       $lines[ 1 ] = $tmp;
+	  }
+	  if ( !( $lines[ 0 ] =~ m/^From / ) ) {
+	       my $date = strftime "%a %b %d %T %Y", localtime;
+	       unshift @lines, "From unknown $date";
+	  }
+	  map { s/^(>*From )/>$1/ } @lines[ 1 .. $#lines ];
+	  print join( "\n", @lines ) . "\n";
+     }
+     exit 0;
 }
 
 else {
