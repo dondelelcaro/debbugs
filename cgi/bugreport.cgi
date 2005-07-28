@@ -332,7 +332,7 @@ should be output to the browser.
 =cut
 
 sub handle_record{
-     my ($record,$bug_number,$msg_number) = @_;
+     my ($record,$bug_number,$msg_number,$seen_msg_ids) = @_;
 
      my $output = '';
      local $_ = $record->{type};
@@ -342,6 +342,13 @@ sub handle_record{
 	       bugurl($ref, 'msg='.($msg_number+1)) . '&mbox=yes">rfc822 format</a> available.</em>';
      }
      elsif (/recips/) {
+	  my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
+	  if (defined $msg_id and exists $$seen_msg_ids{$msg_id}) {
+	       return ();
+	  }
+	  elsif (defined $msg_id) {
+	       $$seen_msg_ids{$msg_id} = 1;
+	  }
 	  $output .= 'View this message in <a href="' . bugurl($ref, "msg=$msg_number") . '&mbox=yes">rfc822 format</a></em>';
 	  $output .= '<pre class="message">' .
 	       handle_email_message($record->{text},
@@ -353,6 +360,13 @@ sub handle_record{
 	  # Do nothing
      }
      elsif (/incoming-recv/) {
+	  my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
+	  if (defined $msg_id and exists $$seen_msg_ids{$msg_id}) {
+	       return ();
+	  }
+	  elsif (defined $msg_id) {
+	       $$seen_msg_ids{$msg_id} = 1;
+	  }
 	  # Incomming Mail Message
 	  my ($received,$hostname) = $record->{text} =~ m/Received: \(at (\S+)\) by (\S+)\;/;
 	  $output .= qq|<h2><a name="msg$msg_number">Message received at |.
@@ -405,6 +419,7 @@ if ( $mbox ) {
 }
 
 else {
+     my %seen_msg_ids;
      for my $record (@records) {
 	  $msg_num++;
 	  if ($skip_next) {
@@ -412,7 +427,7 @@ else {
 	       next;
 	  }
 	  $skip_next = 1 if $record->{type} eq 'html' and not $boring;
-	  push @log, handle_record($record,$ref,$msg_num);
+	  push @log, handle_record($record,$ref,$msg_num,\%seen_msg_ids);
      }
 }
 
