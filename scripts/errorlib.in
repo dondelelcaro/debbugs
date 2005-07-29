@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.48 2005/07/24 17:39:09 cjwatson Exp $
+# $Id: errorlib.in,v 1.49 2005/07/29 16:53:38 cjwatson Exp $
 
 use Mail::Address;
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
@@ -298,10 +298,22 @@ sub addfoundversions {
 
 sub removefoundversions {
     my $data = shift;
-    my $source = shift;
+    my $package = shift;
     my $version = shift;
+    my $isbinary = shift;
     return unless defined $version;
-    undef $source if $source =~ m[(?:\s|/)];
+    undef $package if $package =~ m[(?:\s|/)];
+    my $source = $package;
+
+    if (defined $package and $isbinary) {
+        my @srcinfo = binarytosource($package, $version, undef);
+        if (@srcinfo) {
+            # We know the source package(s). Use a fully-qualified version.
+            removefoundversions($data, $_->[0], $_->[1], '') foreach @srcinfo;
+            return;
+        }
+        # Otherwise, an unqualified version will have to do.
+    }
 
     foreach my $ver (split /[,\s]+/, $version) {
         my $sver = defined($source) ? "$source/$ver" : '';
@@ -346,10 +358,22 @@ sub addfixedversions {
 
 sub removefixedversions {
     my $data = shift;
-    my $source = shift;
+    my $package = shift;
     my $version = shift;
+    my $isbinary = shift;
     return unless defined $version;
-    undef $source if $source =~ m[(?:\s|/)];
+    undef $package if $package =~ m[(?:\s|/)];
+    my $source = $package;
+
+    if (defined $package and $isbinary) {
+        my @srcinfo = binarytosource($package, $version, undef);
+        if (@srcinfo) {
+            # We know the source package(s). Use a fully-qualified version.
+            removefixedversions($data, $_->[0], $_->[1], '') foreach @srcinfo;
+            return;
+        }
+        # Otherwise, an unqualified version will have to do.
+    }
 
     foreach my $ver (split /[,\s]+/, $version) {
         my $sver = defined($source) ? "$source/$ver" : '';
