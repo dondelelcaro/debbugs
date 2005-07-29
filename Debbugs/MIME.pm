@@ -108,6 +108,8 @@ sub parse ($)
 sub convert_to_utf8 {
      my ($data, $charset) = @_;
      $charset =~ s/^(UTF)\-(\d+)/$1$2/i;
+     # XXX HACK UNTIL #320406 IS FIXED
+     return $data if $charset =~ /BIG5/i;
      return $data unless utf8_supported_charset($charset);
      return to_utf8({
 		     -string  => $data,
