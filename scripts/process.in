@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.98 2005/07/26 04:30:53 don Exp $
+# $Id: process.in,v 1.99 2005/07/29 04:34:11 don Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -1205,11 +1205,15 @@ sub bug_list_forward{
 	  $envelope_from =~ s/^.+?<([^>]+)>.+$/$1/;
      }
      my ($header,$body) = split /\n\n/, $bug_message, 2;
-     # Add X-$gProject-PR-Message: list bug_number, package name, and bug title headers
-     $header .= qq(\nX-$gProject-PR-Message: list $bug_number\n).
-	  qq(X-$gProject-PR-Package: $data->{package}\n).
-	       qq(X-$gProject-PR-Title: $data->{subject})
-	       if defined $data;
+     # Add X-$gProject-PR-Message: list bug_number and package name headers
+     if (defined $data and $bfound) {
+	  $header .= qq(\nX-$gProject-PR-Message: list $bug_number\n).
+	       qq(X-$gProject-PR-Package: $data->{package}\n).
+		    qq(X-$gProject-PR-Title: $data->{subject});
+     }
+     else {
+	  $header .= qq(\nX-$gProject-PR-Message: list inactivebug);
+     }
      print STDERR "Tried to loop me with $envelope_from\n"
 	  and exit 1 if $envelope_from =~ /\Q$gListDomain\E|\Q$gEmailDomain\E/;
      print DEBUG $envelope_from,qq(\n);

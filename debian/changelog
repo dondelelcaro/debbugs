@@ -75,6 +75,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
       with &trim=no (closes: #188561)
     - Fix postfix instructions in README.mail (thanks to Jeff Teunissen)
       (closes: #134166)
+    - Display old severity when changing severity (closes: #196947)
 
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
 

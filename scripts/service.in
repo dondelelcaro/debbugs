@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.107 2005/07/24 18:42:41 don Exp $
+# $Id: service.in,v 1.108 2005/07/29 04:34:11 don Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -498,7 +498,7 @@ END
         } elsif (&setbug) {
             $printseverity= $data->{severity};
             $printseverity= "$gDefaultSeverity" if $printseverity eq '';
-	    $action= "Severity set to \`$newseverity'.";
+	    $action= "Severity set to \`$newseverity' from \`$printseverity'";
 	    do {
                 &addmaintainers($data);
                 if (defined $gStrongList and isstrongseverity($newseverity)) {
