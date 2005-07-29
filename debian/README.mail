@@ -238,7 +238,7 @@ This tells postfix to use the debbugs transport agent to deliver any
 mail send to bugs.domain.net. Now we need to make a database from that
 that postfix can use:
 
-	# makemap hash transport
+	# postmap hash:transport
 
 Now we need to teach postfix what the debbugs transport agent is. Edit
 /etc/postfix/master.cf and add:
@@ -252,7 +252,7 @@ to a new debbugs account just to be safe).
 
 Finally add bugs.domain.net to mydestination in main.cf:
 
-	mydestination = $myhostname localhost.$mydomain bugs.domain.org
+	mydestination = $myhostname localhost.$mydomain bugs.domain.net
 
 Now that all this is done, restart postfix and it should be working..
 

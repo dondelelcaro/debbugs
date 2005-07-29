@@ -73,6 +73,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
       (closes: #95373)
     - Uninteresting headers are now hidden by default, can be renabled
       with &trim=no (closes: #188561)
+    - Fix postfix instructions in README.mail (thanks to Jeff Teunissen)
+      (closes: #134166)
 
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
 
