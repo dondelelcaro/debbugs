@@ -83,7 +83,7 @@ sub display_entity ($$$$\$\@) {
 	 my $header = $entity->head;
 	 if ($trim_headers and not $terse) {
 	      my @headers;
-	      foreach (qw(From To Subject Date Cc)) {
+	      foreach (qw(From To Cc Subject Date)) {
 		   my $head_field = $head->get($_);
 		   next unless defined $head_field and $head_field ne '';
 		   push @headers, qq($_: ) . htmlsanit(decode_rfc1522($head_field));
