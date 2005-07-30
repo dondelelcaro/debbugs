@@ -95,6 +95,16 @@ mailservers is available via the WWW, in
   because it was difficult to add a <var>version</var> to that command's
   syntax without suffering ambiguity.
 
+<dt><code>notfound</code> <var>bugnumber</var> <var>version</var>
+
+  <dd>Remove the record that #<var>bugnumber</var> was encountered in the
+  given <var>version</var> of the package to which it is assigned.
+
+  <p>This differs from closing the $gBug at that version in that the $gBug
+  is not listed as fixed in that version either; no information about that
+  version will be known. It is intended for fixing mistakes in the record of
+  when a $gBug was found.
+
 <dt><code>submitter</code> <var>bugnumber</var>
 <var>originator-address</var> | <code>!</code>
 

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.108 2005/07/29 04:34:11 don Exp $
+# $Id: service.in,v 1.109 2005/07/29 17:16:56 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -391,6 +391,20 @@ END
                     }
                 } while (&getnextbug);
             }
+        }
+    } elsif (m/^notfound\s+\#?(-?\d+)\s+(\d.*)$/i) {
+        $ok++;
+        $ref= $1;
+        $version= $2;
+        if (&setbug) {
+            $action= "$gBug marked as not found in version $version.";
+            if (length($data->{done})) {
+                $extramessage= "(By the way, this $gBug is currently marked as done.)\n";
+            }
+            do {
+                &addmaintainers($data);
+                removefoundversions($data, $data->{package}, $version, 'binary');
+            } while (&getnextbug);
         }
     } elsif (m/^submitter\s+\#?(-?\d+)\s+\!$/i ? ($newsubmitter=$replyto, 1) :
              m/^submitter\s+\#?(-?\d+)\s+(\S.*\S)$/i ? ($newsubmitter=$2, 1) : 0) {
