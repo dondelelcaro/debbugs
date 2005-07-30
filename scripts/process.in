@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.99 2005/07/29 04:34:11 don Exp $
+# $Id: process.in,v 1.100 2005/07/30 03:22:36 don Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -101,6 +101,7 @@ if ($entity and $entity->head->tags) {
 }
 
 for my $hdr (@headerlines) {
+    $hdr = decode_rfc1522($hdr);
     $_ = $hdr;
     s/\n\s/ /g;
     &finish if m/^x-loop: (\S+)$/i && $1 eq "$gMaintainerEmail";
@@ -111,7 +112,7 @@ for my $hdr (@headerlines) {
     if (s/^(\S+):\s*//) {
 	my $v = lc $1;
 	print DEBUG ">$v=$_<\n";
-	$header{$v} = decode_rfc1522($_);
+	$header{$v} = $_;
     } else {
 	print DEBUG "!>$_<\n";
     }
@@ -1019,6 +1020,12 @@ sub sendmessage {
         $recips = ['-t'];
     }
     $msg = "X-Loop: $gMaintainerEmail\n" . $msg;
+    # The original message received is written out in appendlog, so
+    # before writing out the other messages we've sent out, we need to
+    # RFC1522 encode the header.
+    my ($header,$body) = split /\n\n/, $msg, 2;
+    $header = encode_rfc1522($header);
+    $msg = $header . qq(\n\n). $body;
 
     my $hash = get_hashname($ref);
     #save email to the log

@@ -16,7 +16,7 @@ use MIME::Parser;
 
 # for decode_rfc1522
 use MIME::WordDecoder qw();
-use Unicode::MapUTF8 qw(to_utf8 utf8_supported_charset);
+use Encode qw(decode encode is_utf8);
 
 # for encode_rfc1522
 use MIME::Words qw();
@@ -107,14 +107,20 @@ sub parse ($)
 
 sub convert_to_utf8 {
      my ($data, $charset) = @_;
-     $charset =~ s/^(UTF)\-(\d+)/$1$2/i;
-     # XXX HACK UNTIL #320406 IS FIXED
-     return $data if $charset =~ /BIG5/i;
-     return $data unless utf8_supported_charset($charset);
-     return to_utf8({
-		     -string  => $data,
-		     -charset => $charset,
-		    });
+     # raw data just gets returned (that's the charset WordDecorder
+     # uses when it doesn't know what to do)
+     return $data if $charset eq 'raw' or is_utf8($data,1);
+     my $result;
+     eval {
+	  # this encode/decode madness is to make sure that the data
+	  # really is valid utf8 and that the is_utf8 flag is off.
+	  $result = encode("utf8",decode($charset,$data))
+     };
+     if ($@) {
+	  warn "Unable to decode charset; '$charset' and '$data': $@";
+	  return $data;
+     }
+     return $result;
 }
 
 
@@ -145,9 +151,72 @@ sub decode_rfc1522 ($)
 
 sub encode_rfc1522 ($)
 {
-    my ($string) = @_;
+#    my ($string) = @_;
+#
+#    return MIME::Words::encode_mimewords($string, Charset => 'UTF-8');
 
-    return MIME::Words::encode_mimewords($string, Charset => 'UTF-8');
+# This function was stolen brazenly from a patched version of
+# MIME::Words (fix for http://rt.cpan.org/NoAuth/Bug.html?id=13027)
+#
+# The patch has been modified slightly to only encode things that
+# should be encoded, and not eat up every single character.
+
+    my ($rawstr) = @_;
+    my $charset  = 'UTF-8';
+    my $encoding = 'q';
+
+    my $NONPRINT = "\\x00-\\x1F\\x7F-\\xFF"; 
+
+    my $result = "";
+    my $current = $rawstr;
+
+    while ($current ne "") {
+      if ($current =~ s/^(([^$NONPRINT]|\s)+)//) {
+	# safe chars (w/spaces) are handled as-is
+	$result .= $1;
+	next;
+      } elsif ($current =~ s/^(([$NONPRINT]|\s)+)//) {
+	# unsafe chars (w/spaces) are encoded
+	my $unsafe_chars = $1;
+      CHUNK75:
+	while ($unsafe_chars ne "") {
+
+	  my $full_len = length($unsafe_chars);
+	  my $len = 1;
+	  my $prev_encoded = "";
+
+	  while ($len <= $full_len) {
+	    # we try to encode next beginning of unsafe string
+	    my $possible = substr $unsafe_chars, 0, $len;
+	    my $encoded = MIME::Words::encode_mimeword($possible, $encoding, $charset);
+
+	    if (length($encoded) < 75) {
+	      # if it could be encoded in specified maximum length, try
+	      # bigger beginning...
+	      $prev_encoded = $encoded;
+	    } else {
+	      #
+	      # ...otherwise, add encoded chunk which still fits, and
+	      # restart with rest of unsafe string
+	      $result .= $prev_encoded;
+	      $prev_encoded = "";
+	      substr $unsafe_chars, 0, $len - 1, "";
+	      next CHUNK75;
+	    }
+
+	    # if we have reached the end of the string, add final
+	    # encoded chunk
+	    if ($len == $full_len) {
+	      $result .= $encoded;
+	      last CHUNK75;
+	    }
+
+	    $len++;
+	  }
+	}
+      }
+    }
+    return $result;
 }
 
 1;

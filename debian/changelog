@@ -65,7 +65,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - All RFC1522 subject lines are decoded, both in the html information
       and the message headers. All messages are converted to UTF-8 whereever
       possible; all bugreport.cgi pages are now completely in UTF-8 to the
-      degree possible. (closes: #46848, #238984)
+      degree possible using Encode.pm (closes: #46848,#238984)
     - Add a convert_to_utf8 function to Debbugs::Mime to make the above
       possible; abstracts functionality that was already present in the
       decode_rfc1522 fucntionality.
@@ -76,6 +76,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Fix postfix instructions in README.mail (thanks to Jeff Teunissen)
       (closes: #134166)
     - Display old severity when changing severity (closes: #196947)
+    - All messages that originate from the BTS and either go to .log files
+      or out to users are now properly RFC1522 encoded. (closes: #306068)
 
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
 

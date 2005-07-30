@@ -1,12 +1,12 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.110 2005/07/29 20:32:30 cjwatson Exp $
+# $Id: service.in,v 1.111 2005/07/30 03:22:36 don Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
 
 use File::Copy;
 use MIME::Parser;
-use Debbugs::MIME qw(decode_rfc1522);
+use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
 
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
@@ -75,12 +75,13 @@ if ($entity and $entity->head->tags) {
 }
 
 for (@headerlines) {
+    $_ = decode_rfc1522($_);
     s/\n\s/ /g;
     print ">$_<\n" if $debug;
     if (s/^(\S+):\s*//) {
 	my $v = lc $1;
 	print ">$v=$_<\n" if $debug;
-	$header{$v} = decode_rfc1522($_);
+	$header{$v} = $_;
     } else {
 	print "!>$_<\n" if $debug;
     }
@@ -864,6 +865,13 @@ unlink("incoming/P$nn") || &quit("unlinking incoming/P$nn: $!");
 sub sendmailmessage {
     local ($message,@recips) = @_;
     $message = "X-Loop: $gMaintainerEmail\n" . $message;
+    # The original message received is written out above, so before
+    # writing out the other messages we've sent out, we need to
+    # RFC1522 encode the header.
+    my ($header,$body) = split /\n\n/, $message, 2;
+    $header = encode_rfc1522($header);
+    $message = $header . qq(\n\n). $body;
+
     print "mailing to >@recips<\n" if $debug;
     $c= open(D,"|-");
     defined($c) || &quit("mailing forking for sendmail: $!");
