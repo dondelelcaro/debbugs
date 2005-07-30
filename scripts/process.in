@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.100 2005/07/30 03:22:36 don Exp $
+# $Id: process.in,v 1.101 2005/07/30 03:55:01 don Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -10,7 +10,7 @@ tzset();
 
 use IO::File;
 use MIME::Parser;
-use Debbugs::MIME qw(decode_rfc1522);
+use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
 
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
