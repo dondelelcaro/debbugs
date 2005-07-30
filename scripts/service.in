@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.109 2005/07/29 17:16:56 cjwatson Exp $
+# $Id: service.in,v 1.110 2005/07/29 20:32:30 cjwatson Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -442,7 +442,9 @@ The submitter address recorded for your $gBug report
 #$ref: $data->{subject}
 has been changed.
 
-The new submitter address for this report is
+The old submitter address for this report was
+$oldsubmitter.
+The new submitter address is
 $newsubmitter.
 
 This change was made by
