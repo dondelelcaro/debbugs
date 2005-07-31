@@ -154,7 +154,9 @@ sub display_entity ($$$$\$\@) {
 	      my ($charset) = $content_type =~ m/charset\s*=\s*\"?([\w-]+)\"?/i;
 	      my $body = $entity->bodyhandle->as_string;
 	      $body = convert_to_utf8($body,$charset) if defined $charset;
-	      $$this .= htmlsanit($body);
+	      $body = htmlsanit($body);
+	      $body =~ s,((ftp|http|https)://[\S~-]+?/?)((\&gt\;)?[)]?[']?[:.\,]?(\s|$)),<a href=\"$1\">$1</a>$3,go;
+	      $$this .= $body;
 	 }
     }
 }
@@ -321,6 +323,30 @@ sub handle_email_message{
 
 }
 
+=head2 bug_links
+
+     bug_links($one_bug);
+     bug_links($starting_bug,$stoping_bugs,);
+
+Creates a set of links to bugs, starting with bug number
+$starting_bug, and finishing with $stoping_bug; if only one bug is
+passed, makes a link to only a single bug.
+
+The content of the link is the bug number.
+
+=cut
+
+sub bug_links{
+     my ($start,$stop,$query_arguments) = @_;
+     $stop = $stop || $start;
+     $query_arguments ||= '';
+     my @output;
+     for my $bug ($start..$stop) {
+	  push @output,'<a href="'.bugurl($bug,'').qq(">$bug</a>);
+     }
+     return join(', ',@output);
+}
+
 =head2 handle_record
 
      push @log, handle_record($record,$ref,$msg_num);
@@ -338,6 +364,11 @@ sub handle_record{
      local $_ = $record->{type};
      if (/html/) {
 	  $output .= decode_rfc1522($record->{text});
+	  # Link to forwarded http:// urls in the midst of the report
+	  # (even though these links already exist at the top)
+	  $output =~ s,((?:ftp|http|https)://[\S~-]+?/?)([\)\'\:\.\,]?(?:\s|\.<|$)),<a href=\"$1\">$1</a>$2,go;
+	  # Add links to the cloned bugs
+	  $output =~ s{(Bug )(\d+)( cloned as bugs? )(\d+)(?:\-(\d+)|)}{$1.bug_links($2).$3.bug_links($4,$5)}eo;
 	  $output .= '<a href="' . bugurl($ref, 'msg='.($msg_number+1)) . '">Full text</a> and <a href="' .
 	       bugurl($ref, 'msg='.($msg_number+1)) . '&mbox=yes">rfc822 format</a> available.</em>';
      }
