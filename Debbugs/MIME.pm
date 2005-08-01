@@ -149,74 +149,78 @@ sub decode_rfc1522 ($)
     return MIME::WordDecoder::unmime($string);
 }
 
-sub encode_rfc1522 ($)
-{
-#    my ($string) = @_;
-#
-#    return MIME::Words::encode_mimewords($string, Charset => 'UTF-8');
+=head2 encode_rfc1522
 
-# This function was stolen brazenly from a patched version of
-# MIME::Words (fix for http://rt.cpan.org/NoAuth/Bug.html?id=13027)
-#
-# The patch has been modified slightly to only encode things that
-# should be encoded, and not eat up every single character.
+     encode_rfc1522('Dön Armströng <don@donarmstrong.com>')
 
-    my ($rawstr) = @_;
-    my $charset  = 'UTF-8';
-    my $encoding = 'q';
+Encodes headers according to the RFC1522 standard by calling
+MIME::Words::encode_mimeword on distinct words as appropriate.
 
-    my $NONPRINT = "\\x00-\\x1F\\x7F-\\xFF"; 
+=cut
 
-    my $result = "";
-    my $current = $rawstr;
+# We cannot use MIME::Words::encode_mimewords because that function
+# does not handle spaces properly at all.
 
-    while ($current ne "") {
-      if ($current =~ s/^(([^$NONPRINT]|\s)+)//) {
-	# safe chars (w/spaces) are handled as-is
-	$result .= $1;
-	next;
-      } elsif ($current =~ s/^(([$NONPRINT]|\s)+)//) {
-	# unsafe chars (w/spaces) are encoded
-	my $unsafe_chars = $1;
-      CHUNK75:
-	while ($unsafe_chars ne "") {
+sub encode_rfc1522 ($) {
+     my ($rawstr) = @_;
 
-	  my $full_len = length($unsafe_chars);
-	  my $len = 1;
-	  my $prev_encoded = "";
+     # We process words in reverse so we can preserve spacing between
+     # encoded words. This regex splits on word|nonword boundaries and
+     # nonword|nonword boundaries.
+     my @words = reverse split /(?:(?<=[\s\n])|(?=[\s\n]))/m, $rawstr;
 
-	  while ($len <= $full_len) {
-	    # we try to encode next beginning of unsafe string
-	    my $possible = substr $unsafe_chars, 0, $len;
-	    my $encoded = MIME::Words::encode_mimeword($possible, $encoding, $charset);
-
-	    if (length($encoded) < 75) {
-	      # if it could be encoded in specified maximum length, try
-	      # bigger beginning...
-	      $prev_encoded = $encoded;
-	    } else {
-	      #
-	      # ...otherwise, add encoded chunk which still fits, and
-	      # restart with rest of unsafe string
-	      $result .= $prev_encoded;
-	      $prev_encoded = "";
-	      substr $unsafe_chars, 0, $len - 1, "";
-	      next CHUNK75;
-	    }
-
-	    # if we have reached the end of the string, add final
-	    # encoded chunk
-	    if ($len == $full_len) {
-	      $result .= $encoded;
-	      last CHUNK75;
-	    }
-
-	    $len++;
+     my $previous_word_encoded = 0;
+     my $string = '';
+     for my $word (@words) {
+	  if ($word !~ m#[\x00-\x1F\x7F-\xFF]#o and $word ne ' ') {
+	       $string = $word.$string;
+	       $previous_word_encoded=0;
 	  }
-	}
-      }
-    }
-    return $result;
+	  elsif ($word =~ /^[\s\n]$/) {
+	       $string = $word.$string;
+	       $previous_word_encoded = 0 if $word eq "\n";
+	  }
+	  else {
+	       my $encoded = MIME::Words::encode_mimeword($word, 'q', 'UTF-8');
+	       # RFC 1522 mandates that segments be at most 76 characters
+	       # long. If that's the case, we split the word up into 10
+	       # character pieces and encode it. We must use the Encode
+	       # magic here to avoid breaking on bit boundaries here.
+	       if (length $encoded > 75) {
+		    # Turn utf8 into the internal perl representation
+		    # so . is a character, not a byte.
+		    my $tempstr = decode_utf8($word,Encode::FB_DEFAULT);
+		    my @encoded;
+		    # Strip it into 10 character long segments, and encode
+		    # the segments
+		    # XXX It's possible that these segments are > 76 characters
+		    while ($tempstr =~ s/(.{1,10})$//) {
+			 # turn the character back into the utf8 representation.
+			 my $tempword = encode_utf8($1);
+			 # It may actually be better to eventually use
+			 # the base64 encoding here, but I'm not sure
+			 # if that's as widely supported as quoted
+			 # printable.
+			 unshift @encoded, MIME::Words::encode_mimeword($tempword,'q','UTF-8');
+		    }
+		    $encoded = join(" ",@encoded);
+		    # If the previous word was encoded, we must
+		    # include a trailing _ that gets encoded as a
+		    # space.
+		    $encoded =~ s/\?\=$/_\?\=/ if $previous_word_encoded;
+		    $string = $encoded.$string;
+	       }
+	       else {
+		    # If the previous word was encoded, we must
+		    # include a trailing _ that gets encoded as a
+		    # space.
+		    $encoded =~ s/\?\=$/_\?\=/ if $previous_word_encoded;
+		    $string = $encoded.$string;
+	       }
+	       $previous_word_encoded = 1;
+	  }
+     }
+     return $string;
 }
 
 1;
