@@ -289,7 +289,13 @@ if ($buglog !~ m#^\Q$gSpoolDir/db#) {
 }
 
 
-my @records = read_log_records($buglogfh);
+my @records;
+eval{
+     @records = read_log_records($buglogfh);
+};
+if ($@) {
+     quitcgi("Bad bug log for $debbugs::gBug $ref. Unable to read records: $@");
+}
 undef $buglogfh;
 
 =head2 handle_email_message
@@ -428,12 +434,13 @@ if ( $mbox ) {
 	  print "Content-Type: text/plain\n\n";
      }
      else {
+	  $msg_num++;
 	  print qq(Content-Disposition: attachment; filename="bug_${ref}_message_${msg_num}.mbox"\n);
 	  print "Content-Type: message/rfc822\n\n";
      }
      for my $record (@records) {
 	  next if $record->{type} !~ /^(?:recips|incoming-recv)$/;
-	  next if not $boring and $record->{type} eq 'recips';
+	  next if not $boring and $record->{type} eq 'recips' and @records > 1;
 	  my @lines = split( "\n", $record->{text}, -1 );
 	  if ( $lines[ 1 ] =~ m/^From / ) {
 	       my $tmp = $lines[ 0 ];
@@ -474,6 +481,7 @@ my $title = htmlsanit($status{subject});
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
 print "<HTML><HEAD>\n" . 
     "<TITLE>$debbugs::gProject $debbugs::gBug report logs - $short - $title</TITLE>\n" .
+     '<meta http-equiv="Content-Type" content="text/html;charset=utf-8">'.
 #    "<link rel=\"stylesheet\" href=\"$debbugs::gWebHostBugDir/bugs.css\" type=\"text/css\">" .
     "</HEAD>\n" .
     '<BODY>' .
