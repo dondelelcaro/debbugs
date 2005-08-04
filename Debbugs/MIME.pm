@@ -16,7 +16,7 @@ use MIME::Parser;
 
 # for decode_rfc1522
 use MIME::WordDecoder qw();
-use Encode qw(decode encode is_utf8);
+use Encode qw(decode encode encode_utf8 decode_utf8 is_utf8);
 
 # for encode_rfc1522
 use MIME::Words qw();
