@@ -1,8 +1,9 @@
 #!/usr/bin/perl
-# $Id: expire.in,v 1.22 2005/08/09 23:09:42 cjwatson Exp $
+# $Id: expire.in,v 1.23 2005/08/09 23:12:07 cjwatson Exp $
 
 # Load modules and set environment
 use File::Copy;
+use File::Path;
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
 
@@ -75,7 +76,7 @@ while (length($ref=shift(@list))) {
             print "$ref removing $mref\n" if $debug;
             my $dir = get_hashname($mref);
             if ($gSaveOldBugs) {
-                `mkdir -p "archive/$dir"`;
+                mkpath("archive/$dir");
                 link( "db-h/$dir/$mref.log", "archive/$dir/$mref.log" ) || copy( "db-h/$dir/$mref.log", "archive/$dir/$mref.log" );
                 link( "db-h/$dir/$mref.status", "archive/$dir/$mref.status" ) || copy( "db-h/$dir/$mref.status", "archive/$dir/$mref.status" );
                 link( "db-h/$dir/$mref.summary", "archive/$dir/$mref.summary" ) || copy( "db-h/$dir/$mref.summary", "archive/$dir/$mref.summary" );
