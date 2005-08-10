@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: expire.in,v 1.21 2005/08/09 23:04:43 cjwatson Exp $
+# $Id: expire.in,v 1.22 2005/08/09 23:09:42 cjwatson Exp $
 
 # Load modules and set environment
 use File::Copy;
@@ -32,9 +32,9 @@ foreach my $dir (@dirs) {
 
 #process each bug (ie, status file)
 while (length($ref=shift(@list))) {
-    print STDERR "$ref considering\n" if $debug;
+    print "$ref considering\n" if $debug;
     ($bfound, $data)= &lockreadbugmerge($ref);
-    print STDERR "$ref read $bfound\n" if $debug;
+    print "$ref read $bfound\n" if $debug;
     $bfound || next;
     print "$ref read ok (done $data->{done})\n" if $debug;
     (&unlockreadbugmerge($bfound), next) unless length($data->{done});
