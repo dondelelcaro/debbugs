@@ -87,6 +87,29 @@ sub isancestor ($$$)
     return 0;
 }
 
+=item leaves
+
+Find the leaves of the version tree, i.e. those versions with no
+descendants.
+
+This method is mainly for internal use.
+
+=cut
+
+sub leaves ($)
+{
+    my $self = shift;
+
+    my $parent = $self->{parent};
+    my @vers = keys %$parent;
+    my %leaf;
+    @leaf{@vers} = (1) x @vers;
+    for my $v (@vers) {
+	delete $leaf{$parent->{$v}} if defined $parent->{$v};
+    }
+    return keys %leaf;
+}
+
 =item merge
 
 Merges one branch of version data into this object. This branch takes the
@@ -151,19 +174,13 @@ sub save ($*)
     local $_;
     my $parent = $self->{parent};
 
-    my @vers = keys %$parent;
-    my %leaf;
-    @leaf{@vers} = (1) x @vers;
-    for my $v (@vers) {
-	delete $leaf{$parent->{$v}} if defined $parent->{$v};
-    }
     # TODO: breaks with tcp-wrappers/1.0-1 tcpd/2.0-1 case
     my @leaves = reverse sort {
 	my ($x, $y) = ($a, $b);
 	$x =~ s{.*/}{};
 	$y =~ s{.*/}{};
 	$self->{vercmp}->($x, $y);
-    } keys %leaf;
+    } $self->leaves();
 
     my %seen;
     for my $lf (@leaves) {
@@ -234,6 +251,130 @@ sub buggy ($$$$)
     # are recorded.
     return 'fixed' if @$fixed;
     return 'found';
+}
+
+=item allstates
+
+Takes two arguments, C<found> and C<fixed>, which are interpreted as in
+L</buggy>. Efficiently returns the state of the bug at every known version,
+in the form of a hash from versions to states (as returned by L</buggy>). If
+you pass a third argument, C<interested>, this method will stop after
+determining the state of the bug at all the versions listed therein.
+
+Whether this is faster than calling L</buggy> for each version you're
+interested in is not altogether clear, and depends rather strongly on the
+number of known and interested versions.
+
+=cut
+
+sub allstates ($$$;$)
+{
+    my $self = shift;
+    my $found = shift;
+    my $fixed = shift;
+    my $interested = shift;
+
+    my %found = map { $_ => 1 } @$found;
+    my %fixed = map { $_ => 1 } @$fixed;
+    my %interested;
+    if (defined $interested) {
+	%interested = map { $_ => 1 } @$interested;
+    }
+    my $parent = $self->{parent};
+    my @leaves = $self->leaves();
+
+    # Are any of the found or fixed versions known? We'll need this later.
+    my $known = 0;
+    for my $f (@$found, @$fixed) {
+	if (exists $parent->{$f}) {
+	    $known = 1;
+	    last;
+	}
+    }
+
+    # Start at each leaf in turn, working our way up and remembering the
+    # list of versions in the branch.
+    my %state;
+    LEAF: for my $lf (@leaves) {
+	my @branch;
+	my $fixeddesc = 0;
+
+	for (my $node = $lf; defined $node; $node = $parent->{$node}) {
+	    # If we're about to start a new branch, check whether we know
+	    # the state of every version in which we're interested. If so,
+	    # we can stop now.
+	    if (defined $interested and not @branch) {
+		my @remove;
+		for my $interest (keys %interested) {
+		    if (exists $state{$interest}) {
+			push @remove, $interest;
+		    }
+		}
+		delete @interested{@remove};
+		last LEAF unless keys %interested;
+	    }
+
+	    # We encounter a version whose state we already know. Record the
+	    # branch with the same state as that version, and go on to the
+	    # next leaf.
+	    if (exists $state{$node}) {
+		$state{$_} = $state{$node} foreach @branch;
+		last;
+	    }
+
+	    push @branch, $node;
+
+	    # We encounter a version in the found list. Record the branch as
+	    # 'found', and start a new branch.
+	    if ($found{$node}) {
+		$state{$_} = 'found' foreach @branch;
+		@branch = ();
+	    }
+
+	    # We encounter a version in the fixed list. Record the branch as
+	    # 'fixed', and start a new branch, remembering that we have a
+	    # fixed descendant.
+	    elsif ($fixed{$node}) {
+		$state{$_} = 'fixed' foreach @branch;
+		@branch = ();
+		$fixeddesc = 1;
+	    }
+
+	    # We encounter a root.
+	    elsif (not defined $parent->{$node}) {
+		# If the found list is empty and we have a fixed descendant,
+		# record the branch as 'found' (since they probably just
+		# forgot to report a version when opening the bug).
+		if (not @$found and $fixeddesc) {
+		    $state{$_} = 'found' foreach @branch;
+		}
+
+		# If any of the found or fixed versions are known, record
+		# the branch as 'absent' (since all the activity must have
+		# happened on some other branch).
+		elsif ($known) {
+		    $state{$_} = 'absent' foreach @branch;
+		}
+
+		# If there are any fixed versions at all (but they're
+		# unknown), then who knows, but we guess at recording the
+		# branch as 'fixed'.
+		elsif (@$fixed) {
+		    $state{$_} = 'fixed' foreach @branch;
+		}
+
+		# Otherwise, fall back to recording the branch as 'found'.
+		else {
+		    $state{$_} = 'found' foreach @branch;
+		}
+
+		# In any case, we're done.
+		last;
+	    }
+	}
+    }
+
+    return %state;
 }
 
 =back
