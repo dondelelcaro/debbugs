@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: expire.in,v 1.20 2004/01/13 18:48:22 cjwatson Exp $
+# $Id: expire.in,v 1.21 2005/08/09 23:04:43 cjwatson Exp $
 
 # Load modules and set environment
 use File::Copy;
@@ -25,67 +25,71 @@ opendir(DIR,"db-h") || &quit("opendir db: $!\n");
 @dirs = sort { $a <=> $b } grep(s,^,db-h/,, grep(m/^\d+$/,readdir(DIR)));
 close(DIR);
 foreach my $dir (@dirs) {
-	opendir(DIR,$dir);
-	push @list, sort { $a <=> $b } grep(s/\.summary$//,grep(m/^\d+\.summary$/,readdir(DIR)));
-	close(DIR);
+    opendir(DIR,$dir);
+    push @list, sort { $a <=> $b } grep(s/\.summary$//,grep(m/^\d+\.summary$/,readdir(DIR)));
+    close(DIR);
 }
 
 #process each bug (ie, status file)
 while (length($ref=shift(@list))) {
-	print STDERR "$ref considering\n" if $debug;
+    print STDERR "$ref considering\n" if $debug;
     ($bfound, $data)= &lockreadbugmerge($ref);
-	print STDERR "$ref read $bfound\n" if $debug;
+    print STDERR "$ref read $bfound\n" if $debug;
     $bfound || next;
-	print "$ref read ok (done $data->{done})\n" if $debug;
+    print "$ref read ok (done $data->{done})\n" if $debug;
     (&unlockreadbugmerge($bfound), next) unless length($data->{done});
-	print "$ref read done\n" if $debug;
+    print "$ref read done\n" if $debug;
     @aref= ($ref);
-    if (length($data->{mergedwith})) { push(@aref,split / /,$data->{mergedwith}); }
-	print "$ref aref @aref\n" if $debug;
+    if (length($data->{mergedwith})) {
+        push(@aref,split / /,$data->{mergedwith});
+    }
+    print "$ref aref @aref\n" if $debug;
     $oktoremove= 1;
     for $mref (@aref) {
-	print "$ref $mref check\n" if $debug;
+        print "$ref $mref check\n" if $debug;
         if ($mref != $ref) {
-	 	print "$ref $mref reading\n" if $debug;
+            print "$ref $mref reading\n" if $debug;
             $newdata = &lockreadbug($mref) || die "huh $mref ?";
-		print "$ref $mref read ok\n" if $debug;
+            print "$ref $mref read ok\n" if $debug;
             $bfound++;
         } else {
             $newdata = $data;
         }
-	print "$ref $mref read/not\n" if $debug;
+        print "$ref $mref read/not\n" if $debug;
         $expectmerge= join(' ',grep($_ != $mref, sort { $a <=> $b } @aref));
         $newdata->{mergedwith} eq $expectmerge ||
             die "$ref -> $mref: ($newdata->{mergedwith}) vs. ($expectmerge) (@aref)";
-		print "$ref $mref merge-ok\n" if $debug;
+        print "$ref $mref merge-ok\n" if $debug;
         length($newdata->{done}) || die "$ref -> $mref";
-		print "$ref $mref done-ok\n" if $debug;
+        print "$ref $mref done-ok\n" if $debug;
         $days= -M "db-h/".get_hashname($mref)."/$mref.log";
-		print "ref $mref days $days\n" if $debug;
-        if ($days <= $gRemoveAge) 
-		{ print "$ref $mref saved\n" if $debug; $oktoremove= 0; }
-    }
-    if ($oktoremove) {
-	print "$ref removing\n" if $debug;
-        for $mref (@aref) {
-	 	print "$ref removing $mref\n" if $debug;
-		my $dir = get_hashname($mref);
-		if ( $gSaveOldBugs ) {
-			`mkdir -p "archive/$dir"`;
-			link( "db-h/$dir/$mref.log", "archive/$dir/$mref.log" ) || copy( "db-h/$dir/$mref.log", "archive/$dir/$mref.log" );
-			link( "db-h/$dir/$mref.status", "archive/$dir/$mref.status" ) || copy( "db-h/$dir/$mref.status", "archive/$dir/$mref.status" );
-			link( "db-h/$dir/$mref.summary", "archive/$dir/$mref.summary" ) || copy( "db-h/$dir/$mref.summary", "archive/$dir/$mref.summary" );
-			link( "db-h/$dir/$mref.report", "archive/$dir/$mref.report" ) || copy( "db-h/$dir/$mref.report", "archive/$dir/$mref.report" );
-            		print("archived $mref to archive/$dir (from $ref)\n") || &quit("output old: $!");
-		}
-		unlink("db-h/$dir/$mref.log", "db-h/$dir/$mref.status", "db-h/$dir/$mref.summary", "db-h/$dir/$mref.report");
-		print("deleted $mref (from $ref)\n") || &quit("output old: $!");
-		bughook_archive($mref);
+        print "ref $mref days $days\n" if $debug;
+        if ($days <= $gRemoveAge) {
+            print "$ref $mref saved\n" if $debug;
+            $oktoremove= 0;
         }
     }
-	print "$ref unlocking $bfound\n" if $debug;
+    if ($oktoremove) {
+        print "$ref removing\n" if $debug;
+        for $mref (@aref) {
+            print "$ref removing $mref\n" if $debug;
+            my $dir = get_hashname($mref);
+            if ($gSaveOldBugs) {
+                `mkdir -p "archive/$dir"`;
+                link( "db-h/$dir/$mref.log", "archive/$dir/$mref.log" ) || copy( "db-h/$dir/$mref.log", "archive/$dir/$mref.log" );
+                link( "db-h/$dir/$mref.status", "archive/$dir/$mref.status" ) || copy( "db-h/$dir/$mref.status", "archive/$dir/$mref.status" );
+                link( "db-h/$dir/$mref.summary", "archive/$dir/$mref.summary" ) || copy( "db-h/$dir/$mref.summary", "archive/$dir/$mref.summary" );
+                link( "db-h/$dir/$mref.report", "archive/$dir/$mref.report" ) || copy( "db-h/$dir/$mref.report", "archive/$dir/$mref.report" );
+                print("archived $mref to archive/$dir (from $ref)\n") || &quit("output old: $!");
+            }
+            unlink("db-h/$dir/$mref.log", "db-h/$dir/$mref.status", "db-h/$dir/$mref.summary", "db-h/$dir/$mref.report");
+            print("deleted $mref (from $ref)\n") || &quit("output old: $!");
+            bughook_archive($mref);
+        }
+    }
+    print "$ref unlocking $bfound\n" if $debug;
     for ($i=0; $i<$bfound; $i++) { &unfilelock; }
-	print "$ref unlocking done\n" if $debug;
+    print "$ref unlocking done\n" if $debug;
 }
 
 close(STDOUT) || &quit("close stdout: $!");
