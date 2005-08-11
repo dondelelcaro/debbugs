@@ -25,6 +25,8 @@ my %common_exclude = ();
 my $common_raw_sort = 0;
 my $common_bug_reverse = 0;
 
+my $common_leet_urls = 0;
+
 my %common_reverse = (
     'pending' => 0,
     'severity' => 0,
@@ -178,7 +180,9 @@ sub set_option {
 
 sub readparse {
     my ($in, $key, $val, %ret);
-    if (defined $ENV{"QUERY_STRING"} && $ENV{"QUERY_STRING"} ne "") {
+    if ($#ARGV >= 0) {
+        $in = join("&", map { s/&/%26/g; s/;/%3b/g; $_ } @ARGV);
+    } elsif (defined $ENV{"QUERY_STRING"} && $ENV{"QUERY_STRING"} ne "") {
         $in=$ENV{QUERY_STRING};
     } elsif(defined $ENV{"REQUEST_METHOD"}
         && $ENV{"REQUEST_METHOD"} eq "POST")
@@ -186,6 +190,11 @@ sub readparse {
         read(STDIN,$in,$ENV{CONTENT_LENGTH});
     } else {
         return;
+    }
+    if (defined $ENV{"HTTP_COOKIE"}) {
+        my $x = $ENV{"HTTP_COOKIE"};
+	$x =~ s/;\s+/;/g;
+        $in = "$x;$in";
     }
     foreach (split(/[&;]/,$in)) {
         s/\+/ /g;
@@ -200,7 +209,12 @@ sub readparse {
 	}
         $ret{$key}=$val;
     }
+
 $debug = 1 if (defined $ret{"debug"} && $ret{"debug"} eq "aj");
+
+    $common_leet_urls = 1
+       if (defined $ret{"leeturls"} && $ret{"leeturls"} eq "yes");
+
     return %ret;
 }
 
@@ -391,47 +405,32 @@ sub htmlindexentrystatus {
 
 sub urlargs {
     my $args = '';
-    $args .= "&archive=yes" if $common_archive;
-    $args .= "&repeatmerged=no" unless $common_repeatmerged;
-    $args .= "&version=$common_version" if defined $common_version;
-    $args .= "&dist=$common_dist" if defined $common_dist;
-    $args .= "&arch=$common_arch" if defined $common_arch;
+    $args .= ";archive=yes" if $common_archive;
+    $args .= ";repeatmerged=no" unless $common_repeatmerged;
+    $args .= ";version=$common_version" if defined $common_version;
+    $args .= ";dist=$common_dist" if defined $common_dist;
+    $args .= ";arch=$common_arch" if defined $common_arch;
     return $args;
 }
 
-sub submitterurl {
-    my $ref = shift || "";
-    my $params = "submitter=" . emailfromrfc822($ref);
-    $params .= urlargs();
-    return urlsanit("pkgreport.cgi" . "?" . $params);
-}
+sub submitterurl { pkg_etc_url(emailfromrfc822($_[0] || ""), "submitter"); }
+sub mainturl { pkg_etc_url(emailfromrfc822($_[0] || ""), "maint"); }
+sub pkgurl { pkg_etc_url($_[0] || "", "pkg"); }
+sub srcurl { pkg_etc_url($_[0] || "", "src"); }
+sub tagurl { pkg_etc_url($_[0] || "", "tag"); }
 
-sub mainturl {
-    my $ref = shift || "";
-    my $params = "maint=" . emailfromrfc822($ref);
-    $params .= urlargs();
-    return urlsanit("pkgreport.cgi" . "?" . $params);
-}
-
-sub pkgurl {
+sub pkg_etc_url {
     my $ref = shift;
-    my $params = "pkg=$ref";
-    $params .= urlargs();
-    return urlsanit("pkgreport.cgi" . "?" . "$params");
-}
-
-sub srcurl {
-    my $ref = shift;
-    my $params = "src=$ref";
-    $params .= urlargs();
-    return urlsanit("pkgreport.cgi" . "?" . "$params");
-}
-
-sub tagurl {
-    my $ref = shift;
-    my $params = "tag=$ref";
-    $params .= urlargs();
-    return urlsanit("pkgreport.cgi" . "?" . "$params");
+    my $code = shift;
+    if ($common_leet_urls) {
+        $code = "package" if ($code eq "pkg");
+        $code = "source" if ($code eq "src");
+        return urlsanit("/x/$code/$ref");
+    } else {
+        my $params = "$code=$ref";
+        $params .= urlargs();
+        return urlsanit("pkgreport.cgi" . "?" . $params);
+    }
 }
 
 sub urlsanit {
@@ -463,35 +462,45 @@ sub maybelink {
 sub bugurl {
     my $ref = shift;
     my $params = "bug=$ref";
-    foreach my $val (@_) {
-	$params .= "\&msg=$1" if ($val =~ /^msg=([0-9]+)/);
-	$params .= "\&archive=yes" if (!$common_archive && $val =~ /^archive.*$/);
-    }
-    $params .= "&archive=yes" if ($common_archive);
-    $params .= "&repeatmerged=no" unless ($common_repeatmerged);
-
-    return urlsanit("bugreport.cgi" . "?" . "$params");
-}
-
-sub dlurl {
-    my $ref = shift;
-    my $params = "bug=$ref";
     my $filename = '';
-    foreach my $val (@_) {
-	$params .= "\&$1=$2" if ($val =~ /^(msg|att)=([0-9]+)/);
-	$filename = $1 if ($val =~ /^filename=(.*)$/);
+
+    if ($common_leet_urls) {
+        my $msg = "";
+        my $mbox = "";
+	my $att = "";
+        foreach my $val (@_) {
+	    $mbox = "/mbox" if ($val eq "mbox");
+	    $msg = "/$1" if ($val =~ /^msg=([0-9]+)/);
+	    $att = "/$1" if ($val =~ /^att=([0-9]+)/);
+	    $filename = "/$1" if ($val =~ /^filename=(.*)$/);
+        }
+	my $ext = "";
+	if ($mbox ne "") {
+	    $ext = $mbox;
+	} elsif ($att ne "") {
+	    $ext = "$att$filename";
+	}
+	return urlsanit("/x/$ref$msg$ext");
+    } else {
+        foreach my $val (@_) {
+	    $params .= ";mbox=yes" if ($val eq "mbox");
+	    $params .= ";msg=$1" if ($val =~ /^msg=([0-9]+)/);
+	    $params .= ";att=$1" if ($val =~ /^att=([0-9]+)/);
+	    $filename = $1 if ($val =~ /^filename=(.*)$/);
+	    $params .= ";archive=yes" if (!$common_archive && $val =~ /^archive.*$/);
+        }
+        $params .= ";archive=yes" if ($common_archive);
+        $params .= ";repeatmerged=no" unless ($common_repeatmerged);
+
+        my $pathinfo = '';
+        $pathinfo = '/'.uri_escape($filename) if $filename ne '';
+
+        return urlsanit("bugreport.cgi" . $pathinfo . "?" . $params);
     }
-    $params .= "&archive=yes" if ($common_archive);
-    my $pathinfo = '';
-    $pathinfo = '/'.uri_escape($filename) if $filename ne '';
-
-    return urlsanit("bugreport.cgi$pathinfo?$params");
 }
 
-sub mboxurl {
-    my $ref = shift;
-    return urlsanit("bugreport.cgi" . "?" . "bug=$ref&mbox=yes");
-}
+sub dlurl { bugurl(@_); }
+sub mboxurl { return bugurl($ref, "mbox"); }
 
 sub allbugs {
     return @{getbugs(sub { 1 })};

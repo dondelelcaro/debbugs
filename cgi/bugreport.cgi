@@ -50,7 +50,7 @@ set_option('repeatmerged', $repeatmerged);
 
 my $buglog = buglog($ref);
 
-if ($ENV{REQUEST_METHOD} eq 'HEAD' and not defined($att) and not $mbox) {
+if (defined $ENV{REQUEST_METHOD} and $ENV{REQUEST_METHOD} eq 'HEAD' and not defined($att) and not $mbox) {
     print "Content-Type: text/html; charset=utf-8\n";
     my @stat = stat $buglog;
     if (@stat) {
@@ -103,7 +103,7 @@ sub display_entity ($$$$\$\@) {
 	push @dlargs, "filename=$filename" if $filename ne '';
 	my $printname = $filename;
 	$printname = 'Message part ' . ($#$attachments + 1) if $filename eq '';
-	$$this .= '[<a href="' . dlurl(@dlargs) . qq{">$printname</a> } .
+	$$this .= '[<a href="' . bugurl(@dlargs) . qq{">$printname</a> } .
 		  "($type, $disposition)]\n\n";
 
 	if ($msg and defined($att) and $att eq $#$attachments) {
@@ -375,7 +375,7 @@ sub handle_record{
 	  # Add links to the cloned bugs
 	  $output =~ s{(Bug )(\d+)( cloned as bugs? )(\d+)(?:\-(\d+)|)}{$1.bug_links($2).$3.bug_links($4,$5)}eo;
 	  $output .= '<a href="' . bugurl($ref, 'msg='.($msg_number+1)) . '">Full text</a> and <a href="' .
-	       bugurl($ref, 'msg='.($msg_number+1)) . '&mbox=yes">rfc822 format</a> available.</em>';
+	       bugurl($ref, 'msg='.($msg_number+1), 'mbox') . '">rfc822 format</a> available.</em>';
      }
      elsif (/recips/) {
 	  my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
@@ -385,7 +385,7 @@ sub handle_record{
 	  elsif (defined $msg_id) {
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
-	  $output .= 'View this message in <a href="' . bugurl($ref, "msg=$msg_number") . '&mbox=yes">rfc822 format</a></em>';
+	  $output .= 'View this message in <a href="' . bugurl($ref, "msg=$msg_number", "mbox") . '">rfc822 format</a></em>';
 	  $output .= '<pre class="message">' .
 	       handle_email_message($record->{text},
 				    ref        => $bug_number,
@@ -489,7 +489,7 @@ print "<H1>" . "$debbugs::gProject $debbugs::gBug report logs - <A HREF=\"mailto
       "<BR>" . $title . "</H1>\n";
 
 print "$descriptivehead\n";
-printf "<p>View this report as an <a href=\"%s\">mbox folder</a>.</p>\n", mboxurl($ref);
+printf "<p>View this report as an <a href=\"%s\">mbox folder</a>.</p>\n", bugurl($ref, "mbox");
 print "<HR>";
 print "$log";
 print "<HR>";
