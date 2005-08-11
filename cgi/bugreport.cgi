@@ -7,7 +7,6 @@ use POSIX qw(strftime tzset);
 use MIME::Parser;
 use MIME::Decoder;
 use IO::Scalar;
-use IO::Lines;
 use IO::File;
 
 #require '/usr/lib/debbugs/errorlib';
@@ -493,6 +492,8 @@ print "$descriptivehead\n";
 printf "<p>View this report as an <a href=\"%s\">mbox folder</a>.</p>\n", mboxurl($ref);
 print "<HR>";
 print "$log";
+print "<HR>";
+print "Report that <a href=\"/cgi-bin/bugspam.cgi?bug=$ref\">this bug log contains spam</a>.<HR>\n";
 print $tail_html;
 
 print "</BODY></HTML>\n";

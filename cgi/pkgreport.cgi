@@ -114,6 +114,7 @@ set_option("sev-inc", $sev_inc);
 set_option("version", $version);
 set_option("dist", $dist);
 set_option("arch", $arch);
+set_option("use-bug-idx", defined($param{'use-bug-idx'}) ? $param{'use-bug-idx'} : 0);
 set_option("show_list_header", $show_list_header);
 set_option("show_list_footer", $show_list_footer);
 
@@ -300,6 +301,11 @@ if (defined $pkg || defined $src) {
 	    if ($pkg and $srcforpkg and (@pkgs or $pkg ne $srcforpkg)) {
 		push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($srcforpkg), htmlsanit($srcforpkg);
 	    }
+	}
+	if ($pkg) {
+	    set_option("archive", !$archive);
+	    push @references, sprintf "to the <a href=\"%s\">%s reports for %s</a>", pkgurl($pkg), ($archive ? "active" : "archived"), htmlsanit($pkg);
+	    set_option("archive", $archive);
 	}
 	if (@references) {
 	    $references[$#references] = "or $references[$#references]" if @references > 1;

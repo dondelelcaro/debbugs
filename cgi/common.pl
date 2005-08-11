@@ -101,6 +101,8 @@ my $common_dist;
 my $common_arch;
 
 my $debug = 0;
+my $use_bug_idx = 0;
+my %bugidx;
 
 sub array_option($) {
     my ($val) = @_;
@@ -133,6 +135,17 @@ sub filter_option($$\%) {
 
 sub set_option {
     my ($opt, $val) = @_;
+    if ($opt eq "use-bug-idx") {
+	$use_bug_idx = $val;
+	if ( $val ) {
+	    $common_headers{pending}{open} = $common_headers{pending}{pending};
+	    my $bugidx = tie %bugidx, MLDBM => "$debbugs::gSpoolDir/realtime/bug.idx", O_RDONLY
+		or quitcgi( "$0: can't open $debbugs::gSpoolDir/realtime/bug.idx ($!)\n" );
+	    $bugidx->RemoveTaint(1);
+	} else {
+	    untie %bugidx;
+	}
+    }
     if ($opt =~ m/^show_list_(foot|head)er$/) { $common{$opt} = $val; }
     if ($opt eq "archive") { $common_archive = $val; }
     if ($opt eq "repeatmerged") { $common_repeatmerged = $val; }
@@ -643,18 +656,33 @@ sub getbugs {
 
     my @result = ();
 
-    if (!$common_archive && defined $opt && 
-        -e "$debbugs::gSpoolDir/by-$opt.idx") 
-    {
+    my $fastidx;
+    if (!defined $opt) {
+        # leave $fastidx undefined;
+    } elsif (!$common_archive) {
+        $fastidx = "$debbugs::gSpoolDir/by-$opt.idx";
+    } else {
+        $fastidx = "$debbugs::gSpoolDir/by-$opt-arc.idx";
+    }
+
+    if (defined $fastidx && -e $fastidx) {
         my %lookup;
 print STDERR "optimized\n" if ($debug);
-        tie %lookup, DB_File => "$debbugs::gSpoolDir/by-$opt.idx", O_RDONLY
-            or die "$0: can't open $debbugs::gSpoolDir/by-$opt.idx ($!)\n";
+        tie %lookup, DB_File => $fastidx, O_RDONLY
+            or die "$0: can't open $fastidx ($!)\n";
 	while ($key = shift) {
             my $bugs = $lookup{$key};
             if (defined $bugs) {
                 push @result, (unpack 'N*', $bugs);
-            }
+            } elsif (defined $lookup{"count $key"}) {
+		my $which = 0;
+		while (1) {
+		    $bugs = $lookup{"$which $key"};
+		    last unless defined $bugs;
+		    push @result, (unpack 'N*', $bugs);
+		    $which += 100;
+		}
+	    }
         }
 	untie %lookup;
 print STDERR "done optimized\n" if ($debug);
@@ -752,6 +780,13 @@ sub getbugstatus {
     my $bugnum = shift;
 
     my %status;
+
+    if ( $use_bug_idx eq 1 && exists( $bugidx{ $bugnum } ) ) {
+	%status = %{ $bugidx{ $bugnum } };
+	$status{ pending } = $status{ status };
+	$status{ id } = $bugnum;
+	return \%status;
+    }
 
     my $location = getbuglocation( $bugnum, 'summary' );
     return {} if ( !$location );
