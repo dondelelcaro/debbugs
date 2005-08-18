@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.101 2005/07/30 03:55:01 don Exp $
+# $Id: process.in,v 1.102 2005/08/17 21:46:16 don Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -10,7 +10,8 @@ tzset();
 
 use IO::File;
 use MIME::Parser;
-use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
+use Debbugs::MIME qw(decode_rfc1522);
+use Debbugs::Mail qw(send_mail_message encode_headers);
 
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
@@ -1023,9 +1024,7 @@ sub sendmessage {
     # The original message received is written out in appendlog, so
     # before writing out the other messages we've sent out, we need to
     # RFC1522 encode the header.
-    my ($header,$body) = split /\n\n/, $msg, 2;
-    $header = encode_rfc1522($header);
-    $msg = $header . qq(\n\n). $body;
+    $msg = encode_headers($msg);
 
     my $hash = get_hashname($ref);
     #save email to the log
@@ -1040,7 +1039,10 @@ sub sendmessage {
         push @$recips, @$bcc;
     }
 
-    send_mail_message($msg,$recips);
+    send_mail_message(message        => $msg,
+		      # Because we encode the headers above, we do not want to encode them here
+		      encode_headers => 0,
+		      recipients     => $recips);
 }
 
 sub checkmaintainers {
@@ -1108,80 +1110,6 @@ sub checkmaintainers {
     }
 }
 
-=head2 send_mail_message
-
-     send_mail_message($message,[@recipients],$envelope_from)
-
-Sends a mail message out to a set of recepients with envelope sender
-$envelope_from; if $envelope_from is not set, defaults to
-$gMaintainerEmail.
-
-=cut
-
-sub send_mail_message{
-     my ($message,$recipients,$envelope_from) = @_;
-
-     # Default to $gMaintainerEmail
-     $envelope_from ||= $gMaintainerEmail;
-
-     print DEBUG "sending mail to ".join(', ',@$recipients)." with -f $envelope_from";
-     local $_ = '';
-     $SIG{'CHLD'}='chldhandle';
-     #print DEBUG "mailing sigchild set up<\n";
-     our $chldexit = 'no';
-     our $c= open(U,"-|");
-     #print DEBUG "mailing opened pipe fork<\n";
-     defined($c) || die $!;
-     #print DEBUG "mailing opened pipe fork ok $c<\n";
-     if (!$c) { # ie, we are in the child process
-	  #print DEBUG "mailing child<\n";
-	  unless (open(STDERR,">&STDOUT")) {
-	       #print DEBUG "mailing child opened stderr<\n";
-	       print STDOUT "redirect stderr: $!\n";
-	       #print DEBUG "mailing child opened stderr fail<\n";
-	       exit 1;
-	       #print DEBUG "mailing child opened stderr fail exit !?<\n";
-	  }
-	  #print DEBUG "mailing child opened stderr ok<\n";
-	  $c= open(D,"|-");
-	  #print DEBUG "mailing child forked again<\n";
-	  defined($c) || die $!;
-	  #print DEBUG "mailing child forked again ok $c<\n";
-	  if (!$c) { # ie, we are the child process
-	       #print DEBUG "mailing grandchild<\n";
-	       exec '/usr/lib/sendmail', (defined $envelope_from?'-f'.$envelope_from:''),'-odq','-oem','-oi',
-		    @{$recipients};
-	       #print DEBUG "mailing grandchild exec failed<\n";
-	       die $!;
-	       #print DEBUG "mailing grandchild died !?<\n";
-	  }
-	  #print DEBUG "mailing child not grandchild<\n";
-	  print(D $message) || die $!;
-	  #print DEBUG "mailing child printed msg<\n";
-	  close(D);
-	  #print DEBUG "mailing child closed pipe<\n";
-	  die "\n*** command returned exit status $?\n" if $?;
-	  #print DEBUG "mailing child exit status ok<\n";
-	  exit 0;
-	  #print DEBUG "mailing child exited ?!<\n";
-     }
-     #print DEBUG "mailing parent<\n";
-     $results='';
-     #print DEBUG "mailing parent results emptied<\n";
-     while( $chldexit eq 'no' ) { $results.= $_; }
-     #print DEBUG "mailing parent results read >$results<\n";
-     close(U);
-     #print DEBUG "mailing parent results closed<\n";
-     $results.= "\n*** child returned exit status $?\n" if $?;
-     #print DEBUG "mailing parent exit status ok<\n";
-     $SIG{'CHLD'}='DEFAULT';
-     #print DEBUG "mailing parent sigchild default<\n";
-     if (length($results)) { &quit("running sendmail: $results"); }
-     #print DEBUG "mailing parent results ok<\n";
-
-
-}
-
 =head2 bug_list_forward
 
      bug_list_forward($spool_filename) if $codeletter eq 'L';
@@ -1229,9 +1157,10 @@ sub bug_list_forward{
      $bug_address =~ s/\@.+//;
      print DEBUG "Sending message to bugs=$bug_address\@$gListDomain\n";
      print DEBUG $header.qq(\n\n).$body;
-     send_mail_message($header.qq(\n\n).$body,
-		       ["bugs=$bug_address\@$gListDomain"],
-		       $envelope_from,
+     send_mail_message(message        => $header.qq(\n\n).$body,
+		       recipients     => ["bugs=$bug_address\@$gListDomain"],
+		       envelope_from  => $envelope_from,
+		       encode_headers => 0,
 		      );
      unlink("incoming/P$bug_fn") || &quit("unlinking incoming/P$bug_fn: $!");
      exit 0;

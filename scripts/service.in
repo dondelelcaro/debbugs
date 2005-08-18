@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.111 2005/07/30 03:22:36 don Exp $
+# $Id: service.in,v 1.112 2005/08/17 21:46:17 don Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -7,6 +7,7 @@
 use File::Copy;
 use MIME::Parser;
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
+use Debbugs::Mail qw(send_mail_message);
 
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
@@ -865,22 +866,9 @@ unlink("incoming/P$nn") || &quit("unlinking incoming/P$nn: $!");
 sub sendmailmessage {
     local ($message,@recips) = @_;
     $message = "X-Loop: $gMaintainerEmail\n" . $message;
-    # The original message received is written out above, so before
-    # writing out the other messages we've sent out, we need to
-    # RFC1522 encode the header.
-    my ($header,$body) = split /\n\n/, $message, 2;
-    $header = encode_rfc1522($header);
-    $message = $header . qq(\n\n). $body;
-
-    print "mailing to >@recips<\n" if $debug;
-    $c= open(D,"|-");
-    defined($c) || &quit("mailing forking for sendmail: $!");
-    if (!$c) { # ie, we are the child process
-        exec '/usr/lib/sendmail','-f'."$gMaintainerEmail",'-odb','-oem','-oi',get_addresses(@recips);
-        die $!;
-    }
-    print(D $message) || &quit("writing to sendmail process: $!");
-    $!=0; close(D); $? && &quit("sendmail gave exit status $? ($!)");
+    send_mail_message(message    => $message,
+		      recipients => \@recips,
+		     );
     $midix++;
 }
 
