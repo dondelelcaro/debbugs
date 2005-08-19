@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.102 2005/08/17 21:46:16 don Exp $
+# $Id: process.in,v 1.103 2005/08/19 05:44:28 don Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -333,20 +333,10 @@ END
 
     &checkmaintainers;
 
-    # Add bug mailing lists as appropriate
-    my @bug_mailing_lists;
-    push @bug_mailing_lists, map {"bugs=$_\@$gListDomain"} ($ref, split (/ /, $data->{mergedwith}));
-
     $noticeccval.= join(', ', grep($_ ne $replyto,@maintaddrs));
     $noticeccval =~ s/\s+\n\s+/ /g; 
     $noticeccval =~ s/^\s+/ /; $noticeccval =~ s/\s+$//;
-
-    $generalcc = join(', ', $generalcc, @addsrcaddrs, @bug_mailing_lists);
-    $generalcc =~ s/\s+\n\s+/ /g;
-    $generalcc =~ s/^\s+/ /; $generalcc =~ s/\s+$//;
-
     if (length($noticeccval)) { $noticecc= "Cc: $noticeccval\n"; }
-    if (length($generalcc)) { $noticecc.= "Bcc: $generalcc\n"; }
 
     @process= ($ref,split(/ /,$data->{mergedwith}));
     $orgref= $ref;
@@ -369,6 +359,12 @@ END
             }
         }
 
+	# Add bug mailing list to $generalbcc as appropriate
+	my $generalbcc = join(', ', $generalcc, @addsrcaddrs,"bugs=$ref\@$gListDomain");
+	$generalbcc =~ s/\s+\n\s+/ /g;
+	$generalbcc =~ s/^\s+/ /; $generalbcc =~ s/\s+$//;
+	if (length $generalbcc) {$generalbcc = "Bcc: $generalbcc\n"};
+
 	writebug($ref, $data);
 
 	my $hash = get_hashname($ref);
@@ -379,7 +375,7 @@ END
             &sendmessage(<<END."---------------------------------------\n".join( "\n", @msg ), '');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
-${noticecc}Subject: $gBug#$ref: marked as forwarded ($data->{subject})
+${noticecc}${generalbcc}Subject: $gBug#$ref: marked as forwarded ($data->{subject})
 Message-ID: <header.$ref.$nn.ackfwdd\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
 References: $header{'message-id'} $data->{msgid}
@@ -409,7 +405,7 @@ END
             &sendmessage(<<END."--------------------------------------\n".$x."---------------------------------------\n".join( "\n", @msg ), '');
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
-${noticecc}Subject: $gBug#$ref: marked as done ($data->{subject})
+${noticecc}${generalbcc}Subject: $gBug#$ref: marked as done ($data->{subject})
 Message-ID: <handler.$ref.$nn.ackdone\@$gEmailDomain>
 In-Reply-To: $header{'message-id'}
 References: $header{'message-id'} $data->{msgid}
