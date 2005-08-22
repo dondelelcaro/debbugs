@@ -293,8 +293,11 @@ if (@blocks && $status{"pending"} ne 'fixed' && ! length($status{done})) {
     }
 }
 
+if ($buglog !~ m#^\Q$gSpoolDir/db#) {
+    push @descstates, "Bug is archived. No further changes may be made";
+}
 
-$indexentry .= join(";\n<br>", @descstates) . ";\n<br>" if @descstates;
+$indexentry .= join(";\n<br>", @descstates) . ".\n" if @descstates;
 $indexentry .= "</h3>\n";
 
 my $descriptivehead = $indexentry;
@@ -307,9 +310,6 @@ if ($buglog =~ m/\.gz$/) {
     $ENV{'PATH'} = $oldpath;
 } else {
     $buglogfh = new IO::File "<$buglog" or &quitcgi("open log for $ref: $!");
-}
-if ($buglog !~ m#^\Q$gSpoolDir/db#) {
-    $descriptivehead .= "\n<p class=\"msgreceived\">Bug is <strong>archived</strong>. No further changes may be made.</p>";
 }
 
 
