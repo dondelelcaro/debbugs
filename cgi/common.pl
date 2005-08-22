@@ -18,6 +18,8 @@ use Debbugs::MIME qw(decode_rfc1522);
 
 $MLDBM::RemoveTaint = 1;
 
+my $common_mindays = 0;
+my $common_maxdays = -1;
 my $common_archive = 0;
 my $common_repeatmerged = 1;
 my %common_include = ();
@@ -176,6 +178,8 @@ sub set_option {
     if ($opt eq "version") { $common_version = $val; }
     if ($opt eq "dist") { $common_dist = $val; }
     if ($opt eq "arch") { $common_arch = $val; }
+    if ($opt eq "maxdays") { $common_maxdays = $val; }
+    if ($opt eq "mindays") { $common_mindays = $val; }
 }
 
 sub readparse {
@@ -407,6 +411,8 @@ sub urlargs {
     my $args = '';
     $args .= ";archive=yes" if $common_archive;
     $args .= ";repeatmerged=no" unless $common_repeatmerged;
+    $args .= ";mindays=${common_mindays}" unless $common_mindays == 0;
+    $args .= ";maxdays=${common_maxdays}" unless $common_maxdays == -1;
     $args .= ";version=$common_version" if defined $common_version;
     $args .= ";dist=$common_dist" if defined $common_dist;
     $args .= ";arch=$common_arch" if defined $common_arch;
@@ -525,6 +531,9 @@ sub bugfilter($%) {
 	return 1 if (bugmatches(%common_exclude, %status));
     }
     my @merged = sort {$a<=>$b} $bug, split(/ /, $status{mergedwith});
+    my $daysold = int((time - $status{date}) / 86400);   # seconds to days
+    return 1 unless ($common_mindays <= $daysold);
+    return 1 unless ($common_maxdays == -1 || $daysold <= $common_maxdays);
     return 1 unless ($common_repeatmerged || !$seenmerged{$merged[0]});
     $seenmerged{$merged[0]} = 1;
     return 0;
