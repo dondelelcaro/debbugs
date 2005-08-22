@@ -274,6 +274,26 @@ if (@{$status{fixed_versions}}) {
     push @descstates, "<strong>Forwarded</strong> to ".maybelink($status{forwarded});
 }
 
+
+my @blockedby= split(/ /, $status{blockedby});
+if (@blockedby && $status{"pending"} ne 'fixed' && ! length($status{done})) {
+    for my $b (@blockedby) {
+        my %s = %{getbugstatus($b)};
+        next if $s{"pending"} eq 'fixed' || length $s{done};
+        push @descstates, "Fix blocked by <a href=\"" . bugurl($b) . "\">#$b</a>: ".htmlsanit($s{subject});
+    }
+}
+
+my @blocks= split(/ /, $status{blocks});
+if (@blocks && $status{"pending"} ne 'fixed' && ! length($status{done})) {
+    for my $b (@blocks) {
+        my %s = %{getbugstatus($b)};
+        next if $s{"pending"} eq 'fixed' || length $s{done};
+        push @descstates, "Blocking fix for <a href=\"" . bugurl($b) . "\">#$b</a>: ".htmlsanit($s{subject});
+    }
+}
+
+
 $indexentry .= join(";\n<br>", @descstates) . ";\n<br>" if @descstates;
 $indexentry .= "</h3>\n";
 
