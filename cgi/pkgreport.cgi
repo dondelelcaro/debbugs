@@ -43,6 +43,33 @@ my $arch = $param{'arch'} || undef;
 my $show_list_header = ($param{'show_list_header'} || $userAgent->{'show_list_header'} || "yes" ) eq "yes";
 my $show_list_footer = ($param{'show_list_footer'} || $userAgent->{'show_list_footer'} || "yes" ) eq "yes";
 
+{
+    if (defined $param{'vt'}) {
+        my $vt = $param{'vt'};
+        if ($vt eq "none") { $dist = undef; $arch = undef; $version = undef; }
+	if ($vt eq "bysuite") {
+	    $version = undef;
+	    $arch = undef if ($arch eq "any");
+	}
+	if ($vt eq "bypkg" || $vt eq "bysrc") { $dist = undef; $arch = undef; }
+    }
+    if (defined $param{'ordering'}) {
+        my $o = $param{'ordering'};
+	if ($o eq "raw") { $raw_sort = 1; $bug_rev = 0; }
+	if ($o eq "normal") { $raw_sort = 0; $bug_rev = 0; }
+	if ($o eq "reverse") { $raw_sort = 0; $bug_rev = 1; }
+    }
+    if (defined $param{'includesubj'}) {
+        my $is = $param{'includesubj'};
+	$include .= "," . join(",", map { "subj:$_" } (split /[\s,]+/, $is));
+    }
+    if (defined $param{'excludesubj'}) {
+        my $es = $param{'excludesubj'};
+	$exclude .= "," . join(",", map { "subj:$_" } (split /[\s,]+/, $es));
+    }
+}
+
+
 my ($pkg, $src, $maint, $maintenc, $submitter, $severity, $status, $tag);
 
 my %which = (
@@ -239,15 +266,16 @@ if (defined $pkg) {
                         })};
 }
 
-my $result = htmlizebugs(\@bugs);
+my $result = pkg_htmlizebugs(\@bugs);
 
 print "Content-Type: text/html; charset=utf-8\n\n";
 
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
 print "<HTML><HEAD>\n" . 
     "<TITLE>$debbugs::gProject$Archived $debbugs::gBug report logs: $title</TITLE>\n" .
+    '<link rel="stylesheet" href="/css/bugs.css" type="text/css">' .
     "</HEAD>\n" .
-    '<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#800080">' .
+    '<BODY onload="toggle(1);enable(1);">' .
     "\n";
 print "<H1>" . "$debbugs::gProject$Archived $debbugs::gBug report logs: $title" .
       "</H1>\n";
@@ -281,9 +309,9 @@ if (defined $pkg || defined $src) {
 	if ( @pkgs ) {
 	    @pkgs = sort @pkgs;
 	    if ($pkg) {
-		    print "You may want to refer to the following packages that are part of the same source:<br>\n";
+		    print "<p>You may want to refer to the following packages that are part of the same source:\n";
 	    } else {
-		    print "You may want to refer to the following individual bug pages:<br>\n";
+		    print "<p>You may want to refer to the following individual bug pages:\n";
 	    }
 	    push @pkgs, $src if ( $src && !grep(/^\Q$src\E$/, @pkgs) );
 	    print join( ", ", map( "<A href=\"" . pkgurl($_) . "\">$_</A>", @pkgs ) );
@@ -337,7 +365,413 @@ if (defined $pkg || defined $src) {
 
 print $result if $showresult;
 
+print pkg_javascript();
+print "<h2 class=\"outstanding\"><a class=\"options\" href=\"javascript:toggle(1)\">Options</a></h2>\n";
+print "<div id=\"a_1\">\n";
+printf "<form action=\"%s\" method=POST>\n", myurl();
+
+print "<table class=\"forms\">\n";
+
+my ($checked_any, $checked_sui, $checked_ver) = ("", "", "");
+if (defined $dist) {
+  $checked_sui = "CHECKED";
+} elsif (defined $version) {
+  $checked_ver = "CHECKED";
+} else {
+  $checked_any = "CHECKED";
+}
+
+print "<tr><td>Show bugs applicable to</td>\n";
+print "    <td><input id=\"b_1_1\" name=vt value=none type=radio onchange=\"enable(1);\" $checked_any>anything</td></tr>\n";
+print "<tr><td></td>";
+print "    <td><input id=\"b_1_2\" name=vt value=bysuite type=radio onchange=\"enable(1);\" $checked_sui>" . pkg_htmlselectsuite(1,2,1) . " for " . pkg_htmlselectarch(1,2,2) . "</td></tr>\n";
+
+if (defined $pkg) {
+    print "<tr><td></td>";
+    print "    <td><input id=\"b_1_3\" name=vt value=bypkg type=radio onchange=\"enable(1);\" $checked_ver>$pkg version <input id=\"b_1_3_1\" name=version value=\"$version\"></td></tr>\n";
+} elsif (defined $src) {
+    print "<tr><td></td>";
+    print "    <td><input name=vt value=bysrc type=radio onchange=\"enable(1);\" $checked_ver>$src version <input id=\"b_1_3_1\" name=version value=\"$version\"></td></tr>\n";
+}
+
+my $sel_rmy = ($repeatmerged ? " selected" : "");
+my $sel_rmn = ($repeatmerged ? "" : " selected");
+my $sel_ordraw = ($raw_sort ? " selected" : "");
+my $sel_ordnor = (!$raw_sort && !$bug_rev ? " selected" : "");
+my $sel_ordrev = (!$raw_sort && $bug_rev ? " selected" : "");
+my $includetags = join(" ", grep { !m/^subj:/i } split /[\s,]+/, $include);
+my $excludetags = join(" ", grep { !m/^subj:/i } split /[\s,]+/, $exclude);
+my $includesubj = join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } split /[\s,]+/, $include);
+my $excludesubj = join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } split /[\s,]+/, $exclude);
+my $vismindays = ($mindays == 0 ? "" : $mindays);
+my $vismaxdays = ($maxdays == -1 ? "" : $maxdays);
+
+print <<EOF;
+<tr><td>Display merged bugs</td><td>
+<select name=repeatmerged>
+<option value=yes$sel_rmy>separately</option>
+<option value=no$sel_rmn>combined</option>
+</select>
+</td></tr>
+<tr><td>Order bugs by</td><td>
+<select name=ordering>
+<option value=raw$sel_ordraw>bug number</option>
+<option value=normal$sel_ordnor>section, oldest first</option>
+<option value=reverse$sel_ordrev>section, newest first</option>
+</select>
+</td></tr>
+<tr><td>Only include bugs tagged with </td><td><input name=include value="$includetags"> or that have <input name=includesubj value="$includesubj"> in their subject</td></tr>
+<tr><td>Exclude bugs tagged with </td><td><input name=exclude value="$excludetags"> or that have <input name=excludesubj value="$excludesubj"> in their subject</td></tr>
+<tr><td>Only show bugs older than</td><td><input name=mindays value="$vismindays" size=5> days, and younger than <input name=maxdays value="$vismaxdays" size=5> days</td></tr>
+<tr><td colspan=2><input value="Reload page" type="submit"> with new settings</td></tr>
+EOF
+
+print "</table></form></div>\n";
+
 print "<hr>\n";
-print "$tail_html";
+print "<p>$tail_html";
 
 print "</body></html>\n";
+
+sub pkg_htmlindexentrystatus {
+    my $s = shift;
+    my %status = %{$s};
+
+    my $result = "";
+
+    my $showseverity;
+    if  ($status{severity} eq 'normal') {
+        $showseverity = '';
+    } elsif (isstrongseverity($status{severity})) {
+        $showseverity = "Severity: <em class=\"severity\">$status{severity}</em>;\n";
+    } else {
+        $showseverity = "Severity: <em>$status{severity}</em>;\n";
+    }
+
+    $result .= pkg_htmlpackagelinks($status{"package"}, 1);
+
+    my $showversions = '';
+    if (@{$status{found_versions}}) {
+        my @found = @{$status{found_versions}};
+        local $_;
+        s{/}{ } foreach @found;
+        $showversions .= join ', ', map htmlsanit($_), @found;
+    }
+    if (@{$status{fixed_versions}}) {
+        $showversions .= '; ' if length $showversions;
+        $showversions .= '<strong>fixed</strong>: ';
+        my @fixed = @{$status{fixed_versions}};
+        local $_;
+        s{/}{ } foreach @fixed;
+        $showversions .= join ', ', map htmlsanit($_), @fixed;
+    }
+    $result .= " ($showversions)" if length $showversions;
+    $result .= ";\n";
+
+    $result .= $showseverity;
+    $result .= pkg_htmladdresslinks("Reported by: ", \&submitterurl,
+                                $status{originator});
+    $result .= ";\nOwned by: " . htmlsanit($status{owner})
+               if length $status{owner};
+    $result .= ";\nTags: <strong>" 
+		 . htmlsanit(join(", ", sort(split(/\s+/, $status{tags}))))
+		 . "</strong>"
+                       if (length($status{tags}));
+
+    my @merged= split(/ /,$status{mergedwith});
+    my $mseparator= ";\nMerged with ";
+    for my $m (@merged) {
+        $result .= $mseparator."<A class=\"submitter\" href=\"" . bugurl($m) . "\">#$m</A>";
+        $mseparator= ", ";
+    }
+
+    my $days = 0;
+    if (length($status{done})) {
+        $result .= "<br><strong>Done:</strong> " . htmlsanit($status{done});
+        $days = ceil($debbugs::gRemoveAge - -M buglog($status{id}));
+        if ($days >= 0) {
+            $result .= ";\n<strong>Will be archived" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" ) . "</strong>";
+        } else {
+            $result .= ";\n<strong>Archived</strong>";
+        }
+    }
+
+    unless (length($status{done})) {
+        if (length($status{forwarded})) {
+            $result .= ";\n<strong>Forwarded</strong> to "
+                       . maybelink($status{forwarded});
+        }
+        my $daysold = int((time - $status{date}) / 86400);   # seconds to days
+        if ($daysold >= 7) {
+            my $font = "";
+            my $efont = "";
+            $font = "em" if ($daysold > 30);
+            $font = "strong" if ($daysold > 60);
+            $efont = "</$font>" if ($font);
+            $font = "<$font>" if ($font);
+
+            my $yearsold = int($daysold / 365);
+            $daysold -= $yearsold * 365;
+
+            $result .= ";\n $font";
+            my @age;
+            push @age, "1 year" if ($yearsold == 1);
+            push @age, "$yearsold years" if ($yearsold > 1);
+            push @age, "1 day" if ($daysold == 1);
+            push @age, "$daysold days" if ($daysold > 1);
+            $result .= join(" and ", @age);
+            $result .= " old$efont";
+        }
+    }
+
+    $result .= ".";
+
+    return $result;
+}
+
+
+sub pkg_htmlizebugs {
+    $b = $_[0];
+    my @bugs = @$b;
+    my $anydone = 0;
+
+    my @status = ();
+    my %count;
+    my $header = '';
+    my $footer = "<h2 class=\"outstanding\">Summary</h2>\n";
+
+    my @dummy = ($debbugs::gRemoveAge, @debbugs::gSeverityList, @debbugs::gSeverityDisplay);  #, $debbugs::gHTMLExpireNote);
+
+    if (@bugs == 0) {
+        return "<HR><H2>No reports found!</H2></HR>\n";
+    }
+
+    if ( $bug_rev ) {
+	@bugs = sort {$b<=>$a} @bugs;
+    } else {
+	@bugs = sort {$a<=>$b} @bugs;
+    }
+    my %seenmerged;
+
+    my @common_grouping = ( 'severity', 'pending' );
+    my %common_grouping_order = (
+        'pending' => [ qw( pending forwarded pending-fixed fixed done absent ) ],
+	'severity' => \@debbugs::gSeverityList,
+    );
+    my %common_grouping_display = (
+        'pending' => 'Status',
+        'severity' => 'Severity',
+    );
+    my %common_headers = (
+        'pending' => {
+            "pending"       => "outstanding",
+            "pending-fixed" => "pending upload",
+            "fixed"         => "fixed in NMU",
+            "done"          => "resolved",
+            "forwarded"     => "forwarded to upstream software authors",
+            "absent"        => "not applicable to this version",
+        },
+        'severity' => \%debbugs::gSeverityDisplay,
+    );
+    my %common_reverse = ( 'pending' => $pend_rev, 'severity' => $sev_rev );
+    my %common = (
+        'show_list_header' => 1,
+	'show_list_footer' => 1,
+    );
+    my $common_raw_sort = $raw_sort;
+
+    my %section = ();
+
+    foreach my $bug (@bugs) {
+	my %status = %{getbugstatus($bug)};
+        next unless %status;
+	next if bugfilter($bug, %status);
+
+	my $html = sprintf "<li><a href=\"%s\">#%d: %s</a>\n<br>",
+	    bugurl($bug), $bug, htmlsanit($status{subject});
+	$html .= pkg_htmlindexentrystatus(\%status) . "\n";
+	my $key = join( '_', map( {$status{$_}} @common_grouping ) );
+	$section{$key} .= $html;
+	$count{"_$key"}++;
+	foreach my $grouping ( @common_grouping ) {
+	    $count{"${grouping}_$status{$grouping}"}++;
+	}
+	$anydone = 1 if $status{pending} eq 'done';
+	push @status, [ $bug, \%status, $html ];
+    }
+
+    my $result = "";
+    if ($common_raw_sort) {
+	$result .= "<UL class=\"bugs\">\n" . join("", map( { $_->[ 2 ] } @status ) ) . "</UL>\n";
+    } else {
+	my (@order, @headers);
+	for( my $i = 0; $i < @common_grouping; $i++ ) {
+	    my $grouping_name = $common_grouping[ $i ];
+	    my @items = @{ $common_grouping_order{ $grouping_name } };
+	    @items = reverse( @items ) if ( $common_reverse{ $grouping_name } );
+	    my @neworder = ();
+	    my @newheaders = ();
+	    if ( @order ) {
+		foreach my $grouping ( @items ) {
+		    push @neworder, map( { "${_}_$grouping" } @order );
+		    push @newheaders, map( { "$_ - $common_headers{$grouping_name}{$grouping}" } @headers );
+		}
+		@order = @neworder;
+		@headers = @newheaders;
+	    } else {
+		push @order, @items;
+		push @headers, map( { $common_headers{$common_grouping[$i]}{$_} } @items );
+	    }
+	}
+	$header .= "<ul>\n<div class=\"msgreceived\">";
+	for ( my $i = 0; $i < @order; $i++ ) {
+	    my $order = $order[ $i ];
+	    next unless defined $section{$order};
+	    my $count = $count{"_$order"};
+	    my $bugs = $count == 1 ? "bug" : "bugs";
+	    $header .= "<li><a href=\"#$order\">$headers[$i]</a> ($count $bugs)</li>\n";
+	}
+	$header .= "</ul></div>\n";
+	for ( my $i = 0; $i < @order; $i++ ) {
+	    my $order = $order[ $i ];
+	    next unless defined $section{$order};
+	    if ($common{show_list_header}) {
+		my $count = $count{"_$order"};
+		my $bugs = $count == 1 ? "bug" : "bugs";
+		$result .= "<H2 CLASS=\"outstanding\"><a name=\"$order\"></a>$headers[$i] ($count $bugs)</H2>\n";
+	    } else {
+		$result .= "<H2 CLASS=\"outstanding\">$headers[$i]</H2>\n";
+	    }
+	    $result .= "<div class=\"msgreceived\">\n<UL class=\"bugs\">\n";
+	    $result .= $section{$order};
+	    $result .= "</UL>\n</div>\n";
+	} 
+	$footer .= "<ul>\n<div class=\"msgreceived\">";
+	foreach my $grouping ( @common_grouping ) {
+	    my $local_result = '';
+	    foreach my $key ( @{$common_grouping_order{ $grouping }} ) {
+		my $count = $count{"${grouping}_$key"};
+		next if !$count;
+		$local_result .= "<li>$count $common_headers{$grouping}{$key}</li>\n";
+	    }
+	    if ( $local_result ) {
+		$footer .= "<li>$common_grouping_display{$grouping}<ul>\n$local_result</ul></li>\n";
+	    }
+	}
+	$footer .= "</div></ul>\n";
+    }
+
+    $result = $header . $result if ( $common{show_list_header} );
+    #$result .= "<hr><p>" . $debbugs::gHTMLExpireNote if $debbugs::gRemoveAge and $anydone;
+    $result .= $footer if ( $common{show_list_footer} );
+    return $result;
+}
+
+sub pkg_htmlpackagelinks {
+    my $pkgs = shift;
+    return unless defined $pkgs and $pkgs ne '';
+    my $strong = shift;
+    my @pkglist = splitpackages($pkgs);
+
+    $strong = 0;
+    my $openstrong  = $strong ? '<strong>' : '';
+    my $closestrong = $strong ? '</strong>' : '';
+
+    return 'Package' . (@pkglist > 1 ? 's' : '') . ': ' .
+           join(', ',
+                map {
+                    '<a class="submitter" href="' . pkgurl($_) . '">' .
+                    $openstrong . htmlsanit($_) . $closestrong . '</a>'
+                } @pkglist
+           );
+}
+
+sub pkg_htmladdresslinks {
+    my ($prefixfunc, $urlfunc, $addresses) = @_;
+    if (defined $addresses and $addresses ne '') {
+        my @addrs = getparsedaddrs($addresses);
+        my $prefix = (ref $prefixfunc) ? $prefixfunc->(scalar @addrs)
+                                       : $prefixfunc;
+        return $prefix .
+               join ', ', map { sprintf '<a class="submitter" href="%s">%s</a>',
+                                        $urlfunc->($_->address),
+                                        htmlsanit($_->format) || '(unknown)'
+                              } @addrs;
+    } else {
+        my $prefix = (ref $prefixfunc) ? $prefixfunc->(1) : $prefixfunc;
+        return sprintf '%s<a class="submitter" href="%s">(unknown)</a>', $prefix, $urlfunc->('');
+    }
+}
+
+sub pkg_javascript {
+    return <<EOF ;
+<script type="text/javascript">
+<!--
+
+function toggle(i) {
+	var a = document.getElementById("a_" + i);
+	if (a.style.display == "none") {
+		a.style.display = "";
+	} else {
+		a.style.display = "none";
+	}
+}
+
+function enable(x) {
+    for (var i = 1; ; i++) {
+        var a = document.getElementById("b_" + x + "_" + i);
+	if (a == null) break;
+	var ischecked = a.checked;
+        for (var j = 1; ; j++) {
+            var b = document.getElementById("b_" + x + "_"+ i + "_" + j);
+            if (b == null) break;
+	    if (ischecked) {
+            	b.disabled = false;
+	    } else {
+	        b.disabled = true;
+	    }
+        }
+    }
+}
+-->
+</script>
+EOF
+}
+
+sub pkg_htmlselectsuite {
+    my $id = sprintf "b_%d_%d_%d", $_[0], $_[1], $_[2];
+    my @suites = ("stable", "testing", "unstable", "experimental");
+    my %suiteaka = ("stable", "sarge", "testing", "etch", "unstable", "sid");
+    my $defaultsuite = "unstable";
+
+    my $result = sprintf '<select name=dist id="%s">', $id;
+    for my $s (@suites) {
+        $result .= sprintf '<option value="%s"%s>%s%s</option>',
+		$s, ($defaultsuite eq $s ? " selected" : ""),
+		$s, (defined $suiteaka{$s} ? " (" . $suiteaka{$s} . ")" : "");
+    }
+    $result .= '</select>';
+    return $result;
+}
+
+sub pkg_htmlselectarch {
+    my $id = sprintf "b_%d_%d_%d", $_[0], $_[1], $_[2];
+    my @arches = qw(alpha amd64 arm hppa i386 ia64 m68k mips mipsel powerpc s390 sparc);
+
+    my $result = sprintf '<select name=arch id="%s">', $id;
+    $result .= '<option value="any">any architecture</option>';
+    for my $a (@arches) {
+        $result .= sprintf '<option value="%s">%s</option>', $a, $a;
+    }
+    $result .= '</select>';
+    return $result;
+}
+
+sub myurl {
+    return pkg_etc_url($pkg, "pkg", 0) if defined($pkg);
+    return pkg_etc_url($src, "src", 0) if defined($src);
+    return pkg_etc_url($maint, "maint", 0) if defined($maint);
+    return pkg_etc_url($submitter, "submitter", 0) if defined($submitter);
+    return pkg_etc_url($severity, "severity", 0) if defined($severity);
+    return pkg_etc_url($tag, "tag", 0) if defined($tag);
+}

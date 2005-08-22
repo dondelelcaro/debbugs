@@ -18,9 +18,8 @@ if (defined $ENV{REQUEST_METHOD} and $ENV{REQUEST_METHOD} eq 'HEAD') {
 }
 
 my $path = $ENV{PATH_INFO};
-my %param = readparse();
 
-if ($path =~ m,^/(\d+)(/(\d)+(/.*)?)?$,) {
+if ($path =~ m,^/(\d+)(/(\d+)(/.*)?)?$,) {
     my $bug = $1;
     my $msg = $3;
     my $rest = $4;

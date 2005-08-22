@@ -183,18 +183,24 @@ sub set_option {
 }
 
 sub readparse {
-    my ($in, $key, $val, %ret);
+    my ($key, $val, %ret);
+    my $in = "";
     if ($#ARGV >= 0) {
-        $in = join("&", map { s/&/%26/g; s/;/%3b/g; $_ } @ARGV);
-    } elsif (defined $ENV{"QUERY_STRING"} && $ENV{"QUERY_STRING"} ne "") {
-        $in=$ENV{QUERY_STRING};
-    } elsif(defined $ENV{"REQUEST_METHOD"}
-        && $ENV{"REQUEST_METHOD"} eq "POST")
-    {
-        read(STDIN,$in,$ENV{CONTENT_LENGTH});
-    } else {
-        return;
+        $in .= ";" . join("&", map { s/&/%26/g; s/;/%3b/g; $_ } @ARGV);
     }
+    if (defined $ENV{"QUERY_STRING"} && $ENV{"QUERY_STRING"} ne "") {
+        $in .= ";" . $ENV{QUERY_STRING};
+    }
+    if (defined $ENV{"REQUEST_METHOD"} && $ENV{"REQUEST_METHOD"} eq "POST"
+          && defined $ENV{"CONTENT_TYPE"}
+	  && $ENV{"CONTENT_TYPE"} eq "application/x-www-form-urlencoded")
+    {
+	my $inx;
+        read(STDIN,$inx,$ENV{CONTENT_LENGTH});
+	$in .= ";" . $inx;
+    }
+    return unless ($in ne "");
+
     if (defined $ENV{"HTTP_COOKIE"}) {
         my $x = $ENV{"HTTP_COOKIE"};
 	$x =~ s/;\s+/;/g;
@@ -433,8 +439,9 @@ sub pkg_etc_url {
         $code = "source" if ($code eq "src");
         return urlsanit("/x/$code/$ref");
     } else {
+        my $addurlargs = shift || 1;
         my $params = "$code=$ref";
-        $params .= urlargs();
+        $params .= urlargs() if $addurlargs;
         return urlsanit("pkgreport.cgi" . "?" . $params);
     }
 }

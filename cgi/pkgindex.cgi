@@ -167,6 +167,6 @@ print $note;
 print $result;
 
 print "<hr>\n";
-print "$tail_html";
+print "<p>$tail_html";
 
 print "</body></html>\n";

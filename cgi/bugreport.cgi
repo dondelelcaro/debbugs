@@ -78,22 +78,21 @@ sub display_entity ($$$$\$\@) {
     $filename = '' unless defined $filename;
     $filename = decode_rfc1522($filename);
 
-    if ($top) {
+    if ($top and not $terse) {
 	 my $header = $entity->head;
-	 if ($trim_headers and not $terse) {
+	 $$this .= "<pre class=\"headers\">\n";
+	 if ($trim_headers) {
 	      my @headers;
 	      foreach (qw(From To Cc Subject Date)) {
 		   my $head_field = $head->get($_);
 		   next unless defined $head_field and $head_field ne '';
-		   push @headers, qq($_: ) . htmlsanit(decode_rfc1522($head_field));
+		   push @headers, qq(<b>$_:</b> ) . htmlsanit(decode_rfc1522($head_field));
 	      }
 	      $$this .= join(qq(), @headers) unless $terse;
-	      $$this .= qq(\n);
-	 }
-	 elsif (not $terse) {
+	 } else {
 	      $$this .= htmlsanit(decode_rfc1522($entity->head->stringify));
-	      $$this .= qq(\n);
 	 }
+	 $$this .= "</pre>\n";
     }
 
     unless (($top and $type =~ m[^text(?:/plain)?(?:;|$)]) or
@@ -103,8 +102,8 @@ sub display_entity ($$$$\$\@) {
 	push @dlargs, "filename=$filename" if $filename ne '';
 	my $printname = $filename;
 	$printname = 'Message part ' . ($#$attachments + 1) if $filename eq '';
-	$$this .= '[<a href="' . bugurl(@dlargs) . qq{">$printname</a> } .
-		  "($type, $disposition)]\n\n";
+	$$this .= '<pre class="mime">[<a href="' . bugurl(@dlargs) . qq{">$printname</a> } .
+		  "($type, $disposition)]</pre>\n";
 
 	if ($msg and defined($att) and $att eq $#$attachments) {
 	    my $head = $entity->head;
@@ -149,13 +148,15 @@ sub display_entity ($$$$\$\@) {
 	$$this .= "</blockquote>\n";
     } else {
 	 if (not $terse) {
-	      my $content_type = $entity->head->get('Content-Type:');
+	      my $content_type = $entity->head->get('Content-Type:') || "text/html";
 	      my ($charset) = $content_type =~ m/charset\s*=\s*\"?([\w-]+)\"?/i;
 	      my $body = $entity->bodyhandle->as_string;
 	      $body = convert_to_utf8($body,$charset) if defined $charset;
 	      $body = htmlsanit($body);
 	      $body =~ s,((ftp|http|https)://[\S~-]+?/?)((\&gt\;)?[)]?[']?[:.\,]?(\s|$)),<a href=\"$1\">$1</a>$3,go;
+	      $$this .= "<pre class=\"message\">";
 	      $$this .= $body;
+	      $$this .= "</pre>\n";
 	 }
     }
 }
@@ -164,7 +165,6 @@ my %maintainer = %{getmaintainers()};
 my %pkgsrc = %{getpkgsrc()};
 
 my $indexentry;
-my $descriptivehead;
 my $showseverity;
 
 my $tpack;
@@ -201,34 +201,50 @@ my @tpacks = splitpackages($tpack);
 
 if  ($status{severity} eq 'normal') {
 	$showseverity = '';
-#} elsif (isstrongseverity($status{severity})) {
-#	$showseverity = "<strong>Severity: $status{severity}</strong>;\n";
+} elsif (isstrongseverity($status{severity})) {
+	$showseverity = "Severity: <em class=\"severity\">$status{severity}</em>;\n";
 } else {
-	$showseverity = "Severity: <em>$status{severity}</em>;\n";
+	$showseverity = "Severity: $status{severity};\n";
 }
 
-$indexentry .= "<p>$showseverity";
+$indexentry .= "<div class=\"msgreceived\">\n";
 $indexentry .= htmlpackagelinks($status{package}, 0) . ";\n";
 
+foreach my $pkg (@tpacks) {
+    my $tmaint = defined($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)';
+    my $tsrc = defined($pkgsrc{$pkg}) ? $pkgsrc{$pkg} : '(unknown)';
+
+    $indexentry .=
+            htmlmaintlinks(sub { $_[0] == 1 ? "Maintainer for $pkg is\n"
+                                            : "Maintainers for $pkg are\n" },
+                           $tmaint);
+    $indexentry .= ";\nSource for $pkg is\n".
+            '<a href="'.srcurl($tsrc)."\">$tsrc</a>" if ($tsrc ne "(unknown)");
+    $indexentry .= ".\n";
+}
+
+$indexentry .= "<br>";
 $indexentry .= htmladdresslinks("Reported by: ", \&submitterurl,
                                 $status{originator}) . ";\n";
+$indexentry .= sprintf "Date: %s.\n",
+		(strftime "%a, %e %b %Y %T UTC", localtime($status{date}));
 
-$indexentry .= "Owned by: " . htmlsanit($status{owner}) . ";\n"
+$indexentry .= "<br>Owned by: " . htmlsanit($status{owner}) . ".\n"
               if length $status{owner};
 
-my $dummy = strftime "%a, %e %b %Y %T UTC", localtime($status{date});
-$indexentry .= "Date: ".$dummy.";\n<br>";
+$indexentry .= "</div>\n";
 
 my @descstates;
 
-push @descstates, "Tags: <strong>"
-		. htmlsanit(join(", ", sort(split(/\s+/, $status{tags}))))
-		. "</strong>"
+$indexentry .= "<h3>$showseverity";
+$indexentry .= sprintf "Tags: %s;\n", 
+		htmlsanit(join(", ", sort(split(/\s+/, $status{tags}))))
 			if length($status{tags});
+$indexentry .= "<br>" if (length($showseverity) or length($status{tags}));
 
 my @merged= split(/ /,$status{mergedwith});
 if (@merged) {
-	my $descmerged = 'merged with ';
+	my $descmerged = 'Merged with ';
 	my $mseparator = '';
 	for my $m (@merged) {
 		$descmerged .= $mseparator."<a href=\"" . bugurl($m) . "\">#$m</a>";
@@ -253,26 +269,15 @@ if (@{$status{fixed_versions}}) {
     }
     push @descstates, $fixedtext;
 } elsif (length($status{done})) {
-	push @descstates, "<strong>Done:</strong> ".htmlsanit(decode_rfc1522($status{done}));
+    push @descstates, "<strong>Done:</strong> ".htmlsanit(decode_rfc1522($status{done}));
 } elsif (length($status{forwarded})) {
-	push @descstates, "<strong>Forwarded</strong> to ".maybelink($status{forwarded});
+    push @descstates, "<strong>Forwarded</strong> to ".maybelink($status{forwarded});
 }
 
-$indexentry .= join(";\n", @descstates) . ";\n<br>" if @descstates;
+$indexentry .= join(";\n<br>", @descstates) . ";\n<br>" if @descstates;
+$indexentry .= "</h3>\n";
 
-$descriptivehead = $indexentry;
-foreach my $pkg (@tpacks) {
-    my $tmaint = defined($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)';
-    my $tsrc = defined($pkgsrc{$pkg}) ? $pkgsrc{$pkg} : '(unknown)';
-
-    $descriptivehead .=
-            htmlmaintlinks(sub { $_[0] == 1 ? "Maintainer for $pkg is\n"
-                                            : "Maintainers for $pkg are\n" },
-                           $tmaint);
-    $descriptivehead .= ";\nSource for $pkg is\n".
-            '<a href="'.srcurl($tsrc)."\">$tsrc</a>" if ($tsrc ne "(unknown)");
-    $descriptivehead .= ".\n<br>";
-}
+my $descriptivehead = $indexentry;
 
 my $buglogfh;
 if ($buglog =~ m/\.gz$/) {
@@ -284,7 +289,7 @@ if ($buglog =~ m/\.gz$/) {
     $buglogfh = new IO::File "<$buglog" or &quitcgi("open log for $ref: $!");
 }
 if ($buglog !~ m#^\Q$gSpoolDir/db#) {
-    $descriptivehead .= "\n<p>Bug is <strong>archived</strong>. No further changes may be made.</p>";
+    $descriptivehead .= "\n<p class=\"msgreceived\">Bug is <strong>archived</strong>. No further changes may be made.</p>";
 }
 
 
@@ -376,6 +381,8 @@ sub handle_record{
 	  $output =~ s{(Bug )(\d+)( cloned as bugs? )(\d+)(?:\-(\d+)|)}{$1.bug_links($2).$3.bug_links($4,$5)}eo;
 	  $output .= '<a href="' . bugurl($ref, 'msg='.($msg_number+1)) . '">Full text</a> and <a href="' .
 	       bugurl($ref, 'msg='.($msg_number+1), 'mbox') . '">rfc822 format</a> available.</em>';
+
+	  $output = "<div class=\"msgreceived\">\n" . $output . "</div>\n";
      }
      elsif (/recips/) {
 	  my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
@@ -386,11 +393,10 @@ sub handle_record{
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
 	  $output .= 'View this message in <a href="' . bugurl($ref, "msg=$msg_number", "mbox") . '">rfc822 format</a></em>';
-	  $output .= '<pre class="message">' .
-	       handle_email_message($record->{text},
+	  $output .= handle_email_message($record->{text},
 				    ref        => $bug_number,
 				    msg_number => $msg_number,
-				   ) . '</pre>';
+				   );
      }
      elsif (/autocheck/) {
 	  # Do nothing
@@ -405,13 +411,12 @@ sub handle_record{
 	  }
 	  # Incomming Mail Message
 	  my ($received,$hostname) = $record->{text} =~ m/Received: \(at (\S+)\) by (\S+)\;/;
-	  $output .= qq|<h2><a name="msg$msg_number">Message received at |.
-	       htmlsanit("$received\@$hostname") . q| (<a href="| . bugurl($ref, "msg=$msg_number") . '">full text</a>'.q|, <a href="| . bugurl($ref, "msg=$msg_number") . '&mbox=yes">mbox</a>)'.":</a></h2>\n";
-	  $output .= '<pre class="message">' .
-	       handle_email_message($record->{text},
+	  $output .= qq|<p class="msgreceived"><a name="msg$msg_number">Message received at |.
+	       htmlsanit("$received\@$hostname") . q| (<a href="| . bugurl($ref, "msg=$msg_number") . '">full text</a>'.q|, <a href="| . bugurl($ref, "msg=$msg_number") . '&mbox=yes">mbox</a>)'.":</a></p>\n";
+	  $output .= handle_email_message($record->{text},
 				    ref        => $bug_number,
 				    msg_number => $msg_number,
-				   ) . '</pre>';
+				   );
      }
      else {
 	  die "Unknown record type $_";
@@ -477,11 +482,13 @@ print "Content-Type: text/html; charset=utf-8\n\n";
 
 my $title = htmlsanit($status{subject});
 
+my $dummy2 = $debbugs::gWebHostBugDir;
+
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
 print "<HTML><HEAD>\n" . 
-    "<TITLE>$debbugs::gProject $debbugs::gBug report logs - $short - $title</TITLE>\n" .
+    "<TITLE>$title - $debbugs::gProject $debbugs::gBug report logs - $short</TITLE>\n" .
      '<meta http-equiv="Content-Type" content="text/html;charset=utf-8">'.
-#    "<link rel=\"stylesheet\" href=\"$debbugs::gWebHostBugDir/bugs.css\" type=\"text/css\">" .
+     "<link rel=\"stylesheet\" href=\"$debbugs::gWebHostBugDir/css/bugs.css\" type=\"text/css\">" .
     "</HEAD>\n" .
     '<BODY>' .
     "\n";
@@ -489,11 +496,11 @@ print "<H1>" . "$debbugs::gProject $debbugs::gBug report logs - <A HREF=\"mailto
       "<BR>" . $title . "</H1>\n";
 
 print "$descriptivehead\n";
-printf "<p>View this report as an <a href=\"%s\">mbox folder</a>.</p>\n", bugurl($ref, "mbox");
+printf "<div class=\"msgreceived\"><p>View this report as an <a href=\"%s\">mbox folder</a>.</p></div>\n", bugurl($ref, "mbox");
 print "<HR>";
 print "$log";
 print "<HR>";
-print "Report that <a href=\"/cgi-bin/bugspam.cgi?bug=$ref\">this bug log contains spam</a>.<HR>\n";
+print "<p class=\"msgreceived\">Send a report that <a href=\"/cgi-bin/bugspam.cgi?bug=$ref\">this bug log contains spam</a>.</p>\n<HR>\n";
 print $tail_html;
 
 print "</BODY></HTML>\n";
