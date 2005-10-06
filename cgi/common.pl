@@ -18,6 +18,7 @@ use Debbugs::MIME qw(decode_rfc1522);
 
 $MLDBM::RemoveTaint = 1;
 
+my %common_bugusertags;
 my $common_mindays = 0;
 my $common_maxdays = -1;
 my $common_archive = 0;
@@ -180,6 +181,7 @@ sub set_option {
     if ($opt eq "arch") { $common_arch = $val; }
     if ($opt eq "maxdays") { $common_maxdays = $val; }
     if ($opt eq "mindays") { $common_mindays = $val; }
+    if ($opt eq "bugusertags") { %common_bugusertags = %{$val}; }
 }
 
 sub readparse {
@@ -820,6 +822,12 @@ sub getbugstatus {
     %status = %{ readbug( $bugnum, $location ) };
     $status{ id } = $bugnum;
 
+
+    if (defined $common_bugusertags{$bugnum}) {
+        $status{keywords} = "" unless defined $status{keywords};
+        $status{keywords} .= " " unless $status{keywords} eq "";
+        $status{keywords} .= join(" ", @{$common_bugusertags{$bugnum}});
+    }
     $status{tags} = $status{keywords};
     my %tags = map { $_ => 1 } split ' ', $status{tags};
 

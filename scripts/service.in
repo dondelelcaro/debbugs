@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.113 2005/10/06 03:32:13 ajt Exp $
+# $Id: service.in,v 1.114 2005/10/06 03:40:32 ajt Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -8,6 +8,7 @@ use File::Copy;
 use MIME::Parser;
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
 use Debbugs::Mail qw(send_mail_message);
+use Debbugs::User;
 
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
@@ -131,6 +132,13 @@ $mergelowstate= 'idle';
 $midix=0;    
 $extras="";
 
+my $user = $replyto;
+$user =~ s/,.*//;
+$user =~ s/^.*<(.*)>.*$/$1/;
+$user =~ s/[(].*[)]//;
+$user =~ s/^\s*(\S+)\s+.*$/$1/;
+$user = "" unless (Debbugs::User::is_valid_user($user));
+
 my $quickabort = 0;
 
 my $fuckheads = "(" . join("|", @gFuckheads) . ")";
@@ -236,6 +244,48 @@ END
 soon: UNSUBSCRIBE_TEXT
 soon: MAILINGLISTS_TEXT
 END
+    } elsif (m/^user\s+(\S+)\s*$/i) {
+        my $newuser = $1;
+	if (Debbugs::User::is_valid_user($newuser)) {
+	    my $olduser = ($user ne "" ? " (was $user)" : "");
+            &transcript("Setting user to $newuser$olduser.\n");
+	    $user = $newuser;
+	} else {
+	    &transcript("Selected user id ($newuser) invalid, sorry\n");
+	    $user = "";
+	}
+    } elsif (m/^usertags?\s+\#?(-?\d+)\s+(([=+-])\s*)?(\S.*)?$/i) {
+	$ok++;
+	$ref = $1; $addsubcode = $3 || "+"; $tags = $4;
+	if ($user eq "") {
+	    &transcript("No valid user selected\n");
+	} else {
+	    my %ut;
+	    Debbugs::User::read_usertags(\%ut, $user);
+            my @oldtags = (); my @newtags = ();
+	    my %chtags = map { ($_, 1) } split /[,\s]+/, $tags;
+            for my $t (keys %chtags) {
+	        $ut{$t} = [] unless defined $ut{$t};
+	    }
+	    for my $t (keys %ut) {
+		my %res = map { ($_, 1) } @{$ut{$t}};
+		push @oldtags, $t if defined $res{$ref};
+		my $addop = ($addsubcode eq "+" or $addsubcode eq "=");
+		my $del = (defined $chtags{$t} ? $addsubcode eq "-" 
+		                               : $addsubcode eq "=");
+		$res{$ref} = 1 if ($addop && defined $chtags{$t});
+		delete $res{$ref} if ($del);
+		push @newtags, $t if defined $res{$ref};
+		$ut{$t} = [ sort { $a <=> $b } (keys %res) ];
+	    }
+	    if (@oldtags == 0) {
+		&transcript("There were no usertags set.\n");
+	    } else {
+		&transcript("Usertags were: " . join(" ", @oldtags) . ".\n");
+	    }
+	    &transcript("Usertags are now: " . join(" ", @newtags) . ".\n");
+	    Debbugs::User::write_usertags(\%ut, $user);
+	}
     } elsif (!$control) {
         &transcript(<<END);
 Unknown command or malformed arguments to command.
@@ -246,7 +296,7 @@ END
             &transcript("Too many unknown commands, stopping here.\n\n");
             last;
         }
-#### interesting ones start here
+#### "developer only" ones start here
     } elsif (m/^close\s+\#?(-?\d+)(?:\s+(\d.*))?$/i) {
 	$ok++;
 	$ref= $1;

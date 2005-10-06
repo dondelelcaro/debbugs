@@ -11,6 +11,8 @@ require './common.pl';
 require '/etc/debbugs/config';
 require '/etc/debbugs/text';
 
+use Debbugs::User;
+
 use vars qw($gPackagePages $gWebDomain);
 
 if (defined $ENV{REQUEST_METHOD} and $ENV{REQUEST_METHOD} eq 'HEAD') {
@@ -42,6 +44,19 @@ my $dist = $param{'dist'} || undef;
 my $arch = $param{'arch'} || undef;
 my $show_list_header = ($param{'show_list_header'} || $userAgent->{'show_list_header'} || "yes" ) eq "yes";
 my $show_list_footer = ($param{'show_list_footer'} || $userAgent->{'show_list_footer'} || "yes" ) eq "yes";
+
+my $users = $param{'users'} || "";
+my %bugusertags;
+my %ut;
+for my $user (split /\s*,\s*/, $users) {
+    Debbugs::User::read_usertags(\%ut, $user);
+}
+for my $t (keys %ut) {
+    for my $b (@{$ut{$t}}) {
+        $bugusertags{$b} = [] unless defined $bugusertags{$b};
+        push @{$bugusertags{$b}}, $t;
+    }
+}
 
 {
     if (defined $param{'vt'}) {
@@ -148,6 +163,7 @@ set_option("arch", $arch);
 set_option("use-bug-idx", defined($param{'use-bug-idx'}) ? $param{'use-bug-idx'} : 0);
 set_option("show_list_header", $show_list_header);
 set_option("show_list_footer", $show_list_footer);
+set_option("bugusertags", \%bugusertags);
 
 my $title;
 my @bugs;
@@ -260,7 +276,14 @@ if (defined $pkg) {
   $title = "bugs tagged $tag";
   $title .= " in $dist" if defined $dist;
   my @tags = split /,/, $tag;
+  my %bugs = ();
+  for my $t (@tags) {
+      for my $b (@{$ut{$t}}) {
+          $bugs{$b} = 1;
+       }
+  }
   @bugs = @{getbugs(sub {my %d = @_;
+			 return 1 if $bugs{$d{"bug"}};
                          my %tags = map { $_ => 1 } split ' ', $d{"tags"};
                          return grep(exists $tags{$_}, @tags);
                         })};
