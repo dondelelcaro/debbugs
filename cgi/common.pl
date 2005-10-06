@@ -206,6 +206,8 @@ sub readparse {
 	$x =~ s/;\s+/;/g;
         $in = "$x;$in";
     }
+    $in =~ s/&/;/g;
+    $in =~ s/;;+/;/g; $in =~ s/^;//; $in =~ s/;$//;
     foreach (split(/[&;]/,$in)) {
         s/\+/ /g;
         ($key, $val) = split(/=/,$_,2);

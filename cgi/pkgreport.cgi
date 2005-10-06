@@ -387,11 +387,13 @@ print "<tr><td></td>";
 print "    <td><input id=\"b_1_2\" name=vt value=bysuite type=radio onchange=\"enable(1);\" $checked_sui>" . pkg_htmlselectsuite(1,2,1) . " for " . pkg_htmlselectarch(1,2,2) . "</td></tr>\n";
 
 if (defined $pkg) {
+    my $v = $version || "";
     print "<tr><td></td>";
-    print "    <td><input id=\"b_1_3\" name=vt value=bypkg type=radio onchange=\"enable(1);\" $checked_ver>$pkg version <input id=\"b_1_3_1\" name=version value=\"$version\"></td></tr>\n";
+    print "    <td><input id=\"b_1_3\" name=vt value=bypkg type=radio onchange=\"enable(1);\" $checked_ver>$pkg version <input id=\"b_1_3_1\" name=version value=\"$v\"></td></tr>\n";
 } elsif (defined $src) {
+    my $v = $version || "";
     print "<tr><td></td>";
-    print "    <td><input name=vt value=bysrc type=radio onchange=\"enable(1);\" $checked_ver>$src version <input id=\"b_1_3_1\" name=version value=\"$version\"></td></tr>\n";
+    print "    <td><input name=vt value=bysrc type=radio onchange=\"enable(1);\" $checked_ver>$src version <input id=\"b_1_3_1\" name=version value=\"$v\"></td></tr>\n";
 }
 
 my $sel_rmy = ($repeatmerged ? " selected" : "");
