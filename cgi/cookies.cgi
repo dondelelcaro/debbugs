@@ -4,8 +4,11 @@ use strict;
 use POSIX qw(strftime);
 require './common.pl';
 
-$ENV{"HTTP_COOKIES"} = "";
+my $oldcookies = $ENV{"HTTP_COOKIE"};
+$ENV{"HTTP_COOKIE"} = "";
 my %param = readparse();
+
+my %oldcookies = map { ($1, $2) if (m/(.*)=(.*)/) } split /[;&]/, $oldcookies;
 
 my $clear = (defined $param{"clear"} && $param{"clear"} eq "yes");
 my @time_now = gmtime(time());
@@ -28,13 +31,15 @@ for my $c (@cookie_options) {
     }
 }
 print "\n";
+print "<p>Oldcookies  $oldcookies  .\n";
 print "<p>Cookies set!\n";
 for my $c (@cookie_options) {
+    my $old = $oldcookies{$c} || "unset";
     if (defined $param{$c}) {
-        printf "<br>Set %s=%s\n", $c, $param{$c};
+        printf "<br>Set %s=%s (was %s)\n", $c, $param{$c}, $old;
     } elsif ($clear) {
-        printf "<br>Cleared %s\n", $c;
+        printf "<br>Cleared %s (was %s)\n", $c, $old;
     } else {
-        printf "<br>Didn't touch %s (use clear=yes to clear)\n", $c;
+        printf "<br>Didn't touch %s (was %s; use clear=yes to clear)\n", $c, $old;
     }
 }
