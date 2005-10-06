@@ -256,6 +256,22 @@ mailservers is available via the WWW, in
   <p>For <a href="Developer.html#tags">their meanings</a> please consult the
   general developers' documentation for the $gBug system.
 
+<dt><code>block</code>|<code>unblock</code> <var>bugnumber</var> <code>by</code>|<code>with</code> <var>bug</var> [ <var>bug</var> ... ]
+
+  <dd>Use to note that one bug blocks another bug from being fixed.
+  The first listed bug is the one being blocked, and it is followed
+  by the bug or bugs that are blocking it. Use <code>unblock</code>
+  to unblock a bug.
+
+  <p>Example usage:</p>
+
+  <pre>
+        # indicates that 7890 cannot be fixed until 123456 is fixed
+        block 7890 by 123456
+        # indicates that 7890 can be fixed before 123456 after all
+        unblock 7890 by 123456
+  </pre>
+
 <dt><code>close</code> <var>bugnumber</var> [ <var>fixed-version</var> ]
  (deprecated)
 
