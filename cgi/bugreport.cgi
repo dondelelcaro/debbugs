@@ -184,7 +184,7 @@ Content-Type: text/html; charset=utf-8
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
-<head><title>$debbugs::gProject $debbugs::gBug report logs - $short</title></head>
+<head><title>$short - $debbugs::gProject $debbugs::gBug report logs</title></head>
 <body>
 <h1>$debbugs::gProject $debbugs::gBug report logs - $short</h1>
 <p>There is no record of $debbugs::gBug $short.
@@ -506,7 +506,7 @@ my $dummy2 = $debbugs::gWebHostBugDir;
 
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
 print "<HTML><HEAD>\n" . 
-    "<TITLE>$title - $debbugs::gProject $debbugs::gBug report logs - $short</TITLE>\n" .
+    "<TITLE>$short - $title - $debbugs::gProject $debbugs::gBug report logs</TITLE>\n" .
      '<meta http-equiv="Content-Type" content="text/html;charset=utf-8">'.
      "<link rel=\"stylesheet\" href=\"$debbugs::gWebHostBugDir/css/bugs.css\" type=\"text/css\">" .
     "</HEAD>\n" .
