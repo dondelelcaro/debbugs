@@ -103,6 +103,35 @@ server.
 
   <dd>Requests that the mailservers' reference card be sent in plain ASCII.
 
+<dt><code>user</code> <var>email</var>
+
+  <dd>Set the user to the given email address. The default user is the
+  email address set in your mail client's From: or Reply-To: field. You
+  should not use other people's email addresses without permission.
+
+<dt><code>usertag</code> <var>bugnumber</var> [ <code>+</code> | <code>-</code> | <code>=</code> ] <var>tag</var> [ <var>tag</var> ... ]
+
+  <dd>Sets usertags for the $gBug report #<var>bugnumber</var>. No
+  notification is sent to the user who reported the $gBug, nor to
+  the package maintainer. Setting the action to <code>+</code> means
+  to add each given <var>tag</var>, <code>-</code> means to remove
+  each given <var>tag</var>, and <code>=</code> means to ignore the
+  current tags and set them afresh to the list provided. The default
+  action is adding.
+
+  <p>Example usage:</p>
+  
+  <pre>
+        # same as 'tags 123456 + patch'
+        usertag 123456 patch
+  
+        # same as 'tags 123456 + help security'
+        usertag 123456 help security
+  </pre>
+
+  <p>The meaning of usertags is decided by the owner of the email address
+  they are associated with.
+
 <dt><code>help</code>
 
   <dd>Requests that this help document be sent by email in plain ASCII.

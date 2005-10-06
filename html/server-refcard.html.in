@@ -33,6 +33,8 @@ sending the word <code>help</code> to each mailserver.
   <li><code>getinfo</code> <var>filename</var> <em>(see below)</em>
   <li><code>help</code>
   <li><code>refcard</code>
+  <li><code>user</code> <var>email</var> 
+  <li><code>usertag</code> <var>bugnumber</var> [+-=] <var>tag</var> ...
   <li><code>quit</code>|<code>stop</code>|<code>thank</code>...|<code>--</code>...
   <li><code>#</code>... <em>(comment)</em>
   <li><code>debug</code> <var>level</var>
