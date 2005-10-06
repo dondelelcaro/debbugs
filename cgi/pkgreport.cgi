@@ -47,25 +47,25 @@ my $show_list_footer = ($param{'show_list_footer'} || $userAgent->{'show_list_fo
     if (defined $param{'vt'}) {
         my $vt = $param{'vt'};
         if ($vt eq "none") { $dist = undef; $arch = undef; $version = undef; }
-	if ($vt eq "bysuite") {
-	    $version = undef;
-	    $arch = undef if ($arch eq "any");
-	}
-	if ($vt eq "bypkg" || $vt eq "bysrc") { $dist = undef; $arch = undef; }
+        if ($vt eq "bysuite") {
+            $version = undef;
+            $arch = undef if ($arch eq "any");
+        }
+        if ($vt eq "bypkg" || $vt eq "bysrc") { $dist = undef; $arch = undef; }
     }
     if (defined $param{'ordering'}) {
         my $o = $param{'ordering'};
-	if ($o eq "raw") { $raw_sort = 1; $bug_rev = 0; }
-	if ($o eq "normal") { $raw_sort = 0; $bug_rev = 0; }
-	if ($o eq "reverse") { $raw_sort = 0; $bug_rev = 1; }
+        if ($o eq "raw") { $raw_sort = 1; $bug_rev = 0; }
+        if ($o eq "normal") { $raw_sort = 0; $bug_rev = 0; }
+        if ($o eq "reverse") { $raw_sort = 0; $bug_rev = 1; }
     }
     if (defined $param{'includesubj'}) {
         my $is = $param{'includesubj'};
-	$include .= "," . join(",", map { "subj:$_" } (split /[\s,]+/, $is));
+        $include .= "," . join(",", map { "subj:$_" } (split /[\s,]+/, $is));
     }
     if (defined $param{'excludesubj'}) {
         my $es = $param{'excludesubj'};
-	$exclude .= "," . join(",", map { "subj:$_" } (split /[\s,]+/, $es));
+        $exclude .= "," . join(",", map { "subj:$_" } (split /[\s,]+/, $es));
     }
 }
 
@@ -73,43 +73,43 @@ my $show_list_footer = ($param{'show_list_footer'} || $userAgent->{'show_list_fo
 my ($pkg, $src, $maint, $maintenc, $submitter, $severity, $status, $tag);
 
 my %which = (
-	'pkg' => \$pkg,
-	'src' => \$src,
-	'maint' => \$maint,
-	'maintenc' => \$maintenc,
-	'submitter' => \$submitter,
-	'severity' => \$severity,
-	'tag' => \$tag,
-	);
+        'pkg' => \$pkg,
+        'src' => \$src,
+        'maint' => \$maint,
+        'maintenc' => \$maintenc,
+        'submitter' => \$submitter,
+        'severity' => \$severity,
+        'tag' => \$tag,
+        );
 my @allowedEmpty = ( 'maint' );
 
 my $found;
 foreach ( keys %which ) {
-	$status = $param{'status'} || 'open' if /^severity$/;
-	if (($found = $param{$_})) {
-		${ $which{$_} } = $found;
-		last;
-	}
+        $status = $param{'status'} || 'open' if /^severity$/;
+        if (($found = $param{$_})) {
+                ${ $which{$_} } = $found;
+                last;
+        }
 }
 if (!$found && !$archive) {
-	foreach ( @allowedEmpty ) {
-		if (exists($param{$_})) {
-			${ $which{$_} } = '';
-			$found = 1;
-			last;
-		}
-	}
+        foreach ( @allowedEmpty ) {
+                if (exists($param{$_})) {
+                        ${ $which{$_} } = '';
+                        $found = 1;
+                        last;
+                }
+        }
 }
 if (!$found) {
-	my $which;
-	if (($which = $param{'which'})) {
-		if (grep( /^\Q$which\E$/, @allowedEmpty)) {
-			${ $which{$which} } = $param{'data'};
-			$found = 1;
-		} elsif (($found = $param{'data'})) {
-			${ $which{$which} } = $found if (exists($which{$which}));
-		}
-	}
+        my $which;
+        if (($which = $param{'which'})) {
+                if (grep( /^\Q$which\E$/, @allowedEmpty)) {
+                        ${ $which{$which} } = $param{'data'};
+                        $found = 1;
+                } elsif (($found = $param{'data'})) {
+                        ${ $which{$which} } = $found if (exists($which{$which}));
+                }
+        }
 }
 quitcgi("You have to choose something to select by") if (!$found);
 
@@ -246,16 +246,16 @@ if (defined $pkg) {
   my @severities = split /,/, $severity;
   my @statuses = split /,/, $status;
   @bugs = @{getbugs(sub {my %d=@_;
-		       return (grep($d{"severity"} eq $_, @severities))
-			 && (grep($d{"status"} eq $_, @statuses));
-		     })};
+                       return (grep($d{"severity"} eq $_, @severities))
+                         && (grep($d{"status"} eq $_, @statuses));
+                     })};
 } elsif (defined($severity)) {
   $title = "$severity bugs";
   $title .= " in $dist" if defined $dist;
   my @severities = split /,/, $severity;
   @bugs = @{getbugs(sub {my %d=@_;
-		       return (grep($d{"severity"} eq $_, @severities));
-		     }, 'severity', @severities)};
+                       return (grep($d{"severity"} eq $_, @severities));
+                     }, 'severity', @severities)};
 } elsif (defined($tag)) {
   $title = "bugs tagged $tag";
   $title .= " in $dist" if defined $dist;
@@ -297,61 +297,61 @@ if (defined $pkg || defined $src) {
         print "<p>No maintainer for $showpkg. Please do not report new bugs against this package.</p>\n";
     }
     if (defined $maint or @bugs) {
-	my %pkgsrc = %{getpkgsrc()};
-	my $srcforpkg;
-	if (defined $pkg) {
-	    $srcforpkg = $pkgsrc{$pkg};
-	    defined $srcforpkg or $srcforpkg = $pkg;
-	}
-	my @pkgs = getsrcpkgs($pkg ? $srcforpkg : $src);
-	undef $srcforpkg unless @pkgs;
-	@pkgs = grep( !/^\Q$pkg\E$/, @pkgs ) if ( $pkg );
-	if ( @pkgs ) {
-	    @pkgs = sort @pkgs;
-	    if ($pkg) {
-		    print "<p>You may want to refer to the following packages that are part of the same source:\n";
-	    } else {
-		    print "<p>You may want to refer to the following individual bug pages:\n";
-	    }
-	    push @pkgs, $src if ( $src && !grep(/^\Q$src\E$/, @pkgs) );
-	    print join( ", ", map( "<A href=\"" . pkgurl($_) . "\">$_</A>", @pkgs ) );
-	    print ".\n";
-	}
-	my @references;
-	my $pseudodesc = getpseudodesc();
-	if ($pkg and defined($pseudodesc) and exists($pseudodesc->{$pkg})) {
-	    push @references, "to the <a href=\"http://${debbugs::gWebDomain}/pseudo-packages${debbugs::gHTMLSuffix}\">list of other pseudo-packages</a>";
-	} else {
-	    if ($pkg and defined $debbugs::gPackagePages) {
-		push @references, sprintf "to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
-	    }
-	    if (defined $debbugs::gSubscriptionDomain) {
-		my $ptslink = $pkg ? $srcforpkg : $src;
-		push @references, "to the <a href=\"http://$debbugs::gSubscriptionDomain/$ptslink\">Package Tracking System</a>";
-	    }
-	    # Only output this if the source listing is non-trivial.
-	    if ($pkg and $srcforpkg and (@pkgs or $pkg ne $srcforpkg)) {
-		push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($srcforpkg), htmlsanit($srcforpkg);
-	    }
-	}
-	if ($pkg) {
-	    set_option("archive", !$archive);
-	    push @references, sprintf "to the <a href=\"%s\">%s reports for %s</a>", pkgurl($pkg), ($archive ? "active" : "archived"), htmlsanit($pkg);
-	    set_option("archive", $archive);
-	}
-	if (@references) {
-	    $references[$#references] = "or $references[$#references]" if @references > 1;
-	    print "<p>You might like to refer ", join(", ", @references), ".</p>\n";
-	}
-	print "<p>If you find a bug not listed here, please\n";
-	printf "<a href=\"%s\">report it</a>.</p>\n",
-	       urlsanit("http://${debbugs::gWebDomain}/Reporting${debbugs::gHTMLSuffix}");
+        my %pkgsrc = %{getpkgsrc()};
+        my $srcforpkg;
+        if (defined $pkg) {
+            $srcforpkg = $pkgsrc{$pkg};
+            defined $srcforpkg or $srcforpkg = $pkg;
+        }
+        my @pkgs = getsrcpkgs($pkg ? $srcforpkg : $src);
+        undef $srcforpkg unless @pkgs;
+        @pkgs = grep( !/^\Q$pkg\E$/, @pkgs ) if ( $pkg );
+        if ( @pkgs ) {
+            @pkgs = sort @pkgs;
+            if ($pkg) {
+                    print "<p>You may want to refer to the following packages that are part of the same source:\n";
+            } else {
+                    print "<p>You may want to refer to the following individual bug pages:\n";
+            }
+            push @pkgs, $src if ( $src && !grep(/^\Q$src\E$/, @pkgs) );
+            print join( ", ", map( "<A href=\"" . pkgurl($_) . "\">$_</A>", @pkgs ) );
+            print ".\n";
+        }
+        my @references;
+        my $pseudodesc = getpseudodesc();
+        if ($pkg and defined($pseudodesc) and exists($pseudodesc->{$pkg})) {
+            push @references, "to the <a href=\"http://${debbugs::gWebDomain}/pseudo-packages${debbugs::gHTMLSuffix}\">list of other pseudo-packages</a>";
+        } else {
+            if ($pkg and defined $debbugs::gPackagePages) {
+                push @references, sprintf "to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
+            }
+            if (defined $debbugs::gSubscriptionDomain) {
+                my $ptslink = $pkg ? $srcforpkg : $src;
+                push @references, "to the <a href=\"http://$debbugs::gSubscriptionDomain/$ptslink\">Package Tracking System</a>";
+            }
+            # Only output this if the source listing is non-trivial.
+            if ($pkg and $srcforpkg and (@pkgs or $pkg ne $srcforpkg)) {
+                push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($srcforpkg), htmlsanit($srcforpkg);
+            }
+        }
+        if ($pkg) {
+            set_option("archive", !$archive);
+            push @references, sprintf "to the <a href=\"%s\">%s reports for %s</a>", pkgurl($pkg), ($archive ? "active" : "archived"), htmlsanit($pkg);
+            set_option("archive", $archive);
+        }
+        if (@references) {
+            $references[$#references] = "or $references[$#references]" if @references > 1;
+            print "<p>You might like to refer ", join(", ", @references), ".</p>\n";
+        }
+        print "<p>If you find a bug not listed here, please\n";
+        printf "<a href=\"%s\">report it</a>.</p>\n",
+               urlsanit("http://${debbugs::gWebDomain}/Reporting${debbugs::gHTMLSuffix}");
     } else {
-	print "<p>There is no record of the " .
-	      (defined($pkg) ? htmlsanit($pkg) . " package"
-			     : htmlsanit($src) . " source package") .
-	      ", and no bugs have been filed against it.</p>";
-	$showresult = 0;
+        print "<p>There is no record of the " .
+              (defined($pkg) ? htmlsanit($pkg) . " package"
+                             : htmlsanit($src) . " source package") .
+              ", and no bugs have been filed against it.</p>";
+        $showresult = 0;
     }
 } elsif (defined $maint || defined $maintenc) {
     print "<p>Note that maintainers may use different Maintainer fields for\n";
@@ -474,8 +474,8 @@ sub pkg_htmlindexentrystatus {
     $result .= ";\nOwned by: " . htmlsanit($status{owner})
                if length $status{owner};
     $result .= ";\nTags: <strong>" 
-		 . htmlsanit(join(", ", sort(split(/\s+/, $status{tags}))))
-		 . "</strong>"
+                 . htmlsanit(join(", ", sort(split(/\s+/, $status{tags}))))
+                 . "</strong>"
                        if (length($status{tags}));
 
     my @merged= split(/ /,$status{mergedwith});
@@ -547,16 +547,16 @@ sub pkg_htmlizebugs {
     }
 
     if ( $bug_rev ) {
-	@bugs = sort {$b<=>$a} @bugs;
+        @bugs = sort {$b<=>$a} @bugs;
     } else {
-	@bugs = sort {$a<=>$b} @bugs;
+        @bugs = sort {$a<=>$b} @bugs;
     }
     my %seenmerged;
 
     my @common_grouping = ( 'severity', 'pending' );
     my %common_grouping_order = (
         'pending' => [ qw( pending forwarded pending-fixed fixed done absent ) ],
-	'severity' => \@debbugs::gSeverityList,
+        'severity' => \@debbugs::gSeverityList,
     );
     my %common_grouping_display = (
         'pending' => 'Status',
@@ -576,89 +576,89 @@ sub pkg_htmlizebugs {
     my %common_reverse = ( 'pending' => $pend_rev, 'severity' => $sev_rev );
     my %common = (
         'show_list_header' => 1,
-	'show_list_footer' => 1,
+        'show_list_footer' => 1,
     );
     my $common_raw_sort = $raw_sort;
 
     my %section = ();
 
     foreach my $bug (@bugs) {
-	my %status = %{getbugstatus($bug)};
+        my %status = %{getbugstatus($bug)};
         next unless %status;
-	next if bugfilter($bug, %status);
+        next if bugfilter($bug, %status);
 
-	my $html = sprintf "<li><a href=\"%s\">#%d: %s</a>\n<br>",
-	    bugurl($bug), $bug, htmlsanit($status{subject});
-	$html .= pkg_htmlindexentrystatus(\%status) . "\n";
-	my $key = join( '_', map( {$status{$_}} @common_grouping ) );
-	$section{$key} .= $html;
-	$count{"_$key"}++;
-	foreach my $grouping ( @common_grouping ) {
-	    $count{"${grouping}_$status{$grouping}"}++;
-	}
-	$anydone = 1 if $status{pending} eq 'done';
-	push @status, [ $bug, \%status, $html ];
+        my $html = sprintf "<li><a href=\"%s\">#%d: %s</a>\n<br>",
+            bugurl($bug), $bug, htmlsanit($status{subject});
+        $html .= pkg_htmlindexentrystatus(\%status) . "\n";
+        my $key = join( '_', map( {$status{$_}} @common_grouping ) );
+        $section{$key} .= $html;
+        $count{"_$key"}++;
+        foreach my $grouping ( @common_grouping ) {
+            $count{"${grouping}_$status{$grouping}"}++;
+        }
+        $anydone = 1 if $status{pending} eq 'done';
+        push @status, [ $bug, \%status, $html ];
     }
 
     my $result = "";
     if ($common_raw_sort) {
-	$result .= "<UL class=\"bugs\">\n" . join("", map( { $_->[ 2 ] } @status ) ) . "</UL>\n";
+        $result .= "<UL class=\"bugs\">\n" . join("", map( { $_->[ 2 ] } @status ) ) . "</UL>\n";
     } else {
-	my (@order, @headers);
-	for( my $i = 0; $i < @common_grouping; $i++ ) {
-	    my $grouping_name = $common_grouping[ $i ];
-	    my @items = @{ $common_grouping_order{ $grouping_name } };
-	    @items = reverse( @items ) if ( $common_reverse{ $grouping_name } );
-	    my @neworder = ();
-	    my @newheaders = ();
-	    if ( @order ) {
-		foreach my $grouping ( @items ) {
-		    push @neworder, map( { "${_}_$grouping" } @order );
-		    push @newheaders, map( { "$_ - $common_headers{$grouping_name}{$grouping}" } @headers );
-		}
-		@order = @neworder;
-		@headers = @newheaders;
-	    } else {
-		push @order, @items;
-		push @headers, map( { $common_headers{$common_grouping[$i]}{$_} } @items );
-	    }
-	}
-	$header .= "<ul>\n<div class=\"msgreceived\">";
-	for ( my $i = 0; $i < @order; $i++ ) {
-	    my $order = $order[ $i ];
-	    next unless defined $section{$order};
-	    my $count = $count{"_$order"};
-	    my $bugs = $count == 1 ? "bug" : "bugs";
-	    $header .= "<li><a href=\"#$order\">$headers[$i]</a> ($count $bugs)</li>\n";
-	}
-	$header .= "</ul></div>\n";
-	for ( my $i = 0; $i < @order; $i++ ) {
-	    my $order = $order[ $i ];
-	    next unless defined $section{$order};
-	    if ($common{show_list_header}) {
-		my $count = $count{"_$order"};
-		my $bugs = $count == 1 ? "bug" : "bugs";
-		$result .= "<H2 CLASS=\"outstanding\"><a name=\"$order\"></a>$headers[$i] ($count $bugs)</H2>\n";
-	    } else {
-		$result .= "<H2 CLASS=\"outstanding\">$headers[$i]</H2>\n";
-	    }
-	    $result .= "<div class=\"msgreceived\">\n<UL class=\"bugs\">\n";
-	    $result .= $section{$order};
-	    $result .= "</UL>\n</div>\n";
-	} 
-	$footer .= "<ul>\n<div class=\"msgreceived\">";
-	foreach my $grouping ( @common_grouping ) {
-	    my $local_result = '';
-	    foreach my $key ( @{$common_grouping_order{ $grouping }} ) {
-		my $count = $count{"${grouping}_$key"};
-		next if !$count;
-		$local_result .= "<li>$count $common_headers{$grouping}{$key}</li>\n";
-	    }
-	    if ( $local_result ) {
-		$footer .= "<li>$common_grouping_display{$grouping}<ul>\n$local_result</ul></li>\n";
-	    }
-	}
-	$footer .= "</div></ul>\n";
+        my (@order, @headers);
+        for( my $i = 0; $i < @common_grouping; $i++ ) {
+            my $grouping_name = $common_grouping[ $i ];
+            my @items = @{ $common_grouping_order{ $grouping_name } };
+            @items = reverse( @items ) if ( $common_reverse{ $grouping_name } );
+            my @neworder = ();
+            my @newheaders = ();
+            if ( @order ) {
+                foreach my $grouping ( @items ) {
+                    push @neworder, map( { "${_}_$grouping" } @order );
+                    push @newheaders, map( { "$_ - $common_headers{$grouping_name}{$grouping}" } @headers );
+                }
+                @order = @neworder;
+                @headers = @newheaders;
+            } else {
+                push @order, @items;
+                push @headers, map( { $common_headers{$common_grouping[$i]}{$_} } @items );
+            }
+        }
+        $header .= "<ul>\n<div class=\"msgreceived\">";
+        for ( my $i = 0; $i < @order; $i++ ) {
+            my $order = $order[ $i ];
+            next unless defined $section{$order};
+            my $count = $count{"_$order"};
+            my $bugs = $count == 1 ? "bug" : "bugs";
+            $header .= "<li><a href=\"#$order\">$headers[$i]</a> ($count $bugs)</li>\n";
+        }
+        $header .= "</ul></div>\n";
+        for ( my $i = 0; $i < @order; $i++ ) {
+            my $order = $order[ $i ];
+            next unless defined $section{$order};
+            if ($common{show_list_header}) {
+                my $count = $count{"_$order"};
+                my $bugs = $count == 1 ? "bug" : "bugs";
+                $result .= "<H2 CLASS=\"outstanding\"><a name=\"$order\"></a>$headers[$i] ($count $bugs)</H2>\n";
+            } else {
+                $result .= "<H2 CLASS=\"outstanding\">$headers[$i]</H2>\n";
+            }
+            $result .= "<div class=\"msgreceived\">\n<UL class=\"bugs\">\n";
+            $result .= $section{$order};
+            $result .= "</UL>\n</div>\n";
+        } 
+        $footer .= "<ul>\n<div class=\"msgreceived\">";
+        foreach my $grouping ( @common_grouping ) {
+            my $local_result = '';
+            foreach my $key ( @{$common_grouping_order{ $grouping }} ) {
+                my $count = $count{"${grouping}_$key"};
+                next if !$count;
+                $local_result .= "<li>$count $common_headers{$grouping}{$key}</li>\n";
+            }
+            if ( $local_result ) {
+                $footer .= "<li>$common_grouping_display{$grouping}<ul>\n$local_result</ul></li>\n";
+            }
+        }
+        $footer .= "</div></ul>\n";
     }
 
     $result = $header . $result if ( $common{show_list_header} );
@@ -709,27 +709,27 @@ sub pkg_javascript {
 <!--
 
 function toggle(i) {
-	var a = document.getElementById("a_" + i);
-	if (a.style.display == "none") {
-		a.style.display = "";
-	} else {
-		a.style.display = "none";
-	}
+        var a = document.getElementById("a_" + i);
+        if (a.style.display == "none") {
+                a.style.display = "";
+        } else {
+                a.style.display = "none";
+        }
 }
 
 function enable(x) {
     for (var i = 1; ; i++) {
         var a = document.getElementById("b_" + x + "_" + i);
-	if (a == null) break;
-	var ischecked = a.checked;
+        if (a == null) break;
+        var ischecked = a.checked;
         for (var j = 1; ; j++) {
             var b = document.getElementById("b_" + x + "_"+ i + "_" + j);
             if (b == null) break;
-	    if (ischecked) {
-            	b.disabled = false;
-	    } else {
-	        b.disabled = true;
-	    }
+            if (ischecked) {
+                b.disabled = false;
+            } else {
+                b.disabled = true;
+            }
         }
     }
 }
@@ -747,8 +747,8 @@ sub pkg_htmlselectsuite {
     my $result = sprintf '<select name=dist id="%s">', $id;
     for my $s (@suites) {
         $result .= sprintf '<option value="%s"%s>%s%s</option>',
-		$s, ($defaultsuite eq $s ? " selected" : ""),
-		$s, (defined $suiteaka{$s} ? " (" . $suiteaka{$s} . ")" : "");
+                $s, ($defaultsuite eq $s ? " selected" : ""),
+                $s, (defined $suiteaka{$s} ? " (" . $suiteaka{$s} . ")" : "");
     }
     $result .= '</select>';
     return $result;
