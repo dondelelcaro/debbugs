@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.112 2005/08/17 21:46:17 don Exp $
+# $Id: service.in,v 1.113 2005/10/06 03:32:13 ajt Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -160,7 +160,7 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
     &transcript("> $_\n");
     next if m/^\s*\#/;
     $action= '';
-    if (m/^stop/i || m/^quit/i || m/^--/ || m/^thank/i) {
+    if (m/^stop/i || m/^quit/i || m/^--/ || m/^thank/i || m/^kthxbye/i) {
 	&transcript("Stopping processing here.\n\n");
         last;
     } elsif (m/^debug\s+(\d+)$/i && $1 >= 0 && $1 <= 1000) {
@@ -580,6 +580,102 @@ END
 		$data->{keywords} =~ s/\s*$//;
             } while (&getnextbug);
 	}
+    } elsif (m/^(un)?block\s+\#?(-?\d+)\s+(by|with)\s+\s*(\S.*)?$/i) {
+	$ok++;
+	my $bugnum = $2; my $blockers = $4;
+	$addsub = "add";
+	$addsub = "sub" if ($1 eq "un");
+	
+	my @okayblockers;
+	my @badblockers;
+	foreach my $b (split /[\s,]+/, $blockers) {
+	    $b=~s/^\#//;
+	    if ($b=~/[0-9]+/) {
+		$ref=$b;
+		if (&getbug) {
+		    push @okayblockers, $b;
+
+		    # add to the list all bugs that are merged with $b,
+		    # because all of their data must be kept in sync
+		    @thisbugmergelist= split(/ /,$data->{mergedwith});
+		    &cancelbug;
+
+		    foreach $ref (@thisbugmergelist) {
+			if (&getbug) {
+		           push @okayblockers, $ref;
+			   &cancelbug;
+			}
+		    }
+		}
+		else {
+		    &notfoundbug;
+                    push @badblockers, $b;
+	    	}
+	    }
+	    else {
+                push @badblockers, $b;
+	    }
+	}
+	if (@badblockers) {
+            &transcript("Unknown blocking bug/s: ".join(', ', @badblockers).".\n");
+	}
+	
+	$ref=$bugnum;
+	if (&setbug) {
+	    if ($data->{blockedby} eq '') {
+		&transcript("Was not blocked by any bugs.\n");
+	    } else {
+		&transcript("Was blocked by: $data->{blockedby}\n");
+	    }
+	    if ($addsub eq "set") {
+		$action= "Blocking bugs set to: " . join(", ", @okayblockers);
+	    } elsif ($addsub eq "add") {
+		$action= "Blocking bugs added: " . join(", ", @okayblockers);
+	    } elsif ($addsub eq "sub") {
+		$action= "Blocking bugs removed: " . join(", ", @okayblockers);
+	    }
+	    my %removedblocks;
+	    my %addedblocks;
+	    do {
+                &addmaintainers($data);
+		my @oldblockerlist = split ' ', $data->{blockedby};
+	        $data->{blockedby} = '' if ($addsub eq "set");
+	        foreach my $b (@okayblockers) {
+			$data->{blockedby} = manipset($data->{blockedby}, $b,
+				($addsub ne "sub"));
+	        }
+
+		foreach my $b (@oldblockerlist) {
+			if (! grep { $_ eq $b } split ' ', $data->{blockedby}) {
+				push @{$removedblocks{$b}}, $ref;
+			}
+		}
+		foreach my $b (split ' ', $data->{blockedby}) {
+			if (! grep { $_ eq $b } @oldblockerlist) {
+				push @{$addedblocks{$b}}, $ref;
+			}
+		}
+            } while (&getnextbug);
+
+	    # Now that the blockedby data is updated, change blocks data
+	    # to match the changes.
+	    foreach $ref (keys %addedblocks) {
+	        if (&getbug) {
+		    foreach my $b (@{$addedblocks{$ref}}) {
+			$data->{blocks} = manipset($data->{blocks}, $b, 1);
+		    }
+		    &savebug;
+                }
+	    }
+	    foreach $ref (keys %removedblocks) {
+	        if (&getbug) {
+		    foreach my $b (@{$removedblocks{$ref}}) {
+			$data->{blocks} = manipset($data->{blocks}, $b, 0);
+		    }
+		    &savebug;
+                }
+	    }
+	}
     } elsif (m/^retitle\s+\#?(-?\d+)\s+(\S.*\S)\s*$/i) {
         $ok++;
         $ref= $1; $newtitle= $2;
@@ -650,6 +746,8 @@ END
 	    &checkmatch('forwarded addr','m_forwarded',$data->{forwarded});
 	    $data->{severity} = '$gDefaultSeverity' if $data->{severity} eq '';
 	    &checkmatch('severity','m_severity',$data->{severity});
+	    &checkmatch('blocks','m_blocks',$data->{blocks});
+	    &checkmatch('blocked-by','m_blockedby',$data->{blockedby});
 	    &checkmatch('done mark','m_done',length($data->{done}) ? 'done' : 'open');
 	    &checkmatch('owner','m_owner',$data->{owner});
 	    foreach my $t (split /\s+/, $data->{keywords}) { $tags{$t} = 1; }
@@ -709,21 +807,38 @@ END
 		} else {
 		    $action= "$gBug $origref cloned as bugs $firstref-$lastref.";
 		}
+
+		my $blocks = $data->{blocks};
+		my $blockedby = $data->{blockedby};
+		
 		&getnextbug;
 		my $ohash = get_hashname($origref);
-		$ref = $firstref;
-		@bug_affected{@newclonedids} = 1 x @newclonedids;
+		my $clone = $firstref;
+                @bug_affected{@newclonedids} = 1 x @newclonedids;
 		for $newclonedid (@newclonedids) {
-		    $clonebugs{$newclonedid} = $ref;
+		    $clonebugs{$newclonedid} = $clone;
 	    
-		    my $hash = get_hashname($ref);
-	            copy("db-h/$ohash/$origref.log", "db-h/$hash/$ref.log");
-	            copy("db-h/$ohash/$origref.status", "db-h/$hash/$ref.status");
-	            copy("db-h/$ohash/$origref.summary", "db-h/$hash/$ref.summary");
-	            copy("db-h/$ohash/$origref.report", "db-h/$hash/$ref.report");
-	            &bughook('new', $ref, $data);
+		    my $hash = get_hashname($clone);
+	            copy("db-h/$ohash/$origref.log", "db-h/$hash/$clone.log");
+	            copy("db-h/$ohash/$origref.status", "db-h/$hash/$clone.status");
+	            copy("db-h/$ohash/$origref.summary", "db-h/$hash/$clone.summary");
+	            copy("db-h/$ohash/$origref.report", "db-h/$hash/$clone.report");
+	            &bughook('new', $clone, $data);
+		
+		    # Update blocking info of bugs blocked by or blocking the
+		    # cloned bug.
+		    foreach $ref (split ' ', $blocks) {
+			&getbug;
+			$data->{blockedby} = manipset($data->{blockedby}, $clone, 1);
+			&savebug;
+		    }
+		    foreach $ref (split ' ', $blockedby) {
+			&getbug;
+			$data->{blocks} = manipset($data->{blocks}, $clone, 1);
+			&savebug;
+		    }
 
-		    $ref++;
+		    $clone++;
 		}
 	    }
 	}
@@ -907,6 +1022,21 @@ sub checkpkglimit {
         return 0;
     }
     return 1;
+}
+
+sub manipset {
+    my $list = shift;
+    my $elt = shift;
+    my $add = shift;
+
+    my %h = map { $_ => 1 } split ' ', $list;
+    if ($add) {
+        $h{$elt}=1;
+    }
+    else {
+	delete $h{$elt};
+    }
+    return join ' ', sort keys %h;
 }
 
 # High-level bug manipulation calls

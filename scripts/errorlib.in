@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.49 2005/07/29 16:53:38 cjwatson Exp $
+# $Id: errorlib.in,v 1.50 2005/10/06 03:32:13 ajt Exp $
 
 use Mail::Address;
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
@@ -88,6 +88,8 @@ my %fields = (originator => 'submitter',
               owner => 'owner',
               found_versions => 'found-in',
               fixed_versions => 'fixed-in',
+              blocks => 'blocks',
+              blockedby => 'blocked-by',
              );
 
 # Fields which need to be RFC1522-decoded in format versions earlier than 3.

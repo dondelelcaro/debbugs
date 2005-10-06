@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.103 2005/08/19 05:44:28 don Exp $
+# $Id: process.in,v 1.104 2005/10/06 03:32:13 ajt Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -8,7 +8,6 @@ use POSIX qw(strftime tzset);
 $ENV{"TZ"} = 'UTC';
 tzset();
 
-use IO::File;
 use MIME::Parser;
 use Debbugs::MIME qw(decode_rfc1522);
 use Debbugs::Mail qw(send_mail_message encode_headers);
@@ -1087,8 +1086,7 @@ sub checkmaintainers {
 	    print DEBUG "maintainer add >$p|$maintainerof{$p}<\n";
             $addmaint= $maintainerof{$p};
             push(@maintaddrs,$addmaint) unless
-                ($addmaint eq $replyto and $codeletter ne 'M') || 
-		     grep($_ eq $addmaint, @maintaddrs);
+                $addmaint eq $replyto || grep($_ eq $addmaint, @maintaddrs);
             $anymaintfound++;
         } else {
 	    print DEBUG "maintainer none >$p<\n";
@@ -1136,15 +1134,11 @@ sub bug_list_forward{
 	  $envelope_from =~ s/^.+?<([^>]+)>.+$/$1/;
      }
      my ($header,$body) = split /\n\n/, $bug_message, 2;
-     # Add X-$gProject-PR-Message: list bug_number and package name headers
-     if (defined $data and $bfound) {
-	  $header .= qq(\nX-$gProject-PR-Message: list $bug_number\n).
-	       qq(X-$gProject-PR-Package: $data->{package}\n).
-		    qq(X-$gProject-PR-Title: $data->{subject});
-     }
-     else {
-	  $header .= qq(\nX-$gProject-PR-Message: list inactivebug);
-     }
+     # Add X-$gProject-PR-Message: list bug_number, package name, and bug title headers
+     $header .= qq(\nX-$gProject-PR-Message: list $bug_number\n).
+	  qq(X-$gProject-PR-Package: $data->{package}\n).
+	       qq(X-$gProject-PR-Title: $data->{subject})
+	       if defined $data;
      print STDERR "Tried to loop me with $envelope_from\n"
 	  and exit 1 if $envelope_from =~ /\Q$gListDomain\E|\Q$gEmailDomain\E/;
      print DEBUG $envelope_from,qq(\n);

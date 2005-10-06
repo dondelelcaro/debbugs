@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: processall.in,v 1.10 2004/03/20 15:13:52 cjwatson Exp $
+# $Id: processall.in,v 1.11 2005/10/06 03:32:13 ajt Exp $
 #
 # Usage: processall
 #
@@ -53,7 +53,7 @@ for (;;) {
         print(STDOUT "[$nf] $id service ...") || die $!;
         defined($c=fork) || die $!;
         if (!$c) { exec("$lib_path/service",$id); die $!; }
-    } elsif ($id =~ m/^[BMQFDU]/) {
+    } elsif ($id =~ m/^[BMQFDUL]/) {
         print(STDOUT "[$nf] $id process ...") || die $!;
         defined($c=fork) || die $!;
         if (!$c) { exec("$lib_path/process",$id); die $!; }
