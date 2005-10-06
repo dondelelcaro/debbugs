@@ -30,7 +30,7 @@ use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 
 BEGIN {
-    ($VERSION) = q$Revision: 1.1 $ =~ /^Revision:\s+([^\s+])/;
+    ($VERSION) = q$Revision: 1.2 $ =~ /^Revision:\s+([^\s+])/;
     $DEBUG = 0 unless defined $DEBUG;
 
     @EXPORT = ();

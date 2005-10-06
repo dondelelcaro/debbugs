@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.114 2005/10/06 03:40:32 ajt Exp $
+# $Id: service.in,v 1.115 2005/10/06 03:46:13 ajt Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn

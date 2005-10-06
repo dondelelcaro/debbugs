@@ -17,7 +17,7 @@ my $time_future = strftime("%a, %d-%b-%Y %T GMT",
 my $time_past = strftime("%a, %d-%b-%Y %T GMT",
 			59, 59, 23, 31, 11, $time_now[5]-10);
 
-my @cookie_options = qw(repeatmerged terse reverse trim);
+my @cookie_options = qw(repeatmerged terse reverse trim oldview);
 
 print "Content-Type: text/html; charset=utf-8\n";
 

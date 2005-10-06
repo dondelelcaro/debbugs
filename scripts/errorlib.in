@@ -1,5 +1,5 @@
 # -*- perl -*-
-# $Id: errorlib.in,v 1.51 2005/10/06 03:40:32 ajt Exp $
+# $Id: errorlib.in,v 1.52 2005/10/06 03:46:13 ajt Exp $
 
 use Mail::Address;
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
