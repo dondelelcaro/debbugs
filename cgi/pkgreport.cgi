@@ -169,13 +169,6 @@ sub toenglish {
 }
 
 
-my %bugusertags;
-my %ut;
-for my $user (split /[\s*,]+/, $users) {
-    next unless ($user =~ m/..../);
-    Debbugs::User::read_usertags(\%ut, $user);
-}
-
 my ($pkg, $src, $maint, $maintenc, $submitter, $severity, $status, $tag, $usertag);
 
 my %which = (
@@ -220,6 +213,13 @@ if (!$found) {
 }
 quitcgi("You have to choose something to select by") if (!$found);
 
+my %bugusertags;
+my %ut;
+for my $user (split /[\s*,]+/, $users) {
+    next unless ($user =~ m/..../);
+    add_usertags(\%ut, $user);
+}
+
 if (defined $usertag) {
     my %select_ut = ();
     my ($u, $t) = split /:/, $usertag, 2;
@@ -228,15 +228,8 @@ if (defined $usertag) {
         $t = join(",", keys(%select_ut));
     }
 
-    Debbugs::User::read_usertags(\%ut, $u);
+    add_usertags(\%ut, $u);
     $tag = $t;
-}
-
-for my $t (keys %ut) {
-    for my $b (@{$ut{$t}}) {
-        $bugusertags{$b} = [] unless defined $bugusertags{$b};
-        push @{$bugusertags{$b}}, $t;
-    }
 }
 
 my $Archived = $archive ? " Archived" : "";
@@ -270,12 +263,28 @@ set_option("arch", $arch);
 set_option("use-bug-idx", defined($param{'use-bug-idx'}) ? $param{'use-bug-idx'} : 0);
 set_option("show_list_header", $show_list_header);
 set_option("show_list_footer", $show_list_footer);
-set_option("bugusertags", \%bugusertags);
+
+sub add_usertags {
+    my $ut = shift;
+    my $u = shift;
+    Debbugs::User::read_usertags($ut, $u);
+
+    %bugusertags = ();
+    for my $t (keys %{$ut}) {
+        for my $b (@{$ut->{$t}}) {
+            $bugusertags{$b} = [] unless defined $bugusertags{$b};
+            push @{$bugusertags{$b}}, $t;
+        }
+    }
+    set_option("bugusertags", \%bugusertags);
+}
+    
 
 my $title;
 my @bugs;
 if (defined $pkg) {
   $title = "package $pkg";
+  add_usertags(\%ut, "$pkg\@packages.debian.org");
   if (defined $version) {
     $title .= " (version $version)";
   } elsif (defined $dist) {
@@ -291,6 +300,7 @@ if (defined $pkg) {
                          return 0;
                         }, 'package', @pkgs)};
 } elsif (defined $src) {
+  add_usertags(\%ut, "$src\@packages.debian.org");
   $title = "source $src";
   set_option('arch', 'source');
   if (defined $version) {
@@ -314,6 +324,7 @@ if (defined $pkg) {
                         }, 'package', @pkgs)};
 } elsif (defined $maint) {
   my %maintainers = %{getmaintainers()};
+  add_usertags(\%ut, $maint);
   $title = "maintainer $maint";
   $title .= " in $dist" if defined $dist;
   if ($maint eq "") {
@@ -354,6 +365,7 @@ if (defined $pkg) {
                          return 0;
                         })};
 } elsif (defined $submitter) {
+  add_usertags(\%ut, $submitter);
   $title = "submitter $submitter";
   $title .= " in $dist" if defined $dist;
   my @submitters = split /,/, $submitter;
