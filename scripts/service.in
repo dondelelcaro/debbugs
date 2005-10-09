@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.116 2005/10/09 14:03:32 ajt Exp $
+# $Id: service.in,v 1.117 2005/10/09 14:17:41 ajt Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -254,6 +254,81 @@ END
 	    &transcript("Selected user id ($newuser) invalid, sorry\n");
 	    $user = "";
 	}
+    } elsif (m/^usercategory\s+(\S+)(\s+\[hidden\])?\s*$/i) {
+        $ok++;
+	my $catname = $1;
+	my $hidden = ($2 ne "");
+
+        my $prefix = "";
+        my @cats;
+        my $bad = 0;
+	my $catsec = 0;
+        while (++$procline <= $#bodylines) {
+            unless ($bodylines[$procline] =~ m/^\s*([*+])\s*(\S.*)$/) {
+                $procline--;
+                last;
+            }
+            &transcript("> $bodylines[$procline]\n");
+            next if $bad;
+            my ($o, $txt) = ($1, $2);
+            if ($#cats == -1 && $o eq "+") {
+                &transcript("User defined category specification must start with a category name. Skipping.\n\n");
+                $bad = 1;
+                next;
+            }
+            if ($o eq "+") {
+	        unless (ref($cats[-1]) eq "HASH") {
+		    $cats[-1] = { "nam" => $cats[-1], 
+		                  "pri" => [], "ttl" => [] };
+		}
+	        $catsec++;
+		my ($desc, $ord, $op);
+                if ($txt =~ m/^(.*\S)\s*\[((\d+):\s*)?\]\s*$/) {
+                    $desc = $1; $ord = $3; $op = "";
+                } elsif ($txt =~ m/^(.*\S)\s*\[((\d+):\s*)?(\S+)\]\s*$/) {
+                    $desc = $1; $ord = $3; $op = $4;
+                } elsif ($txt =~ m/^([^[\s]+)\s*$/) {
+                    $desc = ""; $op = $1;
+                } else {
+                    &transcript("Unrecognised syntax for category section. Skipping.\n\n");
+                    $bad = 1;
+                    next;
+                }
+		$ord = 999 unless defined $ord;
+
+		if ($op) {
+                    push @{$cats[-1]->{"pri"}}, $prefix . $op;
+		    push @{$cats[-1]->{"ttl"}}, $desc;
+		    push @ords, "$ord $catsec";
+		} else {
+		    @cats[-1]->{"def"} = $desc;
+		    push @ords, "$ord DEF";
+		    $catsec--;
+		}
+		@ords = sort { my ($a1, $a2, $b1, $b2) = split / /, "$a $b";
+		               $a1 <=> $b1 || $a2 <=> $b2; } @ords;
+		$cats[-1]->{"ord"} = [map { m/^.* (\S+)/; $1 eq "DEF" ? $catsec + 1 : $1 } @ords];
+            } elsif ($o eq "*") {
+	        $catsec = 0;
+                my ($name);
+                if ($txt =~ m/^(.*\S)(\s*\[(\S+)\])\s*$/) {
+                    $name = $1; $prefix = $3;
+                } else {
+                    $name = $txt; $prefix = "";
+                }
+                push @cats, $name;
+            }
+        }
+        # XXX: got @cats, now do something with it
+	my $u = Debbugs::User::get_user($user);
+	if (@cats) {
+	    &transcript("Added usercategory $catname.\n\n");
+	    $u->{"categories"}->{$catname} = [ @cats ];
+	} else {
+	    &transcript("Removed usercategory $catname.\n\n");
+	    delete $u->{"categories"}->{$catname};
+	}
+	$u->write();
     } elsif (m/^usertags?\s+\#?(-?\d+)\s+(([=+-])\s*)?(\S.*)?$/i) {
 	$ok++;
 	$ref = $1; $addsubcode = $3 || "+"; $tags = $4;

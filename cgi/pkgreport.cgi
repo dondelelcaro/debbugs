@@ -12,9 +12,8 @@ require '/etc/debbugs/config';
 require '/etc/debbugs/text';
 
 use Debbugs::User;
-my $cats = 5;
 
-use vars qw($gPackagePages $gWebDomain);
+use vars qw($gPackagePages $gWebDomain %gSeverityDisplay @gSeverityList);
 
 if (defined $ENV{REQUEST_METHOD} and $ENV{REQUEST_METHOD} eq 'HEAD') {
     print "Content-Type: text/html; charset=utf-8\n\n";
@@ -38,7 +37,7 @@ my $raw_sort = ($param{'raw'} || "no") eq "yes";
 my $old_view = ($param{'oldview'} || "no") eq "yes";
 unless (defined $ordering) {
    $ordering = "normal";
-   $ordering = "old" if $old_view;
+   $ordering = "oldview" if $old_view;
    $ordering = "raw" if $raw_sort;
 }
 
@@ -56,97 +55,6 @@ my $dist = $param{'dist'} || undef;
 my $arch = $param{'arch'} || undef;
 my $show_list_header = ($param{'show_list_header'} || $userAgent->{'show_list_header'} || "yes" ) eq "yes";
 my $show_list_footer = ($param{'show_list_footer'} || $userAgent->{'show_list_footer'} || "yes" ) eq "yes";
-
-my @p = (
-  "pending:pending,forwarded,pending-fixed,fixed,done,absent",
-  "severity:critical,grave,serious,important,normal,minor,wishlist",
-  "pending=pending+tag=wontfix,pending=pending+tag=moreinfo,pending=pending+tag=patch,pending=pending+tag=confirmed,pending=pending");
-my @t = (
-  "Outstanding,Forwarded,Pending Upload,Fixed in NMU,Resolved,From other Branch,Unknown Pending Status",
-  "Critical,Grave,Serious,Important,Normal,Minor,Wishlist,Unknown Severity",
-  "Will Not Fix,More information needed,Patch Available,Confirmed,Unclassified");
-my @o = ("0,1,2,3,4,5,6","0,1,2,3,4,5,6,7","2,3,4,1,0,5");
-my @n = ("Status", "Severity", "Classification");
-
-if ($ordering eq "old") {
-    splice @p, 2, 1;
-    splice @t, 2, 1;
-    splice @o, 2, 1;
-    splice @n, 2, 1;
-}
-$o[0] = scalar reverse($o[0]) if ($pend_rev);
-$o[1] = scalar reverse($o[1]) if ($sev_rev);
-
-if (!defined $param{"pri0"} && $ordering =~ m/^user(\d+)$/) {
-    my $id = $1;
-    my $l = 0;
-    if (defined $param{"cat${id}_users"}) {
-        $users .= "," . $param{"cat${id}_users"};
-    }
-    while (defined $param{"cat${id}_nam$l"}) {
-        my ($n, $p, $t, $o) =
-	    map { $param{"cat${id}_${_}$l"} || "" }
-		("nam", "pri", "ttl", "ord");
-	if ($p eq "") {
-	    if ($n eq "status") {
-	        ($p, $t, $o) = ($p[0], $t[0], $o[0]);
-	    } elsif ($n eq "severity") {
-	        ($p, $t, $o) = ($p[1], $t[1], $o[1])
-	    } else {
-                $ordering = "raw";
-	        last;
-	    }
-	}
-        $param{"nam$l"} = $n;
-        $param{"pri$l"} = $p;
-        $param{"ttl$l"} = $t;
-        $param{"ord$l"} = $o;
-	$l++;
-    }
-}
-if (defined $param{"pri0"}) {
-    my $i = 0;
-    @p = (); @o = (); @t = (); @n = ();
-    while (defined $param{"pri$i"}) {
-        push @p, $param{"pri$i"};
-	push @o, $param{"ord$i"} || "";
-	push @t, $param{"ttl$i"} || "";
-	push @n, $param{"nam$i"} || "";
-	$i++;
-    }
-}
-for my $x (@p) {
-    next if "$x," =~ m/^(pending|severity|tag):(([*]|[a-z0-9.-]+),)+$/;
-    next if "$x," =~ m/^((pending|severity|tag)=([*]|[a-z0-9.-]+)[,+])+/;
-    quitcgi("Bad syntax in Priority: $x");
-}
-
-my @names; my @prior; my @title; my @order;
-for my $i (0..$#p) {
-    push @prior, [ make_order_list($p[$i]) ];
-    if ($n[$i]) {
-	push @names, $n[$i];
-    } elsif ($p[$i] =~ m/^([^:]+):/) {
-        push @names, $1;
-    } else {
-        push @names, "Bug attribute #" . (1+$i);
-    }
-    if ($o[$i]) {
-        push @order, [ split /,/, $o[$i] ];
-    } else {
-        push @order, [ 0..$#{$prior[$i]} ];
-    }
-    my @t = split /,/, $t[$i];
-    push @t, map { toenglish($prior[$i]->[$_]) } ($#t+1)..($#{$prior[$i]});
-    push @title, [@t];
-}
-
-sub toenglish {
-    my $expr = shift;
-    $expr =~ s/[+]/ and /g;
-    $expr =~ s/[a-z]+=//g;
-    return $expr;
-}
 
 {
     if (defined $param{'vt'}) {
@@ -168,6 +76,40 @@ sub toenglish {
     }
 }
 
+
+my %hidden = map { $_, 1 } qw(status severity classification);
+my %cats = (
+    "status" => [ {
+        "nam" => "Status",
+        "pri" => [map { "pending=$_" }
+            qw(pending forwarded pending-fixed fixed done absent)],
+        "ttl" => ["Outstanding","Forwarded","Pending Upload",
+                  "Fixed in NMU","Resolved","From other Branch"],
+        "def" => "Unknown Pending Status",
+        "ord" => [0,1,2,3,4,5,6],
+    } ],
+    "severity" => [ {
+        "nam" => "Severity",
+        "pri" => [map { "severity=$_" } @debbugs::gSeverityList],
+        "ttl" => [map { $debbugs::gSeverityDisplay{$_} } @debbugs::gSeverityList],
+        "def" => "Unknown Severity",
+        "ord" => [0,1,2,3,4,5,6,7],
+    } ],
+    "classification" => [ {
+        "nam" => "Classification",
+        "pri" => [qw(pending=pending+tag=wontfix 
+                     pending=pending+tag=moreinfo
+                     pending=pending+tag=patch
+                     pending=pending+tag=confirmed
+                     pending=pending)],
+        "ttl" => ["Will Not Fix","More information needed",
+                  "Patch Available","Confirmed"],
+        "def" => "Unclassified",
+        "ord" => [2,3,4,1,0,5],
+    } ],
+    "oldview" => [ qw(status severity) ],
+    "normal" => [ qw(status severity classification) ],
+);
 
 my ($pkg, $src, $maint, $maintenc, $submitter, $severity, $status, $tag, $usertag);
 
@@ -217,7 +159,7 @@ my %bugusertags;
 my %ut;
 for my $user (split /[\s*,]+/, $users) {
     next unless ($user =~ m/..../);
-    add_usertags(\%ut, $user);
+    add_user($user);
 }
 
 if (defined $usertag) {
@@ -228,7 +170,7 @@ if (defined $usertag) {
         $t = join(",", keys(%select_ut));
     }
 
-    add_usertags(\%ut, $u);
+    add_user($u);
     $tag = $t;
 }
 
@@ -264,10 +206,22 @@ set_option("use-bug-idx", defined($param{'use-bug-idx'}) ? $param{'use-bug-idx'}
 set_option("show_list_header", $show_list_header);
 set_option("show_list_footer", $show_list_footer);
 
-sub add_usertags {
-    my $ut = shift;
+sub add_user {
+    my $ut = \%ut;
     my $u = shift;
-    Debbugs::User::read_usertags($ut, $u);
+
+    my $user = Debbugs::User::get_user($u);
+
+    my %vis = map { $_, 1 } @{$user->{"visible_cats"}};
+    for my $c (keys %{$user->{"categories"}}) {
+        $cats{$c} = $user->{"categories"}->{$c};
+	$hidden{$c} = 1 unless defined $vis{$c};
+    }
+
+    for my $t (keys %{$user->{"tags"}}) {
+        $ut->{$t} = [] unless defined $ut->{$t};
+        push @{$ut->{$t}}, @{$user->{"tags"}->{$t}};
+    }
 
     %bugusertags = ();
     for my $t (keys %{$ut}) {
@@ -278,13 +232,12 @@ sub add_usertags {
     }
     set_option("bugusertags", \%bugusertags);
 }
-    
 
 my $title;
 my @bugs;
 if (defined $pkg) {
   $title = "package $pkg";
-  add_usertags(\%ut, "$pkg\@packages.debian.org");
+  add_user("$pkg\@packages.debian.org");
   if (defined $version) {
     $title .= " (version $version)";
   } elsif (defined $dist) {
@@ -300,7 +253,7 @@ if (defined $pkg) {
                          return 0;
                         }, 'package', @pkgs)};
 } elsif (defined $src) {
-  add_usertags(\%ut, "$src\@packages.debian.org");
+  add_user("$src\@packages.debian.org");
   $title = "source $src";
   set_option('arch', 'source');
   if (defined $version) {
@@ -324,7 +277,7 @@ if (defined $pkg) {
                         }, 'package', @pkgs)};
 } elsif (defined $maint) {
   my %maintainers = %{getmaintainers()};
-  add_usertags(\%ut, $maint);
+  add_user($maint);
   $title = "maintainer $maint";
   $title .= " in $dist" if defined $dist;
   if ($maint eq "") {
@@ -365,7 +318,7 @@ if (defined $pkg) {
                          return 0;
                         })};
 } elsif (defined $submitter) {
-  add_usertags(\%ut, $submitter);
+  add_user($submitter);
   $title = "submitter $submitter";
   $title .= " in $dist" if defined $dist;
   my @submitters = split /,/, $submitter;
@@ -407,6 +360,9 @@ if (defined $pkg) {
                          return grep(exists $tags{$_}, @tags);
                         })};
 }
+
+my @names; my @prior; my @title; my @order;
+determine_ordering();
 
 my $result = pkg_htmlizebugs(\@bugs);
 
@@ -549,7 +505,7 @@ my $vismaxdays = ($maxdays == -1 ? "" : $maxdays);
 my $sel_rmy = ($repeatmerged ? " selected" : "");
 my $sel_rmn = ($repeatmerged ? "" : " selected");
 my $sel_ordraw = ($ordering eq "raw" ? " selected" : "");
-my $sel_ordold = ($ordering eq "old" ? " selected" : "");
+my $sel_ordold = ($ordering eq "oldview" ? " selected" : "");
 my $sel_ordnor = ($ordering eq "normal" ? " selected" : "");
 
 my $chk_bugrev = ($bug_rev ? " checked" : "");
@@ -572,22 +528,27 @@ print <<EOF;
 <tr><td>Categorise bugs by</td><td>
 <select name=ordering>
 <option value=raw$sel_ordraw>bug number only</option>
-<option value=old$sel_ordold>status, and severity</option>
+<option value=old$sel_ordold>status and severity</option>
 <option value=normal$sel_ordnor>status, severity and classification</option>
 EOF
 
 {
 my $any = 0;
 my $o = $param{"ordering"} || "";
-for my $i (1..$cats) {
-    my $n = get_cat_name($i);
-    next unless defined $n;
+for my $n (keys %cats) {
+    next if ($n eq "normal" || $n eq "oldview");
+    next if defined $hidden{$n};
     unless ($any) {
         $any = 1;
-	print "<option disabled>------</option\n";
+	print "<option disabled>------</option>\n";
     }
-    printf "<option value=user%s%s>%s</option>\n",
-        $i, ($o eq "user$i" ? " selected" : ""), $n;
+    my @names = map { ref($_) eq "HASH" ? $_->{"nam"} : $_ } @{$cats{$n}};
+    my $name;
+    if (@names == 1) { $name = $names[0]; }
+    else { $name = " and " . pop(@names); $name = join(", ", @names) . $name; }
+
+    printf "<option value=\"%s\"%s>%s</option>\n",
+        $n, ($o eq $n ? " selected" : ""), $name;
 }
 }
 
@@ -603,77 +564,6 @@ printf "<tr><td></td><td>%s</td></tr>\n",
 print <<EOF;
 <tr><td>&nbsp;</td></tr>
 <tr><td colspan=2><input value="Reload page" type="submit"> with new settings</td></tr>
-EOF
-
-print "</table></form></div>\n";
-
-print "<h2 class=\"outstanding\"><a class=\"options\" href=\"javascript:toggle(2)\">User Categorisations (beta)</a></h2>\n";
-print "<div id=\"a_2\">\n";
-print <<EOF;
-<p>This form allows you to define a new categorisation to use to view bugs
-against packages. Once defined it will show up as an available category
-in the Options section above. Note there are a limited numbering of
-categorisations you can define, so you may need to choose a pre-existing
-categorisation to replace. Note that this feature currently requires both
-Javascript and cookies to be enabled. Some usage information is available
-via Anthony Towns' <a href="http://code.erisian.com.au/Wiki/debbugs/SectioningNotes">development notes</a>.
-</p>
-EOF
-
-printf "<form name=\"categories\" action=\"%s\" method=POST>\n", myurl();
-print "<table class=\"forms\">\n";
-
-sub get_cat_name {
-    my $i = shift;
-    if (defined $param{"cat${i}_nam0"}) {
-        my @nams = ();
-	my $j = 0;
-	while (defined $param{"cat${i}_nam$j"}) {
-	    push @nams, $param{"cat${i}_nam$j"};
-	    $j++;
-	}
-	return join(", ", @nams);
-    } else {
-        return undef;
-    }
-}
-
-print "<tr><td>Categorisation to set</td><td>\n";
-print "<select name=categorisation>\n";
-my $default = 1;
-for my $i (1..$cats) {
-    my $name = get_cat_name($i);
-    unless (defined $name) {
-        $name = "(unused)";
-        $default = $i if $default == 0;
-    }
-    printf "<option value=%s%s>%s. %s</option>\n",
-        $i, ($default == $i ? " selected" : ""), $i, $name;
-}
-my $defusers = $param{"cat${default}_users"} || $users;
-print "</select></td></tr>\n";
-print "<tr><td>Include usertags set by</td><td>\n";
-print "<input id=users size=50 value=\"$defusers\"></td></tr>\n";
-print "<tr><td>&nbsp;</td></tr>\n";
-
-for my $level (0..3) {
-    my $hlevel = $level + 1;
-    my ($n, $s, $t, $o) =
-        map { $param{"cat${default}_${_}${level}"} || "" }
-	    ("nam", "pri", "ttl", "ord");
-
-    print <<EOF;
-<tr><td>Level</td><td>$hlevel</td></tr>
-<tr><td>Name</td><td><input id="nam$level" value="$n"></td></tr>
-<tr><td>Sections</td><td><input id="pri$level" value="$s" size=70></td></tr>
-<tr><td>Titles</td><td><input id="ttl$level" value="$t" size=70></td></tr>
-<tr><td>Ordering</td><td><input id="ord$level" value="$o" size=20></td></tr>
-<tr><td>&nbsp;</td></tr>
-EOF
-}
-    
-print <<EOF;
-<tr><td colspan=2><a href="javascript:save_cat_cookies();">Commit new ordering</a></td></tr>
 EOF
 
 print "</table></form></div>\n";
@@ -821,7 +711,6 @@ sub pkg_htmlizebugs {
         my $key = "";
 	for my $i (0..$#prior) {
 	    my $v = get_bug_order_index($prior[$i], \%status);
-	    my $k = $prior[$i]->[$v];
             $count{"g_${i}_${v}"}++;
 	    $key .= "_$v";
 	}
@@ -852,7 +741,7 @@ sub pkg_htmlizebugs {
 	    my $title = $title[0]->[$ttl[0]] . " bugs";
 	    if ($#ttl > 0) {
 		$title .= " -- ";
-		$title .= join("; ", grep {$_ ne ""}
+		$title .= join("; ", grep {($_ || "") ne ""}
 			map { $title[$_]->[$ttl[$_]] } 1..$#ttl);
 	    }
 
@@ -1104,7 +993,7 @@ sub get_bug_order_index {
             last;
         }
     }
-    return -1;
+    return $pos + 1;
 }
 
 sub buglinklist {
@@ -1116,4 +1005,82 @@ sub buglinklist {
         $sep = $infix;
     }
     return $r;
+}
+
+
+# sets: my @names; my @prior; my @title; my @order;
+
+sub determine_ordering {
+    $cats{"status"}->{"ord"} = [ reverse @{$cats{"status"}->{"ord"}} ]
+        if ($pend_rev);
+    $cats{"severity"}->{"ord"} = [ reverse @{$cats{"severity"}->{"ord"}} ]
+        if ($sev_rev);
+
+    if (defined $param{"pri0"}) {
+        my @c = ();
+        my $i = 0;
+        while (defined $param{"pri$i"}) {
+            my $h = {};
+
+            my $pri = $param{"pri$i"};
+            if ($pri =~ m/^([^:]*):(.*)$/) {
+              $h->{"nam"} = $1;  # overridden later if necesary
+              $h->{"pri"} = [ map { "$1=$_" } (split /,/, $2) ];
+            } else {
+              $h->{"pri"} = [ split /,/, $pri ];
+            }
+
+	    $h->{"nam"} = $param{"nam$i"}
+                if (defined $param{"nam$i"}); 
+            $h->{"ord"} = [ split /,/, $param{"ord$i"} ]
+                if (defined $param{"ord$i"}); 
+            $h->{"ttl"} = [ split /,/, $param{"ttl$i"} ]
+                if (defined $param{"ttl$i"}); 
+
+            push @c, $h;
+	    $i++;
+        }
+        $cats{"_"} = [@c];
+        $ordering = "_";
+    }
+
+    $ordering = "normal" unless defined $cats{$ordering};
+
+    sub get_ordering {
+        my @res;
+	my $cats = shift;
+        my $o = shift;
+        for my $c (@{$cats->{$o}}) {
+            if (ref($c) eq "HASH") {
+                push @res, $c;
+            } else {
+                push @res, get_ordering($cats, $c);
+            }
+        }
+        return @res;
+    }
+    my @cats = get_ordering(\%cats, $ordering);
+
+    sub toenglish {
+        my $expr = shift;
+        $expr =~ s/[+]/ and /g;
+        $expr =~ s/[a-z]+=//g;
+        return $expr;
+    }
+ 
+    my $i = 0;
+    for my $c (@cats) {
+        $i++;
+        push @prior, $c->{"pri"};
+	push @names, ($c->{"nam"} || "Bug attribute #" . $i);
+        if (defined $c->{"ord"}) {
+            push @order, $c->{"ord"};
+        } else {
+            push @order, [ 0..$#{$prior[-1]} ];
+        }
+        my @t = @{ $c->{"ttl"} };
+        push @t, map { toenglish($prior[-1]->[$_]) } ($#t+1)..($#{$prior[-1]});
+	push @t, $c->{"def"} || "";
+        push @title, [@t];
+    }
 }
