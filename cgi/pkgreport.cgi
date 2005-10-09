@@ -716,12 +716,12 @@ sub pkg_htmlindexentrystatus {
                  . "</strong>"
                        if (length($status{tags}));
 
-    my @merged= split(/ /,$status{mergedwith});
-    my $mseparator= ";\nMerged with ";
-    for my $m (@merged) {
-        $result .= $mseparator."<A class=\"submitter\" href=\"" . bugurl($m) . "\">#$m</A>";
-        $mseparator= ", ";
-    }
+    $result .= buglinklist(";\nMerged with ", ", ",
+        split(/ /,$status{mergedwith}));
+    $result .= buglinklist(";\nBlocked by ", ", ",
+        split(/ /,$status{blockedby}));
+    $result .= buglinklist(";\nBlocks ", ", ",
+        split(/ /,$status{blocks}));
 
     my $days = 0;
     if (length($status{done})) {
@@ -1095,3 +1095,13 @@ sub get_bug_order_index {
     return -1;
 }
 
+sub buglinklist {
+    my ($prefix, $infix, @els) = @_;
+    my $sep = $prefix;
+    my $r = "";
+    for my $e (@els) {
+        $r .= $sep."<A class=\"submitter\" href=\"" . bugurl($e) . "\">#$e</A>";
+        $sep = $infix;
+    }
+    return $r;
+}
