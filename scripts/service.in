@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: service.in,v 1.117 2005/10/09 14:17:41 ajt Exp $
+# $Id: service.in,v 1.118 2005/10/19 01:22:14 don Exp $
 #
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
@@ -1109,7 +1109,7 @@ close(AP) || &quit("open db-h/-1.log: $!");
 &unfilelock;
 utime(time,time,"db-h");
 
-&sendmailmessage($reply,$replyto,@maintccaddrs,@bcc);
+&sendmailmessage($reply,exists $header{'x-debbugs-no-ack'}?():$replyto,@maintccaddrs,@bcc);
 
 unlink("incoming/P$nn") || &quit("unlinking incoming/P$nn: $!");
 

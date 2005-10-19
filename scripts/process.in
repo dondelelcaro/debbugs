@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.106 2005/10/06 03:46:13 ajt Exp $
+# $Id: process.in,v 1.107 2005/10/19 01:22:14 don Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -147,6 +147,10 @@ for my $phline (@bodylines)
     print DEBUG ">$fn~$fv<\n";
 }
 
+# Allow pseudo headers to set x-debbugs- stuff [#179340]
+for my $key (grep /X-Debbugs-.*/i, keys %pheader) {
+     $header{$key} = $pheader{$key} if not exists $header{$key};
+}
 
 $fwd .= join("\n",@msg[$i..$#msg]);
 
@@ -594,6 +598,9 @@ END
     }
     if (defined($pheader{owner})) {
         $data->{owner}= $pheader{owner};
+    }
+    if (defined($pheader{forwarded})) {
+	$data->{'forwarded-to'} = $pheader{forwarded};
     }
     &filelock("nextnumber.lock");
     open(N,"nextnumber") || &quit("nextnumber: read: $!");
