@@ -1078,7 +1078,7 @@ sub determine_ordering {
         } else {
             push @order, [ 0..$#{$prior[-1]} ];
         }
-        my @t = @{ $c->{"ttl"} };
+        my @t = @{ $c->{"ttl"} } if defined $c->{ttl};
         push @t, map { toenglish($prior[-1]->[$_]) } ($#t+1)..($#{$prior[-1]});
 	push @t, $c->{"def"} || "";
         push @title, [@t];
