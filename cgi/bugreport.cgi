@@ -114,7 +114,7 @@ sub display_entity ($$$$\$\@) {
 		my $qf = $filename;
 		$qf =~ s/"/\\"/g;
 		$qf =~ s[.*/][];
-		print qq{Content-Disposition: attachment; filename="$qf"\n};
+		print qq{Content-Disposition: inline; filename="$qf"\n};
 	    }
 	    print "\n";
 	    my $decoder = new MIME::Decoder($head->mime_encoding);
@@ -399,8 +399,10 @@ sub handle_record{
 	  $output =~ s,((?:ftp|http|https)://[\S~-]+?/?)([\)\'\:\.\,]?(?:\s|\.<|$)),<a href=\"$1\">$1</a>$2,go;
 	  # Add links to the cloned bugs
 	  $output =~ s{(Bug )(\d+)( cloned as bugs? )(\d+)(?:\-(\d+)|)}{$1.bug_links($2).$3.bug_links($4,$5)}eo;
+	  # Add links to merged bugs
+	  $output =~ s{(?<=Merged )([\d\s]+)(?=\.)}{join(' ',map {bug_links($_)} (split /\s+/, $1))}eo;
 	  $output .= '<a href="' . bugurl($ref, 'msg='.($msg_number+1)) . '">Full text</a> and <a href="' .
-	       bugurl($ref, 'msg='.($msg_number+1), 'mbox') . '">rfc822 format</a> available.</em>';
+	       bugurl($ref, 'msg='.($msg_number+1), 'mbox') . '">rfc822 format</a> available.';
 
 	  $output = "<div class=\"msgreceived\">\n" . $output . "</div>\n";
      }
@@ -412,7 +414,7 @@ sub handle_record{
 	  elsif (defined $msg_id) {
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
-	  $output .= 'View this message in <a href="' . bugurl($ref, "msg=$msg_number", "mbox") . '">rfc822 format</a></em>';
+	  $output .= 'View this message in <a href="' . bugurl($ref, "msg=$msg_number", "mbox") . '">rfc822 format</a>';
 	  $output .= handle_email_message($record->{text},
 				    ref        => $bug_number,
 				    msg_number => $msg_number,
@@ -431,8 +433,8 @@ sub handle_record{
 	  }
 	  # Incomming Mail Message
 	  my ($received,$hostname) = $record->{text} =~ m/Received: \(at (\S+)\) by (\S+)\;/;
-	  $output .= qq|<p class="msgreceived"><a name="msg$msg_number">Message received at |.
-	       htmlsanit("$received\@$hostname") . q| (<a href="| . bugurl($ref, "msg=$msg_number") . '">full text</a>'.q|, <a href="| . bugurl($ref, "msg=$msg_number") . '&mbox=yes">mbox</a>)'.":</a></p>\n";
+	  $output .= qq|<p class="msgreceived"><a name="msg$msg_number">Message received</a> at |.
+	       htmlsanit("$received\@$hostname") . q| (<a href="| . bugurl($ref, "msg=$msg_number") . '">full text</a>'.q|, <a href="| . bugurl($ref, "msg=$msg_number") . ';mbox=yes">mbox</a>)'.":</p>\n";
 	  $output .= handle_email_message($record->{text},
 				    ref        => $bug_number,
 				    msg_number => $msg_number,
