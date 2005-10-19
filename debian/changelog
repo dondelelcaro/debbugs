@@ -94,6 +94,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Allow X-debbugs-* to be set in pseudo headers. (closes: #179340)
     - Obey X-Debbugs-No-Ack in control@ messages. (closes: #201825)
     - Allow forwarded: to be set at submit@ time. (closes: #128320)
+    - Fix example rewrite rules to allow for #1234 and foo+bar@baz.com
+    (closes: #321925)
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
 
