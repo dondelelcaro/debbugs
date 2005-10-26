@@ -109,7 +109,10 @@ sub display_entity ($$$$\$\@) {
 	    my $head = $entity->head;
 	    chomp(my $type = $entity->effective_type);
 	    my $body = $entity->stringify_body;
-	    print "Content-Type: $type\n";
+	    print "Content-Type: $type";
+	    my ($charset) = $head->get('Content-Type:') =~ m/charset\s*=\s*\"?([\w-]+)\"?/i;
+	    print qq(; charset="$charset") if defined $charset;
+	    print "\n";
 	    if ($filename ne '') {
 		my $qf = $filename;
 		$qf =~ s/"/\\"/g;
