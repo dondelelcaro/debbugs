@@ -913,6 +913,10 @@ sub makesourceversions {
                 my $pkgsrc = getpkgsrc();
                 if (exists $pkgsrc->{$pkg}) {
                     @srcinfo = ([$pkgsrc->{$pkg}, $version]);
+                } elsif (getsrcpkgs($pkg)) {
+                    # If we're looking at a source package that doesn't have
+                    # a binary of the same name, just try the same version.
+                    @srcinfo = ([$pkg, $version]);
                 } else {
                     next;
                 }
@@ -972,7 +976,15 @@ sub getversions {
         for my $ar (keys %{$_versions{$pkg}{$dist}}) {
             $uniq{$_versions{$pkg}{$dist}{$ar}} = 1 unless $ar eq 'source';
         }
-        return keys %uniq;
+        if (%uniq) {
+            return keys %uniq;
+        } elsif (exists $_versions{$pkg}{$dist}{source}) {
+            # Maybe this is actually a source package with no corresponding
+            # binaries?
+            return $_versions{$pkg}{$dist}{source};
+        } else {
+            return ();
+        }
     }
 }
 
