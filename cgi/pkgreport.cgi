@@ -360,6 +360,7 @@ if (defined $pkg) {
                          return grep(exists $tags{$_}, @tags);
                         })};
 }
+$title = htmlsanit($title);
 
 my @names; my @prior; my @title; my @order;
 determine_ordering();
@@ -381,7 +382,7 @@ print "<H1>" . "$debbugs::gProject$Archived $debbugs::gBug report logs: $title" 
 my $showresult = 1;
 
 if (defined $pkg || defined $src) {
-    my $showpkg = (defined $pkg) ? $pkg : "source package $src";
+    my $showpkg = htmlsanit((defined $pkg) ? $pkg : "source package $src");
     my %maintainers = %{getmaintainers()};
     my $maint = $pkg ? $maintainers{$pkg} : $maintainers{$src} ? $maintainers{$src} : undef;
     if (defined $maint) {
@@ -485,20 +486,22 @@ print "<tr><td></td>";
 print "    <td><input id=\"b_1_2\" name=vt value=bysuite type=radio onchange=\"enable(1);\" $checked_sui>" . pkg_htmlselectsuite(1,2,1) . " for " . pkg_htmlselectarch(1,2,2) . "</td></tr>\n";
 
 if (defined $pkg) {
-    my $v = $version || "";
+    my $v = htmlsanit($version) || "";
+    my $pkgsane = htmlsanit($pkg);
     print "<tr><td></td>";
-    print "    <td><input id=\"b_1_3\" name=vt value=bypkg type=radio onchange=\"enable(1);\" $checked_ver>$pkg version <input id=\"b_1_3_1\" name=version value=\"$v\"></td></tr>\n";
+    print "    <td><input id=\"b_1_3\" name=vt value=bypkg type=radio onchange=\"enable(1);\" $checked_ver>$pkgsane version <input id=\"b_1_3_1\" name=version value=\"$v\"></td></tr>\n";
 } elsif (defined $src) {
-    my $v = $version || "";
+    my $v = htmlsanit($version) || "";
+    my $srcsane = htmlsanit($src);
     print "<tr><td></td>";
-    print "    <td><input name=vt value=bysrc type=radio onchange=\"enable(1);\" $checked_ver>$src version <input id=\"b_1_3_1\" name=version value=\"$v\"></td></tr>\n";
+    print "    <td><input name=vt value=bysrc type=radio onchange=\"enable(1);\" $checked_ver>$srcsane version <input id=\"b_1_3_1\" name=version value=\"$v\"></td></tr>\n";
 }
 print "<tr><td>&nbsp;</td></tr>\n";
 
-my $includetags = join(" ", grep { !m/^subj:/i } split /[\s,]+/, $include);
-my $excludetags = join(" ", grep { !m/^subj:/i } split /[\s,]+/, $exclude);
-my $includesubj = join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } split /[\s,]+/, $include);
-my $excludesubj = join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } split /[\s,]+/, $exclude);
+my $includetags = htmlsanit(join(" ", grep { !m/^subj:/i } split /[\s,]+/, $include));
+my $excludetags = htmlsanit(join(" ", grep { !m/^subj:/i } split /[\s,]+/, $exclude));
+my $includesubj = htmlsanit(join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } split /[\s,]+/, $include));
+my $excludesubj = htmlsanit(join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } split /[\s,]+/, $exclude));
 my $vismindays = ($mindays == 0 ? "" : $mindays);
 my $vismaxdays = ($maxdays == -1 ? "" : $maxdays);
 
@@ -744,6 +747,7 @@ sub pkg_htmlizebugs {
 		$title .= join("; ", grep {($_ || "") ne ""}
 			map { $title[$_]->[$ttl[$_]] } 1..$#ttl);
 	    }
+	    $title = htmlsanit($title);
 
             my $count = $count{"_$order"};
             my $bugs = $count == 1 ? "bug" : "bugs";
