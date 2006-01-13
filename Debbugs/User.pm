@@ -45,7 +45,7 @@ use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 
 BEGIN {
-    ($VERSION) = q$Revision: 1.3 $ =~ /^Revision:\s+([^\s+])/;
+    ($VERSION) = q$Revision: 1.4 $ =~ /^Revision:\s+([^\s+])/;
     $DEBUG = 0 unless defined $DEBUG;
 
     @EXPORT = ();
@@ -147,7 +147,10 @@ sub get_user {
 
     my $uf;
     $user->{"filename"} = $p;
-    open($uf, "< $p") or bless $user, "Debbugs::User";
+    if (not -r $p) {
+	 return bless $user, "Debbugs::User";
+    }
+    open($uf, "< $p") or die "Unable to open file $p for reading: $!";
     if ($need_lock) {
         flock($uf, LOCK_EX); 
         $user->{"locked"} = $uf;
