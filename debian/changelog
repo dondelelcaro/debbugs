@@ -99,6 +99,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Fix example rewrite rules to allow for #1234 and foo+bar@baz.com
     (closes: #321925)
     - Output proper charset for attachments (closes: #335813)
+    - Use MIME encodings to attach messages in close and done.
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
 

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.107 2005/10/19 01:22:14 don Exp $
+# $Id: process.in,v 1.108 2006/02/03 03:52:51 don Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -9,7 +9,7 @@ $ENV{"TZ"} = 'UTC';
 tzset();
 
 use MIME::Parser;
-use Debbugs::MIME qw(decode_rfc1522);
+use Debbugs::MIME qw(decode_rfc1522 create_mime_message);
 use Debbugs::Mail qw(send_mail_message encode_headers);
 
 $config_path = '/etc/debbugs';
@@ -260,12 +260,14 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
     }
     $markedby= $header{'from'} eq $replyto ? $replyto :
                "$header{'from'} (reply to $replyto)";
+    my @generalcc;
     if ($codeletter eq 'F') {
         (&appendlog,&finish) if length($data->{forwarded});
         $receivedat= "forwarded\@$gEmailDomain";
         $markaswhat= 'forwarded';
         $set_forwarded= $header{'to'};
 	if ( length( $gListDomain ) > 0 && length( $gForwardList ) > 0 ) {
+	    push @generalcc, "$gForwardList\@$gListDomain";
 	    $generalcc= "$gForwardList\@$gListDomain";
 	} else { 
 	    $generalcc=''; 
@@ -282,12 +284,14 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
         $set_done= $header{'from'};
 	if ( length( $gListDomain ) > 0 && length( $gDoneList ) > 0 ) {
             $generalcc= "$gDoneList\@$gListDomain";
+	    push @generalcc, "$gDoneList\@$gListDomain";
 	} else { 
 	    $generalcc=''; 
 	}
     }
     if (defined $gStrongList and isstrongseverity($data->{severity})) {
         $generalcc = join ', ', $generalcc, "$gStrongList\@$gListDomain";
+	push @generalcc,"$gStrongList\@$gListDomain";
     }
     if ($ref<0) {
 	&htmllog("Warning","sent",$replyto,"Message ignored.");
@@ -336,6 +340,7 @@ END
 
     &checkmaintainers;
 
+    my @noticecc = grep($_ ne $replyto,@maintaddrs);
     $noticeccval.= join(', ', grep($_ ne $replyto,@maintaddrs));
     $noticeccval =~ s/\s+\n\s+/ /g; 
     $noticeccval =~ s/^\s+/ /; $noticeccval =~ s/\s+$//;
@@ -363,6 +368,8 @@ END
         }
 
 	# Add bug mailing list to $generalbcc as appropriate
+ 	# This array is used to specify bcc in the cases where we're using create_mime_message.
+ 	my @generalbcc = (@generalcc,@addsrcaddrs,"bugs=$ref\@$gListDomain");
 	my $generalbcc = join(', ', $generalcc, @addsrcaddrs,"bugs=$ref\@$gListDomain");
 	$generalbcc =~ s/\s+\n\s+/ /g;
 	$generalbcc =~ s/^\s+/ /; $generalbcc =~ s/\s+$//;
@@ -375,18 +382,19 @@ END
         $x= join('',<O>); close(O);
         if ($codeletter eq 'F') {
 	    &htmllog("Reply","sent",$replyto,"You have marked $gBug as forwarded.");
-            &sendmessage(<<END."---------------------------------------\n".join( "\n", @msg ), '');
-From: $gMaintainerEmail ($gProject $gBug Tracking System)
-To: $replyto
-${noticecc}${generalbcc}Subject: $gBug#$ref: marked as forwarded ($data->{subject})
-Message-ID: <header.$ref.$nn.ackfwdd\@$gEmailDomain>
-In-Reply-To: $header{'message-id'}
-References: $header{'message-id'} $data->{msgid}
-Precedence: bulk
-X-$gProject-PR-Message: forwarded $ref
-X-$gProject-PR-Package: $data->{package}
-X-$gProject-PR-Keywords: $data->{keywords}
-
+            &sendmessage(create_mime_message(
+	     [X-Loop => "$gMaintainerEmail",
+	      From => "$gMaintainerEmail ($gProject $gBug Tracking System)",
+              To => "$replyto",
+              Subject => "$gBug#$ref: marked as forwarded ($data->{subject})",
+              Message-ID => "<header.$ref.$nn.ackfwdd\@$gEmailDomain>",
+              In-Reply-To => $header{'message-id'},
+              References  => "$header{'message-id'} $data->{msgid}",
+              Precedence  => 'bulk',
+              "X-$gProject-PR-Message" => "forwarded $ref",
+              "X-$gProject-PR-Package" => $data->{package},
+              "X-$gProject-PR-Keywords" => $data->{keywords}
+             ],<<END ,[join("\n",@msg)]),'',[@generalbcc,@noticecc],1);
 Your message dated $header{'date'}
 with message-id $header{'message-id'}
 has caused the $gProject $gBug report #$ref,
@@ -405,18 +413,19 @@ END
 
         } else {
 	    &htmllog("Reply","sent",$replyto,"You have taken responsibility.");
-            &sendmessage(<<END."--------------------------------------\n".$x."---------------------------------------\n".join( "\n", @msg ), '');
-From: $gMaintainerEmail ($gProject $gBug Tracking System)
-To: $replyto
-${noticecc}${generalbcc}Subject: $gBug#$ref: marked as done ($data->{subject})
-Message-ID: <handler.$ref.$nn.ackdone\@$gEmailDomain>
-In-Reply-To: $header{'message-id'}
-References: $header{'message-id'} $data->{msgid}
-Precedence: bulk
-X-$gProject-PR-Message: closed $ref
-X-$gProject-PR-Package: $data->{package}
-X-$gProject-PR-Keywords: $data->{keywords}
-
+            &sendmessage(create_mime_message(
+	     [X-Loop => "$gMaintainerEmail",
+	      From => "$gMaintainerEmail ($gProject $gBug Tracking System)",
+              To   => $replyto,
+              Subject => "$gBug#$ref: marked as done ($data->{subject})",
+              Message-ID => "<handler.$ref.$nn.ackdone\@$gEmailDomain>",
+              In-Reply-To => $header{'message-id'},
+              References  => "$header{'message-id'} $data->{msgid}",
+              Precedence  => 'bulk',
+              "X-$gProject-PR-Message" => "closed $ref",
+              "X-$gProject-PR-Packag"  => $data->{package},
+              "X-$gProject-PR-Keywords" => $data->{keywords}
+             ],<<END ,[$x,join("\n",@msg)]),'',[@generalbcc,@noticecc],1);
 Your message dated $header{'date'}
 with message-id $header{'message-id'}
 and subject line $subject
@@ -436,19 +445,20 @@ $gMaintainer
 END
             &htmllog("Notification","sent",$data->{originator}, 
 		"$gBug acknowledged by developer.");
-            &sendmessage(<<END.join("\n",@msg),'');
-From: $gMaintainerEmail ($gProject $gBug Tracking System)
-To: $data->{originator}
-Subject: $gBug#$ref acknowledged by developer
-         ($header{'subject'})
-Message-ID: <handler.$ref.$nn.notifdone\@$gEmailDomain>
-In-Reply-To: $data->{msgid}
-References: $header{'message-id'} $data->{msgid}
-X-$gProject-PR-Message: they-closed $ref
-X-$gProject-PR-Package: $data->{package}
-X-$gProject-PR-Keywords: $data->{keywords}
-Reply-To: $ref\@$gEmailDomain
-
+            &sendmessage(create_mime_message(
+	     [X-Loop      => "$gMaintainerEmail",
+	      From        => "$gMaintainerEmail ($gProject $gBug Tracking System)",
+              To          => "$data->{originator}",
+              Subject     => "$gBug#$ref acknowledged by developer ($header{'subject'})",
+              Message-ID  => "<handler.$ref.$nn.notifdone\@$gEmailDomain>",
+              In-Reply-To => "$data->{msgid}",
+              References  => "$header{'message-id'} $data->{msgid}",
+              X-$gProject-PR-Message  => "they-closed $ref",
+              X-$gProject-PR-Package  => "$data->{package}",
+              X-$gProject-PR-Keywords => "$data->{keywords}",
+              Reply-To                => "$ref\@$gEmailDomain",
+              Content-Type            => 'text/plain; charset="utf-8"',
+             ],<<END ,[join("\n",@msg)]),'',undef,1);
 This is an automatic notification regarding your $gBug report
 #$ref: $data->{subject},
 which was filed against the $data->{package} package.
@@ -526,16 +536,17 @@ END
         $data->{package} = $pheader{package};
     } else {
  	&htmllog("Warning","sent",$replyto,"Message not forwarded.");
-        &sendmessage(<<END."---------------------------------------------------------------------------\n".join("\n", @msg), '');
-From: $gMaintainerEmail ($gProject $gBug Tracking System)
-To: $replyto
-Subject: Message with no Package: tag cannot be processed!
-         ($subject)
-Message-ID: <handler.x.$nn.nonumnosub\@$gEmailDomain>
-In-Reply-To: $header{'message-id'}
-References: $header{'message-id'} $data->{msgid}
-Precedence: bulk
-X-$gProject-PR-Message: error
+        &sendmessage(create_mime_message(
+                       [X-Loop      => "$gMaintainerEmail",
+			From        => "$gMaintainerEmail ($gProject $gBug Tracking System)",
+                        To          => $replyto,
+                        Subject     => "Message with no Package: tag cannot be processed! ($subject)",
+                        Message-ID  => "<handler.x.$nn.nonumnosub\@$gEmailDomain>",
+                        In-Reply-To => $header{'message-id'},
+                        References  => "$header{'message-id'} $data->{msgid}",
+                        Precedence  => 'bulk',
+                        "X-$gProject-PR-Message" => 'error'
+		       ],<<END,[join("\n", @msg)]), '',undef,1);
 
 Your message didn't have a Package: line at the start (in the
 pseudo-header following the real mail header), or didn't have a
@@ -1017,16 +1028,34 @@ sub stripbccs {
     return $ret . $msg;
 }
 
+=head2 send_message
+
+     send_message($the_message,\@recipients,\@bcc,$do_not_encode)
+
+The first argument is the scalar message, the second argument is the
+arrayref of recipients, the third is the arrayref of Bcc:'ed
+recipients.
+
+The final argument turns off header encoding and the addition of the
+X-Loop header if true, defaults to false.
+
+=cut
+
+
 sub sendmessage {
-    local ($msg,$recips,$bcc) = @_;
-    if ((!ref($recips) && $recips eq '') || @$recips == 0) {
-        $recips = ['-t'];
+    my ($msg,$recips,$bcc,$no_encode) = @_;
+    if (not defined $recips or (!ref($recips) && $recips eq '')
+	or @$recips == 0) {
+	$recips = ['-t'];
     }
-    $msg = "X-Loop: $gMaintainerEmail\n" . $msg;
+    # This is suboptimal. The right solution is to send headers
+    # separately from the rest of the message and encode them rather
+    # than doing this.
+    $msg = "X-Loop: $gMaintainerEmail\n" . $msg unless $no_encode;
     # The original message received is written out in appendlog, so
     # before writing out the other messages we've sent out, we need to
     # RFC1522 encode the header.
-    $msg = encode_headers($msg);
+    $msg = encode_headers($msg) unless $no_encode;
 
     my $hash = get_hashname($ref);
     #save email to the log

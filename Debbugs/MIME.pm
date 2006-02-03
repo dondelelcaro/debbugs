@@ -8,7 +8,7 @@ use vars qw($VERSION @EXPORT_OK);
 BEGIN {
     $VERSION = 1.00;
 
-    @EXPORT_OK = qw(parse decode_rfc1522 encode_rfc1522 convert_to_utf8);
+    @EXPORT_OK = qw(parse decode_rfc1522 encode_rfc1522 convert_to_utf8 create_mime_message);
 }
 
 use File::Path;
@@ -102,6 +102,52 @@ sub parse ($)
 
     return { header => [@headerlines], body => [@bodylines]};
 }
+
+=head2 create_mime_message
+
+     create_mime_message([To=>'don@debian.org'],$body,[$attach1, $attach2]);
+
+Creates a MIME encoded message with headers given by the first
+argument, and a message given by the second.
+
+Optional attachments can be specified in the third arrayref argument.
+
+Headers are passed directly to MIME::Entity::build, the message is the
+first attachment.
+
+Each of the elements of the attachment arrayref is attached as an
+rfc822 message if it is a scalar or an arrayref; otherwise if it is a
+hashref, the contents are passed as an argument to
+MIME::Entity::attach
+
+=cut
+
+sub create_mime_message{
+     my ($headers,$body,$attachments) = @_;
+     $attachments = [] if not defined $attachments;
+
+     die "The first argument to create_mime_message must be an arrayref" unless ref($headers) eq 'ARRAY';
+     die "The third argument to create_mime_message must be an arrayref" unless ref($attachments) eq 'ARRAY';
+
+     # Build the message
+     my $msg = MIME::Entity->build(@{$headers},
+				   Data    => $body
+				  );
+
+     # Attach the attachments
+     for my $attachment (@{$attachments}) {
+	  if (ref($attachment) eq 'HASH') {
+	       $msg->attach(%{$attachment});
+	  }
+	  else {
+	       $msg->attach(Type => 'message/rfc822',
+			    Data => $attachment
+			   );
+	  }
+     }
+     return $msg->as_string;
+}
+
 
 # Bug #61342 et al.
 
