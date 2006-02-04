@@ -140,11 +140,30 @@ sub create_mime_message{
 	       $msg->attach(%{$attachment});
 	  }
 	  else {
+	       # This is *craptacular*, but because various MTAs
+	       # (sendmail and exim4, at least) appear to eat From
+	       # lines in message/rfc822 attachments, we need to make
+	       # sure the From line is the first thing in the
+	       # attachement, not the second, so if it gets eaten, the
+	       # headers don't collide into the body.
+	       if (ref($attachment) eq 'ARRAY' and $attachment->[1] =~ /^From /) {
+		    # make a copy so that we don't screw up anything
+		    # that is expecting this arrayref to stay constant
+		    $attachment = [@{$attachment}];
+		    # flip the From and Received lines around
+		    @{$attachment}[qw(1 0)] = @{$attachment}[qw(0 1)];
+	       }
+	       elsif (not ref($attachment)) {
+		    # It's a scalar
+		    $attachment =~ s/^(Received:[^\n]+\n)(From [^\n]+\n)/$2$1/s;
+	       }
 	       $msg->attach(Type => 'message/rfc822',
-			    Data => $attachment
+			    Data => $attachment,
+			    Encoding => '7bit',
 			   );
 	  }
      }
+     print STDERR $msg->as_string;
      return $msg->as_string;
 }
 
