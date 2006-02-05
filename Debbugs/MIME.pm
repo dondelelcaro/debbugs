@@ -163,7 +163,6 @@ sub create_mime_message{
 			   );
 	  }
      }
-     print STDERR $msg->as_string;
      return $msg->as_string;
 }
 
