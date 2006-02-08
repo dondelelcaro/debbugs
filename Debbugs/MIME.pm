@@ -150,12 +150,12 @@ sub create_mime_message{
 		    # make a copy so that we don't screw up anything
 		    # that is expecting this arrayref to stay constant
 		    $attachment = [@{$attachment}];
-		    # flip the From and Received lines around
-		    @{$attachment}[qw(1 0)] = @{$attachment}[qw(0 1)];
+		    # remove the from line
+		    splice @$attachment, 1, 1;
 	       }
 	       elsif (not ref($attachment)) {
-		    # It's a scalar
-		    $attachment =~ s/^(Received:[^\n]+\n)(From [^\n]+\n)/$2$1/s;
+		    # It's a scalar; remove the from line
+		    $attachment =~ s/^(Received:[^\n]+\n)(From [^\n]+\n)/$1/s;
 	       }
 	       $msg->attach(Type => 'message/rfc822',
 			    Data => $attachment,
