@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.108 2006/02/03 03:52:51 don Exp $
+# $Id: process.in,v 1.109 2006/02/09 22:02:04 don Exp $
 #
 # Usage: process nn
 # Temps:  incoming/Pnn
@@ -423,7 +423,7 @@ END
               References  => "$header{'message-id'} $data->{msgid}",
               Precedence  => 'bulk',
               "X-$gProject-PR-Message" => "closed $ref",
-              "X-$gProject-PR-Packag"  => $data->{package},
+              "X-$gProject-PR-Package" => $data->{package},
               "X-$gProject-PR-Keywords" => $data->{keywords}
              ],<<END ,[$x,join("\n",@msg)]),'',[@generalbcc,@noticecc],1);
 Your message dated $header{'date'}
