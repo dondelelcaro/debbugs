@@ -13,8 +13,8 @@ Former developers have been:
 	Ian Jackson <ijackson@chiark.greenend.org.uk>
 	Darren Benham <gecko@debian.org>
 
-The sources can be found at:
-	http://cvs.debian.org/?cvsroot=debbugs
+The sources can be obtained by:
+	bzr get http://bugs.debian.org/debbugs-source/mainline
 
 Copyright 1994-1997 Ian Jackson
 Copyright 1997,2003 nCipher Corporation Limited
