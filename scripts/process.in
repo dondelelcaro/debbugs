@@ -100,6 +100,8 @@ if ($entity and $entity->head->tags) {
     @bodylines = @msg[$i..$#msg];
 }
 
+my %header;
+
 for my $hdr (@headerlines) {
     $hdr = decode_rfc1522($hdr);
     $_ = $hdr;
@@ -260,6 +262,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
     }
     $markedby= $header{'from'} eq $replyto ? $replyto :
                "$header{'from'} (reply to $replyto)";
+    $markedby = de_rfc1522($markedby);
     my @generalcc;
     if ($codeletter eq 'F') {
         (&appendlog,&finish) if length($data->{forwarded});
@@ -383,16 +386,16 @@ END
         if ($codeletter eq 'F') {
 	    &htmllog("Reply","sent",$replyto,"You have marked $gBug as forwarded.");
             &sendmessage(create_mime_message(
-	     [X-Loop => "$gMaintainerEmail",
-	      From => "$gMaintainerEmail ($gProject $gBug Tracking System)",
-              To => "$replyto",
-              Subject => "$gBug#$ref: marked as forwarded ($data->{subject})",
-              Message-ID => "<header.$ref.$nn.ackfwdd\@$gEmailDomain>",
-              In-Reply-To => $header{'message-id'},
-              References  => "$header{'message-id'} $data->{msgid}",
-              Precedence  => 'bulk',
-              "X-$gProject-PR-Message" => "forwarded $ref",
-              "X-$gProject-PR-Package" => $data->{package},
+	     ["X-Loop"      => "$gMaintainerEmail",
+	      From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
+              To            => "$replyto",
+              Subject       => "$gBug#$ref: marked as forwarded ($data->{subject})",
+              "Message-ID"  => "<header.$ref.$nn.ackfwdd\@$gEmailDomain>",
+              "In-Reply-To" => $header{'message-id'},
+              References    => "$header{'message-id'} $data->{msgid}",
+              Precedence    => 'bulk',
+              "X-$gProject-PR-Message"  => "forwarded $ref",
+              "X-$gProject-PR-Package"  => $data->{package},
               "X-$gProject-PR-Keywords" => $data->{keywords}
              ],<<END ,[join("\n",@msg)]),'',[@generalbcc,@noticecc],1);
 Your message dated $header{'date'}
@@ -414,16 +417,16 @@ END
         } else {
 	    &htmllog("Reply","sent",$replyto,"You have taken responsibility.");
             &sendmessage(create_mime_message(
-	     [X-Loop => "$gMaintainerEmail",
-	      From => "$gMaintainerEmail ($gProject $gBug Tracking System)",
-              To   => $replyto,
-              Subject => "$gBug#$ref: marked as done ($data->{subject})",
-              Message-ID => "<handler.$ref.$nn.ackdone\@$gEmailDomain>",
-              In-Reply-To => $header{'message-id'},
-              References  => "$header{'message-id'} $data->{msgid}",
-              Precedence  => 'bulk',
-              "X-$gProject-PR-Message" => "closed $ref",
-              "X-$gProject-PR-Package" => $data->{package},
+	     ["X-Loop"      => "$gMaintainerEmail",
+	      From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
+              To            => $replyto,
+              Subject       => "$gBug#$ref: marked as done ($data->{subject})",
+              "Message-ID"  => "<handler.$ref.$nn.ackdone\@$gEmailDomain>",
+              "In-Reply-To" => $header{'message-id'},
+              References    => "$header{'message-id'} $data->{msgid}",
+              Precedence    => 'bulk',
+              "X-$gProject-PR-Message"  => "closed $ref",
+              "X-$gProject-PR-Package"  => $data->{package},
               "X-$gProject-PR-Keywords" => $data->{keywords}
              ],<<END ,[$x,join("\n",@msg)]),'',[@generalbcc,@noticecc],1);
 Your message dated $header{'date'}
@@ -446,18 +449,18 @@ END
             &htmllog("Notification","sent",$data->{originator}, 
 		"$gBug acknowledged by developer.");
             &sendmessage(create_mime_message(
-	     [X-Loop      => "$gMaintainerEmail",
-	      From        => "$gMaintainerEmail ($gProject $gBug Tracking System)",
-              To          => "$data->{originator}",
-              Subject     => "$gBug#$ref acknowledged by developer ($header{'subject'})",
-              Message-ID  => "<handler.$ref.$nn.notifdone\@$gEmailDomain>",
-              In-Reply-To => "$data->{msgid}",
-              References  => "$header{'message-id'} $data->{msgid}",
-              X-$gProject-PR-Message  => "they-closed $ref",
-              X-$gProject-PR-Package  => "$data->{package}",
-              X-$gProject-PR-Keywords => "$data->{keywords}",
-              Reply-To                => "$ref\@$gEmailDomain",
-              Content-Type            => 'text/plain; charset="utf-8"',
+	     ["X-Loop"      => "$gMaintainerEmail",
+	      From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
+              To            => "$data->{originator}",
+              Subject       => "$gBug#$ref acknowledged by developer ($header{'subject'})",
+              "Message-ID"  => "<handler.$ref.$nn.notifdone\@$gEmailDomain>",
+              "In-Reply-To" => "$data->{msgid}",
+              References    => "$header{'message-id'} $data->{msgid}",
+              "X-$gProject-PR-Message"  => "they-closed $ref",
+              "X-$gProject-PR-Package"  => "$data->{package}",
+              "X-$gProject-PR-Keywords" => "$data->{keywords}",
+              "Reply-To"                => "$ref\@$gEmailDomain",
+              "Content-Type"            => 'text/plain; charset="utf-8"',
              ],<<END ,[join("\n",@msg)]),'',undef,1);
 This is an automatic notification regarding your $gBug report
 #$ref: $data->{subject},
@@ -537,14 +540,14 @@ END
     } else {
  	&htmllog("Warning","sent",$replyto,"Message not forwarded.");
         &sendmessage(create_mime_message(
-                       [X-Loop      => "$gMaintainerEmail",
-			From        => "$gMaintainerEmail ($gProject $gBug Tracking System)",
-                        To          => $replyto,
-                        Subject     => "Message with no Package: tag cannot be processed! ($subject)",
-                        Message-ID  => "<handler.x.$nn.nonumnosub\@$gEmailDomain>",
-                        In-Reply-To => $header{'message-id'},
-                        References  => "$header{'message-id'} $data->{msgid}",
-                        Precedence  => 'bulk',
+                       ["X-Loop"      => "$gMaintainerEmail",
+			From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
+                        To            => $replyto,
+                        Subject       => "Message with no Package: tag cannot be processed! ($subject)",
+                        "Message-ID"  => "<handler.x.$nn.nonumnosub\@$gEmailDomain>",
+                        "In-Reply-To" => $header{'message-id'},
+                        References    => "$header{'message-id'} $data->{msgid}",
+                        Precedence    => 'bulk',
                         "X-$gProject-PR-Message" => 'error'
 		       ],<<END,[join("\n", @msg)]), '',undef,1);
 
