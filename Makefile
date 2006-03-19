@@ -19,6 +19,9 @@ perls		:= $(foreach name,Log MIME Mail Packages Versions,Debbugs/$(name).pm)
 install_exec	:= install -m755 -p
 install_data	:= install -m644 -p
 
+test:
+	perl -MTest::Harness -I. -e 'runtests(glob(q(t/*.t)))'
+
 install: install_mostfiles
 	# install basic debbugs documentation
 	$(install_data) COPYING UPGRADE README debian/README.mail $(doc_dir)
@@ -33,6 +36,11 @@ $(var_dir)/indices $(var_dir)/www/cgi $(var_dir)/www/db $(var_dir)/www/txt \
 $(var_dir)/spool/lock $(var_dir)/spool/archive $(var_dir)/spool/incoming \
 $(var_dir)/spool/db-h $(scripts_dir) $(perl_dir) $(examples_dir) $(man8_dir); \
           do test -d $$dir || $(install_exec) -d $$dir; done
+
+	# make db-h spool dirs if they don't exist
+	cd $(var_dir)/spool/db-h; \
+	  for dir in $(shell seq -w 00 99); \
+	    do test -d $$dir || $(install_exec) -d $$dir; done
 
 	# install the scripts
 	$(foreach script,$(scripts_in), $(install_exec) $(script) $(scripts_dir)/$(patsubst scripts/%.in,%,$(script));)
@@ -50,6 +58,7 @@ $(var_dir)/spool/db-h $(scripts_dir) $(perl_dir) $(examples_dir) $(man8_dir); \
 	# install the HTML pages etc
 	$(foreach html, $(htmls_in), $(install_data) $(html) $(etc_dir)/html;)
 	$(install_data) html/htaccess $(var_dir)/www/db/.htaccess
+	$(install_data) html/bugs.css $(var_dir)/www/bugs.css
 
 	# install the CGIs
 	for cgi in $(cgis); do $(install_exec) $$cgi $(var_dir)/www/cgi; done
@@ -68,3 +77,5 @@ $(var_dir)/spool/db-h $(scripts_dir) $(perl_dir) $(examples_dir) $(man8_dir); \
 
 	# install the updateseqs file
 	$(install_data) misc/updateseqs $(var_dir)/spool
+
+.PHONY: test

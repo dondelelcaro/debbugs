@@ -9,7 +9,8 @@
 tmp_dir		:= $(CURDIR)/debian/tmp
 
 build:
-# There is nothing to build here, so this rule can be left empty.
+# Call the test suite
+	$(MAKE) test
 
 clean:
 	dh_testdir
