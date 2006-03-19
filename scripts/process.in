@@ -262,7 +262,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
     }
     $markedby= $header{'from'} eq $replyto ? $replyto :
                "$header{'from'} (reply to $replyto)";
-    $markedby = de_rfc1522($markedby);
+    $markedby = decode_rfc1522($markedby);
     my @generalcc;
     if ($codeletter eq 'F') {
         (&appendlog,&finish) if length($data->{forwarded});
