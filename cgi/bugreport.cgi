@@ -3,6 +3,13 @@
 package debbugs;
 
 use strict;
+
+if (defined $ENV{REMOTE_ADDR} and $ENV{REMOTE_ADDR} =~ m/^(72\.17\.168\.57|60\.238\.143\.248|61\.224\.27\.141|146\.82\.138\.7|61\.214\.28\.119|84\.189\.46\.3|82\.124\.165\.25|220\.181\.26\.108|220\.95\.221\.\d+|82\.120\.77\.220|80\.68\.89\.71|66\.227\.249\.188|194\.46\.224\.153|66\.246\.72\.81|60\.42\.181\.163)$/) {
+    print "Content-Type: text/html\n\nGo away.";
+    sleep(5);
+    exit 0;
+}
+
 use POSIX qw(strftime tzset);
 use MIME::Parser;
 use MIME::Decoder;
