@@ -164,9 +164,15 @@ sub display_entity ($$$$\$\@) {
 	      $body = convert_to_utf8($body,$charset) if defined $charset;
 	      $body = htmlsanit($body);
 	      $body =~ s,((ftp|http|https)://[\S~-]+?/?)((\&gt\;)?[)]?[']?[:.\,]?(\s|$)),<a href=\"$1\">$1</a>$3,go;
-	      $$this .= "<pre class=\"message\">";
-	      $$this .= $body;
-	      $$this .= "</pre>\n";
+	      # The basic idea here is that we take every subpart of
+	      # this regex; if it's a digit, it's a bug number, so link
+	      # it; otherwise it's some other part, so kick it back
+	      # out.
+	      our @bugs;
+	      $body =~ s[(?:(closes:\s*(?:bug)?\#?\s?)(?{ push @bugs, $^N })) #This sticks the recently closed parenthetical into @bugs
+			 (?:(\d+)(?{ push @bugs, $^N }))(?:(?:(,?\s*(?:bug)?\#?\s?)(?{push @bugs, $^N }))(?:(\d+)(?{ push @bugs, $^N })))*
+			][join('',map {/^\d+$/?(q(<a href=").bugurl($_).qq(">$_</a>)):$_} splice @bugs)]gxie;
+	      $$this .= qq(<pre class="message">$body</pre>\n);
 	 }
     }
 }
@@ -350,13 +356,11 @@ sub handle_email_message{
 
      my $output = '';
      my $parser = new MIME::Parser;
+     # Because we are using memory, not tempfiles, there's no need to
+     # clean up here like in Debbugs::MIME
      $parser->tmp_to_core(1);
      $parser->output_to_core(1);
-     # $parser->output_under("/tmp");
      my $entity = $parser->parse_data( $email);
-     # TODO: make local subdir, clean it ourselves
-     # the following does NOT delete the msg dirs in /tmp
-     END { if ( $entity ) { $entity->purge; } if ( $parser ) { $parser->filer->purge; } }
      my @attachments = ();
      display_entity($entity, $options{ref}, 1, $options{msg_number}, $output, @attachments);
      return $output;
