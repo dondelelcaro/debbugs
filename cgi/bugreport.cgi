@@ -156,15 +156,11 @@ sub display_entity ($$$$\$\@) {
 	      my $body = $entity->bodyhandle->as_string;
 	      $body = convert_to_utf8($body,$charset) if defined $charset;
 	      $body = htmlsanit($body);
+	      # Add links to URLs
 	      $body =~ s,((ftp|http|https)://[\S~-]+?/?)((\&gt\;)?[)]?[']?[:.\,]?(\s|$)),<a href=\"$1\">$1</a>$3,go;
-	      # The basic idea here is that we take every subpart of
-	      # this regex; if it's a digit, it's a bug number, so link
-	      # it; otherwise it's some other part, so kick it back
-	      # out.
-	      our @bugs;
-	      $body =~ s[(?:(closes:\s*(?:bug)?\#?\s?)(?{ push @bugs, $^N })) #This sticks the recently closed parenthetical into @bugs
-			 (?:(\d+)(?{ push @bugs, $^N }))(?:(?:(,?\s*(?:bug)?\#?\s?)(?{push @bugs, $^N }))(?:(\d+)(?{ push @bugs, $^N })))*
-			][join('',map {/^\d+$/?(q(<a href=").bugurl($_).qq(">$_</a>)):$_} splice @bugs)]gxie;
+	      # Add links to bug closures
+	      $body =~ s[(closes:\s*(?:bug)?\#?\s?\d+(?:,?\s*(?:bug)?\#?\s?\d+)*)
+			][my $temp = $1; $temp =~ s{(\d+)}{qq(<a href=").bugurl($1).qq(">$1</a>)}ge; $temp;]gxie;
 	      $$this .= qq(<pre class="message">$body</pre>\n);
 	 }
     }
@@ -408,6 +404,9 @@ sub handle_record{
 	  $output =~ s{(Bug )(\d+)( cloned as bugs? )(\d+)(?:\-(\d+)|)}{$1.bug_links($2).$3.bug_links($4,$5)}eo;
 	  # Add links to merged bugs
 	  $output =~ s{(?<=Merged )([\d\s]+)(?=\.)}{join(' ',map {bug_links($_)} (split /\s+/, $1))}eo;
+	  # Add links to reassigned packages
+	  $output =~ s{(Bug reassigned from package \`)([^\']+)(' to \`)([^\']+)(')}
+	  {$1.q(<a href=").pkgurl($2).qq(">$2</a>).$3.q(<a href=").pkgurl($4).qq(">$4</a>).$5}eo;
 	  $output .= '<a href="' . bugurl($ref, 'msg='.($msg_number+1)) . '">Full text</a> and <a href="' .
 	       bugurl($ref, 'msg='.($msg_number+1), 'mbox') . '">rfc822 format</a> available.';
 
