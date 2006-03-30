@@ -130,7 +130,8 @@ sub create_mime_message{
      die "The third argument to create_mime_message must be an arrayref" unless ref($attachments) eq 'ARRAY';
 
      # Build the message
-     my $msg = MIME::Entity->build(@{$headers},
+     # MIME::Entity is stupid, and doesn't rfc1522 encode its headers, so we do it for it.
+     my $msg = MIME::Entity->build(map{encode_rfc1522($_)} @{$headers},
 				   Data    => $body
 				  );
 
@@ -142,10 +143,9 @@ sub create_mime_message{
 	  else {
 	       # This is *craptacular*, but because various MTAs
 	       # (sendmail and exim4, at least) appear to eat From
-	       # lines in message/rfc822 attachments, we need to make
-	       # sure the From line is the first thing in the
-	       # attachement, not the second, so if it gets eaten, the
-	       # headers don't collide into the body.
+	       # lines in message/rfc822 attachments, we need eat
+	       # the entire From line ourselves so the MTA doesn't
+	       # leave \n detrius around.
 	       if (ref($attachment) eq 'ARRAY' and $attachment->[1] =~ /^From /) {
 		    # make a copy so that we don't screw up anything
 		    # that is expecting this arrayref to stay constant
