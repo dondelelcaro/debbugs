@@ -101,6 +101,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Output proper charset for attachments (closes: #335813)
     - Use MIME encodings to attach messages in close and done.
       (closes: #136654)
+    - Add a forcemerge command to service.in to allow forcibly merging
+      bugs which are in the same package. (closes: #286792)
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
 
