@@ -396,7 +396,7 @@ END
               "X-$gProject-PR-Message"  => "forwarded $ref",
               "X-$gProject-PR-Package"  => $data->{package},
               "X-$gProject-PR-Keywords" => $data->{keywords}
-             ],<<END ,[join("\n",@msg)]),'',[@generalbcc,@noticecc],1);
+             ],<<END ,[join("\n",@msg)]),'',[$replyto,@generalbcc,@noticecc],1);
 Your message dated $header{'date'}
 with message-id $header{'message-id'}
 has caused the $gProject $gBug report #$ref,
@@ -427,7 +427,7 @@ END
               "X-$gProject-PR-Message"  => "closed $ref",
               "X-$gProject-PR-Package"  => $data->{package},
               "X-$gProject-PR-Keywords" => $data->{keywords}
-             ],<<END ,[$x,join("\n",@msg)]),'',[@generalbcc,@noticecc],1);
+             ],<<END ,[$x,join("\n",@msg)]),'',[$replyto,@generalbcc,@noticecc],1);
 Your message dated $header{'date'}
 with message-id $header{'message-id'}
 and subject line $subject
