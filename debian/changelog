@@ -97,7 +97,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Obey X-Debbugs-No-Ack in control@ messages. (closes: #201825)
     - Allow forwarded: to be set at submit@ time. (closes: #128320)
     - Fix example rewrite rules to allow for #1234 and foo+bar@baz.com
-    (closes: #321925)
+      (closes: #321925)
     - Output proper charset for attachments (closes: #335813)
     - Use MIME encodings to attach messages in close and done.
       (closes: #136654)
@@ -105,6 +105,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
       bugs which are in the same package. (closes: #286792)
     - Make all packages lowercase to support packages with uppercase
       names, even though that's insane. (closes: #67067)
+    - Change acknoledged to close (closes: #61341) and indicate who
+      actually closed the bug (closes: #355968)
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
 

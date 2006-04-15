@@ -451,7 +451,7 @@ END
 	     ["X-Loop"      => "$gMaintainerEmail",
 	      From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
               To            => "$data->{originator}",
-              Subject       => "$gBug#$ref acknowledged by developer ($header{'subject'})",
+              Subject       => "$gBug#$ref closed by $markedby ($header{'subject'})",
               "Message-ID"  => "<handler.$ref.$nn.notifdone\@$gEmailDomain>",
               "In-Reply-To" => "$data->{msgid}",
               References    => "$header{'message-id'} $data->{msgid}",
@@ -465,12 +465,12 @@ This is an automatic notification regarding your $gBug report
 #$ref: $data->{subject},
 which was filed against the $data->{package} package.
 
-It has been closed by one of the developers, namely
-$markedby.
+It has been closed by $markedby.
 
 Their explanation is attached below.  If this explanation is
 unsatisfactory and you have not received a better one in a separate
-message then please contact the developer, by replying to this email.
+message then please contact $markedby by replying
+to this email.
 
 $gMaintainer
 (administrator, $gProject $gBugs database)
