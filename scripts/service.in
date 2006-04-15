@@ -1548,7 +1548,7 @@ sub ensuremaintainersloaded {
 	m/^\s*$/ && next;
         m/^(\S+)\s+(\S.*\S)\s*\n$/ || &quit("maintainers bogus \`$_'");
         $a= $1; $b= $2; $a =~ y/A-Z/a-z/;
-        $maintainerof{$1}= $2;
+        $maintainerof{$a}= $2;
     }
     close(MAINT);
     open(MAINT,"$gMaintainerFileOverride") || die &quit("maintainers.override open: $!");
@@ -1557,7 +1557,7 @@ sub ensuremaintainersloaded {
         m/^\s*$/ && next;
         m/^(\S+)\s+(\S.*\S)\s*\n$/ || &quit("maintainers.override bogus \`$_'");
         $a= $1; $b= $2; $a =~ y/A-Z/a-z/;
-        $maintainerof{$1}= $2;
+        $maintainerof{$a}= $2;
     }
 
     open(SOURCES, "$gPackageSource") || &quit("pkgsrc open: $!");
