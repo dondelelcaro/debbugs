@@ -451,7 +451,7 @@ END
 	     ["X-Loop"      => "$gMaintainerEmail",
 	      From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
               To            => "$data->{originator}",
-              Subject       => "$gBug#$ref acknowledged by developer ($header{'subject'})",
+              Subject       => "$gBug#$ref closed by $markedby ($header{'subject'})",
               "Message-ID"  => "<handler.$ref.$nn.notifdone\@$gEmailDomain>",
               "In-Reply-To" => "$data->{msgid}",
               References    => "$header{'message-id'} $data->{msgid}",
@@ -465,12 +465,12 @@ This is an automatic notification regarding your $gBug report
 #$ref: $data->{subject},
 which was filed against the $data->{package} package.
 
-It has been closed by one of the developers, namely
-$markedby.
+It has been closed by $markedby.
 
 Their explanation is attached below.  If this explanation is
 unsatisfactory and you have not received a better one in a separate
-message then please contact the developer, by replying to this email.
+message then please contact $markedby by replying
+to this email.
 
 $gMaintainer
 (administrator, $gProject $gBugs database)
@@ -1087,7 +1087,8 @@ sub checkmaintainers {
 	m/^\s*$/ && next;
         m/^(\S+)\s+(\S.*\S)\s*\n$/ || &quit("maintainers bogus \`$_'");
         $a= $1; $b= $2; $a =~ y/A-Z/a-z/;
-        $maintainerof{$1}= $2;
+	# use the package which is normalized to lower case; we do this because we lc the pseudo headers.
+        $maintainerof{$a}= $2;
     }
     close(MAINT);
     open(MAINT,"$gMaintainerFileOverride") || die &quit("maintainers.override open: $!");
@@ -1096,7 +1097,8 @@ sub checkmaintainers {
 	m/^\s*$/ && next;
         m/^(\S+)\s+(\S.*\S)\s*\n$/ || &quit("maintainers.override bogus \`$_'");
         $a= $1; $b= $2; $a =~ y/A-Z/a-z/;
-        $maintainerof{$1}= $2;
+	# use the package which is normalized to lower case; we do this because we lc the pseudo headers.
+        $maintainerof{$a}= $2;
     }
     close(MAINT);
     open(SOURCES,"$gPackageSource") || &quit("pkgsrc open: $!");
