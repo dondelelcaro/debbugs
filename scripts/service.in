@@ -968,7 +968,7 @@ END
 		$data->{found_versions}= [sort keys %found];
 		$data->{fixed_versions}= [sort keys %fixed];
 		my @field_list = qw(forwarded package severity blocks blockedby owner done);
-		@{$data}{@field_list} = @{$master_bug_data}{@field_list}
+		@{$data}{@field_list} = @{$master_bug_data}{@field_list};
 		&savebug;
 	    }
     	    &transcript("$action\n\n");
