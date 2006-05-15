@@ -859,8 +859,8 @@ END
 	}
     } elsif (m/^merge\s+#?(-?\d+(\s+#?-?\d+)+)\s*$/i) {
 	$ok++;
-        @tomerge= sort { $a <=> $b } split(/\s+#?/,$1);
-        @newmergelist= ();
+        my @tomerge= sort { $a <=> $b } split(/\s+#?/,$1);
+        my @newmergelist= ();
 	my %tags = ();
 	my %found = ();
 	my %fixed = ();
@@ -871,7 +871,7 @@ END
 	    if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
 		$ref = $clonebugs{$ref};
 	    }
-	    next if grep($_ eq $ref,@newmergelist);
+	    next if grep($_ == $ref,@newmergelist);
 	    if (!&getbug) { &notfoundbug; @newmergelist=(); last }
             if (!&checkpkglimit) { &cancelbug; @newmergelist=(); last; }
             &foundbug;
@@ -905,7 +905,7 @@ END
 		&getbug || die "huh ?  $gBug $ref disappeared during merge";
                 &addmaintainers($data);
 		@bug_affected{@newmergelist} = 1 x @newmergelist;
-		$data->{mergedwith}= join(' ',grep($_ ne $ref,@newmergelist));
+		$data->{mergedwith}= join(' ',grep($_ != $ref,@newmergelist));
 		$data->{keywords}= join(' ', keys %tags);
 		$data->{found_versions}= [sort keys %found];
 		$data->{fixed_versions}= [sort keys %fixed];
@@ -914,13 +914,14 @@ END
     	    &transcript("$action\n\n");
 	}
         &endmerge;
-    } elsif (m/^forcemerge\s+\#?(-?\d+(\s+\#?-?\d+)+)\s*$/i) {
+    } elsif (m/^forcemerge\s+\#?(-?\d+(?:\s+\#?-?\d+)+)\s*$/i) {
 	$ok++;
 	my @tomerge = split /\s+\#?/,$1;
 	my $master_bug = shift @tomerge;
 	my $master_bug_data;
 	@tomerge = ($master_bug, sort { $a <=> $b } @tomerge);
-        @newmergelist= ();
+	&transcript("D| force merging ".join(',',@tomerge)."\n") if $dl;
+	my @newmergelist= ();
 	my %tags = ();
 	my %found = ();
 	my %fixed = ();
@@ -935,7 +936,7 @@ END
 	    if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
 		$ref = $clonebugs{$ref};
 	    }
-	    next if grep($_ eq $ref,@newmergelist);
+	    next if grep($_ == $ref,@newmergelist);
 	    if (!&getbug) { &notfoundbug; @newmergelist=(); last }
             if (!&checkpkglimit) { &cancelbug; @newmergelist=(); last; }
             &foundbug;
@@ -963,7 +964,7 @@ END
 		&getbug || die "huh ?  $gBug $ref disappeared during merge";
                 &addmaintainers($data);
 		@bug_affected{@newmergelist} = 1 x @newmergelist;
-		$data->{mergedwith}= join(' ',grep($_ ne $ref,@newmergelist));
+		$data->{mergedwith}= join(' ',grep($_ != $ref,@newmergelist));
 		$data->{keywords}= join(' ', keys %tags);
 		$data->{found_versions}= [sort keys %found];
 		$data->{fixed_versions}= [sort keys %fixed];
