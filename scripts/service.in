@@ -916,10 +916,11 @@ END
         &endmerge;
     } elsif (m/^forcemerge\s+\#?(-?\d+(?:\s+\#?-?\d+)+)\s*$/i) {
 	$ok++;
-	my @tomerge = split /\s+\#?/,$1;
-	my $master_bug = shift @tomerge;
+	my @temp = split /\s+\#?/,$1;
+	my $master_bug = shift @temp;
 	my $master_bug_data;
-	@tomerge = ($master_bug, sort { $a <=> $b } @tomerge);
+	my @tomerge = sort { $a <=> $b } @temp;
+        unshift @tomerge,$master_bug;
 	&transcript("D| force merging ".join(',',@tomerge)."\n") if $dl;
 	my @newmergelist= ();
 	my %tags = ();
