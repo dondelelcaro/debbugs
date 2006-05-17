@@ -91,11 +91,11 @@ debbugs (2.4.2) UNRELEASED; urgency=low
       warnings are returned. This fixes bad addresses causing sendmail to
       exit and destroying the bug log. (closes: #191306)
     - Add rudimentary Test::More modules for testing Debbugs::Mime and
-      Debbugs::Mail. These are currently not called as part of the build
-      process.
+      Debbugs::Mail.
     - Allow X-debbugs-* to be set in pseudo headers. (closes: #179340)
     - Obey X-Debbugs-No-Ack in control@ messages. (closes: #201825)
-    - Allow forwarded: to be set at submit@ time. (closes: #128320)
+    - Allow forwarded: and owner to be set at submit@ time.
+      (closes:#128320)
     - Fix example rewrite rules to allow for #1234 and foo+bar@baz.com
       (closes: #321925)
     - Output proper charset for attachments (closes: #335813)
@@ -105,8 +105,13 @@ debbugs (2.4.2) UNRELEASED; urgency=low
       bugs which are in the same package. (closes: #286792)
     - Make all packages lowercase to support packages with uppercase
       names, even though that's insane. (closes: #67067)
-    - Change acknoledged to close (closes: #61341) and indicate who
-      actually closed the bug (closes: #355968)
+    - Change acknowledged to close (closes: #61341) and indicate who
+      actually closed the bug (closes: #355968, #132274)
+    - Fix the documentation of clone to indicate that you need at least
+      one newID (closes: #276747)
+    - Use create_mime_message to send all of the mails which may contain
+      UTF8 material. (closes: #364026)
+    - Add links to Closes: text for closed bugs. (closes: #320986)
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
 
