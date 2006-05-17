@@ -150,7 +150,7 @@ mailservers is available via the WWW, in
   <p>For <a href="Developer.html#severities">their meanings</a> please
   consult the general developers' documentation for the $gBug system.
 
-<dt><code>clone</code> <var>bugnumber</var> [ <var>new IDs</var> ]
+<dt><code>clone</code> <var>bugnumber</var> <var>NewID</var> [ <var>new IDs</var> ... ]
 
   <dd>The clone control command allows you to duplicate a $gBug report. It is
   useful in the case where a single report actually indicates that multiple
@@ -201,6 +201,12 @@ mailservers is available via the WWW, in
 
   <p>Merged reports are all expired simultaneously, and only when all of
   the reports each separately meet the criteria for expiry.
+
+<dt><code>forcemerge</code> <var>bugnumber</var> <var>bugnumber</var> ...
+  <dd>Forcibly merges two or more $gBug reports. The first bug is
+  chosen as the master bug, and its seetings are assigned to the bugs
+  listed next in the command. See the text above for a description of
+  what merging means.
 
 <dt><code>unmerge</code> <var>bugnumber</var>
 
