@@ -11,9 +11,14 @@ tzset();
 use MIME::Parser;
 use Debbugs::MIME qw(decode_rfc1522 create_mime_message);
 use Debbugs::Mail qw(send_mail_message encode_headers);
+use Debbugs::Packages qw(getpkgsrc);
 
-$config_path = '/etc/debbugs';
-$lib_path = '/usr/lib/debbugs';
+my $config_path = '/etc/debbugs';
+my $lib_path = '/usr/lib/debbugs';
+
+# TODO DLA; needs config reworking and errorlib reworking
+# use warnings;
+# use strict;
 
 require "$config_path/config";
 require "$lib_path/errorlib";
@@ -25,13 +30,13 @@ chdir( "$gSpoolDir" ) || die "chdir spool: $!\n";
 umask(002);
 open DEBUG, ">/dev/null";
 
-defined( $intdate= time ) || &quit( "failed to get time: $!" );
+my $intdate = time or quit("failed to get time: $!");
 
 $_=shift;
-m/^([BMQFDUL])(\d*)\.\d+$/ || &quit("bad argument");
-$codeletter= $1;
-$tryref= length($2) ? $2+0 : -1;
-$nn= $_;
+m/^([BMQFDUL])(\d*)\.\d+$/ or quit("bad argument: $_");
+my $codeletter= $1;
+my $tryref= length($2) ? $2 : -1;
+my $nn= $_;
 
 if (!rename("incoming/G$nn","incoming/P$nn")) 
 {
@@ -39,7 +44,7 @@ if (!rename("incoming/G$nn","incoming/P$nn"))
     &quit("renaming to lock: $!");
 }
 
-$baddress= 'submit' if $codeletter eq 'B';
+my $baddress= 'submit' if $codeletter eq 'B';
 $baddress= 'maintonly' if $codeletter eq 'M';
 $baddress= 'quiet' if $codeletter eq 'Q';
 $baddress= 'forwarded' if $codeletter eq 'F';
@@ -47,20 +52,20 @@ $baddress= 'done' if $codeletter eq 'D';
 $baddress= 'submitter' if $codeletter eq 'U';
 bug_list_forward($nn) if $codeletter eq 'L';
 $baddress || &quit("bad codeletter $codeletter");
-$baddressroot= $baddress;
+my $baddressroot= $baddress;
 $baddress= "$tryref-$baddress" if $tryref>=0;
 
 open(M,"incoming/P$nn");
-@log=<M>;
+my @log=<M>;
 close(M);
 
-@msg=@log;
+my @msg = @log;
 chomp @msg;
 
 print DEBUG "###\n",join("##\n",@msg),"\n###\n";
 
-$tdate = strftime "%a, %d %h %Y %T UTC", localtime;
-$fwd= <<END;
+my $tdate = strftime "%a, %d %h %Y %T UTC", gmtime;
+my $fwd= <<END;
 Received: via spool by $baddress\@$gEmailDomain id=$nn
           (code $codeletter ref $tryref); $tdate
 END
@@ -73,6 +78,7 @@ mkdir "$gSpoolDir/mime.tmp", 0777;
 $parser->output_under("$gSpoolDir/mime.tmp");
 my $entity = eval { $parser->parse_data(join('',@log)) };
 
+my $i;
 if ($entity and $entity->head->tags) {
     @headerlines = @{$entity->head->header};
     chomp @headerlines;
@@ -163,7 +169,7 @@ if (defined $header{'resent-from'} && !defined $header{'from'}) {
 }
 defined($header{'from'}) || &quit("no From header");
 
-$replyto = $header{'reply-to'};
+my $replyto = $header{'reply-to'};
 $replyto = '' unless defined $replyto;
 $replyto =~ s/^ +//;
 $replyto =~ s/ +$//;
@@ -171,11 +177,7 @@ unless (length $replyto) {
     $replyto = $header{'from'};
 }
 
-$_= $replyto;
-$_= "$2 <$1>" if m/^([^\<\> \t\n\(\)]+) \(([^\(\)\<\>]+)\)$/;
-$replytocompare= $_;
-print DEBUG "replytocompare >$replytocompare<\n";
-    
+my $subject = '(no subject)';
 if (!defined($header{'subject'})) 
 {
 	$brokenness.= <<END;
@@ -185,14 +187,11 @@ useful because the title of a $gBug is determined using this field.
 Please remember to include a Subject field in your messages in future.
 END
 
-# RFC822 actually lists it as an `optional-field'.
-
-    $subject= '(no subject)';
 } else { 
     $subject= $header{'subject'}; 
 }
 
-$ref=-1;
+my $ref=-1;
 $subject =~ s/^Re:\s*//i; $_= $subject."\n";
 if ($tryref < 0 && m/^Bug ?\#(\d+)\D/i) {
     $tryref= $1+0; 
@@ -253,6 +252,20 @@ END
     &filelock('lock/-1'); 
 }
 
+# Attempt to determine which source package this is
+my $source_pr_header = '';
+my $source_package = '';
+if (defined $pheader{source}) {
+     $source_package = $pheader{source};
+}
+elsif (defined $data->{package}) {
+     my $pkg_src = getpkgsrc();
+     $source_package = $pkg_src->{$data->{package}};
+}
+$source_pr_header = "X-$gProject-Pr-Source: $source_package\n"
+     if length $source_package;
+
+# Done and Forwarded Bugs
 if ($codeletter eq 'D' || $codeletter eq 'F') 
 {
     if ($replyto =~ m/$gBounceFroms/o ||
@@ -263,7 +276,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
     $markedby= $header{'from'} eq $replyto ? $replyto :
                "$header{'from'} (reply to $replyto)";
     my @generalcc;
-    if ($codeletter eq 'F') {
+    if ($codeletter eq 'F') { # Forwarded
         (&appendlog,&finish) if length($data->{forwarded});
         $receivedat= "forwarded\@$gEmailDomain";
         $markaswhat= 'forwarded';
@@ -274,7 +287,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	} else { 
 	    $generalcc=''; 
         }
-    } else {
+    } else { # Done
         if (length($data->{done}) and
                 not defined $pheader{'source-version'} and
                 not defined $pheader{'version'}) {
@@ -346,7 +359,6 @@ END
     $noticeccval.= join(', ', grep($_ ne $replyto,@maintaddrs));
     $noticeccval =~ s/\s+\n\s+/ /g; 
     $noticeccval =~ s/^\s+/ /; $noticeccval =~ s/\s+$//;
-    if (length($noticeccval)) { $noticecc= "Cc: $noticeccval\n"; }
 
     @process= ($ref,split(/ /,$data->{mergedwith}));
     $orgref= $ref;
@@ -395,7 +407,9 @@ END
               Precedence    => 'bulk',
               "X-$gProject-PR-Message"  => "forwarded $ref",
               "X-$gProject-PR-Package"  => $data->{package},
-              "X-$gProject-PR-Keywords" => $data->{keywords}
+              "X-$gProject-PR-Keywords" => $data->{keywords},
+	      # Only have a X-$gProject-PR-Source when we know the source package
+	      length($source_package)?("X-$gProject-PR-Source" => $source_package):(),
              ],<<END ,[join("\n",@msg)]),'',[$replyto,@generalbcc,@noticecc],1);
 Your message dated $header{'date'}
 with message-id $header{'message-id'}
@@ -426,7 +440,9 @@ END
               Precedence    => 'bulk',
               "X-$gProject-PR-Message"  => "closed $ref",
               "X-$gProject-PR-Package"  => $data->{package},
-              "X-$gProject-PR-Keywords" => $data->{keywords}
+              "X-$gProject-PR-Keywords" => $data->{keywords},
+	      # Only have a X-$gProject-PR-Source when we know the source package
+	      length($source_package)?("X-$gProject-PR-Source" => $source_package):(),
              ],<<END ,[$x,join("\n",@msg)]),'',[$replyto,@generalbcc,@noticecc],1);
 Your message dated $header{'date'}
 with message-id $header{'message-id'}
@@ -458,6 +474,8 @@ END
               "X-$gProject-PR-Message"  => "they-closed $ref",
               "X-$gProject-PR-Package"  => "$data->{package}",
               "X-$gProject-PR-Keywords" => "$data->{keywords}",
+	      # Only have a X-$gProject-PR-Source when we know the source package
+	      length($source_package)?("X-$gProject-PR-Source" => $source_package):(),
               "Reply-To"                => "$ref\@$gEmailDomain",
               "Content-Type"            => 'text/plain; charset="utf-8"',
              ],<<END ,[join("\n",@msg)]),'',undef,1);
@@ -716,9 +734,9 @@ Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: report $ref
 X-$gProject-PR-Package: $data->{package}
 X-$gProject-PR-Keywords: $data->{keywords}
-$fwd
+${source_pr_header}$fwd
 END
-} elsif ($codeletter eq 'B') {
+} elsif ($codeletter eq 'B') { # Sent to submit
     &htmllog($newref ? "Report" : "Information", "forwarded",
              join(', ',"$gSubmitList\@$gListDomain",@resentccs),
              "<code>$gBug#$ref</code>".
@@ -735,9 +753,9 @@ Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: report $ref
 X-$gProject-PR-Package: $data->{package}
 X-$gProject-PR-Keywords: $data->{keywords}
-$fwd
+${source_pr_header}$fwd
 END
-} elsif (@resentccs or @bccs) {
+} elsif (@resentccs or @bccs) { # Quiet or Maintainer
     # D and F done far earlier; B just done - so this must be M or Q
     # We preserve whichever it was in the Reply-To (possibly adding
     # the $gBug#).
@@ -765,7 +783,7 @@ Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: report $ref
 X-$gProject-PR-Package: $data->{package}
 X-$gProject-PR-Keywords: $data->{keywords}
-$fwd
+${source_pr_header}$fwd
 END
 }
 
@@ -794,6 +812,8 @@ unless (exists $header{'x-debbugs-no-ack'}) {
 			"X-$gProject-PR-Message"  => "ack-quiet $ref",
 			"X-$gProject-PR-Package"  => $data->{package},
 			"X-$gProject-PR-Keywords" => $data->{keywords},
+			# Only have a X-$gProject-PR-Source when we know the source package
+			length($source_package)?("X-$gProject-PR-Source" => $source_package):(),
 			"Reply-To"                => "$ref-quiet\@$gEmailDomain",
 		       ],<<END,[join("\n", @msg)]), '',undef,1);
 Thank you for the problem report you have sent regarding $gProject.
@@ -814,7 +834,7 @@ $gMaintainer
 (administrator, $gProject $gBugs database)
 END
 	}
-	elsif ($codeletter eq 'M') {
+	elsif ($codeletter eq 'M') { # Maintonly
 	     &sendmessage(create_mime_message(
 		       ["X-Loop"      => "$gMaintainerEmail",
 			From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
@@ -827,6 +847,8 @@ END
 			"X-$gProject-PR-Message" => "ack-maintonly $ref",
 			"X-$gProject-PR-Package"  => $data->{package},
 			"X-$gProject-PR-Keywords" => $data->{keywords},
+			# Only have a X-$gProject-PR-Source when we know the source package
+			length($source_package)?("X-$gProject-PR-Source" => $source_package):(),
 			"Reply-To"               => "$ref-maintonly\@$gEmailDomain",
 		       ],<<END,[]), '',undef,1);
 Thank you for the problem report you have sent regarding $gProject.
@@ -859,6 +881,8 @@ END
 			"X-$gProject-PR-Message"  => "ack $ref",
 			"X-$gProject-PR-Package"  => $data->{package},
 			"X-$gProject-PR-Keywords" => $data->{keywords},
+			# Only have a X-$gProject-PR-Source when we know the source package
+			length($source_package)?("X-$gProject-PR-Source" => $source_package):(),
 			"Reply-To"                => "$ref\@$gEmailDomain",
 		       ],<<END,[]), '',undef,1);
 Thank you for the problem report you have sent regarding $gProject.
@@ -896,6 +920,8 @@ END
 			"X-$gProject-PR-Message" => "ack-info-quiet $ref",
 			"X-$gProject-PR-Package"  => $data->{package},
 			"X-$gProject-PR-Keywords" => $data->{keywords},
+			# Only have a X-$gProject-PR-Source when we know the source package
+			length($source_package)?("X-$gProject-PR-Source" => $source_package):(),
 			"Reply-To"               => "$ref-maintonly\@$gEmailDomain",
 		       ],<<END,[]), '',undef,1);
 Thank you for the additional information you have supplied regarding
@@ -956,6 +982,8 @@ END
 			"X-$gProject-PR-Message"  => "ack-info $ref",
 			"X-$gProject-PR-Package"  => $data->{package},
 			"X-$gProject-PR-Keywords" => $data->{keywords},
+			# Only have a X-$gProject-PR-Source when we know the source package
+			length($source_package)?("X-$gProject-PR-Source" => $source_package):(),
 			"Reply-To"                => "$ref\@$gEmailDomain",
 		       ],<<END,[]), '',undef,1);
 Thank you for the additional information you have supplied regarding
@@ -1007,8 +1035,6 @@ sub finish {
 }
 
 &quit("wot no exit");
-
-sub chldhandle { $chldexit = 'yes'; }
 
 sub htmllog {
     local ($whatobj,$whatverb,$where,$desc) = @_;
@@ -1095,6 +1121,7 @@ sub sendmessage {
 		      recipients     => $recips);
 }
 
+my $maintainerschecked = 0;
 sub checkmaintainers {
     return if $maintainerschecked++;
     return if !length($data->{package});
