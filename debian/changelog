@@ -112,6 +112,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Use create_mime_message to send all of the mails which may contain
       UTF8 material. (closes: #364026)
     - Add links to Closes: text for closed bugs. (closes: #320986)
+    - Add X-$gProject-PR-Source: line (closes: #219230)
+  
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
 

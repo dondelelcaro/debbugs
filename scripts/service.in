@@ -513,8 +513,7 @@ END
                     # equates to the most recent fixing of the bug, or when
                     # a versionless found command is received.
                     if (defined $version) {
-                        my $lastfixed =
-                            (reverse @{$data->{fixed_versions}})[0];
+                        my $lastfixed = $data->{fixed_versions}[-1];
                         # TODO: what if $data->{package} is a source package?
                         addfoundversions($data, $data->{package}, $version, 'binary');
                         if (defined $lastfixed and not grep { $_ eq $lastfixed } @{$data->{fixed_versions}}) {
