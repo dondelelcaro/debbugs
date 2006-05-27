@@ -2,6 +2,7 @@
 
 package debbugs;
 
+use warnings;
 use strict;
 use POSIX qw(strftime tzset);
 use MIME::Parser;
@@ -9,17 +10,16 @@ use MIME::Decoder;
 use IO::Scalar;
 use IO::File;
 
+use Debbugs::Config qw(:globals);
 #require '/usr/lib/debbugs/errorlib';
 require './common.pl';
 
-require '/etc/debbugs/config';
 require '/etc/debbugs/text';
-
-use vars(qw($gEmailDomain $gHTMLTail $gSpoolDir $gWebDomain));
 
 # for read_log_records
 use Debbugs::Log;
-use Debbugs::MIME qw(convert_to_utf8 decode_rfc1522);
+use Debbugs::MIME qw(convert_to_utf8 decode_rfc1522 create_mime_message);
+use Debbugs::CGI qw(:url :html);
 
 use Scalar::Util qw(looks_like_number);
 
@@ -40,6 +40,11 @@ my $mbox = ($param{'mbox'} || 'no') eq 'yes';
 my $mime = ($param{'mime'} || 'yes') eq 'yes';
 
 my $trim_headers = ($param{trim} || ($msg?'no':'yes')) eq 'yes';
+
+my $mbox_status_message = ($param{mboxstat}||'no') eq 'yes';
+my $mbox_maint = ($param{mboxmaint}||'no') eq 'yes';
+$mbox = 1 if $mbox_status_message or $mbox_maint;
+
 
 # Not used by this script directly, but fetch these so that pkgurl() and
 # friends can propagate them correctly.
@@ -410,7 +415,7 @@ sub handle_record{
 	  $output .= '<a href="' . bugurl($ref, 'msg='.($msg_number+1)) . '">Full text</a> and <a href="' .
 	       bugurl($ref, 'msg='.($msg_number+1), 'mbox') . '">rfc822 format</a> available.';
 
-	  $output = "<div class=\"msgreceived\">\n" . $output . "</div>\n";
+	  $output = qq(<div class="msgreceived">\n<a name="$msg_number">\n) . $output . "</div>\n";
      }
      elsif (/recips/) {
 	  my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
@@ -420,6 +425,7 @@ sub handle_record{
 	  elsif (defined $msg_id) {
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
+	  $output .= qq(<a name="$msg_number">\n);
 	  $output .= 'View this message in <a href="' . bugurl($ref, "msg=$msg_number", "mbox") . '">rfc822 format</a>';
 	  $output .= handle_email_message($record->{text},
 				    ref        => $bug_number,
@@ -439,7 +445,7 @@ sub handle_record{
 	  }
 	  # Incomming Mail Message
 	  my ($received,$hostname) = $record->{text} =~ m/Received: \(at (\S+)\) by (\S+)\;/;
-	  $output .= qq|<p class="msgreceived"><a name="msg$msg_number">Message received</a> at |.
+	  $output .= qq|<p class="msgreceived"><a name="$msg_number"><a name="msg$msg_number">Message received</a> at |.
 	       htmlsanit("$received\@$hostname") . q| (<a href="| . bugurl($ref, "msg=$msg_number") . '">full text</a>'.q|, <a href="| . bugurl($ref, "msg=$msg_number") . ';mbox=yes">mbox</a>)'.":</p>\n";
 	  $output .= handle_email_message($record->{text},
 				    ref        => $bug_number,
@@ -461,6 +467,7 @@ if (looks_like_number($msg) and ($msg-1) <= $#records) {
 }
 my @log;
 if ( $mbox ) {
+     my $date = strftime "%a %b %d %T %Y", localtime;
      if (@records > 1) {
 	  print qq(Content-Disposition: attachment; filename="bug_${ref}.mbox"\n);
 	  print "Content-Type: text/plain\n\n";
@@ -470,9 +477,49 @@ if ( $mbox ) {
 	  print qq(Content-Disposition: attachment; filename="bug_${ref}_message_${msg_num}.mbox"\n);
 	  print "Content-Type: message/rfc822\n\n";
      }
+     if ($mbox_status_message and @records > 1) {
+	  my $status_message='';
+	  my @status_fields = (retitle   => 'subject',
+			       package   => 'package',
+			       submitter => 'originator',
+			       severity  => 'severity',
+			       tag       => 'tags',
+			       owner     => 'owner',
+			       blocks    => 'blocks',
+			       forward   => 'forward',
+			      );
+	  my ($key,$value);
+	  while (($key,$value) = splice(@status_fields,0,2)) {
+	       if (defined $status{$value} and length $status{$value}) {
+		    $status_message .= qq($key $ref $status{$value}\n);
+	       }
+	  }
+	  print STDOUT qq(From unknown $date\n),
+	       create_mime_message([From       => "$debbugs::gBug#$ref <$ref\@$debbugs::gEmailDomain>",
+				    To         => "$debbugs::gBug#$ref <$ref\@$debbugs::gEmailDomain>",
+				    Subject    => "Status: $status{subject}",
+				    "Reply-To" => "$debbugs::gBug#$ref <$ref\@$debbugs::gEmailDomain>",
+				   ],
+				   <<END,);
+$status_message
+thanks
+
+
+END
+     }
+     my $message_number=0;
+     my %seen_message_ids;
      for my $record (@records) {
 	  next if $record->{type} !~ /^(?:recips|incoming-recv)$/;
-	  next if not $boring and $record->{type} eq 'recips' and @records > 1;
+	  my $wanted_type = $mbox_maint?'recips':'incoming-recv';
+	  # we want to include control messages anyway
+	  my $record_wanted_anyway = 0;
+	  my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
+	  next if exists $seen_message_ids{$msg_id};
+	  $seen_message_ids{$msg_id} = 1;
+	  next if $msg_id =~/handler\..+\.ack(?:info)?\@/;
+	  $record_wanted_anyway = 1 if $record->{text} =~ /^Received: \(at control\)/;
+	  next if not $boring and $record->{type} ne $wanted_type and not $record_wanted_anyway and @records > 1;
 	  my @lines = split( "\n", $record->{text}, -1 );
 	  if ( $lines[ 1 ] =~ m/^From / ) {
 	       my $tmp = $lines[ 0 ];
@@ -480,7 +527,6 @@ if ( $mbox ) {
 	       $lines[ 1 ] = $tmp;
 	  }
 	  if ( !( $lines[ 0 ] =~ m/^From / ) ) {
-	       my $date = strftime "%a %b %d %T %Y", localtime;
 	       unshift @lines, "From unknown $date";
 	  }
 	  map { s/^(>*From )/>$1/ } @lines[ 1 .. $#lines ];
@@ -524,7 +570,11 @@ print "<H1>" . "$debbugs::gProject $debbugs::gBug report logs - <A HREF=\"mailto
       "<BR>" . $title . "</H1>\n";
 
 print "$descriptivehead\n";
-printf "<div class=\"msgreceived\"><p>View this report as an <a href=\"%s\">mbox folder</a>.</p></div>\n", bugurl($ref, "mbox");
+printf qq(<div class="msgreceived"><p>View this report as an <a href="%s">mbox folder</a>,).
+     qq(<a href="%s">status mbox</a>, <a href="%s">maintainer mbox</a></p></div>\n),
+     html_escape(bug_url($ref, mbox=>'yes')),
+     html_escape(bug_url($ref, mbox=>'yes',mboxstatus=>'yes')),
+     html_escape(bug_url($ref, mbox=>'yes',mboxmaint=>'yes'));
 print "<HR>";
 print "$log";
 print "<HR>";
