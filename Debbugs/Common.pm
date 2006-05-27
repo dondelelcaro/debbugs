@@ -177,7 +177,6 @@ sub getbuglocation {
     my ($bugnum, $ext) = @_;
     my $archdir = get_hashname($bugnum);
     return 'archive' if -r getlocationpath('archive')."/$archdir/$bugnum.$ext";
-    print STDERR getlocationpath('db-h')."/$archdir/$bugnum.$ext\n";
     return 'db-h' if -r getlocationpath('db-h')."/$archdir/$bugnum.$ext";
     return 'db' if -r getlocationpath('db')."/$bugnum.$ext";
     return undef;
