@@ -1,192 +1,414 @@
-package Debbugs::Config;  # assumes Some/Module.pm
 
+package Debbugs::Config;
+
+=head1 NAME
+
+Debbugs::Config -- Configuration information for debbugs
+
+=head1 SYNOPSIS
+
+ use Debbugs::Config;
+
+# to get the compatiblity interface
+
+ use Debbugs::Config qw(:globals);
+
+=head1 DESCRIPTION
+
+This module provides configuration variables for all of debbugs.
+
+=head1 CONFIGURATION FILES
+
+The default configuration file location is /etc/debbugs/config; this
+configuration file location can be set by modifying the
+DEBBUGS_CONFIG_FILE env variable to point at a different location.
+
+=cut
+
+use warnings;
 use strict;
+use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT $USING_GLOBALS %config);
+use base qw(Exporter);
 
-BEGIN 
-{ 	use Exporter   ();
-   	use vars       qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-	
-    # set the version for version checking
-    $VERSION     = 1.00;
+BEGIN {
+     # set the version for version checking
+     $VERSION     = 1.00;
+     $DEBUG = 0 unless defined $DEBUG;
+     $USING_GLOBALS = 0;
 
-    @ISA         = qw(Exporter);
-    @EXPORT      = qw(%Globals %GTags %Strong %Severity );
-    %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
-
-    # your exported package globals go here,
-    # as well as any optionally exported functions
-    @EXPORT_OK   = qw(%Globals %GTags %Severity %Strong &ParseConfigFile &ParseXMLConfigFile);
+     @EXPORT = ();
+     %EXPORT_TAGS = (globals => [qw($gEmailDomain $gListDomain $gWebHost $gWebHostBugDir),
+				 qw($gWebDomain $gHTMLSuffix $gCGIDomain $gMirrors),
+				 qw($gPackagePages $gSubscriptionDomain $gProject $gProjectTitle),
+				 qw($gMaintainer $gMaintainerWebpage $gMaintainerEmail $gUnknownMaintainerEmail),
+				 qw($gSubmitList $gMaintList $gQuietList $gForwardList),
+				 qw($gDoneList $gRequestList $gSubmitterList $gControlList),
+				 qw($gSummaryList $gMirrorList $gMailer $gBug),
+				 qw($gBugs $gRemoveAge $gSaveOldBugs $gDefaultSeverity),
+				 qw($gShowSeverities $gBounceFroms $gConfigDir $gSpoolDir),
+				 qw($gIncomingDir $gWebDir $gDocDir $gMaintainerFile),
+				 qw($gMaintainerFileOverride $gPseudoDescFile $gPackageSource),
+				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
+				],
+		     config   => [qw(%config)],
+		    );
+     @EXPORT_OK = ();
+     Exporter::export_ok_tags(qw(globals config));
+     $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
-use vars      @EXPORT_OK;
-use Debbugs::Common;
-use Debbugs::Email;
+use File::Basename qw(dirname);
+use IO::File;
+use Safe;
 
-# initialize package globals, first exported ones
-%Severity = ();
-%Strong = ();
-$Severity{ 'Text' } = ();
-%GTags = ();
-%Globals = (	"debug" => 0,
-		"verbose" => 0,
-		"quiet" => 0,
-		##### domains
-		"email-domain" => "bugs.domain.com",
-		"list-domain" => "lists.domain.com",
-		"web-domain" => "web.domain.com",
-		"cgi-domain" => "cgi.domain.com",
-		##### identification
-		"project-short" => "debbugs",
-		"project-long" => "Debbugs Test Project",
-		"owner-name" => "Fred Flintstone",
-		"owner-email" => "owner\@bugs.domain.com",
-		##### directories
-		"work-dir" => "/var/lib/debbugs/spool",
-		"spool-dir" => "/var/lib/debbugs/spool/incoming",
-		"www-dir" => "/var/lib/debbugs/www",
-		"doc-dir" => "/var/lib/debbugs/www/txt",
-		##### files
-		"maintainer-file" => "/etc/debbugs/Maintainers",
-		"pseudo-description" => "/etc/debbugs/pseudo-packages.description");
+=head1 CONFIGURATION VARIABLES
 
-my %ConfigMap = ( 
-		"Email Domain" => "email-domain",
-		"List Domain" => "list-domain",
-		"Web Domain" => "web-domain",
-		"CGI Domain" => "cgi-domain",
-		"Short Name" => "project-short",
-		"Long Name" => "project-long",
-		"Owner Name" => "owner-name",
-		"Owner Email" => "owner-email",
-		"Errors Email" => "errors-email",
-		"Owner Webpage" => "owner-webpage",
-		"Spool Dir" => "spool-dir",
-		"Work Dir" => "work-dir",
-		"Web Dir" => "www-dir",
-		"Doc Dir" => "doc-dir",
-		"Template Dir" => "template-dir",
-		"Not-Don-Con" => "not-don-con",
-		"Maintainer File" => "maintainer-file",
-		"Pseudo Description File" => "pseudo-description",
-		"Submit List" => "submit-list",
-		"Maint List" => "maint-list",
-		"Quiet List" => "quiet-list",
-		"Forwarded List" => "forwarded-list",
-		"Done List" => "done-list",
-		"Request List" => "request-list",
-		"Submitter List" => "submitter-list",
-		"Control List" => "control-list",
-		"Summary List" => "summary-list",
-		"Mirror List" => "mirror-list",
-		"Mailer" => "mailer",
-		"Singular Term" => "singluar",
-		"Plural Term" => "plural",
-		"Expire Age" => "expire-age",
-		"Save Expired Bugs" => "save-expired",
-		"Mirrors" => "mirrors",
-		"Default Severity" => "default-severity",
-		"Normal Severity" => "normal-severity",
-	);
+=head2 General Configuration
 
-my %GTagsMap = ( 
-		"email-domain" => "EMAIL_DOMAIN",
-		"list-domain" => "LIST_DOMAIN",
-		"web-domain" => "WEB_DOMAIN",
-		"cgi-domain" => "CGI_DOMAIN",
-		"project-short" => "SHORT_NAME",
-		"project-long" => "LONG_NAME",
-		"owner-name" => "OWNER_NAME",
-		"owner-email" => "OWNER_EMAIL",
-		"submit-list" => "SUBMIT_LIST",
-		"quiet-list" => "QUIET_LIST",
-		"forwarded-list" => "FORWARDED_LIST",
-		"done-list" => "DONE_LIST",
-		"request-list" => "REQUEST_LIST",
-		"submitter-list" => "SUBMITTER_LIST",
-		"control-list" => "CONTROL_LIST",
-		"summary-list" => "SUMMARY_LIST",
-		"mirror-list" => "MIRROR_LIST",
-		"mirrors" => "MIRRORS"
-	);
+=over
 
-sub strip
-{   my $string = $_[0];
-    chop $string while $string =~ /\s$/; 
-    return $string;
+=cut
+
+# read in the files;
+%config = ();
+read_config(exists $ENV{DEBBUGS_CONFIG_FILE}?$ENV{DEBBUGS_CONFIG_FILE}:'/etc/debbugs/config');
+
+=item email_domain
+
+The email domain of the bts
+
+=cut
+
+set_default(\%config,'email_domain','bugs.something');
+
+=item list_domain
+
+The list domain of the bts, defaults to the email domain
+
+=cut
+
+set_default(\%config,'list_domain',$config{email_domain});
+
+=item web_host
+
+The web host of the bts; defaults to the email domain
+
+=cut
+
+set_default(\%config,'web_host',$config{email_domain});
+
+=item web_host_bug_dir
+
+The directory of the web host on which bugs are kept, defaults to C<''>
+
+=cut
+
+set_default(\%config,'web_host_bug_dir','');
+
+=item web_domain
+
+Full path of the web domain where bugs are kept, defaults to the
+concatenation of L</web_host> and L</web_host_bug_dir>
+
+=cut
+
+set_default(\%config,'web_domain',$config{web_host}.'/'.$config{web_host_bug_dir});
+
+=item html_suffix
+
+Suffix of html pages, defaults to .html
+
+=cut
+
+set_default(\%config,'html_suffix','.html');
+
+=item cgi_domain
+
+Full path of the web domain where cgi scripts are kept. Defaults to
+the concatentation of L</web_host> and cgi.
+
+=cut
+
+set_default(\%config,'cgi_domain',$config{web_domain}.($config{web_domain}=~m{/$}?'':'/').'cgi');
+
+=item mirrors
+
+List of mirrors [What these mirrors are used for, no one knows.]
+
+=cut
+
+
+set_default(\%config,'mirrors',[]);
+
+=item package_pages
+
+Domain where the package pages are kept; links should work in a
+package_pages/foopackage manner. Defaults to undef, which means that
+package links will not be made.
+
+=cut
+
+
+set_default(\%config,'package_pages',undef);
+
+=item subscription_domain
+
+Domain where subscriptions to package lists happen
+
+=cut
+
+
+set_default(\%config,'subscription_domain',undef);
+
+=back
+
+=cut
+
+
+=head2 Project Identification
+
+=over
+
+=item project
+
+Name of the project
+
+=cut
+
+set_default(\%config,'project','Something');
+
+=item project_title
+
+Name of this install of Debbugs, defaults to "L</project> Debbugs Install"
+
+=cut
+
+set_default(\%config,'project_title',"$config{project} Debbugs Install");
+
+=item maintainer
+
+Name of the maintainer of this debbugs install
+
+=cut
+
+set_default(\%config,'maintainer','Local DebBugs Owner');
+
+=item maintainer_webpage
+
+Webpage of the maintainer of this install of debbugs
+
+=cut
+
+set_default(\%config,'maintainer_webpage',"$config{web_domain}/~owner");
+
+=item maintainer_email
+
+Email address of the maintainer of this Debbugs install
+
+=cut
+
+set_default(\%config,'maintainer_email','root@'.$config{email_domain});
+
+=item unknown_maintainer_email
+
+Email address where packages with an unknown maintainer will be sent
+
+=cut
+
+set_default(\%config,'unknown_maintainer_email',$config{maintainer_email});
+
+=head2 BTS Mailing Lists
+
+
+=over
+
+=item submit_list
+
+=item maint_list
+
+=item forward_list
+
+=item done_list
+
+=item request_list
+
+=item submitter_list
+
+=item control_list
+
+=item summary_list
+
+=item mirror_list
+
+=back
+
+=cut
+
+set_default(\%config,   'submit_list',   'bug-submit-list');
+set_default(\%config,    'maint_list',    'bug-maint-list');
+set_default(\%config,    'quiet_list',    'bug-quiet-list');
+set_default(\%config,  'forward_list',  'bug-forward-list');
+set_default(\%config,     'done_list',     'bug-done-list');
+set_default(\%config,  'request_list',  'bug-request-list');
+set_default(\%config,'submitter_list','bug-submitter-list');
+set_default(\%config,  'control_list',  'bug-control-list');
+set_default(\%config,  'summary_list',  'bug-summary-list');
+set_default(\%config,   'mirror_list',   'bug-mirror-list');
+
+=head2 Misc Options
+
+=cut
+
+set_default(\%config,'mailer','exim');
+set_default(\%config,'bug','bug');
+set_default(\%config,'bugs','bugs');
+set_default(\%config,'remove_age',28);
+
+set_default(\%config,'save_old_bugs',1);
+
+set_default(\%config,'default_severity','normal');
+set_default(\%config,'show_severities','critical, grave, normal, minor, wishlist');
+set_default(\%config,'strong_severities',[qw(critical grave)]);
+set_default(\%config,'severity_list',[qw(critical grave normal wishlist)]);
+set_default(\%config,'severity_display',{critical => "Critical $config{bugs}",
+					 grave    => "Grave $config{bugs}",
+					 normal   => "Normal $config{bugs}",
+					 wishlist => "Wishlist $config{bugs}",
+					});
+
+set_default(\%config,'tags',[qw(patch wontfix moreinfo unreproducible fixed stable)]);
+
+set_default(\%config,'bounce_froms','^mailer|^da?emon|^post.*mast|^root|^wpuser|^mmdf|^smt.*|'.
+	    '^mrgate|^vmmail|^mail.*system|^uucp|-maiser-|^mal\@|'.
+	    '^mail.*agent|^tcpmail|^bitmail|^mailman');
+
+set_default(\%config,'config_dir',dirname(exists $ENV{DEBBUGS_CONFIG_FILE}?$ENV{DEBBUGS_CONFIG_FILE}:'/etc/debbugs/config'));
+set_default(\%config,'spool_dir','/var/lib/debbugs/spool');
+set_default(\%config,'incoming_dir','incoming');
+set_default(\%config,'web_dir','/var/lib/debbugs/www');
+set_default(\%config,'doc_dir','/var/lib/debbugs/www/txt');
+
+set_default(\%config,'maintainer_file',$config{config_dir}.'/Maintainers');
+set_default(\%config,'maintainer_file_override',$config{config_dir}.'/Maintainers.override');
+set_default(\%config,'pseduo_desc_file',$config{config_dir}.'/pseudo-packages.description');
+set_default(\%config,'package_source',$config{config_dir}.'/indices/sources');
+
+
+sub read_config{
+     my ($conf_file) = @_;
+     # first, figure out what type of file we're reading in.
+     my $fh = new IO::File $conf_file,'r'
+	  or die "Unable to open configuration file $conf_file for reading: $!";
+     # A new version configuration file must have a comment as its first line
+     my $first_line = <$fh>;
+     my ($version) = $first_line =~ /VERSION:\s*(\d+)/i;
+     if (defined $version) {
+	  if ($version == 1) {
+	       # Do something here;
+	       die "Version 1 configuration files not implemented yet";
+	  }
+	  else {
+	       die "Version $version configuration files are not supported";
+	  }
+     }
+     else {
+	  # Ugh. Old configuration file
+	  # What we do here is we create a new Safe compartment
+          # so fucked up crap in the config file doesn't sink us.
+	  my $cpt = new Safe or die "Unable to create safe compartment";
+	  # perldoc Opcode; for details
+	  $cpt->permit('require');
+	  $cpt->reval(q($gMaintainerFile = 'FOOOO'));
+	  $cpt->reval(qq(require '$conf_file';));
+	  die "Error in configuration file: $@" if $@;
+	  # Now what we do is check out the contents of %EXPORT_TAGS to see exactly which variables
+	  # we want to glob in from the configuration file
+	  for my $variable (@{$EXPORT_TAGS{globals}}) {
+	       my ($hash_name,$glob_name,$glob_type) = __convert_name($variable);
+	       my $var_glob = $cpt->varglob($glob_name);
+	       my $value; #= $cpt->reval("return $variable");
+	       #print STDERR $value,qq(\n);
+	       if (defined $var_glob) {{
+	       	    no strict 'refs';
+	       	    if ($glob_type eq '%') {
+	       		 $value = {%{*{$var_glob}}};
+		    }
+		    elsif ($glob_type eq '@') {
+	       		 $value = [@{*{$var_glob}}];
+	       	    }
+	       	    else {
+	       		 $value = ${*{$var_glob}};
+	       	    }
+		    # We punt here, because we can't tell if the value was
+                    # defined intentionally, or if it was just left alone;
+                    # this tries to set sane defaults.
+		    set_default(\%config,$hash_name,$value) if defined $value;
+	       }}
+	  }
+     }
 }
 
-#############################################################################
-#  Read Config File and parse
-#############################################################################
-sub ParseConfigFile
-{   my $configfile = $_[0];
-    my @config;
-    my $votetitle = '';
-    my $ballottype = '';
-
-    #load config file
-    print "V: Loading Config File\n" if $Globals{ "verbose" };
-    open(CONFIG,$configfile) or &fail( "E: Unable to open `$configfile'" );
-    @config = <CONFIG>;
-    close CONFIG;
-
-    #parse config file
-    print "V: Parsing Config File\n" if $Globals{ "verbose" };
-    print "D3: Parse Config:\n@config\n" if $Globals{ 'debug' } > 2;
-    print "D1: Configuration\n" if $Globals{ 'debug' };
-
-    for( my $i=0; $i<=$#config; $i++)
-    {	$_ = $config[$i];
-	chop $_;
-	next unless length $_;
-	next if /^#/;
-
-	if ( /^([^:=]*)\s*[:=]\s*([^#]*)/i ) {
-	    my $key = strip( $1 );
-	    my $value = strip( $2 );
-	    $value = "" if(!defined($value)); 
-	    if ( $key =~ /Severity\s+#*(\d+)\s*(.*)/ ) {
-		my $options = $2;
-		my $severity = $1;
-		if( $options =~ /\btext\b/ ) {
-		    $Severity{ 'Text' }{ $severity } = $value;
-		    print "D2: (config) Severity $severity text = $value\n" if $Globals{ 'debug' } > 1;
-		} else {
-		    $Severity{ $1 } = $value;
-		    print "D2: (config) Severity $severity = $value" if $Globals{ 'debug' } > 1;
-		    if( $options =~ /\bdefault\b/ ) {
-			$Globals{ "default-severity" } = $severity;
-			print ", default" if $Globals{ 'debug' } > 1;
-		    }
-		    if( $options =~ /\bstrong\b/ ) {
-			$Strong{ $severity } = 1;
-			print ", strong" if $Globals{ 'debug' } > 1;
-		    }
-		    print "\n" if $Globals{ 'debug' } > 1;
-		}
-		next;
-	    } else {
-		my $map = $ConfigMap{$key};
-		if(defined($map)) {
-		    $Globals{ $map } = $value;
-		    print "$key = '$value'" if $Globals{ 'debug' } > 1;
-		    my $gtag = $GTagsMap{ $map };
-		    if(defined($gtag)) {
-			$GTags{ $gtag } = $value;
-			print "GTag = '$gtag'" if $Globals{ 'debug' } > 1;
-		    }
-		    print "\n" if $Globals{ 'debug' } > 1;
-		    next;
-		} else {
-		    print "$key\n";
-		}
-		    
-	    }
-	}
-	print "Unknown line in config!($_)\n";
-	next;
-    }
-    return @config;
+sub __convert_name{
+     my ($variable) = @_;
+     my $hash_name = $variable;
+     $hash_name =~ s/^([\$\%\@])g//;
+     my $glob_type = $1;
+     my $glob_name = 'g'.$hash_name;
+     $hash_name =~ s/^([A-Z]+)/lc($1)/e;
+     $hash_name =~ s/([A-Z]+)/'_'.lc($1)/ge;
+     return $hash_name unless wantarray;
+     return ($hash_name,$glob_name,$glob_type);
 }
 
-END { }       # module clean-up code here (global destructor)
+# set_default
+
+# sets the configuration hash to the default value if it's not set,
+# otherwise doesn't do anything
+# If $USING_GLOBALS, then sets an appropriate global.
+
+sub set_default{
+     my ($config,$option,$value) = @_;
+     # update the configuration value
+     if (not $USING_GLOBALS and not exists $config{$option}) {
+	  $config{$option} = $value;
+     }
+     else {
+	  # Need to check if a value has already been set in a global
+     }
+     if ($USING_GLOBALS) {{
+	  # fix up the variable name
+	  my $varname = 'g'.join('',map {ucfirst $_} $option);
+	  # Fix stupid HTML names
+	  $varname =~ s/Html/HTML/;
+	  no strict 'refs';
+	  my $ref = ref $config{$option} || 'SCALAR';
+	  *{"Debbugs::Config::${varname}"} = $config{$option};
+     }}
+}
+
+
+### import magick
+
+# All we care about here is whether we've been called with the globals option;
+# if so, then we need to export some symbols back up; otherwise we call exporter.
+
+sub import {
+     if (grep $_ eq ':globals', @_) {
+	  $USING_GLOBALS=1;
+	  for my $variable (@{$EXPORT_TAGS{globals}}) {
+	       my $tmp = $variable;
+	       no strict 'refs';
+	       # Yes, I don't care if these are only used once
+	       no warnings 'once';
+	       # No, it doesn't bother me that I'm assigning an undefined value to a typeglob
+	       no warnings 'misc';
+	       my ($hash_name,$glob_name,$glob_type) = __convert_name($variable);
+	       $tmp =~ s/^[\%\$\@]//;
+	       *{"Debbugs::Config::${tmp}"} = ref($config{$hash_name})?$config{$hash_name}:\$config{$hash_name};
+	  }
+     }
+     Debbugs::Config->export_to_level(1,@_);
+}
+
+
+1;
