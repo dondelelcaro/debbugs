@@ -876,14 +876,14 @@ END
             &foundbug;
             &transcript("D| adding $ref ($data->{mergedwith})\n") if $dl;
 	    $mismatch= '';
-	    &checkmatch('package','m_package',$data->{package});
-	    &checkmatch('forwarded addr','m_forwarded',$data->{forwarded});
+	    &checkmatch('package','m_package',$data->{package},@newmergelist);
+	    &checkmatch('forwarded addr','m_forwarded',$data->{forwarded},@newmergelist);
 	    $data->{severity} = '$gDefaultSeverity' if $data->{severity} eq '';
-	    &checkmatch('severity','m_severity',$data->{severity});
-	    &checkmatch('blocks','m_blocks',$data->{blocks});
-	    &checkmatch('blocked-by','m_blockedby',$data->{blockedby});
-	    &checkmatch('done mark','m_done',length($data->{done}) ? 'done' : 'open');
-	    &checkmatch('owner','m_owner',$data->{owner});
+	    &checkmatch('severity','m_severity',$data->{severity},@newmergelist);
+	    &checkmatch('blocks','m_blocks',$data->{blocks},@newmergelist);
+	    &checkmatch('blocked-by','m_blockedby',$data->{blockedby},@newmergelist);
+	    &checkmatch('done mark','m_done',length($data->{done}) ? 'done' : 'open',@newmergelist);
+	    &checkmatch('owner','m_owner',$data->{owner},@newmergelist);
 	    foreach my $t (split /\s+/, $data->{keywords}) { $tags{$t} = 1; }
 	    foreach my $f (@{$data->{found_versions}}) { $found{$f} = 1; }
 	    foreach my $f (@{$data->{fixed_versions}}) { $fixed{$f} = 1; }
@@ -1194,7 +1194,7 @@ sub sendhelp {
 #}
 
 sub checkmatch {
-    local ($string,$mvarname,$svarvalue) = @_;
+    local ($string,$mvarname,$svarvalue,@newmergelist) = @_;
     local ($mvarvalue);
     if (@newmergelist) {
         eval "\$mvarvalue= \$$mvarname";
