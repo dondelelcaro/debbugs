@@ -131,7 +131,9 @@ sub create_mime_message{
 
      # Build the message
      # MIME::Entity is stupid, and doesn't rfc1522 encode its headers, so we do it for it.
-     my $msg = MIME::Entity->build(map{encode_rfc1522($_)} @{$headers},
+     my $msg = MIME::Entity->build('Content-Type' => 'text/plain; charset=utf-8',
+				   'Encoding'     => 'quoted-printable',
+				   (map{encode_rfc1522($_)} @{$headers}),
 				   Data    => $body
 				  );
 
