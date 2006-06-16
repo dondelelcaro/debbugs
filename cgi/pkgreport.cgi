@@ -1015,9 +1015,9 @@ sub buglinklist {
 # sets: my @names; my @prior; my @title; my @order;
 
 sub determine_ordering {
-    $cats{"status"}->{"ord"} = [ reverse @{$cats{"status"}->{"ord"}} ]
+    $cats{status}[0]{ord} = [ reverse @{$cats{status}[0]{ord}} ]
         if ($pend_rev);
-    $cats{"severity"}->{"ord"} = [ reverse @{$cats{"severity"}->{"ord"}} ]
+    $cats{severity}[0]{ord} = [ reverse @{$cats{severity}[0]{ord}} ]
         if ($sev_rev);
 
     if (defined $param{"pri0"}) {
