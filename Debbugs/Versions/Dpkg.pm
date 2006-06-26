@@ -46,41 +46,77 @@ sub parseversion ($)
     return %verhash;
 }
 
-sub verrevcmp ($$)
+# verrevcmp
+
+# This function is almost exactly equivalent
+# to dpkg's verrevcmp function, including the
+# order subroutine which it uses.
+
+sub verrevcmp($$)
 {
-    my ($val, $ref) = @_;
-    for (;;)
-    {
-	$val =~ s/^(\D*)//;
-	my $alphaval = $1;
-	$ref =~ s/^(\D*)//;
-	my $alpharef = $1;
-	if (length $alphaval or length $alpharef)
-	{
-	    my @avsplit = split //, $alphaval;
-	    my @arsplit = split //, $alpharef;
-	    my ($av, $ar) = (0, 0);
-	    while ($av < @avsplit and $ar < @arsplit)
-	    {
-		my ($v, $r) = (ord $avsplit[$av], ord $arsplit[$ar]);
-		$v += 256 unless chr($v) =~ /[A-Za-z]/;
-		$r += 256 unless chr($r) =~ /[A-Za-z]/;
-		return $v <=> $r if $v != $r;
-		$av++;
-		$ar++;
-	    }
-	    return 1 if $av < @avsplit;
-	    return -1 if $ar < @arsplit;
-	}
 
-	return 0 unless length $val and length $ref;
+     sub order{
+	  my ($x) = @_;
+	  ##define order(x) ((x) == '~' ? -1 \
+	  #           : cisdigit((x)) ? 0 \
+	  #           : !(x) ? 0 \
+	  #           : cisalpha((x)) ? (x) \
+	  #           : (x) + 256)
+	  # This comparison is out of dpkg's order to avoid
+	  # comparing things to undef and triggering warnings.
+	  if (not defined $x) {
+	       return 0;
+	  }
+	  elsif ($x eq '~') {
+	       return -1;
+	  }
+	  elsif ($x =~ /^\d$/) {
+	       return 0;
+	  }
+	  elsif ($x =~ /^[A-Z]$/i) {
+	       return ord($x);
+	  }
+	  else {
+	       return ord($x) + 256;
+	  }
+     }
 
-	$val =~ s/^(\d*)//;
-	my $numval = $1;
-	$ref =~ s/^(\d*)//;
-	my $numref = $1;
-	return $numval <=> $numref if $numval != $numref;
-    }
+     sub next_elem(\@){
+	  my $a = shift;
+	  return @{$a} ? shift @{$a} : undef;
+     }
+     my ($val, $ref) = @_;
+     $val = "" if not defined $val;
+     $ref = "" if not defined $ref;
+     my @val = split //,$val;
+     my @ref = split //,$ref;
+     my $vc = next_elem @val;
+     my $rc = next_elem @ref;
+     while (defined $vc or defined $rc) {
+	  my $first_diff = 0;
+	  while ((defined $vc and $vc !~ /^\d$/) or
+		 (defined $rc and $rc !~ /^\d$/)) {
+	       my $vo = order($vc); my $ro = order($rc);
+	       # Unlike dpkg's verrevcmp, we only return 1 or -1 here.
+	       return (($vo - $ro > 0) ? 1 : -1) if $vo != $ro;
+	       $vc = next_elem @val; $rc = next_elem @ref;
+	  }
+	  while (defined $vc and $vc eq '0') {
+	       $vc = next_elem @val;
+	  }
+	  while (defined $rc and $rc eq '0') {
+	       $rc = next_elem @ref;
+	  }
+	  while (defined $vc and $vc =~ /^\d$/ and
+		 defined $rc and $rc =~ /^\d$/) {
+	       $first_diff = ord($vc) - ord($rc) if !$first_diff;
+	       $vc = next_elem @val; $rc = next_elem @ref;
+	  }
+	  return 1 if defined $vc and $vc =~ /^\d$/;
+	  return -1 if defined $rc and $rc =~ /^\d$/;
+	  return $first_diff if $first_diff;
+     }
+     return 0;
 }
 
 =item vercmp
@@ -98,21 +134,17 @@ sub vercmp ($$)
     my %refversion = parseversion $_[1];
     return 1 if $version{epoch} > $refversion{epoch};
     return -1 if $version{epoch} < $refversion{epoch};
-    my $r = verrevcmp $version{version}, $refversion{version};
+    my $r = verrevcmp($version{version}, $refversion{version});
     return $r if $r;
-    return verrevcmp $version{revision}, $refversion{revision};
+    return verrevcmp($version{revision}, $refversion{revision});
 }
 
 =back
 
-=head1 BUGS
-
-Version numbers containing the C<~> character, used for pre-releases of
-packages, are not yet supported.
-
 =head1 AUTHOR
 
-Colin Watson E<lt>cjwatson@debian.orgE<gt>, based on the implementation in
+Don Armstrong <don@donarmstrong.com> and Colin Watson
+E<lt>cjwatson@debian.orgE<gt>, based on the implementation in
 C<dpkg/lib/vercmp.c> by Ian Jackson and others.
 
 =cut

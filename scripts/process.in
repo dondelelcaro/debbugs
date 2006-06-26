@@ -902,10 +902,7 @@ $gMaintainer
 END
 		   }
     } elsif ($codeletter ne 'U' and
-             $header{'precedence'} !~ /\b(?:bulk|junk|list)\b/ and
-	     # Workaround for gcc mail loops; bugzilla should do Precedence:
-	     # instead. Deliberately not in CVS. - cjwatson
-	     not exists $header{'x-bugzilla-reason'}) {
+             $header{'precedence'} !~ /\b(?:bulk|junk|list)\b/) {
         &htmllog("Acknowledgement","sent",$replyto,
                  ($veryquiet ? "Extra info received and filed, but not forwarded." :
                   $codeletter eq 'M' ? "Extra info received and forwarded to maintainer." :

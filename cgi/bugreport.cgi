@@ -3,13 +3,6 @@
 package debbugs;
 
 use strict;
-
-if (defined $ENV{REMOTE_ADDR} and $ENV{REMOTE_ADDR} =~ m/^(72\.17\.168\.57|60\.238\.143\.248|61\.224\.27\.141|146\.82\.138\.7|61\.214\.28\.119|84\.189\.46\.3|82\.124\.165\.25|220\.181\.26\.108|220\.95\.221\.\d+|82\.120\.77\.220|80\.68\.89\.71|66\.227\.249\.188|194\.46\.224\.153|66\.246\.72\.81|60\.42\.181\.163)$/) {
-    print "Content-Type: text/html\n\nGo away.";
-    sleep(5);
-    exit 0;
-}
-
 use POSIX qw(strftime tzset);
 use MIME::Parser;
 use MIME::Decoder;
@@ -417,7 +410,7 @@ sub handle_record{
 	  $output .= '<a href="' . bugurl($ref, 'msg='.($msg_number+1)) . '">Full text</a> and <a href="' .
 	       bugurl($ref, 'msg='.($msg_number+1), 'mbox') . '">rfc822 format</a> available.';
 
-	  $output = "<div class=\"msgreceived\">\n" . $output . "</div>\n";
+	  $output = qq(<div class="msgreceived">\n<a name="$msg_number">\n) . $output . "</div>\n";
      }
      elsif (/recips/) {
 	  my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
@@ -427,6 +420,7 @@ sub handle_record{
 	  elsif (defined $msg_id) {
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
+	  $output .= qq(<a name="$msg_number">\n);
 	  $output .= 'View this message in <a href="' . bugurl($ref, "msg=$msg_number", "mbox") . '">rfc822 format</a>';
 	  $output .= handle_email_message($record->{text},
 				    ref        => $bug_number,
@@ -446,7 +440,7 @@ sub handle_record{
 	  }
 	  # Incomming Mail Message
 	  my ($received,$hostname) = $record->{text} =~ m/Received: \(at (\S+)\) by (\S+)\;/;
-	  $output .= qq|<p class="msgreceived"><a name="msg$msg_number">Message received</a> at |.
+	  $output .= qq|<p class="msgreceived"><a name="$msg_number"><a name="msg$msg_number">Message received</a> at |.
 	       htmlsanit("$received\@$hostname") . q| (<a href="| . bugurl($ref, "msg=$msg_number") . '">full text</a>'.q|, <a href="| . bugurl($ref, "msg=$msg_number") . ';mbox=yes">mbox</a>)'.":</p>\n";
 	  $output .= handle_email_message($record->{text},
 				    ref        => $bug_number,
