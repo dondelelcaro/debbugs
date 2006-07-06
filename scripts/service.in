@@ -768,11 +768,11 @@ END
 		&transcript("Was blocked by: $data->{blockedby}\n");
 	    }
 	    if ($addsub eq "set") {
-		$action= "Blocking bugs set to: " . join(", ", @okayblockers);
+		$action= "Blocking bugs of $bugnum set to: " . join(", ", @okayblockers);
 	    } elsif ($addsub eq "add") {
-		$action= "Blocking bugs added: " . join(", ", @okayblockers);
+		$action= "Blocking bugs of $bugnum added: " . join(", ", @okayblockers);
 	    } elsif ($addsub eq "sub") {
-		$action= "Blocking bugs removed: " . join(", ", @okayblockers);
+		$action= "Blocking bugs of $bugnum removed: " . join(", ", @okayblockers);
 	    }
 	    my %removedblocks;
 	    my %addedblocks;
