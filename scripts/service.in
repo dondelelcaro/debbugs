@@ -334,7 +334,7 @@ END
 	$ref = $1; $addsubcode = $3 || "+"; $tags = $4;
 	if ($user eq "") {
 	    &transcript("No valid user selected\n");
-	} else {
+        } elsif (&setbug) {
 	    my %ut;
 	    Debbugs::User::read_usertags(\%ut, $user);
             my @oldtags = (); my @newtags = (); my @badtags = ();
