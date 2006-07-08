@@ -56,7 +56,7 @@ sub getpkgsrc {
     my %pkgcomponent;
 
     open(MM,"$Debbugs::Packages::gPackageSource")
-	or &quitcgi("open $Debbugs::Packages::gPackageSource: $!");
+	or die("open $Debbugs::Packages::gPackageSource: $!");
     while(<MM>) {
 	next unless m/^(\S+)\s+(\S+)\s+(\S.*\S)\s*$/;
 	my ($bin,$cmp,$src)=($1,$2,$3);

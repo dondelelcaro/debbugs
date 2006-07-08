@@ -90,6 +90,20 @@ you, the person doing the reopen.
 $gHTMLSeverityDesc
 </dl>
 
+<h2>Synopsis of bug submission and followup addresses</h2>
+
+<ul compact>
+  <li><var>nnn</var>[ <code>-submit</code> | ]
+  <li><var>nnn</var><code>-maintonly</code>
+  <li><var>nnn</var><code>-quiet</code>
+  <li><var>nnn</var><code>-forwarded</code>
+  <li><var>nnn</var><code>-request</code>
+  <li><var>nnn</var><code>-submitter</code>
+  <li><var>nnn</var><code>-done</code>
+  <li><var>nnn</var><code>-close</code>
+  <li><var>nnn</var><code>-subscribe</code>
+</ul>  
+
 <hr>
 
 <p>Other pages:

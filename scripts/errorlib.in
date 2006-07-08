@@ -4,6 +4,7 @@
 use Mail::Address;
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
 use Debbugs::Packages;
+use Debbugs::Common qw(:all);
 
 sub F_SETLK { 6; } sub F_WRLCK{ 1; }
 $flockstruct= 'sslll'; # And there ought to be something for this too.
@@ -30,48 +31,6 @@ sub lockreadbugmerge {
     return ( 2, $data );
 }
 
-sub getbuglocation {
-    my ( $bugnum, $ext ) = @_;
-    my $archdir = sprintf "%02d", $bugnum % 100;
-    return 'archive' if ( -r "$gSpoolDir/archive/$archdir/$bugnum.$ext" );
-    return 'db-h' if ( -r "$gSpoolDir/db-h/$archdir/$bugnum.$ext" );
-    return 'db' if ( -r "$gSpoolDir/db/$bugnum.$ext" );
-    return undef;
-}
-
-sub getlocationpath {
-    my ($location) = @_;
-    if ($location eq 'archive') {
-        return "$gSpoolDir/archive";
-    } elsif ($location eq 'db') {
-        return "$gSpoolDir/db";
-    } else {
-        return "$gSpoolDir/db-h";
-    }
-}
-
-sub getbugcomponent {
-    my ($bugnum, $ext, $location) = @_;
-
-    unless (defined $location) {
-	$location = getbuglocation($bugnum, $ext);
-	# Default to non-archived bugs only for now; CGI scripts want
-	# archived bugs but most of the backend scripts don't. For now,
-	# anything that is prepared to accept archived bugs should call
-	# getbuglocation() directly first.
-	return undef if defined $location and
-			($location ne 'db' and $location ne 'db-h');
-    }
-    my $dir = getlocationpath($location);
-    return undef unless $dir;
-    if ($location eq 'db') {
-	return "$dir/$bugnum.$ext";
-    } else {
-	my $hash = get_hashname($bugnum);
-	return "$dir/$hash/$bugnum.$ext";
-    }
-}
-
 my @v1fieldorder = qw(originator date subject msgid package
                       keywords done forwarded mergedwith severity);
 
@@ -94,52 +53,6 @@ my %fields = (originator => 'submitter',
 
 # Fields which need to be RFC1522-decoded in format versions earlier than 3.
 my @rfc1522_fields = qw(originator subject done forwarded owner);
-
-sub readbug {
-    my ($lref, $location) = @_;
-    my $status = getbugcomponent($lref, 'summary', $location);
-    return undef unless defined $status;
-    if (!open(S,$status)) { return undef; }
-
-    my %data;
-    my @lines;
-    my $version = 2;
-    local $_;
-
-    while (<S>) {
-        chomp;
-        push @lines, $_;
-        $version = $1 if /^Format-Version: ([0-9]+)/i;
-    }
-
-    # Version 3 is the latest format version currently supported.
-    return undef if $version > 3;
-
-    my %namemap = reverse %fields;
-    for my $line (@lines) {
-        if ($line =~ /(\S+?): (.*)/) {
-            my ($name, $value) = (lc $1, $2);
-            $data{$namemap{$name}} = $value if exists $namemap{$name};
-        }
-    }
-    for my $field (keys %fields) {
-        $data{$field} = '' unless exists $data{$field};
-    }
-
-    close(S);
-
-    $data{severity} = $gDefaultSeverity if $data{severity} eq '';
-    $data{found_versions} = [split ' ', $data{found_versions}];
-    $data{fixed_versions} = [split ' ', $data{fixed_versions}];
-
-    if ($version < 3) {
-	for my $field (@rfc1522_fields) {
-	    $data{$field} = decode_rfc1522($data{$field});
-	}
-    }
-
-    return \%data;
-}
 
 sub lockreadbug {
     local ($lref, $location) = @_;

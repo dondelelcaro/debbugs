@@ -334,7 +334,7 @@ END
 	$ref = $1; $addsubcode = $3 || "+"; $tags = $4;
 	if ($user eq "") {
 	    &transcript("No valid user selected\n");
-	} else {
+        } elsif (&setbug) {
 	    my %ut;
 	    Debbugs::User::read_usertags(\%ut, $user);
             my @oldtags = (); my @newtags = (); my @badtags = ();
@@ -719,13 +719,19 @@ END
 	my $bugnum = $2; my $blockers = $4;
 	$addsub = "add";
 	$addsub = "sub" if ($1 eq "un");
-	
+	if ($bugnum =~ m/^-\d+$/ && defined $clonebugs{$bugnum}) {
+	     $bugnum = $clonebugs{$bugnum};
+	}
+
 	my @okayblockers;
 	my @badblockers;
 	foreach my $b (split /[\s,]+/, $blockers) {
 	    $b=~s/^\#//;
 	    if ($b=~/[0-9]+/) {
 		$ref=$b;
+		if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
+		     $ref = $clonebugs{$ref};
+		}
 		if (&getbug) {
 		    push @okayblockers, $b;
 
@@ -762,11 +768,11 @@ END
 		&transcript("Was blocked by: $data->{blockedby}\n");
 	    }
 	    if ($addsub eq "set") {
-		$action= "Blocking bugs set to: " . join(", ", @okayblockers);
+		$action= "Blocking bugs of $bugnum set to: " . join(", ", @okayblockers);
 	    } elsif ($addsub eq "add") {
-		$action= "Blocking bugs added: " . join(", ", @okayblockers);
+		$action= "Blocking bugs of $bugnum added: " . join(", ", @okayblockers);
 	    } elsif ($addsub eq "sub") {
-		$action= "Blocking bugs removed: " . join(", ", @okayblockers);
+		$action= "Blocking bugs of $bugnum removed: " . join(", ", @okayblockers);
 	    }
 	    my %removedblocks;
 	    my %addedblocks;
