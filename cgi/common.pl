@@ -892,6 +892,7 @@ sub buglog {
 # named source package. This is used to cope with source packages whose
 # names have changed during their history, and with cases where source
 # version numbers differ from binary version numbers.
+my %_sourceversioncache = ();
 sub makesourceversions {
     my $pkg = shift;
     my $arch = shift;
@@ -902,6 +903,15 @@ sub makesourceversions {
             # Already a source version.
             $sourceversions{$version} = 1;
         } else {
+            my $cachearch = (defined $arch) ? $arch : '';
+            my $cachekey = "$pkg/$cachearch/$version";
+            if (exists($_sourceversioncache{$cachekey})) {
+                for my $v (@{$_sourceversioncache{$cachekey}}) {
+		    $sourceversions{$v} = 1;
+		}
+                next;
+            }
+
             my @srcinfo = binarytosource($pkg, $version, $arch);
             unless (@srcinfo) {
                 # We don't have explicit information about the
@@ -922,6 +932,7 @@ sub makesourceversions {
                 }
             }
             $sourceversions{"$_->[0]/$_->[1]"} = 1 foreach @srcinfo;
+            $_sourceversioncache{$cachekey} = [ map { "$_->[0]/$_->[1]" } @srcinfo ];
         }
     }
 
