@@ -194,6 +194,7 @@ sub addfoundversions {
             return;
         }
         # Otherwise, an unqualified version will have to do.
+	undef $source;
     }
 
     # Strip off various kinds of brain-damage.
@@ -228,6 +229,7 @@ sub removefoundversions {
             return;
         }
         # Otherwise, an unqualified version will have to do.
+	undef $source;
     }
 
     foreach my $ver (split /[,\s]+/, $version) {
@@ -254,6 +256,7 @@ sub addfixedversions {
             return;
         }
         # Otherwise, an unqualified version will have to do.
+        undef $source;
     }
 
     # Strip off various kinds of brain-damage.
@@ -288,6 +291,7 @@ sub removefixedversions {
             return;
         }
         # Otherwise, an unqualified version will have to do.
+        undef $source;
     }
 
     foreach my $ver (split /[,\s]+/, $version) {
