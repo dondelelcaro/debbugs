@@ -943,7 +943,7 @@ maintainers, but will accompany the original report in the $gBug
 tracking system.  Please ensure that you yourself have sent a copy of
 the additional information to any relevant developers or mailing lists.
 $resentccexplain
-If you wish to continue to submit further information on your problem,
+If you wish to continue to submit further information on this problem,
 please send it to $ref-$baddressroot\@$gEmailDomain, as before.
 
 Please do not reply to the address at the top of this message,
@@ -972,7 +972,7 @@ Thank you for the additional information you have supplied regarding
 this problem report.  It has been forwarded to the package maintainer(s)
 (but not to other interested parties) to accompany the original report.
 $resentccexplain
-If you wish to continue to submit further information on your problem,
+If you wish to continue to submit further information on this problem,
 please send it to $ref-$baddressroot\@$gEmailDomain, as before.
 
 Please do not reply to the address at the top of this message,
@@ -1003,7 +1003,7 @@ Thank you for the additional information you have supplied regarding
 this problem report.  It has been forwarded to the package maintainer(s)
 and to other interested parties to accompany the original report.
 $resentccexplain
-If you wish to continue to submit further information on your problem,
+If you wish to continue to submit further information on this problem,
 please send it to $ref\@$gEmailDomain, as before.
 
 Please do not reply to the address at the top of this message,
