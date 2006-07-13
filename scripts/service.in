@@ -335,6 +335,7 @@ END
 	if ($user eq "") {
 	    &transcript("No valid user selected\n");
         } elsif (&setbug) {
+	    &nochangebug;
 	    my %ut;
 	    Debbugs::User::read_usertags(\%ut, $user);
             my @oldtags = (); my @newtags = (); my @badtags = ();
