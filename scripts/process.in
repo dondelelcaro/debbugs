@@ -150,7 +150,8 @@ for my $phline (@bodylines)
     $fv =~ s/\s*$//;
     print DEBUG ">$fn|$fv|\n";
     $fn = lc $fn;
-    $fv = lc $fv;
+    # Don't lc owner or forwarded
+    $fv = lc $fv unless $fh =~ /^(?:owner|forwarded)$/;
     $pheader{$fn} = $fv;
     print DEBUG ">$fn~$fv<\n";
 }
@@ -258,12 +259,12 @@ my $source_package = '';
 if (defined $pheader{source}) {
      $source_package = $pheader{source};
 }
-elsif (defined $data->{package}) {
+elsif (defined $data->{package} or defined $pheader{package}) {
      my $pkg_src = getpkgsrc();
-     $source_package = $pkg_src->{$data->{package}};
+     $source_package = $pkg_src->{defined $data->{package}?$data->{package}:$pheader{package}};
 }
-$source_pr_header = "X-$gProject-Pr-Source: $source_package\n"
-     if length $source_package;
+$source_pr_header = "X-$gProject-PR-Source: $source_package\n"
+     if defined $source_package and length $source_package;
 
 # Done and Forwarded Bugs
 if ($codeletter eq 'D' || $codeletter eq 'F') 
@@ -827,6 +828,10 @@ If you wish to submit further information on your problem, please send it
 to $ref-$baddressroot\@$gEmailDomain (and *not*
 to $baddress\@$gEmailDomain).
 
+If you have filed this report in error and wish to close it, please
+send mail to $ref-done\@$gEmailDomain with an explanation
+why the bug report should be closed.
+
 Please do not reply to the address at the top of this message,
 unless you wish to report a problem with the $gBug-tracking system.
 $brokenness
@@ -861,6 +866,10 @@ If you wish to submit further information on your problem, please send
 it to $ref-$baddressroot\@$gEmailDomain (and *not*
 to $baddress\@$gEmailDomain).
 
+If you have filed this report in error and wish to close it, please
+send mail to $ref-done\@$gEmailDomain with an explanation
+why the bug report should be closed.
+
 Please do not reply to the address at the top of this message,
 unless you wish to report a problem with the $gBug-tracking system.
 $brokenness
@@ -893,6 +902,10 @@ $resentccexplain
 If you wish to submit further information on your problem, please send
 it to $ref\@$gEmailDomain (and *not* to
 $baddress\@$gEmailDomain).
+
+If you have filed this report in error and wish to close it, please
+send mail to $ref-done\@$gEmailDomain with an explanation
+why the bug report should be closed.
 
 Please do not reply to the address at the top of this message,
 unless you wish to report a problem with the $gBug-tracking system.
@@ -930,7 +943,7 @@ maintainers, but will accompany the original report in the $gBug
 tracking system.  Please ensure that you yourself have sent a copy of
 the additional information to any relevant developers or mailing lists.
 $resentccexplain
-If you wish to continue to submit further information on your problem,
+If you wish to continue to submit further information on this problem,
 please send it to $ref-$baddressroot\@$gEmailDomain, as before.
 
 Please do not reply to the address at the top of this message,
@@ -959,7 +972,7 @@ Thank you for the additional information you have supplied regarding
 this problem report.  It has been forwarded to the package maintainer(s)
 (but not to other interested parties) to accompany the original report.
 $resentccexplain
-If you wish to continue to submit further information on your problem,
+If you wish to continue to submit further information on this problem,
 please send it to $ref-$baddressroot\@$gEmailDomain, as before.
 
 Please do not reply to the address at the top of this message,
@@ -990,7 +1003,7 @@ Thank you for the additional information you have supplied regarding
 this problem report.  It has been forwarded to the package maintainer(s)
 and to other interested parties to accompany the original report.
 $resentccexplain
-If you wish to continue to submit further information on your problem,
+If you wish to continue to submit further information on this problem,
 please send it to $ref\@$gEmailDomain, as before.
 
 Please do not reply to the address at the top of this message,
