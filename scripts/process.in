@@ -828,6 +828,10 @@ If you wish to submit further information on your problem, please send it
 to $ref-$baddressroot\@$gEmailDomain (and *not*
 to $baddress\@$gEmailDomain).
 
+If you have filed this report in error and wish to close it, please
+send mail to $ref-done\@$gEmailDomain with an explanation
+why the bug report should be closed.
+
 Please do not reply to the address at the top of this message,
 unless you wish to report a problem with the $gBug-tracking system.
 $brokenness
@@ -862,6 +866,10 @@ If you wish to submit further information on your problem, please send
 it to $ref-$baddressroot\@$gEmailDomain (and *not*
 to $baddress\@$gEmailDomain).
 
+If you have filed this report in error and wish to close it, please
+send mail to $ref-done\@$gEmailDomain with an explanation
+why the bug report should be closed.
+
 Please do not reply to the address at the top of this message,
 unless you wish to report a problem with the $gBug-tracking system.
 $brokenness
@@ -894,6 +902,10 @@ $resentccexplain
 If you wish to submit further information on your problem, please send
 it to $ref\@$gEmailDomain (and *not* to
 $baddress\@$gEmailDomain).
+
+If you have filed this report in error and wish to close it, please
+send mail to $ref-done\@$gEmailDomain with an explanation
+why the bug report should be closed.
 
 Please do not reply to the address at the top of this message,
 unless you wish to report a problem with the $gBug-tracking system.
