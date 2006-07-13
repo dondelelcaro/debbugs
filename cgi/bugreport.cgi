@@ -180,10 +180,7 @@ my $showseverity;
 my $tpack;
 my $tmain;
 
-$ENV{"TZ"} = 'UTC';
-tzset();
-
-my $dtime = strftime "%a, %e %b %Y %T UTC", localtime;
+my $dtime = strftime "%a, %e %b %Y %T UTC", gmtime;
 $tail_html = $debbugs::gHTMLTail;
 $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
 
@@ -361,30 +358,6 @@ sub handle_email_message{
 
 }
 
-=head2 bug_links
-
-     bug_links($one_bug);
-     bug_links($starting_bug,$stoping_bugs,);
-
-Creates a set of links to bugs, starting with bug number
-$starting_bug, and finishing with $stoping_bug; if only one bug is
-passed, makes a link to only a single bug.
-
-The content of the link is the bug number.
-
-=cut
-
-sub bug_links{
-     my ($start,$stop,$query_arguments) = @_;
-     $stop = $stop || $start;
-     $query_arguments ||= '';
-     my @output;
-     for my $bug ($start..$stop) {
-	  push @output,'<a href="'.bugurl($bug,'').qq(">$bug</a>);
-     }
-     return join(', ',@output);
-}
-
 =head2 handle_record
 
      push @log, handle_record($record,$ref,$msg_num);
@@ -409,6 +382,10 @@ sub handle_record{
 	  $output =~ s{(Bug )(\d+)( cloned as bugs? )(\d+)(?:\-(\d+)|)}{$1.bug_links($2).$3.bug_links($4,$5)}eo;
 	  # Add links to merged bugs
 	  $output =~ s{(?<=Merged )([\d\s]+)(?=\.)}{join(' ',map {bug_links($_)} (split /\s+/, $1))}eo;
+	  # Add links to blocked bugs
+	  $output =~ s{(?<=Blocking bugs)(?:(of )(\d+))?( (?:added|set to|removed):\s+)([\d\s]+)}
+		      {(defined $2?$1.bug_links($2):'').$3.
+			    join(' ',map {bug_links($_)} (split /\s+/, $4))}eo;
 	  # Add links to reassigned packages
 	  $output =~ s{(Bug reassigned from package \`)([^\']+)(' to \`)([^\']+)(')}
 	  {$1.q(<a href=").pkgurl($2).qq(">$2</a>).$3.q(<a href=").pkgurl($4).qq(">$4</a>).$5}eo;
@@ -570,7 +547,7 @@ print "<H1>" . "$debbugs::gProject $debbugs::gBug report logs - <A HREF=\"mailto
       "<BR>" . $title . "</H1>\n";
 
 print "$descriptivehead\n";
-printf qq(<div class="msgreceived"><p>View this report as an <a href="%s">mbox folder</a>,).
+printf qq(<div class="msgreceived"><p>View this report as an <a href="%s">mbox folder</a>, ).
      qq(<a href="%s">status mbox</a>, <a href="%s">maintainer mbox</a></p></div>\n),
      html_escape(bug_url($ref, mbox=>'yes')),
      html_escape(bug_url($ref, mbox=>'yes',mboxstatus=>'yes')),
