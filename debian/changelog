@@ -120,6 +120,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Indicate which bugs are blocked after blocking (closes: #367496)
     - Obey package for usertags (closes: #376528)
     - Add link to subscribe to a bug (closes: #353260)
+    - Don't lc owner or forwarded at submit time (closes: #288384)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

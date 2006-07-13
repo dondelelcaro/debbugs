@@ -150,7 +150,8 @@ for my $phline (@bodylines)
     $fv =~ s/\s*$//;
     print DEBUG ">$fn|$fv|\n";
     $fn = lc $fn;
-    $fv = lc $fv;
+    # Don't lc owner or forwarded
+    $fv = lc $fv unless $fh =~ /^(?:owner|forwarded)$/;
     $pheader{$fn} = $fv;
     print DEBUG ">$fn~$fv<\n";
 }
@@ -258,12 +259,12 @@ my $source_package = '';
 if (defined $pheader{source}) {
      $source_package = $pheader{source};
 }
-elsif (defined $data->{package}) {
+elsif (defined $data->{package} or defined $pheader{package}) {
      my $pkg_src = getpkgsrc();
-     $source_package = $pkg_src->{$data->{package}};
+     $source_package = $pkg_src->{defined $data->{package}?$data->{package}:$pheader{package}};
 }
-$source_pr_header = "X-$gProject-Pr-Source: $source_package\n"
-     if length $source_package;
+$source_pr_header = "X-$gProject-PR-Source: $source_package\n"
+     if defined $source_package and length $source_package;
 
 # Done and Forwarded Bugs
 if ($codeletter eq 'D' || $codeletter eq 'F') 
