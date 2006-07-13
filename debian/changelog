@@ -119,6 +119,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Support cloned bugs in control blocking (closes: #337329)
     - Indicate which bugs are blocked after blocking (closes: #367496)
     - Obey package for usertags (closes: #376528)
+    - Add link to subscribe to a bug (closes: #353260)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
