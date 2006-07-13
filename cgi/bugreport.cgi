@@ -529,6 +529,9 @@ print "<H1>" . "$debbugs::gProject $debbugs::gBug report logs - <A HREF=\"mailto
       "<BR>" . $title . "</H1>\n";
 
 print "$descriptivehead\n";
+print qq(<p><a href="mailto:$ref\@$debbugs::gEmailDomain">Reply</a> ),
+     qq(or <a href="mailto:$ref-subscribe\@$debbugs::gEmailDomain">subscribe</a> ),
+     qq(to this bug.</p>\n);
 printf "<div class=\"msgreceived\"><p>View this report as an <a href=\"%s\">mbox folder</a>.</p></div>\n", bugurl($ref, "mbox");
 print "<HR>";
 print "$log";
