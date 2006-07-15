@@ -2,11 +2,7 @@ package Debbugs::Packages;
 
 use strict;
 
-# TODO: move config handling to a separate module
-my $config_path = '/etc/debbugs';
-require "$config_path/config";
-# Allow other modules to load config into their namespace.
-delete $INC{"$config_path/config"};
+use Debbugs::Config qw(:config :globals);
 
 use Exporter ();
 use vars qw($VERSION @ISA @EXPORT);
@@ -16,7 +12,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
     @EXPORT = qw(getpkgsrc getpkgcomponent getsrcpkgs
-		 binarytosource sourcetobinary);
+		 binarytosource sourcetobinary getversions);
 }
 
 use Fcntl qw(O_RDONLY);
@@ -187,6 +183,46 @@ sub sourcetobinary {
     my @srcpkgs = getsrcpkgs($srcname);
     return map [$_, $srcver], @srcpkgs;
 }
+
+=item getversions
+
+Returns versions of the package in distribution at a specific architecture
+
+=cut
+
+my %_versions;
+sub getversions {
+    my ($pkg, $dist, $arch) = @_;
+    return () unless defined $debbugs::gVersionIndex;
+    $dist = 'unstable' unless defined $dist;
+
+    unless (tied %_versions) {
+        tie %_versions, 'MLDBM', $debbugs::gVersionIndex, O_RDONLY
+            or die "can't open versions index: $!";
+    }
+
+    if (defined $arch and exists $_versions{$pkg}{$dist}{$arch}) {
+        my $ver = $_versions{$pkg}{$dist}{$arch};
+        return $ver if defined $ver;
+        return ();
+    } else {
+        my %uniq;
+        for my $ar (keys %{$_versions{$pkg}{$dist}}) {
+            $uniq{$_versions{$pkg}{$dist}{$ar}} = 1 unless $ar eq 'source';
+        }
+        if (%uniq) {
+            return keys %uniq;
+        } elsif (exists $_versions{$pkg}{$dist}{source}) {
+            # Maybe this is actually a source package with no corresponding
+            # binaries?
+            return $_versions{$pkg}{$dist}{source};
+        } else {
+            return ();
+        }
+    }
+}
+
+
 
 =back
 
