@@ -53,7 +53,10 @@ BEGIN {
     $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
-my $gSpoolPath = "/org/bugs.debian.org/spool";
+my $gSpoolDir = "/org/bugs.debian.org/spool";
+if (defined($debbugs::gSpoolDir)) {
+    $gSpoolDir = $debbugs::gSpoolDir;
+}
 
 # Obsolete compatability functions
 
@@ -83,7 +86,7 @@ sub write_usertags {
 sub filefromemail {
     my $e = shift;
     my $l = length($e) % 7;
-    return "$gSpoolPath/user/$l/" . join("", 
+    return "$gSpoolDir/user/$l/" . join("", 
         map { m/^[0-9a-zA-Z_+.-]$/ ? $_ : sprintf("%%%02X", ord($_)) }
             split //, $e);
 }

@@ -123,6 +123,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Don't lc owner or forwarded at submit time (closes: #288384)
     - Explain how to close bugs in the ack message (closes: #37605)
     - Make the moreinfo ack more general (closes: #70810)
+    - Add SOAP support (closes: #377520) Thanks to Raphael Hertzog.
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

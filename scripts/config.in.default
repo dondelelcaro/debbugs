@@ -2,6 +2,7 @@
 #domains
 $gEmailDomain = "bugs.top.domain";		#bugs.debian.org
 $gListDomain = "lists.top.domain";		#lists.debian.org
+$gWebHostBugDir = "";
 $gWebDomain = "www.top.domain";			#www.debian.org/Bugs
 $gCGIDomain = "cgi.top.domain";			#cgi.debian.org
 
