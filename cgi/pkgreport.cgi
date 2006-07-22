@@ -830,7 +830,6 @@ sub pkg_javascript {
 <!--
 function pagemain() {
 	toggle(1);
-	toggle(2);
 	enable(1);
 }
 
