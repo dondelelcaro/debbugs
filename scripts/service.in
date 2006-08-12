@@ -734,7 +734,7 @@ END
 		     $ref = $clonebugs{$ref};
 		}
 		if (&getbug) {
-		    push @okayblockers, $b;
+		    push @okayblockers, $ref;
 
 		    # add to the list all bugs that are merged with $b,
 		    # because all of their data must be kept in sync
@@ -750,7 +750,7 @@ END
 		}
 		else {
 		    &notfoundbug;
-                    push @badblockers, $b;
+                    push @badblockers, $ref;
 	    	}
 	    }
 	    else {
