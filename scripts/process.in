@@ -64,7 +64,7 @@ chomp @msg;
 
 print DEBUG "###\n",join("##\n",@msg),"\n###\n";
 
-my $tdate = strftime "%a, %d %h %Y %T UTC", gmtime;
+my $tdate = strftime "%a, %d %h %Y %T +0000", gmtime;
 my $fwd= <<END;
 Received: via spool by $baddress\@$gEmailDomain id=$nn
           (code $codeletter ref $tryref); $tdate
