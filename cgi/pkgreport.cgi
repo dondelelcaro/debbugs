@@ -475,7 +475,7 @@ printf "<p>See the <a href=\"%s\">%s reports</a></p>",
 				    (map {$_ eq 'archived'?():("$_=$param{$_}")
 				     } keys %param
 				    ),
-				    ('archived='.$archive?"yes":"no")
+				    ('archived='.($archive?"no":"yes"))
 				   )
 	     ), ($archive ? "active" : "archived");
 set_option("archive", $archive);
