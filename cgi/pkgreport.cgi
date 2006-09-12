@@ -465,8 +465,9 @@ if (defined $pkg || defined $src) {
 set_option("archive", !$archive);
 printf "<p>See the <a href=\"%s\">%s reports</a></p>",
      urlsanit('pkgreport.cgi?'.join(';',
-				    map {$_ eq 'archived'?():("$_=$param{$_}")
-				    } keys %param,
+				    (map {$_ eq 'archived'?():("$_=$param{$_}")
+				     } keys %param
+				    ),
 				    ('archived='.$archive?"yes":"no")
 				   )
 	     ), ($archive ? "active" : "archived");
