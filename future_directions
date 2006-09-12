@@ -20,6 +20,8 @@ GENERAL ORGANIZATIONAL CLEANUP
   * Allow for multiple debbugs configurations; easy overriding of values
   * Possibly implemented using Config::General (maybe Config::Simple?)
     with hack to allow for backwards compatibility
+    - The backwards compatibility hack is now fully implemented, a
+      decision on a configuration system just needs to be made.
 
 * Separation of Output forms from the code
   * Use Text::Template to do this; it's simple, we don't lose
