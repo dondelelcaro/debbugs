@@ -365,6 +365,11 @@ $title = htmlsanit($title);
 my @names; my @prior; my @title; my @order;
 determine_ordering();
 
+# strip out duplicate bugs
+my %bugs;
+@bugs{@bugs} = @bugs;
+@bugs = keys %bugs;
+
 my $result = pkg_htmlizebugs(\@bugs);
 
 print "Content-Type: text/html; charset=utf-8\n\n";
@@ -642,7 +647,10 @@ sub pkg_htmlindexentrystatus {
     unless (length($status{done})) {
         if (length($status{forwarded})) {
             $result .= ";\n<strong>Forwarded</strong> to "
-                       . maybelink($status{forwarded});
+                       . join(', ',
+			      map {maybelink($_)}
+			      split /,\s*/,$status{forwarded}
+			     );
         }
         my $daysold = int((time - $status{date}) / 86400);   # seconds to days
         if ($daysold >= 7) {
