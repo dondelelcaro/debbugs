@@ -365,6 +365,11 @@ $title = htmlsanit($title);
 my @names; my @prior; my @title; my @order;
 determine_ordering();
 
+# strip out duplicate bugs
+my %bugs;
+@bugs{@bugs} = @bugs;
+@bugs = keys %bugs;
+
 my $result = pkg_htmlizebugs(\@bugs);
 
 print "Content-Type: text/html; charset=utf-8\n\n";
@@ -433,11 +438,6 @@ if (defined $pkg || defined $src) {
                 push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($srcforpkg), htmlsanit($srcforpkg);
             }
         }
-        if ($pkg) {
-            set_option("archive", !$archive);
-            push @references, sprintf "to the <a href=\"%s\">%s reports for %s</a>", pkgurl($pkg), ($archive ? "active" : "archived"), htmlsanit($pkg);
-            set_option("archive", $archive);
-        }
         if (@references) {
             $references[$#references] = "or $references[$#references]" if @references > 1;
             print "<p>You might like to refer ", join(", ", @references), ".</p>\n";
@@ -461,6 +461,16 @@ if (defined $pkg || defined $src) {
     print "different bugs, so there may be other reports filed under\n";
     print "different addresses.\n";
 }
+
+set_option("archive", !$archive);
+print "<p>See the <a href=\"%s\">%s reports</a></p>",
+     urlsanit('pkgreport.cgi?'.join(';',
+				    map {$_ eq 'archived'?():("$_=$param{$_}")
+				    } keys %param,
+				    ('archived='.$archive?"yes":"no")
+				   )
+	     ), ($archive ? "active" : "archived");
+set_option("archive", $archive);
 
 print $result if $showresult;
 
@@ -642,7 +652,10 @@ sub pkg_htmlindexentrystatus {
     unless (length($status{done})) {
         if (length($status{forwarded})) {
             $result .= ";\n<strong>Forwarded</strong> to "
-                       . maybelink($status{forwarded});
+                       . join(', ',
+			      map {maybelink($_)}
+			      split /,\s*/,$status{forwarded}
+			     );
         }
         my $daysold = int((time - $status{date}) / 86400);   # seconds to days
         if ($daysold >= 7) {
