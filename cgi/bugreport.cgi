@@ -412,9 +412,9 @@ sub handle_record{
 	  # Add links to merged bugs
 	  $output =~ s{(?<=Merged )([\d\s]+)(?=\.)}{join(' ',map {bug_links($_)} (split /\s+/, $1))}eo;
 	  # Add links to blocked bugs
-	  $output =~ s{(?<=Blocking bugs)(?:(of )(\d+))?( (?:added|set to|removed):\s+)([\d\s]+)}
+	  $output =~ s{(?<=Blocking bugs)(?:(of )(\d+))?( (?:added|set to|removed):\s+)([\d\s\,]+)}
 		      {(defined $2?$1.bug_links($2):'').$3.
-			    join(' ',map {bug_links($_)} (split /\s+/, $4))}eo;
+			    join(' ',map {bug_links($_)} (split /\,?\s+/, $4))}eo;
 	  # Add links to reassigned packages
 	  $output =~ s{(Bug reassigned from package \`)([^\']+)(' to \`)([^\']+)(')}
 	  {$1.q(<a href=").pkgurl($2).qq(">$2</a>).$3.q(<a href=").pkgurl($4).qq(">$4</a>).$5}eo;
