@@ -56,6 +56,14 @@ my $default_params = {ordering => 'normal',
 		      exclude      => [],
 		     };
 
+if (defined $ENV{REMOTE_ADDR} and $ENV{REMOTE_ADDR} =~ /(?:218\.175\.56\.14|64\.126\
+.93\.93|72\.17\.168\.57|208\.138\.29\.104|66\.63\.250\.28)/) {
+    sleep(5);
+    print "Content-Type: text/html\n\nGo away.";
+    exit 0;
+}
+
+
 our %param = cgi_parameters(query => $q,
 			    single => [qw(ordering archive repeatmerged),
 				       qw(bug-rev pend-rev sev-rev),
