@@ -126,6 +126,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Use RFC compliant dates in headers (closes: #362935)
     - Split forwarded on commas for linking (closes: #367813)
     - Don't display duplicate bugs (closes: #348116)
+    - Display links to archived bugs for all searches (closes: #53710)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
