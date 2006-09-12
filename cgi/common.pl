@@ -985,7 +985,7 @@ sub getversions {
     } else {
         my %uniq;
         for my $ar (keys %{$_versions{$pkg}{$dist}}) {
-            $uniq{$_versions{$pkg}{$dist}{$ar}} = 1 unless $ar eq 'source';
+            $uniq{$_versions{$pkg}{$dist}{$ar}} = 1 unless ($ar eq 'source' or $ar eq 'm68k' or $ar eq 'hurd-i386');
         }
         if (%uniq) {
             return keys %uniq;
