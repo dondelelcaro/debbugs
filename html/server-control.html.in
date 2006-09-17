@@ -340,12 +340,20 @@ mailservers is available via the WWW, in
 
 <dt><code>quit</code>
 <dt><code>stop</code>
-<dt><code>thank</code>...
-<dt><code>--</code>...
+<dt><code>thank</code>
+<dt><code>thanks</code>
+<dt><code>thankyou</code>
+<dt><code>thank you</code>
+<dt><code>--</code>
+<!-- #366093, I blame you! -->
+<!-- <dt><code>kthxbye</code> -->
+<!-- See... I documented it! -->
 
-  <dd>Tells the control server to stop processing the message; the remainder
-      of the message can include explanations, signatures or anything else,
-      none of it will be detected by the control server.
+  <dd>On a line by itself, in any case, possibly followed by
+      whitespace, tells the control server to stop processing the
+      message; the remainder of the message can include explanations,
+      signatures or anything else, none of it will be detected by the
+      control server.
 
 </dl>
 
