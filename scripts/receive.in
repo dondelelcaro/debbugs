@@ -67,7 +67,7 @@ y/A-Z/a-z/;
 if (s/^(\d{1,9})\b//) {
     $bugnumber= $1;
     if (not exists $withbugaddressmap{$_} and
-/-(?:(?:un)?subscribe|subhelp|ignore|(?:sub(?:yes|approve|reject)
+/-(?:(?:un)?subscribe|subhelp|help|ignore|(?:sub(?:yes|approve|reject)
  |unsubyes|bounce|probe|approve|reject|
  setlistyes|setlistsilentyes).*)/x
        ) {

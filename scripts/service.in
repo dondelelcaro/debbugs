@@ -168,7 +168,7 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
     &transcript("> $_\n");
     next if m/^\s*\#/;
     $action= '';
-    if (m/^stop/i || m/^quit/i || m/^--/ || m/^thank/i || m/^kthxbye/i) {
+    if (m/^stop\s*$/i || m/^quit\s*$/i || m/^--\s*$/ || m/^thank(?:s|\s*you)?\s*$/i || m/^kthxbye\s*$/i) {
 	&transcript("Stopping processing here.\n\n");
         last;
     } elsif (m/^debug\s+(\d+)$/i && $1 >= 0 && $1 <= 1000) {

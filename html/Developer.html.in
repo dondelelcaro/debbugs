@@ -128,9 +128,13 @@ reported the $gBug and
 <code>CC</code> field.
 
 <p>Ask the author to preserve the <code>CC</code> to
-<var>nnn</var><code>-forwarded\@$gEmailDomain</code> when they reply, so that
-the $gBug tracking system will file their reply with the original
-report.
+<var>nnn</var><code>-forwarded\@$gEmailDomain</code>
+and <var>nnn</var><code>\@$gEmailDomain</code> when they reply, so
+that the $gBug tracking system will file their reply with the original
+report. These messages are only filed and are not sent on; to send a
+message as normal, send them
+to <var>nnn</var><code>\@$gEmailDomain</code> as well.</p>
+
 
 <p>When the $gBug tracking system gets a message at
 <var>nnn</var><code>-forwarded</code> it will mark the relevant $gBug as

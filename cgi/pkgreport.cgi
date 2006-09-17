@@ -449,9 +449,11 @@ if (defined $pkg || defined $src) {
             $references[$#references] = "or $references[$#references]" if @references > 1;
             print "<p>You might like to refer ", join(", ", @references), ".</p>\n";
         }
-        print "<p>If you find a bug not listed here, please\n";
-        printf "<a href=\"%s\">report it</a>.</p>\n",
-               urlsanit("http://${debbugs::gWebDomain}/Reporting${debbugs::gHTMLSuffix}");
+	if (defined $maint || defined $maintenc) {
+	     print "<p>If you find a bug not listed here, please\n";
+	     printf "<a href=\"%s\">report it</a>.</p>\n",
+		  urlsanit("http://${debbugs::gWebDomain}/Reporting${debbugs::gHTMLSuffix}");
+	}
     } else {
         print "<p>There is no record of the " .
               (defined($pkg) ? htmlsanit($pkg) . " package"
