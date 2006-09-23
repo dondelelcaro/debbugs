@@ -1,18 +1,25 @@
 package Debbugs::Packages;
 
+use warnings;
 use strict;
 
 use Debbugs::Config qw(:config :globals);
 
-use Exporter ();
-use vars qw($VERSION @ISA @EXPORT);
+use base qw(Exporter);
+use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS @EXPORT);
 
 BEGIN {
     $VERSION = 1.00;
 
-    @ISA = qw(Exporter);
-    @EXPORT = qw(getpkgsrc getpkgcomponent getsrcpkgs
-		 binarytosource sourcetobinary getversions);
+     @EXPORT = ();
+     %EXPORT_TAGS = (versions => [qw(getverions)],
+		     mapping  => [qw(getpkgsrc getpkgcomponent getsrcpkgs),
+				  qw(binarytosource sourcetobinary)
+				 ],
+		    );
+     @EXPORT_OK = ();
+     Exporter::export_ok_tags(qw(versions mapping));
+     $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
 use Fcntl qw(O_RDONLY);
@@ -193,11 +200,11 @@ Returns versions of the package in distribution at a specific architecture
 my %_versions;
 sub getversions {
     my ($pkg, $dist, $arch) = @_;
-    return () unless defined $debbugs::gVersionIndex;
+    return () unless defined $gVersionIndex;
     $dist = 'unstable' unless defined $dist;
 
     unless (tied %_versions) {
-        tie %_versions, 'MLDBM', $debbugs::gVersionIndex, O_RDONLY
+        tie %_versions, 'MLDBM', $gVersionIndex, O_RDONLY
             or die "can't open versions index: $!";
     }
 
