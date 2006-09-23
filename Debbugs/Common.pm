@@ -16,12 +16,6 @@ This module is a replacement for the general parts of errorlib.pl.
 subroutines in errorlib.pl will be gradually phased out and replaced
 with equivalent (or better) functionality here.
 
-=head1 BUGS
-
-This module currently requires /etc/debbugs/config; it should use a
-general configuration module so that more intelligent things can be
-done.
-
 =head1 FUNCTIONS
 
 =cut
@@ -36,10 +30,11 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (#status => [qw(getbugstatus)],
-		     read   => [qw(readbug)],
-		     util   => [qw(getbugcomponent getbuglocation getlocationpath get_hashname),
+     %EXPORT_TAGS = (util   => [qw(getbugcomponent getbuglocation getlocationpath get_hashname),
+				qw(appendfile),
 			       ],
+		     quit   => [qw(quit)],
+		     lock   => [qw(filelock unfilelock)],
 		    );
      @EXPORT_OK = ();
      Exporter::export_ok_tags(qw(read util));
@@ -51,81 +46,7 @@ use Debbugs::Config qw(:config);
 use IO::File;
 use Debbugs::MIME qw(decode_rfc1522);
 
-=head2 readbug
-
-     readbug($bug_number,$location)
-
-Reads a summary file from the archive given a bug number and a bug
-location. Valid locations are those understood by L</getbugcomponent>
-
-=cut
-
-
-my %fields = (originator     => 'submitter',
-              date           => 'date',
-              subject        => 'subject',
-              msgid          => 'message-id',
-              'package'      => 'package',
-              keywords       => 'tags',
-              done           => 'done',
-              forwarded      => 'forwarded-to',
-              mergedwith     => 'merged-with',
-              severity       => 'severity',
-              owner          => 'owner',
-              found_versions => 'found-in',
-              fixed_versions => 'fixed-in',
-              blocks         => 'blocks',
-              blockedby      => 'blocked-by',
-             );
-
-# Fields which need to be RFC1522-decoded in format versions earlier than 3.
-my @rfc1522_fields = qw(originator subject done forwarded owner);
-
-sub readbug {
-    my ($lref, $location) = @_;
-    my $status = getbugcomponent($lref, 'summary', $location);
-    return undef unless defined $status;
-    my $status_fh = new IO::File $status, 'r' or
-	 warn "Unable to open $status for reading: $!" and return undef;
-
-    my %data;
-    my @lines;
-    my $version = 2;
-    local $_;
-
-    while (<$status_fh>) {
-        chomp;
-        push @lines, $_;
-        $version = $1 if /^Format-Version: ([0-9]+)/i;
-    }
-
-    # Version 3 is the latest format version currently supported.
-    return undef if $version > 3;
-
-    my %namemap = reverse %fields;
-    for my $line (@lines) {
-        if ($line =~ /(\S+?): (.*)/) {
-            my ($name, $value) = (lc $1, $2);
-            $data{$namemap{$name}} = $value if exists $namemap{$name};
-        }
-    }
-    for my $field (keys %fields) {
-        $data{$field} = '' unless exists $data{$field};
-    }
-
-    $data{severity} = $config{default_severity} if $data{severity} eq '';
-    $data{found_versions} = [split ' ', $data{found_versions}];
-    $data{fixed_versions} = [split ' ', $data{fixed_versions}];
-
-    if ($version < 3) {
-	for my $field (@rfc1522_fields) {
-	    $data{$field} = decode_rfc1522($data{$field});
-	}
-    }
-
-    return \%data;
-}
-
+use Fcntl qw(:flock);
 
 =head1 UTILITIES
 
@@ -214,6 +135,120 @@ Returns the hash of the bug which is the location within the archive
 sub get_hashname {
     return "" if ( $_[ 0 ] < 0 );
     return sprintf "%02d", $_[ 0 ] % 100;
+}
+
+
+=head2 appendfile
+
+     appendfile($file,'data','to','append');
+
+Opens a file for appending and writes data to it.
+
+=cut
+
+sub appendfile {
+	my $file = shift;
+	if (!open(AP,">>$file")) {
+		print DEBUG "failed open log<\n";
+		print DEBUG "failed open log err $!<\n";
+		&quit("opening $file (appendfile): $!");
+	}
+	print(AP @_) || &quit("writing $file (appendfile): $!");
+	close(AP) || &quit("closing $file (appendfile): $!");
+}
+
+=head1 LOCK
+
+These functions are exported with the :lock tag
+
+=head2 filelock
+
+     filelock
+
+FLOCKs the passed file. Use unfilelock to unlock it.
+
+=cut
+
+my @filelocks;
+
+sub filelock {
+    # NB - NOT COMPATIBLE WITH `with-lock'
+    my ($lockfile) = @_;
+    my ($count,$errors) = @_;
+    $count= 10; $errors= '';
+    for (;;) {
+	my $fh = eval {
+	     my $fh = new IO::File $lockfile,'w'
+		  or die "Unable to open $lockfile for writing: $!";
+	     flock($fh,LOCK_EX|LOCK_NB)
+		  or die "Unable to lock $lockfile $!";
+	     return $fh;
+	};
+	if ($@) {
+	     $errors .= $@;
+	}
+	if ($fh) {
+	     push @filelocks, {fh => $fh, file => $lockfile};
+	     last;
+	}
+        if (--$count <=0) {
+            $errors =~ s/\n+$//;
+            &quit("failed to get lock on $lockfile -- $errors");
+        }
+        sleep 10;
+    }
+    push(@cleanups,\&unfilelock);
+}
+
+
+=head2 unfilelock
+
+     unfilelock()
+
+Unlocks the file most recently locked.
+
+Note that it is not currently possible to unlock a specific file
+locked with filelock.
+
+=cut
+
+sub unfilelock {
+    if (@filelocks == 0) {
+        warn "unfilelock called with no active filelocks!\n";
+        return;
+    }
+    my %fl = %{pop(@filelocks)};
+    pop(@cleanups);
+    flock($fl{fh},LOCK_UN)
+	 or warn "Unable to unlock lockfile $fl{file}: $!";
+    close($fl{fh})
+	 or warn "Unable to close lockfile $fl{file}: $!";
+    unlink($fl{file})
+	 or warn "Unable to unlink locfile $fl{file}: $!";
+}
+
+
+
+=head1 QUIT
+
+These functions are exported with the :quit tag.
+
+=head2 quit
+
+     quit()
+
+Exits the program by calling die after running some cleanups.
+
+This should be replaced with an END handler which runs the cleanups
+instead. (Or possibly a die handler, if the cleanups are important)
+
+=cut
+
+sub quit {
+    print DEBUG "quitting >$_[0]<\n";
+    local ($u);
+    while ($u= $cleanups[$#cleanups]) { &$u; }
+    die "*** $_[0]\n";
 }
 
 
