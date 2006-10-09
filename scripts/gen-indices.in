@@ -138,8 +138,8 @@ while (my $dir = shift @dirs) {
 	my @subdirs = readdir(DIR);
 	closedir(DIR);
 
-	my @list = map { s/\.summary$//; $_ } grep { m/^\d+\.summary$/ } @subdirs;
-	push @dirs, map { "$dir/$_" } grep { m/^\d+$/ } @subdirs;
+	my @list = map { m/^(\d+)\.summary$/?($1):() } @subdirs;
+	push @dirs, map { m/^(\d+)$/ && -d "$dir/$1"?("$dir/$1"):() } @subdirs;
 
 	for my $f (@list) {
 		print "Up to $cnt bugs...\n" if (++$cnt % 100 == 0 && $verbose);
