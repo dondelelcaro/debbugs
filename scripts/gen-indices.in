@@ -1,0 +1,163 @@
+#!/usr/bin/perl
+
+# Generates by-*.idx files for the CGI scripts
+# Copyright (c) 2005/08/03 Anthony Towns
+# GPL v2
+
+#use strict;
+
+use DB_File;
+use Fcntl qw/O_RDWR O_CREAT O_TRUNC/;
+use File::Copy;
+
+use Getopt::Long;
+use Pod::Usage;
+
+use File::stat;
+
+=head1 NAME
+
+gen-indices - Generates index files for the cgi scripts
+
+=head1 SYNOPSIS
+
+ gen-indices [options]
+
+ Options:
+  --quick update changed bugs
+  --debug, -d debugging level (Default 0)
+  --help, -h display this help
+  --man, -m display manual
+
+=head1 OPTIONS
+
+=over
+
+=itme B<--quick>
+
+Only update changed bugs
+
+=item B<--debug, -d>
+
+Debug verbosity. (Default 0)
+
+=item B<--help, -h>
+
+Display brief useage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+=head1 EXAMPLES
+
+
+=cut
+
+
+my %options = (debug           => 0,
+	       help            => 0,
+	       man             => 0,
+	       quick           => 0,
+	       );
+
+GetOptions(\%options,'quick!','debug|d+','help|h|?','man|m') or pod2usage(2);
+
+
+require '/etc/debbugs/config';
+require '/org/bugs.debian.org/scripts/errorlib';
+
+chdir('/org/bugs.debian.org/spool') or die "chdir spool: $!\n";
+
+my $verbose = $options{debug};
+my $indexdest = "/org/bugs.debian.org/spool";
+
+my $initialdir = "db-h";
+my $suffix = "";
+
+if ($ARGV[0] eq "archive") {
+    $initialdir = "archive";
+    $suffix = "-arc";
+}
+
+my @indexes = ('package', 'tag', 'severity', 'submitter-email');
+my %index = ();
+my $time = undef;
+for my $i (@indexes) {
+	%{$index{$i}} = {};
+	if ($options{quick}) {
+	     if (-e "$indexdest/by-$i${suffix}.idx") {
+		  system('cp','-a',"$indexdest/by-$i${suffix}.idx","$indexdest/by-$i${suffix}.idx.new") == 0
+		       or die "Error creating the new index";
+		  my $stat = stat("$indexdest/by-$i${suffix}.idx");
+		  $time = defined $time ? min($time,$stat->mtime) : $stat->mtime;
+	     }
+	     tie %{$index{$i}}, DB_File => "$indexdest/by-$i$suffix.idx.new",
+		  O_RDWR|O_CREAT, 0666
+		       or die "$0: can't create by-$i$suffix-idx.new: $!";
+	}
+	else {
+	     tie %{$index{$i}}, DB_File => "$indexdest/by-$i$suffix.idx.new",
+		  O_RDWR|O_CREAT|O_TRUNC, 0666
+		       or die "$0: can't create by-$i$suffix-idx.new: $!";
+
+	}
+	$time = 0 if not defined $time;
+}
+
+sub addbugtoindex {
+	my ($i, $k, $bug) = @_;
+
+	my $cnt = 0;
+	if (exists $index{$i}->{"count $k"}) {
+		$cnt = unpack 'N', $index{$i}->{"count $k"};
+	}
+	$index{$i}->{"count $k"} = (pack 'N', 1+$cnt);
+	my $which = $cnt - ($cnt % 100);
+	$index{$i}->{"$which $k"} = '' unless defined $index{$i}->{"$which $k"};
+	$index{$i}->{"$which $k"} .= (pack 'N', $bug);
+}
+
+sub emailfromrfc822 {
+	my $email = shift;
+	$email =~ s/\s*\(.*\)\s*//;
+	$email = $1 if ($email =~ m/<(.*)>/);
+	return $email;
+}
+
+#my $cnt = 0;
+
+my @dirs = ($initialdir);
+while (my $dir = shift @dirs) {
+	printf "Doing dir %s ...\n", $dir if $verbose;
+
+	opendir(DIR, "$dir/.") or die "opendir $dir: $!\n";
+	my @subdirs = readdir(DIR);
+	closedir(DIR);
+
+	my @list = map { s/\.summary$//; $_ } grep { m/^\d+\.summary$/ } @subdirs;
+	push @dirs, map { "$dir/$_" } grep { m/^\d+$/ } @subdirs;
+
+	for my $f (@list) {
+		print "Up to $cnt bugs...\n" if (++$cnt % 100 == 0 && $verbose);
+		my $stat = stat($f);
+		next if $stat->mtime < $time;
+		my $fdata = readbug($f, $initialdir);
+		for my $p (split /[\s,]+/, $fdata->{"package"}) {
+		  addbugtoindex("package", $p, $f);
+		}
+		for my $t (split /[\s,]+/, $fdata->{"keywords"}) {
+		  addbugtoindex("tag", $t, $f);
+		}
+		addbugtoindex('submitter-email', 
+			emailfromrfc822($fdata->{"originator"}), $f);
+		addbugtoindex("severity", $fdata->{"severity"}, $f);
+	}
+}
+
+for my $i (@indexes) {
+	untie %{$indexes{$i}};
+	move("$indexdest/by-$i$suffix.idx.new", "$indexdest/by-$i$suffix.idx");
+}
