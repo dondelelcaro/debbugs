@@ -143,7 +143,7 @@ while (my $dir = shift @dirs) {
 
 	for my $f (@list) {
 		print "Up to $cnt bugs...\n" if (++$cnt % 100 == 0 && $verbose);
-		my $stat = stat(getbugcomponent($f,'summary');
+		my $stat = stat(getbugcomponent($f,'summary'));
 		next if $stat->mtime < $time;
 		my $fdata = readbug($f, $initialdir);
 		for my $p (split /[\s,]+/, $fdata->{"package"}) {
