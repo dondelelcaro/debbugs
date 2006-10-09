@@ -129,7 +129,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Display links to archived bugs for all searches (closes: #53710)
     - Link to blocked bugs in the bugreport.cgi output (closes: #326077)
     - Don't ask for more bugs if there is no maintainer (closes: #355190)
-    - Stop refering to developers on the index page (closes: #355768)
+    - Stop refering to developers on the index page (closes: #355786)
     - Change control@ stop regex and documentation to match eachother
       (closes: #366093)
 
