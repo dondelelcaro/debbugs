@@ -27,7 +27,11 @@ umask(002);
 $|=1;
 undef %fudged;
 
-&filelock('incoming-cleaner');
+# blarson 2006-02-13 be quieter about still being running
+unless (eval {&filelock('incoming-cleaner');}) {
+    print "incoming-cleaner lock failed: $@";
+    exit(0);
+}
 for (;;) {
     if (-f 'stop') {
         print(STDERR "stop file created\n") || die $!;
