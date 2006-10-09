@@ -14,6 +14,7 @@ use Getopt::Long;
 use Pod::Usage;
 
 use File::stat;
+use List::Util qw(min);
 
 =head1 NAME
 
@@ -91,7 +92,7 @@ for my $i (@indexes) {
 	     if (-e "$indexdest/by-$i${suffix}.idx") {
 		  system('cp','-a',"$indexdest/by-$i${suffix}.idx","$indexdest/by-$i${suffix}.idx.new") == 0
 		       or die "Error creating the new index";
-		  my $stat = stat("$indexdest/by-$i${suffix}.idx");
+		  my $stat = stat("$indexdest/by-$i${suffix}.idx") or die "Unable to stat $indexdest/by-$i${suffix}.idx";
 		  $time = defined $time ? min($time,$stat->mtime) : $stat->mtime;
 	     }
 	     tie %{$index{$i}}, DB_File => "$indexdest/by-$i$suffix.idx.new",
@@ -142,7 +143,7 @@ while (my $dir = shift @dirs) {
 
 	for my $f (@list) {
 		print "Up to $cnt bugs...\n" if (++$cnt % 100 == 0 && $verbose);
-		my $stat = stat($f);
+		my $stat = stat(getbugcomponent($f,'summary');
 		next if $stat->mtime < $time;
 		my $fdata = readbug($f, $initialdir);
 		for my $p (split /[\s,]+/, $fdata->{"package"}) {
