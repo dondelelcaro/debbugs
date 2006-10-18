@@ -86,6 +86,7 @@ if ($ARGV[0] eq "archive") {
 my @indexes = ('package', 'tag', 'severity', 'submitter-email');
 my %index = ();
 my $time = undef;
+my $start_time = time;
 for my $i (@indexes) {
 	%{$index{$i}} = {};
 	if ($options{quick}) {
@@ -138,12 +139,12 @@ while (my $dir = shift @dirs) {
 	my @subdirs = readdir(DIR);
 	closedir(DIR);
 
-	my @list = map { s/\.summary$//; $_ } grep { m/^\d+\.summary$/ } @subdirs;
-	push @dirs, map { "$dir/$_" } grep { m/^\d+$/ } @subdirs;
+	my @list = map { m/^(\d+)\.summary$/?($1):() } @subdirs;
+	push @dirs, map { m/^(\d+)$/ && -d "$dir/$1"?("$dir/$1"):() } @subdirs;
 
 	for my $f (@list) {
 		print "Up to $cnt bugs...\n" if (++$cnt % 100 == 0 && $verbose);
-		my $stat = stat(getbugcomponent($f,'summary');
+		my $stat = stat(getbugcomponent($f,'summary'));
 		next if $stat->mtime < $time;
 		my $fdata = readbug($f, $initialdir);
 		for my $p (split /[\s,]+/, $fdata->{"package"}) {
@@ -161,4 +162,5 @@ while (my $dir = shift @dirs) {
 for my $i (@indexes) {
 	untie %{$indexes{$i}};
 	move("$indexdest/by-$i$suffix.idx.new", "$indexdest/by-$i$suffix.idx");
+	system('touch','-d',"1/1/1970 + ${start_time}secs","$indexdest/by-$i$suffix.idx");
 }
