@@ -78,7 +78,7 @@ for (;;) {
 system("$lib_path/gen-indices",'--quick') == 0 or print STDERR "gen-indices failed\n";
 
 if (@gPostProcessall) {
-    system @gPostProcessall == 0 or print STDERR "\@gPostProcessall failed: ".join(' ',@gPostProcessall)."\n";
+    system(@gPostProcessall) == 0 or print STDERR "\@gPostProcessall failed: ".join(' ',@gPostProcessall)."\n";
 }
 
 
