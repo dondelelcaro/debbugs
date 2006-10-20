@@ -3,7 +3,7 @@
 use DB_File;
 use Fcntl qw/O_RDONLY/;
 use Mail::Address;
-use MLDBM qw/DB_File/;
+use MLDBM qw(DB_File Storable);
 use POSIX qw/ceil/;
 
 use URI::Escape;
@@ -697,21 +697,13 @@ sub getbugs {
     if (defined $fastidx && -e $fastidx) {
         my %lookup;
 print STDERR "optimized\n" if ($debug);
-        tie %lookup, DB_File => $fastidx, O_RDONLY
+        tie %lookup, MLDBM => $fastidx, O_RDONLY
             or die "$0: can't open $fastidx ($!)\n";
 	while ($key = shift) {
             my $bugs = $lookup{$key};
             if (defined $bugs) {
-                push @result, (unpack 'N*', $bugs);
-            } elsif (defined $lookup{"count $key"}) {
-		my $which = 0;
-		while (1) {
-		    $bugs = $lookup{"$which $key"};
-		    last unless defined $bugs;
-		    push @result, (unpack 'N*', $bugs);
-		    $which += 100;
-		}
-	    }
+		 push @result, keys %{$bugs};
+            }
         }
 	untie %lookup;
 print STDERR "done optimized\n" if ($debug);
