@@ -49,7 +49,7 @@ BEGIN {
     $DEBUG = 0 unless defined $DEBUG;
 
     @EXPORT = ();
-    @EXPORT_OK = qw(is_valid_user open);
+    @EXPORT_OK = qw(is_valid_user open read_usertags write_usertags);
     $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
