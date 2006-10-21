@@ -218,11 +218,14 @@ as described in the
 Separate multiple tags with commas, spaces, or both.
 
 <pre>
+User: &lt;<var>username</var>&gt;
 Usertags: &lt;<var>usertags</var>&gt;
 </pre>
 
-<p>Replace &lt;<var>tags</var>&gt; with one or more usertags. Separate
-multiple tags with commas, spaces, or both.</p>
+<p>Replace &lt;<var>usertags</var>&gt; with one or more usertags.
+Separate multiple tags with commas, spaces, or both. If you specify a
+username, that users tags will be set. Otherwise, the email address of
+the sender will be used as the username</p>
 
 
 <h2>Not forwarding to the mailing list - minor $gBug reports</h2>
