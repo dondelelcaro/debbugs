@@ -651,12 +651,12 @@ END
     # Deal with usertags
     if (exists $pheader{usertags}) {
 	 my $user = $replyto;
+	 $user = $pheader{user} if exists $pheader{user};
 	 $user =~ s/,.*//;
 	 $user =~ s/^.*<(.*)>.*$/$1/;
 	 $user =~ s/[(].*[)]//;
 	 $user =~ s/^\s*(\S+)\s+.*$/$1/;
-	 $user = "" unless (Debbugs::User::is_valid_user($user));
-	 if ($user ne '') {
+	 if ($user ne '' and Debbugs::User::is_valid_user($user)) {
 	      $pheader{usertags} =~ s/(?:^\s+|\s+$)//g;
 	      my %user_tags;
 	      read_usertags(\%user_tags,$user);
@@ -669,6 +669,12 @@ END
 		   }
 	      }
 	      write_usertags(\%usertags,$user);
+	 }
+	 else {
+	      $brokenness .=<<END;
+Your message tried to set a usertag, but didn't have a valid
+user set ('$user' isn't valid)
+END
 	 }
     }
     &overwrite("db-h/$hash/$ref.report",
