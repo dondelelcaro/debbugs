@@ -205,5 +205,6 @@ if (not $options{quick}) {
 for my $i (@indexes) {
 	untie %{$slow_index{$i}};
 	move("$indexdest/by-$i$suffix.idx.new", "$indexdest/by-$i$suffix.idx");
-	system('touch','-d',"1/1/1970 + ${start_time}secs","$indexdest/by-$i$suffix.idx");
+	# We do this, because old versions of touch don't support -d '@epoch'
+	system('touch','-d',"1/1/1970 UTC + ${start_time}secs","$indexdest/by-$i$suffix.idx");
 }
