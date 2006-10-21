@@ -20,7 +20,7 @@ BEGIN {
 }
 
 use Fcntl qw(O_RDONLY);
-use MLDBM qw(DB_File);
+use MLDBM qw(DB_File Storable);
 
 $MLDBM::RemoveTaint = 1;
 
