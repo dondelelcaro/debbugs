@@ -62,6 +62,9 @@ Display this manual.
 
 =cut
 
+# Use portable Storable images
+$MLDBM::DumpMeth=q(portable);
+
 
 my %options = (debug           => 0,
 	       help            => 0,
