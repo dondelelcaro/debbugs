@@ -135,6 +135,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Make it obvious when commands to control have failed
       (closes: #344184)
     - Fix javascript error in pkgreport.cgi (closes: #346043)
+    - When a bug can't be found in control@; indicate to user that it may
+      be archived. (closes: #153536)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

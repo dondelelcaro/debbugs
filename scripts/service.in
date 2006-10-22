@@ -1378,7 +1378,7 @@ sub getnextbug {
 #    &transcript("$action\n\n")
 #    endmerge
 
-sub notfoundbug { &transcript("$gBug number $ref not found.\n\n"); }
+sub notfoundbug { &transcript("$gBug number $ref not found. (Is it archived?)\n\n"); }
 sub foundbug { &transcript("$gBug#$ref: $data->{subject}\n"); }
 
 sub getmerge {
