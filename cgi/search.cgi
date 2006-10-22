@@ -88,6 +88,7 @@ print <<END;
 Content-Type: text/html
 
 
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML><HEAD><TITLE>BTS Search</TITLE>
 <link rel="stylesheet" href="http://bugs.debian.org/css/bugs.css" type="text/css">
 </HEAD>
@@ -233,11 +234,11 @@ print qq(</select></p>\n);
 print qq(<p>Max results: <select name="max_results">\n);
 for my $max_results (qw(10 25 50 100 150 200)) {
      my $selected = (defined $cgi_var{max_results} and $cgi_var{max_results} eq $max_results) ? ' selected' : '';
-     print qq(<option value="$max_results"$selected>$max_results</optiion>\n);
+     print qq(<option value="$max_results"$selected>$max_results</option>\n);
 }
 print qq(</select></p>\n);
 
-print qq(</tr></td></table>\n);
+print qq(</tr></table>\n);
 
 
 
