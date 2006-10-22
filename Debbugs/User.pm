@@ -44,18 +44,15 @@ use Fcntl ':flock';
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 
+use Debbugs::Config qw(:globals);
+
 BEGIN {
     ($VERSION) = q$Revision: 1.4 $ =~ /^Revision:\s+([^\s+])/;
     $DEBUG = 0 unless defined $DEBUG;
 
     @EXPORT = ();
-    @EXPORT_OK = qw(is_valid_user open);
+    @EXPORT_OK = qw(is_valid_user open read_usertags write_usertags);
     $EXPORT_TAGS{all} = [@EXPORT_OK];
-}
-
-my $gSpoolDir = "/org/bugs.debian.org/spool";
-if (defined($debbugs::gSpoolDir)) {
-    $gSpoolDir = $debbugs::gSpoolDir;
 }
 
 # Obsolete compatability functions

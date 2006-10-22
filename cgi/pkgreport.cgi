@@ -12,6 +12,7 @@ require '/etc/debbugs/config';
 require '/etc/debbugs/text';
 
 use Debbugs::User;
+use Debbugs::CGI qw(version_url);
 
 use vars qw($gPackagePages $gWebDomain %gSeverityDisplay @gSeverityList);
 
@@ -93,7 +94,7 @@ my %cats = (
         "pri" => [map { "severity=$_" } @debbugs::gSeverityList],
         "ttl" => [map { $debbugs::gSeverityDisplay{$_} } @debbugs::gSeverityList],
         "def" => "Unknown Severity",
-        "ord" => [0,1,2,3,4,5,6,7],
+        "ord" => [0..@debbugs::gSeverityList],
     } ],
     "classification" => [ {
         "nam" => "Classification",
@@ -181,10 +182,7 @@ my $this = "";
 my %indexentry;
 my %strings = ();
 
-$ENV{"TZ"} = 'UTC';
-tzset();
-
-my $dtime = strftime "%a, %e %b %Y %T UTC", localtime;
+my $dtime = strftime "%a, %e %b %Y %T UTC", gmtime;
 my $tail_html = $debbugs::gHTMLTail;
 $tail_html = $debbugs::gHTMLTail;
 $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
@@ -365,6 +363,11 @@ $title = htmlsanit($title);
 my @names; my @prior; my @title; my @order;
 determine_ordering();
 
+# strip out duplicate bugs
+my %bugs;
+@bugs{@bugs} = @bugs;
+@bugs = keys %bugs;
+
 my $result = pkg_htmlizebugs(\@bugs);
 
 print "Content-Type: text/html; charset=utf-8\n\n";
@@ -433,18 +436,15 @@ if (defined $pkg || defined $src) {
                 push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($srcforpkg), htmlsanit($srcforpkg);
             }
         }
-        if ($pkg) {
-            set_option("archive", !$archive);
-            push @references, sprintf "to the <a href=\"%s\">%s reports for %s</a>", pkgurl($pkg), ($archive ? "active" : "archived"), htmlsanit($pkg);
-            set_option("archive", $archive);
-        }
         if (@references) {
             $references[$#references] = "or $references[$#references]" if @references > 1;
             print "<p>You might like to refer ", join(", ", @references), ".</p>\n";
         }
-        print "<p>If you find a bug not listed here, please\n";
-        printf "<a href=\"%s\">report it</a>.</p>\n",
-               urlsanit("http://${debbugs::gWebDomain}/Reporting${debbugs::gHTMLSuffix}");
+	if (defined $maint || defined $maintenc) {
+	     print "<p>If you find a bug not listed here, please\n";
+	     printf "<a href=\"%s\">report it</a>.</p>\n",
+		  urlsanit("http://${debbugs::gWebDomain}/Reporting${debbugs::gHTMLSuffix}");
+	}
     } else {
         print "<p>There is no record of the " .
               (defined($pkg) ? htmlsanit($pkg) . " package"
@@ -461,6 +461,17 @@ if (defined $pkg || defined $src) {
     print "different bugs, so there may be other reports filed under\n";
     print "different addresses.\n";
 }
+
+set_option("archive", !$archive);
+printf "<p>See the <a href=\"%s\">%s reports</a></p>",
+     urlsanit('pkgreport.cgi?'.join(';',
+				    (map {$_ eq 'archived'?():("$_=$param{$_}")
+				     } keys %param
+				    ),
+				    ('archived='.($archive?"no":"yes"))
+				   )
+	     ), ($archive ? "active" : "archived");
+set_option("archive", $archive);
 
 print $result if $showresult;
 
@@ -608,7 +619,11 @@ sub pkg_htmlindexentrystatus {
         s{/}{ } foreach @fixed;
         $showversions .= join ', ', map htmlsanit($_), @fixed;
     }
-    $result .= " ($showversions)" if length $showversions;
+    $result .= ' (<a href="'.
+	 version_url($status{package},
+		     $status{found_versions},
+		     $status{fixed_versions},
+		    ).qq{">$showversions</a>)} if length $showversions;
     $result .= ";\n";
 
     $result .= $showseverity;
@@ -631,18 +646,22 @@ sub pkg_htmlindexentrystatus {
     my $days = 0;
     if (length($status{done})) {
         $result .= "<br><strong>Done:</strong> " . htmlsanit($status{done});
-        $days = ceil($debbugs::gRemoveAge - -M buglog($status{id}));
-        if ($days >= 0) {
-            $result .= ";\n<strong>Will be archived" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" ) . "</strong>";
-        } else {
-            $result .= ";\n<strong>Archived</strong>";
-        }
+# Disabled until archiving actually works again
+#        $days = ceil($debbugs::gRemoveAge - -M buglog($status{id}));
+#         if ($days >= 0) {
+#             $result .= ";\n<strong>Will be archived" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" ) . "</strong>";
+#         } else {
+#             $result .= ";\n<strong>Archived</strong>";
+#         }
     }
 
     unless (length($status{done})) {
         if (length($status{forwarded})) {
             $result .= ";\n<strong>Forwarded</strong> to "
-                       . maybelink($status{forwarded});
+                       . join(', ',
+			      map {maybelink($_)}
+			      split /[,\s]+/,$status{forwarded}
+			     );
         }
         my $daysold = int((time - $status{date}) / 86400);   # seconds to days
         if ($daysold >= 7) {
@@ -808,20 +827,7 @@ sub pkg_htmlpackagelinks {
 }
 
 sub pkg_htmladdresslinks {
-    my ($prefixfunc, $urlfunc, $addresses) = @_;
-    if (defined $addresses and $addresses ne '') {
-        my @addrs = getparsedaddrs($addresses);
-        my $prefix = (ref $prefixfunc) ? $prefixfunc->(scalar @addrs)
-                                       : $prefixfunc;
-        return $prefix .
-               join ', ', map { sprintf '<a class="submitter" href="%s">%s</a>',
-                                        $urlfunc->($_->address),
-                                        htmlsanit($_->format) || '(unknown)'
-                              } @addrs;
-    } else {
-        my $prefix = (ref $prefixfunc) ? $prefixfunc->(1) : $prefixfunc;
-        return sprintf '%s<a class="submitter" href="%s">(unknown)</a>', $prefix, $urlfunc->('');
-    }
+     htmlize_addresslinks(@_,'submitter');
 }
 
 sub pkg_javascript {
@@ -830,6 +836,7 @@ sub pkg_javascript {
 <!--
 function pagemain() {
 	toggle(1);
+//	toggle(2);
 	enable(1);
 }
 
@@ -878,10 +885,12 @@ function save_cat_cookies() {
 
 function toggle(i) {
         var a = document.getElementById("a_" + i);
-        if (a.style.display == "none") {
-                a.style.display = "";
-        } else {
-                a.style.display = "none";
+        if (a) {
+             if (a.style.display == "none") {
+                     a.style.display = "";
+             } else {
+                     a.style.display = "none";
+             }
         }
 }
 
@@ -1001,13 +1010,8 @@ sub get_bug_order_index {
 
 sub buglinklist {
     my ($prefix, $infix, @els) = @_;
-    my $sep = $prefix;
-    my $r = "";
-    for my $e (@els) {
-        $r .= $sep."<A class=\"submitter\" href=\"" . bugurl($e) . "\">#$e</A>";
-        $sep = $infix;
-    }
-    return $r;
+    return '' if not @els;
+    return $prefix . bug_linklist($infix,'submitter',@els);
 }
 
 

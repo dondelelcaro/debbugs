@@ -85,6 +85,7 @@ Display this manual.
 =cut
 
 
+use Debbugs::Config qw(:globals);
 use Debbugs::Mail qw(send_mail_message);
 use Debbugs::MIME qw(create_mime_message);
 
@@ -151,7 +152,7 @@ my $node =  new Search::Estraier::Node (url    => $options{url},
 					user   => $options{user},
 					passwd => $options{passwd},
 				       );
-$Debbugs::Config::gSpoolDir = $options{spool} if defined $options{spool};
+$gSpoolDir = $options{spool} if defined $options{spool};
 
 if ($options{cron}) {
      my %timestamps;
@@ -180,8 +181,9 @@ if ($options{cron}) {
 			 ($timestamps{$File::Find::dir} > $stat->mtime);
 		    $seen_dirs{$File::Find::dir} = $start_time;
 		    print STDERR "Adding $bug_num\n" if $DEBUG;
+		    my $max_message = 0;
 		    eval{
-			 add_bug_log($node,$bug_num);
+			 $max_message = add_bug_log($node,$bug_num);
 		    };
 		    if ($@) {
 			 print STDERR "Adding $bug_num failed with $@\n";

@@ -49,6 +49,8 @@ use Params::Validate qw(validate_with :types);
 use IO::File;
 use Debbugs::Status;
 use Debbugs::Packages qw(getsrcpkgs);
+use Fcntl qw(O_RDONLY);
+use MLDBM qw(DB_File Storable);
 
 =head2 get_bugs
 
@@ -59,7 +61,7 @@ use Debbugs::Packages qw(getsrcpkgs);
 The following parameters can either be a single scalar or a reference
 to an array. The parameters are ANDed together, and the elements of
 arrayrefs are a parameter are ORed. Future versions of this may allow
-for limited regular expressions.
+for limited regular expressions, and/or more complex expressions.
 
 =over
 
@@ -84,6 +86,8 @@ for limited regular expressions.
 =item dist -- distribution (I don't know about this one yet)
 
 =item bugs -- list of bugs to search within
+
+=item function -- see description below
 
 =back
 
@@ -113,6 +117,26 @@ trivial.]
 
 This function will then immediately move on to the next subroutine,
 giving it the same arguments.
+
+=head3 function
+
+This option allows you to provide an arbitrary function which will be
+given the information in the index.db file. This will be super, super
+slow, so only do this if there's no other way to write the search.
+
+You'll be given a list (which you can turn into a hash) like the
+following:
+
+ (pkg => ['a','b'], # may be a scalar (most common)
+  bug => 1234,
+  status => 'pending',
+  submitter => 'boo@baz.com',
+  severity => 'serious',
+  tags => ['a','b','c'], # may be an empty arrayref
+ )
+
+The function should return 1 if the bug should be included; 0 if the
+bug should not.
 
 =cut
 
@@ -148,6 +172,9 @@ sub get_bugs{
 					  dist      => {type => SCALAR|ARRAYREF,
 						        optional => 1,
 						       },
+					  function  => {type => CODEREF,
+							optional => 1,
+						       },
 					  bugs      => {type => SCALAR|ARRAYREF,
 							optional => 1,
 						       },
@@ -164,7 +191,7 @@ sub get_bugs{
      my %options = %param;
      my @bugs;
      # A configuration option will set an array that we'll use here instead.
-     for my $routine (qw(Debbugs::Bugs::get_bugs_flatfile)) {
+     for my $routine (qw(Debbugs::Bugs::get_bugs_by_idx Debbugs::Bugs::get_bugs_flatfile)) {
 	  my ($package) = $routine =~ m/^(.+)\:\:/;
 	  eval "use $package;";
 	  if ($@) {
@@ -190,6 +217,65 @@ sub get_bugs{
      }
      return @bugs;
 }
+
+=head2 get_bugs_by_idx
+
+This routine uses the by-$index.idx indicies to try to speed up
+searches.
+
+
+=cut
+
+sub get_bugs_by_idx{
+     my %param = validate_with(params => \@_,
+			       spec   => {package   => {type => SCALAR|ARRAYREF,
+							optional => 1,
+						       },
+					  submitter => {type => SCALAR|ARRAYREF,
+						        optional => 1,
+						       },
+					  severity  => {type => SCALAR|ARRAYREF,
+						        optional => 1,
+						       },
+					  tag       => {type => SCALAR|ARRAYREF,
+						        optional => 1,
+						       },
+					  archive   => {type => BOOLEAN,
+							default => 0,
+						       },
+					 },
+			      );
+     my %bugs = ();
+     my $keys = keys %param - 1;
+     die "Need at least 1 key to search by" unless $keys;
+     my $arc = $params{archive} ? '-arc':''
+     my %idx;
+     for my $key (keys %param) {
+	  my $index = $key;
+	  $index = 'submitter-email' if $key eq 'submitter';
+	  $index = "$config{spool_dir}/by-${index}${arc}.idx"
+	  tie %idx, MLDBM => $index, O_RDONLY
+	       or die "Unable to open $index $!";
+	  for my $search (__make_list($param{$key})) {
+	       next unless defined $idx{$search};
+	       for my $bug (keys %{$idx{$search}}) {
+		    # increment the number of searches that this bug matched
+		    $bugs{$bug}++;
+	       }
+	  }
+	  untie %idx or die 'Unable to untie %idx';
+     }
+     # Throw out results that do not match all of the search specifications
+     return map {$keys == $bugs{$bug}?($bug):()} keys %bugs;
+}
+
+
+=head2 get_bugs_flatfile
+
+This is the fallback search routine. It should be able to complete all
+searches. [Or at least, that's the idea.]
+
+=cut
 
 sub get_bugs_flatfile{
      my %param = validate_with(params => \@_,
@@ -228,6 +314,9 @@ sub get_bugs_flatfile{
 							default => 1,
 						       },
 					  usertags  => {type => HASHREF,
+							optional => 1,
+						       },
+					  function  => {type => CODEREF,
 							optional => 1,
 						       },
 					 },
@@ -289,6 +378,20 @@ sub get_bugs_flatfile{
 				    grep {$bug_tag eq $_} __make_list($param{tag});
 			       } @bug_tags;
 	       next unless $bug_ok;
+	  }
+	  # We do this last, because a function may be slow...
+	  if (exists $param{function}) {
+	       my @bug_tags = split ' ', $tags;
+	       my @packages = splitpackages($pkg);
+	       my $package = (@packages > 1)?\@packages:$packages[0],
+	       next unless
+		    $param{function}->(pkg       => $package,
+				       bug       => $bug,
+				       status    => $status,
+				       submitter => $submitter,
+				       severity  => $severity,
+				       tags      => \@bug_tags,
+				      );
 	  }
 	  push @bugs, $bug;
      }

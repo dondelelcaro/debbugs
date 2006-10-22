@@ -3,7 +3,7 @@
 use DB_File;
 use Fcntl qw/O_RDONLY/;
 use Mail::Address;
-use MLDBM qw/DB_File/;
+use MLDBM qw(DB_File Storable);
 use POSIX qw/ceil/;
 
 use URI::Escape;
@@ -12,10 +12,13 @@ $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
 require "$lib_path/errorlib";
 
-use Debbugs::Packages;
+use Debbugs::Packages qw(:versions :mapping);
 use Debbugs::Versions;
 use Debbugs::MIME qw(decode_rfc1522);
-use Debbugs::Common qw(:read :util);
+use Debbugs::Common qw(:util);
+use Debbugs::Status qw(:read :versions);
+use Debbugs::CGI qw(:all);
+
 
 $MLDBM::RemoveTaint = 1;
 
@@ -259,34 +262,11 @@ sub splitpackages {
     return map lc, split /[ \t?,()]+/, $pkgs;
 }
 
-my %_parsedaddrs;
-sub getparsedaddrs {
-    my $addr = shift;
-    return () unless defined $addr;
-    return @{$_parsedaddrs{$addr}} if exists $_parsedaddrs{$addr};
-    @{$_parsedaddrs{$addr}} = Mail::Address->parse($addr);
-    return @{$_parsedaddrs{$addr}};
-}
-
 # Generate a comma-separated list of HTML links to each package given in
 # $pkgs. $pkgs may be empty, in which case an empty string is returned, or
 # it may be a comma-separated list of package names.
 sub htmlpackagelinks {
-    my $pkgs = shift;
-    return unless defined $pkgs and $pkgs ne '';
-    my $strong = shift;
-    my @pkglist = splitpackages($pkgs);
-
-    my $openstrong  = $strong ? '<strong>' : '';
-    my $closestrong = $strong ? '</strong>' : '';
-
-    return 'Package' . (@pkglist > 1 ? 's' : '') . ': ' .
-           join(', ',
-                map {
-                    '<a href="' . pkgurl($_) . '">' .
-                    $openstrong . htmlsanit($_) . $closestrong . '</a>'
-                } @pkglist
-           );
+     return htmlize_packagelinks(@_);
 }
 
 # Generate a comma-separated list of HTML links to each address given in
@@ -294,20 +274,7 @@ sub htmlpackagelinks {
 # $urlfunc should be a reference to a function like mainturl or submitterurl
 # which returns the URL for each individual address.
 sub htmladdresslinks {
-    my ($prefixfunc, $urlfunc, $addresses) = @_;
-    if (defined $addresses and $addresses ne '') {
-        my @addrs = getparsedaddrs($addresses);
-        my $prefix = (ref $prefixfunc) ? $prefixfunc->(scalar @addrs)
-                                       : $prefixfunc;
-        return $prefix .
-               join ', ', map { sprintf '<a href="%s">%s</a>',
-                                        $urlfunc->($_->address),
-                                        htmlsanit($_->format) || '(unknown)'
-                              } @addrs;
-    } else {
-        my $prefix = (ref $prefixfunc) ? $prefixfunc->(1) : $prefixfunc;
-        return sprintf '%s<a href="%s">(unknown)</a>', $prefix, $urlfunc->('');
-    }
+     htmlize_addresslinks(@_);
 }
 
 # Generate a comma-separated list of HTML links to each maintainer given in
@@ -367,7 +334,6 @@ sub htmlindexentrystatus {
 		 . htmlsanit(join(", ", sort(split(/\s+/, $status{tags}))))
 		 . "</strong>"
                        if (length($status{tags}));
-
     my @merged= split(/ /,$status{mergedwith});
     my $mseparator= ";\nmerged with ";
     for my $m (@merged) {
@@ -430,11 +396,11 @@ sub urlargs {
     return $args;
 }
 
-sub submitterurl { pkg_etc_url(emailfromrfc822($_[0] || ""), "submitter"); }
-sub mainturl { pkg_etc_url(emailfromrfc822($_[0] || ""), "maint"); }
-sub pkgurl { pkg_etc_url($_[0] || "", "pkg"); }
-sub srcurl { pkg_etc_url($_[0] || "", "src"); }
-sub tagurl { pkg_etc_url($_[0] || "", "tag"); }
+sub submitterurl { pkg_url(submitter => emailfromrfc822($_[0] || "")); }
+sub mainturl { pkg_url(maint => emailfromrfc822($_[0] || "")); }
+sub pkgurl { pkg_url(pkg => $_[0] || ""); }
+sub srcurl { pkg_url(src => $_[0] || ""); }
+sub tagurl { pkg_url(tag => $_[0] || ""); }
 
 sub pkg_etc_url {
     my $ref = shift;
@@ -466,15 +432,6 @@ sub htmlsanit {
     my $in = shift || "";
     $in =~ s/([<>&"])/\&$saniarray{$1};/g;
     return $in;
-}
-
-sub maybelink {
-    my $in = shift;
-    if ($in =~ /^[a-zA-Z0-9+.-]+:/) { # RFC 1738 scheme
-	return qq{<a href="$in">} . htmlsanit($in) . '</a>';
-    } else {
-	return htmlsanit($in);
-    }
 }
 
 sub bugurl {
@@ -698,21 +655,13 @@ sub getbugs {
     if (defined $fastidx && -e $fastidx) {
         my %lookup;
 print STDERR "optimized\n" if ($debug);
-        tie %lookup, DB_File => $fastidx, O_RDONLY
+        tie %lookup, MLDBM => $fastidx, O_RDONLY
             or die "$0: can't open $fastidx ($!)\n";
 	while ($key = shift) {
             my $bugs = $lookup{$key};
             if (defined $bugs) {
-                push @result, (unpack 'N*', $bugs);
-            } elsif (defined $lookup{"count $key"}) {
-		my $which = 0;
-		while (1) {
-		    $bugs = $lookup{"$which $key"};
-		    last unless defined $bugs;
-		    push @result, (unpack 'N*', $bugs);
-		    $which += 100;
-		}
-	    }
+		 push @result, keys %{$bugs};
+            }
         }
 	untie %lookup;
 print STDERR "done optimized\n" if ($debug);
@@ -893,6 +842,7 @@ sub buglog {
 # named source package. This is used to cope with source packages whose
 # names have changed during their history, and with cases where source
 # version numbers differ from binary version numbers.
+my %_sourceversioncache = ();
 sub makesourceversions {
     my $pkg = shift;
     my $arch = shift;
@@ -903,6 +853,15 @@ sub makesourceversions {
             # Already a source version.
             $sourceversions{$version} = 1;
         } else {
+            my $cachearch = (defined $arch) ? $arch : '';
+            my $cachekey = "$pkg/$cachearch/$version";
+            if (exists($_sourceversioncache{$cachekey})) {
+                for my $v (@{$_sourceversioncache{$cachekey}}) {
+		    $sourceversions{$v} = 1;
+		}
+                next;
+            }
+
             my @srcinfo = binarytosource($pkg, $version, $arch);
             unless (@srcinfo) {
                 # We don't have explicit information about the
@@ -923,6 +882,7 @@ sub makesourceversions {
                 }
             }
             $sourceversions{"$_->[0]/$_->[1]"} = 1 foreach @srcinfo;
+            $_sourceversioncache{$cachekey} = [ map { "$_->[0]/$_->[1]" } @srcinfo ];
         }
     }
 
@@ -957,37 +917,6 @@ sub buggyversion {
     return $tree->buggy($ver, \@found, \@fixed);
 }
 
-my %_versions;
-sub getversions {
-    my ($pkg, $dist, $arch) = @_;
-    return () unless defined $debbugs::gVersionIndex;
-    $dist = 'unstable' unless defined $dist;
-
-    unless (tied %_versions) {
-        tie %_versions, 'MLDBM', $debbugs::gVersionIndex, O_RDONLY
-            or die "can't open versions index: $!";
-    }
-
-    if (defined $arch and exists $_versions{$pkg}{$dist}{$arch}) {
-        my $ver = $_versions{$pkg}{$dist}{$arch};
-        return $ver if defined $ver;
-        return ();
-    } else {
-        my %uniq;
-        for my $ar (keys %{$_versions{$pkg}{$dist}}) {
-            $uniq{$_versions{$pkg}{$dist}{$ar}} = 1 unless $ar eq 'source';
-        }
-        if (%uniq) {
-            return keys %uniq;
-        } elsif (exists $_versions{$pkg}{$dist}{source}) {
-            # Maybe this is actually a source package with no corresponding
-            # binaries?
-            return $_versions{$pkg}{$dist}{source};
-        } else {
-            return ();
-        }
-    }
-}
 
 sub getversiondesc {
     my $pkg = shift;

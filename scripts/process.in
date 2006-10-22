@@ -12,6 +12,7 @@ use MIME::Parser;
 use Debbugs::MIME qw(decode_rfc1522 create_mime_message);
 use Debbugs::Mail qw(send_mail_message encode_headers);
 use Debbugs::Packages qw(getpkgsrc);
+use Debbugs::User qw(read_usertags write_usertags);
 
 my $config_path = '/etc/debbugs';
 my $lib_path = '/usr/lib/debbugs';
@@ -151,7 +152,7 @@ for my $phline (@bodylines)
     print DEBUG ">$fn|$fv|\n";
     $fn = lc $fn;
     # Don't lc owner or forwarded
-    $fv = lc $fv unless $fh =~ /^(?:owner|forwarded)$/;
+    $fv = lc $fv unless $fh =~ /^(?:owner|forwarded|usertags)$/;
     $pheader{$fn} = $fv;
     print DEBUG ">$fn~$fv<\n";
 }
@@ -647,6 +648,35 @@ END
     $data->{subject} = $subject;
     $data->{msgid} = $header{'message-id'};
     writebug($ref, $data);
+    # Deal with usertags
+    if (exists $pheader{usertags}) {
+	 my $user = $replyto;
+	 $user = $pheader{user} if exists $pheader{user};
+	 $user =~ s/,.*//;
+	 $user =~ s/^.*<(.*)>.*$/$1/;
+	 $user =~ s/[(].*[)]//;
+	 $user =~ s/^\s*(\S+)\s+.*$/$1/;
+	 if ($user ne '' and Debbugs::User::is_valid_user($user)) {
+	      $pheader{usertags} =~ s/(?:^\s+|\s+$)//g;
+	      my %user_tags;
+	      read_usertags(\%user_tags,$user);
+	      for my $tag (split /[,\s]+/, $pheader{usertags}) {
+		   if ($tag =~ /^[a-zA-Z0-9.+\@-]+/) {
+			my %bugs_with_tag; 
+			@bugs_with_tag{@{$user_tags{$tag}}} = (1) x @{$user_tags{$tag}};
+			$bugs_with_tag{$ref} = 1;
+			$user_tags{$tag} = [keys %bugs_with_tag];
+		   }
+	      }
+	      write_usertags(\%usertags,$user);
+	 }
+	 else {
+	      $brokenness .=<<END;
+Your message tried to set a usertag, but didn't have a valid
+user set ('$user' isn't valid)
+END
+	 }
+    }
     &overwrite("db-h/$hash/$ref.report",
                join("\n",@msg)."\n");
 }

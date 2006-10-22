@@ -1,4 +1,3 @@
-# $Id: text.in,v 1.23 2003/09/18 11:20:54 joy Exp $
 # -*- mode: cperl -*-
 
 use Debbugs::Config qw(:globals);

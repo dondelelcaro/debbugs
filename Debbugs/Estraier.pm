@@ -72,6 +72,36 @@ sub add_bug_log{
 	  next if $msg_id =~ /handler\..+\.ack(?:info)?\@/;
 	  add_bug_message($est,$record->{text},$bug_num,$msg_num,$status)
      }
+     return $msg_num;
+}
+
+=head2 remove_old_message
+
+     remove_old_message($est,300000,50);
+
+Removes all messages which are no longer in the log
+
+=cut
+
+sub remove_old_messages{
+     my ($est,$bug_num,$max_message) = @_;
+     # remove records which are no longer present in the log (uri > $msg_num)
+     my $cond = new Search::Estraier::Condition;
+     $cond->add_attr('@uri STRBW '.$bug_num.'/');
+     $cond->set_max(50);
+     my $skip;
+     my $nres;
+     while ($nres = $est->search($cond,0) and $nres->doc_num > 0){
+	  for my $rdoc (map {$nres->get_doc($_)} 0..($nres->doc_num-1)) {
+	       my $uri = $rdoc->uri;
+	       my ($this_message) = $uri =~ m{/(\d+)$};
+	       next unless $this_message > $max_message;
+	       $est->out_doc_by_uri($uri);
+	  }
+	  last unless $nres->doc_num >= $cond->max;
+	  $cond->set_skip($cond->skip+$cond->max);
+     }
+
 }
 
 sub add_bug_message{

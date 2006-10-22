@@ -12,7 +12,7 @@ BEGIN {
     $VERSION = 1.00;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (versions => [qw(getverions)],
+     %EXPORT_TAGS = (versions => [qw(getversions)],
 		     mapping  => [qw(getpkgsrc getpkgcomponent getsrcpkgs),
 				  qw(binarytosource sourcetobinary)
 				 ],
@@ -23,7 +23,7 @@ BEGIN {
 }
 
 use Fcntl qw(O_RDONLY);
-use MLDBM qw(DB_File);
+use MLDBM qw(DB_File Storable);
 
 $MLDBM::RemoveTaint = 1;
 

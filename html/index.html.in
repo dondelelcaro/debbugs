@@ -25,8 +25,8 @@ $gHTMLCopies
 </ul>
 
 <ul>
-  <li><a href="Developer$gHTMLSuffix">Developers' information on how to use the system</a>
-  <li><a href="server-control$gHTMLSuffix">Developers' information on manipulating $gBugs by email</a>
+  <li><a href="Developer$gHTMLSuffix">Advanced information on how to use the system</a>
+  <li><a href="server-control$gHTMLSuffix">Information on manipulating $gBugs by email</a>
   <li><a href="server-refcard$gHTMLSuffix">Mailservers' reference card</a>
 </ul>
 

@@ -1,3 +1,4 @@
+# -*- mode: cperl -*-
 # This is the template debbugs configuration file.
 # You *must* edit it in order for debbugs to work.
 # $Id: config.in,v 1.23 2005/07/17 19:07:01 cjwatson Exp $
@@ -71,5 +72,12 @@ $gMaintainerFile = "$gConfigDir/Maintainers";
 $gMaintainerFileOverride = "$gConfigDir/Maintainers.override";
 $gPseudoDescFile = "$gConfigDir/pseudo-packages.description";
 $gPackageSource = "$gConfigDir/indices/sources";
+
+
+# Estraier Configuration
+%gSearchEstraier = (url  => 'http://localhost:1978/node/bts1',
+		    user => 'user',
+		    pass => 'pass',
+		   );
 
 1;

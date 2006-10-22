@@ -1,0 +1,211 @@
+#!/usr/bin/perl
+
+# Generates by-*.idx files for the CGI scripts
+# Copyright (c) 2005/08/03 Anthony Towns
+# GPL v2
+
+#use strict;
+
+use DB_File;
+use MLDBM qw(DB_FILE Storable);
+use Fcntl qw/O_RDWR O_CREAT O_TRUNC/;
+use File::Copy;
+
+use Getopt::Long;
+use Pod::Usage;
+
+use warnings;
+use strict;
+
+use File::stat;
+use List::Util qw(min);
+
+=head1 NAME
+
+gen-indices - Generates index files for the cgi scripts
+
+=head1 SYNOPSIS
+
+ gen-indices [options]
+
+ Options:
+  --index-path path to index location
+  --quick update changed bugs
+  --debug, -d debugging level (Default 0)
+  --help, -h display this help
+  --man, -m display manual
+
+=head1 OPTIONS
+
+=over
+
+=itme B<--quick>
+
+Only update changed bugs
+
+=item B<--debug, -d>
+
+Debug verbosity. (Default 0)
+
+=item B<--help, -h>
+
+Display brief useage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+=head1 EXAMPLES
+
+
+=cut
+
+# Use portable Storable images
+$MLDBM::DumpMeth=q(portable);
+
+
+my %options = (debug           => 0,
+	       help            => 0,
+	       man             => 0,
+	       quick           => 0,
+	       index_path      => undef,
+	       );
+
+GetOptions(\%options,'quick!','index_path|index-path=s','debug|d+','help|h|?','man|m') or pod2usage(2);
+pod2usage(1) if $options{help};
+pod2usage(-verbose=>2) if $options{man};
+
+{ no warnings;
+  no strict;
+require '/etc/debbugs/config';
+require '/org/bugs.debian.org/scripts/errorlib';
+}
+
+chdir('/org/bugs.debian.org/spool') or die "chdir spool: $!\n";
+
+my $verbose = $options{debug};
+my $indexdest = $options{index_path} || "/org/bugs.debian.org/spool";
+
+my $initialdir = "db-h";
+my $suffix = "";
+
+if (defined $ARGV[0] and $ARGV[0] eq "archive") {
+    $initialdir = "archive";
+    $suffix = "-arc";
+}
+
+# NB: The reverse index is special; it's used to clean up during updates to bugs
+my @indexes = ('package', 'tag', 'severity', 'submitter-email','reverse');
+my $indexes;
+my %slow_index = ();
+my %fast_index = ();
+if (not $options{quick}) {
+     # We'll trade memory for speed here if we're not doing a quick rebuild
+     for my $indexes (@indexes) {
+	  $fast_index{$indexes} = {};
+     }
+     $indexes = \%fast_index;
+}
+else {
+     $indexes = \%slow_index;
+}
+my $time = undef;
+my $start_time = time;
+for my $i (@indexes) {
+	$slow_index{$i} = {};
+	if ($options{quick}) {
+	     if (-e "$indexdest/by-$i${suffix}.idx") {
+		  system('cp','-a',"$indexdest/by-$i${suffix}.idx","$indexdest/by-$i${suffix}.idx.new") == 0
+		       or die "Error creating the new index";
+		  my $stat = stat("$indexdest/by-$i${suffix}.idx") or die "Unable to stat $indexdest/by-$i${suffix}.idx";
+		  $time = defined $time ? min($time,$stat->mtime) : $stat->mtime;
+	     }
+	     tie %{$slow_index{$i}}, MLDBM => "$indexdest/by-$i$suffix.idx.new",
+		  O_RDWR|O_CREAT, 0666
+		       or die "$0: can't create by-$i$suffix-idx.new: $!";
+	}
+	else {
+	     tie %{$slow_index{$i}}, MLDBM => "$indexdest/by-$i$suffix.idx.new",
+		  O_RDWR|O_CREAT|O_TRUNC, 0666
+		       or die "$0: can't create by-$i$suffix-idx.new: $!";
+
+	}
+	$time = 0 if not defined $time;
+}
+
+sub addbugtoindex {
+     my ($index, $bug, @values) = @_;
+
+     if (exists $indexes->{reverse}{"$index $bug"}) {
+	  # We do this insanity to work around a "feature" in MLDBM
+	  for my $key (@{$indexes->{reverse}{"$index $bug"}}) {
+	       my $temp = $indexes->{$index}{$key};
+	       delete $temp->{$bug};
+	       $indexes->{$index}{$key} = $temp;
+	       $indexes->{$index}{"count $key"}--;
+	  }
+	  delete $indexes->{reverse}{"$index $bug"};
+     }
+     for my $key (@values) {
+	  $indexes->{$index}->{"count $key"}++;
+	  # We do this insanity to work around a "feature" in MLDBM
+	  my $temp = $indexes->{$index}->{$key};
+	  $temp->{$bug} = 1;
+	  $indexes->{$index}->{$key} = $temp;
+     }
+     $indexes->{reverse}{"$index $bug"} = [@values];
+}
+
+sub emailfromrfc822 {
+	my $email = shift;
+	$email =~ s/\s*\(.*\)\s*//;
+	$email = $1 if ($email =~ m/<(.*)>/);
+	return $email;
+}
+
+my $cnt = 0;
+
+my @dirs = ($initialdir);
+while (my $dir = shift @dirs) {
+	printf "Doing dir %s ...\n", $dir if $verbose;
+
+	opendir(DIR, "$dir/.") or die "opendir $dir: $!\n";
+	my @subdirs = readdir(DIR);
+	closedir(DIR);
+
+	my @list = map { m/^(\d+)\.summary$/?($1):() } @subdirs;
+	push @dirs, map { m/^(\d+)$/ && -d "$dir/$1"?("$dir/$1"):() } @subdirs;
+
+	for my $bug (@list) {
+		print "Up to $cnt bugs...\n" if (++$cnt % 100 == 0 && $verbose);
+		my $stat = stat(getbugcomponent($bug,'summary'));
+		next if $stat->mtime < $time;
+		my $fdata = readbug($bug, $initialdir);
+		addbugtoindex("package", $bug, split /[\s,]+/, $fdata->{"package"});
+		addbugtoindex("tag", $bug, split /[\s,]+/, $fdata->{"keywords"});
+		addbugtoindex('submitter-email', $bug,
+			      emailfromrfc822($fdata->{"originator"}));
+		addbugtoindex("severity", $bug, $fdata->{"severity"});
+	}
+}
+
+if (not $options{quick}) {
+     # put the fast index into the slow index
+     for my $key1 (keys %fast_index) {
+	  for my $key2 (keys %{$fast_index{$key1}}) {
+	       $slow_index{$key1}{$key2} = $fast_index{$key1}{$key2};
+	  }
+	  print "Dealt with index $key1\n" if $verbose;
+     }
+}
+
+
+for my $i (@indexes) {
+	untie %{$slow_index{$i}};
+	move("$indexdest/by-$i$suffix.idx.new", "$indexdest/by-$i$suffix.idx");
+	# We do this, because old versions of touch don't support -d '@epoch'
+	system('touch','-d',"1/1/1970 UTC + ${start_time}secs","$indexdest/by-$i$suffix.idx");
+}
+

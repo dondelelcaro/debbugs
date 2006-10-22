@@ -48,7 +48,9 @@ BEGIN {
 				 qw($gShowSeverities $gBounceFroms $gConfigDir $gSpoolDir),
 				 qw($gIncomingDir $gWebDir $gDocDir $gMaintainerFile),
 				 qw($gMaintainerFileOverride $gPseudoDescFile $gPackageSource),
+				 qw($gVersionPackagesDir $gVersionIndex $gBinarySourceMap $gSourceBinaryMap),
 				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
+				 qw(%gSearchEstraier),
 				],
 		     config   => [qw(%config)],
 		    );
@@ -293,6 +295,9 @@ set_default(\%config,'maintainer_file_override',$config{config_dir}.'/Maintainer
 set_default(\%config,'pseduo_desc_file',$config{config_dir}.'/pseudo-packages.description');
 set_default(\%config,'package_source',$config{config_dir}.'/indices/sources');
 
+set_default(\%config,'version_packages_dir',$config{spool_dir}.'/../versions/pkg');
+#set_default(\%config,'version_packages_dir',$config{spool_dir}'/../versions/pkg');
+
 
 sub read_config{
      my ($conf_file) = @_;
@@ -317,7 +322,7 @@ sub read_config{
           # so fucked up crap in the config file doesn't sink us.
 	  my $cpt = new Safe or die "Unable to create safe compartment";
 	  # perldoc Opcode; for details
-	  $cpt->permit('require');
+	  $cpt->permit('require',':filesys_read','entereval','caller','pack','unpack','dofile');
 	  $cpt->reval(q($gMaintainerFile = 'FOOOO'));
 	  $cpt->reval(qq(require '$conf_file';));
 	  die "Error in configuration file: $@" if $@;

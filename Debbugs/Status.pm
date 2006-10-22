@@ -30,21 +30,22 @@ use base qw(Exporter);
 use Params::Validate qw(validate_with :types);
 use Debbugs::Common qw(:util :lock);
 use Debbugs::Config qw(:config);
+use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
+
 
 BEGIN{
      $VERSION = 1.00;
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (status => [qw(splitpackages getbugstatus)],
+     %EXPORT_TAGS = (status => [qw(splitpackages)],
 		     read   => [qw(readbug lockreadbug)],
 		     write  => [qw(writebug makestatus unlockwritebug)],
 		     versions => [qw(addfoundversion addfixedversion),
-				  qw(),
 				 ],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(splitpackages));
+     Exporter::export_ok_tags(qw(status read write versions));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -134,9 +135,9 @@ sub readbug {
 	 $data{$field} = [split ' ', $data{$field}];
     }
     for my $field (qw(found fixed)) {
-	 $data{$field}{@{$data{${field}_versions}}} =
-	      ('') x (@{$data{${field}_date}} - @{$data{${field}_versions}}), 
-		   @{$data{${field}_date}};
+	 @{$data{$field}}{@{$data{"${field}_versions"}}} =
+	      (('') x (@{$data{"${field}_date"}} - @{$data{"${field}_versions"}}),
+	       @{$data{"${field}_date"}});
     }
 
     if ($version < 3) {
@@ -161,7 +162,7 @@ See readbug above for information on what this returns
 =cut
 
 sub lockreadbug {
-    local ($lref, $location) = @_;
+    my ($lref, $location) = @_;
     &filelock("lock/$lref");
     my $data = readbug($lref, $location);
     &unfilelock unless defined $data;
@@ -195,9 +196,9 @@ sub makestatus {
 
     my %newdata = %$data;
     for my $field (qw(found fixed)) {
-	 if (exists $data{$field}) {
-	      $data{"${field}_date"} =
-		   [map {$data{$field}{$_}||''} keys %{$data{$field}}];
+	 if (exists $newdata{$field}) {
+	      $newdata{"${field}_date"} =
+		   [map {$newdata{$field}{$_}||''} keys %{$newdata{$field}}];
 	 }
     }
 
@@ -517,7 +518,7 @@ sub update_realtime {
 	}
 
 	if ($new eq "NOCHANGE") {
-		print IDXNEW $line if ($line ne "" && $line[1] == $ref);
+		print IDXNEW $line if ($line ne "" && $line[1] == $bug);
 	} elsif ($new eq "REMOVE") {
 		0;
 	} else {
@@ -543,10 +544,10 @@ sub bughook_archive {
 	&filelock("debbugs.trace.lock");
 	&appendfile("debbugs.trace","archive $ref\n");
 	my $line = update_realtime(
-		"$gSpoolDir/index.db.realtime", 
+		"$config{spool_dir}/index.db.realtime", 
 		$ref,
 		"REMOVE");
-	update_realtime("$gSpoolDir/index.archive.realtime",
+	update_realtime("$config{spool_dir}/index.archive.realtime",
 		$ref, $line);
 	&unfilelock;
 }	
@@ -558,7 +559,7 @@ sub bughook {
 	&appendfile("debbugs.trace","$type $ref\n",makestatus($data, 1));
 
 	my $whendone = "open";
-	my $severity = $gDefaultSeverity;
+	my $severity = $config{default_severity};
 	(my $pkglist = $data->{package}) =~ s/[,\s]+/,/g;
 	$pkglist =~ s/^,+//;
 	$pkglist =~ s/,+$//;
@@ -570,7 +571,7 @@ sub bughook {
 			$pkglist, $ref, $data->{date}, $whendone,
 			$data->{originator}, $severity, $data->{keywords};
 
-	update_realtime("$gSpoolDir/index.db.realtime", $ref, $k);
+	update_realtime("$config{spool_dir}/index.db.realtime", $ref, $k);
 
 	&unfilelock;
 }

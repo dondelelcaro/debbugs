@@ -37,7 +37,7 @@ BEGIN{
 		     lock   => [qw(filelock unfilelock)],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(read util));
+     Exporter::export_ok_tags(qw(lock quit util));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -170,6 +170,7 @@ FLOCKs the passed file. Use unfilelock to unlock it.
 =cut
 
 my @filelocks;
+my @cleanups;
 
 sub filelock {
     # NB - NOT COMPATIBLE WITH `with-lock'
@@ -246,7 +247,7 @@ instead. (Or possibly a die handler, if the cleanups are important)
 
 sub quit {
     print DEBUG "quitting >$_[0]<\n";
-    local ($u);
+    my ($u);
     while ($u= $cleanups[$#cleanups]) { &$u; }
     die "*** $_[0]\n";
 }
