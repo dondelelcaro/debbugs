@@ -132,6 +132,9 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Stop refering to developers on the index page (closes: #355786)
     - Change control@ stop regex and documentation to match eachother
       (closes: #366093)
+    - Make it obvious when commands to control have failed
+      (closes: #344184)
+    - Fix javascript error in pkgreport.cgi (closes: #346043)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

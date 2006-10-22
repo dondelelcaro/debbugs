@@ -121,6 +121,8 @@ if ( defined($header{'reply-to'}) && $header{'reply-to'} ne "" ) {
     $replyto = $header{'from'};
 }
 
+# This is an error counter which should be incremented every time there is an error.
+my $errors = 0;
 $controlrequestaddr= $control ? "control\@$gEmailDomain" : "request\@$gEmailDomain";
 $transcript='';
 &transcript("Processing commands for $controlrequestaddr:\n\n");
@@ -183,12 +185,15 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
 		     "detailed logs for $gBug#$ref");
     } elsif (m/^index(\s+full)?$/i) {
 	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	$errors++;
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
     } elsif (m/^index-summary\s+by-package$/i) {
 	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	$errors++;
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
     } elsif (m/^index-summary(\s+by-number)?$/i) {
 	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	$errors++;
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
     } elsif (m/^index(\s+|-)pack(age)?s?$/i) {
 	&sendlynxdoc("pkgindex.cgi?indexon=pkg",'index of packages');
@@ -206,12 +211,15 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
         $ok++;
     } elsif (m/^send-unmatched(\s+this|\s+-?0)?$/i) {
 	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	$errors++;
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
     } elsif (m/^send-unmatched\s+(last|-1)$/i) {
 	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	$errors++;
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
     } elsif (m/^send-unmatched\s+(old|-2)$/i) {
 	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	$errors++;
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
     } elsif (m/^getinfo\s+([\w-.]+)$/i) {
         # the following is basically a Debian-specific kludge, but who cares
@@ -252,6 +260,7 @@ END
 	    $user = $newuser;
 	} else {
 	    &transcript("Selected user id ($newuser) invalid, sorry\n");
+	    $errors++;
 	    $user = "";
 	}
     } elsif (m/^usercategory\s+(\S+)(\s+\[hidden\])?\s*$/i) {
@@ -273,6 +282,7 @@ END
             my ($o, $txt) = ($1, $2);
             if ($#cats == -1 && $o eq "+") {
                 &transcript("User defined category specification must start with a category name. Skipping.\n\n");
+		$errors++;
                 $bad = 1;
                 next;
             }
@@ -291,6 +301,7 @@ END
                     $desc = ""; $op = $1;
                 } else {
                     &transcript("Unrecognised syntax for category section. Skipping.\n\n");
+		    $errors++;
                     $bad = 1;
                     next;
                 }
@@ -334,6 +345,7 @@ END
 	$ref = $1; $addsubcode = $3 || "+"; $tags = $4;
 	if ($user eq "") {
 	    &transcript("No valid user selected\n");
+	    $errors++;
         } elsif (&setbug) {
 	    &nochangebug;
 	    my %ut;
@@ -349,6 +361,7 @@ END
 	    }
 	    if (@badtags) {
                 &transcript("Ignoring illegal tag/s: ".join(', ', @badtags).".\nPlease use only alphanumerics, at, dot, plus and dash.\n");
+		$errors++;
 	    }
             for my $t (keys %chtags) {
 	        $ut{$t} = [] unless defined $ut{$t};
@@ -378,6 +391,7 @@ Unknown command or malformed arguments to command.
 (Use control\@$gEmailDomain to manipulate reports.)
 
 END
+	$errors++;
         if (++$unknowns >= 3) {
             &transcript("Too many unknown commands, stopping here.\n\n");
             last;
@@ -497,6 +511,7 @@ END
         if (&setbug) {
             if (!length($data->{done}) and not defined($version)) {
                 &transcript("$gBug is already open, cannot reopen.\n\n");
+		$errors++;
                 &nochangebug;
             } else {
                 $action=
@@ -645,9 +660,11 @@ END
         if (!grep($_ eq $newseverity, @gSeverityList, "$gDefaultSeverity")) {
             &transcript("Severity level \`$newseverity' is not known.\n".
  			"Recognized are: $gShowSeverities.\n\n");
+	    $errors++;
         } elsif (exists $gObsoleteSeverities{$newseverity}) {
             &transcript("Severity level \`$newseverity' is obsolete. " .
-                        "$gObsoleteSeverities{$newseverity}\n\n");
+                        "Use $gObsoleteSeverities{$newseverity} instead.\n\n");
+	    	$errors++;
         } elsif (&setbug) {
             $printseverity= $data->{severity};
             $printseverity= "$gDefaultSeverity" if $printseverity eq '';
@@ -682,6 +699,7 @@ END
 	if (@badtags) {
             &transcript("Unknown tag/s: ".join(', ', @badtags).".\n".
  			"Recognized are: ".join(' ', @gTags).".\n\n");
+	    $errors++;
 	}
 	if (&setbug) {
 	    if ($data->{keywords} eq '') {
@@ -759,6 +777,7 @@ END
 	}
 	if (@badblockers) {
             &transcript("Unknown blocking bug/s: ".join(', ', @badblockers).".\n");
+	    $errors++;
 	}
 	
 	$ref=$bugnum;
@@ -897,6 +916,7 @@ END
 	    if (length($mismatch)) {
 	        &transcript("Mismatch - only $gBugs in same state can be merged:\n".
                             $mismatch."\n");
+		$errors++;
 		&cancelbug; @newmergelist=(); last;
 	    }
             push(@newmergelist,$ref);
@@ -952,6 +972,7 @@ END
 	    if ($data->{package} ne $master_bug_data->{package}) {
 		&transcript("Mismatch - only $gBugs in the same package can be forcibly merged:\n".
 			    "$gBug $ref is not in the same package as $master_bug\n");
+		$errors++;
 		&cancelbug; @newmergelist=(); last;
 	    }
 	    for my $t (split /\s+/,$data->{keywords}) {
@@ -993,7 +1014,8 @@ END
 	$bug_affected{$ref} = 1;
 	if (&setbug) {
 	    if (length($data->{mergedwith})) {
-		&transcript("$gBug is marked as being merged with others.\n\n");
+		&transcript("$gBug is marked as being merged with others. Use an existing clone.\n\n");
+		$errors++;
 		&nochangebug;
 	    } else {
         	&filelock("nextnumber.lock");
@@ -1095,6 +1117,7 @@ END
         }
     } else {
         &transcript("Unknown command or malformed arguments to command.\n\n");
+	$errors++;
         if (++$unknowns >= 5) {
             &transcript("Too many unknown commands, stopping here.\n\n");
             last;
@@ -1105,6 +1128,7 @@ if ($procline>$#bodylines) {
     &transcript(">\nEnd of message, stopping processing here.\n\n");
 }
 if (!$ok && !quickabort) {
+    $errors++;
     &transcript("No commands successfully parsed; sending the help text(s).\n");
     &sendhelp;
     &transcript("\n");
@@ -1145,10 +1169,13 @@ if (!defined $header{'subject'} || $header{'subject'} eq "") {
   $header{'subject'} = "your mail";
 }
 
+# Error text here advertises how many errors there were
+my $error_text = $errors > 0 ? " (with $errors errors)":'';
+
 $reply= <<END;
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
-${maintccs}Subject: Processed: $header{'subject'}
+${maintccs}Subject: Processed${error_text}: $header{'subject'}
 In-Reply-To: $header{'message-id'}
 References: $header{'message-id'}
 Message-ID: <handler.s.$nn.transcript\@$gEmailDomain>
@@ -1222,6 +1249,7 @@ sub checkmatch {
 sub checkpkglimit {
     if (keys %limit_pkgs and not defined $limit_pkgs{$data->{package}}) {
         &transcript("$gBug number $ref belongs to package $data->{package}, skipping.\n\n");
+        $errors++;
         return 0;
     }
     return 1;
