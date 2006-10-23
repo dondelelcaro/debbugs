@@ -19,7 +19,7 @@ require '/etc/debbugs/text';
 # for read_log_records
 use Debbugs::Log;
 use Debbugs::MIME qw(convert_to_utf8 decode_rfc1522 create_mime_message);
-use Debbugs::CGI qw(:url :html);
+use Debbugs::CGI qw(:url :html version_url);
 
 use Scalar::Util qw(looks_like_number);
 
@@ -275,6 +275,12 @@ if (@{$status{fixed_versions}}) {
 	$fixedtext .= ' by ' . htmlsanit(decode_rfc1522($status{done}));
     }
     push @descstates, $fixedtext;
+    push @descstates, '<a href="'.
+	 version_url($status{package},
+		     $status{found_versions},
+		     $status{fixed_versions},
+		    ).qq{">Version Graph</a>};
+
 } elsif (length($status{done})) {
     push @descstates, "<strong>Done:</strong> ".htmlsanit(decode_rfc1522($status{done}));
 } elsif (length($status{forwarded})) {
