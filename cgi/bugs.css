@@ -104,6 +104,16 @@ pre.mime {
     color: #797979;
 }
 
+/* This must be separate from the other CSS to make the showing of
+   unimportant messages work in bugreport.cgi. */ 
+.infmessage { display: none; }
+
+.infmessage {
+    font-family: sans-serif;
+    font-size: 90%;
+    color: #686868;
+}
+
 .msgreceived {
     font-family: sans-serif;
     font-size: 90%;
