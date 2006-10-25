@@ -403,6 +403,7 @@ sub handle_record{
      my $output = '';
      local $_ = $record->{type};
      if (/html/) {
+	  my $class = $record->{text} =~ /^<strong>(?:Acknowledgement|Reply|Information|Report|Notification)/ ? 'infmessage':'msgreceived';
 	  $output .= decode_rfc1522($record->{text});
 	  # Link to forwarded http:// urls in the midst of the report
 	  # (even though these links already exist at the top)
@@ -421,7 +422,7 @@ sub handle_record{
 	  $output .= '<a href="' . bugurl($ref, 'msg='.($msg_number+1)) . '">Full text</a> and <a href="' .
 	       bugurl($ref, 'msg='.($msg_number+1), 'mbox') . '">rfc822 format</a> available.';
 
-	  $output = qq(<div class="msgreceived">\n<a name="$msg_number">\n) . $output . "</div>\n";
+	  $output = qq(<div class="$class"><hr>\n<a name="$msg_number">\n) . $output . "</div>\n";
      }
      elsif (/recips/) {
 	  my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
@@ -431,7 +432,7 @@ sub handle_record{
 	  elsif (defined $msg_id) {
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
-	  $output .= qq(<a name="$msg_number">\n);
+	  $output .= qq(<hr><a name="$msg_number">\n);
 	  $output .= 'View this message in <a href="' . bugurl($ref, "msg=$msg_number", "mbox") . '">rfc822 format</a>';
 	  $output .= handle_email_message($record->{text},
 				    ref        => $bug_number,
@@ -451,7 +452,7 @@ sub handle_record{
 	  }
 	  # Incomming Mail Message
 	  my ($received,$hostname) = $record->{text} =~ m/Received: \(at (\S+)\) by (\S+)\;/;
-	  $output .= qq|<p class="msgreceived"><a name="$msg_number"><a name="msg$msg_number">Message received</a> at |.
+	  $output .= qq|<hr><p class="msgreceived"><a name="$msg_number"><a name="msg$msg_number">Message received</a> at |.
 	       htmlsanit("$received\@$hostname") . q| (<a href="| . bugurl($ref, "msg=$msg_number") . '">full text</a>'.q|, <a href="| . bugurl($ref, "msg=$msg_number") . ';mbox=yes">mbox</a>)'.":</p>\n";
 	  $output .= handle_email_message($record->{text},
 				    ref        => $bug_number,
@@ -515,7 +516,7 @@ else {
 }
 
 @log = reverse @log if $reverse;
-$log = join('<hr>',@log);
+$log = join("\n",@log);
 
 
 print "Content-Type: text/html; charset=utf-8\n\n";
@@ -525,13 +526,33 @@ my $title = htmlsanit($status{subject});
 my $dummy2 = $debbugs::gWebHostBugDir;
 
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
-print "<HTML><HEAD>\n" . 
-    "<TITLE>$short - $title - $debbugs::gProject $debbugs::gBug report logs</TITLE>\n" .
-     '<meta http-equiv="Content-Type" content="text/html;charset=utf-8">'.
-     "<link rel=\"stylesheet\" href=\"$debbugs::gWebHostBugDir/css/bugs.css\" type=\"text/css\">" .
-    "</HEAD>\n" .
-    '<BODY>' .
-    "\n";
+print <<END;
+<HTML><HEAD>
+<TITLE>$short - $title - $debbugs::gProject $debbugs::gBug report logs</TITLE>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+<link rel="stylesheet" href="$debbugs::gWebHostBugDir/css/bugs.css" type="text/css">
+<script type="text/javascript">
+<!--
+function toggle_infmessages(){
+       var styles = document.styleSheets;
+       var deleted = 0
+       for (var i = 0; i < styles.length; i++) {
+          for (var j = 0; j < styles[i].cssRules.length; j++) {
+            if (styles[i].cssRules[j].cssText == ".infmessage { display: none; }") {
+                 styles[i].deleteRule(j);
+                 deleted = 1;
+            }
+          }
+       }
+       if (!deleted) {
+            styles[0].insertRule(".infmessage { display: none; }",0);
+       }
+}
+-->
+</script>
+</HEAD>
+<BODY">
+END
 print "<H1>" . "$debbugs::gProject $debbugs::gBug report logs - <A HREF=\"mailto:$ref\@$gEmailDomain\">$short</A>" .
       "<BR>" . $title . "</H1>\n";
 
@@ -539,8 +560,8 @@ print "$descriptivehead\n";
 print qq(<p><a href="mailto:$ref\@$debbugs::gEmailDomain">Reply</a> ),
      qq(or <a href="mailto:$ref-subscribe\@$debbugs::gEmailDomain">subscribe</a> ),
      qq(to this bug.</p>\n);
+print qq(<p><a href="javascript:toggle_infmessages();">Show useless messages</a></p>);
 printf "<div class=\"msgreceived\"><p>View this report as an <a href=\"%s\">mbox folder</a>.</p></div>\n", bugurl($ref, "mbox");
-print "<HR>";
 print "$log";
 print "<HR>";
 print "<p class=\"msgreceived\">Send a report that <a href=\"/cgi-bin/bugspam.cgi?bug=$ref\">this bug log contains spam</a>.</p>\n<HR>\n";

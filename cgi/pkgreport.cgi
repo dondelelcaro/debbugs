@@ -651,12 +651,13 @@ sub pkg_htmlindexentrystatus {
     my $days = 0;
     if (length($status{done})) {
         $result .= "<br><strong>Done:</strong> " . htmlsanit($status{done});
-        $days = ceil($debbugs::gRemoveAge - -M buglog($status{id}));
-        if ($days >= 0) {
-            $result .= ";\n<strong>Will be archived" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" ) . "</strong>";
-        } else {
-            $result .= ";\n<strong>Archived</strong>";
-        }
+# Disabled until archiving actually works again
+#        $days = ceil($debbugs::gRemoveAge - -M buglog($status{id}));
+#         if ($days >= 0) {
+#             $result .= ";\n<strong>Will be archived" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" ) . "</strong>";
+#         } else {
+#             $result .= ";\n<strong>Archived</strong>";
+#         }
     }
 
     unless (length($status{done})) {
@@ -853,7 +854,7 @@ sub pkg_javascript {
 <!--
 function pagemain() {
 	toggle(1);
-	toggle(2);
+//	toggle(2);
 	enable(1);
 }
 
@@ -902,10 +903,12 @@ function save_cat_cookies() {
 
 function toggle(i) {
         var a = document.getElementById("a_" + i);
-        if (a.style.display == "none") {
-                a.style.display = "";
-        } else {
-                a.style.display = "none";
+        if (a) {
+             if (a.style.display == "none") {
+                     a.style.display = "";
+             } else {
+                     a.style.display = "none";
+             }
         }
 }
 
