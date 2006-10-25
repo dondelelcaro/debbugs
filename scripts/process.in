@@ -668,7 +668,7 @@ END
 			$user_tags{$tag} = [keys %bugs_with_tag];
 		   }
 	      }
-	      write_usertags(\%usertags,$user);
+	      write_usertags(\%user_tags,$user);
 	 }
 	 else {
 	      $brokenness .=<<END;
