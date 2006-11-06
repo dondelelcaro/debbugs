@@ -961,12 +961,13 @@ sub pkg_htmlselectarch {
 }
 
 sub myurl {
-    return pkg_etc_url($pkg, "pkg", 0) if defined($pkg);
-    return pkg_etc_url($src, "src", 0) if defined($src);
-    return pkg_etc_url($maint, "maint", 0) if defined($maint);
-    return pkg_etc_url($submitter, "submitter", 0) if defined($submitter);
-    return pkg_etc_url($severity, "severity", 0) if defined($severity);
-    return pkg_etc_url($tag, "tag", 0) if defined($tag);
+     return urlsanit('pkgreport.cgi?'.
+		     join(';',
+			  (map {("$_=$param{$_}")
+					    } keys %param
+			  )
+			 )
+		    );
 }
 
 sub make_order_list {

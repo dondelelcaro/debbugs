@@ -137,6 +137,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Fix javascript error in pkgreport.cgi (closes: #346043)
     - When a bug can't be found in control@; indicate to user that it may
       be archived. (closes: #153536)
+    - my_url in pkgreport.cgi now returns the complete url (closes: #378566)
+    - Document precisely how forwarded works (closes: #228049)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
