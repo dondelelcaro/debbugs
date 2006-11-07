@@ -19,19 +19,24 @@ use CGI::Alert 'don@donarmstrong.com';
 use Search::Estraier;
 use Debbugs::Config qw(:config);
 use Debbugs::Estraier;
-use Debbugs::CGI qw(htmlize_packagelinks html_escape);
+use Debbugs::CGI qw(htmlize_packagelinks html_escape cgi_parameters);
 use HTML::Entities qw(encode_entities);
 
 my $q = new CGI::Simple;
 
 #my %var_defaults = (attr => 1,);
 
-my %cgi_var = cgi_parameters($q);
+my %cgi_var = cgi_parameters(query => $q,
+			     single => [qw(phrase max_results order_field order_operator),
+				        qw(skip prev next),
+				       ],
+			     default => {phrase      => '',
+					 max_results => 10,
+					 skip        => 0,
+					}.
+			    );
 
-$cgi_var{phrase} = '' if not defined $cgi_var{phrase};
-$cgi_var{max_results} = 10 if not defined $cgi_var{max_results};
 $cgi_var{attribute} = parse_attribute(\%cgi_var) || [];
-$cgi_var{skip} = 0 if not defined $cgi_var{skip};
 
 my @results;
 
@@ -314,16 +319,4 @@ sub parse_attribute {
 	  push @attributes,{map {($_,$$cgi_var{"attribute_$_"});} qw(value field operator)};
      }
      return \@attributes;
-}
-
-
-sub cgi_parameters {
-     my ($q) = @_;
-
-     my %param;
-     foreach my $paramname ($q->param) {
-	  my @value = $q->param($paramname);
-	  $param{$paramname} = @value > 1 ? [@value] : $value[0];
-     }
-     return %param;
 }

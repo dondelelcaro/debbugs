@@ -34,6 +34,7 @@ use Params::Validate qw(validate_with :types);
 use Debbugs::Config qw(:config);
 use Mail::Address;
 use POSIX qw(ceil);
+use Storable qw(dclone);
 
 my %URL_PARAMS = ();
 
@@ -49,7 +50,7 @@ BEGIN{
 		     html   => [qw(html_escape htmlize_bugs htmlize_packagelinks),
 				qw(maybelink htmlize_addresslinks),
 			       ],
-		     util   => [qw(getparsedaddrs)]
+		     util   => [qw(getparsedaddrs cgi_parameters)]
 		     #status => [qw(getbugstatus)],
 		    );
      @EXPORT_OK = ();
@@ -149,6 +150,51 @@ sub html_escape{
 
      return HTML::Entities::encode_entities($string)
 }
+
+=head2 cgi_parameters
+
+     cgi_parameters
+
+Returns all of the cgi_parameters from a CGI script using CGI::Simple
+
+=cut
+
+sub cgi_parameters {
+     my %options = validate_with(params => \@_,
+				 spec   => {query   => {type => OBJECT,
+						        can  => 'param',
+						       },
+					    single  => {type => ARRAYREF,
+							default => [],
+						       },
+					    default => {type => HASHREF,
+							default => {},
+						       },
+					   },
+				);
+     my $q = $options{query};
+     my %single;
+     @single{@{$options{single}}} = (1) x @{$options{single}};
+     my %param;
+     for my $paramname ($q->param) {
+	  if ($single{$paramname}) {
+	       $param{$paramname} = $q->param($paramname);
+	  }
+	  else {
+	       $param{$paramname} = [$q->param($paramname)];
+	  }
+     }
+     for my $default (keys %{$options{default}}) {
+	  if (not exists $param{$default}) {
+	       # We'll clone the reference here to avoid surprises later.
+	       $param{$default} = ref($options{default}{$default})?
+		    dclone($options{default}{$default}):$options{default}{$default};
+	  }
+     }
+     return %param;
+}
+
+
 
 my %common_bugusertags;
 
