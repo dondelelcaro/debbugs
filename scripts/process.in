@@ -283,6 +283,10 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
         $receivedat= "forwarded\@$gEmailDomain";
         $markaswhat= 'forwarded';
         $set_forwarded= $header{'to'};
+	# Dissallow forwarded being set to this bug tracking system
+	if (defined $set_forwarded and $set_forwarded =~ /\Q$gEmailDomain\E/) {
+	     undef $set_forwarded;
+	}
 	if ( length( $gListDomain ) > 0 && length( $gForwardList ) > 0 ) {
 	    push @generalcc, "$gForwardList\@$gListDomain";
 	    $generalcc= "$gForwardList\@$gListDomain";

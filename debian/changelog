@@ -139,6 +139,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
       be archived. (closes: #153536)
     - my_url in pkgreport.cgi now returns the complete url (closes: #378566)
     - Document precisely how forwarded works (closes: #228049)
+    - Dissallow forwarded being set to a $gEmailDomain address
+      (closes: #397486)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
