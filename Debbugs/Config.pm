@@ -52,10 +52,12 @@ BEGIN {
 				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
 				 qw(%gSearchEstraier),
 				],
+		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
+				 ],
 		     config   => [qw(%config)],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(globals config));
+     Exporter::export_ok_tags(qw(globals text config));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -298,6 +300,62 @@ set_default(\%config,'package_source',$config{config_dir}.'/indices/sources');
 set_default(\%config,'version_packages_dir',$config{spool_dir}.'/../versions/pkg');
 #set_default(\%config,'version_packages_dir',$config{spool_dir}'/../versions/pkg');
 
+=head2 Text Fields
+
+The following are the only text fields in general use in the scripts;
+a few additional text fields are defined in text.in, but are only used
+in db2html and a few other specialty scripts.
+
+Earlier versions of debbugs defined these values in /etc/debbugs/text,
+but now they are required to be in the configuration file. [Eventually
+the longer ones will move out into a fully fledged template system.]
+
+=cut
+
+=over
+
+=item bad_email_prefix
+
+This prefixes the text of all lines in a bad e-mail message ack.
+
+=cut
+
+set_default(\%config,'bad_email_prefix','');
+
+=item html_tail
+
+This shows up at the end of (most) html pages
+
+=cut
+
+set_default(\%config,'html_tail',<<END);
+ <ADDRESS>$config{maintainer} &lt;<A HREF=\"mailto:$config{maintainer_email}\">$config{maintainer_email}</A>&gt;.
+ Last modified:
+ <!--timestamp-->
+ SUBSTITUTE_DTIME
+ <!--timestamp-->
+ <P>
+ <A HREF=\"http://$config{web_domain}/\">Debian $config{bug} tracking system</A><BR>
+ Copyright (C) 1999 Darren O. Benham,
+ 1997,2003 nCipher Corporation Ltd,
+ 1994-97 Ian Jackson.
+ </ADDRESS>
+END
+
+
+=item html_expire_note
+
+This message explains what happens to archive/remove-able bugs
+
+=cut
+
+set_default(\%config,'html_expire_note',
+	    "(Closed $config{bugs} are archived $config{remove_age} days after the last related message is received.)");
+
+=back
+
+=cut
+
 
 sub read_config{
      my ($conf_file) = @_;
@@ -359,6 +417,7 @@ sub __convert_name{
      $hash_name =~ s/^([\$\%\@])g//;
      my $glob_type = $1;
      my $glob_name = 'g'.$hash_name;
+     $hash_name =~ s/(HTML|CGI)/ucfirst(lc($1))/ge;
      $hash_name =~ s/^([A-Z]+)/lc($1)/e;
      $hash_name =~ s/([A-Z]+)/'_'.lc($1)/ge;
      return $hash_name unless wantarray;
@@ -373,20 +432,26 @@ sub __convert_name{
 
 sub set_default{
      my ($config,$option,$value) = @_;
+     my $varname;
+     if ($USING_GLOBALS) {
+	  # fix up the variable name
+	  $varname = 'g'.join('',map {ucfirst $_} split /_/, $option);
+	  # Fix stupid HTML names
+	  $varname =~ s/(Html|Cgi)/uc($1)/ge;
+     }
      # update the configuration value
      if (not $USING_GLOBALS and not exists $config{$option}) {
 	  $config{$option} = $value;
      }
-     else {
-	  # Need to check if a value has already been set in a global
-     }
-     if ($USING_GLOBALS) {{
-	  # fix up the variable name
-	  my $varname = 'g'.join('',map {ucfirst $_} $option);
-	  # Fix stupid HTML names
-	  $varname =~ s/Html/HTML/;
+     elsif ($USING_GLOBALS) {{
 	  no strict 'refs';
-	  my $ref = ref $config{$option} || 'SCALAR';
+	  # Need to check if a value has already been set in a global
+	  if (defined *{"Debbugs::Config::${varname}"}) {
+	       $config{$option} = *{"Debbugs::Config::${varname}"};
+	  }
+     }}
+     if ($USING_GLOBALS) {{
+	  no strict 'refs';
 	  *{"Debbugs::Config::${varname}"} = $config{$option};
      }}
 }
@@ -394,13 +459,14 @@ sub set_default{
 
 ### import magick
 
-# All we care about here is whether we've been called with the globals option;
-# if so, then we need to export some symbols back up; otherwise we call exporter.
+# All we care about here is whether we've been called with the globals or text option;
+# if so, then we need to export some symbols back up.
+# In any event, we call exporter.
 
 sub import {
-     if (grep $_ eq ':globals', @_) {
+     if (grep /^:(?:text|globals)$/, @_) {
 	  $USING_GLOBALS=1;
-	  for my $variable (@{$EXPORT_TAGS{globals}}) {
+	  for my $variable (map {@$_} @EXPORT_TAGS{map{(/^:(text|globals)$/?($1):())} @_}) {
 	       my $tmp = $variable;
 	       no strict 'refs';
 	       # Yes, I don't care if these are only used once
