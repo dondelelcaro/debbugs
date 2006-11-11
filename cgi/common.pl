@@ -8,6 +8,7 @@ use POSIX qw/ceil/;
 
 use URI::Escape;
 
+use Debbugs::Config qw(:globals :text);
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
 require "$lib_path/errorlib";
@@ -18,7 +19,6 @@ use Debbugs::MIME qw(decode_rfc1522);
 use Debbugs::Common qw(:util);
 use Debbugs::Status qw(:read :versions);
 use Debbugs::CGI qw(:all);
-use Debbugs::Config qw(:globals);
 
 $MLDBM::RemoveTaint = 1;
 
