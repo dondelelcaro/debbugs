@@ -14,7 +14,7 @@ BEGIN {
      @EXPORT = ();
      %EXPORT_TAGS = (versions => [qw(getversions)],
 		     mapping  => [qw(getpkgsrc getpkgcomponent getsrcpkgs),
-				  qw(binarytosource sourcetobinary)
+				  qw(binarytosource sourcetobinary makesourceversions)
 				 ],
 		    );
      @EXPORT_OK = ();
@@ -24,7 +24,9 @@ BEGIN {
 
 use Fcntl qw(O_RDONLY);
 use MLDBM qw(DB_File Storable);
+use Storable qw(dclone);
 
+$MLDBM::DumpMeth = 'portable';
 $MLDBM::RemoveTaint = 1;
 
 =head1 NAME
@@ -52,11 +54,13 @@ source package names.
 
 my $_pkgsrc;
 my $_pkgcomponent;
+my $_srcpkg;
 sub getpkgsrc {
     return $_pkgsrc if $_pkgsrc;
     return {} unless defined $Debbugs::Packages::gPackageSource;
     my %pkgsrc;
     my %pkgcomponent;
+    my %srcpkg;
 
     open(MM,"$Debbugs::Packages::gPackageSource")
 	or die("open $Debbugs::Packages::gPackageSource: $!");
@@ -65,11 +69,13 @@ sub getpkgsrc {
 	my ($bin,$cmp,$src)=($1,$2,$3);
 	$bin =~ y/A-Z/a-z/;
 	$pkgsrc{$bin}= $src;
+	push @{$srcpkg{$src}}, $bin;
 	$pkgcomponent{$bin}= $cmp;
     }
     close(MM);
     $_pkgsrc = \%pkgsrc;
     $_pkgcomponent = \%pkgcomponent;
+    $_srcpkg = \%srcpkg;
     return $_pkgsrc;
 }
 
@@ -95,13 +101,9 @@ Returns a list of the binary packages produced by a given source package.
 
 sub getsrcpkgs {
     my $src = shift;
-    return () if !$src;
-    my %pkgsrc = %{getpkgsrc()};
-    my @pkgs;
-    foreach ( keys %pkgsrc ) {
-	push @pkgs, $_ if $pkgsrc{$_} eq $src;
-    }
-    return @pkgs;
+    getpkgsrc() if not defined $_srcpkg;
+    return () if not defined $src or not exists $_srcpkg->{$src};
+    return @{$_srcpkg->{$src}};
 }
 
 =item binarytosource
@@ -125,21 +127,23 @@ sub binarytosource {
 	    tie %_binarytosource, 'MLDBM',
 		$Debbugs::Packages::gBinarySourceMap, O_RDONLY) {
 	# avoid autovivification
-	if (exists $_binarytosource{$binname} and
-		exists $_binarytosource{$binname}{$binver}) {
+	my $binary = $_binarytosource{$binname};
+	return () unless defined $binary;
+	my %binary = %{$binary};
+	if (exists $binary{$binver}) {
 	    if (defined $binarch) {
-		my $src = $_binarytosource{$binname}{$binver}{$binarch};
+		my $src = $binary{$binver}{$binarch};
 		return () unless defined $src; # not on this arch
 		# Copy the data to avoid tiedness problems.
-		return [@$src];
+		return dclone($src);
 	    } else {
 		# Get (srcname, srcver) pairs for all architectures and
 		# remove any duplicates. This involves some slightly tricky
 		# multidimensional hashing; sorry. Fortunately there'll
 		# usually only be one pair returned.
 		my %uniq;
-		for my $ar (keys %{$_binarytosource{$binname}{$binver}}) {
-		    my $src = $_binarytosource{$binname}{$binver}{$ar};
+		for my $ar (keys %{$binary{$binver}}) {
+		    my $src = $binary{$binver}{$ar};
 		    next unless defined $src;
 		    $uniq{$src->[0]}{$src->[1]} = 1;
 		}
@@ -176,11 +180,12 @@ sub sourcetobinary {
 	    tie %_sourcetobinary, 'MLDBM',
 		$Debbugs::Packages::gSourceBinaryMap, O_RDONLY) {
 	# avoid autovivification
-	if (exists $_sourcetobinary{$srcname} and
-		exists $_sourcetobinary{$srcname}{$srcver}) {
-	    my $bin = $_sourcetobinary{$srcname}{$srcver};
+	my $source = $_sourcetobinary{$srcname};
+	return () unless defined $source;
+	my %source = %{$source};
+	if (exists $source{$srcver}) {
+	    my $bin = $source{$srcver};
 	    return () unless defined $bin;
-	    # Copy the data to avoid tiedness problems.
 	    return @$bin;
 	}
     }
@@ -193,7 +198,8 @@ sub sourcetobinary {
 
 =item getversions
 
-Returns versions of the package in distribution at a specific architecture
+Returns versions of the package in a distribution at a specific
+architecture
 
 =cut
 
@@ -207,26 +213,88 @@ sub getversions {
         tie %_versions, 'MLDBM', $gVersionIndex, O_RDONLY
             or die "can't open versions index: $!";
     }
+    my $version = $_versions{$pkg};
+    return () unless defined $version;
+    my %version = %{$version};
 
-    if (defined $arch and exists $_versions{$pkg}{$dist}{$arch}) {
-        my $ver = $_versions{$pkg}{$dist}{$arch};
+    if (defined $arch and exists $version{$dist}{$arch}) {
+        my $ver = $version{$pkg}{$dist}{$arch};
         return $ver if defined $ver;
         return ();
     } else {
         my %uniq;
-        for my $ar (keys %{$_versions{$pkg}{$dist}}) {
-            $uniq{$_versions{$pkg}{$dist}{$ar}} = 1 unless $ar eq 'source';
+        for my $ar (keys %{$version{$dist}}) {
+            $uniq{$version{$dist}{$ar}} = 1 unless $ar eq 'source';
         }
         if (%uniq) {
             return keys %uniq;
-        } elsif (exists $_versions{$pkg}{$dist}{source}) {
+        } elsif (exists $version{$dist}{source}) {
             # Maybe this is actually a source package with no corresponding
             # binaries?
-            return $_versions{$pkg}{$dist}{source};
+            return $version{$dist}{source};
         } else {
             return ();
         }
     }
+}
+
+
+=item makesourceversions
+
+     @{$cgi_var{found}} = makesourceversions($cgi_var{package},undef,@{$cgi_var{found}});
+
+Canonicalize versions into source versions, which have an explicitly
+named source package. This is used to cope with source packages whose
+names have changed during their history, and with cases where source
+version numbers differ from binary version numbers.
+
+=cut
+
+my %_sourceversioncache = ();
+sub makesourceversions {
+    my $pkg = shift;
+    my $arch = shift;
+    my %sourceversions;
+
+    for my $version (@_) {
+        if ($version =~ m[/]) {
+            # Already a source version.
+            $sourceversions{$version} = 1;
+        } else {
+            my $cachearch = (defined $arch) ? $arch : '';
+            my $cachekey = "$pkg/$cachearch/$version";
+            if (exists($_sourceversioncache{$cachekey})) {
+                for my $v (@{$_sourceversioncache{$cachekey}}) {
+		    $sourceversions{$v} = 1;
+		}
+                next;
+            }
+
+            my @srcinfo = binarytosource($pkg, $version, $arch);
+            unless (@srcinfo) {
+                # We don't have explicit information about the
+                # binary-to-source mapping for this version (yet). Since
+                # this is a CGI script and our output is transient, we can
+                # get away with just looking in the unversioned map; if it's
+                # wrong (as it will be when binary and source package
+                # versions differ), too bad.
+                my $pkgsrc = getpkgsrc();
+                if (exists $pkgsrc->{$pkg}) {
+                    @srcinfo = ([$pkgsrc->{$pkg}, $version]);
+                } elsif (getsrcpkgs($pkg)) {
+                    # If we're looking at a source package that doesn't have
+                    # a binary of the same name, just try the same version.
+                    @srcinfo = ([$pkg, $version]);
+                } else {
+                    next;
+                }
+            }
+            $sourceversions{"$_->[0]/$_->[1]"} = 1 foreach @srcinfo;
+            $_sourceversioncache{$cachekey} = [ map { "$_->[0]/$_->[1]" } @srcinfo ];
+        }
+    }
+
+    return sort keys %sourceversions;
 }
 
 

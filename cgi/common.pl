@@ -18,7 +18,7 @@ use Debbugs::MIME qw(decode_rfc1522);
 use Debbugs::Common qw(:util);
 use Debbugs::Status qw(:read :versions);
 use Debbugs::CGI qw(:all);
-
+use Debbugs::Config qw(:globals);
 
 $MLDBM::RemoveTaint = 1;
 
@@ -87,7 +87,7 @@ my %field_match = (
 my @common_grouping = ( 'severity', 'pending' );
 my %common_grouping_order = (
     'pending' => [ qw( pending forwarded pending-fixed fixed done absent ) ],
-    'severity' => \@debbugs::gSeverityList,
+    'severity' => \@gSeverityList,
 );
 my %common_grouping_display = (
     'pending' => 'Status',
@@ -102,7 +102,7 @@ my %common_headers = (
 	"forwarded"	=> "forwarded to upstream software authors",
 	"absent"	=> "not applicable to this version",
     },
-    'severity' => \%debbugs::gSeverityDisplay,
+    'severity' => \%gSeverityDisplay,
 );
 
 my $common_version;
@@ -148,8 +148,8 @@ sub set_option {
 	$use_bug_idx = $val;
 	if ( $val ) {
 	    $common_headers{pending}{open} = $common_headers{pending}{pending};
-	    my $bugidx = tie %bugidx, MLDBM => "$debbugs::gSpoolDir/realtime/bug.idx", O_RDONLY
-		or quitcgi( "$0: can't open $debbugs::gSpoolDir/realtime/bug.idx ($!)\n" );
+	    my $bugidx = tie %bugidx, MLDBM => "$gSpoolDir/realtime/bug.idx", O_RDONLY
+		or quitcgi( "$0: can't open $gSpoolDir/realtime/bug.idx ($!)\n" );
 	    $bugidx->RemoveTaint(1);
 	} else {
 	    untie %bugidx;
@@ -343,7 +343,7 @@ sub htmlindexentrystatus {
 
     if (length($status{done})) {
         $result .= ";\n<strong>Done:</strong> " . htmlsanit($status{done});
-        $days = ceil($debbugs::gRemoveAge - -M buglog($status{id}));
+        $days = ceil($gRemoveAge - -M buglog($status{id}));
         if ($days >= 0) {
             $result .= ";\n<strong>Will be archived:</strong>" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" );
         } else {
@@ -608,7 +608,7 @@ sub htmlizebugs {
     }
 
     $result = $header . $result if ( $common{show_list_header} );
-    $result .= $debbugs::gHTMLExpireNote if $debbugs::gRemoveAge and $anydone;
+    $result .= $gHTMLExpireNote if $gRemoveAge and $anydone;
     $result .= "<hr>" . $footer if ( $common{show_list_footer} );
     return $result;
 }
@@ -616,11 +616,11 @@ sub htmlizebugs {
 sub countbugs {
     my $bugfunc = shift;
     if ($common_archive) {
-        open I, "<$debbugs::gSpoolDir/index.archive"
-            or &quitcgi("$debbugs::gSpoolDir/index.archive: $!");
+        open I, "<$gSpoolDir/index.archive"
+            or &quitcgi("$gSpoolDir/index.archive: $!");
     } else {
-        open I, "<$debbugs::gSpoolDir/index.db"
-            or &quitcgi("$debbugs::gSpoolDir/index.db: $!");
+        open I, "<$gSpoolDir/index.db"
+            or &quitcgi("$gSpoolDir/index.db: $!");
     }
 
     my %count = ();
@@ -647,9 +647,9 @@ sub getbugs {
     if (!defined $opt) {
         # leave $fastidx undefined;
     } elsif (!$common_archive) {
-        $fastidx = "$debbugs::gSpoolDir/by-$opt.idx";
+        $fastidx = "$gSpoolDir/by-$opt.idx";
     } else {
-        $fastidx = "$debbugs::gSpoolDir/by-$opt-arc.idx";
+        $fastidx = "$gSpoolDir/by-$opt-arc.idx";
     }
 
     if (defined $fastidx && -e $fastidx) {
@@ -667,11 +667,11 @@ print STDERR "optimized\n" if ($debug);
 print STDERR "done optimized\n" if ($debug);
     } else {
         if ( $common_archive ) {
-            open I, "<$debbugs::gSpoolDir/index.archive" 
-                or &quitcgi("$debbugs::gSpoolDir/index.archive: $!");
+            open I, "<$gSpoolDir/index.archive" 
+                or &quitcgi("$gSpoolDir/index.archive: $!");
         } else {
-            open I, "<$debbugs::gSpoolDir/index.db" 
-                or &quitcgi("$debbugs::gSpoolDir/index.db: $!");
+            open I, "<$gSpoolDir/index.db" 
+                or &quitcgi("$gSpoolDir/index.db: $!");
         }
         while(<I>) {
             if (m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/) {
@@ -718,7 +718,7 @@ sub getmaintainers {
     return $_maintainer if $_maintainer;
     my %maintainer;
 
-    open(MM,"$debbugs::gMaintainerFile") or &quitcgi("open $debbugs::gMaintainerFile: $!");
+    open(MM,"$gMaintainerFile") or &quitcgi("open $gMaintainerFile: $!");
     while(<MM>) {
 	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
 	($a,$b)=($1,$2);
@@ -726,8 +726,8 @@ sub getmaintainers {
 	$maintainer{$a}= $b;
     }
     close(MM);
-    if (defined $debbugs::gMaintainerFileOverride) {
-	open(MM,"$debbugs::gMaintainerFileOverride") or &quitcgi("open $debbugs::gMaintainerFileOverride: $!");
+    if (defined $gMaintainerFileOverride) {
+	open(MM,"$gMaintainerFileOverride") or &quitcgi("open $gMaintainerFileOverride: $!");
 	while(<MM>) {
 	    next unless m/^(\S+)\s+(\S.*\S)\s*$/;
 	    ($a,$b)=($1,$2);
@@ -745,7 +745,7 @@ sub getpseudodesc {
     return $_pseudodesc if $_pseudodesc;
     my %pseudodesc;
 
-    open(PSEUDO, "< $debbugs::gPseudoDescFile") or &quitcgi("open $debbugs::gPseudoDescFile: $!");
+    open(PSEUDO, "< $gPseudoDescFile") or &quitcgi("open $gPseudoDescFile: $!");
     while(<PSEUDO>) {
 	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
 	$pseudodesc{lc $1} = $2;
@@ -838,61 +838,11 @@ sub buglog {
     return getbugcomponent($bugnum, 'log.gz', $location);
 }
 
-# Canonicalize versions into source versions, which have an explicitly
-# named source package. This is used to cope with source packages whose
-# names have changed during their history, and with cases where source
-# version numbers differ from binary version numbers.
-my %_sourceversioncache = ();
-sub makesourceversions {
-    my $pkg = shift;
-    my $arch = shift;
-    my %sourceversions;
-
-    for my $version (@_) {
-        if ($version =~ m[/]) {
-            # Already a source version.
-            $sourceversions{$version} = 1;
-        } else {
-            my $cachearch = (defined $arch) ? $arch : '';
-            my $cachekey = "$pkg/$cachearch/$version";
-            if (exists($_sourceversioncache{$cachekey})) {
-                for my $v (@{$_sourceversioncache{$cachekey}}) {
-		    $sourceversions{$v} = 1;
-		}
-                next;
-            }
-
-            my @srcinfo = binarytosource($pkg, $version, $arch);
-            unless (@srcinfo) {
-                # We don't have explicit information about the
-                # binary-to-source mapping for this version (yet). Since
-                # this is a CGI script and our output is transient, we can
-                # get away with just looking in the unversioned map; if it's
-                # wrong (as it will be when binary and source package
-                # versions differ), too bad.
-                my $pkgsrc = getpkgsrc();
-                if (exists $pkgsrc->{$pkg}) {
-                    @srcinfo = ([$pkgsrc->{$pkg}, $version]);
-                } elsif (getsrcpkgs($pkg)) {
-                    # If we're looking at a source package that doesn't have
-                    # a binary of the same name, just try the same version.
-                    @srcinfo = ([$pkg, $version]);
-                } else {
-                    next;
-                }
-            }
-            $sourceversions{"$_->[0]/$_->[1]"} = 1 foreach @srcinfo;
-            $_sourceversioncache{$cachekey} = [ map { "$_->[0]/$_->[1]" } @srcinfo ];
-        }
-    }
-
-    return sort keys %sourceversions;
-}
 
 my %_versionobj;
 sub buggyversion {
     my ($bug, $ver, $status) = @_;
-    return '' unless defined $debbugs::gVersionPackagesDir;
+    return '' unless defined $gVersionPackagesDir;
     my $src = getpkgsrc()->{$status->{package}};
     $src = $status->{package} unless defined $src;
 
@@ -902,7 +852,7 @@ sub buggyversion {
     } else {
         $tree = Debbugs::Versions->new(\&DpkgVer::vercmp);
         my $srchash = substr $src, 0, 1;
-        if (open VERFILE, "< $debbugs::gVersionPackagesDir/$srchash/$src") {
+        if (open VERFILE, "< $gVersionPackagesDir/$srchash/$src") {
             $tree->load(\*VERFILE);
             close VERFILE;
         }
