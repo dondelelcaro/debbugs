@@ -55,7 +55,8 @@ BEGIN{
 
 =head2 readbug
 
-     readbug($bug_number,$location)
+     readbug($bug_num,$location)
+     readbug($bug_num)
 
 Reads a summary file from the archive given a bug number and a bug
 location. Valid locations are those understood by L</getbugcomponent>
@@ -85,30 +86,72 @@ my %fields = (originator     => 'submitter',
 # Fields which need to be RFC1522-decoded in format versions earlier than 3.
 my @rfc1522_fields = qw(originator subject done forwarded owner);
 
-=head2 readbug
+sub readbug {
+     return read_bug(bug => $_[0],
+		     (@_ > 1)?(location => $_[1]):()
+		    );
+}
 
-     readbug($bug_num,$location);
-     readbug($bug_num)
+=head2 read_bug
 
+     read_bug(bug => $bug_num,
+              location => 'archive',
+             );
+     read_bug(summary => 'path/to/bugnum.summary');
+     read_bug($bug_num);
 
-Retreives the information from the summary files for a particular bug
-number. If location is not specified, getbuglocation is called to fill
-it in.
+A more complete function than readbug; it enables you to pass a full
+path to the summary file instead of the bug number and/or location.
+
+=head3 Options
+
+=over
+
+=item bug -- the bug number
+
+=item location -- optional location which is passed to getbugcomponent
+
+=item summary -- complete path to the .summary file which will be read
+
+=back
+
+One of C<bug> or C<summary> must be passed. This function will return
+undef on failure, and will die if improper arguments are passed.
 
 =cut
 
-# Sesse: ok, that I've moved to Debbugs::Status; I think I'm going to make a variant called read_bug that allows you to just say 
-# read_bug(bugnum=>$nnn); and get back the right thing, or read_bug(path=>$nnn)
-# and then make readbug call read_bug with the right arguments
-
-sub readbug {
-    my ($lref, $location) = @_;
-    if (not defined $location) {
-	 $location = getbuglocation($lref,'summary');
-	 return undef if not defined $location;
+sub read_bug{
+    if (@_ == 1) {
+	 unshift @_, 'bug';
     }
-    my $status = getbugcomponent($lref, 'summary', $location);
-    return undef unless defined $status;
+    my %param = validate_with(params => \@_,
+			      spec   => {bug => {type => SCALAR,
+						 optional => 1,
+						 regex    => qr/^\d+/,
+						},
+					 location => {type => SCALAR,
+						      optional => 1,
+						     },
+					 summary  => {type => SCALAR,
+						      optional => 1,
+						     },
+					},
+			     );
+    die "One of bug or summary must be passed to read_bug"
+	 if not exists $param{bug} and not exists $param{summary};
+    my $status;
+    if (not defined $param{summary}) {
+	 my ($lref, $location) = @param{qw(bug location)};
+	 if (not defined $location) {
+	      $location = getbuglocation($lref,'summary');
+	      return undef if not defined $location;
+	 }
+	 $status = getbugcomponent($lref, 'summary', $location);
+	 return undef unless defined $status;
+    }
+    else {
+	 $status = $param{summary};
+    }
     my $status_fh = new IO::File $status, 'r' or
 	 warn "Unable to open $status for reading: $!" and return undef;
 
@@ -171,7 +214,7 @@ See readbug above for information on what this returns
 sub lockreadbug {
     my ($lref, $location) = @_;
     &filelock("lock/$lref");
-    my $data = readbug($lref, $location);
+    my $data = read_bug(bug => $lref, location => $location);
     &unfilelock unless defined $data;
     return $data;
 }
