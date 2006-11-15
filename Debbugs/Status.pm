@@ -42,7 +42,7 @@ BEGIN{
 
      @EXPORT = ();
      %EXPORT_TAGS = (status => [qw(splitpackages get_bug_status buggy)],
-		     read   => [qw(readbug lockreadbug)],
+		     read   => [qw(readbug read_bug lockreadbug)],
 		     write  => [qw(writebug makestatus unlockwritebug)],
 		     versions => [qw(addfoundversion addfixedversion),
 				 ],
