@@ -756,78 +756,13 @@ sub getpseudodesc {
 }
 
 sub getbugstatus {
-    my $bugnum = shift;
-
-    my %status;
-
-    if ( $use_bug_idx eq 1 && exists( $bugidx{ $bugnum } ) ) {
-	%status = %{ $bugidx{ $bugnum } };
-	$status{ pending } = $status{ status };
-	$status{ id } = $bugnum;
-	return \%status;
-    }
-
-    my $location = getbuglocation( $bugnum, 'summary' );
-    return {} if ( !$location );
-    %status = %{ readbug( $bugnum, $location ) };
-    $status{ id } = $bugnum;
-
-
-    if (defined $common_bugusertags{$bugnum}) {
-        $status{keywords} = "" unless defined $status{keywords};
-        $status{keywords} .= " " unless $status{keywords} eq "";
-        $status{keywords} .= join(" ", @{$common_bugusertags{$bugnum}});
-    }
-    $status{tags} = $status{keywords};
-    my %tags = map { $_ => 1 } split ' ', $status{tags};
-
-    $status{"package"} =~ s/\s*$//;
-    $status{"package"} = 'unknown' if ($status{"package"} eq '');
-    $status{"severity"} = 'normal' if ($status{"severity"} eq '');
-
-    $status{"pending"} = 'pending';
-    $status{"pending"} = 'forwarded'	    if (length($status{"forwarded"}));
-    $status{"pending"} = 'pending-fixed'    if ($tags{pending});
-    $status{"pending"} = 'fixed'	    if ($tags{fixed});
-
-    my @versions;
-    if (defined $common_version) {
-        @versions = ($common_version);
-    } elsif (defined $common_dist) {
-        @versions = getversions($status{package}, $common_dist, $common_arch);
-    }
-
-    # TODO: This should probably be handled further out for efficiency and
-    # for more ease of distinguishing between pkg= and src= queries.
-    my @sourceversions = makesourceversions($status{package}, $common_arch,
-                                            @versions);
-
-    if (@sourceversions) {
-        # Resolve bugginess states (we might be looking at multiple
-        # architectures, say). Found wins, then fixed, then absent.
-        my $maxbuggy = 'absent';
-        for my $version (@sourceversions) {
-            my $buggy = buggyversion($bugnum, $version, \%status);
-            if ($buggy eq 'found') {
-                $maxbuggy = 'found';
-                last;
-            } elsif ($buggy eq 'fixed' and $maxbuggy ne 'found') {
-                $maxbuggy = 'fixed';
-            }
-        }
-        if ($maxbuggy eq 'absent') {
-            $status{"pending"} = 'absent';
-        } elsif ($maxbuggy eq 'fixed') {
-            $status{"pending"} = 'done';
-        }
-    }
-    
-    if (length($status{done}) and
-            (not @sourceversions or not @{$status{fixed_versions}})) {
-        $status{"pending"} = 'done';
-    }
-
-    return \%status;
+    return get_bug_status(bug => shift,
+			  $use_bug_idx ?(bug_index => \%bugidx):(),
+			  usertags => \%common_bugusertags,
+			  defined $common_dist?(dist => $common_dist):(),
+			  defined $common_version?(version => $common_version):(),
+			  defined $common_arch?(arch => $common_arch):()
+			 );
 }
 
 sub buglog {
@@ -837,36 +772,6 @@ sub buglog {
     $location = getbuglocation($bugnum, 'log.gz');
     return getbugcomponent($bugnum, 'log.gz', $location);
 }
-
-
-my %_versionobj;
-sub buggyversion {
-    my ($bug, $ver, $status) = @_;
-    return '' unless defined $gVersionPackagesDir;
-    my $src = getpkgsrc()->{$status->{package}};
-    $src = $status->{package} unless defined $src;
-
-    my $tree;
-    if (exists $_versionobj{$src}) {
-        $tree = $_versionobj{$src};
-    } else {
-        $tree = Debbugs::Versions->new(\&DpkgVer::vercmp);
-        my $srchash = substr $src, 0, 1;
-        if (open VERFILE, "< $gVersionPackagesDir/$srchash/$src") {
-            $tree->load(\*VERFILE);
-            close VERFILE;
-        }
-        $_versionobj{$src} = $tree;
-    }
-
-    my @found = makesourceversions($status->{package}, undef,
-                                   @{$status->{found_versions}});
-    my @fixed = makesourceversions($status->{package}, undef,
-                                   @{$status->{fixed_versions}});
-
-    return $tree->buggy($ver, \@found, \@fixed);
-}
-
 
 sub getversiondesc {
     my $pkg = shift;

@@ -31,6 +31,9 @@ use Params::Validate qw(validate_with :types);
 use Debbugs::Common qw(:util :lock);
 use Debbugs::Config qw(:config);
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
+use Debbugs::Packages qw(makesourceversions getversions);
+use Debbugs::Versions;
+use Debbugs::Versions::Dpkg;
 
 
 BEGIN{
@@ -38,7 +41,7 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (status => [qw(splitpackages)],
+     %EXPORT_TAGS = (status => [qw(splitpackages get_bug_status buggy)],
 		     read   => [qw(readbug lockreadbug)],
 		     write  => [qw(writebug makestatus unlockwritebug)],
 		     versions => [qw(addfoundversion addfixedversion),
@@ -93,6 +96,10 @@ number. If location is not specified, getbuglocation is called to fill
 it in.
 
 =cut
+
+# Sesse: ok, that I've moved to Debbugs::Status; I think I'm going to make a variant called read_bug that allows you to just say 
+# read_bug(bugnum=>$nnn); and get back the right thing, or read_bug(path=>$nnn)
+# and then make readbug call read_bug with the right arguments
 
 sub readbug {
     my ($lref, $location) = @_;
@@ -577,6 +584,243 @@ sub bughook {
 }
 
 
+=head2 get_bug_status
+
+     my $status = get_bug_status(bug => $nnn);
+
+     my $status = get_bug_status($bug_num)
+
+=head3 Options
+
+=over
+
+=item bug -- scalar bug number
+
+=item status -- optional hashref of bug status as returned by readbug
+(can be passed to avoid rereading the bug information)
+
+=item bug_index -- optional tied index of bug status infomration;
+currently not correctly implemented.
+
+=item version -- optional version to check package status at
+
+=item dist -- optional distribution to check package status at
+
+=item arch -- optional architecture to check package status at
+
+=item usertags -- optional hashref of usertags
+
+=item sourceversion -- optional arrayref of source/version; overrides
+dist, arch, and version. [The entries in this array must be in the
+"source/version" format.] Eventually this can be used to for caching.
+
+=back
+
+Note: Currently the version information is cached; this needs to be
+changed before using this function in long lived programs.
+
+=cut
+
+# This will eventually need to be fixed before we start using mod_perl
+my $version_cache = {};
+sub get_bug_status {
+     if (@_ == 1) {
+	  unshift @_, 'bug';
+     }
+     my %param = validate_with(params => \@_,
+			       spec   => {bug       => {type => SCALAR,
+							regex => qr/^\d+$/,
+						       },
+					  status    => {type => HASHREF,
+						        optional => 1,
+						       },
+					  bug_index => {type => OBJECT,
+							optional => 1,
+						       },
+					  version   => {type => SCALAR,
+							optional => 1,
+						       },
+					  dist       => {type => SCALAR,
+							 optional => 1,
+							},
+					  arch       => {type => SCALAR,
+							 optional => 1,
+							},
+					  usertags   => {type => HASHREF,
+							 optional => 1,
+							},
+					  sourceversions => {type => ARRAYREF,
+							     optional => 1,
+							    },
+					 },
+			      );
+     my %status;
+
+     if (defined $param{bug_index} and
+	 exists $param{bug_index}{$param{bug}}) {
+	  %status = %{ $param{bug_index}{$param{bug}} };
+	  $status{pending} = $status{ status };
+	  $status{id} = $param{bug};
+	  return \%status;
+     }
+     if (defined $param{status}) {
+	  %status = %{$param{status}};
+     }
+     else {
+	  my $location = getbuglocation($param{bug}, 'summary');
+	  return {} if not length $location;
+	  %status = %{ readbug( $param{bug}, $location ) };
+     }
+     $status{id} = $param{bug};
+
+     if (defined $param{usertags}{$param{bug}}) {
+	  $status{keywords} = "" unless defined $status{keywords};
+	  $status{keywords} .= " " unless $status{keywords} eq "";
+	  $status{keywords} .= join(" ", @{$param{usertags}{$param{bug}}});
+     }
+     $status{tags} = $status{keywords};
+     my %tags = map { $_ => 1 } split ' ', $status{tags};
+
+     $status{"package"} =~ s/\s*$//;
+     $status{"package"} = 'unknown' if ($status{"package"} eq '');
+     $status{"severity"} = 'normal' if ($status{"severity"} eq '');
+
+     $status{"pending"} = 'pending';
+     $status{"pending"} = 'forwarded'	    if (length($status{"forwarded"}));
+     $status{"pending"} = 'pending-fixed'    if ($tags{pending});
+     $status{"pending"} = 'fixed'	    if ($tags{fixed});
+
+     my @sourceversions;
+     if (not exists $param{sourceversions}) {
+	  my @versions;
+	  if (defined $param{version}) {
+	       @versions = ($param{version});
+	  } elsif (defined $param{dist}) {
+	       @versions = getversions($status{package}, $param{dist}, $param{arch});
+	  }
+
+	  # TODO: This should probably be handled further out for efficiency and
+	  # for more ease of distinguishing between pkg= and src= queries.
+	  @sourceversions = makesourceversions($status{package},
+					       $param{arch},
+					       @versions);
+     }
+     else {
+	  @sourceversions = @{$param{sourceversions}};
+     }
+
+     if (@sourceversions) {
+	  # Resolve bugginess states (we might be looking at multiple
+	  # architectures, say). Found wins, then fixed, then absent.
+	  my $maxbuggy = 'absent';
+	  for my $version (@sourceversions) {
+	       my $buggy = buggy(bug => $param{bug},
+				 version => $version,
+				 found => $status{found_versions},
+				 fixed => $status{fixed_versions},
+				 version_cache => $version_cache,
+				 package => $status{package},
+				);
+	       if ($buggy eq 'found') {
+		    $maxbuggy = 'found';
+		    last;
+	       } elsif ($buggy eq 'fixed' and $maxbuggy ne 'found') {
+		    $maxbuggy = 'fixed';
+	       }
+	  }
+	  if ($maxbuggy eq 'absent') {
+	       $status{"pending"} = 'absent';
+	  } elsif ($maxbuggy eq 'fixed') {
+	       $status{"pending"} = 'done';
+	  }
+     }
+
+     if (length($status{done}) and
+	 (not @sourceversions or not @{$status{fixed_versions}})) {
+	  $status{"pending"} = 'done';
+     }
+
+     return \%status;
+}
+
+=head2 buggy
+
+     buggy(bug => nnn,
+           found => \@found,
+           fixed => \@fixed,
+           package => 'foo',
+           version => '1.0',
+          );
+
+Returns the output of Debbugs::Versions::buggy for a particular
+package, version and found/fixed set. Automatically turns found, fixed
+and version into source/version strings.
+
+Caching can be had by using the version_cache, but no attempt to check
+to see if the on disk information is more recent than the cache is
+made. [This will need to be fixed for long-lived processes.]
+
+=cut
+
+sub buggy {
+     my %param = validate_with(params => \@_,
+			       spec   => {bug => {type => SCALAR,
+						  regex => qr/^\d+$/,
+						 },
+					  found => {type => ARRAYREF,
+						    default => [],
+						   },
+					  fixed => {type => ARRAYREF,
+						    default => [],
+						   },
+					  version_cache => {type => HASHREF,
+							    optional => 1,
+							   },
+					  package => {type => SCALAR,
+						     },
+					  version => {type => SCALAR,
+						     },
+					 },
+			      );
+     my @found = @{$param{found}};
+     my @fixed = @{$param{fixed}};
+     if (grep {$_ !~ m{/}} (@{$param{found}}, @{$param{fixed}})) {
+	  # We have non-source version versions
+	  @found = makesourceversions($param{package},undef,
+				      @found
+				     );
+	  @fixed = makesourceversions($param{package},undef,
+				      @fixed
+				     );
+     }
+     if ($param{version} !~ m{/}) {
+	  $param{version} = makesourceversions($param{package},undef,
+					       $param{version}
+					      );
+     }
+     # Figure out which source packages we need
+     my %sources;
+     @sources{map {m{(.+)/}; $1} @found} = (1) x @found;
+     @sources{map {m{(.+)/}; $1} @fixed} = (1) x @fixed;
+     @sources{map {m{(.+)/}; $1} $param{version}} = 1;
+     my $version;
+     if (not defined $param{version_cache} or
+	 not exists $param{version_cache}{join(',',sort keys %sources)}) {
+	  $version = Debbugs::Versions->new(\&Debbugs::Versions::Dpkg::vercmp);
+	  foreach my $source (keys %sources) {
+	       my $srchash = substr $source, 0, 1;
+	       my $version_fh = new IO::File "$config{version_packages_dir}/$srchash/$source", 'r';
+	       $version->load($version_fh);
+	  }
+	  if (defined $param{version_cache}) {
+	       $param{version_cache}{join(',',sort keys %sources)} = $version;
+	  }
+     }
+     else {
+	  $version = $param{version_cache}{join(',',sort keys %sources)};
+     }
+     return $version->buggy($param{version},\@found,\@fixed);
+}
 
 
 1;
