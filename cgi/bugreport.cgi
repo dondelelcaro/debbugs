@@ -10,11 +10,9 @@ use MIME::Decoder;
 use IO::Scalar;
 use IO::File;
 
-use Debbugs::Config qw(:globals);
+use Debbugs::Config qw(:globals :text);
 #require '/usr/lib/debbugs/errorlib';
 require './common.pl';
-
-require '/etc/debbugs/text';
 
 # for read_log_records
 use Debbugs::Log;
@@ -191,10 +189,10 @@ Content-Type: text/html; charset=utf-8
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
-<head><title>$short - $debbugs::gProject $debbugs::gBug report logs</title></head>
+<head><title>$short - $gProject $gBug report logs</title></head>
 <body>
-<h1>$debbugs::gProject $debbugs::gBug report logs - $short</h1>
-<p>There is no record of $debbugs::gBug $short.
+<h1>$gProject $gBug report logs - $short</h1>
+<p>There is no record of $gBug $short.
 Try the <a href="http://$gWebDomain/">search page</a> instead.</p>
 $tail_html</body></html>
 EOF
@@ -331,7 +329,7 @@ eval{
      @records = read_log_records($buglogfh);
 };
 if ($@) {
-     quitcgi("Bad bug log for $debbugs::gBug $ref. Unable to read records: $@");
+     quitcgi("Bad bug log for $gBug $ref. Unable to read records: $@");
 }
 undef $buglogfh;
 
@@ -479,10 +477,10 @@ if ( $mbox ) {
 	       }
 	  }
 	  print STDOUT qq(From unknown $date\n),
-	       create_mime_message([From       => "$debbugs::gBug#$ref <$ref\@$debbugs::gEmailDomain>",
-				    To         => "$debbugs::gBug#$ref <$ref\@$debbugs::gEmailDomain>",
+	       create_mime_message([From       => "$gBug#$ref <$ref\@$gEmailDomain>",
+				    To         => "$gBug#$ref <$ref\@$gEmailDomain>",
 				    Subject    => "Status: $status{subject}",
-				    "Reply-To" => "$debbugs::gBug#$ref <$ref\@$debbugs::gEmailDomain>",
+				    "Reply-To" => "$gBug#$ref <$ref\@$gEmailDomain>",
 				   ],
 				   <<END,);
 $status_message
@@ -540,14 +538,14 @@ print "Content-Type: text/html; charset=utf-8\n\n";
 
 my $title = htmlsanit($status{subject});
 
-my $dummy2 = $debbugs::gWebHostBugDir;
+my $dummy2 = $gWebHostBugDir;
 
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
 print <<END;
 <HTML><HEAD>
-<TITLE>$short - $title - $debbugs::gProject $debbugs::gBug report logs</TITLE>
+<TITLE>$short - $title - $gProject $gBug report logs</TITLE>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-<link rel="stylesheet" href="$debbugs::gWebHostBugDir/css/bugs.css" type="text/css">
+<link rel="stylesheet" href="$gWebHostBugDir/css/bugs.css" type="text/css">
 <script type="text/javascript">
 <!--
 function toggle_infmessages(){
@@ -568,14 +566,14 @@ function toggle_infmessages(){
 -->
 </script>
 </HEAD>
-<BODY">
+<BODY>
 END
-print "<H1>" . "$debbugs::gProject $debbugs::gBug report logs - <A HREF=\"mailto:$ref\@$gEmailDomain\">$short</A>" .
+print "<H1>" . "$gProject $gBug report logs - <A HREF=\"mailto:$ref\@$gEmailDomain\">$short</A>" .
       "<BR>" . $title . "</H1>\n";
 
 print "$descriptivehead\n";
-print qq(<p><a href="mailto:$ref\@$debbugs::gEmailDomain">Reply</a> ),
-     qq(or <a href="mailto:$ref-subscribe\@$debbugs::gEmailDomain">subscribe</a> ),
+print qq(<p><a href="mailto:$ref\@$gEmailDomain">Reply</a> ),
+     qq(or <a href="mailto:$ref-subscribe\@$gEmailDomain">subscribe</a> ),
      qq(to this bug.</p>\n);
 print qq(<p><a href="javascript:toggle_infmessages();">Show useless messages</a></p>);
 printf qq(<div class="msgreceived"><p>View this report as an <a href="%s">mbox folder</a>, ).
