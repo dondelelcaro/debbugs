@@ -3,14 +3,11 @@
 package debbugs;
 
 use strict;
-use POSIX qw(strftime tzset nice);
+use POSIX qw(strftime nice);
 
-#require '/usr/lib/debbugs/errorlib';
 require './common.pl';
 
-require '/etc/debbugs/config';
-require '/etc/debbugs/text';
-
+use Debbugs::Config qw(:globals :text);
 use Debbugs::User;
 use Debbugs::CGI qw(version_url);
 
@@ -91,10 +88,10 @@ my %cats = (
     } ],
     "severity" => [ {
         "nam" => "Severity",
-        "pri" => [map { "severity=$_" } @debbugs::gSeverityList],
-        "ttl" => [map { $debbugs::gSeverityDisplay{$_} } @debbugs::gSeverityList],
+        "pri" => [map { "severity=$_" } @gSeverityList],
+        "ttl" => [map { $gSeverityDisplay{$_} } @gSeverityList],
         "def" => "Unknown Severity",
-        "ord" => [0..@debbugs::gSeverityList],
+        "ord" => [0..@gSeverityList],
     } ],
     "classification" => [ {
         "nam" => "Classification",
@@ -374,12 +371,12 @@ print "Content-Type: text/html; charset=utf-8\n\n";
 
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
 print "<HTML><HEAD>\n" . 
-    "<TITLE>$debbugs::gProject$Archived $debbugs::gBug report logs: $title</TITLE>\n" .
-    '<link rel="stylesheet" href="/css/bugs.css" type="text/css">' .
+    "<TITLE>$gProject$Archived $gBug report logs: $title</TITLE>\n" .
+    qq(<link rel="stylesheet" href="$gWebHostBugDir/css/bugs.css" type="text/css">) .
     "</HEAD>\n" .
     '<BODY onload="pagemain();">' .
     "\n";
-print "<H1>" . "$debbugs::gProject$Archived $debbugs::gBug report logs: $title" .
+print "<H1>" . "$gProject$Archived $gBug report logs: $title" .
       "</H1>\n";
 
 my $showresult = 1;
@@ -424,12 +421,12 @@ if (defined $pkg || defined $src) {
         if ($pkg and defined($pseudodesc) and exists($pseudodesc->{$pkg})) {
             push @references, "to the <a href=\"http://${debbugs::gWebDomain}/pseudo-packages${debbugs::gHTMLSuffix}\">list of other pseudo-packages</a>";
         } else {
-            if ($pkg and defined $debbugs::gPackagePages) {
+            if ($pkg and defined $gPackagePages) {
                 push @references, sprintf "to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
             }
-            if (defined $debbugs::gSubscriptionDomain) {
+            if (defined $gSubscriptionDomain) {
                 my $ptslink = $pkg ? $srcforpkg : $src;
-                push @references, "to the <a href=\"http://$debbugs::gSubscriptionDomain/$ptslink\">Package Tracking System</a>";
+                push @references, "to the <a href=\"http://$gSubscriptionDomain/$ptslink\">Package Tracking System</a>";
             }
             # Only output this if the source listing is non-trivial.
             if ($pkg and $srcforpkg and (@pkgs or $pkg ne $srcforpkg)) {
@@ -465,10 +462,10 @@ if (defined $pkg || defined $src) {
 set_option("archive", !$archive);
 printf "<p>See the <a href=\"%s\">%s reports</a></p>",
      urlsanit('pkgreport.cgi?'.join(';',
-				    (map {$_ eq 'archived'?():("$_=$param{$_}")
+				    (map {$_ eq 'archive'?():("$_=$param{$_}")
 				     } keys %param
 				    ),
-				    ('archived='.($archive?"no":"yes"))
+				    ('archive='.($archive?"no":"yes"))
 				   )
 	     ), ($archive ? "active" : "archived");
 set_option("archive", $archive);
@@ -647,7 +644,7 @@ sub pkg_htmlindexentrystatus {
     if (length($status{done})) {
         $result .= "<br><strong>Done:</strong> " . htmlsanit($status{done});
 # Disabled until archiving actually works again
-#        $days = ceil($debbugs::gRemoveAge - -M buglog($status{id}));
+#        $days = ceil($gRemoveAge - -M buglog($status{id}));
 #         if ($days >= 0) {
 #             $result .= ";\n<strong>Will be archived" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" ) . "</strong>";
 #         } else {
@@ -701,7 +698,7 @@ sub pkg_htmlizebugs {
     my $header = '';
     my $footer = "<h2 class=\"outstanding\">Summary</h2>\n";
 
-    my @dummy = ($debbugs::gRemoveAge); #, @debbugs::gSeverityList, @debbugs::gSeverityDisplay);  #, $debbugs::gHTMLExpireNote);
+    my @dummy = ($gRemoveAge); #, @gSeverityList, @gSeverityDisplay);  #, $gHTMLExpireNote);
 
     if (@bugs == 0) {
         return "<HR><H2>No reports found!</H2></HR>\n";
