@@ -261,14 +261,58 @@ set_default(\%config,   'mirror_list',   'bug-mirror-list');
 
 =head2 Misc Options
 
+=over
+
 =cut
 
 set_default(\%config,'mailer','exim');
 set_default(\%config,'bug','bug');
 set_default(\%config,'bugs','bugs');
+
+=item remove_age
+
+Age at which bugs are archived/removed
+
+Default: 28
+
+=cut
+
 set_default(\%config,'remove_age',28);
 
+=item save_old_bugs
+
+Whether old bugs are saved or deleted
+
+Default: 1
+
+=cut
+
 set_default(\%config,'save_old_bugs',1);
+
+=item removal_distribution_tags
+
+Tags which specifiy distributions to check
+
+Default: qw(experimental unstable testing stable oldstable);
+
+=cut
+
+set_default(\%config,'removal_distribution_tags',
+	    [qw(experimental unstable testing stable oldstable)]);
+
+=item removal_default_distribution_tags
+
+For removal/archival purposes, all bugs are assumed to have these tags
+set.
+
+Default: qw(unstable testing);
+
+=cut
+
+set_default(\%config,'removal_default_distribution_tags',
+	    [qw(unstable testing)]
+	   );
+
 
 set_default(\%config,'default_severity','normal');
 set_default(\%config,'show_severities','critical, grave, normal, minor, wishlist');
@@ -299,6 +343,9 @@ set_default(\%config,'package_source',$config{config_dir}.'/indices/sources');
 
 set_default(\%config,'version_packages_dir',$config{spool_dir}.'/../versions/pkg');
 #set_default(\%config,'version_packages_dir',$config{spool_dir}'/../versions/pkg');
+
+=back
+
 
 =head2 Text Fields
 

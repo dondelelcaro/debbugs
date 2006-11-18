@@ -34,6 +34,7 @@ use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
 use Debbugs::Packages qw(makesourceversions getversions);
 use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
+use POSIX qw(ceil);
 
 
 BEGIN{
@@ -41,7 +42,7 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (status => [qw(splitpackages get_bug_status buggy)],
+     %EXPORT_TAGS = (status => [qw(splitpackages get_bug_status buggy bug_archiveable)],
 		     read   => [qw(readbug read_bug lockreadbug)],
 		     write  => [qw(writebug makestatus unlockwritebug)],
 		     versions => [qw(addfoundversion addfixedversion),
@@ -495,15 +496,15 @@ sub splitpackages {
 
 =head2 bug_archiveable
 
-     bug_archiveable(ref => $bug_num);
+     bug_archiveable(bug => $bug_num);
 
 Options
 
 =over
 
-=item ref -- bug number (required)
+=item bug -- bug number (required)
 
-=item status -- Status hashref (optional)
+=item status -- Status hashref returned by read_bug or get_bug_status (optional)
 
 =item version -- Debbugs::Version information (optional)
 
@@ -515,13 +516,18 @@ Returns 1 if the bug can be archived
 Returns 0 if the bug cannot be archived
 
 If days_until is true, returns the number of days until the bug can be
-archived, -1 if it cannot be archived.
+archived, -1 if it cannot be archived. 0 means that the bug can be
+archived the next time the archiver runs.
+
+Returns undef on failure.
 
 =cut
 
+# This will eventually need to be fixed before we start using mod_perl
+my $version_cache = {};
 sub bug_archiveable{
      my %param = validate_with(params => \@_,
-			       spec   => {ref => {type => SCALAR,
+			       spec   => {bug => {type => SCALAR,
 						  regex => qr/^\d+$/,
 						 },
 					  status => {type => HASHREF,
@@ -535,95 +541,76 @@ sub bug_archiveable{
 							},
 					 },
 			      );
+     # This is what we return if the bug cannot be archived.
+     my $cannot_archive = $param{days_until}?-1:0;
      # read the status information
-     # read the version information
+     my $status = $param{status};
+     if (not exists $param{status} or not defined $status) {
+	  $status = read_bug(bug=>$param{bug});
+	  return undef if not defined $status;
+     }
      # Bugs can be archived if they are
      # 1. Closed
-     # 2. Fixed in unstable if tagged unstable
-     # 3. Fixed in stable if tagged stable
-     # 4. Fixed in testing if tagged testing
-     # 5. Fixed in experimental if tagged experimental
+     return $cannot_archive if not defined $status->{done} or not length $status->{done};
+     # If we just are checking if the bug can be archived, we'll not even bother
+     # checking the versioning information if the bug has been -done for less than 28 days.
+     if (not $param{days_until} and $config{remove_age} >
+	 -M getbugcomponent($param{ref},'log')
+	) {
+	  return $cannot_archive;
+     }
+     # At this point, we have to get the versioning information for this bug.
+
+     # We examine the set of distribution tags. If a bug has no distribution
+     # tags set, we assume a default set, otherwise we use the tags the bug
+     # has set.
+     my %dist_tags;
+     @dist_tags{@{$config{removal_distribution_tags}}} =
+	  (1) x @{$config{removal_distribution_tags}};
+     my %dists;
+     @dists{@{$config{removal_default_distribution_tags}}} = 
+	  (1) x @{$config{removal_default_distribution_tags}};
+     for my $tag (split ' ', $status->{tags}) {
+	  next unless $dist_tags{$tag};
+	  $dists{$tag} = 1;
+     }
+     my %source_versions;
+     for my $dist (keys %dists){
+     	  my @versions;
+	  if (defined $param{version}) {
+	       @versions = ($param{version});
+	  } elsif (defined $param{dist}) {
+	       @versions = getversions($status->{package},
+				       $dist,
+				       undef);
+	  }
+
+	  # TODO: This should probably be handled further out for efficiency and
+	  # for more ease of distinguishing between pkg= and src= queries.
+	  my @sourceversions = makesourceversions($status->{package},
+						  $dist,
+						  @versions);
+	  @source_versions{@sourceversions} = (1) x @sourceversions;
+     }
+     if ('found' eq max_buggy(bug => $param{bug},
+			      sourceversions => [keys %source_versions],
+			      found          => $status->{found_versions},
+			      fixed          => $status->{fixed_versions},
+			      version_cache  => $version_cache,
+			      package        => $status->{package},
+			     )) {
+	  return $cannot_archive;
+     }
      # 6. at least 28 days have passed since the last action has occured or the bug was closed
-}
-
-=head1 PRIVATE FUNCTIONS
-
-=cut
-
-sub update_realtime {
-	my ($file, $bug, $new) = @_;
-
-	# update realtime index.db
-
-	open(IDXDB, "<$file") or die "Couldn't open $file";
-	open(IDXNEW, ">$file.new");
-
-	my $line;
-	my @line;
-	while($line = <IDXDB>) {
-		@line = split /\s/, $line;
-		last if ($line[1] >= $bug);
-		print IDXNEW $line;
-		$line = "";
-	}
-
-	if ($new eq "NOCHANGE") {
-		print IDXNEW $line if ($line ne "" && $line[1] == $bug);
-	} elsif ($new eq "REMOVE") {
-		0;
-	} else {
-		print IDXNEW $new;
-	}
-	if ($line ne "" && $line[1] > $bug) {
-		print IDXNEW $line;
-		$line = "";
-	}
-
-	print IDXNEW while(<IDXDB>);
-
-	close(IDXNEW);
-	close(IDXDB);
-
-	rename("$file.new", $file);
-
-	return $line;
-}
-
-sub bughook_archive {
-	my $ref = shift;
-	&filelock("debbugs.trace.lock");
-	&appendfile("debbugs.trace","archive $ref\n");
-	my $line = update_realtime(
-		"$config{spool_dir}/index.db.realtime", 
-		$ref,
-		"REMOVE");
-	update_realtime("$config{spool_dir}/index.archive.realtime",
-		$ref, $line);
-	&unfilelock;
-}	
-
-sub bughook {
-	my ( $type, $ref, $data ) = @_;
-	&filelock("debbugs.trace.lock");
-
-	&appendfile("debbugs.trace","$type $ref\n",makestatus($data, 1));
-
-	my $whendone = "open";
-	my $severity = $config{default_severity};
-	(my $pkglist = $data->{package}) =~ s/[,\s]+/,/g;
-	$pkglist =~ s/^,+//;
-	$pkglist =~ s/,+$//;
-	$whendone = "forwarded" if length $data->{forwarded};
-	$whendone = "done" if length $data->{done};
-	$severity = $data->{severity} if length $data->{severity};
-
-	my $k = sprintf "%s %d %d %s [%s] %s %s\n",
-			$pkglist, $ref, $data->{date}, $whendone,
-			$data->{originator}, $severity, $data->{keywords};
-
-	update_realtime("$config{spool_dir}/index.db.realtime", $ref, $k);
-
-	&unfilelock;
+     # XXX We still need some more work here before we actually can archive;
+     # we really need to track when a bug was closed in a version.
+     my $age = ceil($config{remove_age} - -M getbugcomponent($param{bug},'log'));
+     if ($age > 0 ) {
+	  return $param{days_until}?$age:0;
+     }
+     else {
+	  return $param{days_until}?0:1;
+     }
 }
 
 
@@ -664,8 +651,6 @@ changed before using this function in long lived programs.
 
 =cut
 
-# This will eventually need to be fixed before we start using mod_perl
-my $version_cache = {};
 sub get_bug_status {
      if (@_ == 1) {
 	  unshift @_, 'bug';
@@ -751,33 +736,21 @@ sub get_bug_status {
      else {
 	  @sourceversions = @{$param{sourceversions}};
      }
-
      if (@sourceversions) {
-	  # Resolve bugginess states (we might be looking at multiple
-	  # architectures, say). Found wins, then fixed, then absent.
-	  my $maxbuggy = 'absent';
-	  for my $version (@sourceversions) {
-	       my $buggy = buggy(bug => $param{bug},
-				 version => $version,
-				 found => $status{found_versions},
-				 fixed => $status{fixed_versions},
-				 version_cache => $version_cache,
-				 package => $status{package},
-				);
-	       if ($buggy eq 'found') {
-		    $maxbuggy = 'found';
-		    last;
-	       } elsif ($buggy eq 'fixed' and $maxbuggy ne 'found') {
-		    $maxbuggy = 'fixed';
-	       }
-	  }
+	  my $maxbuggy = max_buggy(bug => $param{bug},
+				   sourceversions => \@sourceversions,
+				   found => $status{found_versions},
+				   fixed => $status{fixed_versions}.
+				   package => $status{package},
+				   version_cache => $version_cache,
+				  );
 	  if ($maxbuggy eq 'absent') {
-	       $status{"pending"} = 'absent';
-	  } elsif ($maxbuggy eq 'fixed') {
-	       $status{"pending"} = 'done';
+	       $status{pending} = 'absent';
+	  }
+	  elsif ($maxbuggy eq 'fixed' ) {
+	       $status{pending} = 'done';
 	  }
      }
-
      if (length($status{done}) and
 	 (not @sourceversions or not @{$status{fixed_versions}})) {
 	  $status{"pending"} = 'done';
@@ -785,6 +758,70 @@ sub get_bug_status {
 
      return \%status;
 }
+
+
+=head2 max_buggy
+
+     max_buggy()
+
+=head3 Options
+
+=over
+
+=item bug -- scalar bug number
+
+=item sourceversion -- optional arrayref of source/version; overrides
+dist, arch, and version. [The entries in this array must be in the
+"source/version" format.] Eventually this can be used to for caching.
+
+=back
+
+Note: Currently the version information is cached; this needs to be
+changed before using this function in long lived programs.
+
+
+=cut
+sub max_buggy{
+     my %param = validate_with(params => \@_,
+			       spec   => {bug       => {type => SCALAR,
+							regex => qr/^\d+$/,
+						       },
+					  sourceversions => {type => ARRAYREF,
+							     default => [],
+							    },
+					  found          => {type => ARRAYREF,
+							     default => [],
+							    },
+					  fixed          => {type => ARRAYREF,
+							     default => [],
+							    },
+					  package        => {type => SCALAR,
+							    },
+					  version_cache  => {type => HASHREF,
+							     default => {},
+							    },
+					 },
+			      );
+     # Resolve bugginess states (we might be looking at multiple
+     # architectures, say). Found wins, then fixed, then absent.
+     my $maxbuggy = 'absent';
+     for my $version (@{$param{sourceversions}}) {
+	  my $buggy = buggy(bug => $param{bug},
+			    version => $version,
+			    found => $param{found},
+			    fixed => $param{fixed},
+			    version_cache => $param{version_cache},
+			    package => $param{package},
+			   );
+	  if ($buggy eq 'found') {
+	       return 'found';
+	  } elsif ($buggy eq 'fixed') {
+	       $maxbuggy = 'fixed';
+	  }
+     }
+     return $maxbuggy;
+}
+
 
 =head2 buggy
 
@@ -863,6 +900,86 @@ sub buggy {
 	  $version = $param{version_cache}{join(',',sort keys %sources)};
      }
      return $version->buggy($param{version},\@found,\@fixed);
+}
+
+=head1 PRIVATE FUNCTIONS
+
+=cut
+
+sub update_realtime {
+	my ($file, $bug, $new) = @_;
+
+	# update realtime index.db
+
+	open(IDXDB, "<$file") or die "Couldn't open $file";
+	open(IDXNEW, ">$file.new");
+
+	my $line;
+	my @line;
+	while($line = <IDXDB>) {
+		@line = split /\s/, $line;
+		last if ($line[1] >= $bug);
+		print IDXNEW $line;
+		$line = "";
+	}
+
+	if ($new eq "NOCHANGE") {
+		print IDXNEW $line if ($line ne "" && $line[1] == $bug);
+	} elsif ($new eq "REMOVE") {
+		0;
+	} else {
+		print IDXNEW $new;
+	}
+	if ($line ne "" && $line[1] > $bug) {
+		print IDXNEW $line;
+		$line = "";
+	}
+
+	print IDXNEW while(<IDXDB>);
+
+	close(IDXNEW);
+	close(IDXDB);
+
+	rename("$file.new", $file);
+
+	return $line;
+}
+
+sub bughook_archive {
+	my $ref = shift;
+	&filelock("debbugs.trace.lock");
+	&appendfile("debbugs.trace","archive $ref\n");
+	my $line = update_realtime(
+		"$config{spool_dir}/index.db.realtime", 
+		$ref,
+		"REMOVE");
+	update_realtime("$config{spool_dir}/index.archive.realtime",
+		$ref, $line);
+	&unfilelock;
+}
+
+sub bughook {
+	my ( $type, $ref, $data ) = @_;
+	&filelock("debbugs.trace.lock");
+
+	&appendfile("debbugs.trace","$type $ref\n",makestatus($data, 1));
+
+	my $whendone = "open";
+	my $severity = $config{default_severity};
+	(my $pkglist = $data->{package}) =~ s/[,\s]+/,/g;
+	$pkglist =~ s/^,+//;
+	$pkglist =~ s/,+$//;
+	$whendone = "forwarded" if length $data->{forwarded};
+	$whendone = "done" if length $data->{done};
+	$severity = $data->{severity} if length $data->{severity};
+
+	my $k = sprintf "%s %d %d %s [%s] %s %s\n",
+			$pkglist, $ref, $data->{date}, $whendone,
+			$data->{originator}, $severity, $data->{keywords};
+
+	update_realtime("$config{spool_dir}/index.db.realtime", $ref, $k);
+
+	&unfilelock;
 }
 
 

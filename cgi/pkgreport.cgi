@@ -640,16 +640,15 @@ sub pkg_htmlindexentrystatus {
     $result .= buglinklist(";\nBlocks ", ", ",
         split(/ /,$status{blocks}));
 
-    my $days = 0;
     if (length($status{done})) {
         $result .= "<br><strong>Done:</strong> " . htmlsanit($status{done});
-# Disabled until archiving actually works again
-#        $days = ceil($gRemoveAge - -M buglog($status{id}));
-#         if ($days >= 0) {
-#             $result .= ";\n<strong>Will be archived" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" ) . "</strong>";
-#         } else {
-#             $result .= ";\n<strong>Archived</strong>";
-#         }
+        my $days = bug_archiveable(bug => $status{id},
+				   status => \%status,
+				   days_until => 1,
+				  );
+        if ($days >= 0) {
+            $result .= ";\n<strong>Will be archived" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" ) . "</strong>";
+        }
     }
 
     unless (length($status{done})) {
