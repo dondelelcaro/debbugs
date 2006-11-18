@@ -64,6 +64,7 @@ my @interesting_versions = makesourceversions($cgi_var{package},undef,keys %vers
 my %sources;
 @sources{map {m{(.+)/}; $1} @{$cgi_var{found}}} = (1) x @{$cgi_var{found}};
 @sources{map {m{(.+)/}; $1} @{$cgi_var{fixed}}} = (1) x @{$cgi_var{fixed}};
+@sources{map {m{(.+)/}; $1} @interesting_versions} = (1) x @interesting_versions;
 my $version = Debbugs::Versions->new(\&Debbugs::Versions::Dpkg::vercmp);
 foreach my $source (keys %sources) {
      my $srchash = substr $source, 0, 1;
