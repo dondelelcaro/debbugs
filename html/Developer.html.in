@@ -123,8 +123,9 @@ they should note this in the $gBug tracking system as follows:
 
 <p>Make sure that the <code>To</code> field of your message to the author
 has only the author(s) address(es) in it; put both the person who
-reported the $gBug and
-<var>nnn</var><code>-forwarded\@$gEmailDomain</code> in the
+reported the $gBug, 
+<var>nnn</var><code>-forwarded\@$gEmailDomain</code> and
+<var>nnn</var><code>\@$gEmailDomain</code> in the
 <code>CC</code> field.
 
 <p>Ask the author to preserve the <code>CC</code> to

@@ -609,17 +609,13 @@ sub pkg_htmlindexentrystatus {
     my $showversions = '';
     if (@{$status{found_versions}}) {
         my @found = @{$status{found_versions}};
-        local $_;
-        s{/}{ } foreach @found;
-        $showversions .= join ', ', map htmlsanit($_), @found;
+        $showversions .= join ', ', map {s{/}{ }; htmlsanit($_)} @found;
     }
     if (@{$status{fixed_versions}}) {
         $showversions .= '; ' if length $showversions;
         $showversions .= '<strong>fixed</strong>: ';
         my @fixed = @{$status{fixed_versions}};
-        local $_;
-        s{/}{ } foreach @fixed;
-        $showversions .= join ', ', map htmlsanit($_), @fixed;
+        $showversions .= join ', ', map {s{/}{ }; htmlsanit($_)} @fixed;
     }
     $result .= " ($showversions)" if length $showversions;
     $result .= ";\n";
@@ -750,12 +746,12 @@ sub pkg_htmlizebugs {
 	    push @keys_in_order, "X";
 	    while ((my $k = shift @keys_in_order) ne "X") {
 	        for my $k2 (@{$o}) {
+		    $k2+=0;
 		    push @keys_in_order, "${k}_${k2}";
 		}
 	    }
 	}
-        for ( my $i = 0; $i <= $#keys_in_order; $i++ ) {
-            my $order = $keys_in_order[ $i ];
+        for my $order (@keys_in_order) {
             next unless defined $section{$order};
 	    my @ttl = split /_/, $order; shift @ttl;
 	    my $title = $title[0]->[$ttl[0]] . " bugs";
@@ -961,12 +957,13 @@ sub pkg_htmlselectarch {
 }
 
 sub myurl {
-    return pkg_etc_url($pkg, "pkg", 0) if defined($pkg);
-    return pkg_etc_url($src, "src", 0) if defined($src);
-    return pkg_etc_url($maint, "maint", 0) if defined($maint);
-    return pkg_etc_url($submitter, "submitter", 0) if defined($submitter);
-    return pkg_etc_url($severity, "severity", 0) if defined($severity);
-    return pkg_etc_url($tag, "tag", 0) if defined($tag);
+     return urlsanit('pkgreport.cgi?'.
+		     join(';',
+			  (map {("$_=$param{$_}")
+					    } keys %param
+			  )
+			 )
+		    );
 }
 
 sub make_order_list {
@@ -1039,9 +1036,10 @@ sub determine_ordering {
     $cats{severity}[0]{ord} = [ reverse @{$cats{severity}[0]{ord}} ]
         if ($sev_rev);
 
+    my $i;
     if (defined $param{"pri0"}) {
         my @c = ();
-        my $i = 0;
+        $i = 0;
         while (defined $param{"pri$i"}) {
             my $h = {};
 
@@ -1091,7 +1089,7 @@ sub determine_ordering {
         return $expr;
     }
  
-    my $i = 0;
+    $i = 0;
     for my $c (@cats) {
         $i++;
         push @prior, $c->{"pri"};
