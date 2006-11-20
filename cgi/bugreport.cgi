@@ -422,7 +422,7 @@ sub handle_record{
 	  $output .= '<a href="' . bugurl($ref, 'msg='.($msg_number+1)) . '">Full text</a> and <a href="' .
 	       bugurl($ref, 'msg='.($msg_number+1), 'mbox') . '">rfc822 format</a> available.';
 
-	  $output = qq(<div class="$class"><hr>\n<a name="$msg_number">\n) . $output . "</div>\n";
+	  $output = qq(<div class="$class"><hr>\n<a name="$msg_number"></a>\n) . $output . "</div>\n";
      }
      elsif (/recips/) {
 	  my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
@@ -432,7 +432,7 @@ sub handle_record{
 	  elsif (defined $msg_id) {
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
-	  $output .= qq(<hr><a name="$msg_number">\n);
+	  $output .= qq(<hr><a name="$msg_number"></a>\n);
 	  $output .= 'View this message in <a href="' . bugurl($ref, "msg=$msg_number", "mbox") . '">rfc822 format</a>';
 	  $output .= handle_email_message($record->{text},
 				    ref        => $bug_number,
@@ -551,7 +551,7 @@ function toggle_infmessages(){
 -->
 </script>
 </HEAD>
-<BODY">
+<BODY>
 END
 print "<H1>" . "$debbugs::gProject $debbugs::gBug report logs - <A HREF=\"mailto:$ref\@$gEmailDomain\">$short</A>" .
       "<BR>" . $title . "</H1>\n";
@@ -560,7 +560,7 @@ print "$descriptivehead\n";
 print qq(<p><a href="mailto:$ref\@$debbugs::gEmailDomain">Reply</a> ),
      qq(or <a href="mailto:$ref-subscribe\@$debbugs::gEmailDomain">subscribe</a> ),
      qq(to this bug.</p>\n);
-print qq(<p><a href="javascript:toggle_infmessages();">Show useless messages</a></p>);
+print qq(<p><a href="javascript:toggle_infmessages();">Toggle useless messages</a></p>);
 printf "<div class=\"msgreceived\"><p>View this report as an <a href=\"%s\">mbox folder</a>.</p></div>\n", bugurl($ref, "mbox");
 print "$log";
 print "<HR>";
