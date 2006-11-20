@@ -77,7 +77,7 @@ use Safe;
 %config = ();
 read_config(exists $ENV{DEBBUGS_CONFIG_FILE}?$ENV{DEBBUGS_CONFIG_FILE}:'/etc/debbugs/config');
 
-=item email_domain
+=item email_domain $gEmailDomain
 
 The email domain of the bts
 
@@ -85,7 +85,7 @@ The email domain of the bts
 
 set_default(\%config,'email_domain','bugs.something');
 
-=item list_domain
+=item list_domain $gListDomain
 
 The list domain of the bts, defaults to the email domain
 
@@ -93,7 +93,7 @@ The list domain of the bts, defaults to the email domain
 
 set_default(\%config,'list_domain',$config{email_domain});
 
-=item web_host
+=item web_host $gWebHost
 
 The web host of the bts; defaults to the email domain
 
@@ -101,7 +101,7 @@ The web host of the bts; defaults to the email domain
 
 set_default(\%config,'web_host',$config{email_domain});
 
-=item web_host_bug_dir
+=item web_host_bug_dir $gWebHostDir
 
 The directory of the web host on which bugs are kept, defaults to C<''>
 
@@ -109,7 +109,7 @@ The directory of the web host on which bugs are kept, defaults to C<''>
 
 set_default(\%config,'web_host_bug_dir','');
 
-=item web_domain
+=item web_domain $gWebDomain
 
 Full path of the web domain where bugs are kept, defaults to the
 concatenation of L</web_host> and L</web_host_bug_dir>
@@ -118,7 +118,7 @@ concatenation of L</web_host> and L</web_host_bug_dir>
 
 set_default(\%config,'web_domain',$config{web_host}.'/'.$config{web_host_bug_dir});
 
-=item html_suffix
+=item html_suffix $gHTMLSuffix
 
 Suffix of html pages, defaults to .html
 
@@ -126,7 +126,7 @@ Suffix of html pages, defaults to .html
 
 set_default(\%config,'html_suffix','.html');
 
-=item cgi_domain
+=item cgi_domain $gCGIDomain
 
 Full path of the web domain where cgi scripts are kept. Defaults to
 the concatentation of L</web_host> and cgi.
@@ -135,7 +135,7 @@ the concatentation of L</web_host> and cgi.
 
 set_default(\%config,'cgi_domain',$config{web_domain}.($config{web_domain}=~m{/$}?'':'/').'cgi');
 
-=item mirrors
+=item mirrors @gMirrors
 
 List of mirrors [What these mirrors are used for, no one knows.]
 
@@ -144,7 +144,7 @@ List of mirrors [What these mirrors are used for, no one knows.]
 
 set_default(\%config,'mirrors',[]);
 
-=item package_pages
+=item package_pages  $gPackagePages
 
 Domain where the package pages are kept; links should work in a
 package_pages/foopackage manner. Defaults to undef, which means that
@@ -155,7 +155,7 @@ package links will not be made.
 
 set_default(\%config,'package_pages',undef);
 
-=item subscription_domain
+=item subscription_domain $gSubscriptionDomain
 
 Domain where subscriptions to package lists happen
 
@@ -173,33 +173,41 @@ set_default(\%config,'subscription_domain',undef);
 
 =over
 
-=item project
+=item project $gProject
 
 Name of the project
+
+Default: 'Something'
 
 =cut
 
 set_default(\%config,'project','Something');
 
-=item project_title
+=item project_title $gProjectTitle
 
 Name of this install of Debbugs, defaults to "L</project> Debbugs Install"
+
+Default: "$config{project} Debbugs Install"
 
 =cut
 
 set_default(\%config,'project_title',"$config{project} Debbugs Install");
 
-=item maintainer
+=item maintainer $gMaintainer
 
 Name of the maintainer of this debbugs install
+
+Default: 'Local DebBugs Owner's
 
 =cut
 
 set_default(\%config,'maintainer','Local DebBugs Owner');
 
-=item maintainer_webpage
+=item maintainer_webpage $gMaintainerWebpage
 
 Webpage of the maintainer of this install of debbugs
+
+Default: "$config{web_domain}/~owner"
 
 =cut
 
@@ -209,6 +217,8 @@ set_default(\%config,'maintainer_webpage',"$config{web_domain}/~owner");
 
 Email address of the maintainer of this Debbugs install
 
+Default: 'root@'.$config{email_domain}
+
 =cut
 
 set_default(\%config,'maintainer_email','root@'.$config{email_domain});
@@ -216,6 +226,10 @@ set_default(\%config,'maintainer_email','root@'.$config{email_domain});
 =item unknown_maintainer_email
 
 Email address where packages with an unknown maintainer will be sent
+
+Default: $config{maintainer_email}
+
+=back
 
 =cut
 
@@ -289,16 +303,26 @@ Default: 1
 
 set_default(\%config,'save_old_bugs',1);
 
-=item removal_distribution_tags
+=item distributions
 
-Tags which specifiy distributions to check
+List of valid distributions
 
 Default: qw(experimental unstable testing stable oldstable);
 
 =cut
 
+set_default(\%config,'distributions',[qw(experimental unstable testing stable oldstable)]);
+
+=item removal_distribution_tags
+
+Tags which specifiy distributions to check
+
+Default: @{$config{distributions}}
+
+=cut
+
 set_default(\%config,'removal_distribution_tags',
-	    [qw(experimental unstable testing stable oldstable)]);
+	    [@{$config{distributions}}]);
 
 =item removal_default_distribution_tags
 
@@ -313,7 +337,6 @@ set_default(\%config,'removal_default_distribution_tags',
 	    [qw(unstable testing)]
 	   );
 
-
 set_default(\%config,'default_severity','normal');
 set_default(\%config,'show_severities','critical, grave, normal, minor, wishlist');
 set_default(\%config,'strong_severities',[qw(critical grave)]);
@@ -324,7 +347,9 @@ set_default(\%config,'severity_display',{critical => "Critical $config{bugs}",
 					 wishlist => "Wishlist $config{bugs}",
 					});
 
-set_default(\%config,'tags',[qw(patch wontfix moreinfo unreproducible fixed stable)]);
+set_default(\%config,'tags',[qw(patch wontfix moreinfo unreproducible fixed),
+			     @{$config{distributions}}
+			    ]);
 
 set_default(\%config,'bounce_froms','^mailer|^da?emon|^post.*mast|^root|^wpuser|^mmdf|^smt.*|'.
 	    '^mrgate|^vmmail|^mail.*system|^uucp|-maiser-|^mal\@|'.
@@ -342,7 +367,6 @@ set_default(\%config,'pseduo_desc_file',$config{config_dir}.'/pseudo-packages.de
 set_default(\%config,'package_source',$config{config_dir}.'/indices/sources');
 
 set_default(\%config,'version_packages_dir',$config{spool_dir}.'/../versions/pkg');
-#set_default(\%config,'version_packages_dir',$config{spool_dir}'/../versions/pkg');
 
 =back
 

@@ -47,7 +47,7 @@ my %cgi_var = cgi_parameters(query   => $q,
 # then figure out which versions are there in which architectures,
 my %versions;
 my %version_to_dist;
-for my $dist (qw(oldstable stable testing unstable experimental)) {
+for my $dist (@{$config{distributions}}) {
      $versions{$dist} = [getversions($cgi_var{package},$dist)];
      # make version_to_dist
      foreach my $version (@{$versions{$dist}}){
