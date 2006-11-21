@@ -428,6 +428,7 @@ sub handle_record{
 	  # Incomming Mail Message
 	  my ($received,$hostname) = $record->{text} =~ m/Received: \(at (\S+)\) by (\S+)\;/;
 	  $output .= qq|<hr><p class="msgreceived"><a name="$msg_number"></a><a name="msg$msg_number">Message received</a> at |.
+	  $output .= qq|<hr><p class="msgreceived"><a name="$msg_number"><a name="msg$msg_number">Message received</a> at |.
 	       htmlsanit("$received\@$hostname") . q| (<a href="| . bugurl($ref, "msg=$msg_number") . '">full text</a>'.q|, <a href="| . bugurl($ref, "msg=$msg_number") . ';mbox=yes">mbox</a>)'.":</p>\n";
 	  $output .= handle_email_message($record->{text},
 				    ref        => $bug_number,
