@@ -46,6 +46,7 @@ BEGIN{
 		     read   => [qw(readbug read_bug lockreadbug)],
 		     write  => [qw(writebug makestatus unlockwritebug)],
 		     versions => [qw(addfoundversion addfixedversion),
+				  qw(removefoundversions)
 				 ],
 		    );
      @EXPORT_OK = ();
@@ -388,32 +389,44 @@ sub addfoundversions {
     }
 }
 
+=head2 removefoundversions
+
+     removefoundversions($data,$package,$versiontoremove)
+
+Removes found versions from $data
+
+If a version is fully qualified (contains /) only versions matching
+exactly are removed. Otherwise, all versions matching the version
+number are removed.
+
+Currently $package and $isbinary are entirely ignored, but accepted
+for backwards compatibilty.
+
+=cut
+
 sub removefoundversions {
     my $data = shift;
     my $package = shift;
     my $version = shift;
     my $isbinary = shift;
     return unless defined $version;
-    undef $package if $package =~ m[(?:\s|/)];
-    my $source = $package;
-
-    if (defined $package and $isbinary) {
-        my @srcinfo = binarytosource($package, $version, undef);
-        if (@srcinfo) {
-            # We know the source package(s). Use a fully-qualified version.
-            removefoundversions($data, $_->[0], $_->[1], '') foreach @srcinfo;
-            return;
-        }
-        # Otherwise, an unqualified version will have to do.
-	undef $source;
-    }
 
     foreach my $ver (split /[,\s]+/, $version) {
-        my $sver = defined($source) ? "$source/$ver" : '';
-        @{$data->{found_versions}} =
-            grep { $_ ne $ver and $_ ne $sver } @{$data->{found_versions}};
+	 if ($ver =~ m{/}) {
+	      # fully qualified version
+	      @{$data->{found_versions}} =
+		   grep {$_ ne $ver}
+			@{$data->{found_versions}};
+	 }
+	 else {
+	      # non qualified version; delete all matchers
+	      @{$data->{found_versions}} =
+		   grep {$_ !~ m[(?:^|/)\Q$ver\E$]}
+			@{$data->{found_versions}};
+	 }
     }
 }
+
 
 sub addfixedversions {
     my $data = shift;

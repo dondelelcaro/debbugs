@@ -20,7 +20,7 @@ my %data = (package => q(foo),
 	   );
 
 
-require_ok('scripts/errorlib.in');
+use_ok('Debbugs::Status',qw(:versions));
 # check removefoundversions
 my $data = dclone(\%data);
 removefoundversions($data,$data->{package},'1.00');
