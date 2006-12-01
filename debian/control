@@ -4,13 +4,13 @@ Priority: optional
 Maintainer: Debbugs developers <debian-debbugs@lists.debian.org>
 Uploaders: Josip Rodin <joy-packages@debian.org>, Colin Watson <cjwatson@debian.org>
 Standards-Version: 3.2.1
-Build-Depends-Indep: debhelper
+Build-Depends-Indep: debhelper, libparams-validate-perl, libmailtools-perl, libmime-perl, libio-stringy-perl, libmldbm-perl, liburi-perl, libsoap-lite-perl, libcgi-simple-perl
 
 Package: debbugs
 Architecture: all
-Depends: perl5 | perl, exim4 | mail-transport-agent, libmailtools-perl, ed, libmime-perl, libio-stringy-perl, libmldbm-perl, liburi-perl, libsoap-lite-perl
+Depends: perl5 | perl, exim4 | mail-transport-agent, libmailtools-perl, ed, libmime-perl, libio-stringy-perl, libmldbm-perl, liburi-perl, libsoap-lite-perl, libcgi-simple-perl
 Recommends: httpd, links | lynx
-Suggests: spamassassin (>= 3.0)
+Suggests: spamassassin (>= 3.0), libcgi-alert-perl
 Description: The bug tracking system based on the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
  users and developers. Each bug is given a number, and is kept on file until
