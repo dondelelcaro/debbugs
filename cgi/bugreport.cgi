@@ -1,7 +1,5 @@
 #!/usr/bin/perl -wT
 
-package debbugs;
-
 use warnings;
 use strict;
 use POSIX qw(strftime tzset);
@@ -11,45 +9,63 @@ use IO::Scalar;
 use IO::File;
 
 use Debbugs::Config qw(:globals :text);
-#require '/usr/lib/debbugs/errorlib';
-require './common.pl';
 
 # for read_log_records
 use Debbugs::Log;
 use Debbugs::MIME qw(convert_to_utf8 decode_rfc1522 create_mime_message);
-use Debbugs::CGI qw(:url :html version_url);
+use Debbugs::CGI qw(:url :html :util);
+use Debbugs::Common qw(buglog);
+use Debbugs::Packages qw(getpkgsrc);
+use Debbugs::Status qw(get_bug_status isstrongseverity);
 
 use Scalar::Util qw(looks_like_number);
+use CGI::Simple;
+my $q = new CGI::Simple;
 
-my %param = readparse();
+my %param = cgi_parameters(query => $q,
+			   single => [qw(bug msg att boring terse),
+				      qw(reverse mbox mime trim),
+				      qw(mboxstat mboxmaint archive),
+				      qw(repeatmerged)
+				     ],
+			   default => {msg       => '',
+				       boring    => 'no',
+				       terse     => 'no',
+				       reverse   => 'no',
+				       mbox      => 'no',
+				       mime      => 'no',
+				       mboxstat  => 'no',
+				       mboxmaint => 'no',
+				       archive   => 'no',
+				      },
+			  );
+# This is craptacular.
 
 my $tail_html;
 
-my $ref = $param{'bug'} || quitcgi("No bug number");
+my $ref = $param{bug} or quitcgi("No bug number");
 $ref =~ /(\d+)/ or quitcgi("Invalid bug number");
 $ref = $1;
 my $short = "#$ref";
-my $msg = $param{'msg'} || "";
+my $msg = $param{'msg'};
 my $att = $param{'att'};
-my $boring = ($param{'boring'} || 'no') eq 'yes'; 
-my $terse = ($param{'terse'} || 'no') eq 'yes';
-my $reverse = ($param{'reverse'} || 'no') eq 'yes';
-my $mbox = ($param{'mbox'} || 'no') eq 'yes'; 
-my $mime = ($param{'mime'} || 'yes') eq 'yes';
+my $boring = $param{'boring'} eq 'yes';
+my $terse = $param{'terse'} eq 'yes';
+my $reverse = $param{'reverse'} eq 'yes';
+my $mbox = $param{'mbox'} eq 'yes';
+my $mime = $param{'mime'} eq 'yes';
 
 my $trim_headers = ($param{trim} || ($msg?'no':'yes')) eq 'yes';
 
-my $mbox_status_message = ($param{mboxstat}||'no') eq 'yes';
-my $mbox_maint = ($param{mboxmaint}||'no') eq 'yes';
+my $mbox_status_message = $param{mboxstat} eq 'yes';
+my $mbox_maint = $param{mboxmaint} eq 'yes';
 $mbox = 1 if $mbox_status_message or $mbox_maint;
 
 
 # Not used by this script directly, but fetch these so that pkgurl() and
 # friends can propagate them correctly.
-my $archive = ($param{'archive'} || 'no') eq 'yes';
-my $repeatmerged = ($param{'repeatmerged'} || 'yes') eq 'yes';
-set_option('archive', $archive);
-set_option('repeatmerged', $repeatmerged);
+my $archive = $param{'archive'} eq 'yes';
+my $repeatmerged = $param{'repeatmerged'} eq 'yes';
 
 my $buglog = buglog($ref);
 
@@ -89,11 +105,11 @@ sub display_entity ($$$$\$\@) {
 	      foreach (qw(From To Cc Subject Date)) {
 		   my $head_field = $head->get($_);
 		   next unless defined $head_field and $head_field ne '';
-		   push @headers, qq(<b>$_:</b> ) . htmlsanit(decode_rfc1522($head_field));
+		   push @headers, qq(<b>$_:</b> ) . html_escape(decode_rfc1522($head_field));
 	      }
 	      $$this .= join(qq(), @headers) unless $terse;
 	 } else {
-	      $$this .= htmlsanit(decode_rfc1522($entity->head->stringify));
+	      $$this .= html_escape(decode_rfc1522($entity->head->stringify));
 	 }
 	 $$this .= "</pre>\n";
     }
@@ -101,11 +117,11 @@ sub display_entity ($$$$\$\@) {
     unless (($top and $type =~ m[^text(?:/plain)?(?:;|$)]) or
 	    ($type =~ m[^multipart/])) {
 	push @$attachments, $entity;
-	my @dlargs = ($ref, "msg=$xmessage", "att=$#$attachments");
-	push @dlargs, "filename=$filename" if $filename ne '';
+	my @dlargs = ($ref, msg=>$xmessage, att=>$#$attachments);
+	push @dlargs, (filename=>$filename) if $filename ne '';
 	my $printname = $filename;
 	$printname = 'Message part ' . ($#$attachments + 1) if $filename eq '';
-	$$this .= '<pre class="mime">[<a href="' . bugurl(@dlargs) . qq{">$printname</a> } .
+	$$this .= '<pre class="mime">[<a href="' . bug_url(@dlargs) . qq{">$printname</a> } .
 		  "($type, $disposition)]</pre>\n";
 
 	if ($msg and defined($att) and $att eq $#$attachments) {
@@ -158,12 +174,12 @@ sub display_entity ($$$$\$\@) {
 	      my ($charset) = $content_type =~ m/charset\s*=\s*\"?([\w-]+)\"?/i;
 	      my $body = $entity->bodyhandle->as_string;
 	      $body = convert_to_utf8($body,$charset) if defined $charset;
-	      $body = htmlsanit($body);
+	      $body = html_escape($body);
 	      # Add links to URLs
 	      $body =~ s,((ftp|http|https)://[\S~-]+?/?)((\&gt\;)?[)]?[']?[:.\,]?(\s|$)),<a href=\"$1\">$1</a>$3,go;
 	      # Add links to bug closures
 	      $body =~ s[(closes:\s*(?:bug)?\#?\s?\d+(?:,?\s*(?:bug)?\#?\s?\d+)*)
-			][my $temp = $1; $temp =~ s{(\d+)}{qq(<a href=").bugurl($1).qq(">$1</a>)}ge; $temp;]gxie;
+			][my $temp = $1; $temp =~ s{(\d+)}{qq(<a href=").bug_url($1).qq(">$1</a>)}ge; $temp;]gxie;
 	      $$this .= qq(<pre class="message">$body</pre>\n);
 	 }
     }
@@ -179,10 +195,10 @@ my $tpack;
 my $tmain;
 
 my $dtime = strftime "%a, %e %b %Y %T UTC", gmtime;
-$tail_html = $debbugs::gHTMLTail;
+$tail_html = $gHTMLTail;
 $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
 
-my %status = %{getbugstatus($ref)};
+my %status = %{get_bug_status(bug=>$ref)};
 unless (%status) {
     print <<EOF;
 Content-Type: text/html; charset=utf-8
@@ -213,28 +229,28 @@ if  ($status{severity} eq 'normal') {
 }
 
 $indexentry .= "<div class=\"msgreceived\">\n";
-$indexentry .= htmlpackagelinks($status{package}, 0) . ";\n";
+$indexentry .= htmlize_packagelinks($status{package}, 0) . ";\n";
 
 foreach my $pkg (@tpacks) {
     my $tmaint = defined($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)';
     my $tsrc = defined($pkgsrc{$pkg}) ? $pkgsrc{$pkg} : '(unknown)';
 
     $indexentry .=
-            htmlmaintlinks(sub { $_[0] == 1 ? "Maintainer for $pkg is\n"
+            htmlize_maintlinks(sub { $_[0] == 1 ? "Maintainer for $pkg is\n"
                                             : "Maintainers for $pkg are\n" },
                            $tmaint);
     $indexentry .= ";\nSource for $pkg is\n".
-            '<a href="'.srcurl($tsrc)."\">$tsrc</a>" if ($tsrc ne "(unknown)");
+            '<a href="'.pkg_url(src=>$tsrc)."\">$tsrc</a>" if ($tsrc ne "(unknown)");
     $indexentry .= ".\n";
 }
 
 $indexentry .= "<br>";
-$indexentry .= htmladdresslinks("Reported by: ", \&submitterurl,
+$indexentry .= htmlize_addresslinks("Reported by: ", \&submitterurl,
                                 $status{originator}) . ";\n";
 $indexentry .= sprintf "Date: %s.\n",
 		(strftime "%a, %e %b %Y %T UTC", localtime($status{date}));
 
-$indexentry .= "<br>Owned by: " . htmlsanit($status{owner}) . ".\n"
+$indexentry .= "<br>Owned by: " . html_escape($status{owner}) . ".\n"
               if length $status{owner};
 
 $indexentry .= "</div>\n";
@@ -243,7 +259,7 @@ my @descstates;
 
 $indexentry .= "<h3>$showseverity";
 $indexentry .= sprintf "Tags: %s;\n", 
-		htmlsanit(join(", ", sort(split(/\s+/, $status{tags}))))
+		html_escape(join(", ", sort(split(/\s+/, $status{tags}))))
 			if length($status{tags});
 $indexentry .= "<br>" if (length($showseverity) or length($status{tags}));
 
@@ -252,7 +268,7 @@ if (@merged) {
 	my $descmerged = 'Merged with ';
 	my $mseparator = '';
 	for my $m (@merged) {
-		$descmerged .= $mseparator."<a href=\"" . bugurl($m) . "\">#$m</a>";
+		$descmerged .= $mseparator."<a href=\"" . bug_url($m) . "\">#$m</a>";
 		$mseparator= ",\n";
 	}
 	push @descstates, $descmerged;
@@ -261,16 +277,16 @@ if (@merged) {
 if (@{$status{found_versions}}) {
     my $foundtext = 'Found in ';
     $foundtext .= (@{$status{found_versions}} == 1) ? 'version ' : 'versions ';
-    $foundtext .= join ', ', map htmlsanit($_), @{$status{found_versions}};
+    $foundtext .= join ', ', map html_escape($_), @{$status{found_versions}};
     push @descstates, $foundtext;
 }
 
 if (@{$status{fixed_versions}}) {
     my $fixedtext = '<strong>Fixed</strong> in ';
     $fixedtext .= (@{$status{fixed_versions}} == 1) ? 'version ' : 'versions ';
-    $fixedtext .= join ', ', map htmlsanit($_), @{$status{fixed_versions}};
+    $fixedtext .= join ', ', map html_escape($_), @{$status{fixed_versions}};
     if (length($status{done})) {
-	$fixedtext .= ' by ' . htmlsanit(decode_rfc1522($status{done}));
+	$fixedtext .= ' by ' . html_escape(decode_rfc1522($status{done}));
     }
     push @descstates, $fixedtext;
     push @descstates, '<a href="'.
@@ -280,7 +296,7 @@ if (@{$status{fixed_versions}}) {
 		    ).qq{">Version Graph</a>};
 
 } elsif (length($status{done})) {
-    push @descstates, "<strong>Done:</strong> ".htmlsanit(decode_rfc1522($status{done}));
+    push @descstates, "<strong>Done:</strong> ".html_escape(decode_rfc1522($status{done}));
 } elsif (length($status{forwarded})) {
     push @descstates, "<strong>Forwarded</strong> to ".maybelink($status{forwarded});
 }
@@ -291,7 +307,7 @@ if (@blockedby && $status{"pending"} ne 'fixed' && ! length($status{done})) {
     for my $b (@blockedby) {
         my %s = %{getbugstatus($b)};
         next if $s{"pending"} eq 'fixed' || length $s{done};
-        push @descstates, "Fix blocked by <a href=\"" . bugurl($b) . "\">#$b</a>: ".htmlsanit($s{subject});
+        push @descstates, "Fix blocked by <a href=\"" . bug_url($b) . "\">#$b</a>: ".html_escape($s{subject});
     }
 }
 
@@ -300,7 +316,7 @@ if (@blocks && $status{"pending"} ne 'fixed' && ! length($status{done})) {
     for my $b (@blocks) {
         my %s = %{getbugstatus($b)};
         next if $s{"pending"} eq 'fixed' || length $s{done};
-        push @descstates, "Blocking fix for <a href=\"" . bugurl($b) . "\">#$b</a>: ".htmlsanit($s{subject});
+        push @descstates, "Blocking fix for <a href=\"" . bug_url($b) . "\">#$b</a>: ".html_escape($s{subject});
     }
 }
 
@@ -393,9 +409,9 @@ sub handle_record{
 			    join(' ',map {bug_links($_)} (split /\,?\s+/, $4))}eo;
 	  # Add links to reassigned packages
 	  $output =~ s{(Bug reassigned from package \`)([^\']+)(' to \`)([^\']+)(')}
-	  {$1.q(<a href=").pkgurl($2).qq(">$2</a>).$3.q(<a href=").pkgurl($4).qq(">$4</a>).$5}eo;
-	  $output .= '<a href="' . bugurl($ref, 'msg='.($msg_number+1)) . '">Full text</a> and <a href="' .
-	       bugurl($ref, 'msg='.($msg_number+1), 'mbox') . '">rfc822 format</a> available.';
+	  {$1.q(<a href=").pkg_url(pkg=>$2).qq(">$2</a>).$3.q(<a href=").pkg_url(pkg=>$4).qq(">$4</a>).$5}eo;
+	  $output .= '<a href="' . bug_url($ref, msg => ($msg_number+1)) . '">Full text</a> and <a href="' .
+	       bug_url($ref, msg => ($msg_number+1), mbox => 'yes') . '">rfc822 format</a> available.';
 
 	  $output = qq(<div class="$class"><hr>\n<a name="$msg_number"></a>\n) . $output . "</div>\n";
      }
@@ -428,8 +444,7 @@ sub handle_record{
 	  # Incomming Mail Message
 	  my ($received,$hostname) = $record->{text} =~ m/Received: \(at (\S+)\) by (\S+)\;/;
 	  $output .= qq|<hr><p class="msgreceived"><a name="$msg_number"></a><a name="msg$msg_number">Message received</a> at |.
-	  $output .= qq|<hr><p class="msgreceived"><a name="$msg_number"><a name="msg$msg_number">Message received</a> at |.
-	       htmlsanit("$received\@$hostname") . q| (<a href="| . bugurl($ref, "msg=$msg_number") . '">full text</a>'.q|, <a href="| . bugurl($ref, "msg=$msg_number") . ';mbox=yes">mbox</a>)'.":</p>\n";
+	       html_escape("$received\@$hostname") . q| (<a href="| . bug_url($ref, msg=>$msg_number) . '">full text</a>'.q|, <a href="| . bug_url($ref, msg=>$msg_number,mbox=>'yes') .'">mbox</a>)'.":</p>\n";
 	  $output .= handle_email_message($record->{text},
 				    ref        => $bug_number,
 				    msg_number => $msg_number,
@@ -537,7 +552,7 @@ $log = join("\n",@log);
 
 print "Content-Type: text/html; charset=utf-8\n\n";
 
-my $title = htmlsanit($status{subject});
+my $title = html_escape($status{subject});
 
 my $dummy2 = $gWebHostBugDir;
 
