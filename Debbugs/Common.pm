@@ -31,7 +31,7 @@ BEGIN{
 
      @EXPORT = ();
      %EXPORT_TAGS = (util   => [qw(getbugcomponent getbuglocation getlocationpath get_hashname),
-				qw(appendfile),
+				qw(appendfile buglog),
 			       ],
 		     quit   => [qw(quit)],
 		     lock   => [qw(filelock unfilelock)],
@@ -135,6 +135,22 @@ Returns the hash of the bug which is the location within the archive
 sub get_hashname {
     return "" if ( $_[ 0 ] < 0 );
     return sprintf "%02d", $_[ 0 ] % 100;
+}
+
+=head2 buglog
+
+     buglog($bugnum);
+
+Returns the path to the logfile corresponding to the bug.
+
+=cut
+
+sub buglog {
+    my $bugnum = shift;
+    my $location = getbuglocation($bugnum, 'log');
+    return getbugcomponent($bugnum, 'log', $location) if ($location);
+    $location = getbuglocation($bugnum, 'log.gz');
+    return getbugcomponent($bugnum, 'log.gz', $location);
 }
 
 
