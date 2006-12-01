@@ -236,16 +236,6 @@ $debug = 1 if (defined $ret{"debug"} && $ret{"debug"} eq "aj");
     return %ret;
 }
 
-sub quitcgi {
-    my $msg = shift;
-    print "Content-Type: text/html\n\n";
-    print "<HTML><HEAD><TITLE>Error</TITLE></HEAD><BODY>\n";
-    print "An error occurred. Dammit.\n";
-    print "Error was: $msg.\n";
-    print "</BODY></HTML>\n";
-    exit 0;
-}
-
 #sub abort {
 #    my $msg = shift;
 #    my $Archive = $common_archive ? "archive" : "";
@@ -713,64 +703,16 @@ sub maintencoded {
     return $encoded;
 }
 
-my $_maintainer;
-sub getmaintainers {
-    return $_maintainer if $_maintainer;
-    my %maintainer;
-
-    open(MM,"$gMaintainerFile") or &quitcgi("open $gMaintainerFile: $!");
-    while(<MM>) {
-	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
-	($a,$b)=($1,$2);
-	$a =~ y/A-Z/a-z/;
-	$maintainer{$a}= $b;
-    }
-    close(MM);
-    if (defined $gMaintainerFileOverride) {
-	open(MM,"$gMaintainerFileOverride") or &quitcgi("open $gMaintainerFileOverride: $!");
-	while(<MM>) {
-	    next unless m/^(\S+)\s+(\S.*\S)\s*$/;
-	    ($a,$b)=($1,$2);
-	    $a =~ y/A-Z/a-z/;
-	    $maintainer{$a}= $b;
-	}
-	close(MM);
-    }
-    $_maintainer = \%maintainer;
-    return $_maintainer;
-}
-
-my $_pseudodesc;
-sub getpseudodesc {
-    return $_pseudodesc if $_pseudodesc;
-    my %pseudodesc;
-
-    open(PSEUDO, "< $gPseudoDescFile") or &quitcgi("open $gPseudoDescFile: $!");
-    while(<PSEUDO>) {
-	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
-	$pseudodesc{lc $1} = $2;
-    }
-    close(PSEUDO);
-    $_pseudodesc = \%pseudodesc;
-    return $_pseudodesc;
-}
 
 sub getbugstatus {
-    return get_bug_status(bug => shift,
-			  $use_bug_idx ?(bug_index => \%bugidx):(),
+    my ($bug) = @_;
+    return get_bug_status(bug => $bug,
+			  $use_bug_idx?(bug_index => \%bugidx):(),
 			  usertags => \%common_bugusertags,
-			  defined $common_dist?(dist => $common_dist):(),
-			  defined $common_version?(version => $common_version):(),
-			  defined $common_arch?(arch => $common_arch):()
+			  (defined $common_dist)?(dist => $common_dist):(),
+			  (defined $common_version)?(version => $common_version):(),
+			  (defined $common_arch)?(arch => $common_arch):(),
 			 );
-}
-
-sub buglog {
-    my $bugnum = shift;
-    my $location = getbuglocation($bugnum, 'log');
-    return getbugcomponent($bugnum, 'log', $location) if ($location);
-    $location = getbuglocation($bugnum, 'log.gz');
-    return getbugcomponent($bugnum, 'log.gz', $location);
 }
 
 sub getversiondesc {
