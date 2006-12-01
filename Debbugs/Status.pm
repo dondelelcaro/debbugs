@@ -42,7 +42,9 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (status => [qw(splitpackages get_bug_status buggy bug_archiveable)],
+     %EXPORT_TAGS = (status => [qw(splitpackages get_bug_status buggy bug_archiveable),
+				qw(isstrongseverity),
+			       ],
 		     read   => [qw(readbug read_bug lockreadbug)],
 		     write  => [qw(writebug makestatus unlockwritebug)],
 		     versions => [qw(addfoundversion addfixedversion),
@@ -546,9 +548,6 @@ sub bug_archiveable{
 					  status => {type => HASHREF,
 						     optional => 1,
 						    },
-					  version => {type => HASHREF,
-						      optional => 1,
-						     },
 					  days_until => {type => BOOLEAN,
 							 default => 0,
 							},
@@ -590,14 +589,9 @@ sub bug_archiveable{
      my %source_versions;
      for my $dist (keys %dists){
      	  my @versions;
-	  if (defined $param{version}) {
-	       @versions = ($param{version});
-	  } elsif (defined $param{dist}) {
-	       @versions = getversions($status->{package},
-				       $dist,
-				       undef);
-	  }
-
+	  @versions = getversions($status->{package},
+				  $dist,
+				  undef);
 	  # TODO: This should probably be handled further out for efficiency and
 	  # for more ease of distinguishing between pkg= and src= queries.
 	  my @sourceversions = makesourceversions($status->{package},
@@ -753,7 +747,7 @@ sub get_bug_status {
 	  my $maxbuggy = max_buggy(bug => $param{bug},
 				   sourceversions => \@sourceversions,
 				   found => $status{found_versions},
-				   fixed => $status{fixed_versions}.
+				   fixed => $status{fixed_versions},
 				   package => $status{package},
 				   version_cache => $version_cache,
 				  );
@@ -914,6 +908,13 @@ sub buggy {
      }
      return $version->buggy($param{version},\@found,\@fixed);
 }
+
+sub isstrongseverity {
+    my $severity = shift;
+    $severity = $config{default_severity} if $severity eq '';
+    return grep { $_ eq $severity } @{$config{strong_severities}};
+}
+
 
 =head1 PRIVATE FUNCTIONS
 
