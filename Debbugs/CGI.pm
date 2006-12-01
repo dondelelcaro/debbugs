@@ -46,11 +46,14 @@ BEGIN{
      @EXPORT = ();
      %EXPORT_TAGS = (url    => [qw(bug_url bug_links bug_linklist maybelink),
 				qw(set_url_params pkg_url version_url),
+				qw(submitterurl mainturl)
 			       ],
 		     html   => [qw(html_escape htmlize_bugs htmlize_packagelinks),
-				qw(maybelink htmlize_addresslinks),
+				qw(maybelink htmlize_addresslinks htmlize_maintlinks),
 			       ],
-		     util   => [qw(getparsedaddrs cgi_parameters)]
+		     util   => [qw(getparsedaddrs cgi_parameters quitcgi),
+				qw(getmaintainers getpseudodesc splitpackages)
+			       ],
 		     #status => [qw(getbugstatus)],
 		    );
      @EXPORT_OK = ();
@@ -195,95 +198,23 @@ sub cgi_parameters {
 }
 
 
+sub quitcgi {
+    my $msg = shift;
+    print "Content-Type: text/html\n\n";
+    print "<HTML><HEAD><TITLE>Error</TITLE></HEAD><BODY>\n";
+    print "An error occurred. Dammit.\n";
+    print "Error was: $msg.\n";
+    print "</BODY></HTML>\n";
+    exit 0;
+}
+
 
 my %common_bugusertags;
 
-# =head2 get_bug_status
-# 
-#      my $status = getbugstatus($bug_num)
-# 
-#      my $status = getbugstatus($bug_num,$bug_index)
-# 
-# 
-# =cut
-# 
-# sub get_bug_status {
-#     my ($bugnum,$bugidx) = @_;
-# 
-#     my %status;
-# 
-#     if (defined $bugidx and exists $bugidx->{$bugnum}) {
-# 	%status = %{ $bugidx->{$bugnum} };
-# 	$status{pending} = $status{ status };
-# 	$status{id} = $bugnum;
-# 	return \%status;
-#     }
-# 
-#     my $location = getbuglocation($bugnum, 'summary');
-#     return {} if not length $location;
-#     %status = %{ readbug( $bugnum, $location ) };
-#     $status{id} = $bugnum;
-# 
-# 
-#     if (defined $common_bugusertags{$bugnum}) {
-#         $status{keywords} = "" unless defined $status{keywords};
-#         $status{keywords} .= " " unless $status{keywords} eq "";
-#         $status{keywords} .= join(" ", @{$common_bugusertags{$bugnum}});
-#     }
-#     $status{tags} = $status{keywords};
-#     my %tags = map { $_ => 1 } split ' ', $status{tags};
-# 
-#     $status{"package"} =~ s/\s*$//;
-#     $status{"package"} = 'unknown' if ($status{"package"} eq '');
-#     $status{"severity"} = 'normal' if ($status{"severity"} eq '');
-# 
-#     $status{"pending"} = 'pending';
-#     $status{"pending"} = 'forwarded'	    if (length($status{"forwarded"}));
-#     $status{"pending"} = 'pending-fixed'    if ($tags{pending});
-#     $status{"pending"} = 'fixed'	    if ($tags{fixed});
-# 
-#     my @versions;
-#     if (defined $common_version) {
-#         @versions = ($common_version);
-#     } elsif (defined $common_dist) {
-#         @versions = getversions($status{package}, $common_dist, $common_arch);
-#     }
-# 
-#     # TODO: This should probably be handled further out for efficiency and
-#     # for more ease of distinguishing between pkg= and src= queries.
-#     my @sourceversions = makesourceversions($status{package}, $common_arch,
-#                                             @versions);
-# 
-#     if (@sourceversions) {
-#         # Resolve bugginess states (we might be looking at multiple
-#         # architectures, say). Found wins, then fixed, then absent.
-#         my $maxbuggy = 'absent';
-#         for my $version (@sourceversions) {
-#             my $buggy = buggyversion($bugnum, $version, \%status);
-#             if ($buggy eq 'found') {
-#                 $maxbuggy = 'found';
-#                 last;
-#             } elsif ($buggy eq 'fixed' and $maxbuggy ne 'found') {
-#                 $maxbuggy = 'fixed';
-#             }
-#         }
-#         if ($maxbuggy eq 'absent') {
-#             $status{"pending"} = 'absent';
-#         } elsif ($maxbuggy eq 'fixed') {
-#             $status{"pending"} = 'done';
-#         }
-#     }
-#     
-#     if (length($status{done}) and
-#             (not @sourceversions or not @{$status{fixed_versions}})) {
-#         $status{"pending"} = 'done';
-#     }
-# 
-#     return \%status;
-# }
 
 
-#     htmlize_bugs(bugs=>[@bugs]);
+=head HTML
+
 =head2 htmlize_bugs
 
      htmlize_bugs({bug=>1,status=>\%status,extravars=>\%extra},{bug=>...}});
@@ -291,7 +222,7 @@ my %common_bugusertags;
 Turns a list of bugs into an html snippit of the bugs.
 
 =cut
-
+#     htmlize_bugs(bugs=>[@bugs]);
 sub htmlize_bugs{
      my @bugs = @_;
      my @html;
@@ -501,13 +432,14 @@ sub htmlize_addresslinks {
 	  my $prefix = (ref $prefixfunc) ?
 	       $prefixfunc->(scalar @addrs):$prefixfunc;
 	  return $prefix .
-	       join ', ', map
+	       join(', ', map
 		    { sprintf qq(<a ${class}).
 			   'href="%s">%s</a>',
 				$urlfunc->($_->address),
 				     html_escape($_->format) ||
 					  '(unknown)'
-				     } @addrs;
+				     } @addrs
+		   );
      }
      else {
 	  my $prefix = (ref $prefixfunc) ?
@@ -517,15 +449,66 @@ sub htmlize_addresslinks {
      }
 }
 
+sub emailfromrfc822{
+     my $addr = getparsedaddrs($_[0] || "");
+     $addr = defined $addr?$addr->address:'';
+     return $addr;
+}
+
+sub mainturl { pkg_url(maint => emailfromrfc822($_[0])); }
+sub submitterurl { pkg_url(submitter => emailfromrfc822($_[0])); }
+sub htmlize_maintlinks {
+    my ($prefixfunc, $maints) = @_;
+    return htmlize_addresslinks($prefixfunc, \&mainturl, $maints);
+}
+
 
 
 my %_parsedaddrs;
 sub getparsedaddrs {
     my $addr = shift;
     return () unless defined $addr;
-    return @{$_parsedaddrs{$addr}} if exists $_parsedaddrs{$addr};
+    return wantarray?@{$_parsedaddrs{$addr}}:$_parsedaddrs{$addr}[0]
+	 if exists $_parsedaddrs{$addr};
     @{$_parsedaddrs{$addr}} = Mail::Address->parse($addr);
-    return @{$_parsedaddrs{$addr}};
+    return wantarray?@{$_parsedaddrs{$addr}}:$_parsedaddrs{$addr}[0];
+}
+
+
+my $_maintainer;
+sub getmaintainers {
+    return $_maintainer if $_maintainer;
+    my %maintainer;
+    for my $file (@config{qw(maintainer_file maintainer_file_override)}) {
+	 next unless defined $file;
+	 my $maintfile = new IO::File $file,'r' or
+	      &quitcgi("Unable to open $file: $!");
+	 while(<$maintfile>) {
+	      next unless m/^(\S+)\s+(\S.*\S)\s*$/;
+	      ($a,$b)=($1,$2);
+	      $a =~ y/A-Z/a-z/;
+	      $maintainer{$a}= $b;
+	 }
+	 close($maintfile);
+    }
+    $_maintainer = \%maintainer;
+    return $_maintainer;
+}
+
+my $_pseudodesc;
+sub getpseudodesc {
+    return $_pseudodesc if $_pseudodesc;
+    my %pseudodesc;
+
+    my $pseudo = new IO::File $config{pseudo_desc_file},'r'
+	 or &quitcgi("Unable to open $config{pseudo_desc_file}: $!");
+    while(<$pseudo>) {
+	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
+	$pseudodesc{lc $1} = $2;
+    }
+    close($pseudo);
+    $_pseudodesc = \%pseudodesc;
+    return $_pseudodesc;
 }
 
 
