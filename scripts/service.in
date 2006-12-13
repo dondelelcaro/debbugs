@@ -487,7 +487,7 @@ END
 	$bug_affected{$ref}=1;
         if (&setbug) {
             if (@{$data->{fixed_versions}}) {
-                &transcript("'reopen' is deprecated when a bug has been closed with a version;\nuse 'found' or 'submitter' as appropriate instead.\n");
+                &transcript("'reopen' may be inappropriate when a bug has been closed with a version;\nyou may need to use 'found' to remove fixed versions.\n");
             }
             if (!length($data->{done})) {
                 &transcript("$gBug is already open, cannot reopen.\n\n");
