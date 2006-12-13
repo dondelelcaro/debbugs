@@ -572,41 +572,45 @@ sub bug_archiveable{
 	  return $cannot_archive;
      }
      # At this point, we have to get the versioning information for this bug.
-
      # We examine the set of distribution tags. If a bug has no distribution
      # tags set, we assume a default set, otherwise we use the tags the bug
      # has set.
-     my %dist_tags;
-     @dist_tags{@{$config{removal_distribution_tags}}} =
-	  (1) x @{$config{removal_distribution_tags}};
-     my %dists;
-     @dists{@{$config{removal_default_distribution_tags}}} = 
-	  (1) x @{$config{removal_default_distribution_tags}};
-     for my $tag (split ' ', $status->{tags}) {
-	  next unless $dist_tags{$tag};
-	  $dists{$tag} = 1;
-     }
-     my %source_versions;
-     for my $dist (keys %dists){
-     	  my @versions;
-	  @versions = getversions($status->{package},
-				  $dist,
-				  undef);
-	  # TODO: This should probably be handled further out for efficiency and
-	  # for more ease of distinguishing between pkg= and src= queries.
-	  my @sourceversions = makesourceversions($status->{package},
-						  $dist,
-						  @versions);
-	  @source_versions{@sourceversions} = (1) x @sourceversions;
-     }
-     if ('found' eq max_buggy(bug => $param{bug},
-			      sourceversions => [keys %source_versions],
-			      found          => $status->{found_versions},
-			      fixed          => $status->{fixed_versions},
-			      version_cache  => $version_cache,
-			      package        => $status->{package},
-			     )) {
-	  return $cannot_archive;
+
+     # There must be fixed_versions for us to look at the versioning
+     # information
+     if (@{$status->{fixed_versions}}) {
+	  my %dist_tags;
+	  @dist_tags{@{$config{removal_distribution_tags}}} =
+	       (1) x @{$config{removal_distribution_tags}};
+	  my %dists;
+	  @dists{@{$config{removal_default_distribution_tags}}} = 
+	       (1) x @{$config{removal_default_distribution_tags}};
+	  for my $tag (split ' ', $status->{tags}) {
+	       next unless $dist_tags{$tag};
+	       $dists{$tag} = 1;
+	  }
+	  my %source_versions;
+	  for my $dist (keys %dists){
+	       my @versions;
+	       @versions = getversions($status->{package},
+				       $dist,
+				       undef);
+	       # TODO: This should probably be handled further out for efficiency and
+	       # for more ease of distinguishing between pkg= and src= queries.
+	       my @sourceversions = makesourceversions($status->{package},
+						       $dist,
+						       @versions);
+	       @source_versions{@sourceversions} = (1) x @sourceversions;
+	  }
+	  if ('found' eq max_buggy(bug => $param{bug},
+				   sourceversions => [keys %source_versions],
+				   found          => $status->{found_versions},
+				   fixed          => $status->{fixed_versions},
+				   version_cache  => $version_cache,
+				   package        => $status->{package},
+				  )) {
+	       return $cannot_archive;
+	  }
      }
      # 6. at least 28 days have passed since the last action has occured or the bug was closed
      # XXX We still need some more work here before we actually can archive;
@@ -896,7 +900,8 @@ sub buggy {
 	  $version = Debbugs::Versions->new(\&Debbugs::Versions::Dpkg::vercmp);
 	  foreach my $source (keys %sources) {
 	       my $srchash = substr $source, 0, 1;
-	       my $version_fh = new IO::File "$config{version_packages_dir}/$srchash/$source", 'r';
+	       my $version_fh = new IO::File "$config{version_packages_dir}/$srchash/$source", 'r' or
+		    warn "Unable to open $config{version_packages_dir}/$srchash/$source: $!" and next;
 	       $version->load($version_fh);
 	  }
 	  if (defined $param{version_cache}) {
