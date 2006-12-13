@@ -47,8 +47,9 @@ BEGIN{
 use Debbugs::Config qw(:config);
 use Params::Validate qw(validate_with :types);
 use IO::File;
-use Debbugs::Status;
+use Debbugs::Status qw(splitpackages);
 use Debbugs::Packages qw(getsrcpkgs);
+use Debbugs::Common qw(getparsedaddrs getmaintainers getmaintainers_reverse);
 use Fcntl qw(O_RDONLY);
 use MLDBM qw(DB_File Storable);
 
@@ -70,8 +71,6 @@ for limited regular expressions, and/or more complex expressions.
 =item src -- name of the source package
 
 =item maint -- address of the maintainer
-
-=item maintenc -- encoded address of the maintainer
 
 =item submitter -- address of the submitter
 
@@ -149,9 +148,6 @@ sub get_bugs{
 						        optional => 1,
 						       },
 					  maint     => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  maintenc  => {type => SCALAR|ARRAYREF,
 						        optional => 1,
 						       },
 					  submitter => {type => SCALAR|ARRAYREF,
@@ -243,19 +239,38 @@ sub get_bugs_by_idx{
 					  archive   => {type => BOOLEAN,
 							default => 0,
 						       },
+					  src       => {type => SCALAR|ARRAYREF,
+						        optional => 1,
+						       },
+					  maint     => {type => SCALAR|ARRAYREF,
+						        optional => 1,
+						       },
 					 },
 			      );
      my %bugs = ();
-     my $keys = keys %param - 1;
+
+     # We handle src packages, maint and maintenc by mapping to the
+     # appropriate binary packages, then removing all packages which
+     # don't match all queries
+     my @packages = __handle_pkg_src_and_maint(map {exists $param{$_}?($_,$param{$_}):()}
+					       qw(package src maint)
+					      );
+     if (exists $param{package} or
+	 exists $param{src} or
+	 exists $param{maint}) {
+	  delete @param{qw(maint src)};
+	  $param{package} = [@packages];
+     }
+     my $keys = keys(%param) - 1;
      die "Need at least 1 key to search by" unless $keys;
-     my $arc = $params{archive} ? '-arc':''
+     my $arc = $param{archive} ? '-arc':'';
      my %idx;
-     for my $key (keys %param) {
+     for my $key (grep {$_ ne 'archive'} keys %param) {
 	  my $index = $key;
 	  $index = 'submitter-email' if $key eq 'submitter';
-	  $index = "$config{spool_dir}/by-${index}${arc}.idx"
-	  tie %idx, MLDBM => $index, O_RDONLY
-	       or die "Unable to open $index $!";
+	  $index = "$config{spool_dir}/by-${index}${arc}.idx";
+	  tie(%idx, MLDBM => $index, O_RDONLY)
+	       or die "Unable to open $index: $!";
 	  for my $search (__make_list($param{$key})) {
 	       next unless defined $idx{$search};
 	       for my $bug (keys %{$idx{$search}}) {
@@ -266,7 +281,7 @@ sub get_bugs_by_idx{
 	  untie %idx or die 'Unable to untie %idx';
      }
      # Throw out results that do not match all of the search specifications
-     return map {$keys == $bugs{$bug}?($bug):()} keys %bugs;
+     return map {$keys <= $bugs{$_}?($_):()} keys %bugs;
 }
 
 
@@ -286,9 +301,6 @@ sub get_bugs_flatfile{
 						        optional => 1,
 						       },
 					  maint     => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  maintenc  => {type => SCALAR|ARRAYREF,
 						        optional => 1,
 						       },
 					  submitter => {type => SCALAR|ARRAYREF,
@@ -339,6 +351,18 @@ sub get_bugs_flatfile{
 			     @{$param{usertags}}{__make_list($param{tag})}
 			} = (1) x @{$param{usertags}}{__make_list($param{tag})}
      }
+     # We handle src packages, maint and maintenc by mapping to the
+     # appropriate binary packages, then removing all packages which
+     # don't match all queries
+     my @packages = __handle_pkg_src_and_maint(map {exists $param{$_}?($_,$param{$_}):()}
+					       qw(package src maint)
+					      );
+     if (exists $param{package} or
+	 exists $param{src} or
+	 exists $param{maint}) {
+	  delete @param{qw(maint src)};
+	  $param{package} = [@packages];
+     }
      my @bugs;
      while (<$flatfile>) {
 	  next unless m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/;
@@ -383,7 +407,7 @@ sub get_bugs_flatfile{
 	  if (exists $param{function}) {
 	       my @bug_tags = split ' ', $tags;
 	       my @packages = splitpackages($pkg);
-	       my $package = (@packages > 1)?\@packages:$packages[0],
+	       my $package = (@packages > 1)?\@packages:$packages[0];
 	       next unless
 		    $param{function}->(pkg       => $package,
 				       bug       => $bug,
@@ -398,12 +422,54 @@ sub get_bugs_flatfile{
      return @bugs;
 }
 
+sub __handle_pkg_src_and_maint{
+     my %param = validate_with(params => \@_,
+			       spec   => {package   => {type => SCALAR|ARRAYREF,
+						        optional => 1,
+						       },
+					  src       => {type => SCALAR|ARRAYREF,
+						        optional => 1,
+						       },
+					  maint     => {type => SCALAR|ARRAYREF,
+						        optional => 1,
+						       },
+					 },
+			       allow_extra => 1,
+			      );
 
-# This private subroutine takes a scalar and turns it
-# into a list; transforming arrayrefs into their contents
-# along the way.
+     my @packages = __make_list($param{package});
+     my $package_keys = @packages?1:0;
+     my %packages;
+     @packages{@packages} = (1) x @packages;
+     if (exists $param{src}) {
+	  # We only want to increment the number of keys if there is
+	  # something to match
+	  my $key_inc = 0;
+	  for my $package (map { getsrcpkgs($_)} __make_list($param{src})) {
+	       $packages{$package}++;
+	       $key_inc=1;
+	  }
+	  $package_keys += $key_inc;
+     }
+     if (exists $param{maint}) {
+	  my $key_inc = 0;
+	  my $maint_rev = getmaintainers_reverse();
+	  for my $package (map { exists $maint_rev->{$_}?@{$maint_rev->{$_}}:()}
+			   __make_list($param{maint})) {
+	       $packages{$package}++;
+	       $key_inc = 1;
+	  }
+	  $package_keys += $key_inc;
+     }
+     return grep {$packages{$_} >= $package_keys} keys %packages;
+}
+
+
+# This private subroutine takes a scalar and turns it into a list;
+# transforming arrayrefs into their contents along the way. It also
+# turns undef into the empty list.
 sub __make_list{
-     return map {ref($_) eq 'ARRAY'?@{$_}:$_} @_;
+     return map {defined $_?(ref($_) eq 'ARRAY'?@{$_}:$_):()} @_;
 }
 
 1;
