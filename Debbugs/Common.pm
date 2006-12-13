@@ -31,7 +31,8 @@ BEGIN{
 
      @EXPORT = ();
      %EXPORT_TAGS = (util   => [qw(getbugcomponent getbuglocation getlocationpath get_hashname),
-				qw(appendfile buglog),
+				qw(appendfile buglog getparsedaddrs getmaintainers),
+				qw(getmaintainers_reverse)
 			       ],
 		     quit   => [qw(quit)],
 		     lock   => [qw(filelock unfilelock)],
@@ -45,6 +46,7 @@ BEGIN{
 use Debbugs::Config qw(:config);
 use IO::File;
 use Debbugs::MIME qw(decode_rfc1522);
+use Mail::Address;
 
 use Fcntl qw(:flock);
 
@@ -172,6 +174,60 @@ sub appendfile {
 	print(AP @_) || &quit("writing $file (appendfile): $!");
 	close(AP) || &quit("closing $file (appendfile): $!");
 }
+
+=head2 getparsedaddrs
+
+     my $address = getparsedaddrs($address);
+     my @address = getpasredaddrs($address);
+
+Returns the output from Mail::Address->parse, or the cached output if
+this address has been parsed before. In SCALAR context returns the
+first address parsed.
+
+=cut
+
+
+my %_parsedaddrs;
+sub getparsedaddrs {
+    my $addr = shift;
+    return () unless defined $addr;
+    return wantarray?@{$_parsedaddrs{$addr}}:$_parsedaddrs{$addr}[0]
+	 if exists $_parsedaddrs{$addr};
+    @{$_parsedaddrs{$addr}} = Mail::Address->parse($addr);
+    return wantarray?@{$_parsedaddrs{$addr}}:$_parsedaddrs{$addr}[0];
+}
+
+my $_maintainer;
+my $_maintainer_rev;
+sub getmaintainers {
+    return $_maintainer if $_maintainer;
+    my %maintainer;
+    my %maintainer_rev;
+    for my $file (@config{qw(maintainer_file maintainer_file_override)}) {
+	 next unless defined $file;
+	 my $maintfile = new IO::File $file,'r' or
+	      &quitcgi("Unable to open $file: $!");
+	 while(<$maintfile>) {
+	      next unless m/^(\S+)\s+(\S.*\S)\s*$/;
+	      ($a,$b)=($1,$2);
+	      $a =~ y/A-Z/a-z/;
+	      $maintainer{$a}= $b;
+	      for my $maint (map {lc($_->address)} getparsedaddrs($b)) {
+		   push @{$maintainer_rev{$maint}},$a;
+	      }
+	 }
+	 close($maintfile);
+    }
+    $_maintainer = \%maintainer;
+    $_maintainer_rev = \%maintainer_rev;
+    return $_maintainer;
+}
+sub getmaintainers_reverse{
+     return $_maintainer_rev if $_maintainer_rev;
+     getmaintainers();
+     return $_maintainer_rev;
+}
+
 
 =head1 LOCK
 
