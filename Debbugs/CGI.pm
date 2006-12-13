@@ -29,7 +29,7 @@ use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 use Debbugs::URI;
 use HTML::Entities;
-use Debbugs::Common qw();
+use Debbugs::Common qw(getparsedaddrs);
 use Params::Validate qw(validate_with :types);
 use Debbugs::Config qw(:config);
 use Mail::Address;
@@ -51,7 +51,7 @@ BEGIN{
 		     html   => [qw(html_escape htmlize_bugs htmlize_packagelinks),
 				qw(maybelink htmlize_addresslinks htmlize_maintlinks),
 			       ],
-		     util   => [qw(getparsedaddrs cgi_parameters quitcgi),
+		     util   => [qw(cgi_parameters quitcgi),
 				qw(getmaintainers getpseudodesc splitpackages)
 			       ],
 		     #status => [qw(getbugstatus)],
@@ -463,22 +463,12 @@ sub htmlize_maintlinks {
 }
 
 
-
-my %_parsedaddrs;
-sub getparsedaddrs {
-    my $addr = shift;
-    return () unless defined $addr;
-    return wantarray?@{$_parsedaddrs{$addr}}:$_parsedaddrs{$addr}[0]
-	 if exists $_parsedaddrs{$addr};
-    @{$_parsedaddrs{$addr}} = Mail::Address->parse($addr);
-    return wantarray?@{$_parsedaddrs{$addr}}:$_parsedaddrs{$addr}[0];
-}
-
-
 my $_maintainer;
+my $_maintainer_rev;
 sub getmaintainers {
     return $_maintainer if $_maintainer;
     my %maintainer;
+    my %maintainer_rev;
     for my $file (@config{qw(maintainer_file maintainer_file_override)}) {
 	 next unless defined $file;
 	 my $maintfile = new IO::File $file,'r' or
@@ -488,12 +478,22 @@ sub getmaintainers {
 	      ($a,$b)=($1,$2);
 	      $a =~ y/A-Z/a-z/;
 	      $maintainer{$a}= $b;
+	      for my $maint (map {lc($_->address)} getparsedaddrs($b)) {
+		   push @{$maintainer_rev{$maint}},$a;
+	      }
 	 }
 	 close($maintfile);
     }
     $_maintainer = \%maintainer;
+    $_maintainer_rev = \%maintainer_rev;
     return $_maintainer;
 }
+sub getmaintainers_reverse{
+     return $_maintainer_rev if $_maintainer_rev;
+     getmaintainers();
+     return $_maintainer_rev;
+}
+
 
 my $_pseudodesc;
 sub getpseudodesc {
