@@ -4,8 +4,6 @@
 # Copyright (c) 2005/08/03 Anthony Towns
 # GPL v2
 
-#use strict;
-
 use DB_File;
 use MLDBM qw(DB_FILE Storable);
 use Fcntl qw/O_RDWR O_CREAT O_TRUNC/;
@@ -77,16 +75,14 @@ GetOptions(\%options,'quick!','index_path|index-path=s','debug|d+','help|h|?','m
 pod2usage(1) if $options{help};
 pod2usage(-verbose=>2) if $options{man};
 
-{ no warnings;
-  no strict;
-require '/etc/debbugs/config';
-require '/org/bugs.debian.org/scripts/errorlib';
-}
+use Debbugs::Config qw(:config);
+use Debbugs::Common qw(getparsedaddrs);
+use Debbugs::Status qw(readbug);
 
-chdir('/org/bugs.debian.org/spool') or die "chdir spool: $!\n";
+chdir($config{spool_dir}) or die "chdir $config{spool_dir} failed: $!";
 
 my $verbose = $options{debug};
-my $indexdest = $options{index_path} || "/org/bugs.debian.org/spool";
+my $indexdest = $options{index_path} || $config{spool_dir};
 
 my $initialdir = "db-h";
 my $suffix = "";
@@ -186,7 +182,7 @@ while (my $dir = shift @dirs) {
 		addbugtoindex("package", $bug, split /[\s,]+/, $fdata->{"package"});
 		addbugtoindex("tag", $bug, split /[\s,]+/, $fdata->{"keywords"});
 		addbugtoindex('submitter-email', $bug,
-			      emailfromrfc822($fdata->{"originator"}));
+			      map {$_->address} getparsedaddrs($fdata->{originator}));
 		addbugtoindex("severity", $bug, $fdata->{"severity"});
 	}
 }
