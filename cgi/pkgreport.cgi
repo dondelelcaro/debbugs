@@ -10,6 +10,8 @@ require './common.pl';
 use Debbugs::Config qw(:globals :text);
 use Debbugs::User;
 use Debbugs::CGI qw(version_url);
+use Debbugs::Common qw(getparsedaddrs);
+use Debbugs::Bugs qw(get_bugs);
 
 use vars qw($gPackagePages $gWebDomain %gSeverityDisplay @gSeverityList);
 
@@ -241,12 +243,7 @@ if (defined $pkg) {
     $title .= " ($verdesc)" if defined $verdesc;
   }
   my @pkgs = split /,/, $pkg;
-  @bugs = @{getbugs(sub {my %d=@_;
-                         foreach my $try (splitpackages($d{"pkg"})) {
-                           return 1 if grep($try eq $_, @pkgs);
-                         }
-                         return 0;
-                        }, 'package', @pkgs)};
+  @bugs = get_bugs(package=>\@pkgs);
 } elsif (defined $src) {
   add_user("$src\@packages.debian.org");
   $title = "source $src";
@@ -258,47 +255,12 @@ if (defined $pkg) {
     my $verdesc = getversiondesc($src);
     $title .= " ($verdesc)" if defined $verdesc;
   }
-  my @pkgs = ();
-  my @srcs = split /,/, $src;
-  foreach my $try (@srcs) {
-    push @pkgs, getsrcpkgs($try);
-    push @pkgs, $try if ( !grep(/^\Q$try\E$/, @pkgs) );
-  }
-  @bugs = @{getbugs(sub {my %d=@_;
-                         foreach my $try (splitpackages($d{"pkg"})) {
-                           return 1 if grep($try eq $_, @pkgs);
-                         }
-                         return 0;
-                        }, 'package', @pkgs)};
+  @bugs = get_bugs(src=>[split /,/, $src]);
 } elsif (defined $maint) {
-  my %maintainers = %{getmaintainers()};
   add_user($maint);
   $title = "maintainer $maint";
   $title .= " in $dist" if defined $dist;
-  if ($maint eq "") {
-    @bugs = @{getbugs(sub {my %d=@_;
-                           foreach my $try (splitpackages($d{"pkg"})) {
-                             return 1 if !getparsedaddrs($maintainers{$try});
-                           }
-                           return 0;
-                          })};
-  } else {
-    my @maints = split /,/, $maint;
-    my @pkgs = ();
-    foreach my $try (@maints) {
-      foreach my $p (keys %maintainers) {
-        my @me = getparsedaddrs($maintainers{$p});
-        push @pkgs, $p if grep { $_->address eq $try } @me;
-      }
-    }
-    @bugs = @{getbugs(sub {my %d=@_;
-                           foreach my $try (splitpackages($d{"pkg"})) {
-                             my @me = getparsedaddrs($maintainers{$try});
-                             return 1 if grep { $_->address eq $maint } @me;
-                           }
-                           return 0;
-                          }, 'package', @pkgs)};
-  }
+  @bugs = get_bugs(maint=>[split /,/,$maint]);
 } elsif (defined $maintenc) {
   my %maintainers = %{getmaintainers()};
   $title = "encoded maintainer $maintenc";
@@ -317,12 +279,7 @@ if (defined $pkg) {
   $title = "submitter $submitter";
   $title .= " in $dist" if defined $dist;
   my @submitters = split /,/, $submitter;
-  @bugs = @{getbugs(sub {my %d=@_;
-                         my @se = getparsedaddrs($d{"submitter"} || "");
-                         foreach my $try (@submitters) {
-                           return 1 if grep { $_->address eq $try } @se;
-                         }
-                        }, 'submitter-email', @submitters)};
+  @bugs = get_bugs(submitter => \@submitters);
 } elsif (defined($severity) && defined($status)) {
   $title = "$status $severity bugs";
   $title .= " in $dist" if defined $dist;
