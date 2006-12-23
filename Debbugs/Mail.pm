@@ -41,6 +41,8 @@ use POSIX ":sys_wait_h";
 use Time::HiRes qw(usleep);
 use Mail::Address ();
 use Debbugs::MIME qw(encode_rfc1522);
+use Debbugs::Config qw(:config);
+use Params::Validate qw(:types validate_with);
 
 BEGIN{
      ($VERSION) = q$Revision: 1.1 $ =~ /^Revision:\s+([^\s+])/;
@@ -51,6 +53,9 @@ BEGIN{
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 
 }
+
+# We set this here so it can be overridden for testing purposes
+our $SENDMAIL = $config{sendmail};
 
 =head2 get_addresses
 
@@ -99,12 +104,26 @@ using warn.
 =cut
 
 sub send_mail_message{
-     die "send_mail_message requires an even number of arguments" if @_ % 2;
-     # It would be better to use Param::Validate instead...
-     my %param = @_;
-
-     die "send_mail_message requires a message" if not defined $param{message};
-
+     my %param = validate_with(param => \@_,
+			       spec  => {sendmail_arguments => {type => ARRAYREF,
+								default => [qw(-odq -oem -oi)],
+							       },
+					 parse_for_recipients => {type => BOOLEAN,
+								  default => 0,
+								 },
+					 encode_headers       => {type => BOOLEAN,
+								  default => 1,
+								 },
+					 message              => {type => SCALAR,
+								 },
+					 envelope_from        => {type => SCALAR,
+								  optional => 1,
+								 },
+					 recipients           => {type => ARRAYREF|UNDEF,
+								  optional => 1,
+								 },
+					},
+			      );
      my @sendmail_arguments = qw(-odq -oem -oi);
      push @sendmail_arguments, '-f', $param{envelope_from} if exists $param{envelope_from};
 
@@ -183,12 +202,12 @@ sub _send_message{
      my ($message,@sendmail_args) = @_;
 
      my ($wfh,$rfh);
-     my $pid = open3($wfh,$rfh,$rfh,'/usr/lib/sendmail',@sendmail_args)
-	  or die "Unable to fork off /usr/lib/sendmail: $!";
+     my $pid = open3($wfh,$rfh,$rfh,$SENDMAIL,@sendmail_args)
+	  or die "Unable to fork off $SENDMAIL: $!";
      local $SIG{PIPE} = 'IGNORE';
      eval {
-	  print {$wfh} $message or die "Unable to write to /usr/lib/sendmail: $!";
-	  close $wfh or die "/usr/lib/sendmail exited with $?";
+	  print {$wfh} $message or die "Unable to write to $SENDMAIL: $!";
+	  close $wfh or die "$SENDMAIL exited with $?";
      };
      if ($@) {
 	  local $\;
@@ -206,7 +225,7 @@ sub _send_message{
 	  usleep(50_000);
      }
      if ($loop >= 600) {
-	  warn "Sendmail didn't exit within 30 seconds";
+	  warn "$SENDMAIL didn't exit within 30 seconds";
      }
 }
 

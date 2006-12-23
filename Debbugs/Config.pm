@@ -49,6 +49,7 @@ BEGIN {
 				 qw($gIncomingDir $gWebDir $gDocDir $gMaintainerFile),
 				 qw($gMaintainerFileOverride $gPseudoDescFile $gPackageSource),
 				 qw($gVersionPackagesDir $gVersionIndex $gBinarySourceMap $gSourceBinaryMap),
+				 qw($gSendmail),
 				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
 				 qw(%gSearchEstraier),
 				],
@@ -367,6 +368,14 @@ set_default(\%config,'pseduo_desc_file',$config{config_dir}.'/pseudo-packages.de
 set_default(\%config,'package_source',$config{config_dir}.'/indices/sources');
 
 set_default(\%config,'version_packages_dir',$config{spool_dir}.'/../versions/pkg');
+
+=item sendmail
+
+Sets the sendmail binary to execute; defaults to /usr/lib/sendmail
+
+=cut
+
+set_default(\%config,'sendmail',$config{sendmail},'/usr/lib/sendmail');
 
 =back
 
