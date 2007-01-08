@@ -564,20 +564,16 @@ print <<END;
 <link rel="stylesheet" href="$gWebHostBugDir/css/bugs.css" type="text/css">
 <script type="text/javascript">
 <!--
-function toggle_infmessages(){
-       var styles = document.styleSheets;
-       var deleted = 0
-       for (var i = 0; i < styles.length; i++) {
-          for (var j = 0; j < styles[i].cssRules.length; j++) {
-            if (styles[i].cssRules[j].cssText == ".infmessage { display: none; }") {
-                 styles[i].deleteRule(j);
-                 deleted = 1;
-            }
-          }
-       }
-       if (!deleted) {
-            styles[0].insertRule(".infmessage { display: none; }",0);
-       }
+function toggle_infmessages()
+{
+        allDivs=document.getElementsByTagName("div");
+        for (var i = 0 ; i < allDivs.length ; i++ )
+        {
+                if (allDivs[i].className == "infmessage")
+                {
+                        allDivs[i].style.display=(allDivs[i].style.display == 'none') ? 'block' : 'none';
+                }
+        }
 }
 -->
 </script>

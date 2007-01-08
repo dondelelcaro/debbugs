@@ -143,6 +143,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Dissallow forwarded being set to a $gEmailDomain address
       (closes: #397486)
     - Fix broken sorting by usertags by forcing numeric (closes: #395027)
+    - Add support for hiding useless messages; thanks to Sune Vuorela.
+      (closes: #406020)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
