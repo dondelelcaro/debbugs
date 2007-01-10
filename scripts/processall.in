@@ -8,10 +8,12 @@
 # Creates: incoming/E.nn
 # Stop:    stop
 
-$config_path = '/etc/debbugs';
-$lib_path = '/usr/lib/debbugs';
 
-require "$config_path/config";
+use Debbugs::Config qw(:globals);
+
+my $lib_path = $gLibPath;
+
+
 require "$lib_path/errorlib";
 $ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
 

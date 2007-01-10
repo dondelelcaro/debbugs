@@ -10,10 +10,8 @@ use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
 use Debbugs::Mail qw(send_mail_message);
 use Debbugs::User;
 
-$config_path = '/etc/debbugs';
-$lib_path = '/usr/lib/debbugs';
-
-require "$config_path/config";
+use Debbugs::Config qw(:globals);
+$lib_path = $gLibPath;
 require "$lib_path/errorlib";
 $ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
 
