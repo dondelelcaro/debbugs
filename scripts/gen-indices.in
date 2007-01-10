@@ -93,7 +93,7 @@ if (defined $ARGV[0] and $ARGV[0] eq "archive") {
 }
 
 # NB: The reverse index is special; it's used to clean up during updates to bugs
-my @indexes = ('package', 'tag', 'severity', 'submitter-email','reverse');
+my @indexes = ('package', 'tag', 'severity','owner','submitter-email','reverse');
 my $indexes;
 my %slow_index = ();
 my %fast_index = ();
@@ -184,6 +184,7 @@ while (my $dir = shift @dirs) {
 		addbugtoindex('submitter-email', $bug,
 			      map {$_->address} getparsedaddrs($fdata->{originator}));
 		addbugtoindex("severity", $bug, $fdata->{"severity"});
+		addbugtoindex("owner", $bug, $fdata->{"owner"});
 	}
 }
 
