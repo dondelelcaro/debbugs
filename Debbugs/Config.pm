@@ -49,7 +49,7 @@ BEGIN {
 				 qw($gIncomingDir $gWebDir $gDocDir $gMaintainerFile),
 				 qw($gMaintainerFileOverride $gPseudoDescFile $gPackageSource),
 				 qw($gVersionPackagesDir $gVersionIndex $gBinarySourceMap $gSourceBinaryMap),
-				 qw($gSendmail),
+				 qw($gSendmail $gLibPath),
 				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
 				 qw(%gSearchEstraier),
 				],
@@ -361,10 +361,11 @@ set_default(\%config,'spool_dir','/var/lib/debbugs/spool');
 set_default(\%config,'incoming_dir','incoming');
 set_default(\%config,'web_dir','/var/lib/debbugs/www');
 set_default(\%config,'doc_dir','/var/lib/debbugs/www/txt');
+set_default(\%config,'lib_path','/usr/lib/debbugs');
 
 set_default(\%config,'maintainer_file',$config{config_dir}.'/Maintainers');
 set_default(\%config,'maintainer_file_override',$config{config_dir}.'/Maintainers.override');
-set_default(\%config,'pseduo_desc_file',$config{config_dir}.'/pseudo-packages.description');
+set_default(\%config,'pseudo_desc_file',$config{config_dir}.'/pseudo-packages.description');
 set_default(\%config,'package_source',$config{config_dir}.'/indices/sources');
 
 set_default(\%config,'version_packages_dir',$config{spool_dir}.'/../versions/pkg');
@@ -461,7 +462,6 @@ sub read_config{
 	  my $cpt = new Safe or die "Unable to create safe compartment";
 	  # perldoc Opcode; for details
 	  $cpt->permit('require',':filesys_read','entereval','caller','pack','unpack','dofile');
-	  $cpt->reval(q($gMaintainerFile = 'FOOOO'));
 	  $cpt->reval(qq(require '$conf_file';));
 	  die "Error in configuration file: $@" if $@;
 	  # Now what we do is check out the contents of %EXPORT_TAGS to see exactly which variables
