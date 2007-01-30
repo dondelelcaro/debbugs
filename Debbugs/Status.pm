@@ -28,7 +28,7 @@ use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 
 use Params::Validate qw(validate_with :types);
-use Debbugs::Common qw(:util :lock);
+use Debbugs::Common qw(:util :lock :quit);
 use Debbugs::Config qw(:config);
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
 use Debbugs::Packages qw(makesourceversions getversions);
@@ -47,7 +47,7 @@ BEGIN{
 			       ],
 		     read   => [qw(readbug read_bug lockreadbug)],
 		     write  => [qw(writebug makestatus unlockwritebug)],
-		     versions => [qw(addfoundversion addfixedversion),
+		     versions => [qw(addfoundversions addfixedversions),
 				  qw(removefoundversions)
 				 ],
 		    );
@@ -133,7 +133,7 @@ sub read_bug{
 						 optional => 1,
 						 regex    => qr/^\d+/,
 						},
-					 location => {type => SCALAR,
+					 location => {type => SCALAR|UNDEF,
 						      optional => 1,
 						     },
 					 summary  => {type => SCALAR,
@@ -257,7 +257,7 @@ sub makestatus {
     }
 
     for my $field (qw(found_versions fixed_versions found_date fixed_date)) {
-	 $newdata{$field} = [split ' ', $newdata{$field}];
+	 $newdata{$field} = [split ' ', $newdata{$field}||''];
     }
 
     if ($version < 3) {
@@ -268,7 +268,7 @@ sub makestatus {
 
     if ($version == 1) {
         for my $field (@v1fieldorder) {
-            if (exists $newdata{$field}) {
+            if (exists $newdata{$field} and defined $newdata{$field}) {
                 $contents .= "$newdata{$field}\n";
             } else {
                 $contents .= "\n";
@@ -279,7 +279,8 @@ sub makestatus {
         # further extensibility in the future.
         $contents .= "Format-Version: $version\n";
         for my $field (keys %fields) {
-            if (exists $newdata{$field} and $newdata{$field} ne '') {
+            if (exists $newdata{$field} and defined $newdata{$field}
+		and $newdata{$field} ne '') {
                 # Output field names in proper case, e.g. 'Merged-With'.
                 my $properfield = $fields{$field};
                 $properfield =~ s/(?:^|(?<=-))([a-z])/\u$1/g;
@@ -943,13 +944,13 @@ sub update_realtime {
 	}
 
 	if ($new eq "NOCHANGE") {
-		print IDXNEW $line if ($line ne "" && $line[1] == $bug);
+		print IDXNEW $line if ($line ne ""  and $line[1] == $bug);
 	} elsif ($new eq "REMOVE") {
 		0;
 	} else {
 		print IDXNEW $new;
 	}
-	if ($line ne "" && $line[1] > $bug) {
+	if (defined $line and $line ne "" and  @line and $line[1] > $bug) {
 		print IDXNEW $line;
 		$line = "";
 	}
@@ -988,8 +989,8 @@ sub bughook {
 	(my $pkglist = $data->{package}) =~ s/[,\s]+/,/g;
 	$pkglist =~ s/^,+//;
 	$pkglist =~ s/,+$//;
-	$whendone = "forwarded" if length $data->{forwarded};
-	$whendone = "done" if length $data->{done};
+	$whendone = "forwarded" if defined $data->{forwarded} and length $data->{forwarded};
+	$whendone = "done" if defined $data->{done} and length $data->{done};
 	$severity = $data->{severity} if length $data->{severity};
 
 	my $k = sprintf "%s %d %d %s [%s] %s %s\n",
