@@ -418,12 +418,13 @@ if (defined $pkg || defined $src) {
 
 set_option("archive", !$archive);
 printf "<p>See the <a href=\"%s\">%s reports</a></p>",
-     urlsanit('pkgreport.cgi?'.join(';',
-				    (map {$_ eq 'archive'?():("$_=$param{$_}")
-				     } keys %param
-				    ),
-				    ('archive='.($archive?"no":"yes"))
-				   )
+     urlsanit(pkg_url((
+		       map {
+			    $_ eq 'archive'?():($_,$param{$_})
+		       } keys %param
+		      ),
+		      ('archive',($archive?"no":"yes"))
+		     )
 	     ), ($archive ? "active" : "archived");
 set_option("archive", $archive);
 
@@ -463,10 +464,10 @@ if (defined $pkg) {
 }
 print "<tr><td>&nbsp;</td></tr>\n";
 
-my $includetags = htmlsanit(join(" ", grep { !m/^subj:/i } split /[\s,]+/, $include));
-my $excludetags = htmlsanit(join(" ", grep { !m/^subj:/i } split /[\s,]+/, $exclude));
-my $includesubj = htmlsanit(join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } split /[\s,]+/, $include));
-my $excludesubj = htmlsanit(join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } split /[\s,]+/, $exclude));
+my $includetags = htmlsanit(join(" ", grep { !m/^subj:/i } map {split /[\s,]+/} ref($include)?@{$include}:$include));
+my $excludetags = htmlsanit(join(" ", grep { !m/^subj:/i } map {split /[\s,]+/} ref($exclude)?@{$exclude}:$exclude));
+my $includesubj = htmlsanit(join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } map {split /[\s,]+/} ref($include)?@{$include}:$include));
+my $excludesubj = htmlsanit(join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } map {split /[\s,]+/} ref($exclude)?@{$exclude}:$exclude));
 my $vismindays = ($mindays == 0 ? "" : $mindays);
 my $vismaxdays = ($maxdays == -1 ? "" : $maxdays);
 
@@ -899,12 +900,10 @@ sub pkg_htmlselectarch {
 }
 
 sub myurl {
-     return urlsanit('pkgreport.cgi?'.
-		     join(';',
-			  (map {("$_=$param{$_}")
-					    } keys %param
-			  )
-			 )
+     return urlsanit(pkg_url(map {exists $param{$_}?($_,$param{$_}):()}
+			     qw(archive repeatmerged mindays maxdays),
+			     qw(version dist arch pkg src tag maint submitter)
+			    )
 		    );
 }
 

@@ -145,6 +145,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Fix broken sorting by usertags by forcing numeric (closes: #395027)
     - Add support for hiding useless messages; thanks to Sune Vuorela.
       (closes: #406020)
+    - Fix arrayrefs leaking into the myurl function (closes: #397344)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
