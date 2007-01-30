@@ -5,6 +5,7 @@ use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
 use Debbugs::Packages qw(:all);
 use Debbugs::Common qw(:all);
 use Debbugs::Status qw(:all);
+use Carp;
 
 sub unlockreadbugmerge {
     local ($rv) = @_;
@@ -27,7 +28,7 @@ sub lockreadbugmerge {
 
 sub sani {
     my ($in) = @_;
-    warn "You should be using HTML::Entities instead.";
+    carp "You should be using HTML::Entities instead.";
     $in =~ s/([<>&"])/$saniarray{$1}/g;
     return $in;
 }
