@@ -76,7 +76,7 @@ pod2usage(1) if $options{help};
 pod2usage(-verbose=>2) if $options{man};
 
 use Debbugs::Config qw(:config);
-use Debbugs::Common qw(getparsedaddrs);
+use Debbugs::Common qw(getparsedaddrs getbugcomponent);
 use Debbugs::Status qw(readbug);
 
 chdir($config{spool_dir}) or die "chdir $config{spool_dir} failed: $!";
