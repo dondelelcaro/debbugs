@@ -104,7 +104,7 @@ using warn.
 =cut
 
 sub send_mail_message{
-     my %param = validate_with(param => \@_,
+     my %param = validate_with(params => \@_,
 			       spec  => {sendmail_arguments => {type => ARRAYREF,
 								default => [qw(-odq -oem -oi)],
 							       },
