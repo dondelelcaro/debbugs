@@ -17,6 +17,7 @@ use IO::File;
 use File::Temp qw(tempdir);
 use Cwd qw(getcwd);
 use Debbugs::MIME qw(create_mime_message);
+use File::Basename qw(dirname basename);
 
 
 my $sendmail_dir = tempdir(CLEANUP => $ENV{DEBUG}?0:1);
@@ -31,8 +32,11 @@ END{
      }
 }
 
+$ENV{DEBBUGS_CONFIG_FILE}  ="$config_dir/debbugs_config";
+$ENV{PERL5LIB} = getcwd();
 $ENV{SENDMAIL_TESTDIR} = $sendmail_dir;
 my $sendmail_tester = getcwd().'/t/sendmail_tester';
+
 
 unless (-x $sendmail_tester) {
      BAIL_OUT(q(t/sendmail_tester doesn't exist or isn't executable. You may be in the wrong directory.));
@@ -41,12 +45,19 @@ unless (-x $sendmail_tester) {
 my %files_to_create = ("$config_dir/debbugs_config" => <<END,
 \$gSendmail='$sendmail_tester';
 \$gSpoolDir='$spool_dir';
+\$gLibPath='@{[getcwd()]}/scripts';
+1;
 END
 		       "$spool_dir/nextnumber" => qq(1\n),
-		       "$config_dir/Maintainers" => qq(foo Blah Bleargh <bar\@baz.com>),
+		       "$config_dir/Maintainers" => qq(foo Blah Bleargh <bar\@baz.com>\n),
+		       "$config_dir/Maintainers.override" => qq(),
+		       "$config_dir/indices/sources" => <<END,
+foo main foo
+END
 		       );
 while (my ($file,$contents) = each %files_to_create) {
-     my $fh = new IO::File $file,'w' or
+     system('mkdir','-p',dirname($file));
+     my $fh = IO::File->new($file,'w') or
 	  BAIL_OUT("Unable to create $file: $!");
      print {$fh} $contents;
      close $fh;
@@ -60,13 +71,13 @@ system('ln','-s','index.archive.realtime',
        "$spool_dir/index.archive");
 
 
-$ENV{DEBBUGS_CONFIG_FILE}  ="$config_dir/debbugs_config";
 
 # create the spool files and sub directories
 map {system('mkdir','-p',"$spool_dir/$_"); }
      map {('db-h/'.$_,'archive/'.$_)}
      map { sprintf "%02d",$_ % 100} 0..99;
 system('mkdir','-p',"$spool_dir/incoming");
+system('mkdir','-p',"$spool_dir/lock");
 
 
 # We're going to use create mime message to create these messages, and
@@ -152,6 +163,7 @@ print {$receive} create_mime_message([To   => 'control@bugs.something',
 				     ],
 				     <<EOF);
 severity 1 wishlist
+retitle 1 new title
 thanks
 EOF
 
@@ -160,8 +172,17 @@ ok($?==0,'receive took the mail');
 # now we should run processall to see if the message gets processed
 ok(system('scripts/processall.in') == 0,'processall ran');
 $SD_SIZE_NOW = dirsize($sendmail_dir);
-ok($SD_SIZE_NOW-$SD_SIZE_PREV >= 2,'1@bugs.something messages appear to have been sent out properly');
+ok($SD_SIZE_NOW-$SD_SIZE_PREV >= 1,'control@bugs.something messages appear to have been sent out properly');
 $SD_SIZE_PREV=$SD_SIZE_NOW;
+# now we need to check to make sure the control message was processed without errors
+ok(system("sh -c 'find ".$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Munging a bug"')) == 0,
+   'control@bugs.something message was parsed without errors');
+# now we need to check to make sure that the control message actually did anything
+# This is an eval because $ENV{DEBBUGS_CONFIG_FILE} isn't set at BEGIN{} time
+eval "use Debbugs::Status qw(read_bug);";
+my $status = read_bug(bug=>1);
+ok($status->{subject} eq 'new title','bug 1 retitled');
+ok($status->{severity} eq 'wishlist','bug 1 wishlisted');
 
 
 
