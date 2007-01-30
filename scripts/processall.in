@@ -54,11 +54,11 @@ for (;;) {
     if ($id =~ m/^[RC]/) {
         print(STDOUT "[$nf] $id service ...") || die $!;
         defined($c=fork) || die $!;
-        if (!$c) { exec("$lib_path/service",$id); die $!; }
+        if (!$c) { exec("$lib_path/service",$id); die "unable to execute $lib_path/service: $!"; }
     } elsif ($id =~ m/^[BMQFDUL]/) {
         print(STDOUT "[$nf] $id process ...") || die $!;
         defined($c=fork) || die $!;
-        if (!$c) { exec("$lib_path/process",$id); die $!; }
+        if (!$c) { exec("$lib_path/process",$id); die "unable to execute $lib_path/process: $!"; }
     } else {
         die "bad name $id";
     }
