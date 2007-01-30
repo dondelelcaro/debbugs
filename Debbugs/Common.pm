@@ -50,6 +50,8 @@ use Mail::Address;
 
 use Fcntl qw(:flock);
 
+our $DEBUG_FH = \*STDERR if not defined $DEBUG_FH;
+
 =head1 UTILITIES
 
 The following functions are exported by the C<:util> tag
@@ -75,10 +77,9 @@ sub getbugcomponent {
 	return undef if defined $location and
 			($location ne 'db' and $location ne 'db-h');
     }
-    return undef if not defined $location;
     my $dir = getlocationpath($location);
     return undef if not defined $dir;
-    if ($location eq 'db') {
+    if (defined $location and $location eq 'db') {
 	return "$dir/$bugnum.$ext";
     } else {
 	my $hash = get_hashname($bugnum);
@@ -167,8 +168,8 @@ Opens a file for appending and writes data to it.
 sub appendfile {
 	my $file = shift;
 	if (!open(AP,">>$file")) {
-		print DEBUG "failed open log<\n";
-		print DEBUG "failed open log err $!<\n";
+		print $DEBUG_FH "failed open log<\n" if $DEBUG;
+		print $DEBUG_FH "failed open log err $!<\n" if $DEBUG;
 		&quit("opening $file (appendfile): $!");
 	}
 	print(AP @_) || &quit("writing $file (appendfile): $!");
@@ -251,11 +252,11 @@ sub filelock {
     $count= 10; $errors= '';
     for (;;) {
 	my $fh = eval {
-	     my $fh = new IO::File $lockfile,'w'
+	     my $fh2 = IO::File->new($lockfile,'w')
 		  or die "Unable to open $lockfile for writing: $!";
-	     flock($fh,LOCK_EX|LOCK_NB)
+	     flock($fh2,LOCK_EX|LOCK_NB)
 		  or die "Unable to lock $lockfile $!";
-	     return $fh;
+	     return $fh2;
 	};
 	if ($@) {
 	     $errors .= $@;
@@ -318,7 +319,7 @@ instead. (Or possibly a die handler, if the cleanups are important)
 =cut
 
 sub quit {
-    print DEBUG "quitting >$_[0]<\n";
+    print $DEBUG_FH "quitting >$_[0]<\n" if $DEBUG;
     my ($u);
     while ($u= $cleanups[$#cleanups]) { &$u; }
     die "*** $_[0]\n";
