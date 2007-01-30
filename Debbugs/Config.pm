@@ -445,7 +445,7 @@ sub read_config{
 	  or die "Unable to open configuration file $conf_file for reading: $!";
      # A new version configuration file must have a comment as its first line
      my $first_line = <$fh>;
-     my ($version) = $first_line =~ /VERSION:\s*(\d+)/i;
+     my ($version) = defined $first_line?$first_line =~ /VERSION:\s*(\d+)/i:undef;
      if (defined $version) {
 	  if ($version == 1) {
 	       # Do something here;
@@ -470,14 +470,14 @@ sub read_config{
 	       my ($hash_name,$glob_name,$glob_type) = __convert_name($variable);
 	       my $var_glob = $cpt->varglob($glob_name);
 	       my $value; #= $cpt->reval("return $variable");
-	       #print STDERR $value,qq(\n);
+	       # print STDERR "$variable $value",qq(\n);
 	       if (defined $var_glob) {{
 	       	    no strict 'refs';
 	       	    if ($glob_type eq '%') {
-	       		 $value = {%{*{$var_glob}}};
+	       		 $value = {%{*{$var_glob}}} if defined *{$var_glob}{HASH};
 		    }
 		    elsif ($glob_type eq '@') {
-	       		 $value = [@{*{$var_glob}}];
+	       		 $value = [@{*{$var_glob}}] if defined *{$var_glob}{ARRAY};
 	       	    }
 	       	    else {
 	       		 $value = ${*{$var_glob}};
@@ -520,19 +520,22 @@ sub set_default{
 	  $varname =~ s/(Html|Cgi)/uc($1)/ge;
      }
      # update the configuration value
-     if (not $USING_GLOBALS and not exists $config{$option}) {
-	  $config{$option} = $value;
+     if (not $USING_GLOBALS and not exists $config->{$option}) {
+	  $config->{$option} = $value;
      }
      elsif ($USING_GLOBALS) {{
 	  no strict 'refs';
 	  # Need to check if a value has already been set in a global
 	  if (defined *{"Debbugs::Config::${varname}"}) {
-	       $config{$option} = *{"Debbugs::Config::${varname}"};
+	       $config->{$option} = *{"Debbugs::Config::${varname}"};
+	  }
+	  else {
+	       $config->{$option} = $value;
 	  }
      }}
      if ($USING_GLOBALS) {{
 	  no strict 'refs';
-	  *{"Debbugs::Config::${varname}"} = $config{$option};
+	  *{"Debbugs::Config::${varname}"} = $config->{$option};
      }}
 }
 
