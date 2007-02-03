@@ -122,10 +122,11 @@ sub binarytosource {
 
     # TODO: This gets hit a lot, especially from buggyversion() - probably
     # need an extra cache for speed here.
+    return () unless defined $gBinarySourceMap;
 
     if (tied %_binarytosource or
 	    tie %_binarytosource, 'MLDBM',
-		$Debbugs::Packages::gBinarySourceMap, O_RDONLY) {
+		$gBinarySourceMap, O_RDONLY) {
 	# avoid autovivification
 	my $binary = $_binarytosource{$binname};
 	return () unless defined $binary;
@@ -178,7 +179,7 @@ sub sourcetobinary {
 
     if (tied %_sourcetobinary or
 	    tie %_sourcetobinary, 'MLDBM',
-		$Debbugs::Packages::gSourceBinaryMap, O_RDONLY) {
+		$gSourceBinaryMap, O_RDONLY) {
 	# avoid autovivification
 	my $source = $_sourcetobinary{$srcname};
 	return () unless defined $source;

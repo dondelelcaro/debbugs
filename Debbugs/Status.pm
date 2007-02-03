@@ -31,7 +31,7 @@ use Params::Validate qw(validate_with :types);
 use Debbugs::Common qw(:util :lock :quit);
 use Debbugs::Config qw(:config);
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
-use Debbugs::Packages qw(makesourceversions getversions);
+use Debbugs::Packages qw(makesourceversions getversions binarytosource);
 use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
 use POSIX qw(ceil);
@@ -189,6 +189,8 @@ sub read_bug{
 	 $data{$field} = [split ' ', $data{$field}];
     }
     for my $field (qw(found fixed)) {
+	 # create the found/fixed hashes which indicate when a
+	 # particular version was marked found or marked fixed.
 	 @{$data{$field}}{@{$data{"${field}_versions"}}} =
 	      (('') x (@{$data{"${field}_date"}} - @{$data{"${field}_versions"}}),
 	       @{$data{"${field}_date"}});
@@ -257,7 +259,7 @@ sub makestatus {
     }
 
     for my $field (qw(found_versions fixed_versions found_date fixed_date)) {
-	 $newdata{$field} = [split ' ', $newdata{$field}||''];
+	 $newdata{$field} = join ' ', @{$newdata{$field}||[]};
     }
 
     if ($version < 3) {
