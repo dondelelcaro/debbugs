@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 20;
+use Test::More tests => 31;
 
 use warnings;
 use strict;
@@ -18,91 +18,45 @@ use File::Temp qw(tempdir);
 use Cwd qw(getcwd);
 use Debbugs::MIME qw(create_mime_message);
 use File::Basename qw(dirname basename);
+# The test functions are placed here to make things easier
+use lib qw(t/lib);
+use DebbugsTest qw(:all);
+use Data::Dumper;
 
+my %config;
+eval {
+     %config = create_debbugs_configuration(debug => exists $ENV{DEBUG}?$ENV{DEBUG}:0);
+};
+if ($@) {
+     BAIL_OUT($@);
+}
 
-my $sendmail_dir = tempdir(CLEANUP => $ENV{DEBUG}?0:1);
-my $spool_dir = tempdir(CLEANUP => $ENV{DEBUG}?0:1);
-my $config_dir = tempdir(CLEANUP => $ENV{DEBUG}?0:1);
+my $sendmail_dir = $config{sendmail_dir};
+my $spool_dir = $config{spool_dir};
+my $config_dir = $config{config_dir};
 
 END{
      if ($ENV{DEBUG}) {
-	  print STDERR "\nspool_dir:   $spool_dir\n";
-	  print STDERR "config_dir:   $config_dir\n";
-	  print STDERR "sendmail_dir: $sendmail_dir\n";
+	  diag("spool_dir:   $spool_dir\n");
+	  diag("config_dir:   $config_dir\n");
+	  diag("sendmail_dir: $sendmail_dir\n");
      }
 }
-
-$ENV{DEBBUGS_CONFIG_FILE}  ="$config_dir/debbugs_config";
-$ENV{PERL5LIB} = getcwd();
-$ENV{SENDMAIL_TESTDIR} = $sendmail_dir;
-my $sendmail_tester = getcwd().'/t/sendmail_tester';
-
-
-unless (-x $sendmail_tester) {
-     BAIL_OUT(q(t/sendmail_tester doesn't exist or isn't executable. You may be in the wrong directory.));
-}
-
-my %files_to_create = ("$config_dir/debbugs_config" => <<END,
-\$gSendmail='$sendmail_tester';
-\$gSpoolDir='$spool_dir';
-\$gLibPath='@{[getcwd()]}/scripts';
-1;
-END
-		       "$spool_dir/nextnumber" => qq(1\n),
-		       "$config_dir/Maintainers" => qq(foo Blah Bleargh <bar\@baz.com>\n),
-		       "$config_dir/Maintainers.override" => qq(),
-		       "$config_dir/indices/sources" => <<END,
-foo main foo
-END
-		       );
-while (my ($file,$contents) = each %files_to_create) {
-     system('mkdir','-p',dirname($file));
-     my $fh = IO::File->new($file,'w') or
-	  BAIL_OUT("Unable to create $file: $!");
-     print {$fh} $contents;
-     close $fh;
-}
-
-system('touch',"$spool_dir/index.db.realtime");
-system('ln','-s','index.db.realtime',
-       "$spool_dir/index.db");
-system('touch',"$spool_dir/index.archive.realtime");
-system('ln','-s','index.archive.realtime',
-       "$spool_dir/index.archive");
-
-
-
-# create the spool files and sub directories
-map {system('mkdir','-p',"$spool_dir/$_"); }
-     map {('db-h/'.$_,'archive/'.$_)}
-     map { sprintf "%02d",$_ % 100} 0..99;
-system('mkdir','-p',"$spool_dir/incoming");
-system('mkdir','-p',"$spool_dir/lock");
-
 
 # We're going to use create mime message to create these messages, and
 # then just send them to receive.
 
-# First, check that submit@ works
-
-$ENV{LOCAL_PART} = 'submit@bugs.something';
-my $receive = new IO::File ('|scripts/receive.in') or BAIL_OUT("Unable to start receive.in: $!");
-
-print {$receive} create_mime_message([To   => 'submit@bugs.something',
-				      From => 'foo@bugs.something',
-				      Subject => 'Submiting a bug',
-				     ],
-				     <<EOF);
+send_message(to=>'submit@bugs.something',
+	     headers => [To   => 'submit@bugs.something',
+			 From => 'foo@bugs.something',
+			 Subject => 'Submiting a bug',
+			],
+	     body => <<EOF) or fail('Unable to send message');
 Package: foo
 Severity: normal
 
 This is a silly bug
 EOF
-
-close($receive);
-ok($?==0,'receive took the mail');
-# now we should run processall to see if the message gets processed
-ok(system('scripts/processall.in') == 0,'processall ran');
 
 # now we check to see that we have a bug, and nextnumber has been incremented
 ok(-e "$spool_dir/db-h/01/1.log",'log file created');
@@ -113,14 +67,6 @@ ok(-e "$spool_dir/db-h/01/1.report",'report file created');
 # next, we check to see that (at least) the proper messages have been
 # sent out. 1) ack to submitter 2) mail to maintainer
 
-sub dirsize{
-     my ($dir) = @_;
-     opendir(DIR,$dir);
-     my @content = grep {!/^\.\.?$/} readdir(DIR);
-     closedir(DIR);
-     return scalar @content;
-}
-
 # This keeps track of the previous size of the sendmail directory
 my $SD_SIZE_PREV = 0;
 my $SD_SIZE_NOW = dirsize($sendmail_dir);
@@ -129,48 +75,34 @@ $SD_SIZE_PREV=$SD_SIZE_NOW;
 
 # now send a message to the bug
 
-$ENV{LOCAL_PART} = '1@bugs.something';
-$receive = new IO::File ('|scripts/receive.in') or
-     BAIL_OUT("Unable to start receive.in: $!");
-
-print {$receive} create_mime_message([To   => '1@bugs.something',
-				      From => 'foo@bugs.something',
-				      Subject => 'Sending a message to a bug',
-				     ],
-				     <<EOF);
+send_message(to => '1@bugs.something',
+	     headers => [To   => '1@bugs.something',
+			 From => 'foo@bugs.something',
+			 Subject => 'Sending a message to a bug',
+			],
+	     body => <<EOF) or fail('sending message to 1@bugs.someting failed');
 Package: foo
 Severity: normal
 
 This is a silly bug
 EOF
 
-close($receive);
-ok($?==0,'receive took the mail');
-# now we should run processall to see if the message gets processed
-ok(system('scripts/processall.in') == 0,'processall ran');
 $SD_SIZE_NOW = dirsize($sendmail_dir);
 ok($SD_SIZE_NOW-$SD_SIZE_PREV >= 2,'1@bugs.something messages appear to have been sent out properly');
 $SD_SIZE_PREV=$SD_SIZE_NOW;
 
 # just check to see that control doesn't explode
-$ENV{LOCAL_PART} = 'control@bugs.something';
-$receive = new IO::File ('|scripts/receive.in') or
-     BAIL_OUT("Unable to start receive.in: $!");
-
-print {$receive} create_mime_message([To   => 'control@bugs.something',
-				      From => 'foo@bugs.something',
-				      Subject => 'Munging a bug',
-				     ],
-				     <<EOF);
+send_message(to => 'control@bugs.something',
+	     headers => [To   => 'control@bugs.something',
+			 From => 'foo@bugs.something',
+			 Subject => 'Munging a bug',
+			],
+	     body => <<EOF) or fail 'message to control@bugs.something failed';
 severity 1 wishlist
 retitle 1 new title
 thanks
 EOF
 
-close($receive);
-ok($?==0,'receive took the mail');
-# now we should run processall to see if the message gets processed
-ok(system('scripts/processall.in') == 0,'processall ran');
 $SD_SIZE_NOW = dirsize($sendmail_dir);
 ok($SD_SIZE_NOW-$SD_SIZE_PREV >= 1,'control@bugs.something messages appear to have been sent out properly');
 $SD_SIZE_PREV=$SD_SIZE_NOW;
@@ -184,5 +116,69 @@ my $status = read_bug(bug=>1);
 ok($status->{subject} eq 'new title','bug 1 retitled');
 ok($status->{severity} eq 'wishlist','bug 1 wishlisted');
 
+# now we're going to go through and methododically test all of the control commands.
+my @control_commands =
+     (severity_wishlist => {command => 'severity',
+			    value   => 'wishlist',
+			    status_key => 'severity',
+			    status_value => 'wishlist',
+			   },
+      'found_1.0'        => {command => 'found',
+			     value   => '1.0',
+			     status_key => 'found_versions',
+			     status_value => ['1.0'],
+			    },
+      'notfound_1.0'     => {command => 'notfound',
+			     value   => '1.0',
+			     status_key => 'found_versions',
+			     status_value => [],
+			    },
+      submitter_foo      => {command => 'submitter',
+			     value   => 'foo@bar.com',
+			     status_key => 'originator',
+			     status_value => 'foo@bar.com',
+			    },
 
+      forwarded_foo      => {command => 'forwarded',
+			     value   => 'foo@bar.com',
+			     status_key => 'forwarded',
+			     status_value => 'foo@bar.com',
+			    },
+      owner_foo          => {command => 'owner',
+			     value   => 'foo@bar.com',
+			     status_key => 'owner',
+			     status_value => 'foo@bar.com',
+			    },
+      noowner      => {command => 'noowner',
+		       value   => '',
+		       status_key => 'owner',
+		       status_value => '',
+		      },
 
+     );
+
+while (my ($command,$control_command) = splice(@control_commands,0,2)) {
+     # just check to see that control doesn't explode
+     $control_command->{value} = " $control_command->{value}" if length $control_command->{value}
+	  and $control_command->{value} !~ /^\s/;
+     send_message(to => 'control@bugs.something',
+		  headers => [To   => 'control@bugs.something',
+			      From => 'foo@bugs.something',
+			      Subject => "Munging a bug with $command",
+			     ],
+		  body => <<EOF) or fail 'message to control@bugs.something failed';
+$control_command->{command} 1$control_command->{value}
+thanks
+EOF
+				  ;
+     $SD_SIZE_NOW = dirsize($sendmail_dir);
+     ok($SD_SIZE_NOW-$SD_SIZE_PREV >= 1,'control@bugs.something messages appear to have been sent out properly');
+     $SD_SIZE_PREV=$SD_SIZE_NOW;
+     # now we need to check to make sure the control message was processed without errors
+     ok(system("sh -c 'find ".$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Munging a bug with $command"')) == 0,
+	'control@bugs.something'. "$command message was parsed without errors");
+     # now we need to check to make sure that the control message actually did anything
+     my $status = read_bug(bug=>1);
+     is_deeply($status->{$control_command->{status_key}},$control_command->{status_value},"bug 1 $command")
+	  or fail(Dumper($status));
+}
