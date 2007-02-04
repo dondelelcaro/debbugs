@@ -305,7 +305,7 @@ if (@{$status{fixed_versions}}) {
 my @blockedby= split(/ /, $status{blockedby});
 if (@blockedby && $status{"pending"} ne 'fixed' && ! length($status{done})) {
     for my $b (@blockedby) {
-        my %s = %{getbugstatus($b)};
+        my %s = %{get_bug_status($b)};
         next if $s{"pending"} eq 'fixed' || length $s{done};
         push @descstates, "Fix blocked by <a href=\"" . bug_url($b) . "\">#$b</a>: ".html_escape($s{subject});
     }
@@ -314,7 +314,7 @@ if (@blockedby && $status{"pending"} ne 'fixed' && ! length($status{done})) {
 my @blocks= split(/ /, $status{blocks});
 if (@blocks && $status{"pending"} ne 'fixed' && ! length($status{done})) {
     for my $b (@blocks) {
-        my %s = %{getbugstatus($b)};
+        my %s = %{get_bug_status($b)};
         next if $s{"pending"} eq 'fixed' || length $s{done};
         push @descstates, "Blocking fix for <a href=\"" . bug_url($b) . "\">#$b</a>: ".html_escape($s{subject});
     }
