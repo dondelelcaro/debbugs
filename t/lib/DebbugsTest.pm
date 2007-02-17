@@ -154,6 +154,53 @@ sub send_message{
      }
 }
 
+{
+     package DebbugsTest::HTTPServer;
+     use base qw(HTTP::Server::Simple::CGI);
+
+     our $child_pid = undef;
+     our $webserver = undef;
+     our $server_handler = undef;
+
+     END {
+	  if (defined $child_pid) {
+	       # stop the child
+	       kill(15,$child_pid);
+	       waitpid(-1,0);
+	  }
+     }
+
+     sub fork_and_create_webserver {
+	  my ($handler,$port) = @_;
+	  $port ||= 8080;
+	  if (defined $child_pid) {
+	       die "We appear to have already forked once";
+	  }
+	  $server_handler = $handler;
+	  my $pid = fork;
+	  return 0 if not defined $pid;
+	  if ($pid) {
+	       $child_pid = $pid;
+	       return $pid;
+	  }
+	  else {
+	       $webserver = DebbugsTest::HTTPServer->new($port);
+	       $webserver->run;
+	  }
+
+     }
+
+     sub handle_request {
+	  if (defined $server_handler) {
+	       $server_handler->(@_);
+	  }
+	  else {
+	       warn "No handler defined\n";
+	       print "No handler defined\n";
+	  }
+     }
+}
+
 
 1;
 
