@@ -76,6 +76,13 @@ use Safe;
 
 # read in the files;
 %config = ();
+# untaint $ENV{DEBBUGS_CONFIG_FILE} if it's owned by us
+# This enables us to test things that are -T.
+if (exists $ENV{DEBBUGS_CONFIG_FILE} and
+    ${[stat($ENV{DEBBUGS_CONFIG_FILE})]}[4] = $<) {
+     $ENV{DEBBUGS_CONFIG_FILE} =~ /(.+)/;
+     $ENV{DEBBUGS_CONFIG_FILE} = $1;
+}
 read_config(exists $ENV{DEBBUGS_CONFIG_FILE}?$ENV{DEBBUGS_CONFIG_FILE}:'/etc/debbugs/config');
 
 =item email_domain $gEmailDomain
