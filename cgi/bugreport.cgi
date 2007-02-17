@@ -37,6 +37,7 @@ my %param = cgi_parameters(query => $q,
 				       mboxstat  => 'no',
 				       mboxmaint => 'no',
 				       archive   => 'no',
+				       repeatmerged => 'yes',
 				      },
 			  );
 # This is craptacular.
