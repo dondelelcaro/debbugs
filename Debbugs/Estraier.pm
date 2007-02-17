@@ -27,8 +27,8 @@ use Debbugs::Log;
 #use Params::Validate;
 use Search::Estraier;
 use Date::Manip;
-use Debbugs::Common qw(getbuglocation getbugcomponent readbug);
-
+use Debbugs::Common qw(getbuglocation getbugcomponent);
+use Debbugs::Status qw(readbug);
 
 BEGIN{
      ($VERSION) = q$Revision: 1.3 $ =~ /^Revision:\s+([^\s+])/;
