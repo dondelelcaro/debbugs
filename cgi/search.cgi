@@ -33,7 +33,7 @@ my %cgi_var = cgi_parameters(query => $q,
 			     default => {phrase      => '',
 					 max_results => 10,
 					 skip        => 0,
-					}.
+					},
 			    );
 
 $cgi_var{attribute} = parse_attribute(\%cgi_var) || [];
