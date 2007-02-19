@@ -85,6 +85,7 @@ END
 			    "$config_dir/indices/sources" => <<END,
 foo main foo
 END
+			    "$config_dir/pseudo-packages.description" => '',
 			   );
      while (my ($file,$contents) = each %files_to_create) {
 	  system('mkdir','-p',dirname($file));
@@ -181,6 +182,8 @@ sub send_message{
 	  return 0 if not defined $pid;
 	  if ($pid) {
 	       $child_pid = $pid;
+	       # Wait here for a second to let the child start up
+	       sleep 1;
 	       return $pid;
 	  }
 	  else {
