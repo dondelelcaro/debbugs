@@ -34,12 +34,14 @@ my %img_types = (svg => 'image/svg+xml',
 my $q = new CGI::Simple;
 
 my %cgi_var = cgi_parameters(query   => $q,
-			     single  => [qw(package format ignore_boring)],
+			     single  => [qw(package format ignore_boring width height)],
 			     default => {package       => 'xterm',
 					 found         => [],
 					 fixed         => [],
 					 ignore_boring => 1,
 					 format        => 'png',
+					 width         => undef,
+					 height        => undef,
 					},
 			    );
 
@@ -54,6 +56,16 @@ for my $dist (@{$config{distributions}}) {
 	  push @{$version_to_dist{$version}}, $dist;
      }
 }
+
+if (defined $cgi_var{width}) {
+     $cgi_var{width} =~ /(\d+)/;
+     $cgi_var{width} = $1;
+}
+if (defined $cgi_var{height}) {
+     $cgi_var{height} =~ /(\d+)/;
+     $cgi_var{height} = $1;
+}
+
 # then figure out which are affected.
 # turn found and fixed into full versions
 @{$cgi_var{found}} = makesourceversions($cgi_var{package},undef,@{$cgi_var{found}});
@@ -96,6 +108,9 @@ for my $found_fixed (qw(found fixed)) {
 my %all_states = $version->allstates($cgi_var{found},$cgi_var{fixed});
 
 my $dot = "digraph G {\n";
+if (defined $cgi_var{width} and defined $cgi_var{height}) {
+     $dot .= qq(size="$cgi_var{width},$cgi_var{height}";\n);
+}
 my %state = (found  => ['fillcolor="salmon"',
 			'style="filled"',
 			'shape="diamond"',
