@@ -131,11 +131,13 @@ Creates a link to the version cgi script
 =cut
 
 sub version_url{
-     my ($package,$found,$fixed) = @_;
+     my ($package,$found,$fixed,$width,$height) = @_;
      my $url = Debbugs::URI->new('version.cgi?');
      $url->query_form(package => $package,
 		      found   => $found,
 		      fixed   => $fixed,
+		      (defined $width)?(width => $width):(),
+		      (defined $height)?(height => $height):()
 		     );
      return $url->as_string;
 }
