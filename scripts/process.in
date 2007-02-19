@@ -152,7 +152,7 @@ for my $phline (@bodylines)
     print DEBUG ">$fn|$fv|\n";
     $fn = lc $fn;
     # Don't lc owner or forwarded
-    $fv = lc $fv unless $fh =~ /^(?:owner|forwarded|usertags)$/;
+    $fv = lc $fv unless $fh =~ /^(?:owner|forwarded|usertags|version|source-version)$/;
     $pheader{$fn} = $fv;
     print DEBUG ">$fn~$fv<\n";
 }
