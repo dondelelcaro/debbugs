@@ -229,6 +229,22 @@ if  ($status{severity} eq 'normal') {
 	$showseverity = "Severity: $status{severity};\n";
 }
 
+if (@{$status{found_versions}} or @{$status{fixed_versions}}) {
+     $indexentry.= q(<div style="float:right"><a href=").
+	  version_url($status{package},
+		      $status{found_versions},
+		      $status{fixed_versions},
+		     ).
+	  q("><img src=").
+	  version_url($status{package},
+		      $status{found_versions},
+		      $status{fixed_versions},
+		      2,
+		      2,
+		     ).qq{"></a></div>};
+}
+
+
 $indexentry .= "<div class=\"msgreceived\">\n";
 $indexentry .= htmlize_packagelinks($status{package}, 0) . ";\n";
 
@@ -281,7 +297,6 @@ if (@{$status{found_versions}}) {
     $foundtext .= join ', ', map html_escape($_), @{$status{found_versions}};
     push @descstates, $foundtext;
 }
-
 if (@{$status{fixed_versions}}) {
     my $fixedtext = '<strong>Fixed</strong> in ';
     $fixedtext .= (@{$status{fixed_versions}} == 1) ? 'version ' : 'versions ';
@@ -290,15 +305,21 @@ if (@{$status{fixed_versions}}) {
 	$fixedtext .= ' by ' . html_escape(decode_rfc1522($status{done}));
     }
     push @descstates, $fixedtext;
-    push @descstates, '<a href="'.
-	 version_url($status{package},
-		     $status{found_versions},
-		     $status{fixed_versions},
-		    ).qq{">Version Graph</a>};
+}
 
-} elsif (length($status{done})) {
+if (@{$status{found_versions}} or @{$status{fixed_versions}}) {
+     push @descstates, '<a href="'.
+	  version_url($status{package},
+		      $status{found_versions},
+		      $status{fixed_versions},
+		     ).qq{">Version Graph</a>};
+}
+
+if (length($status{done})) {
     push @descstates, "<strong>Done:</strong> ".html_escape(decode_rfc1522($status{done}));
-} elsif (length($status{forwarded})) {
+}
+
+if (length($status{forwarded})) {
     push @descstates, "<strong>Forwarded</strong> to ".maybelink($status{forwarded});
 }
 
