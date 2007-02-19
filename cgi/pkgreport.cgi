@@ -5,7 +5,7 @@ package debbugs;
 use strict;
 use POSIX qw(strftime nice);
 
-require './common.pl';
+require 'common.pl';
 
 use Debbugs::Config qw(:globals :text);
 use Debbugs::User;
