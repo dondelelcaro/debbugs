@@ -57,24 +57,29 @@ EOF
 # test bugreport.cgi
 
 # start up an HTTP::Server::Simple
-my $bugreport_cgi_handler = sub {
+my $pkgreport_cgi_handler = sub {
      # I do not understand why this is necessary.
      $ENV{DEBBUGS_CONFIG_FILE} = "$config{config_dir}/debbugs_config";
-     my $content = qx(perl -I. -T cgi/bugreport.cgi);
+     my $content = qx(perl -I. -I./cgi -T cgi/pkgreport.cgi);
+     # Strip off the Content-Type: stuff
      $content =~ s/^\s*Content-Type:[^\n]+\n*//si;
      print $content;
 };
 
 my $port = 11342;
 
-ok(DebbugsTest::HTTPServer::fork_and_create_webserver($bugreport_cgi_handler,$port),
+ok(DebbugsTest::HTTPServer::fork_and_create_webserver($pkgreport_cgi_handler,$port),
    'forked HTTP::Server::Simple successfully');
 
-my $mech = Test::WWW::Mechanize->new();
 
-$mech->get_ok('http://localhost:'.$port.'/?bug=1',
-	      'Page received ok');
-ok($mech->content() =~ qr/\<title\>\#1\s+\-\s+Submitting a bug/i,
-   'Title of bug is submitting a bug');
+my $mech = Test::WWW::Mechanize->new(autocheck => 1);
 
-# Other tests for bugs in the page should be added here eventually
+$mech->get_ok('http://localhost:'.$port.'/?pkg=foo');
+
+# I'd like to use $mech->title_ok(), but I'm not sure why it doesn't
+# work.
+ok($mech->content()=~ qr/package foo/i,
+   'Package title seems ok',
+  );
+
+# Test more stuff here
