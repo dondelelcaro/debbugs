@@ -66,6 +66,14 @@ if (defined $cgi_var{height}) {
      $cgi_var{height} = $1;
 }
 
+if (defined $cgi_var{format}) {
+     $cgi_var{format} =~ /(png|svg|jpg|gif)/;
+     $cgi_var{format} = $1 || 'png';
+}
+else {
+     $cgi_var{format} = 'png';
+}
+
 # then figure out which are affected.
 # turn found and fixed into full versions
 @{$cgi_var{found}} = makesourceversions($cgi_var{package},undef,@{$cgi_var{found}});
