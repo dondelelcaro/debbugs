@@ -16,7 +16,7 @@ use Debbugs::MIME qw(convert_to_utf8 decode_rfc1522 create_mime_message);
 use Debbugs::CGI qw(:url :html :util);
 use Debbugs::Common qw(buglog);
 use Debbugs::Packages qw(getpkgsrc);
-use Debbugs::Status qw(get_bug_status isstrongseverity);
+use Debbugs::Status qw(splitpackages get_bug_status isstrongseverity);
 
 use Scalar::Util qw(looks_like_number);
 use CGI::Simple;

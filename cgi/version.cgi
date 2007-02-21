@@ -131,6 +131,8 @@ my %state = (found  => ['fillcolor="salmon"',
 			'shape="rect"',
 		       ],
 	    );
+# TODO: Allow collapsing versions which are at the same state and not
+# in a suite.
 foreach my $key (keys %all_states) {
      my ($short_version) = $key =~ m{/(.+)$};
      next if $cgi_var{ignore_boring} and (not defined $all_states{$key}

@@ -68,13 +68,6 @@ sub escapelog {
 	return \@log;
 }
 
-sub isstrongseverity {
-    my $severity = shift;
-    $severity = $gDefaultSeverity if $severity eq '';
-    return grep { $_ eq $severity } @gStrongSeverities;
-}
-
-
 @severities= grep { not exists $gObsoleteSeverities{$_} } @gSeverityList;
 @showseverities= @severities;
 grep ($_= $_ eq '' ? $gDefaultSeverity : $_, @showseverities);

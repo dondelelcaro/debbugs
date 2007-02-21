@@ -11,13 +11,13 @@ use URI::Escape;
 use Debbugs::Config qw(:globals :text);
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
-require "$lib_path/errorlib";
+#require "$lib_path/errorlib";
 
 use Debbugs::Packages qw(:versions :mapping);
 use Debbugs::Versions;
 use Debbugs::MIME qw(decode_rfc1522);
 use Debbugs::Common qw(:util);
-use Debbugs::Status qw(:read :versions);
+use Debbugs::Status qw(:status :read :versions);
 use Debbugs::CGI qw(:all);
 
 $MLDBM::RemoveTaint = 1;
@@ -236,22 +236,6 @@ $debug = 1 if (defined $ret{"debug"} && $ret{"debug"} eq "aj");
     return %ret;
 }
 
-#sub abort {
-#    my $msg = shift;
-#    my $Archive = $common_archive ? "archive" : "";
-#    print header . start_html("Sorry");
-#    print "Sorry bug #$msg doesn't seem to be in the $Archive database.\n";
-#    print end_html;
-#    exit 0;
-#}
-
-# Split a package string from the status file into a list of package names.
-sub splitpackages {
-    my $pkgs = shift;
-    return unless defined $pkgs;
-    return map lc, split /[ \t?,()]+/, $pkgs;
-}
-
 # Generate a comma-separated list of HTML links to each package given in
 # $pkgs. $pkgs may be empty, in which case an empty string is returned, or
 # it may be a comma-separated list of package names.
@@ -386,8 +370,6 @@ sub urlargs {
     return $args;
 }
 
-sub submitterurl { pkg_url(submitter => emailfromrfc822($_[0] || "")); }
-sub mainturl { pkg_url(maint => emailfromrfc822($_[0] || "")); }
 sub pkgurl { pkg_url(pkg => $_[0] || ""); }
 sub srcurl { pkg_url(src => $_[0] || ""); }
 sub tagurl { pkg_url(tag => $_[0] || ""); }

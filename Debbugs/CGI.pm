@@ -32,6 +32,7 @@ use HTML::Entities;
 use Debbugs::Common qw(getparsedaddrs);
 use Params::Validate qw(validate_with :types);
 use Debbugs::Config qw(:config);
+use Debbugs::Status qw(splitpackages);
 use Mail::Address;
 use POSIX qw(ceil);
 use Storable qw(dclone);
@@ -52,7 +53,7 @@ BEGIN{
 				qw(maybelink htmlize_addresslinks htmlize_maintlinks),
 			       ],
 		     util   => [qw(cgi_parameters quitcgi),
-				qw(getmaintainers getpseudodesc splitpackages)
+				qw(getmaintainers getpseudodesc)
 			       ],
 		     #status => [qw(getbugstatus)],
 		    );
@@ -339,14 +340,6 @@ sub htmlize_bugstatus {
 
     return $result;
 }
-
-# Split a package string from the status file into a list of package names.
-sub splitpackages {
-    my $pkgs = shift;
-    return unless defined $pkgs;
-    return map lc, split /[ \t?,()]+/, $pkgs;
-}
-
 
 =head2 htmlize_packagelinks
 
