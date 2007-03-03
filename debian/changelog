@@ -149,6 +149,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - List bugs being blocked (closes: #356680)
     - Fix multiple submitters for a single bug in the index
       (closes: #402362)
+    - Marking a bug as fixed now overrides a found at that exact version
+      (closes: #395865)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
