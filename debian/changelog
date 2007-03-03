@@ -147,6 +147,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
       (closes: #406020)
     - Fix arrayrefs leaking into the myurl function (closes: #397344)
     - List bugs being blocked (closes: #356680)
+    - Fix multiple submitters for a single bug in the index
+      (closes: #402362)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
