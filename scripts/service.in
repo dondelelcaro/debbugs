@@ -751,6 +751,7 @@ END
 		     $ref = $clonebugs{$ref};
 		}
 		if (&getbug) {
+		    &foundbug;
 		    push @okayblockers, $ref;
 
 		    # add to the list all bugs that are merged with $b,
