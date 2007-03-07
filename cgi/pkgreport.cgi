@@ -3,15 +3,15 @@
 package debbugs;
 
 use strict;
-use POSIX qw(strftime tzset nice);
+use POSIX qw(strftime nice);
 
-#require '/usr/lib/debbugs/errorlib';
 require './common.pl';
 
-require '/etc/debbugs/config';
-require '/etc/debbugs/text';
-
+use Debbugs::Config qw(:globals :text);
 use Debbugs::User;
+use Debbugs::CGI qw(version_url);
+use Debbugs::Common qw(getparsedaddrs);
+use Debbugs::Bugs qw(get_bugs);
 
 use vars qw($gPackagePages $gWebDomain %gSeverityDisplay @gSeverityList);
 
@@ -97,10 +97,10 @@ my %cats = (
     } ],
     "severity" => [ {
         "nam" => "Severity",
-        "pri" => [map { "severity=$_" } @debbugs::gSeverityList],
-        "ttl" => [map { $debbugs::gSeverityDisplay{$_} } @debbugs::gSeverityList],
+        "pri" => [map { "severity=$_" } @gSeverityList],
+        "ttl" => [map { $gSeverityDisplay{$_} } @gSeverityList],
         "def" => "Unknown Severity",
-        "ord" => [0,1,2,3,4,5,6,7],
+        "ord" => [0..@gSeverityList],
     } ],
     "classification" => [ {
         "nam" => "Classification",
@@ -188,10 +188,7 @@ my $this = "";
 my %indexentry;
 my %strings = ();
 
-$ENV{"TZ"} = 'UTC';
-tzset();
-
-my $dtime = strftime "%a, %e %b %Y %T UTC", localtime;
+my $dtime = strftime "%a, %e %b %Y %T UTC", gmtime;
 my $tail_html = $debbugs::gHTMLTail;
 $tail_html = $debbugs::gHTMLTail;
 $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
@@ -253,12 +250,7 @@ if (defined $pkg) {
     $title .= " ($verdesc)" if defined $verdesc;
   }
   my @pkgs = split /,/, $pkg;
-  @bugs = @{getbugs(sub {my %d=@_;
-                         foreach my $try (splitpackages($d{"pkg"})) {
-                           return 1 if grep($try eq $_, @pkgs);
-                         }
-                         return 0;
-                        }, 'package', @pkgs)};
+  @bugs = get_bugs(package=>\@pkgs);
 } elsif (defined $src) {
   add_user("$src\@packages.debian.org");
   $title = "source $src";
@@ -270,47 +262,12 @@ if (defined $pkg) {
     my $verdesc = getversiondesc($src);
     $title .= " ($verdesc)" if defined $verdesc;
   }
-  my @pkgs = ();
-  my @srcs = split /,/, $src;
-  foreach my $try (@srcs) {
-    push @pkgs, getsrcpkgs($try);
-    push @pkgs, $try if ( !grep(/^\Q$try\E$/, @pkgs) );
-  }
-  @bugs = @{getbugs(sub {my %d=@_;
-                         foreach my $try (splitpackages($d{"pkg"})) {
-                           return 1 if grep($try eq $_, @pkgs);
-                         }
-                         return 0;
-                        }, 'package', @pkgs)};
+  @bugs = get_bugs(src=>[split /,/, $src]);
 } elsif (defined $maint) {
-  my %maintainers = %{getmaintainers()};
   add_user($maint);
   $title = "maintainer $maint";
   $title .= " in $dist" if defined $dist;
-  if ($maint eq "") {
-    @bugs = @{getbugs(sub {my %d=@_;
-                           foreach my $try (splitpackages($d{"pkg"})) {
-                             return 1 if !getparsedaddrs($maintainers{$try});
-                           }
-                           return 0;
-                          })};
-  } else {
-    my @maints = split /,/, $maint;
-    my @pkgs = ();
-    foreach my $try (@maints) {
-      foreach my $p (keys %maintainers) {
-        my @me = getparsedaddrs($maintainers{$p});
-        push @pkgs, $p if grep { $_->address eq $try } @me;
-      }
-    }
-    @bugs = @{getbugs(sub {my %d=@_;
-                           foreach my $try (splitpackages($d{"pkg"})) {
-                             my @me = getparsedaddrs($maintainers{$try});
-                             return 1 if grep { $_->address eq $maint } @me;
-                           }
-                           return 0;
-                          }, 'package', @pkgs)};
-  }
+  @bugs = get_bugs(maint=>[split /,/,$maint]);
 } elsif (defined $maintenc) {
   my %maintainers = %{getmaintainers()};
   $title = "encoded maintainer $maintenc";
@@ -329,12 +286,7 @@ if (defined $pkg) {
   $title = "submitter $submitter";
   $title .= " in $dist" if defined $dist;
   my @submitters = split /,/, $submitter;
-  @bugs = @{getbugs(sub {my %d=@_;
-                         my @se = getparsedaddrs($d{"submitter"} || "");
-                         foreach my $try (@submitters) {
-                           return 1 if grep { $_->address eq $try } @se;
-                         }
-                        }, 'submitter-email', @submitters)};
+  @bugs = get_bugs(submitter => \@submitters);
 } elsif (defined($severity) && defined($status)) {
   $title = "$status $severity bugs";
   $title .= " in $dist" if defined $dist;
@@ -383,12 +335,12 @@ print "Content-Type: text/html; charset=utf-8\n\n";
 
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
 print "<HTML><HEAD>\n" . 
-    "<TITLE>$debbugs::gProject$Archived $debbugs::gBug report logs: $title</TITLE>\n" .
-    '<link rel="stylesheet" href="/css/bugs.css" type="text/css">' .
+    "<TITLE>$gProject$Archived $gBug report logs: $title</TITLE>\n" .
+    qq(<link rel="stylesheet" href="$gWebHostBugDir/css/bugs.css" type="text/css">) .
     "</HEAD>\n" .
     '<BODY onload="pagemain();">' .
     "\n";
-print "<H1>" . "$debbugs::gProject$Archived $debbugs::gBug report logs: $title" .
+print "<H1>" . "$gProject$Archived $gBug report logs: $title" .
       "</H1>\n";
 
 my $showresult = 1;
@@ -433,12 +385,12 @@ if (defined $pkg || defined $src) {
         if ($pkg and defined($pseudodesc) and exists($pseudodesc->{$pkg})) {
             push @references, "to the <a href=\"http://${debbugs::gWebDomain}/pseudo-packages${debbugs::gHTMLSuffix}\">list of other pseudo-packages</a>";
         } else {
-            if ($pkg and defined $debbugs::gPackagePages) {
+            if ($pkg and defined $gPackagePages) {
                 push @references, sprintf "to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
             }
-            if (defined $debbugs::gSubscriptionDomain) {
+            if (defined $gSubscriptionDomain) {
                 my $ptslink = $pkg ? $srcforpkg : $src;
-                push @references, "to the <a href=\"http://$debbugs::gSubscriptionDomain/$ptslink\">Package Tracking System</a>";
+                push @references, "to the <a href=\"http://$gSubscriptionDomain/$ptslink\">Package Tracking System</a>";
             }
             # Only output this if the source listing is non-trivial.
             if ($pkg and $srcforpkg and (@pkgs or $pkg ne $srcforpkg)) {
@@ -473,12 +425,13 @@ if (defined $pkg || defined $src) {
 
 set_option("archive", !$archive);
 printf "<p>See the <a href=\"%s\">%s reports</a></p>",
-     urlsanit('pkgreport.cgi?'.join(';',
-				    (map {$_ eq 'archived'?():("$_=$param{$_}")
-				     } keys %param
-				    ),
-				    ('archived='.($archive?"no":"yes"))
-				   )
+     urlsanit(pkg_url((
+		       map {
+			    $_ eq 'archive'?():($_,$param{$_})
+		       } keys %param
+		      ),
+		      ('archive',($archive?"no":"yes"))
+		     )
 	     ), ($archive ? "active" : "archived");
 set_option("archive", $archive);
 
@@ -518,10 +471,10 @@ if (defined $pkg) {
 }
 print "<tr><td>&nbsp;</td></tr>\n";
 
-my $includetags = htmlsanit(join(" ", grep { !m/^subj:/i } split /[\s,]+/, $include));
-my $excludetags = htmlsanit(join(" ", grep { !m/^subj:/i } split /[\s,]+/, $exclude));
-my $includesubj = htmlsanit(join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } split /[\s,]+/, $include));
-my $excludesubj = htmlsanit(join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } split /[\s,]+/, $exclude));
+my $includetags = htmlsanit(join(" ", grep { !m/^subj:/i } map {split /[\s,]+/} ref($include)?@{$include}:$include));
+my $excludetags = htmlsanit(join(" ", grep { !m/^subj:/i } map {split /[\s,]+/} ref($exclude)?@{$exclude}:$exclude));
+my $includesubj = htmlsanit(join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } map {split /[\s,]+/} ref($include)?@{$include}:$include));
+my $excludesubj = htmlsanit(join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } map {split /[\s,]+/} ref($exclude)?@{$exclude}:$exclude));
 my $vismindays = ($mindays == 0 ? "" : $mindays);
 my $vismaxdays = ($maxdays == -1 ? "" : $maxdays);
 
@@ -624,7 +577,11 @@ sub pkg_htmlindexentrystatus {
         my @fixed = @{$status{fixed_versions}};
         $showversions .= join ', ', map {s{/}{ }; htmlsanit($_)} @fixed;
     }
-    $result .= " ($showversions)" if length $showversions;
+    $result .= ' (<a href="'.
+	 version_url($status{package},
+		     $status{found_versions},
+		     $status{fixed_versions},
+		    ).qq{">$showversions</a>)} if length $showversions;
     $result .= ";\n";
 
     $result .= $showseverity;
@@ -644,16 +601,15 @@ sub pkg_htmlindexentrystatus {
     $result .= buglinklist(";\nBlocks ", ", ",
         split(/ /,$status{blocks}));
 
-    my $days = 0;
     if (length($status{done})) {
         $result .= "<br><strong>Done:</strong> " . htmlsanit($status{done});
-# Disabled until archiving actually works again
-#        $days = ceil($debbugs::gRemoveAge - -M buglog($status{id}));
-#         if ($days >= 0) {
-#             $result .= ";\n<strong>Will be archived" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" ) . "</strong>";
-#         } else {
-#             $result .= ";\n<strong>Archived</strong>";
-#         }
+        my $days = bug_archiveable(bug => $status{id},
+				   status => \%status,
+				   days_until => 1,
+				  );
+        if ($days >= 0) {
+            $result .= ";\n<strong>Will be archived" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" ) . "</strong>";
+        }
     }
 
     unless (length($status{done})) {
@@ -661,7 +617,7 @@ sub pkg_htmlindexentrystatus {
             $result .= ";\n<strong>Forwarded</strong> to "
                        . join(', ',
 			      map {maybelink($_)}
-			      split /,\s*/,$status{forwarded}
+			      split /[,\s]+/,$status{forwarded}
 			     );
         }
         my $daysold = int((time - $status{date}) / 86400);   # seconds to days
@@ -702,7 +658,7 @@ sub pkg_htmlizebugs {
     my $header = '';
     my $footer = "<h2 class=\"outstanding\">Summary</h2>\n";
 
-    my @dummy = ($debbugs::gRemoveAge); #, @debbugs::gSeverityList, @debbugs::gSeverityDisplay);  #, $debbugs::gHTMLExpireNote);
+    my @dummy = ($gRemoveAge); #, @gSeverityList, @gSeverityDisplay);  #, $gHTMLExpireNote);
 
     if (@bugs == 0) {
         return "<HR><H2>No reports found!</H2></HR>\n";
@@ -828,20 +784,7 @@ sub pkg_htmlpackagelinks {
 }
 
 sub pkg_htmladdresslinks {
-    my ($prefixfunc, $urlfunc, $addresses) = @_;
-    if (defined $addresses and $addresses ne '') {
-        my @addrs = getparsedaddrs($addresses);
-        my $prefix = (ref $prefixfunc) ? $prefixfunc->(scalar @addrs)
-                                       : $prefixfunc;
-        return $prefix .
-               join ', ', map { sprintf '<a class="submitter" href="%s">%s</a>',
-                                        $urlfunc->($_->address),
-                                        htmlsanit($_->format) || '(unknown)'
-                              } @addrs;
-    } else {
-        my $prefix = (ref $prefixfunc) ? $prefixfunc->(1) : $prefixfunc;
-        return sprintf '%s<a class="submitter" href="%s">(unknown)</a>', $prefix, $urlfunc->('');
-    }
+     htmlize_addresslinks(@_,'submitter');
 }
 
 sub pkg_javascript {
@@ -964,12 +907,10 @@ sub pkg_htmlselectarch {
 }
 
 sub myurl {
-     return urlsanit('pkgreport.cgi?'.
-		     join(';',
-			  (map {("$_=$param{$_}")
-					    } keys %param
-			  )
-			 )
+     return urlsanit(pkg_url(map {exists $param{$_}?($_,$param{$_}):()}
+			     qw(archive repeatmerged mindays maxdays),
+			     qw(version dist arch pkg src tag maint submitter)
+			    )
 		    );
 }
 
@@ -1025,13 +966,8 @@ sub get_bug_order_index {
 
 sub buglinklist {
     my ($prefix, $infix, @els) = @_;
-    my $sep = $prefix;
-    my $r = "";
-    for my $e (@els) {
-        $r .= $sep."<A class=\"submitter\" href=\"" . bugurl($e) . "\">#$e</A>";
-        $sep = $infix;
-    }
-    return $r;
+    return '' if not @els;
+    return $prefix . bug_linklist($infix,'submitter',@els);
 }
 
 

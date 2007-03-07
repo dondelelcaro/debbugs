@@ -8,13 +8,17 @@ use POSIX qw/ceil/;
 
 use URI::Escape;
 
+use Debbugs::Config qw(:globals :text);
 $config_path = '/etc/debbugs';
 $lib_path = '/usr/lib/debbugs';
-require "$lib_path/errorlib";
+#require "$lib_path/errorlib";
 
-use Debbugs::Packages;
+use Debbugs::Packages qw(:versions :mapping);
 use Debbugs::Versions;
 use Debbugs::MIME qw(decode_rfc1522);
+use Debbugs::Common qw(:util);
+use Debbugs::Status qw(:status :read :versions);
+use Debbugs::CGI qw(:all);
 
 $MLDBM::RemoveTaint = 1;
 
@@ -83,7 +87,7 @@ my %field_match = (
 my @common_grouping = ( 'severity', 'pending' );
 my %common_grouping_order = (
     'pending' => [ qw( pending forwarded pending-fixed fixed done absent ) ],
-    'severity' => \@debbugs::gSeverityList,
+    'severity' => \@gSeverityList,
 );
 my %common_grouping_display = (
     'pending' => 'Status',
@@ -98,7 +102,7 @@ my %common_headers = (
 	"forwarded"	=> "forwarded to upstream software authors",
 	"absent"	=> "not applicable to this version",
     },
-    'severity' => \%debbugs::gSeverityDisplay,
+    'severity' => \%gSeverityDisplay,
 );
 
 my $common_version;
@@ -144,8 +148,8 @@ sub set_option {
 	$use_bug_idx = $val;
 	if ( $val ) {
 	    $common_headers{pending}{open} = $common_headers{pending}{pending};
-	    my $bugidx = tie %bugidx, MLDBM => "$debbugs::gSpoolDir/realtime/bug.idx", O_RDONLY
-		or quitcgi( "$0: can't open $debbugs::gSpoolDir/realtime/bug.idx ($!)\n" );
+	    my $bugidx = tie %bugidx, MLDBM => "$gSpoolDir/realtime/bug.idx", O_RDONLY
+		or quitcgi( "$0: can't open $gSpoolDir/realtime/bug.idx ($!)\n" );
 	    $bugidx->RemoveTaint(1);
 	} else {
 	    untie %bugidx;
@@ -232,60 +236,11 @@ $debug = 1 if (defined $ret{"debug"} && $ret{"debug"} eq "aj");
     return %ret;
 }
 
-sub quitcgi {
-    my $msg = shift;
-    print "Content-Type: text/html\n\n";
-    print "<HTML><HEAD><TITLE>Error</TITLE></HEAD><BODY>\n";
-    print "An error occurred. Dammit.\n";
-    print "Error was: $msg.\n";
-    print "</BODY></HTML>\n";
-    exit 0;
-}
-
-#sub abort {
-#    my $msg = shift;
-#    my $Archive = $common_archive ? "archive" : "";
-#    print header . start_html("Sorry");
-#    print "Sorry bug #$msg doesn't seem to be in the $Archive database.\n";
-#    print end_html;
-#    exit 0;
-#}
-
-# Split a package string from the status file into a list of package names.
-sub splitpackages {
-    my $pkgs = shift;
-    return unless defined $pkgs;
-    return map lc, split /[ \t?,()]+/, $pkgs;
-}
-
-my %_parsedaddrs;
-sub getparsedaddrs {
-    my $addr = shift;
-    return () unless defined $addr;
-    return @{$_parsedaddrs{$addr}} if exists $_parsedaddrs{$addr};
-    @{$_parsedaddrs{$addr}} = Mail::Address->parse($addr);
-    return @{$_parsedaddrs{$addr}};
-}
-
 # Generate a comma-separated list of HTML links to each package given in
 # $pkgs. $pkgs may be empty, in which case an empty string is returned, or
 # it may be a comma-separated list of package names.
 sub htmlpackagelinks {
-    my $pkgs = shift;
-    return unless defined $pkgs and $pkgs ne '';
-    my $strong = shift;
-    my @pkglist = splitpackages($pkgs);
-
-    my $openstrong  = $strong ? '<strong>' : '';
-    my $closestrong = $strong ? '</strong>' : '';
-
-    return 'Package' . (@pkglist > 1 ? 's' : '') . ': ' .
-           join(', ',
-                map {
-                    '<a href="' . pkgurl($_) . '">' .
-                    $openstrong . htmlsanit($_) . $closestrong . '</a>'
-                } @pkglist
-           );
+     return htmlize_packagelinks(@_);
 }
 
 # Generate a comma-separated list of HTML links to each address given in
@@ -293,20 +248,7 @@ sub htmlpackagelinks {
 # $urlfunc should be a reference to a function like mainturl or submitterurl
 # which returns the URL for each individual address.
 sub htmladdresslinks {
-    my ($prefixfunc, $urlfunc, $addresses) = @_;
-    if (defined $addresses and $addresses ne '') {
-        my @addrs = getparsedaddrs($addresses);
-        my $prefix = (ref $prefixfunc) ? $prefixfunc->(scalar @addrs)
-                                       : $prefixfunc;
-        return $prefix .
-               join ', ', map { sprintf '<a href="%s">%s</a>',
-                                        $urlfunc->($_->address),
-                                        htmlsanit($_->format) || '(unknown)'
-                              } @addrs;
-    } else {
-        my $prefix = (ref $prefixfunc) ? $prefixfunc->(1) : $prefixfunc;
-        return sprintf '%s<a href="%s">(unknown)</a>', $prefix, $urlfunc->('');
-    }
+     htmlize_addresslinks(@_);
 }
 
 # Generate a comma-separated list of HTML links to each maintainer given in
@@ -366,7 +308,6 @@ sub htmlindexentrystatus {
 		 . htmlsanit(join(", ", sort(split(/\s+/, $status{tags}))))
 		 . "</strong>"
                        if (length($status{tags}));
-
     my @merged= split(/ /,$status{mergedwith});
     my $mseparator= ";\nmerged with ";
     for my $m (@merged) {
@@ -376,7 +317,7 @@ sub htmlindexentrystatus {
 
     if (length($status{done})) {
         $result .= ";\n<strong>Done:</strong> " . htmlsanit($status{done});
-        $days = ceil($debbugs::gRemoveAge - -M buglog($status{id}));
+        $days = ceil($gRemoveAge - -M buglog($status{id}));
         if ($days >= 0) {
             $result .= ";\n<strong>Will be archived:</strong>" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" );
         } else {
@@ -429,11 +370,9 @@ sub urlargs {
     return $args;
 }
 
-sub submitterurl { pkg_etc_url(emailfromrfc822($_[0] || ""), "submitter"); }
-sub mainturl { pkg_etc_url(emailfromrfc822($_[0] || ""), "maint"); }
-sub pkgurl { pkg_etc_url($_[0] || "", "pkg"); }
-sub srcurl { pkg_etc_url($_[0] || "", "src"); }
-sub tagurl { pkg_etc_url($_[0] || "", "tag"); }
+sub pkgurl { pkg_url(pkg => $_[0] || ""); }
+sub srcurl { pkg_url(src => $_[0] || ""); }
+sub tagurl { pkg_url(tag => $_[0] || ""); }
 
 sub pkg_etc_url {
     my $ref = shift;
@@ -465,15 +404,6 @@ sub htmlsanit {
     my $in = shift || "";
     $in =~ s/([<>&"])/\&$saniarray{$1};/g;
     return $in;
-}
-
-sub maybelink {
-    my $in = shift;
-    if ($in =~ /^[a-zA-Z0-9+.-]+:/) { # RFC 1738 scheme
-	return qq{<a href="$in">} . htmlsanit($in) . '</a>';
-    } else {
-	return htmlsanit($in);
-    }
 }
 
 sub bugurl {
@@ -650,7 +580,7 @@ sub htmlizebugs {
     }
 
     $result = $header . $result if ( $common{show_list_header} );
-    $result .= $debbugs::gHTMLExpireNote if $debbugs::gRemoveAge and $anydone;
+    $result .= $gHTMLExpireNote if $gRemoveAge and $anydone;
     $result .= "<hr>" . $footer if ( $common{show_list_footer} );
     return $result;
 }
@@ -658,11 +588,11 @@ sub htmlizebugs {
 sub countbugs {
     my $bugfunc = shift;
     if ($common_archive) {
-        open I, "<$debbugs::gSpoolDir/index.archive"
-            or &quitcgi("$debbugs::gSpoolDir/index.archive: $!");
+        open I, "<$gSpoolDir/index.archive"
+            or &quitcgi("$gSpoolDir/index.archive: $!");
     } else {
-        open I, "<$debbugs::gSpoolDir/index.db"
-            or &quitcgi("$debbugs::gSpoolDir/index.db: $!");
+        open I, "<$gSpoolDir/index.db"
+            or &quitcgi("$gSpoolDir/index.db: $!");
     }
 
     my %count = ();
@@ -689,9 +619,9 @@ sub getbugs {
     if (!defined $opt) {
         # leave $fastidx undefined;
     } elsif (!$common_archive) {
-        $fastidx = "$debbugs::gSpoolDir/by-$opt.idx";
+        $fastidx = "$gSpoolDir/by-$opt.idx";
     } else {
-        $fastidx = "$debbugs::gSpoolDir/by-$opt-arc.idx";
+        $fastidx = "$gSpoolDir/by-$opt-arc.idx";
     }
 
     if (defined $fastidx && -e $fastidx) {
@@ -709,11 +639,11 @@ print STDERR "optimized\n" if ($debug);
 print STDERR "done optimized\n" if ($debug);
     } else {
         if ( $common_archive ) {
-            open I, "<$debbugs::gSpoolDir/index.archive" 
-                or &quitcgi("$debbugs::gSpoolDir/index.archive: $!");
+            open I, "<$gSpoolDir/index.archive" 
+                or &quitcgi("$gSpoolDir/index.archive: $!");
         } else {
-            open I, "<$debbugs::gSpoolDir/index.db" 
-                or &quitcgi("$debbugs::gSpoolDir/index.db: $!");
+            open I, "<$gSpoolDir/index.db" 
+                or &quitcgi("$gSpoolDir/index.db: $!");
         }
         while(<I>) {
             if (m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/) {
@@ -755,240 +685,16 @@ sub maintencoded {
     return $encoded;
 }
 
-my $_maintainer;
-sub getmaintainers {
-    return $_maintainer if $_maintainer;
-    my %maintainer;
-
-    open(MM,"$debbugs::gMaintainerFile") or &quitcgi("open $debbugs::gMaintainerFile: $!");
-    while(<MM>) {
-	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
-	($a,$b)=($1,$2);
-	$a =~ y/A-Z/a-z/;
-	$maintainer{$a}= $b;
-    }
-    close(MM);
-    if (defined $debbugs::gMaintainerFileOverride) {
-	open(MM,"$debbugs::gMaintainerFileOverride") or &quitcgi("open $debbugs::gMaintainerFileOverride: $!");
-	while(<MM>) {
-	    next unless m/^(\S+)\s+(\S.*\S)\s*$/;
-	    ($a,$b)=($1,$2);
-	    $a =~ y/A-Z/a-z/;
-	    $maintainer{$a}= $b;
-	}
-	close(MM);
-    }
-    $_maintainer = \%maintainer;
-    return $_maintainer;
-}
-
-my $_pseudodesc;
-sub getpseudodesc {
-    return $_pseudodesc if $_pseudodesc;
-    my %pseudodesc;
-
-    open(PSEUDO, "< $debbugs::gPseudoDescFile") or &quitcgi("open $debbugs::gPseudoDescFile: $!");
-    while(<PSEUDO>) {
-	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
-	$pseudodesc{lc $1} = $2;
-    }
-    close(PSEUDO);
-    $_pseudodesc = \%pseudodesc;
-    return $_pseudodesc;
-}
 
 sub getbugstatus {
-    my $bugnum = shift;
-
-    my %status;
-
-    if ( $use_bug_idx eq 1 && exists( $bugidx{ $bugnum } ) ) {
-	%status = %{ $bugidx{ $bugnum } };
-	$status{ pending } = $status{ status };
-	$status{ id } = $bugnum;
-	return \%status;
-    }
-
-    my $location = getbuglocation( $bugnum, 'summary' );
-    return {} if ( !$location );
-    %status = %{ readbug( $bugnum, $location ) };
-    $status{ id } = $bugnum;
-
-
-    if (defined $common_bugusertags{$bugnum}) {
-        $status{keywords} = "" unless defined $status{keywords};
-        $status{keywords} .= " " unless $status{keywords} eq "";
-        $status{keywords} .= join(" ", @{$common_bugusertags{$bugnum}});
-    }
-    $status{tags} = $status{keywords};
-    my %tags = map { $_ => 1 } split ' ', $status{tags};
-
-    $status{"package"} =~ s/\s*$//;
-    $status{"package"} = 'unknown' if ($status{"package"} eq '');
-    $status{"severity"} = 'normal' if ($status{"severity"} eq '');
-
-    $status{"pending"} = 'pending';
-    $status{"pending"} = 'forwarded'	    if (length($status{"forwarded"}));
-    $status{"pending"} = 'pending-fixed'    if ($tags{pending});
-    $status{"pending"} = 'fixed'	    if ($tags{fixed});
-
-    my @versions;
-    if (defined $common_version) {
-        @versions = ($common_version);
-    } elsif (defined $common_dist) {
-        @versions = getversions($status{package}, $common_dist, $common_arch);
-    }
-
-    # TODO: This should probably be handled further out for efficiency and
-    # for more ease of distinguishing between pkg= and src= queries.
-    my @sourceversions = makesourceversions($status{package}, $common_arch,
-                                            @versions);
-
-    if (@sourceversions) {
-        # Resolve bugginess states (we might be looking at multiple
-        # architectures, say). Found wins, then fixed, then absent.
-        my $maxbuggy = 'absent';
-        for my $version (@sourceversions) {
-            my $buggy = buggyversion($bugnum, $version, \%status);
-            if ($buggy eq 'found') {
-                $maxbuggy = 'found';
-                last;
-            } elsif ($buggy eq 'fixed' and $maxbuggy ne 'found') {
-                $maxbuggy = 'fixed';
-            }
-        }
-        if ($maxbuggy eq 'absent') {
-            $status{"pending"} = 'absent';
-        } elsif ($maxbuggy eq 'fixed') {
-            $status{"pending"} = 'done';
-        }
-    }
-    
-    if (length($status{done}) and
-            (not @sourceversions or not @{$status{fixed_versions}})) {
-        $status{"pending"} = 'done';
-    }
-
-    return \%status;
-}
-
-sub buglog {
-    my $bugnum = shift;
-    my $location = getbuglocation($bugnum, 'log');
-    return getbugcomponent($bugnum, 'log', $location) if ($location);
-    $location = getbuglocation($bugnum, 'log.gz');
-    return getbugcomponent($bugnum, 'log.gz', $location);
-}
-
-# Canonicalize versions into source versions, which have an explicitly
-# named source package. This is used to cope with source packages whose
-# names have changed during their history, and with cases where source
-# version numbers differ from binary version numbers.
-my %_sourceversioncache = ();
-sub makesourceversions {
-    my $pkg = shift;
-    my $arch = shift;
-    my %sourceversions;
-
-    for my $version (@_) {
-        if ($version =~ m[/]) {
-            # Already a source version.
-            $sourceversions{$version} = 1;
-        } else {
-            my $cachearch = (defined $arch) ? $arch : '';
-            my $cachekey = "$pkg/$cachearch/$version";
-            if (exists($_sourceversioncache{$cachekey})) {
-                for my $v (@{$_sourceversioncache{$cachekey}}) {
-		    $sourceversions{$v} = 1;
-		}
-                next;
-            }
-
-            my @srcinfo = binarytosource($pkg, $version, $arch);
-            unless (@srcinfo) {
-                # We don't have explicit information about the
-                # binary-to-source mapping for this version (yet). Since
-                # this is a CGI script and our output is transient, we can
-                # get away with just looking in the unversioned map; if it's
-                # wrong (as it will be when binary and source package
-                # versions differ), too bad.
-                my $pkgsrc = getpkgsrc();
-                if (exists $pkgsrc->{$pkg}) {
-                    @srcinfo = ([$pkgsrc->{$pkg}, $version]);
-                } elsif (getsrcpkgs($pkg)) {
-                    # If we're looking at a source package that doesn't have
-                    # a binary of the same name, just try the same version.
-                    @srcinfo = ([$pkg, $version]);
-                } else {
-                    next;
-                }
-            }
-            $sourceversions{"$_->[0]/$_->[1]"} = 1 foreach @srcinfo;
-            $_sourceversioncache{$cachekey} = [ map { "$_->[0]/$_->[1]" } @srcinfo ];
-        }
-    }
-
-    return sort keys %sourceversions;
-}
-
-my %_versionobj;
-sub buggyversion {
-    my ($bug, $ver, $status) = @_;
-    return '' unless defined $debbugs::gVersionPackagesDir;
-    my $src = getpkgsrc()->{$status->{package}};
-    $src = $status->{package} unless defined $src;
-
-    my $tree;
-    if (exists $_versionobj{$src}) {
-        $tree = $_versionobj{$src};
-    } else {
-        $tree = Debbugs::Versions->new(\&DpkgVer::vercmp);
-        my $srchash = substr $src, 0, 1;
-        if (open VERFILE, "< $debbugs::gVersionPackagesDir/$srchash/$src") {
-            $tree->load(\*VERFILE);
-            close VERFILE;
-        }
-        $_versionobj{$src} = $tree;
-    }
-
-    my @found = makesourceversions($status->{package}, undef,
-                                   @{$status->{found_versions}});
-    my @fixed = makesourceversions($status->{package}, undef,
-                                   @{$status->{fixed_versions}});
-
-    return $tree->buggy($ver, \@found, \@fixed);
-}
-
-my %_versions;
-sub getversions {
-    my ($pkg, $dist, $arch) = @_;
-    return () unless defined $debbugs::gVersionIndex;
-    $dist = 'unstable' unless defined $dist;
-
-    unless (tied %_versions) {
-        tie %_versions, 'MLDBM', $debbugs::gVersionIndex, O_RDONLY
-            or die "can't open versions index: $!";
-    }
-
-    if (defined $arch and exists $_versions{$pkg}{$dist}{$arch}) {
-        my $ver = $_versions{$pkg}{$dist}{$arch};
-        return $ver if defined $ver;
-        return ();
-    } else {
-        my %uniq;
-        for my $ar (keys %{$_versions{$pkg}{$dist}}) {
-            $uniq{$_versions{$pkg}{$dist}{$ar}} = 1 unless ($ar eq 'source' or $ar eq 'm68k' or $ar eq 'hurd-i386');
-        }
-        if (%uniq) {
-            return keys %uniq;
-        } elsif (exists $_versions{$pkg}{$dist}{source}) {
-            # Maybe this is actually a source package with no corresponding
-            # binaries?
-            return $_versions{$pkg}{$dist}{source};
-        } else {
-            return ();
-        }
-    }
+    my ($bug) = @_;
+    return get_bug_status(bug => $bug,
+			  $use_bug_idx?(bug_index => \%bugidx):(),
+			  usertags => \%common_bugusertags,
+			  (defined $common_dist)?(dist => $common_dist):(),
+			  (defined $common_version)?(version => $common_version):(),
+			  (defined $common_arch)?(arch => $common_arch):(),
+			 );
 }
 
 sub getversiondesc {

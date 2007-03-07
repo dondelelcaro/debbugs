@@ -1,0 +1,21 @@
+#!/usr/bin/perl
+
+# All this script does is write whatever is piped to it to a unique
+# filename, with the first line containing the arguments sent.
+
+use IO::File;
+
+# create a unique filename
+if (not -d $ENV{SENDMAIL_TESTDIR}) {
+     system('mkdir','-p',$ENV{SENDMAIL_TESTDIR});
+}
+
+my $fn = "$ENV{SENDMAIL_TESTDIR}/".time.$$;
+
+my $fh = IO::File->new($fn ,'w') or die "Unable to open file $fn for writing: $!";
+
+print {$fh} "$0 called with: ", join(' ',map {"'$_'"} @ARGV) or die "Unable to write to file $fn: $!";
+print {$fh} "\n\n";
+print {$fh} <STDIN> or die "Unable to write to file $fn: $!";
+
+close $fh or die "Unable to close file $fn: $!";

@@ -1,54 +1,63 @@
 #!/usr/bin/perl -wT
 
-package debbugs;
-
+use warnings;
 use strict;
-use POSIX qw(strftime tzset nice);
+use POSIX qw(strftime nice);
 
-#require '/usr/lib/debbugs/errorlib';
+use Debbugs::Config;
+use CGI::Simple;
+use Debbugs::CGI qw(cgi_parameters);
 require './common.pl';
-
-require '/etc/debbugs/config';
-require '/etc/debbugs/text';
 
 nice(5);
 
-my %param = readparse();
+my $q = new CGI::Simple;
+my %param = cgi_parameters(query   => $q,
+			   single  => [qw(indexon repeatmerged archive sortby),
+				       qw(skip max_results first),
+				      ],
+			   default => {indexon      => 'pkg',
+				       repeatmerged => 'yes',
+				       archive      => 'no',
+				       sortby       => 'alpha',
+				       skip         => 0,
+				       max_results  => 100,
+				      },
+			  );
 
-my $indexon = $param{'indexon'} || 'pkg';
-if ($indexon !~ m/^(pkg|src|maint|submitter|tag)$/) {
+if (defined $param{first}) {
+     # rip out all non-words from first
+     $param{first} =~ s/\W//g;
+}
+if (defined $param{next}) {
+     $param{skip}+=$param{max_results};
+}
+elsif (defined $param{prev}) {
+     $param{skip}-=$param{max_results};
+     $param{skip} = 0 if $param{skip} < 0;
+}
+
+my $indexon = $param{indexon};
+if ($param{indexon} !~ m/^(pkg|src|maint|submitter|tag)$/) {
     quitcgi("You have to choose something to index on");
 }
 
-my $repeatmerged = ($param{'repeatmerged'} || "yes") eq "yes";
-my $archive = ($param{'archive'} || "no") eq "yes";
-my $sortby = $param{'sortby'} || 'alpha';
+my $repeatmerged = $param{repeatmerged} eq 'yes';
+my $archive = $param{archive} eq "yes";
+my $sortby = $param{sortby};
 if ($sortby !~ m/^(alpha|count)$/) {
     quitcgi("Don't know how to sort like that");
 }
-
-#my $include = $param{'include'} || "";
-#my $exclude = $param{'exclude'} || "";
 
 my $Archived = $archive ? " Archived" : "";
 
 my %maintainers = %{&getmaintainers()};
 my %strings = ();
 
-$ENV{"TZ"} = 'UTC';
-tzset();
-
-my $dtime = strftime "%a, %e %b %Y %T UTC", localtime;
-my $tail_html = $debbugs::gHTMLTail;
-$tail_html = $debbugs::gHTMLTail;
+my $dtime = strftime "%a, %e %b %Y %T UTC", gmtime;
+my $tail_html = '';#$gHTMLTail;
+$tail_html = '';#$gHTMLTail;
 $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
-
-set_option("repeatmerged", $repeatmerged);
-set_option("archive", $archive);
-#set_option("include", { map {($_,1)} (split /[\s,]+/, $include) })
-#	if ($include);
-#set_option("exclude", { map {($_,1)} (split /[\s,]+/, $exclude) })
-#	if ($exclude);
 
 my %count;
 my $tag;
@@ -58,6 +67,16 @@ my %sortkey = ();
 if ($indexon eq "pkg") {
   $tag = "package";
   %count = countbugs(sub {my %d=@_; return splitpackages($d{"pkg"})});
+  if (defined $param{first}) {
+       %count = map {
+	    if (/^\Q$param{first}\E/) {
+		 ($_,$count{$_});
+	    }
+	    else {
+		 ();
+	    } 
+       } keys %count;
+  }
   $note = "<p>Note that with multi-binary packages there may be other\n";
   $note .= "reports filed under the different binary package names.</p>\n";
   foreach my $pkg (keys %count) {
@@ -72,6 +91,16 @@ if ($indexon eq "pkg") {
 } elsif ($indexon eq "src") {
   $tag = "source package";
   my $pkgsrc = getpkgsrc();
+  if (defined $param{first}) {
+       %count = map {
+	    if (/^\Q$param{first}\E/) {
+		 ($_,$count{$_});
+	    }
+	    else {
+		 ();
+	    } 
+       } keys %count;
+  }
   %count = countbugs(sub {my %d=@_;
                           return map {
                             $pkgsrc->{$_} || $_
@@ -100,6 +129,16 @@ if ($indexon eq "pkg") {
                             map { $_->address } @me;
                           } splitpackages($d{"pkg"});
                          });
+  if (defined $param{first}) {
+       %count = map {
+	    if (/^\Q$param{first}\E/) {
+		 ($_,$count{$_});
+	    }
+	    else {
+		 ();
+	    } 
+       } keys %count;
+  }
   $note = "<p>Note that maintainers may use different Maintainer fields for\n";
   $note .= "different packages, so there may be other reports filed under\n";
   $note .= "different addresses.</p>\n";
@@ -118,6 +157,16 @@ if ($indexon eq "pkg") {
                           }
                           map { $_->address } @se;
                          });
+  if (defined $param{first}) {
+       %count = map {
+	    if (/^\Q$param{first}\E/) {
+		 ($_,$count{$_});
+	    }
+	    else {
+		 ();
+	    } 
+       } keys %count;
+  }
   foreach my $sub (keys %count) {
     $sortkey{$sub} = lc $fullname{$sub};
     $htmldescrip{$sub} = sprintf('<a href="%s">%s</a>',
@@ -130,6 +179,16 @@ if ($indexon eq "pkg") {
 } elsif ($indexon eq "tag") {
   $tag = "tag";
   %count = countbugs(sub {my %d=@_; return split ' ', $d{tags}; });
+  if (defined $param{first}) {
+       %count = map {
+	    if (/^\Q$param{first}\E/) {
+		 ($_,$count{$_});
+	    }
+	    else {
+		 ();
+	    } 
+       } keys %count;
+  }
   $note = "";
   foreach my $keyword (keys %count) {
     $sortkey{$keyword} = lc $keyword;
@@ -146,7 +205,13 @@ if ($sortby eq "count") {
 } else { # sortby alpha
   @orderedentries = sort { $sortkey{$a} cmp $sortkey{$b} } keys %count;
 }
+my $skip = $param{skip};
+my $max_results = $param{max_results};
 foreach my $x (@orderedentries) {
+     if (not defined $param{first}) {
+	  $skip-- and next if $skip > 0;
+	  last if --$max_results < 0;
+     }
   $result .= "<li>" . $htmldescrip{$x} . " has $count{$x} " .
             ($count{$x} == 1 ? "bug" : "bugs") . "</li>\n";
 }
@@ -164,6 +229,28 @@ print "<H1>" . "$debbugs::gProject$Archived $debbugs::gBug report logs by $tag" 
       "</H1>\n";
 
 print $note;
+print <<END;
+<form>
+<input type="hidden" name="skip" value="$param{skip}">
+<input type="hidden" name="max_results" value="$param{max_results}">
+<input type="hidden" name="indexon" value="$param{indexon}">
+<input type="hidden" name="repeatmerged" value="$param{repeatmerged}">
+<input type="hidden" name="archive" value="$param{archive}">
+<input type="hidden" name="sortby" value="$param{sortby}">
+END
+if (defined $param{first}) {
+     print qq(<input type="hidden" name="first" value="$param{first}">\n);
+}
+else {
+     print q(<p>);
+     if ($param{skip} > 0) {
+	  print q(<input type="submit" name="prev" value="Prev">);
+     }
+     if (keys %count > ($param{skip} + $param{max_results})) {
+	  print q(<input type="submit" name="next" value="Next">);
+     }
+     print qq(</p>\n);
+}
 print $result;
 
 print "<hr>\n";
