@@ -49,7 +49,7 @@ BEGIN {
 				 qw($gIncomingDir $gWebDir $gDocDir $gMaintainerFile),
 				 qw($gMaintainerFileOverride $gPseudoDescFile $gPackageSource),
 				 qw($gVersionPackagesDir $gVersionIndex $gBinarySourceMap $gSourceBinaryMap),
-				 qw($gSendmail $gLibPath),
+				 qw($gSendmail $gLibPath $gSpamScan),
 				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
 				 qw(%gSearchEstraier),
 				 qw(@gPostProcessall),
@@ -386,7 +386,16 @@ Sets the sendmail binary to execute; defaults to /usr/lib/sendmail
 
 =cut
 
-set_default(\%config,'sendmail',$config{sendmail},'/usr/lib/sendmail');
+set_default(\%config,'sendmail','/usr/lib/sendmail');
+
+=item spam_scan
+
+Whether or not spamscan is being used; defaults to 0 (not being used
+
+=cut
+
+set_default(\%config,'spam_scan',0);
+
 
 =back
 
