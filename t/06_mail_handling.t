@@ -23,6 +23,8 @@ use lib qw(t/lib);
 use DebbugsTest qw(:all);
 use Data::Dumper;
 
+# HTTP::Server:::Simple defines a SIG{CHLD} handler that breaks system; undef it here.
+$SIG{CHLD} = sub {};
 my %config;
 eval {
      %config = create_debbugs_configuration(debug => exists $ENV{DEBUG}?$ENV{DEBUG}:0);
@@ -107,7 +109,7 @@ $SD_SIZE_NOW = dirsize($sendmail_dir);
 ok($SD_SIZE_NOW-$SD_SIZE_PREV >= 1,'control@bugs.something messages appear to have been sent out properly');
 $SD_SIZE_PREV=$SD_SIZE_NOW;
 # now we need to check to make sure the control message was processed without errors
-ok(system("sh -c 'find ".$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Munging a bug"')) == 0,
+ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Munging a bug")) == 0,
    'control@bugs.something message was parsed without errors');
 # now we need to check to make sure that the control message actually did anything
 # This is an eval because $ENV{DEBBUGS_CONFIG_FILE} isn't set at BEGIN{} time
@@ -175,7 +177,7 @@ EOF
      ok($SD_SIZE_NOW-$SD_SIZE_PREV >= 1,'control@bugs.something messages appear to have been sent out properly');
      $SD_SIZE_PREV=$SD_SIZE_NOW;
      # now we need to check to make sure the control message was processed without errors
-     ok(system("sh -c 'find ".$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Munging a bug with $command"')) == 0,
+     ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Munging a bug with $command")) == 0,
 	'control@bugs.something'. "$command message was parsed without errors");
      # now we need to check to make sure that the control message actually did anything
      my $status = read_bug(bug=>1);

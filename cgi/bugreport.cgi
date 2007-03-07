@@ -14,7 +14,7 @@ use Debbugs::Config qw(:globals :text);
 use Debbugs::Log;
 use Debbugs::MIME qw(convert_to_utf8 decode_rfc1522 create_mime_message);
 use Debbugs::CGI qw(:url :html :util);
-use Debbugs::Common qw(buglog);
+use Debbugs::Common qw(buglog getmaintainers);
 use Debbugs::Packages qw(getpkgsrc);
 use Debbugs::Status qw(splitpackages get_bug_status isstrongseverity);
 

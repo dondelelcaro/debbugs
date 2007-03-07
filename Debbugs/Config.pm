@@ -52,6 +52,7 @@ BEGIN {
 				 qw($gSendmail $gLibPath),
 				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
 				 qw(%gSearchEstraier),
+				 qw(@gPostProcessall),
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
@@ -377,6 +378,8 @@ set_default(\%config,'package_source',$config{config_dir}.'/indices/sources');
 
 set_default(\%config,'version_packages_dir',$config{spool_dir}.'/../versions/pkg');
 
+set_default(\%config,'post_processall',[]);
+
 =item sendmail
 
 Sets the sendmail binary to execute; defaults to /usr/lib/sendmail
@@ -409,6 +412,15 @@ This prefixes the text of all lines in a bad e-mail message ack.
 =cut
 
 set_default(\%config,'bad_email_prefix','');
+
+
+=item text_instructions
+
+This gives more information about bad e-mails to receive.in
+
+=cut
+
+set_default(\%config,'text_instructions',$config{bad_email_prefix});
 
 =item html_tail
 

@@ -53,7 +53,7 @@ BEGIN{
 				qw(maybelink htmlize_addresslinks htmlize_maintlinks),
 			       ],
 		     util   => [qw(cgi_parameters quitcgi),
-				qw(getmaintainers getpseudodesc)
+				qw(getpseudodesc)
 			       ],
 		     #status => [qw(getbugstatus)],
 		    );
@@ -460,35 +460,6 @@ sub htmlize_maintlinks {
 
 my $_maintainer;
 my $_maintainer_rev;
-sub getmaintainers {
-    return $_maintainer if $_maintainer;
-    my %maintainer;
-    my %maintainer_rev;
-    for my $file (@config{qw(maintainer_file maintainer_file_override)}) {
-	 next unless defined $file;
-	 my $maintfile = new IO::File $file,'r' or
-	      &quitcgi("Unable to open $file: $!");
-	 while(<$maintfile>) {
-	      next unless m/^(\S+)\s+(\S.*\S)\s*$/;
-	      ($a,$b)=($1,$2);
-	      $a =~ y/A-Z/a-z/;
-	      $maintainer{$a}= $b;
-	      for my $maint (map {lc($_->address)} getparsedaddrs($b)) {
-		   push @{$maintainer_rev{$maint}},$a;
-	      }
-	 }
-	 close($maintfile);
-    }
-    $_maintainer = \%maintainer;
-    $_maintainer_rev = \%maintainer_rev;
-    return $_maintainer;
-}
-sub getmaintainers_reverse{
-     return $_maintainer_rev if $_maintainer_rev;
-     getmaintainers();
-     return $_maintainer_rev;
-}
-
 
 my $_pseudodesc;
 sub getpseudodesc {

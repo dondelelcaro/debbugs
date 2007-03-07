@@ -30,6 +30,7 @@ use Cwd qw(getcwd);
 use Debbugs::MIME qw(create_mime_message);
 use File::Basename qw(dirname basename);
 use IPC::Open3;
+use IO::Handle;
 
 use Params::Validate qw(validate_with :types);
 
@@ -146,13 +147,19 @@ sub send_message{
      $ENV{LOCAL_PART} = $param{to};
      my ($rfd,$wfd);
      my $output='';
+     local $SIG{PIPE} = 'IGNORE';
+     local $SIG{CHLD} = sub {};
      my $pid = open3($wfd,$rfd,$rfd,'scripts/receive.in')
 	  or die "Unable to start receive.in: $!";
      print {$wfd} create_mime_message($param{headers},
 					 $param{body}) or die "Unable to to print to receive.in";
      close($wfd) or die "Unable to close receive.in";
-     waitpid($pid,0);
-     my $err = $?>>8;
+     my $err = $? >> 8;
+     my $childpid = waitpid($pid,0);
+     if ($childpid != -1) {
+	  $err = $? >> 8;
+	  print STDERR "receive.in pid: $pid doesn't match childpid: $childpid\n" if $childpid != $pid;
+     }
      if ($err != 0 ) {
 	  my $rfh =  IO::Handle->new_from_fd($rfd,'r') or die "Unable to create filehandle: $!";
 	  $rfh->blocking(0);
@@ -161,7 +168,7 @@ sub send_message{
 	  if (not defined $rv) {
 	       print STDERR "Reading from STDOUT/STDERR would have blocked.";
 	  }
-	  print STDERR $output;
+	  print STDERR $output,qq(\n);
 	  die "receive.in failed with exit status $err";
      }
      # now we should run processall to see if the message gets processed
