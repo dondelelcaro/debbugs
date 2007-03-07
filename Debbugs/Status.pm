@@ -43,16 +43,17 @@ BEGIN{
 
      @EXPORT = ();
      %EXPORT_TAGS = (status => [qw(splitpackages get_bug_status buggy bug_archiveable),
-				qw(isstrongseverity),
+				qw(isstrongseverity bug_presence),
 			       ],
 		     read   => [qw(readbug read_bug lockreadbug)],
 		     write  => [qw(writebug makestatus unlockwritebug)],
 		     versions => [qw(addfoundversions addfixedversions),
 				  qw(removefoundversions)
 				 ],
+		     hook     => [qw(bughook bughook_archive)],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(status read write versions));
+     Exporter::export_ok_tags(qw(status read write versions hook));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -732,6 +733,90 @@ sub get_bug_status {
      $status{"pending"} = 'pending-fixed'    if ($tags{pending});
      $status{"pending"} = 'fixed'	    if ($tags{fixed});
 
+
+     my $presence = bug_presence(map{exists $param{$_}?($_,$param{$_}):()}
+				 qw(bug sourceversions arch dist version found fixed package)
+				);
+     if (defined $presence) {
+	  if ($presence eq 'fixed') {
+	       $status{pending} = 'done';
+	  }
+	  elsif ($presence eq 'absent') {
+	       $status{pending} = 'absent';
+	  }
+     }
+     return \%status;
+}
+
+=head2 bug_presence
+
+     my $precence = bug_presence(bug => nnn,
+                                 ...
+                                );
+
+Returns 'found', 'absent', 'fixed' or undef based on whether the bug
+is found, absent, fixed, or no information is available in the
+distribution (dist) and/or architecture (arch) specified.
+
+
+=head3 Options
+
+=over
+
+=item bug -- scalar bug number
+
+=item status -- optional hashref of bug status as returned by readbug
+(can be passed to avoid rereading the bug information)
+
+=item bug_index -- optional tied index of bug status infomration;
+currently not correctly implemented.
+
+=item version -- optional version to check package status at
+
+=item dist -- optional distribution to check package status at
+
+=item arch -- optional architecture to check package status at
+
+=item sourceversion -- optional arrayref of source/version; overrides
+dist, arch, and version. [The entries in this array must be in the
+"source/version" format.] Eventually this can be used to for caching.
+
+=back
+
+=cut
+
+sub bug_presence {
+     my %param = validate_with(params => \@_,
+			       spec   => {bug       => {type => SCALAR,
+							regex => qr/^\d+$/,
+						       },
+					  status    => {type => HASHREF,
+						        optional => 1,
+						       },
+					  version   => {type => SCALAR,
+							optional => 1,
+						       },
+					  dist       => {type => SCALAR,
+							 optional => 1,
+							},
+					  arch       => {type => SCALAR,
+							 optional => 1,
+							},
+					  sourceversions => {type => ARRAYREF,
+							     optional => 1,
+							    },
+					 },
+			      );
+     my %status;
+     if (defined $param{status}) {
+	 %status = %{$param{status}};
+     }
+     else {
+	  my $location = getbuglocation($param{bug}, 'summary');
+	  return {} if not length $location;
+	  %status = %{ readbug( $param{bug}, $location ) };
+     }
+
      my @sourceversions;
      if (not exists $param{sourceversions}) {
 	  my @versions;
@@ -758,19 +843,13 @@ sub get_bug_status {
 				   package => $status{package},
 				   version_cache => $version_cache,
 				  );
-	  if ($maxbuggy eq 'absent') {
-	       $status{pending} = 'absent';
-	  }
-	  elsif ($maxbuggy eq 'fixed' ) {
-	       $status{pending} = 'done';
-	  }
+	  return $maxbuggy;
      }
      if (length($status{done}) and
 	 (not @sourceversions or not @{$status{fixed_versions}})) {
-	  $status{"pending"} = 'done';
+	  return 'fixed';
      }
-
-     return \%status;
+     return undef;
 }
 
 
