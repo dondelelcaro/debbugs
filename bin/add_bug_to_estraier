@@ -1,0 +1,233 @@
+#!/usr/bin/perl
+# add_bug_to_estraier adds a log for a bug to the estaier db, and is
+# released under the terms of the GPL version 2, or any later version,
+# at your option. See the file README and COPYING for more
+# information.
+# Copyright 2006 by Don Armstrong <don@debian.org>.
+
+
+
+use warnings;
+use strict;
+
+
+use Getopt::Long;
+use Pod::Usage;
+
+=head1 NAME
+
+add_bug_to_estraier
+
+=head1 SYNOPSIS
+
+add_bug_to_estraier [options] < list_of_bugs_to_add
+
+ Options:
+  --debug, -d debugging level (Default 0)
+  --help, -h display this help
+  --man, -m display manual
+
+=head1 OPTIONS
+
+=over
+
+=item B<--url, -u>
+
+Url to the estraier node
+
+=item B<--user,-U>
+
+User to log onto the estraier node
+
+=item B<--pass,-P>
+
+Password to log onto the estraier node
+
+=item B<--spool,-s>
+
+Spool location; if not set defaults to /etc/debbugs/config
+
+=item B<--conf,-C>
+
+Configuration file; a set of key = value pairs separated by newlines;
+the long name of any option is the name that the configuration file
+takes
+
+=item B<--cron>
+
+Descend through the spool and add all of the bugs to estraier
+
+=item B<--timestamp>
+
+Use the timestamp file to only add new bugs; will lock the timestamp
+file to avoid racing with other invocations
+
+=item B<--debug, -d>
+
+Debug verbosity. (Default 0)
+
+=item B<--help, -h>
+
+Display brief useage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+
+=head1 EXAMPLES
+
+  test_bts --bug 7 --host donbugs.donarmstrong.com
+
+
+=cut
+
+
+use Debbugs::Config qw(:globals);
+use Debbugs::Mail qw(send_mail_message);
+use Debbugs::MIME qw(create_mime_message);
+
+use Search::Estraier;
+use Debbugs::Estraier qw(:add);
+use File::Find;
+use File::stat;
+
+use vars qw($DEBUG $VERBOSE);
+
+# XXX parse config file
+
+my %options = (debug           => 0,
+	       help            => 0,
+	       man             => 0,
+	       url             => undef,
+	       user            => undef,
+	       passwd          => undef,
+	       spool           => undef,
+	       conf            => undef,
+	       cron            => 0,
+	       timestamp       => undef,
+	      );
+
+GetOptions(\%options,'url|u=s','user|U=s','passwd|P=s',
+	   'spool|s=s','conf|C=s','cron!','timestamp=s',
+	   'debug|d+','help|h|?','man|m');
+
+my $ERRORS = '';
+
+if (not defined $options{conf}) {
+     $ERRORS .= "--url must be set\n" if not defined $options{url};
+     $ERRORS .= "--user must be set\n" if not defined $options{user};
+     $ERRORS .= "--passwd must be set\n" if not defined $options{passwd};
+}
+else {
+     # Read the conf file
+     my $conf_fh = new IO::File $options{conf},'r'
+	  or die "Unable to open $options{conf} for reading";
+     while (<$conf_fh>) {
+	  chomp;
+	  next if /^\s*\#/;
+	  my ($key,$value) = split /\s*[:=]\s*/,$_,2;
+	  $options{$key} = $value if defined $key and not defined $options{$key};
+     }
+     $ERRORS .= "url must be set\n" if not defined $options{url};
+     $ERRORS .= "user must be set\n" if not defined $options{user};
+     $ERRORS .= "passwd must be set\n" if not defined $options{passwd};
+}
+$ERRORS .= "--spool must be set if --cron is used\n" if
+     not defined $options{spool} and $options{cron};
+pod2usage($ERRORS) if length $ERRORS;
+
+pod2usage() if $options{help};
+pod2usage({verbose=>2}) if $options{man};
+
+
+$DEBUG = $options{debug};
+
+$Debbugs::Estraier::DEBUG = $DEBUG;
+$VERBOSE = 0;
+
+my $node =  new Search::Estraier::Node (url    => $options{url},
+					user   => $options{user},
+					passwd => $options{passwd},
+				       );
+$gSpoolDir = $options{spool} if defined $options{spool};
+
+if ($options{cron}) {
+     my %timestamps;
+     my $start_time = time;
+     my $unlink = 0;
+     my %seen_dirs;
+     check_pid($options{timestamp});
+     # read timestamp file
+     if (defined $options{timestamp}) {
+	  my $timestamp_fh = new IO::File $options{timestamp},'r' or
+	       die "Unable to open timestamp $options{timestamp}: $!";
+	  while (<$timestamp_fh>) {
+	       chomp;
+	       my ($key,$value) = split /\s+/,$_,2;
+	       $timestamps{$key} = $value;
+	  }
+     }
+     for my $hash (map {sprintf '%02d',$_ } 0..99) {
+	  find(sub {
+		    print STDERR "Examining $_\n" if $DEBUG > 1;
+		    return if not /^(\d+)\.log$/;
+		    my $bug_num = $1;
+		    my $stat = stat $_ or next;
+		    return unless -f _;
+		    return if exists $timestamps{$File::Find::dir} and
+			 ($timestamps{$File::Find::dir} > $stat->mtime);
+		    $seen_dirs{$File::Find::dir} = $start_time;
+		    print STDERR "Adding $bug_num\n" if $DEBUG;
+		    my $max_message = 0;
+		    eval{
+			 $max_message = add_bug_log($node,$bug_num);
+		    };
+		    if ($@) {
+			 print STDERR "Adding $bug_num failed with $@\n";
+		    }
+	       },
+	       map {(-d "$options{spool}/$_/$hash")?
+			 "$options{spool}/$_/$hash":()}
+	       qw(db-h archive),
+	      );
+	  # write timestamp file
+	  if (defined $options{timestamp}) {
+	       %timestamps = (%timestamps,%seen_dirs);
+	       my $timestamp_fh = new IO::File $options{timestamp},'w' or
+		    die "Unable to open timestamp $options{timestamp}: $!";
+	       foreach my $key (keys %timestamps) {
+		    print {$timestamp_fh} $key,' ',
+			 $timestamps{$key}||'',qq(\n);
+	       }
+	  }
+     }
+     unlink("$options{timestamp}.pid");
+}
+else {
+     while (my $bug_num = <STDIN>) {
+	  chomp $bug_num;
+	  add_bug_log($node,$bug_num);
+     }
+}
+
+
+sub check_pid{
+     my ($timestamp) = @_;
+     if (-e "${timestamp}.pid") {
+	  my $time_fh = new IO::File  "${timestamp}.pid", 'r' or die "Unable to read pidfile";
+	  local $/;
+	  my $pid = <$time_fh>;
+	  if (kill(0,$pid)) {
+	       print STDERR "Another cron is running" and exit 0;
+	  }
+     }
+     my $time_fh = new IO::File  "${timestamp}.pid", 'w' or
+	  die "Unable to read pidfile";
+     print {$time_fh} $$;
+}
+
+
+__END__

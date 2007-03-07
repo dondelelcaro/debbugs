@@ -1,0 +1,178 @@
+#!/usr/bin/perl
+# test_bts tests a running BTS by sending mail to it, and is released
+# under the terms of the GPL version 2, or any later version, at your
+# option. See the file README and COPYING for more information.
+# Copyright 2006 by Don Armstrong <don@debian.org>.
+
+
+
+use warnings;
+use strict;
+
+
+use Getopt::Long;
+use Pod::Usage;
+
+=head1 NAME
+
+test_bts - Test a running bts install
+
+=head1 SYNOPSIS
+
+test_bts [options]
+
+ Options:
+  --bug, -b bug number to mail
+  --host, -h host to send mail to
+  --control, -c whether to send control messages (off by default)
+  --process, -p whether to send process messages (on by default)
+  --submit, -s whether a new bug is created (off by default)
+  --quiet, -q disable output (off by default)
+  --debug, -d debugging level (Default 0)
+  --help, -h display this help
+  --man, -m display manual
+
+=head1 OPTIONS
+
+=over
+
+=item B<--bug, -b>
+
+Bug number to mail
+
+=item B<--host, -H>
+
+The host running the bts
+
+=item B<--control, -c>
+
+Whether control messages are sent; defaults to false.
+
+=item B<--process, -p>
+
+Whether messages are sent to process (bugnum@host)
+
+=item B<--submit, -s>
+
+Whether a new bug is created by a message to submit; not enabled by default.
+
+=item B<--quiet,-q>
+
+Disable output
+
+=item B<--debug, -d>
+
+Debug verbosity. (Default 0)
+
+=item B<--help, -h>
+
+Display brief useage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+=head1 EXAMPLES
+
+  test_bts --bug 7 --host donbugs.donarmstrong.com
+
+
+=cut
+
+
+use Debbugs::Mail qw(send_mail_message);
+use Debbugs::MIME qw(create_mime_message);
+
+
+use vars qw($DEBUG $VERBOSE);
+
+# XXX parse config file
+
+my %options = (debug           => 0,
+	       help            => 0,
+	       man             => 0,
+	       host            => undef,
+	       bug             => undef,
+	       quiet           => 0,
+	       from            => undef,
+	       process         => 1,
+	       submit          => 0,
+	       control         => 0,
+	      );
+
+GetOptions(\%options,'host|H=s','bug|b=s','control|c!','submit|s!',
+	   'process|p!','from|f=s','quiet|q+',
+	   'debug|d+','help|h|?','man|m');
+
+my $ERRORS = '';
+
+$ERRORS .= "--from must be set\n" if not defined $options{from};
+$ERRORS .= "--host must be set\n" if not defined $options{host};
+$ERRORS .= "--bug must be set\n" if not defined $options{bug};
+pod2usage($ERRORS) if length $ERRORS;
+
+pod2usage() if $options{help};
+pod2usage({verbose=>2}) if $options{man};
+
+
+$DEBUG = $options{debug};
+
+$VERBOSE = 1 - $options{quiet};
+
+if ($options{process}) {
+     my @standard_headers = ([],
+			     ['X-Debbugs-No-Ack:','yes no ack'],
+			    );
+
+     my %process_messages = ('-maintonly' => \@standard_headers,
+			     '-quiet'     => \@standard_headers,
+			     '-forwarded' => \@standard_headers,
+			     '-done'      => \@standard_headers,
+			     '-submitter' => \@standard_headers,
+			     ''           => \@standard_headers,
+			    );
+     my $message_count = 0;
+     for my $addr (keys %process_messages) {
+	  for my $header (@{$process_messages{$addr}}) {
+	       $message_count++;
+	       my $message =
+		    create_mime_message([To   => "$options{bug}$addr\@$options{host}",
+					 From => $options{from},
+					 Subject => "message $message_count to $addr from test_bts",
+					 @{$header},
+					],<<END
+This is a testing message from test_bts
+This message was sent: 
+To: $options{bug}$addr\@$options{host}
+From: $options{from}
+Subject: message $message_count to $options{bug}$addr\@$options{host} from test_bts
+
+with additional headers:
+@{$header}
+
+If you are seeing this, and have no idea what this means, please
+ignore this message. If you are sure that this message has been sent
+in error please send mail to $options{from} so they can stop sending
+stupid messages to you.
+
+If you are reading this message in a BTS, it's only a testing message.
+Please ignore it... it shouldn't have been sent to a public one, but
+accidents happen.
+END
+				       );
+	       send_mail_message(message   => $message,
+				 recipients => "$options{bug}$addr\@$options{host}",
+				);
+	  }
+     }
+}
+if ($options{control}) {
+     die "Not implemented";
+}
+if ($options{submit}) {
+     die "Not implemented";
+}
+
+__END__

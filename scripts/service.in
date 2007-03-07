@@ -9,11 +9,10 @@ use MIME::Parser;
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
 use Debbugs::Mail qw(send_mail_message);
 use Debbugs::User;
+use HTML::Entities qw(encode_entities);
 
-$config_path = '/etc/debbugs';
-$lib_path = '/usr/lib/debbugs';
-
-require "$config_path/config";
+use Debbugs::Config qw(:globals);
+$lib_path = $gLibPath;
 require "$lib_path/errorlib";
 $ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
 
@@ -487,7 +486,7 @@ END
 	$bug_affected{$ref}=1;
         if (&setbug) {
             if (@{$data->{fixed_versions}}) {
-                &transcript("'reopen' is deprecated when a bug has been closed with a version;\nuse 'found' or 'submitter' as appropriate instead.\n");
+                &transcript("'reopen' may be inappropriate when a bug has been closed with a version;\nyou may need to use 'found' to remove fixed versions.\n");
             }
             if (!length($data->{done})) {
                 &transcript("$gBug is already open, cannot reopen.\n\n");
@@ -752,6 +751,7 @@ END
 		     $ref = $clonebugs{$ref};
 		}
 		if (&getbug) {
+		    &foundbug;
 		    push @okayblockers, $ref;
 
 		    # add to the list all bugs that are merged with $b,
@@ -1196,8 +1196,8 @@ print(AP
       "\2\n$repliedshow\n\5\n$reply\n\3\n".
       "\6\n".
       "<strong>Request received</strong> from <code>".
-      &sani($header{'from'})."</code>\n".
-      "to <code>".&sani($controlrequestaddr)."</code>\n".
+      encode_entities($header{'from'})."</code>\n".
+      "to <code>".encode_entities($controlrequestaddr)."</code>\n".
       "\3\n".
       "\7\n",@{escapelog(@log)},"\n\3\n") || &quit("writing db-h/-1.log: $!");
 close(AP) || &quit("open db-h/-1.log: $!");
@@ -1429,9 +1429,9 @@ sub savebug {
     open(L,">>db-h/$hash/$ref.log") || &quit("opening db-h/$hash/$ref.log: $!");
     print(L
           "\6\n".
-          "<strong>".&sani($action)."</strong>\n".
-          "Request was from <code>".&sani($header{'from'})."</code>\n".
-          "to <code>".&sani($controlrequestaddr)."</code>. \n".
+          "<strong>".encode_entities($action)."</strong>\n".
+          "Request was from <code>".encode_entities($header{'from'})."</code>\n".
+          "to <code>".encode_entities($controlrequestaddr)."</code>. \n".
           "\3\n".
           "\7\n",@{escapelog(@log)},"\n\3\n") || &quit("writing db-h/$hash/$ref.log: $!");
     close(L) || &quit("closing db-h/$hash/$ref.log: $!");

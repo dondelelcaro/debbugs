@@ -4,6 +4,7 @@
 # Domains
 $gEmailDomain = "bugs.debian.org";
 $gListDomain = "lists.debian.org";
+$gWebHostBugDir = "";
 $gWebDomain = "www.debian.org/Bugs";
 $gHTMLSuffix = "";
 $gPackagePages = "packages.debian.org";
