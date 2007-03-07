@@ -8,25 +8,28 @@
 # Creates: incoming/E.nn
 # Stop:    stop
 
-$config_path = '/etc/debbugs';
-$lib_path = '/usr/lib/debbugs';
+use warnings;
+use strict;
 
-require "$config_path/config";
-require "$lib_path/errorlib";
-$ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
+
+use Debbugs::Config qw(:globals);
+use Debbugs::Common qw(:lock);
+
+my $lib_path = $gLibPath;
 
 use File::Path;
 
 chdir( $gSpoolDir ) || die "chdir spool: $!\n";
-push( @INC, $lib_path );
 
 #open(DEBUG,">&4");
 
 umask(002);
 
 $|=1;
-undef %fudged;
+my %fudged;
+my @ids;
 
+my $ndone = 0;
 &filelock('incoming-cleaner');
 for (;;) {
     if (-f 'stop') {
@@ -40,8 +43,8 @@ for (;;) {
         @ids= sort(@ids);
     }
     stat("$gMaintainerFile") || die "stat $gMaintainerFile: $!\n";
-    $nf= @ids;
-    $id= shift(@ids);
+    my $nf= @ids;
+    my $id= shift(@ids);
     unless (rename("incoming/I$id","incoming/G$id")) {
         if ($fudged{$id}) {
             die "$id already fudged once! $!\n";
@@ -49,19 +52,20 @@ for (;;) {
         $fudged{$id}= 1;
         next;
     }
+    my $c;
     if ($id =~ m/^[RC]/) {
-        print(STDOUT "[$nf] $id service ...") || die $!;
+	 print(STDOUT "[$nf] $id service ...") || die $!;
         defined($c=fork) || die $!;
-        if (!$c) { exec("$lib_path/service",$id); die $!; }
+        if (!$c) { exec("$lib_path/service",$id); die "unable to execute $lib_path/service: $!"; }
     } elsif ($id =~ m/^[BMQFDUL]/) {
         print(STDOUT "[$nf] $id process ...") || die $!;
         defined($c=fork) || die $!;
-        if (!$c) { exec("$lib_path/process",$id); die $!; }
+        if (!$c) { exec("$lib_path/process",$id); die "unable to execute $lib_path/process: $!"; }
     } else {
         die "bad name $id";
     }
-    $cc=waitpid($c,0); $cc == $c || die "$cc $c $!";
-    $status=$?;
+    my $cc=waitpid($c,0); $cc == $c || die "$cc $c $!";
+    my $status=$?;
     if ($status) {
         print(STDERR "$id: process failed ($status $!) - now in [PG]$id\n") || die $!;
     }

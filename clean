@@ -1,3 +1,0 @@
-#!/bin/sh
-find \( -name '*.out' -o -name '*~' -o -name '#*#' \) -print | xargs -r rm -f --
-rm -f install install.new

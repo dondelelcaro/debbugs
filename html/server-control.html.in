@@ -91,6 +91,12 @@ mailservers is available via the WWW, in
   the $gBug is cleared. This is identical to the behaviour of
   <code>reopen</code>.
 
+  <p>This command will only cause a bug to be marked as not done if no
+    version is specified, or if the <var>version</var> being marked found
+    is equal to the <var>version</var> which was last marked fixed. (If
+    you are certain that you want the bug marked as not done,
+    use <code>reopen</code> in conjunction with <code>found</code>.</p>
+
   <p>This command was introduced in preference to <code>reopen</code>
   because it was difficult to add a <var>version</var> to that command's
   syntax without suffering ambiguity.
@@ -319,8 +325,8 @@ mailservers is available via the WWW, in
 <dt><code>owner</code> <var>bugnumber</var> <var>address</var> | <code>!</code>
 
   <dd>Sets <var>address</var> to be the "owner" of #<var>bugnumber</var>.
-  The owner of a $gBug claims responsibility for fixing it and will receive
-  all mail regarding it.  This is useful to share out work in cases where a
+  The owner of a $gBug claims responsibility for fixing it.
+  This is useful to share out work in cases where a
   package has a team of maintainers.
 
   <p>If you wish to become the owner of the $gBug yourself, you can use the

@@ -44,6 +44,8 @@ use Fcntl ':flock';
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 
+use Debbugs::Config qw(:globals);
+
 BEGIN {
     ($VERSION) = q$Revision: 1.4 $ =~ /^Revision:\s+([^\s+])/;
     $DEBUG = 0 unless defined $DEBUG;
@@ -52,8 +54,6 @@ BEGIN {
     @EXPORT_OK = qw(is_valid_user open read_usertags write_usertags);
     $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
-
-my $gSpoolPath = "/org/bugs.debian.org/spool";
 
 # Obsolete compatability functions
 
@@ -83,7 +83,7 @@ sub write_usertags {
 sub filefromemail {
     my $e = shift;
     my $l = length($e) % 7;
-    return "$gSpoolPath/user/$l/" . join("", 
+    return "$gSpoolDir/user/$l/" . join("", 
         map { m/^[0-9a-zA-Z_+.-]$/ ? $_ : sprintf("%%%02X", ord($_)) }
             split //, $e);
 }

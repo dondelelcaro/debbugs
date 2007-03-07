@@ -5,11 +5,9 @@
 #set umask in order to have group-writable incoming/*
 #umask(002);
 
-#load configuration file
-$config_path = '/etc/debbugs';
-#$lib_path = '/usr/lib/debbugs';
+use Debbugs::Config qw(:globals :text);
+my $lib_path = $gLibPath;
 
-require "$config_path/config";
 $ENV{'PATH'} = '/usr/lib/debbugs:'.$ENV{'PATH'};
 
 #set source of mail delivery
@@ -28,7 +26,6 @@ if ( $gMailer eq 'exim' )
 	s/\>//;
 	s/\<//;
 }
-require("/etc/debbugs/text");
 
 #remove everything from @ to end of line
 s/\@.*$//;
