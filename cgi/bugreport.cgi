@@ -543,9 +543,9 @@ END
 	  my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
 	  next if exists $seen_message_ids{$msg_id};
 	  $seen_message_ids{$msg_id} = 1;
-	  next if $msg_id =~/handler\..+\.ack(?:info)?\@/;
-	  $record_wanted_anyway = 1 if $record->{text} =~ /^Received: \(at control\)/;
-	  next if not $boring and $record->{type} ne $wanted_type and not $record_wanted_anyway and @records > 1;
+	  next if $msg_id =~/handler\..+\.ack(?:info|done)?\@/;
+	  $record_wanted_anyway = 1 if $record->{text} =~ /^Received: \(at control|submit\)/;
+	  next if not $boring and not $record->{type} eq $wanted_type and not $record_wanted_anyway and @records > 1;
 	  my @lines = split( "\n", $record->{text}, -1 );
 	  if ( $lines[ 1 ] =~ m/^From / ) {
 	       my $tmp = $lines[ 0 ];

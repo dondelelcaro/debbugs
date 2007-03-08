@@ -380,8 +380,6 @@ set_default(\%config,'version_packages_dir',$config{spool_dir}.'/../versions/pkg
 
 set_default(\%config,'post_processall',[]);
 
-set_default(\%config,'spam_scan',0);
-
 =item sendmail
 
 Sets the sendmail binary to execute; defaults to /usr/lib/sendmail
@@ -389,6 +387,14 @@ Sets the sendmail binary to execute; defaults to /usr/lib/sendmail
 =cut
 
 set_default(\%config,'sendmail','/usr/lib/sendmail');
+
+=item spam_scan
+
+Whether or not spamscan is being used; defaults to 0 (not being used
+
+=cut
+
+set_default(\%config,'spam_scan',0);
 
 =back
 

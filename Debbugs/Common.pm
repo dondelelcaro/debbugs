@@ -47,6 +47,7 @@ use Debbugs::Config qw(:config);
 use IO::File;
 use Debbugs::MIME qw(decode_rfc1522);
 use Mail::Address;
+use Cwd qw(cwd);
 
 use Fcntl qw(:flock);
 
