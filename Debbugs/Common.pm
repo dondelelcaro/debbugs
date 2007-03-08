@@ -35,7 +35,7 @@ BEGIN{
 				qw(getmaintainers_reverse)
 			       ],
 		     quit   => [qw(quit)],
-		     lock   => [qw(filelock unfilelock)],
+		     lock   => [qw(filelock unfilelock @cleanups)],
 		    );
      @EXPORT_OK = ();
      Exporter::export_ok_tags(qw(lock quit util));
@@ -47,6 +47,7 @@ use Debbugs::Config qw(:config);
 use IO::File;
 use Debbugs::MIME qw(decode_rfc1522);
 use Mail::Address;
+use Cwd qw(cwd);
 
 use Fcntl qw(:flock);
 
@@ -243,12 +244,15 @@ FLOCKs the passed file. Use unfilelock to unlock it.
 =cut
 
 my @filelocks;
-my @cleanups;
+our @cleanups;
 
 sub filelock {
     # NB - NOT COMPATIBLE WITH `with-lock'
     my ($lockfile) = @_;
-    my ($count,$errors) = @_;
+    if ($lockfile !~ m{^/}) {
+	 $lockfile = cwd().'/'.$lockfile;
+    }
+    my ($count,$errors);
     $count= 10; $errors= '';
     for (;;) {
 	my $fh = eval {
@@ -298,7 +302,7 @@ sub unfilelock {
     close($fl{fh})
 	 or warn "Unable to close lockfile $fl{file}: $!";
     unlink($fl{file})
-	 or warn "Unable to unlink locfile $fl{file}: $!";
+	 or warn "Unable to unlink lockfile $fl{file}: $!";
 }
 
 
