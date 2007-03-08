@@ -132,7 +132,10 @@ sub read_bug{
     my %param = validate_with(params => \@_,
 			      spec   => {bug => {type => SCALAR,
 						 optional => 1,
-						 regex    => qr/^\d+/,
+						 # something really
+						 # stupid passes
+						 # negative bugnumbers
+						 regex    => qr/^-?\d+/,
 						},
 					 location => {type => SCALAR|UNDEF,
 						      optional => 1,
@@ -440,7 +443,7 @@ sub addfixedversions {
     my $version = shift;
     my $isbinary = shift;
     return unless defined $version;
-    undef $package if $package =~ m[(?:\s|/)];
+    undef $package if defined $package and $package =~ m[(?:\s|/)];
     my $source = $package;
 
     if (defined $package and $isbinary) {
