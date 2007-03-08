@@ -43,6 +43,7 @@ BEGIN {
 				 qw($gMaintainer $gMaintainerWebpage $gMaintainerEmail $gUnknownMaintainerEmail),
 				 qw($gSubmitList $gMaintList $gQuietList $gForwardList),
 				 qw($gDoneList $gRequestList $gSubmitterList $gControlList),
+				 qw($gStrongList),
 				 qw($gSummaryList $gMirrorList $gMailer $gBug),
 				 qw($gBugs $gRemoveAge $gSaveOldBugs $gDefaultSeverity),
 				 qw($gShowSeverities $gBounceFroms $gConfigDir $gSpoolDir),
@@ -281,6 +282,7 @@ set_default(\%config,'submitter_list','bug-submitter-list');
 set_default(\%config,  'control_list',  'bug-control-list');
 set_default(\%config,  'summary_list',  'bug-summary-list');
 set_default(\%config,   'mirror_list',   'bug-mirror-list');
+set_default(\%config,   'strong_list',   'bug-strong-list');
 
 =head2 Misc Options
 
