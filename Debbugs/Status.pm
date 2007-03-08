@@ -737,7 +737,7 @@ sub get_bug_status {
      $status{"pending"} = 'fixed'	    if ($tags{fixed});
 
 
-     my $presence = bug_presence(map{exists $param{$_}?($_,$param{$_}):()}
+     my $presence = bug_presence(map{(exists $param{$_})?($_,$param{$_}):()}
 				 qw(bug sourceversions arch dist version found fixed package)
 				);
      if (defined $presence) {
@@ -838,21 +838,21 @@ sub bug_presence {
      else {
 	  @sourceversions = @{$param{sourceversions}};
      }
+     my $maxbuggy = 'undef';
      if (@sourceversions) {
-	  my $maxbuggy = max_buggy(bug => $param{bug},
+	  $maxbuggy = max_buggy(bug => $param{bug},
 				   sourceversions => \@sourceversions,
 				   found => $status{found_versions},
 				   fixed => $status{fixed_versions},
 				   package => $status{package},
 				   version_cache => $version_cache,
 				  );
-	  return $maxbuggy;
      }
      if (length($status{done}) and
 	 (not @sourceversions or not @{$status{fixed_versions}})) {
 	  return 'fixed';
      }
-     return undef;
+     return $maxbuggy;
 }
 
 
