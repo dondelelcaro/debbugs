@@ -34,11 +34,12 @@ my %img_types = (svg => 'image/svg+xml',
 my $q = new CGI::Simple;
 
 my %cgi_var = cgi_parameters(query   => $q,
-			     single  => [qw(package format ignore_boring width height)],
-			     default => {package       => 'xterm',
+			     single  => [qw(package format ignore_boring width height collapse)],
+			     default => {package       => 'spamass-milter',
 					 found         => [],
 					 fixed         => [],
 					 ignore_boring => 1,
+					 collapse      => 1,
 					 format        => 'png',
 					 width         => undef,
 					 height        => undef,
@@ -121,10 +122,11 @@ if (defined $cgi_var{width} and defined $cgi_var{height}) {
 }
 my %state = (found  => ['fillcolor="salmon"',
 			'style="filled"',
-			'shape="diamond"',
+			'shape="ellipse"',
 		       ],
 	     absent => ['fillcolor="grey"',
 			'style="filled"',
+			'shape="trapezium"',
 		       ],
 	     fixed  => ['fillcolor="chartreuse"',
 			'style="filled"',
@@ -133,8 +135,76 @@ my %state = (found  => ['fillcolor="salmon"',
 	    );
 # TODO: Allow collapsing versions which are at the same state and not
 # in a suite.
+my %collapsed_nodes;
+my %group_nodes;
+if ($cgi_var{collapse}) {
+     my %reversed_nodes;
+     foreach my $key (keys %{$version->{parent}}) {
+	  next if $cgi_var{ignore_boring} and (not defined $all_states{$key}
+					       or $all_states{$key} eq 'absent');
+	  next if $cgi_var{ignore_boring} and not version_relevant($version,$key,\@interesting_versions);
+	  if (defined $version->{parent}{$key}) {
+	       push @{$reversed_nodes{$version->{parent}{$key}}}, $key;
+	  }
+	  else {
+	       $reversed_nodes{$key} ||=[];
+	  }
+     }
+     # nodes that can be collapsed are those that have one child
+     # are in the same state as their parent, and are not in a suite
+     foreach my $key (keys %reversed_nodes) {
+	  my ($short_version) = $key =~ m{/(.+)$};
+     	  if (not exists $version_to_dist{$short_version}
+	      and @{$reversed_nodes{$key}} <= 1
+	      and defined $version->{parent}{$key}
+	      and $all_states{$key} eq $all_states{$version->{parent}{$key}}
+	     ) {
+	       # check to see if there is an entry for the parent or child of this node
+	       my $group_node;
+	       if ((@{$reversed_nodes{$key}} and exists $collapsed_nodes{$reversed_nodes{$key}[0]})) {
+		    $group_node = $collapsed_nodes{$reversed_nodes{$key}[0]};
+		    if ($group_nodes{$group_node}{parent} eq $key) {
+			 $group_nodes{$group_node}{parent} = $version->{parent}{$key};
+		    }
+	       }
+	       if (defined $version->{parent}{$key} and exists $collapsed_nodes{$version->{parent}{$key}}) {
+		    if (defined $group_node) {
+			 #MWHAHAHAHAHA
+			 my $collapser = $group_nodes{$collapsed_nodes{$version->{parent}{$key}}};
+			 push @{$collapser->{collapsed_nodes}},@{$group_nodes{$group_node}{collapsed_nodes}},$group_node;
+			 foreach (@{$collapser->{collapsed_nodes}}) {
+			      if (exists $group_nodes{$_}) {
+				   $group_nodes{$_} = $collapser;
+			      }
+			 }
+		    }
+		    $group_node = $collapsed_nodes{$version->{parent}{$key}};
+	       }
+	       if (not defined $group_node) {
+		    $group_node = "group_$key";
+		    $group_nodes{$group_node} = {attr => qq("$group_node" [).join(',','label="some versions"',
+										  @{$state{$all_states{$key}}},
+										  'style="bold,filled"',
+										 ).qq(]\n),
+						 name => $group_node,
+						 parent => $version->{parent}{$key},
+						 collapsed_nodes => [],
+						};
+	       }
+	       $collapsed_nodes{$key} = $group_node;
+	  }
+     }
+     my %used_node;
+     foreach my $group (values %group_nodes) {
+	  next if $used_node{$group->{name}};
+	  $used_node{$group->{name}} = 1;
+	  $dot .= $group->{attr};
+     }
+}
+
 foreach my $key (keys %all_states) {
      my ($short_version) = $key =~ m{/(.+)$};
+     next if exists $collapsed_nodes{$key};
      next if $cgi_var{ignore_boring} and (not defined $all_states{$key}
 					  or $all_states{$key} eq 'absent');
      next if $cgi_var{ignore_boring} and not version_relevant($version,$key,\@interesting_versions);
@@ -145,6 +215,7 @@ foreach my $key (keys %all_states) {
      my $node_attributes = qq("$key" [).join(',',@attributes).qq(]\n);
      $dot .= $node_attributes;
 }
+
 foreach my $key (keys %{$version->{parent}}) {
      next if not defined $version->{parent}{$key};
      next if $cgi_var{ignore_boring} and $all_states{$key} eq 'absent';
@@ -152,7 +223,22 @@ foreach my $key (keys %{$version->{parent}}) {
 					  or $all_states{$version->{parent}{$key}} eq 'absent');
      # Ignore branches which are not ancestors of a currently distributed version
      next if $cgi_var{ignore_boring} and not version_relevant($version,$key,\@interesting_versions);
-     $dot .= qq("$key").'->'.qq("$version->{parent}{$key}" [dir="back"])."\n" if defined $version->{parent}{$key};
+     next if exists $collapsed_nodes{$key};
+     $dot .= qq("$key").'->'.q(").
+	  (exists $collapsed_nodes{$version->{parent}{$key}}?
+	   $group_nodes{$collapsed_nodes{$version->{parent}{$key}}}{name}:$version->{parent}{$key}).
+		qq(" [dir="back"])."\n" if defined $version->{parent}{$key};
+}
+if ($cgi_var{collapse}) {
+     my %used_node;
+     foreach my $group (values %group_nodes) {
+	  next if $used_node{$group->{name}};
+	  $used_node{$group->{name}} = 1;
+	  $dot .= qq("$group->{name}").'->'.q(").
+	       (exists $collapsed_nodes{$group->{parent}}?
+		$group_nodes{$collapsed_nodes{$group->{parent}}}{name}:$group->{parent}).
+		    qq(" [dir="back"])."\n";
+     }
 }
 $dot .= "}\n";
 
@@ -181,8 +267,14 @@ my %_version_relevant_cache;
 sub version_relevant {
      my ($version,$test_version,$relevant_versions) = @_;
      for my $dist_version (@{$relevant_versions}) {
-	  print STDERR "Testing $dist_version against $test_version\n";
-	  return 1 if $version->isancestor($test_version,$dist_version);
+	  if (exists $_version_relevant_cache{$dist_version}{$test_version}{$version}) {
+	       return 1 if $_version_relevant_cache{$dist_version}{$test_version}{$version};
+	  }
+	  else {
+	       my $rel = $version->isancestor($test_version,$dist_version);
+	       $_version_relevant_cache{$dist_version}{$test_version}{$version} = $rel;
+	       return 1 if $rel;
+	  }
      }
      return 0;
 }
