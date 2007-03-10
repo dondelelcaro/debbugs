@@ -138,7 +138,8 @@ sub version_url{
 		      found   => $found,
 		      fixed   => $fixed,
 		      (defined $width)?(width => $width):(),
-		      (defined $height)?(height => $height):()
+		      (defined $height)?(height => $height):(),
+		      (defined $width or defined $height)?(collapse => 1):(),
 		     );
      return $url->as_string;
 }
