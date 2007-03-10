@@ -28,7 +28,7 @@ use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 
 use Params::Validate qw(validate_with :types);
-use Debbugs::Common qw(:util :lock :quit);
+use Debbugs::Common qw(:util :lock :quit :misc);
 use Debbugs::Config qw(:config);
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
 use Debbugs::Packages qw(makesourceversions getversions binarytosource);
@@ -650,11 +650,11 @@ sub bug_archiveable{
 =item bug_index -- optional tied index of bug status infomration;
 currently not correctly implemented.
 
-=item version -- optional version to check package status at
+=item version -- optional version(s) to check package status at
 
-=item dist -- optional distribution to check package status at
+=item dist -- optional distribution(s) to check package status at
 
-=item arch -- optional architecture to check package status at
+=item arch -- optional architecture(s) to check package status at
 
 =item usertags -- optional hashref of usertags
 
@@ -683,13 +683,13 @@ sub get_bug_status {
 					  bug_index => {type => OBJECT,
 							optional => 1,
 						       },
-					  version   => {type => SCALAR,
+					  version   => {type => SCALAR|ARRAYREF,
 							optional => 1,
 						       },
-					  dist       => {type => SCALAR,
+					  dist       => {type => SCALAR|ARRAYREF,
 							 optional => 1,
 							},
-					  arch       => {type => SCALAR,
+					  arch       => {type => SCALAR|ARRAYREF,
 							 optional => 1,
 							},
 					  usertags   => {type => HASHREF,
@@ -796,13 +796,13 @@ sub bug_presence {
 					  status    => {type => HASHREF,
 						        optional => 1,
 						       },
-					  version   => {type => SCALAR,
+					  version   => {type => SCALAR|ARRAYREF,
 							optional => 1,
 						       },
-					  dist       => {type => SCALAR,
+					  dist       => {type => SCALAR|ARRAYREF,
 							 optional => 1,
 							},
-					  arch       => {type => SCALAR,
+					  arch       => {type => SCALAR|ARRAYREF,
 							 optional => 1,
 							},
 					  sourceversions => {type => ARRAYREF,
@@ -822,18 +822,32 @@ sub bug_presence {
 
      my @sourceversions;
      if (not exists $param{sourceversions}) {
-	  my @versions;
+	  my %sourceversions;
 	  if (defined $param{version}) {
-	       @versions = ($param{version});
+	       foreach my $arch (make_list($param{arch})) {
+		    my @temp = makesourceversions($status{package},
+						  $arch,
+						  make_list($param{version})
+						 );
+		    @sourceversions{@temp} = (1) x @temp;
+	       }
 	  } elsif (defined $param{dist}) {
-	       @versions = getversions($status{package}, $param{dist}, $param{arch});
+	       foreach my $arch (make_list($param{arch})) {
+		    my @versions;
+		    foreach my $dist (make_list($param{dist})) {
+			 push @versions, getversions($status{package}, $dist, $arch);
+		    }
+		    my @temp = makesourceversions($status{package},
+						  $arch,
+						  @versions
+						 );
+		    @sourceversions{@temp} = (1) x @temp;
+	       }
 	  }
 
 	  # TODO: This should probably be handled further out for efficiency and
 	  # for more ease of distinguishing between pkg= and src= queries.
-	  @sourceversions = makesourceversions($status{package},
-					       $param{arch},
-					       @versions);
+	  @sourceversions = keys %sourceversions;
      }
      else {
 	  @sourceversions = @{$param{sourceversions}};
