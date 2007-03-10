@@ -154,7 +154,7 @@ Escapes html entities by calling HTML::Entities::encode_entities;
 sub html_escape{
      my ($string) = @_;
 
-     return HTML::Entities::encode_entities($string)
+     return HTML::Entities::encode_entities($string,q(<>&"'));
 }
 
 =head2 cgi_parameters

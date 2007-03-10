@@ -34,11 +34,12 @@ BEGIN{
 				qw(appendfile buglog getparsedaddrs getmaintainers),
 				qw(getmaintainers_reverse)
 			       ],
+		     misc   => [qw(make_list)],
 		     quit   => [qw(quit)],
 		     lock   => [qw(filelock unfilelock @cleanups)],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(lock quit util));
+     Exporter::export_ok_tags(qw(lock quit util misc));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -329,6 +330,25 @@ sub quit {
     die "*** $_[0]\n";
 }
 
+=head1 MISC
+
+These functions are exported with the :misc tag
+
+=head2 make_list
+
+     LIST = make_list(@_);
+
+Turns a scalar or an arrayref into a list; expands a list of arrayrefs
+into a list.
+
+That is, make_list([qw(a b c)]); returns qw(a b c); make_list([qw(a
+b)],[qw(c d)] returns qw(a b c d);
+
+=cut
+
+sub make_list {
+     return map {(ref($_) eq 'ARRAY')?@{$_}:$_} @_;
+}
 
 
 
