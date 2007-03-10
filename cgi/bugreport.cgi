@@ -445,8 +445,8 @@ sub handle_record{
 	  elsif (defined $msg_id) {
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
-	  $output .= qq(<hr><a name="$msg_number"></a>\n);
-	  $output .= 'View this message in <a href="' . bug_url($ref, "msg=$msg_number", "mbox") . '">rfc822 format</a>';
+	  $output .= qq(<hr><p class="msgreceived"><a name="$msg_number"></a>\n);
+	  $output .= 'View this message in <a href="' . bug_url($ref, msg=>$msg_number, mbox=>'yes') . '">rfc822 format</a></p>';
 	  $output .= handle_email_message($record->{text},
 				    ref        => $bug_number,
 				    msg_number => $msg_number,
