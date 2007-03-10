@@ -144,7 +144,10 @@ if ($cgi_var{collapse}) {
 					       or $all_states{$key} eq 'absent');
 	  next if $cgi_var{ignore_boring} and not version_relevant($version,$key,\@interesting_versions);
 	  if (defined $version->{parent}{$key}) {
-	       push @{$reversed_nodes{$version->{parent}{$key}}}, $key;
+	       next if $cgi_var{ignore_boring} and (not defined $all_states{$version->{parent}{$key}}
+						    or $all_states{$version->{parent}{$key}} eq 'absent');
+	       next if $cgi_var{ignore_boring} and not version_relevant($version,$version->{parent}{$key},\@interesting_versions);
+	       push @{$reversed_nodes{$version->{parent}{$key}}},$key;
 	  }
 	  else {
 	       $reversed_nodes{$key} ||=[];
@@ -233,6 +236,7 @@ if ($cgi_var{collapse}) {
      my %used_node;
      foreach my $group (values %group_nodes) {
 	  next if $used_node{$group->{name}};
+	  next if not defined $group->{parent};
 	  $used_node{$group->{name}} = 1;
 	  $dot .= qq("$group->{name}").'->'.q(").
 	       (exists $collapsed_nodes{$group->{parent}}?
