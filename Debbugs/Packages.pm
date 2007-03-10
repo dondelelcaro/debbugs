@@ -219,7 +219,7 @@ sub getversions {
     my %version = %{$version};
 
     if (defined $arch and exists $version{$dist}{$arch}) {
-        my $ver = $version{$pkg}{$dist}{$arch};
+        my $ver = $version{$dist}{$arch};
         return $ver if defined $ver;
         return ();
     } else {
