@@ -862,6 +862,9 @@ sub bug_presence {
 				   version_cache => $version_cache,
 				  );
      }
+     elsif (defined $param{dist} or defined $param{arch}) {
+	  return 'absent';
+     }
      if (length($status{done}) and
 	 (not @sourceversions or not @{$status{fixed_versions}})) {
 	  return 'fixed';
