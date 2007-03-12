@@ -237,6 +237,11 @@ sub add_user {
     set_option("bugusertags", \%bugusertags);
 }
 
+my $pseudodesc = getpseudodesc();
+if (defined $pseudodesc and defined $pkg and exists $pseudodesc->{$pkg}) {
+     undef $dist;
+     set_option('dist',$dist)
+}
 my $title;
 my @bugs;
 if (defined $pkg) {

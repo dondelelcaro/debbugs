@@ -862,7 +862,7 @@ sub bug_presence {
 				   version_cache => $version_cache,
 				  );
      }
-     elsif (defined $param{dist} or defined $param{arch}) {
+     elsif (defined $param{dist}) {
 	  return 'absent';
      }
      if (length($status{done}) and
