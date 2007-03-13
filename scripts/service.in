@@ -12,6 +12,7 @@ use Debbugs::User;
 use HTML::Entities qw(encode_entities);
 
 use Debbugs::Config qw(:globals);
+use Debbugs::CGI qw(html_escape);
 $lib_path = $gLibPath;
 require "$lib_path/errorlib";
 $ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
@@ -847,8 +848,10 @@ END
             if (&checkpkglimit) {
                 &foundbug;
                 &addmaintainers($data);
+		my $oldtitle = $data->{subject};
                 $data->{subject}= $newtitle;
-                $action= "Changed $gBug title.";
+                $action= "Changed $gBug title to ".html_escape($newtitle)." from ".
+		     html_escape($oldtitle).".";
                 &savebug;
                 &transcript("$action\n");
                 if (length($data->{done})) {
@@ -1196,8 +1199,8 @@ print(AP
       "\2\n$repliedshow\n\5\n$reply\n\3\n".
       "\6\n".
       "<strong>Request received</strong> from <code>".
-      encode_entities($header{'from'})."</code>\n".
-      "to <code>".encode_entities($controlrequestaddr)."</code>\n".
+      html_escape($header{'from'})."</code>\n".
+      "to <code>".html_escape($controlrequestaddr)."</code>\n".
       "\3\n".
       "\7\n",@{escapelog(@log)},"\n\3\n") || &quit("writing db-h/-1.log: $!");
 close(AP) || &quit("open db-h/-1.log: $!");
@@ -1429,9 +1432,10 @@ sub savebug {
     open(L,">>db-h/$hash/$ref.log") || &quit("opening db-h/$hash/$ref.log: $!");
     print(L
           "\6\n".
-          "<strong>".encode_entities($action)."</strong>\n".
-          "Request was from <code>".encode_entities($header{'from'})."</code>\n".
-          "to <code>".encode_entities($controlrequestaddr)."</code>. \n".
+	  "<!-- time:".time." -->\n".
+          "<strong>".html_escape($action)."</strong>\n".
+          "Request was from <code>".html_escape($header{'from'})."</code>\n".
+          "to <code>".html_escape($controlrequestaddr)."</code>. \n".
           "\3\n".
           "\7\n",@{escapelog(@log)},"\n\3\n") || &quit("writing db-h/$hash/$ref.log: $!");
     close(L) || &quit("closing db-h/$hash/$ref.log: $!");
