@@ -12,7 +12,7 @@ use Debbugs::Mail qw(send_mail_message encode_headers);
 use Debbugs::Packages qw(getpkgsrc);
 use Debbugs::User qw(read_usertags write_usertags);
 
-use HTML::Entities qw(encode_entities);
+use Debbugs::CGI qw(html_escape);
 
 # TODO DLA; needs config reworking and errorlib reworking
 # use warnings;
@@ -775,7 +775,7 @@ END
     &htmllog($newref ? "Report" : "Information", "forwarded",
              join(', ',"$gSubmitList\@$gListDomain",@resentccs),
              "<code>$gBug#$ref</code>".
-             (length($data->{package})? "; Package <code>".encode_entities($data->{package})."</code>" : '').
+             (length($data->{package})? "; Package <code>".html_escape($data->{package})."</code>" : '').
              ".");
     &sendmessage(<<END,["$gSubmitList\@$gListDomain",@resentccs],[@bccs]);
 Subject: $gBug#$ref: $newsubject
@@ -798,13 +798,13 @@ END
         &htmllog($newref ? "Report" : "Information", "forwarded",
                  $resentccval,
                  "<code>$gBug#$ref</code>".
-                 (length($data->{package}) ? "; Package <code>".encode_entities($data->{package})."</code>" : '').
+                 (length($data->{package}) ? "; Package <code>".html_escape($data->{package})."</code>" : '').
                  ".");
     } else {
         &htmllog($newref ? "Report" : "Information", "stored",
                  "",
                  "<code>$gBug#$ref</code>".
-                 (length($data->{package}) ? "; Package <code>".encode_entities($data->{package})."</code>" : '').
+                 (length($data->{package}) ? "; Package <code>".html_escape($data->{package})."</code>" : '').
                  ".");
     }
     &sendmessage(<<END,[@resentccs],[@bccs]);
@@ -822,10 +822,10 @@ ${source_pr_header}$fwd
 END
 }
 
-$htmlbreak= length($brokenness) ? "<p>\n".encode_entities($brokenness)."\n<p>\n" : '';
+$htmlbreak= length($brokenness) ? "<p>\n".html_escape($brokenness)."\n<p>\n" : '';
 $htmlbreak =~ s/\n\n/\n<P>\n\n/g;
 if (length($resentccval)) {
-    $htmlbreak = "  Copy sent to <code>".encode_entities($resentccval)."</code>.".
+    $htmlbreak = "  Copy sent to <code>".html_escape($resentccval)."</code>.".
         $htmlbreak;
 }
 unless (exists $header{'x-debbugs-no-ack'}) {
@@ -1090,7 +1090,7 @@ sub htmllog {
     print(AP
           "\6\n".
           "<strong>$whatobj $whatverb</strong>".
-          ($where eq '' ? "" : " to <code>".encode_entities($where)."</code>").
+          ($where eq '' ? "" : " to <code>".html_escape($where)."</code>").
           ":<br>\n". $desc.
           "\n\3\n") || &quit("writing db-h/$hash/$ref.log (lh): $!");
     close(AP) || &quit("closing db-h/$hash/$ref.log (lh): $!");
