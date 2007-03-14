@@ -422,6 +422,7 @@ sub handle_record{
      my $output = '';
      local $_ = $record->{type};
      if (/html/) {
+	  my ($time) = $record->{text} =~ /<!--\s+time:(\d+)\s+-->/;
 	  my $class = $record->{text} =~ /^<strong>(?:Acknowledgement|Reply|Information|Report|Notification)/ ? 'infmessage':'msgreceived';
 	  $output .= decode_rfc1522($record->{text});
 	  # Link to forwarded http:// urls in the midst of the report
@@ -438,6 +439,9 @@ sub handle_record{
 	  # Add links to reassigned packages
 	  $output =~ s{(Bug reassigned from package \`)([^\']+)(' to \`)([^\']+)(')}
 	  {$1.q(<a href=").pkg_url(pkg=>$2).qq(">$2</a>).$3.q(<a href=").pkg_url(pkg=>$4).qq(">$4</a>).$5}eo;
+	  if (defined $time) {
+	       $output .= ' ('.strftime('%a, %d %b %Y %T GMT',gmtime($time)).') ';
+	  }
 	  $output .= '<a href="' . bug_url($ref, msg => ($msg_number+1)) . '">Full text</a> and <a href="' .
 	       bug_url($ref, msg => ($msg_number+1), mbox => 'yes') . '">rfc822 format</a> available.';
 
