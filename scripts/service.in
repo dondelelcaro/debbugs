@@ -343,6 +343,9 @@ END
     } elsif (m/^usertags?\s+\#?(-?\d+)\s+(([=+-])\s*)?(\S.*)?$/i) {
 	$ok++;
 	$ref = $1; $addsubcode = $3 || "+"; $tags = $4;
+	if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
+	     $ref = $clonebugs{$ref};
+        }
 	if ($user eq "") {
 	    &transcript("No valid user selected\n");
 	    $errors++;

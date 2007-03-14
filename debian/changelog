@@ -156,6 +156,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
       package called that. (closes: #414825)
     - Add link from singlemsg page to main page; remove useless links
       (closes: #404806)
+    - Support usertagging cloned bugs (closes: #375697)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
