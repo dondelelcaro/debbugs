@@ -604,17 +604,22 @@ function toggle_infmessages()
 END
 print "<H1>" . "$gProject $gBug report logs - <A HREF=\"mailto:$ref\@$gEmailDomain\">$short</A>" .
       "<BR>" . $title . "</H1>\n";
-
 print "$descriptivehead\n";
-print qq(<p><a href="mailto:$ref\@$gEmailDomain">Reply</a> ),
-     qq(or <a href="mailto:$ref-subscribe\@$gEmailDomain">subscribe</a> ),
-     qq(to this bug.</p>\n);
-print qq(<p><a href="javascript:toggle_infmessages();">Toggle useless messages</a></p>);
-printf qq(<div class="msgreceived"><p>View this report as an <a href="%s">mbox folder</a>, ).
-     qq(<a href="%s">status mbox</a>, <a href="%s">maintainer mbox</a></p></div>\n),
-     html_escape(bug_url($ref, mbox=>'yes')),
-     html_escape(bug_url($ref, mbox=>'yes',mboxstatus=>'yes')),
-     html_escape(bug_url($ref, mbox=>'yes',mboxmaint=>'yes'));
+
+if (looks_like_number($msg)) {
+     printf qq(<p><a href="%s">Full log</a></p>),html_escape(bug_url($ref));
+}
+else {
+     print qq(<p><a href="mailto:$ref\@$gEmailDomain">Reply</a> ),
+	  qq(or <a href="mailto:$ref-subscribe\@$gEmailDomain">subscribe</a> ),
+	       qq(to this bug.</p>\n);
+     print qq(<p><a href="javascript:toggle_infmessages();">Toggle useless messages</a></p>);
+     printf qq(<div class="msgreceived"><p>View this report as an <a href="%s">mbox folder</a>, ).
+	  qq(<a href="%s">status mbox</a>, <a href="%s">maintainer mbox</a></p></div>\n),
+	       html_escape(bug_url($ref, mbox=>'yes')),
+		    html_escape(bug_url($ref, mbox=>'yes',mboxstatus=>'yes')),
+			 html_escape(bug_url($ref, mbox=>'yes',mboxmaint=>'yes'));
+}
 print "$log";
 print "<HR>";
 print "<p class=\"msgreceived\">Send a report that <a href=\"/cgi-bin/bugspam.cgi?bug=$ref\">this bug log contains spam</a>.</p>\n<HR>\n";
