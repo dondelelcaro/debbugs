@@ -235,7 +235,7 @@ if (@{$status{found_versions}} or @{$status{fixed_versions}}) {
 		      $status{found_versions},
 		      $status{fixed_versions},
 		     ).
-	  q("><img src=").
+	  q("><img alt="version graph" src=").
 	  version_url($status{package},
 		      $status{found_versions},
 		      $status{fixed_versions},
