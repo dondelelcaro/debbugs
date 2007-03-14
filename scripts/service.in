@@ -850,8 +850,7 @@ END
                 &addmaintainers($data);
 		my $oldtitle = $data->{subject};
                 $data->{subject}= $newtitle;
-                $action= "Changed $gBug title to ".html_escape($newtitle)." from ".
-		     html_escape($oldtitle).".";
+                $action= "Changed $gBug title to $newtitle from $oldtitle.";
                 &savebug;
                 &transcript("$action\n");
                 if (length($data->{done})) {
