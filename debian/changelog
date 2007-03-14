@@ -151,6 +151,12 @@ debbugs (2.4.2) UNRELEASED; urgency=low
       (closes: #402362)
     - Marking a bug as fixed now overrides a found at that exact version
       (closes: #395865)
+    - When searching by source package, include the source package itself
+      in the list of packages to search for, even if there is no binary
+      package called that. (closes: #414825)
+    - Add link from singlemsg page to main page; remove useless links
+      (closes: #404806)
+    - Support usertagging cloned bugs (closes: #375697)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

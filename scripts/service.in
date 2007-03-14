@@ -343,6 +343,9 @@ END
     } elsif (m/^usertags?\s+\#?(-?\d+)\s+(([=+-])\s*)?(\S.*)?$/i) {
 	$ok++;
 	$ref = $1; $addsubcode = $3 || "+"; $tags = $4;
+	if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
+	     $ref = $clonebugs{$ref};
+        }
 	if ($user eq "") {
 	    &transcript("No valid user selected\n");
 	    $errors++;
@@ -850,8 +853,7 @@ END
                 &addmaintainers($data);
 		my $oldtitle = $data->{subject};
                 $data->{subject}= $newtitle;
-                $action= "Changed $gBug title to ".html_escape($newtitle)." from ".
-		     html_escape($oldtitle).".";
+                $action= "Changed $gBug title to $newtitle from $oldtitle.";
                 &savebug;
                 &transcript("$action\n");
                 if (length($data->{done})) {
