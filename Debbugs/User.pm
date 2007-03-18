@@ -45,6 +45,7 @@ use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 
 use Debbugs::Config qw(:globals);
+use List::Util qw(min);
 
 BEGIN {
     ($VERSION) = q$Revision: 1.4 $ =~ /^Revision:\s+([^\s+])/;
@@ -175,8 +176,12 @@ sub get_user {
                     my %c = ("nam" => $stanza{"Cat${i}"});
                     $c{"def"} = $stanza{"Cat${i}Default"}
                         if defined $stanza{"Cat${i}Default"};
-                    $c{"ord"} = [ split /,/, $stanza{"Cat${i}Order"} ]
-                        if defined $stanza{"Cat${i}Order"};
+                    if (defined $stanza{"Cat${i}Order"}) {
+			 my @temp = split /\s*,\s*/, $stanza{"Cat${i}Order"};
+			 my $min = min(@temp);
+			 @temp = map {$_-$min} @temp;
+			 $c{ord} = [@temp];
+		    }
                     my @pri; my @ttl;
                     for my $l (split /\n/, $stanza{"Cat${i}Options"}) {
                         if ($l =~ m/^\s*(\S+)\s+-\s+(.*\S)\s*$/) {

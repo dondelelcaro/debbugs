@@ -159,6 +159,10 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Support usertagging cloned bugs (closes: #375697)
     - List previous/new title when retitling, and show date of control
       actions (closes: #127354)
+    - Add searching by owner (closes: #345407)
+    - Accept colon after package in control mails (closes: #319720)
+    - Make e-mail addresses case insensitive for searching
+      (closes: #89569)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
