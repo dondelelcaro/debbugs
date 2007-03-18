@@ -163,6 +163,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Accept colon after package in control mails (closes: #319720)
     - Make e-mail addresses case insensitive for searching
       (closes: #89569)
+    - pkgindex.cgi limits its output with pagination (closes: #23018)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
