@@ -1072,7 +1072,7 @@ END
 		}
 	    }
 	}
-    } elsif (m/^package\s+(\S.*\S)?\s*$/i) {
+    } elsif (m/^package\:?\s+(\S.*\S)?\s*$/i) {
         $ok++;
 	my @pkgs = split /\s+/, $1;
 	if (scalar(@pkgs) > 0) {

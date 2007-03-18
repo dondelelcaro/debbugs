@@ -182,9 +182,10 @@ while (my $dir = shift @dirs) {
 		addbugtoindex("package", $bug, split /[\s,]+/, $fdata->{"package"});
 		addbugtoindex("tag", $bug, split /[\s,]+/, $fdata->{"keywords"});
 		addbugtoindex('submitter-email', $bug,
-			      map {$_->address} getparsedaddrs($fdata->{originator}));
+			      map {lc($_->address)} getparsedaddrs($fdata->{originator}));
 		addbugtoindex("severity", $bug, $fdata->{"severity"});
-		addbugtoindex("owner", $bug, $fdata->{"owner"});
+		addbugtoindex("owner", $bug,
+			      map {lc($_->address)} getparsedaddrs($fdata->{"owner"}));
 	}
 }
 

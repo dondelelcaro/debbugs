@@ -118,7 +118,9 @@ my %cats = (
     "normal" => [ qw(status severity classification) ],
 );
 
-my ($pkg, $src, $maint, $maintenc, $submitter, $severity, $status, $tag, $usertag);
+my ($pkg, $src, $maint, $maintenc, $submitter, $severity, $status, $tag, $usertag,
+    $owner,
+   );
 
 my %which = (
         'pkg' => \$pkg,
@@ -129,6 +131,7 @@ my %which = (
         'severity' => \$severity,
         'tag' => \$tag,
 	'usertag' => \$usertag,
+	'owner'   => \$owner,
         );
 my @allowedEmpty = ( 'maint' );
 
@@ -324,6 +327,14 @@ if (defined $pkg) {
                          return grep(exists $tags{$_}, @tags);
                         })};
 }
+elsif (defined $owner) {
+     $title = "bugs owned by $owner";
+     $title .= " in $dist" if defined $dist;
+     my @owners = split /,/, $tag;
+     my %bugs = ();
+     @bugs = get_bugs(owner=>\@owners);
+
+}
 $title = htmlsanit($title);
 
 my @names; my @prior; my @title; my @order;
@@ -340,7 +351,7 @@ print "Content-Type: text/html; charset=utf-8\n\n";
 
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
 print "<HTML><HEAD>\n" . 
-    "<TITLE>$gProject$Archived $gBug report logs: $title</TITLE>\n" .
+    "<TITLE>$title -- $gProject$Archived $gBug report logs</TITLE>\n" .
     qq(<link rel="stylesheet" href="$gWebHostBugDir/css/bugs.css" type="text/css">) .
     "</HEAD>\n" .
     '<BODY onload="pagemain();">' .
@@ -1001,9 +1012,9 @@ sub determine_ordering {
 
 	    $h->{"nam"} = $param{"nam$i"}
                 if (defined $param{"nam$i"}); 
-            $h->{"ord"} = [ split /,/, $param{"ord$i"} ]
+            $h->{"ord"} = [ split /\s*,\s*/, $param{"ord$i"} ]
                 if (defined $param{"ord$i"}); 
-            $h->{"ttl"} = [ split /,/, $param{"ttl$i"} ]
+            $h->{"ttl"} = [ split /\s*,\s*/, $param{"ttl$i"} ]
                 if (defined $param{"ttl$i"}); 
 
             push @c, $h;
@@ -1039,7 +1050,7 @@ sub determine_ordering {
  
     $i = 0;
     for my $c (@cats) {
-        $i++;
+	$i++;
         push @prior, $c->{"pri"};
 	push @names, ($c->{"nam"} || "Bug attribute #" . $i);
         if (defined $c->{"ord"}) {
@@ -1048,8 +1059,8 @@ sub determine_ordering {
             push @order, [ 0..$#{$prior[-1]} ];
         }
         my @t = @{ $c->{"ttl"} } if defined $c->{ttl};
-	if (($#t+1) < $#{$prior[-1]}) {
-	     push @t, map { toenglish($prior[-1]->[$_]) } ($#t+1)..($#{$prior[-1]});
+	if ($#t < $#{$prior[-1]}) {
+	     push @t, map { toenglish($prior[-1][$_]) } @t..($#{$prior[-1]});
 	}
 	push @t, $c->{"def"} || "";
         push @title, [@t];
