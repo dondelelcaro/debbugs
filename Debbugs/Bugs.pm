@@ -239,6 +239,9 @@ sub get_bugs_by_idx{
 					  archive   => {type => BOOLEAN,
 							default => 0,
 						       },
+					  owner     => {type => SCALAR|ARRAYREF,
+						        optional => 1,
+						       },
 					  src       => {type => SCALAR|ARRAYREF,
 						        optional => 1,
 						       },
@@ -382,8 +385,8 @@ sub get_bugs_flatfile{
 			     } @src_packages;
 	  }
 	  if (exists $param{submitter}) {
-	       my @p_addrs = map {$_->address}
-		    map {lc(getparsedaddrs($_))}
+	       my @p_addrs = map {lc($_->address)}
+		    map {getparsedaddrs($_)}
 			 __make_list($param{submitter});
 	       my @f_addrs = map {$_->address}
 		    getparsedaddrs($submitter||'');
