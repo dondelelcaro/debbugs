@@ -330,7 +330,7 @@ if (defined $pkg) {
 elsif (defined $owner) {
      $title = "bugs owned by $owner";
      $title .= " in $dist" if defined $dist;
-     my @owners = split /,/, $tag;
+     my @owners = split /,/, $owner;
      my %bugs = ();
      @bugs = get_bugs(owner=>\@owners);
 
