@@ -48,7 +48,7 @@ BEGIN{
 		     read   => [qw(readbug read_bug lockreadbug)],
 		     write  => [qw(writebug makestatus unlockwritebug)],
 		     versions => [qw(addfoundversions addfixedversions),
-				  qw(removefoundversions)
+				  qw(removefoundversions removefixedversions)
 				 ],
 		     hook     => [qw(bughook bughook_archive)],
 		    );
