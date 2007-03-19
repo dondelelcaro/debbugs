@@ -275,7 +275,17 @@ if (defined $pkg) {
   add_user($maint);
   $title = "maintainer $maint";
   $title .= " in $dist" if defined $dist;
-  @bugs = get_bugs(maint=>[split /,/,$maint]);
+  if ($maint eq "") {
+       my %maintainers = %{getmaintainers()};
+       @bugs = @{getbugs(sub {my %d=@_;
+			      foreach my $try (splitpackages($d{"pkg"})) {
+				   return 1 if !getparsedaddrs($maintainers{$try});
+			      }
+			      return 0;
+			 })};
+  } else {
+       @bugs = get_bugs(maint=>[split /,/,$maint]);
+  }
 } elsif (defined $maintenc) {
   my %maintainers = %{getmaintainers()};
   $title = "encoded maintainer $maintenc";
