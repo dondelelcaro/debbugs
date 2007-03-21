@@ -348,6 +348,34 @@ set_default(\%config,'removal_default_distribution_tags',
 	    [qw(unstable testing)]
 	   );
 
+=item package_name_re
+
+The regex which will match a package name
+
+Default: '[a-z0-9][a-z0-9\.+-]+'
+
+=cut
+
+set_default(\%config,'package_name_re',
+	    '[a-z0-9][a-z0-9\.+-]+');
+
+=item package_version_re
+
+The regex which will match a package version
+
+Default: '[A-Za-z0-9:+\.-]+'
+
+=cut
+
+set_default(\%config,'package_version_re',
+	    '[A-Za-z0-9:+\.-]+');
+
+
+
+
+
+
+
 set_default(\%config,'default_severity','normal');
 set_default(\%config,'show_severities','critical, grave, normal, minor, wishlist');
 set_default(\%config,'strong_severities',[qw(critical grave)]);
