@@ -11,7 +11,7 @@ use Debbugs::Mail qw(send_mail_message);
 use Debbugs::User;
 use HTML::Entities qw(encode_entities);
 
-use Debbugs::Config qw(:globals);
+use Debbugs::Config qw(:globals :config);
 use Debbugs::CGI qw(html_escape);
 $lib_path = $gLibPath;
 require "$lib_path/errorlib";
@@ -507,7 +507,9 @@ END
                 } while (&getnextbug);
             }
         }
-    } elsif (m/^found\s+\#?(-?\d+)(?:\s+(\d.*))?$/i) {
+    } elsif (m{^found\s+\#?(-?\d+)
+	       (?:\s+(?:$config{package_name_re}\/)?
+		    ($config{package_version_re}))?$}ix) {
         $ok++;
         $ref= $1;
         $version= $2;
@@ -560,8 +562,43 @@ END
                 &addmaintainers($data);
                 removefoundversions($data, $data->{package}, $version, 'binary');
             } while (&getnextbug);
-        }
-    } elsif (m/^submitter\s+\#?(-?\d+)\s+\!$/i ? ($newsubmitter=$replyto, 1) :
+       }
+   }
+    elsif (m[^fixed\s+\#?(-?\d+)\s+
+	     ((?:$config{package_name_re}\/)?
+		  $config{package_version_re})\s*$]ix) {
+        $ok++;
+        $ref= $1;
+        $version= $2;
+        if (&setbug) {
+	     $action=
+		  defined($version) ?
+		       "$gBug marked as fixed in version $version." :
+			    "$gBug reopened.";
+                do {
+                    &addmaintainers($data);
+                    addfixedversions($data, $data->{package}, $version, 'binary');
+	       } while (&getnextbug);
+	}
+   }
+    elsif (m[^notfixed\s+\#?(-?\d+)\s+
+	     ((?:$config{package_name_re}\/)?
+		  $config{package_version_re})\s*$]ix) {
+        $ok++;
+        $ref= $1;
+        $version= $2;
+        if (&setbug) {
+	     $action=
+		  defined($version) ?
+		       "$gBug marked as not fixed in version $version." :
+			    "$gBug reopened.";
+                do {
+                    &addmaintainers($data);
+                    removefixedversions($data, $data->{package}, $version, 'binary');
+	       } while (&getnextbug);
+	}
+   }
+    elsif (m/^submitter\s+\#?(-?\d+)\s+\!$/i ? ($newsubmitter=$replyto, 1) :
              m/^submitter\s+\#?(-?\d+)\s+(\S.*\S)$/i ? ($newsubmitter=$2, 1) : 0) {
         $ok++;
         $ref= $1;

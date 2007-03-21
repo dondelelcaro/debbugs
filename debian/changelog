@@ -164,6 +164,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Make e-mail addresses case insensitive for searching
       (closes: #89569)
     - pkgindex.cgi limits its output with pagination (closes: #23018)
+    - lc submitter address for comparsion in pkgreport.cgi
+      (closes: #415628)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

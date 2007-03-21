@@ -284,7 +284,7 @@ if (defined $pkg) {
 			      return 0;
 			 })};
   } else {
-       @bugs = get_bugs(maint=>[split /,/,$maint]);
+       @bugs = get_bugs(maint=>[map {lc ($_)} split /,/,$maint]);
   }
 } elsif (defined $maintenc) {
   my %maintainers = %{getmaintainers()};
@@ -303,7 +303,7 @@ if (defined $pkg) {
   add_user($submitter);
   $title = "submitter $submitter";
   $title .= " in $dist" if defined $dist;
-  my @submitters = split /,/, $submitter;
+  my @submitters = map {lc ($_)} split /,/, $submitter;
   @bugs = get_bugs(submitter => \@submitters);
 } elsif (defined($severity) && defined($status)) {
   $title = "$status $severity bugs";
@@ -340,7 +340,7 @@ if (defined $pkg) {
 elsif (defined $owner) {
      $title = "bugs owned by $owner";
      $title .= " in $dist" if defined $dist;
-     my @owners = split /,/, $owner;
+     my @owners = map {lc ($_)} split /,/, $owner;
      my %bugs = ();
      @bugs = get_bugs(owner=>\@owners);
 
