@@ -143,9 +143,10 @@ $user = "" unless (Debbugs::User::is_valid_user($user));
 
 my $quickabort = 0;
 
-my $fuckheads = "(" . join("|", @gFuckheads) . ")";
-if (@gFuckheads and $replyto =~ m/$fuckheads/) {
-	&transcript("This service is unavailable.\n\n");
+my $fuckheads = "(" . join("|", @gExcludeFromControl) . ")";
+if (@gExcludeFromControl and $replyto =~ m/$fuckheads/) {
+	&transcript("You have been specifically excluded from using the\ncontrol interface.\n\n");
+	&transcript("Have a nice day\n\n.");
 	$quickabort = 1;
 }
 
@@ -335,9 +336,11 @@ END
 	if (@cats) {
 	    &transcript("Added usercategory $catname.\n\n");
 	    $u->{"categories"}->{$catname} = [ @cats ];
+	    $u->{visible_cats}{$catname} = $hidden;
 	} else {
 	    &transcript("Removed usercategory $catname.\n\n");
 	    delete $u->{"categories"}->{$catname};
+	    delete $u->{visible_cats}{$catname};
 	}
 	$u->write();
     } elsif (m/^usertags?\s+\#?(-?\d+)\s+(([=+-])\s*)?(\S.*)?$/i) {
