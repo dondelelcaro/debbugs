@@ -369,7 +369,7 @@ sub get_bugs_flatfile{
      my @bugs;
      while (<$flatfile>) {
 	  next unless m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/;
-	  my ($pkg,$bug,$status,$submitter,$severity,$tags) = ($1,$2,$3,$4,$5,$6,$7);
+	  my ($pkg,$bug,$time,$status,$submitter,$severity,$tags) = ($1,$2,$3,$4,$5,$6,$7);
 	  next if exists $param{bug} and not grep {$bug == $_} __make_list($param{bugs});
 	  if (exists $param{pkg}) {
 	       my @packages = splitpackages($pkg);

@@ -178,9 +178,13 @@ sub get_user {
                         if defined $stanza{"Cat${i}Default"};
                     if (defined $stanza{"Cat${i}Order"}) {
 			 my @temp = split /\s*,\s*/, $stanza{"Cat${i}Order"};
+			 my %temp;
 			 my $min = min(@temp);
-			 @temp = map {$_-$min} @temp;
-			 $c{ord} = [@temp];
+			 # Order to 0 minimum; strip duplicates
+			 $c{ord} = [map {$temp{$_}++;
+					 $temp{$_}>1?():($_-$min);
+				    } @temp
+				   ];
 		    }
                     my @pri; my @ttl;
                     for my $l (split /\n/, $stanza{"Cat${i}Options"}) {
