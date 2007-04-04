@@ -50,7 +50,7 @@ BEGIN {
 				 qw($gIncomingDir $gWebDir $gDocDir $gMaintainerFile),
 				 qw($gMaintainerFileOverride $gPseudoDescFile $gPackageSource),
 				 qw($gVersionPackagesDir $gVersionIndex $gBinarySourceMap $gSourceBinaryMap),
-				 qw($gSendmail $gLibPath $gSpamScan),
+				 qw($gSendmail $gLibPath $gSpamScan @gExcludeFromControl),
 				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
 				 qw(%gSearchEstraier),
 				 qw(@gPostProcessall),
@@ -372,6 +372,13 @@ set_default(\%config,'package_version_re',
 
 
 
+=item exclude_from_control
+
+Addresses which are not allowed to send messages to control
+
+=cut
+
+set_default(\%config,'exclude_from_control',[]);
 
 
 

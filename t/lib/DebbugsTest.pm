@@ -79,6 +79,7 @@ sub create_debbugs_configuration {
 \$gSendmail='$sendmail_tester';
 \$gSpoolDir='$spool_dir';
 \$gLibPath='@{[getcwd()]}/scripts';
+\$gWebHost='localhost';
 1;
 END
 			    "$spool_dir/nextnumber" => qq(1\n),
