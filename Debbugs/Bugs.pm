@@ -338,12 +338,12 @@ sub get_bugs_flatfile{
 			      );
      my $flatfile;
      if ($param{archive}) {
-	  $flatfile = new IO::File "$debbugs::gSpoolDir/index.archive", 'r'
-	       or die "Unable to open $debbugs::gSpoolDir/index.archive for reading: $!";
+	  $flatfile = IO::File->new("$config{spool_dir}/index.archive", 'r')
+	       or die "Unable to open $config{spool_dir}/index.archive for reading: $!";
      }
      else {
-	  $flatfile = new IO::File "$debbugs::gSpoolDir/index.db", 'r'
-	       or die "Unable to open $debbugs::gSpoolDir/index.db for reading: $!";
+	  $flatfile = IO::File->new("$config{spool_dir}/index.db", 'r')
+	       or die "Unable to open $config{spool_dir}/index.db for reading: $!";
      }
      my %usertag_bugs;
      if (exists $param{tag} and exists $param{usertags}) {
@@ -370,11 +370,11 @@ sub get_bugs_flatfile{
      while (<$flatfile>) {
 	  next unless m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/;
 	  my ($pkg,$bug,$time,$status,$submitter,$severity,$tags) = ($1,$2,$3,$4,$5,$6,$7);
-	  next if exists $param{bug} and not grep {$bug == $_} __make_list($param{bugs});
-	  if (exists $param{pkg}) {
+	  next if exists $param{bugs} and not grep {$bug == $_} __make_list($param{bugs});
+	  if (exists $param{package}) {
 	       my @packages = splitpackages($pkg);
 	       next unless grep { my $pkg_list = $_;
-				  grep {$pkg_list eq $_} __make_list($param{pkg})
+				  grep {$pkg_list eq $_} __make_list($param{package})
 			     } @packages;
 	  }
 	  if (exists $param{src}) {
