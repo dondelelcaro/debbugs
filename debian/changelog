@@ -167,6 +167,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - lc submitter address for comparsion in pkgreport.cgi
       (closes: #415628)
     - Add quotes around retitle'd titles (closes: #419202)
+    - Make file locking portable (closes: #293277)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

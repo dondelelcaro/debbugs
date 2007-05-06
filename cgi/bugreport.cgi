@@ -125,7 +125,7 @@ sub display_entity ($$$$\$\@) {
 	$$this .= '<pre class="mime">[<a href="' . bug_url(@dlargs) . qq{">$printname</a> } .
 		  "($type, $disposition)]</pre>\n";
 
-	if ($msg and defined($att) and $att eq $#$attachments) {
+	if ($msg and defined($att) and $att == $#$attachments) {
 	    my $head = $entity->head;
 	    chomp(my $type = $entity->effective_type);
 	    my $body = $entity->stringify_body;
