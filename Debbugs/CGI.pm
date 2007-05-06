@@ -37,7 +37,7 @@ use Mail::Address;
 use POSIX qw(ceil);
 use Storable qw(dclone);
 
-my %URL_PARAMS = ();
+our %URL_PARAMS = ();
 
 
 BEGIN{
@@ -211,10 +211,6 @@ sub quitcgi {
     print "</BODY></HTML>\n";
     exit 0;
 }
-
-
-my %common_bugusertags;
-
 
 
 =head HTML
@@ -459,10 +455,10 @@ sub htmlize_maintlinks {
 }
 
 
-my $_maintainer;
-my $_maintainer_rev;
+our $_maintainer;
+our $_maintainer_rev;
 
-my $_pseudodesc;
+our $_pseudodesc;
 sub getpseudodesc {
     return $_pseudodesc if $_pseudodesc;
     my %pseudodesc;
