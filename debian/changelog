@@ -169,6 +169,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Add quotes around retitle'd titles (closes: #419202)
     - Make file locking portable (closes: #293277)
     - Allow the package pages to be optional (closes: #234362)
+    - Fix package link code and link both packages (closes: #419553)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

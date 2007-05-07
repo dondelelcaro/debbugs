@@ -431,7 +431,7 @@ sub handle_record{
 		      {(defined $2?$1.bug_links($2):'').$3.
 			    join(' ',map {bug_links($_)} (split /\,?\s+/, $4))}eo;
 	  # Add links to reassigned packages
-	  $output =~ s{(Bug reassigned from package \`)([^\']+)(' to \`)([^\']+)(')}
+	  $output =~ s{(Bug reassigned from package \`)([^']+)((?:'|\&\#39;) to \`)([^']+)((?:'|\&\#39;))}
 	  {$1.q(<a href=").pkg_url(pkg=>$2).qq(">$2</a>).$3.q(<a href=").pkg_url(pkg=>$4).qq(">$4</a>).$5}eo;
 	  if (defined $time) {
 	       $output .= ' ('.strftime('%a, %d %b %Y %T GMT',gmtime($time)).') ';
