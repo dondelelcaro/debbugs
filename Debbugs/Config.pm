@@ -53,7 +53,7 @@ BEGIN {
 				 qw($gSendmail $gLibPath $gSpamScan @gExcludeFromControl),
 				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
 				 qw(%gSearchEstraier),
-				 qw(@gPostProcessall),
+				 qw(@gPostProcessall @gRemovalDefaultDistributionTags @gRemovalDistributionTags @gRemovalArchitectures),
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
@@ -347,6 +347,22 @@ Default: qw(unstable testing);
 set_default(\%config,'removal_default_distribution_tags',
 	    [qw(unstable testing)]
 	   );
+
+=item removal_architectures
+
+For removal/archival purposes, these architectures are consulted if
+there is more than one architecture applicable. If the bug is in a
+package not in any of these architectures, the architecture actually
+checked is undefined.
+
+Default: qw(i386 amd64 arm ppc sparc alpha);
+
+=cut
+
+set_default(\%config,'removal_architectures',
+	    [qw(i386 amd64 arm ppc sparc alpha)]
+	   );
+
 
 =item package_name_re
 
