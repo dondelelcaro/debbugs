@@ -40,7 +40,7 @@ BEGIN{
 
      @EXPORT = ();
      %EXPORT_TAGS = ();
-     @EXPORT_OK = (qw(get_bugs));
+     @EXPORT_OK = (qw(get_bugs count_bugs));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -213,6 +213,52 @@ sub get_bugs{
      }
      return @bugs;
 }
+
+=head2 count_bugs
+
+     count_bugs(function => sub {...})
+
+Uses a subroutine to classify bugs into categories and return the
+number of bugs which fall into those categories
+
+=cut
+
+sub count_bugs {
+     my %param = validate_with(params => \@_,
+			       spec   => {function => {type => CODEREF,
+						      },
+					  archive  => {type => BOOLEAN,
+						       default => 0,
+						      },
+					 },
+			      );
+     my $flatfile;
+     if ($param{archive}) {
+	  $flatfile = IO::File->new("$config{spool_dir}/index.archive", 'r')
+	       or die "Unable to open $config{spool_dir}/index.archive for reading: $!";
+     }
+     else {
+	  $flatfile = IO::File->new("$config{spool_dir}/index.db", 'r')
+	       or die "Unable to open $config{spool_dir}/index.db for reading: $!";
+     }
+     my %count = ();
+     while(<$flatfile>) {
+	  if (m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/) {
+	       my @x = $param{function}->(pkg       => $1,
+					  bug       => $2,
+					  status    => $4,
+					  submitter => $5,
+					  severity  => $6,
+					  tags      => $7,
+					 );
+	       local $_;
+	       $count{$_}++ foreach @x;
+	  }
+     }
+     close $flatfile;
+     return %count;
+}
+
 
 =head2 get_bugs_by_idx
 
