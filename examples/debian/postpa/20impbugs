@@ -1,0 +1,37 @@
+#! /usr/bin/perl -w
+
+use warnings;
+use strict;
+
+use Debbugs::Config qw(:globals);
+use Debbugs::Common qw(splitpackages);
+use Debbugs::Status qw(get_bug_status);
+use Debbugs::Bugs qw(count_bugs);
+
+my %strong = map { $_ => 1 } @gStrongSeverities;
+
+my %impbugs = count_bugs(function => sub {
+    my %d = @_;
+
+    # Fast checks.
+    return () if $d{status} eq 'done' or not $strong{$d{severity}};
+    my %tags = map { $_ => 1 } split ' ', $d{tags};
+    return () if $tags{fixed} or $tags{'etch-ignore'};
+    return () if ($tags{potato} or $tags{woody} or $tags{sarge} or $tags{etch} or $tags{experimental}) and not $tags{sid};
+
+    # Unfortunately mergedwith isn't indexed.
+    my $status = get_bug_status(bug => $d{bug});
+    my @merged = sort split ' ', $status->{mergedwith};
+    return () if @merged and $merged[0] < $d{bug};
+
+    return splitpackages($d{pkg});
+});
+
+open IMPBUGS, '> /org/bugs.debian.org/www/stats/impbugs.txt.new'
+    or die "can't open impbugs.txt.new: $!";
+for my $pkg (reverse sort keys %impbugs) {
+    print IMPBUGS "$pkg $impbugs{$pkg}\n" or die "can't write to impbugs.txt.new: $!";
+}
+close IMPBUGS or die "can't close impbugs.txt.new: $!";
+rename '/org/bugs.debian.org/www/stats/impbugs.txt.new', '/org/bugs.debian.org/www/stats/impbugs.txt'
+    or die "can't rename impbugs.txt.new to impbugs.txt: $!";

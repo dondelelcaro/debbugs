@@ -1,0 +1,28 @@
+#! /usr/bin/perl -w
+use strict;
+use MLDBM qw(DB_File Storable);
+use Fcntl;
+
+$MLDBM::DumpMeth=q(portable);
+
+my (%srcbin, %binsrc);
+tie %srcbin, 'MLDBM', '/org/bugs.debian.org/versions/indices/srcbin.idx',
+	     O_CREAT|O_RDWR, 0644
+    or die "tie srcbin.idx: $!";
+tie %binsrc, 'MLDBM', '/org/bugs.debian.org/versions/indices/binsrc.idx',
+	     O_CREAT|O_RDWR, 0644
+    or die "tie binsrc.idx: $!";
+
+while (<>) {
+    my ($binname, $binver, $binarch, $srcname, $srcver) = split;
+    print STDERR "$binname/$binver/$binarch => $srcname/$srcver\n";
+
+    # see MLDBM(3pm)/BUGS
+    my $tmp = $srcbin{$srcname};
+    push @{$tmp->{$srcver}}, [$binname, $binver, $binarch];
+    $srcbin{$srcname} = $tmp;
+
+    $tmp = $binsrc{$binname};
+    $tmp->{$binver}{$binarch} = [$srcname, $srcver];
+    $binsrc{$binname} = $tmp;
+}

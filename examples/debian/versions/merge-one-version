@@ -1,0 +1,35 @@
+#! /usr/bin/perl -w
+
+use vars qw($gVersionPackagesDir);
+require '/etc/debbugs/config';
+my $root = $gVersionPackagesDir;
+
+use strict;
+use Debbugs::Versions;
+use Debbugs::Versions::Dpkg;
+
+unless (-d $root) {
+    mkdir $root or die "can't mkdir $root: $!\n";
+}
+
+my $tree = Debbugs::Versions->new(\&Debbugs::Versions::Dpkg::vercmp);
+
+my $versions = shift;
+
+(my $pkg = $versions) =~ s{.*/}{};
+$pkg =~ s/_.*//;
+my $pkghash = substr $pkg, 0, 1;
+unless (-d "$root/$pkghash") {
+    mkdir "$root/$pkghash" or die "can't mkdir $root/$pkghash";
+}
+my $outfile = "$root/$pkghash/$pkg";
+if (open PREV, "< $outfile") {
+    $tree->load(*PREV);
+    close PREV;
+}
+
+$tree->load(*STDIN);
+
+open OUT, "> $outfile" or die "can't open $outfile for writing: $!\n";
+$tree->save(*OUT);
+close OUT or die "can't close $outfile: $!\n";

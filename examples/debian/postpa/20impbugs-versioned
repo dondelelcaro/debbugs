@@ -1,0 +1,72 @@
+#! /usr/bin/perl
+
+use warnings;
+use strict;
+use Debbugs::Config qw(:globals);
+use Debbugs::Status qw(splitpackages buggy);
+use Debbugs::Packages qw(getversions makesourceversions);
+use Debbugs::Bugs qw(count_bugs);
+
+my %strong = map { $_ => 1 } @gStrongSeverities;
+my $pkgsrc = getpkgsrc();
+my $version_cache = {};
+# love my do nothing warn handler?
+$SIG{__WARN__} = sub {};
+for my $dist ('testing', 'unstable') {
+  # no locking, so don't run this multiple times mmkay
+  open IMPBUGS, "> /org/bugs.debian.org/www/stats/impbugs.$dist.txt.new"
+    or die "can't open impbugs.$dist.txt.new: $!";
+
+  my @merged;
+  my %impbugs = count_bugs(function => sub {
+    my %d = @_;
+
+    # Fast checks.
+    return () if $d{status} eq 'done' or not $strong{$d{severity}};
+    my %tags = map { $_ => 1 } split ' ', $d{tags};
+    return () if $tags{fixed} or $tags{'etch-ignore'};
+    return () if (grep /^$d{bug}$/, @merged);
+
+    # Unfortunately mergedwith isn't indexed.
+    my $status = getbugstatus($d{bug});
+    push(@merged, split(' ', $status->{'mergedwith'}));
+
+    #set_option('dist', $dist);
+    my %affected=();
+
+    foreach my $pkg (splitpackages($d{pkg})) {
+        my @versions = getversions($pkg, $dist, 'source');
+        if (defined $versions[0]) {
+            if (not $pkgsrc->{$pkg} or $pkg eq $pkgsrc->{$pkg}) { # if it has source and is source-only, the makesourceversions fails ...
+               @versions = map { "$pkg/$_" unless /^\//} @versions;
+            } else {
+               @versions = makesourceversions($pkg, 'source', @versions);
+            }
+        } else {
+            @versions = getversions($pkg, $dist, 'i386');
+            ## ^ buggy! fix me!
+            @versions = makesourceversions($pkg, 'i386', @versions);
+        }
+        for my $version (@versions) {
+           my $buggy = buggy(bug => $d{bug}, version => $version,
+			     found => $status->{found_versions},
+			     fixed => $status->{fixed_versions},
+			     version_cache => $version_cache,
+			     package => $pkg);
+           if ($buggy eq 'found') {
+               $affected{$pkg}=1;
+               last;
+           }
+        }
+    }
+    return keys %affected;
+  });
+
+  print "warnings/errors: $@" if $@;
+  for my $pkg (reverse sort keys %impbugs) {
+    print IMPBUGS "$pkg $impbugs{$pkg}\n" or die "can't write to impbugs.$dist.txt.new: $!";
+  }
+  close IMPBUGS or die "can't close impbugs.$dist.txt.new: $!";
+  rename "/org/bugs.debian.org/www/stats/impbugs.$dist.txt.new", "/org/bugs.debian.org/www/stats/impbugs.$dist.txt"
+    or die "can't rename impbugs.$dist.txt.new to impbugs.$dist.txt: $!";
+}

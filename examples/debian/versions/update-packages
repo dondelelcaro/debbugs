@@ -1,0 +1,6 @@
+#!/bin/sh
+
+/home/debbugs/get-packages ftp; 
+/home/debbugs/get-packages nonus; 
+/home/debbugs/get-packages security; 
+/org/bugs.debian.org/versions/indices/update-mldbm >/dev/null

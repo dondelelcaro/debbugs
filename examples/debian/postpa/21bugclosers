@@ -1,0 +1,49 @@
+#! /usr/bin/perl -w
+
+use warnings;
+use strict;
+
+use Debbugs::Config qw(:globals);
+
+use Debbugs::Bugs qw(count_bugs);
+use Debbugs::Status qw(get_bug_status);
+
+require '/org/bugs.debian.org/cgi-bin/common.pl';
+
+package main;
+
+my $startdate = time;
+die "failed to get time: $!" unless defined $startdate;
+
+# check the ctime of '/org/bugs.debian.org/www/stats/bugclosers.txt'
+use File::stat;
+my $ob = stat '/org/bugs.debian.org/www/stats/bugclosers.txt';
+if (defined $ob and (time - $ob->ctime) < 60*60*12) {
+     # If less than 12 hours have passed since we last ran this file,
+     # don't rebuild it.
+     exit 0;
+}
+      
+
+my %bugclosers = count_bugs(function => sub {
+    my %d = @_;
+    return () unless $d{status} eq 'done';
+
+    my $status = get_bug_status(bug => $d{bug});
+    return () unless %$status;
+    my @merged = sort split ' ', $status->{mergedwith};
+    return () if @merged and $merged[0] < $d{bug};
+
+    return ($status->{done});
+});
+
+open BUGCLOSERS, '> /org/bugs.debian.org/www/stats/bugclosers.txt.new'
+    or die "can't open bugclosers.txt.new: $!";
+for my $closer (sort { $bugclosers{$a} <=> $bugclosers{$b} } keys %bugclosers) {
+    printf BUGCLOSERS "%4d %s\n", $bugclosers{$closer}, $closer
+	or die "can't write to bugclosers.txt.new: $!";
+}
+close BUGCLOSERS or die "can't close bugclosers.txt.new: $!";
+rename '/org/bugs.debian.org/www/stats/bugclosers.txt.new',
+       '/org/bugs.debian.org/www/stats/bugclosers.txt'
+    or die "can't rename bugclosers.txt.new to bugclosers.txt: $!";

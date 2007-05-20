@@ -1,0 +1,32 @@
+#! /bin/sh
+set -e
+
+umask 002
+
+exec >>/org/bugs.debian.org/log/update-versions.log 2>&1
+
+LOCK=/org/bugs.debian.org/versions/lock/update-versions.lock
+
+if lockfile -! -l 3600 -r 0 "$LOCK"; then
+    echo "unable to start update-versions, lock file exists"
+    exit 1
+fi
+trap "rm -f \"$LOCK\" >/dev/null 2>&1" exit
+
+cd /org/bugs.debian.org/versions/queue/ftp-master
+
+#~debbugs/ssh-move \
+#	--ssh-identity ~debbugs/.ssh/bts-vt \
+#	--ssh-move-path ~debbugs/ssh-move \
+#	--from-directory /org/ftp.debian.org/queue/bts_version_track \
+#	ftp-master.debian.org \*.debinfo \*.versions
+
+# while ftp-master.debian.org == bugs.debian.org:
+find /org/ftp.debian.org/queue/bts_version_track/ \
+	\( -name \*.debinfo -o -name \*.versions \) -print0 | \
+	xargs -0r mv --target-directory="$(pwd)"
+
+/org/bugs.debian.org/versions/bin/queue-versions ftp-master
+/org/bugs.debian.org/versions/bin/queue-debinfo ftp-master
+
+rm -f "$LOCK" >/dev/null 2>&1
