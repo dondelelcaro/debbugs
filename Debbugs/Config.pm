@@ -44,6 +44,7 @@ BEGIN {
 				 qw($gSubmitList $gMaintList $gQuietList $gForwardList),
 				 qw($gDoneList $gRequestList $gSubmitterList $gControlList),
 				 qw($gStrongList),
+				 qw($gPackageVersionRe),
 				 qw($gSummaryList $gMirrorList $gMailer $gBug),
 				 qw($gBugs $gRemoveAge $gSaveOldBugs $gDefaultSeverity),
 				 qw($gShowSeverities $gBounceFroms $gConfigDir $gSpoolDir),
@@ -384,7 +385,7 @@ Default: '[A-Za-z0-9:+\.-]+'
 =cut
 
 set_default(\%config,'package_version_re',
-	    '[A-Za-z0-9:+\.-]+');
+	    '[A-Za-z0-9:+\.~-]+');
 
 
 
