@@ -171,6 +171,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Allow the package pages to be optional (closes: #234362)
     - Fix package link code and link both packages (closes: #419553)
     - Save leading space when we unmime (closes: #416321)
+    - Make the version regex correct (closes: #425614)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
