@@ -210,9 +210,13 @@ sub decode_rfc1522 ($)
 {
     my ($string) = @_;
 
+    # this is craptacular, but leading space is hacked off by unmime.
+    # Save it.
+    my $leading_space = '';
+    $leading_space = $1 if $string =~ s/^(\s+)//;
     # unmime calls the default MIME::WordDecoder handler set up at
     # initialization time.
-    return MIME::WordDecoder::unmime($string);
+    return $leading_space . MIME::WordDecoder::unmime($string);
 }
 
 =head2 encode_rfc1522

@@ -336,11 +336,13 @@ END
 	if (@cats) {
 	    &transcript("Added usercategory $catname.\n\n");
 	    $u->{"categories"}->{$catname} = [ @cats ];
-	    $u->{visible_cats}{$catname} = $hidden;
+	    if (not $hidden) {
+		 push @{$u->{visible_cats}},$catname;
+	    }
 	} else {
 	    &transcript("Removed usercategory $catname.\n\n");
 	    delete $u->{"categories"}->{$catname};
-	    delete $u->{visible_cats}{$catname};
+	    @{$u->{visible_cats}} = grep {$_ ne $catname} @{$u->{visible_cats}};
 	}
 	$u->write();
     } elsif (m/^usertags?\s+\#?(-?\d+)\s+(([=+-])\s*)?(\S.*)?$/i) {
@@ -893,7 +895,7 @@ END
                 &addmaintainers($data);
 		my $oldtitle = $data->{subject};
                 $data->{subject}= $newtitle;
-                $action= "Changed $gBug title to $newtitle from $oldtitle.";
+                $action= "Changed $gBug title to `$newtitle' from `$oldtitle'.";
                 &savebug;
                 &transcript("$action\n");
                 if (length($data->{done})) {

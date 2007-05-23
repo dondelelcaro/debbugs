@@ -40,7 +40,7 @@ BEGIN{
 
      @EXPORT = ();
      %EXPORT_TAGS = ();
-     @EXPORT_OK = (qw(get_bugs));
+     @EXPORT_OK = (qw(get_bugs count_bugs));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -214,6 +214,52 @@ sub get_bugs{
      return @bugs;
 }
 
+=head2 count_bugs
+
+     count_bugs(function => sub {...})
+
+Uses a subroutine to classify bugs into categories and return the
+number of bugs which fall into those categories
+
+=cut
+
+sub count_bugs {
+     my %param = validate_with(params => \@_,
+			       spec   => {function => {type => CODEREF,
+						      },
+					  archive  => {type => BOOLEAN,
+						       default => 0,
+						      },
+					 },
+			      );
+     my $flatfile;
+     if ($param{archive}) {
+	  $flatfile = IO::File->new("$config{spool_dir}/index.archive", 'r')
+	       or die "Unable to open $config{spool_dir}/index.archive for reading: $!";
+     }
+     else {
+	  $flatfile = IO::File->new("$config{spool_dir}/index.db", 'r')
+	       or die "Unable to open $config{spool_dir}/index.db for reading: $!";
+     }
+     my %count = ();
+     while(<$flatfile>) {
+	  if (m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/) {
+	       my @x = $param{function}->(pkg       => $1,
+					  bug       => $2,
+					  status    => $4,
+					  submitter => $5,
+					  severity  => $6,
+					  tags      => $7,
+					 );
+	       local $_;
+	       $count{$_}++ foreach @x;
+	  }
+     }
+     close $flatfile;
+     return %count;
+}
+
+
 =head2 get_bugs_by_idx
 
 This routine uses the by-$index.idx indicies to try to speed up
@@ -338,12 +384,12 @@ sub get_bugs_flatfile{
 			      );
      my $flatfile;
      if ($param{archive}) {
-	  $flatfile = new IO::File "$debbugs::gSpoolDir/index.archive", 'r'
-	       or die "Unable to open $debbugs::gSpoolDir/index.archive for reading: $!";
+	  $flatfile = IO::File->new("$config{spool_dir}/index.archive", 'r')
+	       or die "Unable to open $config{spool_dir}/index.archive for reading: $!";
      }
      else {
-	  $flatfile = new IO::File "$debbugs::gSpoolDir/index.db", 'r'
-	       or die "Unable to open $debbugs::gSpoolDir/index.db for reading: $!";
+	  $flatfile = IO::File->new("$config{spool_dir}/index.db", 'r')
+	       or die "Unable to open $config{spool_dir}/index.db for reading: $!";
      }
      my %usertag_bugs;
      if (exists $param{tag} and exists $param{usertags}) {
@@ -370,11 +416,11 @@ sub get_bugs_flatfile{
      while (<$flatfile>) {
 	  next unless m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/;
 	  my ($pkg,$bug,$time,$status,$submitter,$severity,$tags) = ($1,$2,$3,$4,$5,$6,$7);
-	  next if exists $param{bug} and not grep {$bug == $_} __make_list($param{bugs});
-	  if (exists $param{pkg}) {
+	  next if exists $param{bugs} and not grep {$bug == $_} __make_list($param{bugs});
+	  if (exists $param{package}) {
 	       my @packages = splitpackages($pkg);
 	       next unless grep { my $pkg_list = $_;
-				  grep {$pkg_list eq $_} __make_list($param{pkg})
+				  grep {$pkg_list eq $_} __make_list($param{package})
 			     } @packages;
 	  }
 	  if (exists $param{src}) {

@@ -1,0 +1,97 @@
+#! /usr/bin/perl
+
+use warnings;
+use strict;
+
+use Debbugs::Config qw(:globals);
+use Debbugs::Bugs qw(count_bugs);
+use Debbugs::CGI qw(html_escape);
+use Debbugs::Status qw(get_bug_status);
+
+
+# Derived from the 'summary' script in the debbugs package, via
+# ~ajt/bugscan.
+
+my $startdate = time;
+die "failed to get time: $!" unless defined $startdate;
+
+# check the ctime of '/org/bugs.debian.org/www/stats/oldbugs.html'
+use File::stat;
+my $ob = stat '/org/bugs.debian.org/www/stats/oldbugs.html';
+if (defined $ob and (time - $ob->ctime) < 60*60*12) {
+  # If less than 12 hours have passed since we last ran this file,
+  # don't rebuild it.
+  exit 0;
+}
+
+my %excludepackage = ();
+for (qw(bugs.debian.org ftp.debian.org lists.debian.org)) {
+    $excludepackage{$_} = 1;
+}
+
+my (%oldpackage, %olddesc, %oldage);
+
+count_bugs(function => sub {
+    my %d = @_;
+
+    # Fast checks.
+    return () if $d{status} eq 'done' or
+		 $d{severity} eq 'fixed' or $d{severity} eq 'wishlist';
+    my %tags = map { $_ => 1 } split ' ', $d{tags};
+    return () if $tags{fixed};
+
+    my $status = get_bug_status($d{bug});
+    my @merged = sort split ' ', $status->{mergedwith};
+    return () if @merged and $merged[0] < $d{bug};
+
+    # 3600*24*30 (30 days)
+    my $cmonths = int(($startdate - $status->{date}) / 2592000);
+    if ($cmonths >= 24 && !length($status->{forwarded}) &&
+	    !$excludepackage{$d{pkg}}) {
+	$oldpackage{$d{bug}} = $d{pkg};
+	$olddesc{$d{bug}} = (length($d{tags}) ? "$d{tags}/" : '') .
+			    $status->{subject};
+	$oldage{$d{bug}} = $cmonths;
+    }
+});
+
+my $date = `date`;
+chomp $date;
+
+my $nrbugs = keys %oldpackage;
+
+open OLDBUGS, '> /org/bugs.debian.org/www/stats/oldbugs.html.new'
+    or die "can't open oldbugs.html.new: $!";
+print OLDBUGS <<EOF or die "can't write to oldbugs.html.new: $!";
+<html><head><title>Bugs Over Two Years Old</title></head>
+<body>
+<h1>Bugs Over Two Years Old</h1>
+
+<p>Report date: $date<br>
+Number of bugs: $nrbugs
+</p>
+EOF
+
+# TODO: sort optimization would help a lot here
+while (%oldpackage) {
+    my $firstpackage = $oldpackage{(sort { $a <=> $b } keys %oldpackage)[0]};
+
+    print OLDBUGS "<p>Package: <a href=\"http://bugs.debian.org/$firstpackage\">$firstpackage</a><br>\n" or
+	 die "can't write to oldbugs.html.new: $!";
+    # TODO: maintainer
+    # TODO: comments
+    for (sort { $a <=> $b } keys %oldpackage) {
+	if ($oldpackage{$_} eq $firstpackage) {
+	    printf OLDBUGS "<a href=\"http://bugs.debian.org/%d\">%d</a> %s<br>\n", $_, $_, html_escape($olddesc{$_}) or
+		 die "can't write to oldbugs.html.new: $!";;
+	    # TODO: comments
+	    delete $oldpackage{$_};
+	}
+    }
+    print OLDBUGS "\n";
+}
+
+close OLDBUGS or die "can't close oldbugs.html.new: $!";
+rename '/org/bugs.debian.org/www/stats/oldbugs.html.new',
+       '/org/bugs.debian.org/www/stats/oldbugs.html'
+    or die "can't rename oldbugs.html.new to oldbugs.html: $!";

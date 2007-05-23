@@ -546,7 +546,7 @@ Returns undef on failure.
 =cut
 
 # This will eventually need to be fixed before we start using mod_perl
-my $version_cache = {};
+our $version_cache = {};
 sub bug_archiveable{
      my %param = validate_with(params => \@_,
 			       spec   => {bug => {type => SCALAR,

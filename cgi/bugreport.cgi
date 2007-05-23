@@ -125,7 +125,7 @@ sub display_entity ($$$$\$\@) {
 	$$this .= '<pre class="mime">[<a href="' . bug_url(@dlargs) . qq{">$printname</a> } .
 		  "($type, $disposition)]</pre>\n";
 
-	if ($msg and defined($att) and $att eq $#$attachments) {
+	if ($msg and defined($att) and $att == $#$attachments) {
 	    my $head = $entity->head;
 	    chomp(my $type = $entity->effective_type);
 	    my $body = $entity->stringify_body;
@@ -431,7 +431,7 @@ sub handle_record{
 		      {(defined $2?$1.bug_links($2):'').$3.
 			    join(' ',map {bug_links($_)} (split /\,?\s+/, $4))}eo;
 	  # Add links to reassigned packages
-	  $output =~ s{(Bug reassigned from package \`)([^\']+)(' to \`)([^\']+)(')}
+	  $output =~ s{(Bug reassigned from package \`)([^']+)((?:'|\&\#39;) to \`)([^']+)((?:'|\&\#39;))}
 	  {$1.q(<a href=").pkg_url(pkg=>$2).qq(">$2</a>).$3.q(<a href=").pkg_url(pkg=>$4).qq(">$4</a>).$5}eo;
 	  if (defined $time) {
 	       $output .= ' ('.strftime('%a, %d %b %Y %T GMT',gmtime($time)).') ';

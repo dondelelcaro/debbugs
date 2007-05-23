@@ -1,0 +1,17 @@
+#! /bin/sh
+set -e
+
+# Called from update-versions (inside the lock) to process all *.debinfo
+# files in the queue.
+
+SOURCE="$1"
+
+cd "/org/bugs.debian.org/versions/queue/$SOURCE"
+
+find . -maxdepth 1 -name \*.debinfo -printf '%P\n' | while read x; do
+    /org/bugs.debian.org/versions/bin/merge-one-debinfo "$x" || continue
+    pkg="${x%%_*}"
+    pkghash="$(echo "$pkg" | cut -b 1)"
+    mkdir -p "/org/bugs.debian.org/versions/archive/$SOURCE/$pkghash/$pkg"
+    mv "$x" "/org/bugs.debian.org/versions/archive/$SOURCE/$pkghash/$pkg"
+done

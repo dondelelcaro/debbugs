@@ -52,9 +52,9 @@ source package names.
 
 =cut
 
-my $_pkgsrc;
-my $_pkgcomponent;
-my $_srcpkg;
+our $_pkgsrc;
+our $_pkgcomponent;
+our $_srcpkg;
 sub getpkgsrc {
     return $_pkgsrc if $_pkgsrc;
     return {} unless defined $Debbugs::Packages::gPackageSource;
@@ -116,7 +116,7 @@ with any duplicates removed.
 
 =cut
 
-my %_binarytosource;
+our %_binarytosource;
 sub binarytosource {
     my ($binname, $binver, $binarch) = @_;
 
@@ -173,7 +173,7 @@ returned, without the architecture.
 
 =cut
 
-my %_sourcetobinary;
+our %_sourcetobinary;
 sub sourcetobinary {
     my ($srcname, $srcver) = @_;
 
@@ -204,7 +204,7 @@ architecture
 
 =cut
 
-my %_versions;
+our %_versions;
 sub getversions {
     my ($pkg, $dist, $arch) = @_;
     return () unless defined $gVersionIndex;
@@ -251,7 +251,7 @@ version numbers differ from binary version numbers.
 
 =cut
 
-my %_sourceversioncache = ();
+our %_sourceversioncache = ();
 sub makesourceversions {
     my $pkg = shift;
     my $arch = shift;

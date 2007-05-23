@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 37;
+use Test::More tests => 43;
 
 use warnings;
 use strict;
@@ -135,6 +135,16 @@ my @control_commands =
 			     status_key => 'found_versions',
 			     status_value => [],
 			    },
+      'found_1.0~5+1b2'  => {command => 'found',
+			     value   => '1.0~5+1b2',
+			     status_key => 'found_versions',
+			     status_value => ['1.0~5+1b2'],
+			    },
+      'notfound_1.0~5+1b2' => {command => 'notfound',
+			       value   => '1.0~5+1b2',
+			       status_key => 'found_versions',
+			       status_value => [],
+			      },
       'fixed_1.1'        => {command => 'fixed',
 			     value   => '1.1',
 			     status_key => 'fixed_versions',

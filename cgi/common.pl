@@ -19,6 +19,7 @@ use Debbugs::MIME qw(decode_rfc1522);
 use Debbugs::Common qw(:util);
 use Debbugs::Status qw(:status :read :versions);
 use Debbugs::CGI qw(:all);
+use Debbugs::Bugs qw(count_bugs);
 
 $MLDBM::RemoveTaint = 1;
 
@@ -586,27 +587,9 @@ sub htmlizebugs {
 }
 
 sub countbugs {
-    my $bugfunc = shift;
-    if ($common_archive) {
-        open I, "<$gSpoolDir/index.archive"
-            or &quitcgi("$gSpoolDir/index.archive: $!");
-    } else {
-        open I, "<$gSpoolDir/index.db"
-            or &quitcgi("$gSpoolDir/index.db: $!");
-    }
-
-    my %count = ();
-    while(<I>) 
-    {
-        if (m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/) {
-            my @x = $bugfunc->(pkg => $1, bug => $2, status => $4, 
-                               submitter => $5, severity => $6, tags => $7);
-            local $_;
-            $count{$_}++ foreach @x;
-	}
-    }
-    close I;
-    return %count;
+     return count_bugs(function=>shift,
+		       archive => $commonarchive,
+		      );
 }
 
 sub getbugs {
