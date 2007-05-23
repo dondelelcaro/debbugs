@@ -1,0 +1,38 @@
+#! /usr/bin/perl
+
+# This script's job is to clean up the version file and remove old
+# versions when there are multiple versions older than the archive
+# date.
+
+use warnings;
+use strict;
+
+use Debbugs::Config qw(:config);
+use MLDBM qw(DB_File Storable);
+use Fcntl;
+
+$MLDBM::DumpMeth=q(portable);
+
+my %db;
+tie %db, "MLDBM", "versions_time.idx.new",O_CREAT|O_RDWR, 0664
+     or die "tie versions_time.idx.new failed: $!";
+
+my $time = time;
+for my $package (keys %db) {
+     my $temp = $db{$package};
+     for my $dist (keys %{$temp}) {
+	  for my $arch (keys %{$temp->{$dist}}) {
+	       my @versions =  (sort {$temp->{$dist}{$arch}{$a} <=>
+					   $temp->{$dist}{$arch}{$a}
+				      }
+				keys %{$temp->{$dist}{$arch}});
+	       next unless @versions > 1;
+	       for my $i (0 .. ($#versions-1)) {
+		    last if $temp->{$dist}{$arch}{$versions[$i+1]} > ($time - $config{remove_age}*60*60*24);
+		    last if keys %{$temp->{$dist}{$arch}} <= 1;
+		    delete $temp->{$dist}{$arch}{$versions[$i+1]};
+	       }
+	  }
+     }
+     $db{$package} = $temp;
+}

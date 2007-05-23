@@ -1,0 +1,197 @@
+#! /usr/bin/perl -w
+# Extract version information from an existing non-versioned database by
+# guesswork, based on Version: pseudo-headers and closing mails that look
+# like Debian changelogs. The latter in particular is somewhat heuristic.
+
+use strict;
+use Debbugs::Log;
+use Debbugs::MIME;
+
+if (@ARGV != 2) {
+    print <<EOF;
+Usage: $0 db-directory versions-directory
+
+EOF
+    exit 0;
+}
+
+sub getbuginfo ($)
+{
+    my $log = shift;
+    #print "Processing $log ...\n";
+
+    open LOG, "< $log" or die "Can't open $log: $!";
+    my @records = read_log_records(*LOG);
+    close LOG;
+
+    my (@found_versions, @fixed_versions);
+    my (%found_versions, %fixed_versions);
+
+    for my $record (@records) {
+	if ($record->{type} eq 'html') {
+	    # Reassigns zap the found and fixed version list. Reopens will
+	    # zap the fixed list too in the full deployment, but doing that
+	    # here causes problems in case of accidental reopens and
+	    # recloses.
+	    if ($record->{text} =~ /assigned/) {
+		@found_versions = ();
+		%found_versions = ();
+		@fixed_versions = ();
+		%fixed_versions = ();
+	    }
+	    next;
+	}
+
+	next unless $record->{type} eq 'autocheck' or
+		    $record->{type} eq 'incoming-recv';
+	my $decoded = Debbugs::MIME::parse($record->{text});
+	next unless defined $decoded;
+
+	# Was it sent to -done or -close?
+	my $closing = 0;
+	my $firstreceived = $decoded->{header}[0];
+	if ($firstreceived =~ /\(at [^)]*-(?:done|close)\)/) {
+	    $closing = 1;
+	}
+
+	# Get Version: pseudo-headers.
+	my $i;
+	my ($source, $sourcever, $ver);
+	for ($i = 0; $i < @{$decoded->{body}}; ++$i) {
+	    last if $decoded->{body}[$i] !~ /^(\S+):\s*(.*)/;
+	    my ($fn, $fv) = (lc $1, $2);
+	    if ($fn eq 'source') {
+		$source = $fv;
+	    } elsif ($fn eq 'source-version' and
+		     $fv =~ /^(\d[^,\s]*(?:[,\s]+|$))+/) {
+		$sourcever = $fv;
+	    } elsif ($fn eq 'version' and $fv =~ /^(\d[^,\s]*(?:[,\s]+|$))+/) {
+		# Deal with reportbug brain-damage.
+		next if $fv =~ /^unavailable/i;
+		$fv =~ s/;.*//;
+		$fv =~ s/ *\(.*\)//;
+		$ver = $fv;
+	    }
+	}
+
+	my @parsedvers;
+	if (defined $ver) {
+	    push @parsedvers, split /[,\s]+/, $ver;
+	} elsif (defined $source and defined $sourcever) {
+	    push @parsedvers, map "$source/$_", split /[,\s]+/, $sourcever;
+	}
+
+	if ($closing) {
+	    for my $v (@parsedvers) {
+		push @fixed_versions, $v
+		    unless exists $fixed_versions{$v};
+		$fixed_versions{$v} = 1;
+		@found_versions = grep { $_ ne $v } @found_versions;
+		delete $found_versions{$v};
+	    }
+	} else {
+	    for my $v (@parsedvers) {
+		push @found_versions, $v
+		    unless exists $found_versions{$v};
+		$found_versions{$v} = 1;
+		@fixed_versions = grep { $_ ne $v } @fixed_versions;
+		delete $fixed_versions{$v};
+	    }
+	}
+
+	if ($closing) {
+	    # Look for Debian changelogs.
+	    for (; $i < @{$decoded->{body}}; ++$i) {
+		if ($decoded->{body}[$i] =~
+			/(\w[-+0-9a-z.]+) \(([^\(\) \t]+)\) \S+; urgency=\S+/i) {
+		    my ($p, $v) = ($1, $2);
+		    push @fixed_versions, "$p/$v"
+			unless exists $fixed_versions{"$p/$v"};
+		    $fixed_versions{"$p/$v"} = 1;
+		    @found_versions = grep { $_ ne "$p/$v" } @found_versions;
+		    delete $found_versions{"$p/$v"};
+		    last;
+		}
+	    }
+	}
+    }
+
+    return (\@found_versions, \@fixed_versions);
+}
+
+sub mergeinto ($$)
+{
+    my ($target, $source) = @_;
+    my %seen = map { $_ => 1 } @$target;
+    for my $v (@$source) {
+	next if exists $seen{$v};
+	push @$target, $v;
+	$seen{$v} = 1;
+    }
+}
+
+my ($db, $verdb) = @ARGV[0, 1];
+opendir DB, $db or die "Can't opendir $db: $!";
+unless (-d $verdb) {
+    mkdir $verdb or die "Can't mkdir $verdb: $!";
+}
+
+while (defined(my $dir = readdir DB)) {
+    next if $dir =~ /^\.\.?$/ or not -d "$db/$dir";
+    opendir HASH, "$db/$dir" or die "Can't opendir $db/$dir: $!";
+
+    while (defined(my $file = readdir HASH)) {
+	next unless $file =~ /\.log$/;
+	next if -z "$db/$dir/$file";
+	(my $bug = $file) =~ s/\..*//;
+
+	$bug =~ /(..)$/;
+	my $bughash = $1;
+	#next if -e "$verdb/$bughash/$bug.versions" and
+	#	(stat "$verdb/$bughash/$bug.versions")[9] >=
+	#	    (stat "$db/$dir/$file")[9];
+
+	print "Processing $bug ...\n" if $ENV{DEBBUGS_VERBOSE};
+
+	open STATUS, "$db/$dir/$bug.status" or next;
+	<STATUS> for 1 .. 6;	# done is field 7
+	chomp (my $done = <STATUS>);
+	<STATUS>;		# mergedwith is field 9
+	chomp (my $mergedwith = <STATUS>);
+	close STATUS;
+
+	my ($found_versions, $fixed_versions) = getbuginfo("$db/$dir/$file");
+
+	if (length $mergedwith) {
+	    for my $merge (split ' ', $mergedwith) {
+		$merge =~ /(..)$/;
+		my $mergehash = $1;
+		my ($mfound, $mfixed) =
+		    getbuginfo("$db/$mergehash/$merge.log");
+		mergeinto($found_versions, $mfound);
+		mergeinto($fixed_versions, $mfixed);
+	    }
+	}
+
+	@$fixed_versions = () unless length $done;
+
+	for my $out ($bug, (split ' ', $mergedwith)) {
+	    $out =~ /(..)$/;
+	    my $outhash = $1;
+
+	    unless (-d "$verdb/$outhash") {
+		mkdir "$verdb/$outhash" or die "Can't mkdir $verdb/$outhash: $!";
+	    }
+
+	    open VERSIONS, "> $verdb/$outhash/$out.versions"
+		or die "Can't open $verdb/$outhash/$out.versions: $!";
+	    print VERSIONS "Found-in: @$found_versions\n";
+	    print VERSIONS "Fixed-in: @$fixed_versions\n";
+	    close VERSIONS;
+	}
+    }
+
+    closedir HASH;
+}
+
+closedir DB;

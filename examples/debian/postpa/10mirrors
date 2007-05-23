@@ -1,0 +1,26 @@
+#! /bin/sh
+
+# This script signals merkel.debian.org to mirror debbugs at most once
+# every 800 seconds
+
+set -e
+
+umask 002
+
+cd /org/bugs.debian.org
+
+[ $(( $(date +%s) - $(stat -c %Y /org/bugs.debian.org/log/mirrors.log) )) -gt 800 ] || exit 0;
+
+exec >>log/mirrors.log 2>&1
+
+signal () {
+  if [ $# = 2 ]; then
+    echo Signalling $1: $2@$1 > log/$1.log
+    key="$HOME/.ssh/bts-mirror"
+    ssh -i "$key" -o"user $2" "$1" sleep 1 &
+  fi
+}
+
+date
+
+signal merkel debbugs

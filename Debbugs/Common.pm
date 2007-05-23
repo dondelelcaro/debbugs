@@ -190,7 +190,7 @@ first address parsed.
 =cut
 
 
-my %_parsedaddrs;
+our %_parsedaddrs;
 sub getparsedaddrs {
     my $addr = shift;
     return () unless defined $addr;
@@ -200,8 +200,8 @@ sub getparsedaddrs {
     return wantarray?@{$_parsedaddrs{$addr}}:$_parsedaddrs{$addr}[0];
 }
 
-my $_maintainer;
-my $_maintainer_rev;
+our $_maintainer;
+our $_maintainer_rev;
 sub getmaintainers {
     return $_maintainer if $_maintainer;
     my %maintainer;
@@ -244,7 +244,7 @@ FLOCKs the passed file. Use unfilelock to unlock it.
 
 =cut
 
-my @filelocks;
+our @filelocks;
 our @cleanups;
 
 sub filelock {

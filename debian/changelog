@@ -166,6 +166,12 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - pkgindex.cgi limits its output with pagination (closes: #23018)
     - lc submitter address for comparsion in pkgreport.cgi
       (closes: #415628)
+    - Add quotes around retitle'd titles (closes: #419202)
+    - Make file locking portable (closes: #293277)
+    - Allow the package pages to be optional (closes: #234362)
+    - Fix package link code and link both packages (closes: #419553)
+    - Save leading space when we unmime (closes: #416321)
+    - Make the version regex correct (closes: #425614)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

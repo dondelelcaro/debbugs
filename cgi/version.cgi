@@ -267,7 +267,7 @@ else {
 }
 
 
-my %_version_relevant_cache;
+our %_version_relevant_cache;
 sub version_relevant {
      my ($version,$test_version,$relevant_versions) = @_;
      for my $dist_version (@{$relevant_versions}) {
