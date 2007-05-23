@@ -253,7 +253,7 @@ if (defined $pkg) {
   # figure out the source package
   my $pkgsrc = getpkgsrc();
   add_user($pkgsrc->{$pkg}.'@packages.debian.org')
-       if defined $pkgsrc->{$pkc};
+       if defined $pkgsrc->{$pkg};
   if (defined $version) {
     $title .= " (version $version)";
   } elsif (defined $dist) {
