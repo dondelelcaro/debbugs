@@ -29,6 +29,7 @@ use Search::Estraier;
 use Date::Manip;
 use Debbugs::Common qw(getbuglocation getbugcomponent);
 use Debbugs::Status qw(readbug);
+use Debbugs::MIME qw(parse);
 
 BEGIN{
      ($VERSION) = q$Revision: 1.3 $ =~ /^Revision:\s+([^\s+])/;
@@ -112,7 +113,9 @@ sub add_bug_message{
      my $uri = "$bug_num/$msg_num";
      $doc = $est->get_doc_by_uri($uri);
      $doc = new Search::Estraier::Document if not defined $doc;
-     $doc->add_text($bug_message);
+
+     my $message = parse($bug_message);
+     $doc->add_text(join('',values %{$message}));
 
      # * @id : the ID number determined automatically when the document is registered.
      # * @uri : the location of a document which any document should have.
