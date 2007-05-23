@@ -140,6 +140,7 @@ $user =~ s/^.*<(.*)>.*$/$1/;
 $user =~ s/[(].*[)]//;
 $user =~ s/^\s*(\S+)\s+.*$/$1/;
 $user = "" unless (Debbugs::User::is_valid_user($user));
+my $indicated_user = 0;
 
 my $quickabort = 0;
 
@@ -259,10 +260,12 @@ END
 	    my $olduser = ($user ne "" ? " (was $user)" : "");
             &transcript("Setting user to $newuser$olduser.\n");
 	    $user = $newuser;
+	    $indicated_user = 1;
 	} else {
 	    &transcript("Selected user id ($newuser) invalid, sorry\n");
 	    $errors++;
 	    $user = "";
+	    $indicated_user = 1;
 	}
     } elsif (m/^usercategory\s+(\S+)(\s+\[hidden\])?\s*$/i) {
         $ok++;
@@ -273,7 +276,16 @@ END
         my @cats;
         my $bad = 0;
 	my $catsec = 0;
-        while (++$procline <= $#bodylines) {
+	if ($user eq "") {
+	    &transcript("No valid user selected\n");
+	    $errors++;
+	    next;
+        }
+	if (not $indicated_user and defined $user) {
+	     &transcript("User is $user");
+	     $indicated_user = 1;
+	}
+	while (++$procline <= $#bodylines) {
             unless ($bodylines[$procline] =~ m/^\s*([*+])\s*(\S.*)$/) {
                 $procline--;
                 last;
@@ -354,7 +366,12 @@ END
 	if ($user eq "") {
 	    &transcript("No valid user selected\n");
 	    $errors++;
+	    $indicated_user = 1;
         } elsif (&setbug) {
+	    if (not $indicated_user and defined $user) {
+		 &transcript("User is $user");
+		 $indicated_user = 1;
+	    }
 	    &nochangebug;
 	    my %ut;
 	    Debbugs::User::read_usertags(\%ut, $user);

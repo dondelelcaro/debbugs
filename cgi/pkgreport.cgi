@@ -250,6 +250,10 @@ my @bugs;
 if (defined $pkg) {
   $title = "package $pkg";
   add_user("$pkg\@packages.debian.org");
+  # figure out the source package
+  my $pkgsrc = getpkgsrc();
+  add_user($pkgsrc->{$pkg}.'@packages.debian.org')
+       if defined $pkgsrc->{$pkc};
   if (defined $version) {
     $title .= " (version $version)";
   } elsif (defined $dist) {
