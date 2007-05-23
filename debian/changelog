@@ -173,6 +173,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Save leading space when we unmime (closes: #416321)
     - Make the version regex correct (closes: #425614)
     - Indicate the selected user (closes: #422934)
+    - Use source package for usertags where possible (closes: #415933)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
