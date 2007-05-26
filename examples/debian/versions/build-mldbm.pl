@@ -6,6 +6,7 @@ use Fcntl;
 $MLDBM::DumpMeth=q(portable);
 
 my %db;
+my %db2;
 tie %db, "MLDBM", "versions.idx.new", O_CREAT|O_RDWR, 0664
     or die "tie versions.idx.new: $!";
 tie %db2, "MLDBM", "versions_time.idx.new",O_CREAT|O_RDWR, 0664
