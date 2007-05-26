@@ -69,4 +69,4 @@ chmod 664 versions.idx.new
 mv versions.idx.new versions.idx
 
 chmod 664 versions_time.idx.new
-mv versions_time.idx versions_time.idx
+mv versions_time.idx.new versions_time.idx
