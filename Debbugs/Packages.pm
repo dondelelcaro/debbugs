@@ -1,3 +1,12 @@
+# This module is part of debbugs, and is released
+# under the terms of the GPL version 2, or any later
+# version at your option.
+# See the file README and COPYING for more information.
+#
+# [Other people have contributed to this file; their copyrights should
+# go here too.]
+# Copyright 2007 by Don Armstrong <don@donarmstrong.com>.
+
 package Debbugs::Packages;
 
 use warnings;
@@ -12,7 +21,7 @@ BEGIN {
     $VERSION = 1.00;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (versions => [qw(getversions)],
+     %EXPORT_TAGS = (versions => [qw(getversions get_versions)],
 		     mapping  => [qw(getpkgsrc getpkgcomponent getsrcpkgs),
 				  qw(binarytosource sourcetobinary makesourceversions)
 				 ],
@@ -25,6 +34,8 @@ BEGIN {
 use Fcntl qw(O_RDONLY);
 use MLDBM qw(DB_File Storable);
 use Storable qw(dclone);
+use Params::Validate qw(validate_with :types);
+use Debbugs::Common qw(make_list);
 
 $MLDBM::DumpMeth = 'portable';
 $MLDBM::RemoveTaint = 1;
@@ -204,39 +215,113 @@ architecture
 
 =cut
 
-our %_versions;
 sub getversions {
     my ($pkg, $dist, $arch) = @_;
-    return () unless defined $gVersionIndex;
-    $dist = 'unstable' unless defined $dist;
+    return get_versions(package=>$pkg,
+			dist => $dist,
+			defined $arch ? (arch => $arch):(),
+		       );
+}
 
-    unless (tied %_versions) {
-        tie %_versions, 'MLDBM', $gVersionIndex, O_RDONLY
-            or die "can't open versions index: $!";
-    }
-    my $version = $_versions{$pkg};
-    return () unless defined $version;
-    my %version = %{$version};
 
-    if (defined $arch and exists $version{$dist}{$arch}) {
-        my $ver = $version{$dist}{$arch};
-        return $ver if defined $ver;
-        return ();
-    } else {
-        my %uniq;
-        for my $ar (keys %{$version{$dist}}) {
-            $uniq{$version{$dist}{$ar}} = 1 unless $ar eq 'source';
-        }
-        if (%uniq) {
-            return keys %uniq;
-        } elsif (exists $version{$dist}{source}) {
-            # Maybe this is actually a source package with no corresponding
-            # binaries?
-            return $version{$dist}{source};
-        } else {
-            return ();
-        }
-    }
+
+=head2 get_versions
+
+     get_version(package=>'foopkg',
+                 dist => 'unstable',
+                 arch => 'i386',
+                );
+
+Returns a list of the versions of package in the distributions and
+architectures listed. This routine only returns unique values.
+
+=over
+
+=item package -- package to return list of versions
+
+=item dist -- distribution (unstable, stable, testing); can be an
+arrayref
+
+=item arch -- architecture (i386, source, ...); can be an arrayref
+
+=item time -- returns a version=>time hash at which the newest package
+matching this version was uploaded
+
+=item source -- returns source/version instead of just versions
+
+=back
+
+=cut
+
+our %_versions;
+our %_versions_time;
+
+sub get_versions{
+     my %param = validate_with(params => \@_,
+				spec   => {package => {type => SCALAR,
+						      },
+					   dist    => {type => SCALAR|ARRAYREF,
+						       default => 'unstable',
+						      },
+					   arch    => {type => SCALAR|ARRAYREF,
+						       optional => 1,
+						      },
+					   time    => {type    => BOOLEAN,
+						       default => 0,
+						      },
+					   source  => {type    => BOOLEAN,
+						       default => 0,
+						      },
+					  },
+			       );
+     my $versions;
+     if ($param{time}) {
+	  return () if not defined $gVersionTimeIndex;
+	  unless (tied %_versions_time) {
+	       tie %_versions_time, 'MLDBM', $gVersionTimeIndex, O_RDONLY
+		    or die "can't open versions index $gVersionTimeIndex: $!";
+	  }
+	  $versions = \%_versions_time;
+     }
+     else {
+	  return () if not defined $gVersionIndex;
+	  unless (tied %_versions) {
+	       tie %_versions, 'MLDBM', $gVersionIndex, O_RDONLY
+		    or die "can't open versions index $gVersionIndex: $!";
+	  }
+	  $versions = \%_versions;
+     }
+     my %versions;
+     for my $package (make_list($param{package})) {
+	  my $version = $versions->{$package};
+	  next unless defined $version;
+	  for my $dist (make_list($param{dist})) {
+	       for my $arch (exists $param{arch}?
+			     make_list($param{arch}):
+			     (keys %{$version->{$dist}})) {
+		    next unless defined $version->{$dist}{$arch};
+		    for my $ver (ref $version->{$dist}{$arch} ?
+				 keys %{$version->{$dist}{$arch}} :
+				 $version->{$dist}{$arch}
+				) {
+			 my $f_ver = $ver;
+			 if ($param{source}) {
+			      $f_ver = makesourceversions($package,$arch,$ver)
+			 }
+			 if ($param{time}) {
+			      $versions{$f_ver} = max($versions{$f_ver}||0,$version->{$dist}{$arch}{$ver});
+			 }
+			 else {
+			      $versions{$f_ver} = 1;
+			 }
+		    }
+	       }
+	  }
+     }
+     if ($param{time}) {
+	  return %versions
+     }
+     return keys %versions;
 }
 
 

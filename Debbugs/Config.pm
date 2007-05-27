@@ -1,3 +1,9 @@
+# This module is part of debbugs, and is released
+# under the terms of the GPL version 2, or any later
+# version at your option.
+# See the file README and COPYING for more information.
+#
+# Copyright 2007 by Don Armstrong <don@donarmstrong.com>.
 
 package Debbugs::Config;
 
@@ -51,6 +57,7 @@ BEGIN {
 				 qw($gIncomingDir $gWebDir $gDocDir $gMaintainerFile),
 				 qw($gMaintainerFileOverride $gPseudoDescFile $gPackageSource),
 				 qw($gVersionPackagesDir $gVersionIndex $gBinarySourceMap $gSourceBinaryMap),
+				 qw($gVersionTimeIndex),
 				 qw($gSendmail $gLibPath $gSpamScan @gExcludeFromControl),
 				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
 				 qw(%gSearchEstraier),
@@ -430,7 +437,54 @@ set_default(\%config,'maintainer_file_override',$config{config_dir}.'/Maintainer
 set_default(\%config,'pseudo_desc_file',$config{config_dir}.'/pseudo-packages.description');
 set_default(\%config,'package_source',$config{config_dir}.'/indices/sources');
 
+
+=item version_packages_dir
+
+Location where the version package information is kept; defaults to
+spool_dir/../versions/pkg
+
+=cut
+
 set_default(\%config,'version_packages_dir',$config{spool_dir}.'/../versions/pkg');
+
+=item version_time_index
+
+Location of the version/time index file. Defaults to
+spool_dir/../versions/idx/versions_time.idx
+
+=cut
+
+
+set_default(\%config,'version_time_index',$config{spool_dir}.'../versions/idx/versions_time.idx');
+
+=item version_index
+
+Location of the version index file. Defaults to
+spool_dir/../versions/idx/versions.idx
+
+=cut
+
+set_default(\%config,'version_index',$config{spool_dir}.'../versions/idx/versions.idx');
+
+=item binary_source_map
+
+Location of the binary -> source map. Defaults to
+spool_dir/../versions/idx/binsrc.idx
+
+=cut
+
+set_default(\%config,'binary_source_map',$config{spool_dir}.'../versions/idx/binsrc.idx');
+
+=item source_binary_map
+
+Location of the source -> binary map. Defaults to
+spool_dir/../versions/idx/srcbin.idx
+
+=cut
+
+set_default(\%config,'source_binary_map',$config{spool_dir}.'../versions/idx/srcbin.idx');
+
+
 
 set_default(\%config,'post_processall',[]);
 

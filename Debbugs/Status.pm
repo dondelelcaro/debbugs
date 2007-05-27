@@ -1,3 +1,11 @@
+# This module is part of debbugs, and is released
+# under the terms of the GPL version 2, or any later
+# version at your option.
+# See the file README and COPYING for more information.
+#
+# [Other people have contributed to this file; their copyrights should
+# go here too.]
+# Copyright 2007 by Don Armstrong <don@donarmstrong.com>.
 
 package Debbugs::Status;
 
@@ -31,7 +39,7 @@ use Params::Validate qw(validate_with :types);
 use Debbugs::Common qw(:util :lock :quit :misc);
 use Debbugs::Config qw(:config);
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
-use Debbugs::Packages qw(makesourceversions getversions binarytosource);
+use Debbugs::Packages qw(makesourceversions getversions get_versions binarytosource);
 use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
 use POSIX qw(ceil);
@@ -597,18 +605,11 @@ sub bug_archiveable{
 	       $dists{$tag} = 1;
 	  }
 	  my %source_versions;
-	  for my $dist (keys %dists){
-	       my @versions;
-	       @versions = getversions($status->{package},
-				       $dist,
-				       undef);
-	       # TODO: This should probably be handled further out for efficiency and
-	       # for more ease of distinguishing between pkg= and src= queries.
-	       my @sourceversions = makesourceversions($status->{package},
-						       $dist,
-						       @versions);
-	       @source_versions{@sourceversions} = (1) x @sourceversions;
-	  }
+	  my @sourceversions = get_versions(package => $status->{package},
+					    dist => [keys %dists],
+					    source => 1,
+					   );
+	  @source_versions{@sourceversions} = (1) x @sourceversions;
 	  if ('found' eq max_buggy(bug => $param{bug},
 				   sourceversions => [keys %source_versions],
 				   found          => $status->{found_versions},
@@ -618,10 +619,11 @@ sub bug_archiveable{
 				  )) {
 	       return $cannot_archive;
 	  }
+	  # Since the bug has at least been fixed in the architectures
+	  # that matters, we check to see how long it has been fixed.
+	  
      }
      # 6. at least 28 days have passed since the last action has occured or the bug was closed
-     # XXX We still need some more work here before we actually can archive;
-     # we really need to track when a bug was closed in a version.
      my $age = ceil($config{remove_age} - -M getbugcomponent($param{bug},'log'));
      if ($age > 0 ) {
 	  return $param{days_until}?$age:0;
