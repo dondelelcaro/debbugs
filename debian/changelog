@@ -177,6 +177,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Indicate the selected user (closes: #422934)
     - Use source package for usertags where possible (closes: #415933)
     - Add PR-Package header for control messages (closes: #414023)
+    - Fix double leading spaces of format=flowed messages
+      (closes: #428056)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
