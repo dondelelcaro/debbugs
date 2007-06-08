@@ -168,6 +168,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
       (closes: #415628)
     - Add quotes around retitle'd titles (closes: #419202)
     - Don't automatically make categories hidden (closes: #415932)
+    - Don't duplicate ordering (closes: #415931)
     - Make file locking portable (closes: #293277)
     - Allow the package pages to be optional (closes: #234362)
     - Fix package link code and link both packages (closes: #419553)
