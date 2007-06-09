@@ -178,7 +178,7 @@ sub display_entity ($$$$\$\@) {
 	      $body = html_escape($body);
 	      # Attempt to deal with format=flowed
 	      if ($content_type =~ m/format\s*=\s*\"?flowed\"?/i) {
-		   $body =~ s{^\s}{}mgo;
+		   $body =~ s{^\ }{}mgo;
 		   # we ignore the other things that you can do with
 		   # flowed e-mails cause they don't really matter.
 	      }
