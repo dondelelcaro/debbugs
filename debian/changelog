@@ -179,6 +179,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Add PR-Package header for control messages (closes: #414023)
     - Fix double leading spaces of format=flowed messages
       (closes: #428056)
+    - Don't doubly select users
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
