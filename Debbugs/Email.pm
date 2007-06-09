@@ -1,4 +1,4 @@
-package Debbugs::Email;  
+package Debbugs::Email;
 
 use strict;
 

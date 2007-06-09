@@ -182,6 +182,12 @@ sub display_entity ($$$$\$\@) {
 	      my $body = $entity->bodyhandle->as_string;
 	      $body = convert_to_utf8($body,$charset) if defined $charset;
 	      $body = html_escape($body);
+	      # Attempt to deal with format=flowed
+	      if ($content_type =~ m/format\s*=\s*\"?flowed\"?/i) {
+		   $body =~ s{^\s}{}mgo;
+		   # we ignore the other things that you can do with
+		   # flowed e-mails cause they don't really matter.
+	      }
 	      # Add links to URLs
 	      $body =~ s,((ftp|http|https)://[\S~-]+?/?)((\&gt\;)?[)]?[']?[:.\,]?(\s|$)),<a href=\"$1\">$1</a>$3,go;
 	      # Add links to bug closures
