@@ -1,4 +1,9 @@
-# $Id: Mail.pm,v 1.1 2005/08/17 21:46:16 don Exp $
+# This module is part of debbugs, and is released
+# under the terms of the GPL version 2, or any later
+# version at your option.
+# See the file README and COPYING for more information.
+#
+# Copyright 2004-7 by Don Armstrong <don@donarmstrong.com>.
 
 package Debbugs::Mail;
 

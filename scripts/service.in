@@ -1226,6 +1226,16 @@ if (@maintccs) {
     $maintccs .= "Cc: " . join(",\n    ",@maintccs) . "\n";
 }
 
+my %packagepr;
+for my $maint (keys %maintccreasons) {
+     for my $package (keys %{$maintccreasons{$maint}}) {
+	  next unless length $package;
+	  $packagepr{$package} = 1;
+     }
+}
+my $packagepr = '';
+$packagepr = "X-${gProject}-PR-Package: " . join(keys %packagepr) . "\n" if keys %packagepr;
+
 # Add Bcc's to subscribed bugs
 push @bcc, map {"bugs=$_\@$gListDomain"} keys %bug_affected;
 
@@ -1244,7 +1254,7 @@ In-Reply-To: $header{'message-id'}
 References: $header{'message-id'}
 Message-ID: <handler.s.$nn.transcript\@$gEmailDomain>
 Precedence: bulk
-X-$gProject-PR-Message: transcript
+${packagepr}X-$gProject-PR-Message: transcript
 
 ${transcript}Please contact me if you need assistance.
 

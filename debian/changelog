@@ -167,6 +167,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - lc submitter address for comparsion in pkgreport.cgi
       (closes: #415628)
     - Add quotes around retitle'd titles (closes: #419202)
+    - Don't automatically make categories hidden (closes: #415932)
+    - Don't duplicate ordering (closes: #415931)
     - Make file locking portable (closes: #293277)
     - Allow the package pages to be optional (closes: #234362)
     - Fix package link code and link both packages (closes: #419553)
@@ -174,6 +176,11 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Make the version regex correct (closes: #425614)
     - Indicate the selected user (closes: #422934)
     - Use source package for usertags where possible (closes: #415933)
+    - Add PR-Package header for control messages (closes: #414023)
+    - Fix double leading spaces of format=flowed messages
+      (closes: #428056)
+    - Don't doubly select users
+    - Implement versioning aware archiving support (closes: #419693)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

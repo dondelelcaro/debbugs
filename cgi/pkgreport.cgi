@@ -161,7 +161,7 @@ quitcgi("You have to choose something to select by") if (!$found);
 my %bugusertags;
 my %ut;
 for my $user (split /[\s*,]+/, $users) {
-    next unless ($user =~ m/..../);
+    next unless length($user) >= 4;
     add_user($user);
 }
 
@@ -206,9 +206,13 @@ set_option("use-bug-idx", defined($param{'use-bug-idx'}) ? $param{'use-bug-idx'}
 set_option("show_list_header", $show_list_header);
 set_option("show_list_footer", $show_list_footer);
 
+our %seen_users;
 sub add_user {
     my $ut = \%ut;
     my $u = shift;
+
+    return if $seen_users{$u};
+    $seen_users{$u} = 1;
 
     my $user = Debbugs::User::get_user($u);
 

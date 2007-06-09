@@ -1,3 +1,11 @@
+# This module is part of debbugs, and is released
+# under the terms of the GPL version 2, or any later
+# version at your option.
+# See the file README and COPYING for more information.
+#
+# [Other people have contributed to this file; their copyrights should
+# go here too.]
+# Copyright 2007 by Don Armstrong <don@donarmstrong.com>.
 
 package Debbugs::CGI;
 
