@@ -180,6 +180,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Fix double leading spaces of format=flowed messages
       (closes: #428056)
     - Don't doubly select users
+    - Implement versioning aware archiving support (closes: #419693)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

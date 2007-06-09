@@ -37,6 +37,8 @@ use Storable qw(dclone);
 use Params::Validate qw(validate_with :types);
 use Debbugs::Common qw(make_list);
 
+use List::Util qw(min max);
+
 $MLDBM::DumpMeth = 'portable';
 $MLDBM::RemoveTaint = 1;
 
@@ -135,37 +137,38 @@ sub binarytosource {
     # need an extra cache for speed here.
     return () unless defined $gBinarySourceMap;
 
-    if (tied %_binarytosource or
-	    tie %_binarytosource, 'MLDBM',
-		$gBinarySourceMap, O_RDONLY) {
-	# avoid autovivification
-	my $binary = $_binarytosource{$binname};
-	return () unless defined $binary;
-	my %binary = %{$binary};
-	if (exists $binary{$binver}) {
-	    if (defined $binarch) {
-		my $src = $binary{$binver}{$binarch};
-		return () unless defined $src; # not on this arch
-		# Copy the data to avoid tiedness problems.
-		return dclone($src);
-	    } else {
-		# Get (srcname, srcver) pairs for all architectures and
-		# remove any duplicates. This involves some slightly tricky
-		# multidimensional hashing; sorry. Fortunately there'll
-		# usually only be one pair returned.
-		my %uniq;
-		for my $ar (keys %{$binary{$binver}}) {
-		    my $src = $binary{$binver}{$ar};
-		    next unless defined $src;
-		    $uniq{$src->[0]}{$src->[1]} = 1;
-		}
-		my @uniq;
-		for my $sn (sort keys %uniq) {
-		    push @uniq, [$sn, $_] for sort keys %{$uniq{$sn}};
-		}
-		return @uniq;
-	    }
-	}
+    if (not tied %_binarytosource) {
+	 tie %_binarytosource, MLDBM => $gBinarySourceMap, O_RDONLY or
+	      die "Unable to open $gBinarySourceMap for reading";
+    }
+
+    # avoid autovivification
+    my $binary = $_binarytosource{$binname};
+    return () unless defined $binary;
+    my %binary = %{$binary};
+    if (exists $binary{$binver}) {
+	 if (defined $binarch) {
+	      my $src = $binary{$binver}{$binarch};
+	      return () unless defined $src; # not on this arch
+	      # Copy the data to avoid tiedness problems.
+	      return dclone($src);
+	 } else {
+	      # Get (srcname, srcver) pairs for all architectures and
+	      # remove any duplicates. This involves some slightly tricky
+	      # multidimensional hashing; sorry. Fortunately there'll
+	      # usually only be one pair returned.
+	      my %uniq;
+	      for my $ar (keys %{$binary{$binver}}) {
+		   my $src = $binary{$binver}{$ar};
+		   next unless defined $src;
+		   $uniq{$src->[0]}{$src->[1]} = 1;
+	      }
+	      my @uniq;
+	      for my $sn (sort keys %uniq) {
+		   push @uniq, [$sn, $_] for sort keys %{$uniq{$sn}};
+	      }
+	      return @uniq;
+	 }
     }
 
     # No $gBinarySourceMap, or it didn't have an entry for this name and
@@ -188,20 +191,22 @@ our %_sourcetobinary;
 sub sourcetobinary {
     my ($srcname, $srcver) = @_;
 
-    if (tied %_sourcetobinary or
-	    tie %_sourcetobinary, 'MLDBM',
-		$gSourceBinaryMap, O_RDONLY) {
-	# avoid autovivification
-	my $source = $_sourcetobinary{$srcname};
-	return () unless defined $source;
-	my %source = %{$source};
-	if (exists $source{$srcver}) {
-	    my $bin = $source{$srcver};
-	    return () unless defined $bin;
-	    return @$bin;
-	}
+    if (not tied %_sourcetobinary) {
+	 tie %_sourcetobinary, MLDBM => $gSourceBinaryMap, O_RDONLY or
+	      die "Unable top open $gSourceBinaryMap for reading";
     }
 
+
+
+    # avoid autovivification
+    my $source = $_sourcetobinary{$srcname};
+    return () unless defined $source;
+    my %source = %{$source};
+    if (exists $source{$srcver}) {
+	 my $bin = $source{$srcver};
+	 return () unless defined $bin;
+	 return @$bin;
+    }
     # No $gSourceBinaryMap, or it didn't have an entry for this name and
     # version. Try $gPackageSource (unversioned) instead.
     my @srcpkgs = getsrcpkgs($srcname);
@@ -306,7 +311,7 @@ sub get_versions{
 				) {
 			 my $f_ver = $ver;
 			 if ($param{source}) {
-			      $f_ver = makesourceversions($package,$arch,$ver)
+			      ($f_ver) = makesourceversions($package,$arch,$ver);
 			 }
 			 if ($param{time}) {
 			      $versions{$f_ver} = max($versions{$f_ver}||0,$version->{$dist}{$arch}{$ver});

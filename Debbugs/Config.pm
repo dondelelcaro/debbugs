@@ -450,39 +450,43 @@ set_default(\%config,'version_packages_dir',$config{spool_dir}.'/../versions/pkg
 =item version_time_index
 
 Location of the version/time index file. Defaults to
-spool_dir/../versions/idx/versions_time.idx
+spool_dir/../versions/idx/versions_time.idx if spool_dir/../versions
+exists; otherwise defaults to undef.
 
 =cut
 
 
-set_default(\%config,'version_time_index',$config{spool_dir}.'../versions/idx/versions_time.idx');
+set_default(\%config,'version_time_index', -d $config{spool_dir}.'/../versions' ? $config{spool_dir}.'/../versions/indices/versions_time.idx' : undef);
 
 =item version_index
 
 Location of the version index file. Defaults to
-spool_dir/../versions/idx/versions.idx
+spool_dir/../versions/indices/versions.idx if spool_dir/../versions
+exists; otherwise defaults to undef.
 
 =cut
 
-set_default(\%config,'version_index',$config{spool_dir}.'../versions/idx/versions.idx');
+set_default(\%config,'version_index',-d $config{spool_dir}.'/../versions' ? $config{spool_dir}.'/../versions/indices/versions.idx' : undef);
 
 =item binary_source_map
 
 Location of the binary -> source map. Defaults to
-spool_dir/../versions/idx/binsrc.idx
+spool_dir/../versions/indices/bin2src.idx if spool_dir/../versions
+exists; otherwise defaults to undef.
 
 =cut
 
-set_default(\%config,'binary_source_map',$config{spool_dir}.'../versions/idx/binsrc.idx');
+set_default(\%config,'binary_source_map',-d $config{spool_dir}.'/../versions' ? $config{spool_dir}.'/../versions/indices/binsrc.idx' : undef);
 
 =item source_binary_map
 
 Location of the source -> binary map. Defaults to
-spool_dir/../versions/idx/srcbin.idx
+spool_dir/../versions/indices/src2bin.idx if spool_dir/../versions
+exists; otherwise defaults to undef.
 
 =cut
 
-set_default(\%config,'source_binary_map',$config{spool_dir}.'../versions/idx/srcbin.idx');
+set_default(\%config,'source_binary_map',-d $config{spool_dir}.'/../versions' ? $config{spool_dir}.'/../versions/indices/srcbin.idx' : undef);
 
 
 

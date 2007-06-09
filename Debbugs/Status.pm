@@ -44,6 +44,8 @@ use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
 use POSIX qw(ceil);
 
+use List::Util qw(min max);
+
 
 BEGIN{
      $VERSION = 1.00;
@@ -593,14 +595,16 @@ sub bug_archiveable{
 
      # There must be fixed_versions for us to look at the versioning
      # information
+     my $min_fixed_time = time;
+     my $min_archive_days = 0;
      if (@{$status->{fixed_versions}}) {
 	  my %dist_tags;
 	  @dist_tags{@{$config{removal_distribution_tags}}} =
 	       (1) x @{$config{removal_distribution_tags}};
 	  my %dists;
-	  @dists{@{$config{removal_default_distribution_tags}}} = 
+	  @dists{@{$config{removal_default_distribution_tags}}} =
 	       (1) x @{$config{removal_default_distribution_tags}};
-	  for my $tag (split ' ', $status->{tags}) {
+	  for my $tag (split ' ', ($status->{tags}||'')) {
 	       next unless $dist_tags{$tag};
 	       $dists{$tag} = 1;
 	  }
@@ -610,6 +614,8 @@ sub bug_archiveable{
 					    source => 1,
 					   );
 	  @source_versions{@sourceversions} = (1) x @sourceversions;
+	  # If the bug has not been fixed in the versions actually
+	  # distributed, then it cannot be archived.
 	  if ('found' eq max_buggy(bug => $param{bug},
 				   sourceversions => [keys %source_versions],
 				   found          => $status->{found_versions},
@@ -621,12 +627,33 @@ sub bug_archiveable{
 	  }
 	  # Since the bug has at least been fixed in the architectures
 	  # that matters, we check to see how long it has been fixed.
-	  
+
+	  # To do this, we order the times from most recent to oldest;
+	  # when we come to the first found version, we stop.
+	  # If we run out of versions, we only report the time of the
+	  # last one.
+	  my %time_versions = get_versions(package => $status->{package},
+					   dist    => [keys %dists],
+					   source  => 1,
+					   time    => 1,
+					  );
+	  for my $version (sort {$time_versions{$b} <=> $time_versions{$a}} keys %time_versions) {
+	       my $buggy = buggy(bug => $param{bug},
+				 version        => $version,
+				 found          => $status->{found_versions},
+				 fixed          => $status->{fixed_versions},
+				 version_cache  => $version_cache,
+				 package        => $status->{package},
+				);
+	       last if $buggy eq 'found';
+	       $min_fixed_time = min($time_versions{$version},$min_fixed_time);
+	  }
+	  $min_archive_days = max($min_archive_days,ceil((time - $min_fixed_time)/(60*60*24)));
      }
      # 6. at least 28 days have passed since the last action has occured or the bug was closed
      my $age = ceil($config{remove_age} - -M getbugcomponent($param{bug},'log'));
-     if ($age > 0 ) {
-	  return $param{days_until}?$age:0;
+     if ($age > 0 or $min_archive_days > 0) {
+	  return $param{days_until}?max($age,$min_archive_days):0;
      }
      else {
 	  return $param{days_until}?0:1;
