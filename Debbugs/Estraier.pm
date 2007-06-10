@@ -76,7 +76,7 @@ sub add_bug_log{
 	  my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
 	  next if defined $msg_id and exists $seen_msg_ids{$msg_id};
 	  $seen_msg_ids{$msg_id} = 1 if defined $msg_id;
-	  next if $msg_id =~ /handler\..+\.ack(?:info)?\@/;
+	  next if defined $msg_id and $msg_id =~ /handler\..+\.ack(?:info)?\@/;
 	  add_bug_message($est,$record->{text},$bug_num,$msg_num,$status)
      }
      return $msg_num;
