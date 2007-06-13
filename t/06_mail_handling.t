@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 43;
+use Test::More tests => 52;
 
 use warnings;
 use strict;
@@ -113,7 +113,7 @@ ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: P
    'control@bugs.something message was parsed without errors');
 # now we need to check to make sure that the control message actually did anything
 # This is an eval because $ENV{DEBBUGS_CONFIG_FILE} isn't set at BEGIN{} time
-eval "use Debbugs::Status qw(read_bug);";
+eval "use Debbugs::Status qw(read_bug writebug);";
 my $status = read_bug(bug=>1);
 ok($status->{subject} eq 'new title','bug 1 retitled');
 ok($status->{severity} eq 'wishlist','bug 1 wishlisted');
@@ -176,9 +176,28 @@ my @control_commands =
 		       status_key => 'owner',
 		       status_value => '',
 		      },
-
+      close        => {command => 'close',
+		       value   => '',
+		       status_key => 'done',
+		       status_value => 'foo@bugs.something',
+		      },
+      archive      => {command => 'archive',
+		       value   => '',
+		       status_key => 'owner',
+		       status_value => '',
+		       location => 'archive',
+		      },
+      unarchive    => {command => 'unarchive',
+		       value   => '',
+		       status_key => 'owner',
+		       status_value => '',
+		      },
      );
 
+# In order for the archive/unarchive to work, we have to munge the summary file slightly
+$status = read_bug(bug => 1);
+$status->{unarchived} = time;
+writebug(1,$status);
 while (my ($command,$control_command) = splice(@control_commands,0,2)) {
      # just check to see that control doesn't explode
      $control_command->{value} = " $control_command->{value}" if length $control_command->{value}
@@ -200,7 +219,10 @@ EOF
      ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Munging a bug with $command")) == 0,
 	'control@bugs.something'. "$command message was parsed without errors");
      # now we need to check to make sure that the control message actually did anything
-     my $status = read_bug(bug=>1);
+     my $status;
+     $status = read_bug(bug=>1,
+			exists $control_command->{location}?(location => $control_command->{location}):(),
+		       );
      is_deeply($status->{$control_command->{status_key}},$control_command->{status_value},"bug 1 $command")
 	  or fail(Dumper($status));
 }

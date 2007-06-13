@@ -55,7 +55,7 @@ BEGIN{
      %EXPORT_TAGS = (status => [qw(splitpackages get_bug_status buggy bug_archiveable),
 				qw(isstrongseverity bug_presence),
 			       ],
-		     read   => [qw(readbug read_bug lockreadbug)],
+		     read   => [qw(readbug read_bug lockreadbug lockreadbugmerge)],
 		     write  => [qw(writebug makestatus unlockwritebug)],
 		     versions => [qw(addfoundversions addfixedversions),
 				  qw(removefoundversions removefixedversions)
@@ -96,6 +96,7 @@ my %fields = (originator     => 'submitter',
 	      fixed_date     => 'fixed-date',
               blocks         => 'blocks',
               blockedby      => 'blocked-by',
+	      unarchived     => 'unarchived',
              );
 
 # Fields which need to be RFC1522-decoded in format versions earlier than 3.
@@ -238,6 +239,36 @@ sub lockreadbug {
     &unfilelock unless defined $data;
     return $data;
 }
+
+=head2 lockreadbugmerge
+
+     my ($locks, $data) = lockreadbugmerge($bug_num,$location);
+
+Performs a filelock, then reads the bug. If the bug is merged, locks
+the merge lock. Returns a list of the number of locks and the bug
+data.
+
+=cut
+
+sub lockreadbugmerge {
+     my ($bug_num,$location) = @_;
+     my $data = lockreadbug(@_);
+     if (not defined $data) {
+	  return (0,undef);
+     }
+     if (not length $data->{mergedwith}) {
+	  return (1,$data);
+     }
+     unfilelock();
+     filelock('lock/merge');
+     $data = lockreadbug(@_);
+     if (not defined $data) {
+	  unfilelock();
+	  return (0,undef);
+     }
+     return (2,$data);
+}
+
 
 my @v1fieldorder = qw(originator date subject msgid package
                       keywords done forwarded mergedwith severity);
@@ -568,6 +599,9 @@ sub bug_archiveable{
 					  days_until => {type => BOOLEAN,
 							 default => 0,
 							},
+					  ignore_time => {type => BOOLEAN,
+							  default => 0,
+							 },
 					 },
 			      );
      # This is what we return if the bug cannot be archived.
@@ -583,8 +617,9 @@ sub bug_archiveable{
      return $cannot_archive if not defined $status->{done} or not length $status->{done};
      # If we just are checking if the bug can be archived, we'll not even bother
      # checking the versioning information if the bug has been -done for less than 28 days.
-     if (not $param{days_until} and $config{remove_age} >
-	 -M getbugcomponent($param{ref},'log')
+     if (not $param{days_until} and not $param{ignore_time}
+	 and $config{remove_age} >
+	 -M getbugcomponent($param{bug},'log')
 	) {
 	  return $cannot_archive;
      }
@@ -628,6 +663,11 @@ sub bug_archiveable{
 	  # Since the bug has at least been fixed in the architectures
 	  # that matters, we check to see how long it has been fixed.
 
+	  # If $param{ignore_time}, then we should ignore time.
+	  if ($param{ignore_time}) {
+	       return $param{days_until}?0:1;
+	  }
+
 	  # To do this, we order the times from most recent to oldest;
 	  # when we come to the first found version, we stop.
 	  # If we run out of versions, we only report the time of the
@@ -649,6 +689,10 @@ sub bug_archiveable{
 	       $min_fixed_time = min($time_versions{$version},$min_fixed_time);
 	  }
 	  $min_archive_days = max($min_archive_days,ceil((time - $min_fixed_time)/(60*60*24)));
+     }
+     # If $param{ignore_time}, then we should ignore time.
+     if ($param{ignore_time}) {
+	  return $param{days_until}?0:1;
      }
      # 6. at least 28 days have passed since the last action has occured or the bug was closed
      my $age = ceil($config{remove_age} - -M getbugcomponent($param{bug},'log'));

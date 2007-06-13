@@ -13,6 +13,9 @@ use HTML::Entities qw(encode_entities);
 
 use Debbugs::Config qw(:globals :config);
 use Debbugs::CGI qw(html_escape);
+use Debbugs::Control qw(:archive :log);
+use Debbugs::Log qw(:misc);
+
 $lib_path = $gLibPath;
 require "$lib_path/errorlib";
 $ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
@@ -1179,6 +1182,53 @@ END
                 &nochangebug;
             }
         }
+    } elsif (m/^unarchive\s+#?(\d+)$/i) {
+	 $ok++;
+	 $ref = $1;
+	 $bug_affected{$ref} = 1;
+	 my $transcript;
+	 eval {
+	      bug_unarchive(bug        => $ref,
+			    transcript => \$transcript,
+			    affected_bugs => \%bug_affected,
+			    requester => $header{from},
+			    request_addr => $controlrequestaddr,
+			    message => \@log,
+			   );
+	 };
+	 if ($@) {
+	      $errors++;
+	 }
+	 transcript($transcript."\n");
+    } elsif (m/^archive\s+#?(\d+)$/i) {
+	 $ok++;
+	 $ref = $1;
+	 $bug_affected{$ref} = 1;
+	 if (&setbug) {
+	      if (exists $data->{unarchived}) {
+		   my $transcript;
+		   nochangebug();
+		   eval {
+			bug_archive(bug => $ref,
+				    transcript => \$transcript,
+				    ignore_time => 1,
+				    affected_bugs => \%bug_affected,
+				    requester => $header{from},
+				    request_addr => $controlrequestaddr,
+				    message => \@log,
+				   );
+		   };
+		   if ($@) {
+			$errors++;
+		   }
+		   transcript($transcript."\n");
+	      }
+	      else {
+		   transcript("$gBug $ref has not been archived previously\n\n");
+		   nochangebug();
+		   $errors++;
+	      }
+	 }
     } else {
         &transcript("Unknown command or malformed arguments to command.\n\n");
 	$errors++;
@@ -1264,6 +1314,7 @@ $extras
 END
 
 $repliedshow= join(', ',$replyto,@maintccaddrs);
+# -1 is the service.in log
 &filelock("lock/-1");
 open(AP,">>db-h/-1.log") || &quit("open db-h/-1.log: $!");
 print(AP
@@ -1273,7 +1324,7 @@ print(AP
       html_escape($header{'from'})."</code>\n".
       "to <code>".html_escape($controlrequestaddr)."</code>\n".
       "\3\n".
-      "\7\n",@{escapelog(@log)},"\n\3\n") || &quit("writing db-h/-1.log: $!");
+      "\7\n",escape_log(@log),"\n\3\n") || &quit("writing db-h/-1.log: $!");
 close(AP) || &quit("open db-h/-1.log: $!");
 &unfilelock;
 utime(time,time,"db-h");
@@ -1499,17 +1550,13 @@ sub savebug {
     $lowstate eq 'open' || die "$lowstate ?";
     length($action) || die;
     $ref == $sref || die "read $sref but saving $ref ?";
-    my $hash = get_hashname($ref);
-    open(L,">>db-h/$hash/$ref.log") || &quit("opening db-h/$hash/$ref.log: $!");
-    print(L
-          "\6\n".
-	  "<!-- time:".time." -->\n".
-          "<strong>".html_escape($action)."</strong>\n".
-          "Request was from <code>".html_escape($header{'from'})."</code>\n".
-          "to <code>".html_escape($controlrequestaddr)."</code>. \n".
-          "\3\n".
-          "\7\n",@{escapelog(@log)},"\n\3\n") || &quit("writing db-h/$hash/$ref.log: $!");
-    close(L) || &quit("closing db-h/$hash/$ref.log: $!");
+    append_action_to_log(bug => $ref,
+			 action => $action,
+			 requester => $header{from},
+			 request_addr => $controlrequestaddr,
+			 message => \@log,
+			 get_lock => 0,
+			);
     unlockwritebug($ref, $data);
     $lowstate= "idle";
     &dlex("savebug");

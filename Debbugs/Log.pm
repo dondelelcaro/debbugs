@@ -5,21 +5,34 @@
 #
 # [Other people have contributed to this file; their copyrights should
 # go here too.]
-# Copyright 2004 by Collin Waston <cjwatson@debian.org>
+# Copyright 2004 by Collin Watson <cjwatson@debian.org>
+# Copyright 2007 by Don Armstrong <don@donarmstrong.com>
 
 
 package Debbugs::Log;
 
+
+use warnings;
 use strict;
 
-use Exporter ();
-use vars qw($VERSION @ISA @EXPORT);
+use vars qw($VERSION $DEBUG @EXPORT @EXPORT_OK %EXPORT_TAGS);
+use base qw(Exporter);
 
 BEGIN {
     $VERSION = 1.00;
+    $DEBUG = 0 unless defined $DEBUG;
 
-    @ISA = qw(Exporter);
-    @EXPORT = qw(read_log_records write_log_records);
+    @EXPORT = ();
+    %EXPORT_TAGS = (write => [qw(write_log_records),
+			     ],
+		    read  => [qw(read_log_records),
+			     ],
+		    misc  => [qw(escape_log),
+			     ],
+		   );
+    @EXPORT_OK = ();
+    Exporter::export_ok_tags(qw(write read misc));
+    $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
 =head1 NAME
@@ -255,7 +268,7 @@ sub write_log_records (*@)
 
     for my $record (@records) {
 	my $type = $record->{type};
-	my $text = $record->{text};
+	my ($text) = escapelog($record->{text});
 	die "type '$type' with no text field" unless defined $text;
 	if ($type eq 'autocheck') {
 	    print $logfh "\01\n$text\03\n";
@@ -269,12 +282,12 @@ sub write_log_records (*@)
 	    } else {
 		print $logfh "-t\n";
 	    }
-	    $text =~ s/^([\01-\07\030])/\030$1/gm;
+	    #$text =~ s/^([\01-\07\030])/\030$1/gm;
 	    print $logfh "\05\n$text\03\n";
 	} elsif ($type eq 'html') {
 	    print $logfh "\06\n$text\03\n";
 	} elsif ($type eq 'incoming-recv') {
-	    $text =~ s/^([\01-\07\030])/\030$1/gm;
+	    #$text =~ s/^([\01-\07\030])/\030$1/gm;
 	    print $logfh "\07\n$text\03\n";
 	} else {
 	    die "unknown type '$type'";
@@ -283,6 +296,20 @@ sub write_log_records (*@)
 
     1;
 }
+
+=head2 escapelog
+
+     print {$log} escapelog(@log)
+
+Applies the log escape regex to the passed logfile.
+
+=cut
+
+sub escape_log {
+	my @log = @_;
+	return map { s/^([\01-\07\030])/\030$1/gm; $_ } @log;
+}
+
 
 =back
 

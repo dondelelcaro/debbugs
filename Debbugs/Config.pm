@@ -395,6 +395,32 @@ set_default(\%config,'package_version_re',
 	    '[A-Za-z0-9:+\.~-]+');
 
 
+=item control_internal_requester
+
+This address is used by Debbugs::Control as the request address which
+sent a control request for faked log messages.
+
+Default:"Debbugs Internal Request <$config{maintainer_email}>"
+
+=cut
+
+set_default(\%config,'control_internal_requester',
+	    "Debbugs Internal Request <$config{maintainer_email}>",
+	   );
+
+=item control_internal_request_addr
+
+This address is used by Debbugs::Control as the address to which a
+faked log message request was sent.
+
+Default: "internal_control\@$config{email_domain}";
+
+=cut
+
+set_default(\%config,'control_internal_request_addr',
+	    'internal_control@'.$config{email_domain},
+	   );
+
 
 =item exclude_from_control
 
