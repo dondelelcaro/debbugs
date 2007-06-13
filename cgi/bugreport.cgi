@@ -11,7 +11,7 @@ use IO::File;
 use Debbugs::Config qw(:globals :text);
 
 # for read_log_records
-use Debbugs::Log;
+use Debbugs::Log qw(read_log_records);
 use Debbugs::MIME qw(convert_to_utf8 decode_rfc1522 create_mime_message);
 use Debbugs::CGI qw(:url :html :util);
 use Debbugs::Common qw(buglog getmaintainers);

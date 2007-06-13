@@ -189,7 +189,7 @@ sub appendfile {
 =head2 getparsedaddrs
 
      my $address = getparsedaddrs($address);
-     my @address = getpasredaddrs($address);
+     my @address = getparsedaddrs($address);
 
 Returns the output from Mail::Address->parse, or the cached output if
 this address has been parsed before. In SCALAR context returns the

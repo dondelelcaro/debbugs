@@ -13,17 +13,6 @@ sub unlockreadbugmerge {
     &unfilelock if $rv >= 1;
 }
 
-sub lockreadbugmerge {
-    local ($lref, $location) = @_;
-    local $data;
-    if (!($data = &lockreadbug($lref, $location))) { return ( 0, undef ); }
-    if (!length($data->{mergedwith})) { return ( 1, $data ); }
-    &unfilelock;
-    &filelock('lock/merge');
-    if (!&lockreadbug($lref, $location)) { &unfilelock; return ( 0, undef ); }
-    return ( 2, $data );
-}
-
 %saniarray= ('<','lt', '>','gt', '&','amp', '"','quot');
 
 sub sani {
