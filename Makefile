@@ -14,7 +14,10 @@ examples_dir	:= $(doc_dir)/examples
 scripts_in	:= $(filter-out scripts/config.in scripts/errorlib.in scripts/text.in, $(wildcard scripts/*.in))
 htmls_in	:= $(wildcard html/*.html.in)
 cgis		:= $(wildcard cgi/*.cgi cgi/*.pl)
-perls		:= $(foreach name,Log MIME Mail Packages Versions,Debbugs/$(name).pm)
+
+# We use the Makefile.PL to install these; not totally decided if we
+# should switch entirely to this model.
+#perls		:= $(shell find Debbugs -type f -iname '*.pm')
 
 install_exec	:= install -m755 -p
 install_data	:= install -m644 -p
@@ -64,8 +67,10 @@ $(var_dir)/spool/db-h $(scripts_dir) $(perl_dir) $(examples_dir) $(man8_dir); \
 	for cgi in $(cgis); do $(install_exec) $$cgi $(var_dir)/www/cgi; done
 	$(install_exec) cgi/bugs-fetch2.pl.in $(var_dir)/www/cgi/bugs-fetch2.pl
 
-	# install Perl modules
-	for perl in $(perls); do $(install_data) $$perl $(perl_dir); done
+#	# install Perl modules
+#	for perl in $(perls); do $(install_data) $$perl $(perl_dir); done
+	# Make documentation for the perl modules
+
 
 	# install debbugsconfig
 	$(install_exec) debian/debbugsconfig $(sbin_dir)

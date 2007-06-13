@@ -6,38 +6,59 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-tmp_dir		:= $(CURDIR)/debian/tmp
+DEST_DIR := $(CURDIR)/debian/tmp
+PERL ?= /usr/bin/perl
 
-build:
+
+build: build-stamp
+build-stamp:
 # Call the test suite
+	$(PERL) Makefile.PL INSTALLDIRS=vendor
+	$(MAKE) -f Makefile.perl
 	$(MAKE) test
+	touch $@
 
 clean:
 	dh_testdir
 	dh_testroot
+	rm -f *-stamp;
+	-$(MAKE) -f Makefile.perl clean;
 	#something to remove all trace and *.trace files?
-	dh_clean build-stamp
+	dh_clean
+
+install: install-stamp
+install-stamp: build
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+	$(MAKE) install_mostfiles DESTDIR=$(DEST_DIR)
+	$(MAKE) -f Makefile.perl install PREFIX=$(DEST_DIR)/usr
+	touch $@
 
 binary-arch:
 # nothing to do, as there aren't any architecture-dependent packages
 
-binary-indep: build install
+binary-indep:
 	dh_testdir
 	dh_testroot
 	dh_clean -k
 	dh_installdirs
-	$(MAKE) install_mostfiles DESTDIR=$(tmp_dir)
+	$(MAKE) install_mostfiles DESTDIR=$(DEST_DIR)
+	$(MAKE) -f Makefile.perl install PREFIX=$(DEST_DIR)/usr
+	dh_install --sourcedir=debian/tmp --list-missing
 	dh_installdocs
 	dh_installchangelogs
 	dh_strip
-	dh_compress -X examples/text
 	dh_fixperms
 	#chown bugs.bugs $(var_dir)/spool/incoming
 	dh_installdeb
+	dh_perl
+	dh_compress -X examples/text
 	dh_shlibdeps
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
+
 
 binary: binary-indep binary-arch
 .PHONY: build clean install binary-indep binary-arch binary

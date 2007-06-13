@@ -14,6 +14,8 @@ use Debbugs::User qw(read_usertags write_usertags);
 
 use Debbugs::CGI qw(html_escape);
 
+use Debbugs::Log qw(:misc);
+
 # TODO DLA; needs config reworking and errorlib reworking
 # use warnings;
 # use strict;
@@ -1069,7 +1071,7 @@ sub appendlog {
         print DEBUG "failed open log err $!<\n";
         &quit("opening db-h/$hash/$ref.log (li): $!");
     }
-    print(AP "\7\n",@{escapelog(@log)},"\n\3\n") || &quit("writing db-h/$hash/$ref.log (li): $!");
+    print(AP "\7\n",escape_log(@log),"\n\3\n") || &quit("writing db-h/$hash/$ref.log (li): $!");
     close(AP) || &quit("closing db-h/$hash/$ref.log (li): $!");
 }
 
@@ -1153,7 +1155,7 @@ sub sendmessage {
     #save email to the log
     open(AP,">>db-h/$hash/$ref.log") || &quit("opening db-h/$hash/$ref.log (lo): $!");
     print(AP "\2\n",join("\4",@$recips),"\n\5\n",
-          @{escapelog(stripbccs($msg))},"\n\3\n") ||
+          escape_log(stripbccs($msg)),"\n\3\n") ||
         &quit("writing db-h/$hash/$ref.log (lo): $!");
     close(AP) || &quit("closing db-h/$hash/$ref.log (lo): $!");
 

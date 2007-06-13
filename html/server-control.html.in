@@ -337,6 +337,18 @@ mailservers is available via the WWW, in
   <dd>Forgets any idea that the $gBug has an owner other than the usual
   maintainer.  If the $gBug had no owner recorded then this will do nothing.
 
+<dt><code>archive</code> <var>bugnumber</var>
+
+  <dd>Archives a $gBug that was previously archived if the $gBug
+  fulfills the requirements for archival, ignoring time.
+
+<dt><code>unarchive</code> <var>bugnumber</var>
+
+  <dd>Unarchives a $gBug that was previously archived. Unarchival
+  should generally be coupled with reopen and found/fixed as
+  approprite. Bugs that have been unarchived can be archived using
+  archive assuming the non-time based archival requirements are met.
+
 <dt><code>#</code>...
 
   <dd>One-line comment. The <code>#</code> must be at the start of the line.
