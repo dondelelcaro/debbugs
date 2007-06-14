@@ -135,6 +135,9 @@ sub send_mail_message{
      my @recipients;
      @recipients = @{$param{recipients}} if defined $param{recipients} and
 	  ref($param{recipients}) eq 'ARRAY';
+     my %recipients;
+     @recipients{@recipients} = (1) x @recipients;
+     @recipients = keys %recipients;
      # If there are no recipients, use -t to parse the message
      if (@recipients == 0) {
 	  $param{parse_for_recipients} = 1 unless exists $param{parse_for_recipients};
