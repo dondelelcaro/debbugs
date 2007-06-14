@@ -183,6 +183,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Implement versioning aware archiving support (closes: #339141)
     - Split out packages so that you don't have to install the mail stuff
       unless you want it.
+    - Only mail duplicated recipients once (closes: #172635)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
