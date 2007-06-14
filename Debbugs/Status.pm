@@ -160,8 +160,10 @@ sub read_bug{
 	 if not exists $param{bug} and not exists $param{summary};
     my $status;
     my $log;
+    my $location;
     if (not defined $param{summary}) {
-	 my ($lref, $location) = @param{qw(bug location)};
+	 my $lref;
+	 ($lref,$location) = @param{qw(bug location)};
 	 if (not defined $location) {
 	      $location = getbuglocation($lref,'summary');
 	      return undef if not defined $location;
@@ -172,6 +174,9 @@ sub read_bug{
     }
     else {
 	 $status = $param{summary};
+	 $log = $status;
+	 $log =~ s/\.summary$/.log/;
+	 ($location) = $status =~ m/(db-h|db|archive)/;
     }
     my $status_fh = new IO::File $status, 'r' or
 	 warn "Unable to open $status for reading: $!" and return undef;
@@ -220,6 +225,7 @@ sub read_bug{
     }
     # Add log last modified time
     $data{log_modified} = (stat($log))[9];
+    $data{location} = $location;
 
     return \%data;
 }

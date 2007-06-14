@@ -10,6 +10,7 @@ use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
 use Debbugs::Mail qw(send_mail_message);
 use Debbugs::User;
 use HTML::Entities qw(encode_entities);
+use Debbugs::Versions::Dpkg;
 
 use Debbugs::Config qw(:globals :config);
 use Debbugs::CGI qw(html_escape);
@@ -554,17 +555,16 @@ END
                     # tracking, because a bug may be closed by multiple
                     # people in different branches. Until we have something
                     # more flexible, we set it every time a bug is fixed,
-                    # and clear it precisely when a found command is
-                    # received for the rightmost fixed-in version, which
-                    # equates to the most recent fixing of the bug, or when
-                    # a versionless found command is received.
-                    if (defined $version) {
-                        my $lastfixed = $data->{fixed_versions}[-1];
-                        # TODO: what if $data->{package} is a source package?
+                    # and clear it when a bug is found in a version greater
+		    # than any version in which the bug is fixed or when
+		    # a bug is found and there is no fixed version
+		    if (defined $version) {
                         addfoundversions($data, $data->{package}, $version, 'binary');
-                        if (defined $lastfixed and not grep { $_ eq $lastfixed } @{$data->{fixed_versions}}) {
-                            $data->{done} = '';
-                        }
+			my @fixed_order = sort {Debbugs::Versions::Dpkg::vercmp($a,$b);}
+			     @{$data->{fixed_versions}};
+			if (not @fixed_order or (vercmp($fixed_order[-1],$version) >= 0)) {
+			     $data->{done} = '';
+			}
                     } else {
                         # Versionless found; assume old-style "not fixed at
                         # all".
