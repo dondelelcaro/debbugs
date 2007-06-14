@@ -259,7 +259,9 @@ if (defined $pkg) {
     $title .= " ($verdesc)" if defined $verdesc;
   }
   my @pkgs = split /,/, $pkg;
-  @bugs = get_bugs(package=>\@pkgs);
+  @bugs = get_bugs(package=>\@pkgs,
+		   archive=>$archive
+		  );
 } elsif (defined $src) {
   add_user("$src\@packages.debian.org");
   $title = "source $src";
@@ -271,7 +273,9 @@ if (defined $pkg) {
     my $verdesc = getversiondesc($src);
     $title .= " ($verdesc)" if defined $verdesc;
   }
-  @bugs = get_bugs(src=>[split /,/, $src]);
+  @bugs = get_bugs(src=>[split /,/, $src],
+		   archive=>$archive
+		  );
 } elsif (defined $maint) {
   add_user($maint);
   $title = "maintainer $maint";
@@ -285,7 +289,9 @@ if (defined $pkg) {
 			      return 0;
 			 })};
   } else {
-       @bugs = get_bugs(maint=>[map {lc ($_)} split /,/,$maint]);
+       @bugs = get_bugs(maint=>[map {lc ($_)} split /,/,$maint],
+			archive=>$archive
+		       );
   }
 } elsif (defined $maintenc) {
   my %maintainers = %{getmaintainers()};
@@ -305,7 +311,9 @@ if (defined $pkg) {
   $title = "submitter $submitter";
   $title .= " in $dist" if defined $dist;
   my @submitters = map {lc ($_)} split /,/, $submitter;
-  @bugs = get_bugs(submitter => \@submitters);
+  @bugs = get_bugs(submitter => \@submitters,
+		   archive=>$archive
+		  );
 } elsif (defined($severity) && defined($status)) {
   $title = "$status $severity bugs";
   $title .= " in $dist" if defined $dist;
@@ -343,7 +351,9 @@ elsif (defined $owner) {
      $title .= " in $dist" if defined $dist;
      my @owners = map {lc ($_)} split /,/, $owner;
      my %bugs = ();
-     @bugs = get_bugs(owner=>\@owners);
+     @bugs = get_bugs(owner=>\@owners,
+		      archive=>$archive
+		     );
 
 }
 $title = htmlsanit($title);
