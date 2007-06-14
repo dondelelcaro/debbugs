@@ -172,6 +172,8 @@ sub read_bug{
     }
     else {
 	 $status = $param{summary};
+	 $log = $status;
+	 $log =~ s/\.summary$/.log/;
     }
     my $status_fh = new IO::File $status, 'r' or
 	 warn "Unable to open $status for reading: $!" and return undef;
@@ -220,6 +222,7 @@ sub read_bug{
     }
     # Add log last modified time
     $data{log_modified} = (stat($log))[9];
+    $date{location} = $location;
 
     return \%data;
 }

@@ -644,7 +644,7 @@ sub pkg_htmlindexentrystatus {
 				   status => \%status,
 				   days_until => 1,
 				  );
-        if ($days >= 0) {
+        if ($days >= 0 and $status->{location} ne 'archive') {
             $result .= ";\n<strong>Will be archived" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" ) . "</strong>";
         }
     }
