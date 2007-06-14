@@ -43,11 +43,12 @@ BEGIN{
 				qw(getmaintainers_reverse)
 			       ],
 		     misc   => [qw(make_list)],
+		     date   => [qw(secs_to_english)],
 		     quit   => [qw(quit)],
 		     lock   => [qw(filelock unfilelock @cleanups)],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(lock quit util misc));
+     Exporter::export_ok_tags(qw(lock quit date util misc));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -237,6 +238,32 @@ sub getmaintainers_reverse{
      return $_maintainer_rev if $_maintainer_rev;
      getmaintainers();
      return $_maintainer_rev;
+}
+
+=head1 DATE
+
+    my $english = secs_to_english($seconds);
+    my ($days,$english) = secs_to_english($seconds);
+
+XXX This should probably be changed to use Date::Calc
+
+=cut
+
+sub secs_to_english{
+     my ($seconds) = @_;
+
+     my $days = int($seconds / 86400);
+     my $years = int($days / 365);
+     $days -= $years * 365;
+     my $result;
+     my @age;
+     push @age, "1 year" if ($years == 1);
+     push @age, "$years years" if ($years > 1);
+     push @age, "1 day" if ($days == 1);
+     push @age, "$days days" if ($days > 1);
+     $result .= join(" and ", @age);
+
+     return wantarray?($days,$result):$result;
 }
 
 

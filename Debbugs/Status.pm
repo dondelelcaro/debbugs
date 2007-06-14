@@ -159,6 +159,7 @@ sub read_bug{
     die "One of bug or summary must be passed to read_bug"
 	 if not exists $param{bug} and not exists $param{summary};
     my $status;
+    my $log;
     if (not defined $param{summary}) {
 	 my ($lref, $location) = @param{qw(bug location)};
 	 if (not defined $location) {
@@ -166,6 +167,7 @@ sub read_bug{
 	      return undef if not defined $location;
 	 }
 	 $status = getbugcomponent($lref, 'summary', $location);
+	 $log    = getbugcomponent($lref, 'log'    , $location);
 	 return undef unless defined $status;
     }
     else {
@@ -216,6 +218,8 @@ sub read_bug{
 	    $data{$field} = decode_rfc1522($data{$field});
 	}
     }
+    # Add log last modified time
+    $data{log_modified} = (stat($log))[9];
 
     return \%data;
 }
