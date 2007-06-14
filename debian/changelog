@@ -180,9 +180,12 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Fix double leading spaces of format=flowed messages
       (closes: #428056)
     - Don't doubly select users
-    - Implement versioning aware archiving support (closes: #419693)
+    - Implement versioning aware archiving support (closes: #339141)
     - Split out packages so that you don't have to install the mail stuff
       unless you want it.
+    - Only mail duplicated recipients once (closes: #172635)
+    - Indicate date of last activity (closes: #207065)
+    - Reorder title (closes: #265267)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

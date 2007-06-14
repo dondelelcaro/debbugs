@@ -10,7 +10,7 @@ require './common.pl';
 use Debbugs::Config qw(:globals :text);
 use Debbugs::User;
 use Debbugs::CGI qw(version_url);
-use Debbugs::Common qw(getparsedaddrs);
+use Debbugs::Common qw(getparsedaddrs :date);
 use Debbugs::Bugs qw(get_bugs);
 
 use vars qw($gPackagePages $gWebDomain %gSeverityDisplay @gSeverityList);
@@ -654,27 +654,30 @@ sub pkg_htmlindexentrystatus {
 			      split /[,\s]+/,$status{forwarded}
 			     );
         }
-        my $daysold = int((time - $status{date}) / 86400);   # seconds to days
-        if ($daysold >= 7) {
+	# Check the age of the logfile
+	my ($days_last,$eng_last) = secs_to_english(time - $status{log_modified});
+        my ($days,$eng) = secs_to_english(time - $status{date});
+	
+        if ($days >= 7) {
             my $font = "";
             my $efont = "";
-            $font = "em" if ($daysold > 30);
-            $font = "strong" if ($daysold > 60);
+            $font = "em" if ($days > 30);
+            $font = "strong" if ($days > 60);
             $efont = "</$font>" if ($font);
             $font = "<$font>" if ($font);
 
-            my $yearsold = int($daysold / 365);
-            $daysold -= $yearsold * 365;
-
-            $result .= ";\n $font";
-            my @age;
-            push @age, "1 year" if ($yearsold == 1);
-            push @age, "$yearsold years" if ($yearsold > 1);
-            push @age, "1 day" if ($daysold == 1);
-            push @age, "$daysold days" if ($daysold > 1);
-            $result .= join(" and ", @age);
-            $result .= " old$efont";
+            $result .= ";\n ${font}$eng old$efont";
         }
+	if ($days_last > 7) {
+	    my $font = "";
+            my $efont = "";
+            $font = "em" if ($days_last > 30);
+            $font = "strong" if ($days_last > 60);
+            $efont = "</$font>" if ($font);
+            $font = "<$font>" if ($font);
+
+            $result .= ";\n ${font}Modified $eng_last ago$efont";
+	}
     }
 
     $result .= ".";
