@@ -644,7 +644,7 @@ sub pkg_htmlindexentrystatus {
 				   status => \%status,
 				   days_until => 1,
 				  );
-        if ($days >= 0) {
+        if ($days >= 0 and defined $status->{location} and $status->{location} ne 'archive') {
             $result .= ";\n<strong>Will be archived" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" ) . "</strong>";
         }
     }
@@ -920,7 +920,7 @@ sub pkg_htmlselectyesno {
 sub pkg_htmlselectsuite {
     my $id = sprintf "b_%d_%d_%d", $_[0], $_[1], $_[2];
     my @suites = ("stable", "testing", "unstable", "experimental");
-    my %suiteaka = ("stable", "sarge", "testing", "etch", "unstable", "sid");
+    my %suiteaka = ("stable", "etch", "testing", "lenny", "unstable", "sid");
     my $defaultsuite = "unstable";
 
     my $result = sprintf '<select name=dist id="%s">', $id;
