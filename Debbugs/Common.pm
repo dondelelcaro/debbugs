@@ -254,7 +254,7 @@ sub secs_to_english{
 
      my $days = int($seconds / 86400);
      my $years = int($days / 365);
-     $days -= $years * 365;
+     $days %= 365;
      my $result;
      my @age;
      push @age, "1 year" if ($years == 1);
@@ -263,7 +263,7 @@ sub secs_to_english{
      push @age, "$days days" if ($days > 1);
      $result .= join(" and ", @age);
 
-     return wantarray?($days,$result):$result;
+     return wantarray?(int($seconds/86400),$result):$result;
 }
 
 
