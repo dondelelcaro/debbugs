@@ -186,6 +186,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Only mail duplicated recipients once (closes: #172635)
     - Indicate date of last activity (closes: #207065)
     - Reorder title (closes: #265267)
+    - Reopen bugs when a bug is found with a version greater than any
+      fixed version (closes: #365352)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
