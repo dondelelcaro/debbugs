@@ -42,11 +42,15 @@ my $users = $param{'users'} || "";
 my $ordering = $param{'ordering'};
 my $raw_sort = ($param{'raw'} || "no") eq "yes";
 my $old_view = ($param{'oldview'} || "no") eq "yes";
+my $age_sort = ($param{'age'} || "no") eq "yes";
 unless (defined $ordering) {
    $ordering = "normal";
    $ordering = "oldview" if $old_view;
    $ordering = "raw" if $raw_sort;
+   $ordering = 'age' if $age_sort;
 }
+my ($bug_order) = $ordering =~ /(age(?:rev)?)/;
+$bug_order = '' if not defined $bug_order;
 
 my $bug_rev = ($param{'bug-rev'} || "no") eq "yes";
 my $pend_rev = ($param{'pend-rev'} || "no") eq "yes";
@@ -527,6 +531,7 @@ my $sel_rmn = ($repeatmerged ? "" : " selected");
 my $sel_ordraw = ($ordering eq "raw" ? " selected" : "");
 my $sel_ordold = ($ordering eq "oldview" ? " selected" : "");
 my $sel_ordnor = ($ordering eq "normal" ? " selected" : "");
+my $sel_ordage = ($ordering eq "age" ? " selected" : "");
 
 my $chk_bugrev = ($bug_rev ? " checked" : "");
 my $chk_pendrev = ($pend_rev ? " checked" : "");
@@ -550,6 +555,7 @@ print <<EOF;
 <option value=raw$sel_ordraw>bug number only</option>
 <option value=old$sel_ordold>status and severity</option>
 <option value=normal$sel_ordnor>status, severity and classification</option>
+<option value=age$sel_ordage>status, severity, classification, and age</option>
 EOF
 
 {
@@ -730,20 +736,28 @@ sub pkg_htmlizebugs {
         next unless %status;
         next if bugfilter($bug, %status);
 
-        my $html = sprintf "<li><a href=\"%s\">#%d: %s</a>\n<br>",
+	my $html = sprintf "<li><a href=\"%s\">#%d: %s</a>\n<br>",
             bugurl($bug), $bug, htmlsanit($status{subject});
         $html .= pkg_htmlindexentrystatus(\%status) . "\n";
-
+	push @status, [ $bug, \%status, $html ];
+    }
+    print STDERR "nbnug_order: $bug_order\n";
+    if ($bug_order eq 'age') {
+	 # MWHAHAHAHA
+	 @status = sort {$a->[1]{log_modified} <=> $b->[1]{log_modified}} @status;
+    }
+    elsif ($bug_order eq 'agerev') {
+	 @status = sort {$b->[1]{log_modified} <=> $a->[1]{log_modified}} @status;
+    }
+    for my $entry (@status) {
         my $key = "";
 	for my $i (0..$#prior) {
-	    my $v = get_bug_order_index($prior[$i], \%status);
+	    my $v = get_bug_order_index($prior[$i], $entry->[1]);
             $count{"g_${i}_${v}"}++;
 	    $key .= "_$v";
 	}
-        $section{$key} .= $html;
+        $section{$key} .= $entry->[2];
         $count{"_$key"}++;
-
-        push @status, [ $bug, \%status, $html ];
     }
 
     my $result = "";
