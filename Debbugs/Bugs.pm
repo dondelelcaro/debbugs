@@ -46,7 +46,7 @@ BEGIN{
 
      @EXPORT = ();
      %EXPORT_TAGS = ();
-     @EXPORT_OK = (qw(get_bugs count_bugs));
+     @EXPORT_OK = (qw(get_bugs count_bugs newest_bug));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -55,7 +55,7 @@ use Params::Validate qw(validate_with :types);
 use IO::File;
 use Debbugs::Status qw(splitpackages);
 use Debbugs::Packages qw(getsrcpkgs);
-use Debbugs::Common qw(getparsedaddrs getmaintainers getmaintainers_reverse);
+use Debbugs::Common qw(getparsedaddrs getmaintainers getmaintainers_reverse make_list);
 use Fcntl qw(O_RDONLY);
 use MLDBM qw(DB_File Storable);
 
@@ -265,6 +265,24 @@ sub count_bugs {
      return %count;
 }
 
+=head2 newest_bug
+
+     my $bug = newest_bug();
+
+Returns the bug number of the newest bug, which is nextnumber-1.
+
+=cut
+
+sub newest_bug {
+     my $nn_fh = IO::File->new("$config{spool_dir}/nextnumber",'r')
+	  or die "Unable to open $config{spool_dir}nextnumber for reading: $!";
+     local $/;
+     my $next_number = <$nn_fh>;
+     close $nn_fh;
+     chomp $next_number;
+     return $next_number+0;
+}
+
 
 =head2 get_bugs_by_idx
 
@@ -326,7 +344,7 @@ sub get_bugs_by_idx{
 	  $index = "$config{spool_dir}/by-${index}${arc}.idx";
 	  tie(%idx, MLDBM => $index, O_RDONLY)
 	       or die "Unable to open $index: $!";
-	  for my $search (__make_list($param{$key})) {
+	  for my $search (make_list($param{$key})) {
 	       next unless defined $idx{$search};
 	       for my $bug (keys %{$idx{$search}}) {
 		    # increment the number of searches that this bug matched
@@ -403,8 +421,8 @@ sub get_bugs_flatfile{
 	  # This complex slice makes a hash with the bugs which have the
           # usertags passed in $param{tag} set.
 	  @usertag_bugs{map {@{$_}}
-			     @{$param{usertags}}{__make_list($param{tag})}
-			} = (1) x @{$param{usertags}}{__make_list($param{tag})}
+			     @{$param{usertags}}{make_list($param{tag})}
+			} = (1) x @{$param{usertags}}{make_list($param{tag})}
      }
      # We handle src packages, maint and maintenc by mapping to the
      # appropriate binary packages, then removing all packages which
@@ -422,15 +440,15 @@ sub get_bugs_flatfile{
      while (<$flatfile>) {
 	  next unless m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/;
 	  my ($pkg,$bug,$time,$status,$submitter,$severity,$tags) = ($1,$2,$3,$4,$5,$6,$7);
-	  next if exists $param{bugs} and not grep {$bug == $_} __make_list($param{bugs});
+	  next if exists $param{bugs} and not grep {$bug == $_} make_list($param{bugs});
 	  if (exists $param{package}) {
 	       my @packages = splitpackages($pkg);
 	       next unless grep { my $pkg_list = $_;
-				  grep {$pkg_list eq $_} __make_list($param{package})
+				  grep {$pkg_list eq $_} make_list($param{package})
 			     } @packages;
 	  }
 	  if (exists $param{src}) {
-	       my @src_packages = map { getsrcpkgs($_)} __make_list($param{src});
+	       my @src_packages = map { getsrcpkgs($_)} make_list($param{src});
 	       my @packages = splitpackages($pkg);
 	       next unless grep { my $pkg_list = $_;
 				  grep {$pkg_list eq $_} @packages
@@ -439,22 +457,22 @@ sub get_bugs_flatfile{
 	  if (exists $param{submitter}) {
 	       my @p_addrs = map {lc($_->address)}
 		    map {getparsedaddrs($_)}
-			 __make_list($param{submitter});
+			 make_list($param{submitter});
 	       my @f_addrs = map {$_->address}
 		    getparsedaddrs($submitter||'');
 	       next unless grep { my $f_addr = $_; 
 				  grep {$f_addr eq $_} @p_addrs
 			     } @f_addrs;
 	  }
-	  next if exists $param{severity} and not grep {$severity eq $_} __make_list($param{severity});
-	  next if exists $param{status} and not grep {$status eq $_} __make_list($param{status});
+	  next if exists $param{severity} and not grep {$severity eq $_} make_list($param{severity});
+	  next if exists $param{status} and not grep {$status eq $_} make_list($param{status});
 	  if (exists $param{tag}) {
 	       my $bug_ok = 0;
 	       # either a normal tag, or a usertag must be set
 	       $bug_ok = 1 if exists $param{usertags} and $usertag_bugs{$bug};
 	       my @bug_tags = split ' ', $tags;
 	       $bug_ok = 1 if grep {my $bug_tag = $_;
-				    grep {$bug_tag eq $_} __make_list($param{tag});
+				    grep {$bug_tag eq $_} make_list($param{tag});
 			       } @bug_tags;
 	       next unless $bug_ok;
 	  }
@@ -492,7 +510,7 @@ sub __handle_pkg_src_and_maint{
 			       allow_extra => 1,
 			      );
 
-     my @packages = __make_list($param{package});
+     my @packages = make_list($param{package});
      my $package_keys = @packages?1:0;
      my %packages;
      @packages{@packages} = (1) x @packages;
@@ -500,7 +518,7 @@ sub __handle_pkg_src_and_maint{
 	  # We only want to increment the number of keys if there is
 	  # something to match
 	  my $key_inc = 0;
-	  for my $package ((map { getsrcpkgs($_)} __make_list($param{src})),__make_list($param{src})) {
+	  for my $package ((map { getsrcpkgs($_)} make_list($param{src})),make_list($param{src})) {
 	       $packages{$package}++;
 	       $key_inc=1;
 	  }
@@ -510,7 +528,7 @@ sub __handle_pkg_src_and_maint{
 	  my $key_inc = 0;
 	  my $maint_rev = getmaintainers_reverse();
 	  for my $package (map { exists $maint_rev->{$_}?@{$maint_rev->{$_}}:()}
-			   __make_list($param{maint})) {
+			   make_list($param{maint})) {
 	       $packages{$package}++;
 	       $key_inc = 1;
 	  }
@@ -519,13 +537,6 @@ sub __handle_pkg_src_and_maint{
      return grep {$packages{$_} >= $package_keys} keys %packages;
 }
 
-
-# This private subroutine takes a scalar and turns it into a list;
-# transforming arrayrefs into their contents along the way. It also
-# turns undef into the empty list.
-sub __make_list{
-     return map {defined $_?(ref($_) eq 'ARRAY'?@{$_}:$_):()} @_;
-}
 
 1;
 
