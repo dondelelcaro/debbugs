@@ -17,7 +17,7 @@ use CGI::Simple;
 use CGI::Alert 'don@donarmstrong.com';
 
 use Debbugs::Config qw(:config);
-use Debbugs::CGI qw(htmlize_packagelinks html_escape cgi_parameters);
+use Debbugs::CGI qw(htmlize_packagelinks html_escape cgi_parameters munge_url);
 use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
 use Debbugs::Packages qw(getversions makesourceversions);
@@ -34,7 +34,7 @@ my %img_types = (svg => 'image/svg+xml',
 my $q = new CGI::Simple;
 
 my %cgi_var = cgi_parameters(query   => $q,
-			     single  => [qw(package format ignore_boring width height collapse)],
+			     single  => [qw(package format ignore_boring width height collapse info)],
 			     default => {package       => 'spamass-milter',
 					 found         => [],
 					 fixed         => [],
@@ -43,8 +43,12 @@ my %cgi_var = cgi_parameters(query   => $q,
 					 format        => 'png',
 					 width         => undef,
 					 height        => undef,
+					 info          => 0,
 					},
 			    );
+my $this = munge_url('version.cgi?',
+		     %cgi_var,
+		    );
 
 # we want to first load the appropriate file,
 # then figure out which versions are there in which architectures,
@@ -73,6 +77,28 @@ if (defined $cgi_var{format}) {
 }
 else {
      $cgi_var{format} = 'png';
+}
+
+if ($cgi_var{info} and not defined $cgi_var{dot}) {
+     print "Content-Type: text/html\n\n";
+     print <<END;
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head><title>$cgi_var{package} Version Graph</title></head>
+<body>
+END
+     print '<a href="'.html_escape(munge_url($this,ignore_boring=>$cgi_var{ignore_boring}?0:1)).
+	  '">['.($cgi_var{ignore_boring}?"Don't i":'I').'gnore boring]</a> ';
+     print '<a href="'.html_escape(munge_url($this,collapse=>$cgi_var{collapse}?0:1)).
+	  '">['.($cgi_var{collapse}?"Don't c":'C').'ollapse]</a> ';
+     print '<a href="'.html_escape(munge_url($this,dot=>1)).
+	  '">[Dot]</a><br/>';
+     print '<img src="'.html_escape(munge_url($this,info=>0)).'">';
+     print <<END;
+</body>
+</html>
+END
+	  exit 0;
 }
 
 # then figure out which are affected.

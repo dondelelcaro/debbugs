@@ -55,7 +55,7 @@ BEGIN{
      @EXPORT = ();
      %EXPORT_TAGS = (url    => [qw(bug_url bug_links bug_linklist maybelink),
 				qw(set_url_params pkg_url version_url),
-				qw(submitterurl mainturl)
+				qw(submitterurl mainturl munge_url)
 			       ],
 		     html   => [qw(html_escape htmlize_bugs htmlize_packagelinks),
 				qw(maybelink htmlize_addresslinks htmlize_maintlinks),
@@ -112,9 +112,7 @@ sub bug_url{
      else {
 	  %params = @_;
      }
-     my $url = Debbugs::URI->new('bugreport.cgi?');
-     $url->query_form(bug=>$ref,%params);
-     return $url->as_string;
+     return munge_url('bugreport.cgi?',%params,bug=>$ref);
 }
 
 sub pkg_url{
@@ -126,10 +124,26 @@ sub pkg_url{
      else {
 	  %params = @_;
      }
-     my $url = Debbugs::URI->new('pkgreport.cgi?');
-     $url->query_form(%params);
-     return $url->as_string;
+     return munge_url('pkgreport.cgi?',%params);
 }
+
+=head2 munge_url
+
+     my $url = munge_url($url,%params_to_munge);
+
+Munges a url, replacing parameters with %params_to_munge as appropriate.
+
+=cut
+
+sub munge_url {
+     my $url = shift;
+     my %params = @_;
+     my $new_url = Debbugs::URI->new($url);
+     %params = ($new_url->query_form(),%params);
+     $new_url->query_form(%params);
+     return $new_url->as_string;
+}
+
 
 =head2 version_url
 
@@ -147,7 +161,7 @@ sub version_url{
 		      fixed   => $fixed,
 		      (defined $width)?(width => $width):(),
 		      (defined $height)?(height => $height):(),
-		      (defined $width or defined $height)?(collapse => 1):(),
+		      (defined $width or defined $height)?(collapse => 1):(info => 1),
 		     );
      return $url->as_string;
 }
