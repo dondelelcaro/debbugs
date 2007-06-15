@@ -268,7 +268,7 @@ sub write_log_records (*@)
 
     for my $record (@records) {
 	my $type = $record->{type};
-	my ($text) = escapelog($record->{text});
+	my ($text) = escape_log($record->{text});
 	die "type '$type' with no text field" unless defined $text;
 	if ($type eq 'autocheck') {
 	    print $logfh "\01\n$text\03\n";
@@ -297,9 +297,9 @@ sub write_log_records (*@)
     1;
 }
 
-=head2 escapelog
+=head2 escape_log
 
-     print {$log} escapelog(@log)
+     print {$log} escape_log(@log)
 
 Applies the log escape regex to the passed logfile.
 

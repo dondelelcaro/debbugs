@@ -121,7 +121,7 @@ sub add_bug_message{
      $doc = new Search::Estraier::Document if not defined $doc;
 
      my $message = parse($bug_message);
-     $doc->add_text(join('',make_list(values %{$message})));
+     $doc->add_text(join("\n",make_list(values %{$message})));
 
      # * @id : the ID number determined automatically when the document is registered.
      # * @uri : the location of a document which any document should have.
