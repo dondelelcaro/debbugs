@@ -189,6 +189,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Reopen bugs when a bug is found with a version greater than any
       fixed version (closes: #365352)
     - Allow ordering bugs by last action (closes: #318898)
+    - Add notfixed/notfound commands (closes: #389634)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
