@@ -510,7 +510,8 @@ sub __handle_pkg_src_and_maint{
 			       allow_extra => 1,
 			      );
 
-     my @packages = make_list($param{package});
+     my @packages;
+     @packages = make_list($param{package}) if exists $param{package};
      my $package_keys = @packages?1:0;
      my %packages;
      @packages{@packages} = (1) x @packages;
