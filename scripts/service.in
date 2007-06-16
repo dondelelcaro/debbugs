@@ -562,7 +562,7 @@ END
                         addfoundversions($data, $data->{package}, $version, 'binary');
 			my @fixed_order = sort {Debbugs::Versions::Dpkg::vercmp($a,$b);}
 			     @{$data->{fixed_versions}};
-			if (not @fixed_order or (vercmp($fixed_order[-1],$version) >= 0)) {
+			if (not @fixed_order or (Debbugs::Versions::Dpkg::vercmp($version,$fixed_order[-1]) >= 0)) {
 			     $data->{done} = '';
 			}
                     } else {
