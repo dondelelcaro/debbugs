@@ -51,12 +51,6 @@ sub get_addresses {
 	    map { Mail::Address->parse($_) } @_;
 }
 
-sub escapelog {
-	my @log = @_;
-	map { s/^([\01-\07\030])/\030$1/gm } @log;
-	return \@log;
-}
-
 @severities= grep { not exists $gObsoleteSeverities{$_} } @gSeverityList;
 @showseverities= @severities;
 grep ($_= $_ eq '' ? $gDefaultSeverity : $_, @showseverities);
