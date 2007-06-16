@@ -461,6 +461,7 @@ sub __return_append_to_log_options{
      if (not exists $param{message}) {
 	  $action = $param{action} if exists $param{action};
 	  $param{message} = <<END;
+Received: (at fakecontrol) by fakecontrolmessage;
 To: $param{request_addr}
 From: $param{requester}
 Subject: Internal Control

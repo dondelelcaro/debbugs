@@ -19,10 +19,10 @@ use Debbugs::Config qw(:config);
 # No $gRemoveAge means "never expire".
 exit 0 unless $config{remove_age};
 
-chdir($config{spool}) || die "chdir $config{spool} failed: $!\n";
+chdir($config{spool_dir}) || die "chdir $config{spool_dir} failed: $!\n";
 
 #get list of bugs (ie, status files)
-opendir(DIR,"db-h") || &quit("opendir db: $!\n");
+opendir(DIR,"db-h") or die "Unable to open dir db-h: $!";
 @dirs = sort { $a <=> $b } grep(s,^,db-h/,, grep(m/^\d+$/,readdir(DIR)));
 close(DIR);
 foreach my $dir (@dirs) {
