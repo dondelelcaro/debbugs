@@ -741,7 +741,6 @@ sub pkg_htmlizebugs {
         $html .= pkg_htmlindexentrystatus(\%status) . "\n";
 	push @status, [ $bug, \%status, $html ];
     }
-    print STDERR "nbnug_order: $bug_order\n";
     if ($bug_order eq 'age') {
 	 # MWHAHAHAHA
 	 @status = sort {$a->[1]{log_modified} <=> $b->[1]{log_modified}} @status;
