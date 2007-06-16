@@ -33,6 +33,8 @@ foreach my $dir (@dirs) {
 
 my $bug;
 my $errors=0;
+our $exit_now = 0;
+$SIG{INT} = sub {$exit_now=1;}
 #process each bug (ie, status file)
 while (length($bug=shift(@list))) {
      # Weeeee.
@@ -44,6 +46,7 @@ while (length($bug=shift(@list))) {
 	  $errors=1;
 	  print STDERR "Unable to archive bug# $bug which I thought I could archive:\n$@\n";
      }
+     last if $exit_now;
 }
 
 exit $errors;
