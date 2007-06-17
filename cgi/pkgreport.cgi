@@ -658,8 +658,11 @@ sub pkg_htmlindexentrystatus {
 				   days_until => 1,
 				  );
         if ($days >= 0 and defined $status{location} and $status{location} ne 'archive') {
-            $result .= ";\n<strong>Will be archived" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" ) . "</strong>";
+            $result .= ";\n<strong>Can be archived" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" ) . "</strong>";
         }
+	elsif (defined $status{location} and $status{location} eq 'archived') {
+	     $result .= ";\n<strong>Archived.</strong>";
+	}
     }
 
     unless (length($status{done})) {
