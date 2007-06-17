@@ -9,7 +9,61 @@
 # Copyright 2004 by Collin Watson <cjwatson@debian.org>
 # Copyright 2007 by Don Armstrong <don@donarmstrong.com>
 
+use Getopt::Long;
+use Pod::Usage;
 
+use warnings;
+use strict;
+
+=head1 NAME
+
+expire - Expires archiveable bugs by copying to archive or deleting
+
+=head1 SYNOPSIS
+
+ expire [options]
+
+ Options:
+  --debug, -d debugging level (Default 0)
+  --help, -h display this help
+  --man, -m display manual
+
+=head1 OPTIONS
+
+=over
+
+=item B<--debug, -d>
+
+Debug verbosity. (Default 0)
+
+=item B<--help, -h>
+
+Display brief useage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+=head1 EXAMPLES
+
+
+=cut
+
+my %options = (debug           => 0,
+	       help            => 0,
+	       man             => 0,
+	       quick           => 0,
+	       index_path      => undef,
+	       );
+
+GetOptions(\%options,'debug|d+','help|h|?','man|m') or pod2usage(2);
+pod2usage(1) if $options{help};
+pod2usage(-verbose=>2) if $options{man};
+
+
+my $verbose = $options{debug};
 
 use Debbugs::Control qw(bug_archive);
 use Debbugs::Status qw(bug_archiveable);
@@ -23,8 +77,9 @@ chdir($config{spool_dir}) || die "chdir $config{spool_dir} failed: $!\n";
 
 #get list of bugs (ie, status files)
 opendir(DIR,"db-h") or die "Unable to open dir db-h: $!";
-@dirs = sort { $a <=> $b } grep(s,^,db-h/,, grep(m/^\d+$/,readdir(DIR)));
+my @dirs = sort { $a <=> $b } grep(s,^,db-h/,, grep(m/^\d+$/,readdir(DIR)));
 close(DIR);
+my @list;
 foreach my $dir (@dirs) {
     opendir(DIR,$dir);
     push @list, sort { $a <=> $b } grep(s/\.summary$//,grep(m/^\d+\.summary$/,readdir(DIR)));
@@ -34,16 +89,20 @@ foreach my $dir (@dirs) {
 my $bug;
 my $errors=0;
 our $exit_now = 0;
-$SIG{INT} = sub {$exit_now=1;}
+$SIG{INT} = sub {$exit_now=1;};
 #process each bug (ie, status file)
 while (length($bug=shift(@list))) {
      # Weeeee.
+     print "Examining $bug\n" if $verbose;
      next unless bug_archiveable(bug=>$bug);
+     print "Bug $bug can be archived: " if $verbose;
      eval {
 	  bug_archive(bug=>$bug);
+	  print "archived.\n" if $verbose;
      };
      if ($@) {
 	  $errors=1;
+	  print "failed.\n" if $verbose;
 	  print STDERR "Unable to archive bug# $bug which I thought I could archive:\n$@\n";
      }
      last if $exit_now;
