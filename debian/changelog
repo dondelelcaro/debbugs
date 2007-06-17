@@ -191,6 +191,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Allow ordering bugs by last action (closes: #318898)
     - Add notfixed/notfound commands (closes: #389634)
     - Fix soapy insanity (closes: #422062)
+    - Add script to split index.db by severities (closes: #422062)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
