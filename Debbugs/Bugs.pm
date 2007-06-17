@@ -104,7 +104,8 @@ searches are performed.
 =over
 
 =item archive -- whether to search archived bugs or normal bugs;
-defaults to false.
+defaults to false. As a special case, if archive is 'both', but
+archived and unarchived bugs are returned.
 
 =item usertags -- set of usertags and the bugs they are applied to
 
@@ -180,7 +181,7 @@ sub get_bugs{
 					  bugs      => {type => SCALAR|ARRAYREF,
 							optional => 1,
 						       },
-					  archive   => {type => BOOLEAN,
+					  archive   => {type => BOOLEAN|SCALAR,
 							default => 0,
 						       },
 					  usertags  => {type => HASHREF,
@@ -192,6 +193,13 @@ sub get_bugs{
      # Normalize options
      my %options = %param;
      my @bugs;
+     if ($options{archive} eq 'both') {
+	  push @bugs, get_bugs(%options,archive=>0);
+	  push @bugs, get_bugs(%options,archive=>1);
+	  my %bugs;
+	  @bugs{@bugs} = @bugs;
+	  return keys %bugs;
+     }
      # A configuration option will set an array that we'll use here instead.
      for my $routine (qw(Debbugs::Bugs::get_bugs_by_idx Debbugs::Bugs::get_bugs_flatfile)) {
 	  my ($package) = $routine =~ m/^(.+)\:\:/;
