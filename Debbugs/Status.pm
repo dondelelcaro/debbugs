@@ -1111,32 +1111,41 @@ sub isstrongseverity {
 =cut
 
 sub update_realtime {
-	my ($file, $bug, $new) = @_;
+	my ($file, %bugs) = @_;
 
 	# update realtime index.db
 
 	open(IDXDB, "<$file") or die "Couldn't open $file";
 	open(IDXNEW, ">$file.new");
 
+	my $min_bug = min(keys %bugs);
 	my $line;
 	my @line;
+	my %changed_bugs;
 	while($line = <IDXDB>) {
-		@line = split /\s/, $line;
-		last if ($line[1] >= $bug);
-		print IDXNEW $line;
-		$line = "";
-	}
-
-	if ($new eq "NOCHANGE") {
-		print IDXNEW $line if ($line ne ""  and $line[1] == $bug);
-	} elsif ($new eq "REMOVE") {
-		0;
-	} else {
-		print IDXNEW $new;
-	}
-	if (defined $line and $line ne "" and  @line and $line[1] > $bug) {
-		print IDXNEW $line;
-		$line = "";
+	     @line = split /\s/, $line;
+	     last unless (keys %bugs) > 0;
+	     # Two cases; replacing existing line or adding new line
+	     if (exists $bugs{$line[1]}) {
+		  my $new = $bugs{$line[1]};
+		  delete $bugs{$line[1]};
+		  $min_bug = min(keys %bugs);
+		  if ($new eq "NOCHANGE") {
+		       print IDXNEW $line;
+		       $changed_bugs{$line[1]} = $line;
+		  } elsif ($new eq "REMOVE") {
+		       $changed_bugs{$line[1]} = $line;
+		  } else {
+		       print IDXNEW $new;
+		       $changed_bugs{$line[1]} = $line;
+		  }
+	     }
+	     elsif ($line[1] > $min_bug) {
+		  print IDXNEW $bugs{$min_bug};
+		  delete $bugs{$min_bug};
+		  $min_bug = min(keys %bugs);
+		  $changed_bugs{$line[1]} = '';
+	     }
 	}
 
 	print IDXNEW while(<IDXDB>);
@@ -1146,42 +1155,44 @@ sub update_realtime {
 
 	rename("$file.new", $file);
 
-	return $line;
+	return %changed_bugs;
 }
 
 sub bughook_archive {
-	my $ref = shift;
+	my @refs = @_;
 	&filelock("debbugs.trace.lock");
-	&appendfile("debbugs.trace","archive $ref\n");
-	my $line = update_realtime(
-		"$config{spool_dir}/index.db.realtime", 
-		$ref,
-		"REMOVE");
+	&appendfile("debbugs.trace","archive ".join(',',@refs)."\n");
+	my %bugs = update_realtime("$config{spool_dir}/index.db.realtime",
+				   map{($_,'REMOVE')} @refs);
 	update_realtime("$config{spool_dir}/index.archive.realtime",
-		$ref, $line);
+			%bugs);
 	&unfilelock;
 }
 
 sub bughook {
-	my ( $type, $ref, $data ) = @_;
+	my ( $type, %bugs_temp ) = @_;
 	&filelock("debbugs.trace.lock");
 
-	&appendfile("debbugs.trace","$type $ref\n",makestatus($data, 1));
+	my %bugs;
+	for my $bug (keys %bugs_temp) {
+	     my $data = $bugs_temp{$bug};
+	     &appendfile("debbugs.trace","$type $bug\n",makestatus($data, 1));
 
-	my $whendone = "open";
-	my $severity = $config{default_severity};
-	(my $pkglist = $data->{package}) =~ s/[,\s]+/,/g;
-	$pkglist =~ s/^,+//;
-	$pkglist =~ s/,+$//;
-	$whendone = "forwarded" if defined $data->{forwarded} and length $data->{forwarded};
-	$whendone = "done" if defined $data->{done} and length $data->{done};
-	$severity = $data->{severity} if length $data->{severity};
+	     my $whendone = "open";
+	     my $severity = $config{default_severity};
+	     (my $pkglist = $data->{package}) =~ s/[,\s]+/,/g;
+	     $pkglist =~ s/^,+//;
+	     $pkglist =~ s/,+$//;
+	     $whendone = "forwarded" if defined $data->{forwarded} and length $data->{forwarded};
+	     $whendone = "done" if defined $data->{done} and length $data->{done};
+	     $severity = $data->{severity} if length $data->{severity};
 
-	my $k = sprintf "%s %d %d %s [%s] %s %s\n",
-			$pkglist, $ref, $data->{date}, $whendone,
-			$data->{originator}, $severity, $data->{keywords};
-
-	update_realtime("$config{spool_dir}/index.db.realtime", $ref, $k);
+	     my $k = sprintf "%s %d %d %s [%s] %s %s\n",
+		  $pkglist, $bug, $data->{date}, $whendone,
+		       $data->{originator}, $severity, $data->{keywords};
+	     $bugs{$bug} = $k;
+	}
+	update_realtime("$config{spool_dir}/index.db.realtime", %bugs);
 
 	&unfilelock;
 }

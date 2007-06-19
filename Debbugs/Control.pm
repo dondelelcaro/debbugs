@@ -245,8 +245,8 @@ sub bug_archive {
 	  }
 	  unlink(map {"db-h/$dir/$_"} @files_to_remove);
 	  print {$transcript} "deleted $bug (from $param{bug})\n";
-	  bughook_archive($bug);
      }
+     bughook_archive(@bugs);
      if (exists $param{bugs_affected}) {
 	  @{$param{bugs_affected}}{@bugs} = (1) x @bugs;
      }
