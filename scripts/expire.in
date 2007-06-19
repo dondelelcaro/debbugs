@@ -69,6 +69,7 @@ use Debbugs::Control qw(bug_archive);
 use Debbugs::Status qw(bug_archiveable);
 
 use Debbugs::Config qw(:config);
+use Debbugs::Common qw(:lock);
 
 # No $gRemoveAge means "never expire".
 exit 0 unless $config{remove_age};
