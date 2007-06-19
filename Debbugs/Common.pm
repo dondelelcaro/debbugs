@@ -368,7 +368,7 @@ sub lockpid {
 	  unlink $pidfile or
 	       die "Unable to unlink stale pidfile $pidfile $!";
      }
-     my $pidfh = IO::File->new($pidfile), 'w' or
+     my $pidfh = IO::File->new($pidfile,'w') or
 	  die "Unable to open $pidfile for writing: $!";
      print {$pidfh} $$ or die "Unable to write to $pidfile $!";
      close $pidfh or die "Unable to close $pidfile $!";
