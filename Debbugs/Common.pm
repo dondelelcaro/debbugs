@@ -341,6 +341,38 @@ sub unfilelock {
 	 or warn "Unable to unlink lockfile $fl{file}: $!";
 }
 
+=head2 lockpid
+
+      lockpid('/path/to/pidfile');
+
+Creates a pidfile '/path/to/pidfile' if one doesn't exist or if the
+pid in the file does not respond to kill 0.
+
+Returns 1 on success, false on failure; dies on unusual errors.
+
+=cut
+
+sub lockpid {
+     my ($pidfile) = @_;
+     if (-e $pidfile) {
+	  my $pidfh = IO::File->new($pidfile, 'r') or
+	       die "Unable to open pidfile $pidfile: $!"
+	  local $/;
+	  my $pid = <$pidfh>;
+	  ($pid) = $pid =~ /(\d+)/;
+	  if (defined $pid and kill(0,$pid)) {
+	       return 0;
+	  }
+	  close $pidfh;
+	  unlink $pidfile or
+	       die "Unable to unlink stale pidfile $pidfile $!";
+     }
+     my $pidfh = IO::File->new($pidfile), 'w' or
+	  die "Unable to open $pidfile for writing: $!";
+     print {$pidfh} $$ or die "Unable to write to $pidfile $!";
+     close $pidfh or die "Unable to close $pidfile $!";
+     return 1;
+}
 
 
 =head1 QUIT

@@ -91,13 +91,26 @@ my $errors=0;
 our $exit_now = 0;
 $SIG{INT} = sub {$exit_now=1;};
 #process each bug (ie, status file)
-while (length($bug=shift(@list))) {
+my @bugs_to_archive = ();
+for my $bug (@list))) {
      # Weeeee.
      print "Examining $bug\n" if $verbose;
      next unless bug_archiveable(bug=>$bug);
+     push @bugs_to_archive,$bug;
+}
+
+# At this point we want to block control
+if (not lockpid($config{spool_dir}.'/lock/expire.pid')) {
+     exit 1;
+}
+# We'll also double check that the bug can be archived
+for my $bug (@bugs_to_archive) {
+     print "Reexamining $bug\n" if $verbose;
+     next unless bug_archiveable(bug=>$bug);
      print "Bug $bug can be archived: " if $verbose;
      eval {
-	  bug_archive(bug=>$bug);
+	  bug_archive(bug=>$bug,
+		     );
 	  print "archived.\n" if $verbose;
      };
      if ($@) {
@@ -107,5 +120,7 @@ while (length($bug=shift(@list))) {
      }
      last if $exit_now;
 }
+unlink($config{spool_dir}.'/lock/expire.pid')
+
 
 exit $errors;
