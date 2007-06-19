@@ -1116,6 +1116,7 @@ sub update_realtime {
 
 	# update realtime index.db
 
+	return () unless keys %bugs;
 	my $idx_old = IO::File->new($file,'r')
 	     or die "Couldn't open ${file}: $!";
 	my $idx_new = IO::File->new($file.'.new','w')
@@ -1127,7 +1128,6 @@ sub update_realtime {
 	my %changed_bugs;
 	while($line = <$idx_old>) {
 	     @line = split /\s/, $line;
-	     last unless (keys %bugs) > 0;
 	     # Two cases; replacing existing line or adding new line
 	     if (exists $bugs{$line[1]}) {
 		  my $new = $bugs{$line[1]};
@@ -1147,10 +1147,12 @@ sub update_realtime {
 		  while ($line[1] > $min_bug) {
 		       print {$idx_new} $bugs{$min_bug};
 		       delete $bugs{$min_bug};
+		       last unless keys %bugs;
 		       $min_bug = min(keys %bugs);
 		  }
 		  print {$idx_new} $line;
 	     }
+	     last unless keys %bugs;
 	}
 	print {$idx_new} map {$bugs{$_}} sort keys %bugs;
 
