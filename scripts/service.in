@@ -1525,7 +1525,8 @@ sub endmerge {
 sub getbug {
     &dlen("getbug $ref");
     $lowstate eq 'idle' || die "$state ?";
-    if (($data = &lockreadbug($ref))) {
+    # Only use unmerged bugs here
+    if (($data = &lockreadbug($ref,'db-h'))) {
         $sref= $ref;
         $lowstate= "open";
         &dlex("getbug => 1");

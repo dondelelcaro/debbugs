@@ -139,8 +139,12 @@ sub munge_url {
      my $url = shift;
      my %params = @_;
      my $new_url = Debbugs::URI->new($url);
-     %params = ($new_url->query_form(),%params);
-     $new_url->query_form(%params);
+     my @old_param = $new_url->query_form();
+     my @new_param;
+     while (my ($key,$value) = splice @old_param,0,2) {
+	  push @new_param,($key,$value) unless exists $params{$key};
+     }
+     $new_url->query_form(@new_param,%params);
      return $new_url->as_string;
 }
 
