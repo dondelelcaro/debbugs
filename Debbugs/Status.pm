@@ -1085,7 +1085,7 @@ sub buggy {
 	  $version = Debbugs::Versions->new(\&Debbugs::Versions::Dpkg::vercmp);
 	  foreach my $source (keys %sources) {
 	       my $srchash = substr $source, 0, 1;
-	       my $version_fh = new IO::File "$config{version_packages_dir}/$srchash/$source", 'r' or
+	       my $version_fh = IO::File->new("$config{version_packages_dir}/$srchash/$source", 'r') or
 		    warn "Unable to open $config{version_packages_dir}/$srchash/$source: $!" and next;
 	       $version->load($version_fh);
 	  }
@@ -1101,7 +1101,8 @@ sub buggy {
 
 sub isstrongseverity {
     my $severity = shift;
-    $severity = $config{default_severity} if $severity eq '';
+    $severity = $config{default_severity} if
+	 not defined $severity or $severity eq '';
     return grep { $_ eq $severity } @{$config{strong_severities}};
 }
 
@@ -1115,14 +1116,16 @@ sub update_realtime {
 
 	# update realtime index.db
 
-	open(IDXDB, "<$file") or die "Couldn't open $file";
-	open(IDXNEW, ">$file.new");
+	my $idx_old = IO::File->new($file,'r')
+	     or die "Couldn't open ${file}: $!";
+	my $idx_new = IO::File->new($file.'.new','w')
+	     or die "Couldn't open ${file}.new: $!";
 
 	my $min_bug = min(keys %bugs);
 	my $line;
 	my @line;
 	my %changed_bugs;
-	while($line = <IDXDB>) {
+	while($line = <$idx_old>) {
 	     @line = split /\s/, $line;
 	     last unless (keys %bugs) > 0;
 	     # Two cases; replacing existing line or adding new line
@@ -1131,27 +1134,30 @@ sub update_realtime {
 		  delete $bugs{$line[1]};
 		  $min_bug = min(keys %bugs);
 		  if ($new eq "NOCHANGE") {
-		       print IDXNEW $line;
+		       print {$idx_new} $line;
 		       $changed_bugs{$line[1]} = $line;
 		  } elsif ($new eq "REMOVE") {
 		       $changed_bugs{$line[1]} = $line;
 		  } else {
-		       print IDXNEW $new;
+		       print {$idx_new} $new;
 		       $changed_bugs{$line[1]} = $line;
 		  }
 	     }
-	     elsif ($line[1] > $min_bug) {
-		  print IDXNEW $bugs{$min_bug};
-		  delete $bugs{$min_bug};
-		  $min_bug = min(keys %bugs);
-		  $changed_bugs{$line[1]} = '';
+	     else {
+		  while ($line[1] > $min_bug) {
+		       print {$idx_new} $bugs{$min_bug};
+		       delete $bugs{$min_bug};
+		       $min_bug = min(keys %bugs);
+		  }
+		  print {$idx_new} $line;
 	     }
 	}
+	print {$idx_new} map {$bugs{$_}} sort keys %bugs;
 
-	print IDXNEW while(<IDXDB>);
+	print {$idx_new} <$idx_old>;
 
-	close(IDXNEW);
-	close(IDXDB);
+	close($idx_new);
+	close($idx_old);
 
 	rename("$file.new", $file);
 
