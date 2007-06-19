@@ -356,7 +356,7 @@ sub lockpid {
      my ($pidfile) = @_;
      if (-e $pidfile) {
 	  my $pidfh = IO::File->new($pidfile, 'r') or
-	       die "Unable to open pidfile $pidfile: $!"
+	       die "Unable to open pidfile $pidfile: $!";
 	  local $/;
 	  my $pid = <$pidfh>;
 	  ($pid) = $pid =~ /(\d+)/;
