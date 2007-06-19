@@ -167,7 +167,7 @@ my @dirs = ($initialdir);
 while (my $dir = shift @dirs) {
 	printf "Doing dir %s ...\n", $dir if $verbose;
 
-	opendir(DIR, "$dir/.") or die "opendir $dir: $!\n";
+	opendir(DIR, "$dir/.") or die "opendir $dir: $!";
 	my @subdirs = readdir(DIR);
 	closedir(DIR);
 
@@ -176,7 +176,11 @@ while (my $dir = shift @dirs) {
 
 	for my $bug (@list) {
 		print "Up to $cnt bugs...\n" if (++$cnt % 100 == 0 && $verbose);
-		my $stat = stat(getbugcomponent($bug,'summary'));
+		my $stat = stat(getbugcomponent($bug,'summary',$initialdir));
+		if (not defined $stat) {
+		     print STDERR "Unable to stat $bug $!\n";
+		     next;
+		}
 		next if $stat->mtime < $time;
 		my $fdata = readbug($bug, $initialdir);
 		addbugtoindex("package", $bug, split /[\s,]+/, $fdata->{"package"});
