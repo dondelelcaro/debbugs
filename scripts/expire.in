@@ -90,7 +90,6 @@ foreach my $dir (@dirs) {
 my $bug;
 my $errors=0;
 our $exit_now = 0;
-$SIG{INT} = sub {$exit_now=1;};
 #process each bug (ie, status file)
 my @bugs_to_archive = ();
 for my $bug (@list) {
@@ -100,14 +99,17 @@ for my $bug (@list) {
      push @bugs_to_archive,$bug;
 }
 
+$SIG{INT} = sub {$exit_now=1;};
 # At this point we want to block control
 if (not lockpid($config{spool_dir}.'/lock/expire.pid')) {
      exit 1;
 }
 # We'll also double check that the bug can be archived
 for my $bug (@bugs_to_archive) {
+     last if $exit_now;
      print "Reexamining $bug\n" if $verbose;
      next unless bug_archiveable(bug=>$bug);
+     last if $exit_now;
      print "Bug $bug can be archived: " if $verbose;
      eval {
 	  bug_archive(bug=>$bug,
