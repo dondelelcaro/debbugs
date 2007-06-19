@@ -93,7 +93,7 @@ our $exit_now = 0;
 $SIG{INT} = sub {$exit_now=1;};
 #process each bug (ie, status file)
 my @bugs_to_archive = ();
-for my $bug (@list))) {
+for my $bug (@list) {
      # Weeeee.
      print "Examining $bug\n" if $verbose;
      next unless bug_archiveable(bug=>$bug);
@@ -121,7 +121,7 @@ for my $bug (@bugs_to_archive) {
      }
      last if $exit_now;
 }
-unlink($config{spool_dir}.'/lock/expire.pid')
+unlink($config{spool_dir}.'/lock/expire.pid');
 
 
 exit $errors;
