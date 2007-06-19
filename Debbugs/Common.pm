@@ -45,7 +45,7 @@ BEGIN{
 		     misc   => [qw(make_list)],
 		     date   => [qw(secs_to_english)],
 		     quit   => [qw(quit)],
-		     lock   => [qw(filelock unfilelock @cleanups)],
+		     lock   => [qw(filelock unfilelock @cleanups lockpid)],
 		    );
      @EXPORT_OK = ();
      Exporter::export_ok_tags(qw(lock quit date util misc));
