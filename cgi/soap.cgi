@@ -2,6 +2,8 @@
 
 #use SOAP::Transport::HTTP;
 
+use Debbugs::SOAP::Server;
+
 # Work around stupid soap bug on line 411
 if (not exists $ENV{EXPECT}) {
      $ENV{EXPECT} = '';
