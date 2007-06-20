@@ -326,6 +326,12 @@ sub get_bugs_by_idx{
 					  maint     => {type => SCALAR|ARRAYREF,
 						        optional => 1,
 						       },
+					  bugs      => {type => SCALAR|ARRAYREF,
+							optional => 1,
+						       },
+					  usertags  => {type => HASHREF,
+							optional => 1,
+						       },
 					 },
 			      );
      my %bugs = ();
@@ -336,6 +342,13 @@ sub get_bugs_by_idx{
      my @packages = __handle_pkg_src_and_maint(map {exists $param{$_}?($_,$param{$_}):()}
 					       qw(package src maint)
 					      );
+     my %usertag_bugs;
+     if (exists $param{tag} and exists $param{usertags}) {
+	  # This complex slice makes a hash with the bugs which have the
+          # usertags passed in $param{tag} set.
+	  @usertag_bugs{make_list(@{$param{usertags}}{make_list($param{tag})})
+			} = (1) x make_list(@{$param{usertags}}{make_list($param{tag})});
+     }
      if (exists $param{package} or
 	 exists $param{src} or
 	 exists $param{maint}) {
@@ -346,20 +359,36 @@ sub get_bugs_by_idx{
      die "Need at least 1 key to search by" unless $keys;
      my $arc = $param{archive} ? '-arc':'';
      my %idx;
-     for my $key (grep {$_ ne 'archive'} keys %param) {
+     for my $key (grep {$_ !~ /^(archive|usertags|bugs)$/} keys %param) {
 	  my $index = $key;
 	  $index = 'submitter-email' if $key eq 'submitter';
 	  $index = "$config{spool_dir}/by-${index}${arc}.idx";
 	  tie(%idx, MLDBM => $index, O_RDONLY)
 	       or die "Unable to open $index: $!";
+	  my %bug_matching = ();
 	  for my $search (make_list($param{$key})) {
 	       next unless defined $idx{$search};
 	       for my $bug (keys %{$idx{$search}}) {
+		    next if $bug_matching{$bug};
 		    # increment the number of searches that this bug matched
 		    $bugs{$bug}++;
+		    $bug_matching{$bug}=1;
+	       }
+	  }
+	  if ($key eq 'tag' and exists $param{usertags}) {
+	       for my $bug (make_list(grep {defined $_ } @{$param{usertags}}{make_list($param{tag})})) {
+		    next if $bug_matching{$bug};
+		    $bugs{$bug}++;
+		    $bug_matching{$bug}=1;
 	       }
 	  }
 	  untie %idx or die 'Unable to untie %idx';
+     }
+     if ($param{bugs}) {
+	  $keys++;
+	  for my $bug (make_list($param{bugs})) {
+	       $bugs{$bug}++;
+	  }
      }
      # Throw out results that do not match all of the search specifications
      return map {$keys <= $bugs{$_}?($_):()} keys %bugs;
@@ -425,12 +454,10 @@ sub get_bugs_flatfile{
      }
      my %usertag_bugs;
      if (exists $param{tag} and exists $param{usertags}) {
-
 	  # This complex slice makes a hash with the bugs which have the
           # usertags passed in $param{tag} set.
-	  @usertag_bugs{map {@{$_}}
-			     @{$param{usertags}}{make_list($param{tag})}
-			} = (1) x @{$param{usertags}}{make_list($param{tag})}
+	  @usertag_bugs{make_list(@{$param{usertags}}{make_list($param{tag})})
+			} = (1) x make_list(@{$param{usertags}}{make_list($param{tag})});
      }
      # We handle src packages, maint and maintenc by mapping to the
      # appropriate binary packages, then removing all packages which

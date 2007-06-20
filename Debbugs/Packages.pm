@@ -346,6 +346,8 @@ sub makesourceversions {
     my $pkg = shift;
     my $arch = shift;
     my %sourceversions;
+    die "Package $pkg is multiple packages; split on , and call makesourceversions multiple times"
+	 if $pkg =~ /,/;
 
     for my $version (@_) {
         if ($version =~ m[/]) {

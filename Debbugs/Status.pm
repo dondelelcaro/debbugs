@@ -797,7 +797,7 @@ sub get_bug_status {
      }
      else {
 	  my $location = getbuglocation($param{bug}, 'summary');
-	  return {} if not length $location;
+	  return {} if not defined $location or not length $location;
 	  %status = %{ readbug( $param{bug}, $location ) };
      }
      $status{id} = $param{bug};
@@ -908,23 +908,27 @@ sub bug_presence {
 	  my %sourceversions;
 	  if (defined $param{version}) {
 	       foreach my $arch (make_list($param{arch})) {
-		    my @temp = makesourceversions($status{package},
-						  $arch,
-						  make_list($param{version})
-						 );
-		    @sourceversions{@temp} = (1) x @temp;
+		    for my $package (split /\s*,\s*/, $status{package}) {
+			 my @temp = makesourceversions($package,
+						       $arch,
+						       make_list($param{version})
+						      );
+			 @sourceversions{@temp} = (1) x @temp;
+		    }
 	       }
 	  } elsif (defined $param{dist}) {
 	       foreach my $arch (make_list($param{arch})) {
 		    my @versions;
-		    foreach my $dist (make_list($param{dist})) {
-			 push @versions, getversions($status{package}, $dist, $arch);
+		    for my $package (split /\s*,\s*/, $status{package}) {
+			 foreach my $dist (make_list($param{dist})) {
+			      push @versions, getversions($package, $dist, $arch);
+			 }
+			 my @temp = makesourceversions($package,
+						       $arch,
+						       @versions
+						      );
+			 @sourceversions{@temp} = (1) x @temp;
 		    }
-		    my @temp = makesourceversions($status{package},
-						  $arch,
-						  @versions
-						 );
-		    @sourceversions{@temp} = (1) x @temp;
 	       }
 	  }
 
