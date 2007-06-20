@@ -42,7 +42,6 @@ BEGIN{
 use Debbugs::Status qw(get_bug_status);
 use Debbugs::Common qw(make_list);
 use Storable qw(nstore retrieve);
-use Debbugs::Cookies;
 
 
 our $CURRENT_VERSION = 1;
