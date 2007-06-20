@@ -63,10 +63,11 @@ BEGIN{
 		     util   => [qw(cgi_parameters quitcgi),
 				qw(getpseudodesc)
 			       ],
+		     misc   => [qw(maint_decode)],
 		     #status => [qw(getbugstatus)],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(url html util));
+     Exporter::export_ok_tags(qw(url html util misc));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -554,6 +555,36 @@ sub bug_linklist{
 }
 
 
+=head1 misc
+
+=cut
+
+=head2 maint_decode
+
+     maint_decode
+
+Decodes the funky maintainer encoding.
+
+Don't ask me what in the world it does.
+
+=cut
+
+sub maint_decode {
+     my @input = @_;
+     return () unless @input;
+     my @output;
+     for my $input (@input) {
+	  my $decoded = $input;
+	  $decoded =~ s/-([^_]+)/-$1_-/g;
+	  $decoded =~ s/_/-20_/g;
+	  $decoded =~ s/^,(.*),(.*),([^,]+)$/$1-40_$2-20_-28_$3-29_/;
+	  $decoded =~ s/^([^,]+),(.*),(.*),/$1-20_-3c_$2-40_$3-3e_/;
+	  $decoded =~ s/\./-2e_/g;
+	  $decoded =~ s/-([0-9a-f]{2})_/pack('H*',$1)/ge;
+	  push @output,$decoded;
+     }
+     wantarray ? @output : $output[0];
+}
 
 
 1;
