@@ -797,7 +797,7 @@ sub get_bug_status {
      }
      else {
 	  my $location = getbuglocation($param{bug}, 'summary');
-	  return {} if not length $location;
+	  return {} if not defined $location or not length $location;
 	  %status = %{ readbug( $param{bug}, $location ) };
      }
      $status{id} = $param{bug};
