@@ -92,6 +92,16 @@ if (defined $ARGV[0] and $ARGV[0] eq "archive") {
     $suffix = "-arc";
 }
 
+if (not lockpid($config{spool_dir}.'/lock/gen-indices')) {
+     if ($options{quick}) {
+	  # If this is a quick run, just exit
+	  print STDERR "Another gen-indices is running; stopping\n" if $verbose;
+	  exit 0;
+     }
+     print STDERR "Another gen-indices is running; stopping\n";
+     exit 1;
+}
+
 # NB: The reverse index is special; it's used to clean up during updates to bugs
 my @indexes = ('package', 'tag', 'severity','owner','submitter-email','reverse');
 my $indexes;
@@ -211,3 +221,4 @@ for my $i (@indexes) {
 	system('touch','-d',"1/1/1970 UTC + ${start_time}secs","$indexdest/by-$i$suffix.idx");
 }
 
+unlink($config{spool_dir}.'/lock/gen-indices')
