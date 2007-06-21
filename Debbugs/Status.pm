@@ -1005,18 +1005,20 @@ sub max_buggy{
      # Resolve bugginess states (we might be looking at multiple
      # architectures, say). Found wins, then fixed, then absent.
      my $maxbuggy = 'absent';
-     for my $version (@{$param{sourceversions}}) {
-	  my $buggy = buggy(bug => $param{bug},
-			    version => $version,
-			    found => $param{found},
-			    fixed => $param{fixed},
-			    version_cache => $param{version_cache},
-			    package => $param{package},
-			   );
-	  if ($buggy eq 'found') {
-	       return 'found';
-	  } elsif ($buggy eq 'fixed') {
-	       $maxbuggy = 'fixed';
+     for my $package (split /\s*,\s*/, $param{package}) {
+	  for my $version (@{$param{sourceversions}}) {
+	       my $buggy = buggy(bug => $param{bug},
+				 version => $version,
+				 found => $param{found},
+				 fixed => $param{fixed},
+				 version_cache => $param{version_cache},
+				 package => $package,
+				);
+	       if ($buggy eq 'found') {
+		    return 'found';
+	       } elsif ($buggy eq 'fixed') {
+		    $maxbuggy = 'fixed';
+	       }
 	  }
      }
      return $maxbuggy;
