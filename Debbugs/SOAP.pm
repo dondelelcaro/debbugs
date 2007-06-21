@@ -39,8 +39,9 @@ BEGIN{
 }
 
 
+use IO::File;
 use Debbugs::Status qw(get_bug_status);
-use Debbugs::Common qw(make_list);
+use Debbugs::Common qw(make_list getbuglocation getbugcomponent);
 use Storable qw(nstore retrieve);
 
 
@@ -119,11 +120,79 @@ sub get_bugs{
      my ($self,@params) = @_;
      my %params;
      while (my ($key,$value) = splice @params,0,2) {
-	  push @{$params{$key}}, $value;
+	  push @{$params{$key}}, make_list($value);
      }
      my @bugs;
      @bugs = Debbugs::Bugs::get_bugs(%params);
      return \@bugs;
+}
+
+
+=head2 get_bug_log
+
+     my $bug_log = get_bug_log($bug);
+     my $bug_log = get_bug_log($bug,$msg_num);
+
+Retuns a parsed set of the bug log; this is an array of hashes with
+the following
+
+ [{html => '',
+   header => '',
+   body    => '',
+   attachments => [],
+   msg_num     => 5,
+  },
+  {html => '',
+   header => '',
+   body    => '',
+   attachments => [],
+  },
+ ]
+
+
+=cut
+
+use Debbugs::Log qw();
+use Debbugs::MIME qw(parse);
+
+sub get_bug_log{
+     my ($self,$bug,$msg_num) = @_;
+
+     my $location = getbuglocation($bug,'log');
+     my $bug_log = getbugcomponent($bug,'log',$location);
+
+     my $log_fh = IO::File->new($bug_log, 'r') or
+	  die "Unable to open bug log $bug_log for reading: $!";
+
+     my $log = Debbugs::Log->new($log_fh) or
+	  die "Debbugs::Log was unable to be initialized";
+
+     my %seen_msg_ids;
+     my $current_msg=0;
+     my $status = {};
+     my @messages;
+     while (my $record = $log->read_record()) {
+	  $current_msg++;
+	  print STDERR "message $current_msg\n";
+	  #next if defined $msg_num and ($current_msg ne $msg_num);
+	  print STDERR "still message $current_msg\n";
+	  next unless $record->{type} eq 'incoming-recv';
+	  my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
+	  next if defined $msg_id and exists $seen_msg_ids{$msg_id};
+	  $seen_msg_ids{$msg_id} = 1 if defined $msg_id;
+	  next if defined $msg_id and $msg_id =~ /handler\..+\.ack(?:info)?\@/;
+	  my $message = parse($record->{text});
+	  my ($header,$body) = map {join("\n",make_list($_))}
+	       values %{$message};
+	  print STDERR "still still message $current_msg\n";
+	  push @messages,{html => $record->{html},
+			  header => $header,
+			  body   => $body,
+			  attachments => [],
+			  msg_num => $current_msg,
+			 };
+     }
+     return \@messages;
 }
 
 
