@@ -15,5 +15,6 @@ my $soap = Debbugs::SOAP::Server
 #$soap->serializer()->soapversion(1.2);
 # soapy is stupid, and is using the 1999 schema; override it.
 *SOAP::XMLSchema1999::Serializer::as_base64Binary = \&SOAP::XMLSchema2001::Serializer::as_base64Binary;
+*SOAP::Serializer::as_anyURI       = \&SOAP::XMLSchema2001::Serializer::as_string;
 $soap-> handle;
 
