@@ -103,8 +103,8 @@ END
 
 # then figure out which are affected.
 # turn found and fixed into full versions
-@{$cgi_var{found}} = makesourceversions($cgi_var{package},undef,@{$cgi_var{found}});
-@{$cgi_var{fixed}} = makesourceversions($cgi_var{package},undef,@{$cgi_var{fixed}});
+@{$cgi_var{found}} = map {makesourceversions($_,undef,@{$cgi_var{found}})} split/\s*,\s*/, $cgi_var{package};
+@{$cgi_var{fixed}} = map {makesourceversions($_,undef,@{$cgi_var{fixed}})} split/\s*,\s*/, $cgi_var{package};
 my @interesting_versions = makesourceversions($cgi_var{package},undef,keys %version_to_dist);
 
 # We need to be able to rip out leaves which the versions that do not affect the current versions of unstable/testing
