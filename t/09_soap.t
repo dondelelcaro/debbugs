@@ -57,7 +57,7 @@ EOF
 
 # test bugreport.cgi
 
-my $port = 11342;
+my $port = 11343;
 
 # We'd like to use soap.cgi here instead of testing the module
 # directly, but I can't quite get it to work with
@@ -78,8 +78,8 @@ my $pid = fork;
 die "Unable to fork child" if not defined $pid;
 if ($pid) {
      $child_pid = $pid;
-     # Wait for a second to let the child start
-     sleep 1;
+     # Wait for two seconds to let the child start
+     sleep 2;
 }
 else {
      # UGH.

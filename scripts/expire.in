@@ -78,7 +78,7 @@ chdir($config{spool_dir}) || die "chdir $config{spool_dir} failed: $!\n";
 
 #get list of bugs (ie, status files)
 opendir(DIR,"db-h") or die "Unable to open dir db-h: $!";
-my @dirs = sort { $a <=> $b } grep(s,^,db-h/,, grep(m/^\d+$/,readdir(DIR)));
+my @dirs = sort { $a cmp $b } grep(s,^,db-h/,, grep(m/^\d+$/,readdir(DIR)));
 close(DIR);
 my @list;
 foreach my $dir (@dirs) {
