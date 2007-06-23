@@ -119,8 +119,17 @@ sub get_bugs{
      my $VERSION = __populate_version(pop);
      my ($self,@params) = @_;
      my %params;
+     # Because some clients can't handle passing arrayrefs, we allow
+     # options to be specified multiple times
      while (my ($key,$value) = splice @params,0,2) {
 	  push @{$params{$key}}, make_list($value);
+     }
+     # However, for singly specified options, we want to pull them
+     # back out
+     for my $key (keys %params) {
+	  if (@{$params{$key}} == 1) {
+	       ($params{$key}) = @{$params{key}}
+	  }
      }
      my @bugs;
      @bugs = Debbugs::Bugs::get_bugs(%params);
