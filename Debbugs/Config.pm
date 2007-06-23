@@ -177,6 +177,15 @@ package links will not be made.
 
 set_default(\%config,'package_pages',undef);
 
+=item package_pages  $gUsertagPackageDomain
+
+Domain where where usertags of packages belong; defaults to $gPackagePages
+
+=cut
+
+set_default(\%config,'usertag_package_domain',$config{package_pages});
+
+
 =item subscription_domain $gSubscriptionDomain
 
 Domain where subscriptions to package lists happen
