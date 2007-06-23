@@ -128,7 +128,7 @@ sub get_bugs{
      # back out
      for my $key (keys %params) {
 	  if (@{$params{$key}} == 1) {
-	       ($params{$key}) = @{$params{key}}
+	       ($params{$key}) = @{$params{$key}}
 	  }
      }
      my @bugs;
