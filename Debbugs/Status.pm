@@ -698,7 +698,7 @@ sub bug_archiveable{
 	       last if $buggy eq 'found';
 	       $min_fixed_time = min($time_versions{$version},$min_fixed_time);
 	  }
-	  $min_archive_days = max($min_archive_days,ceil((time - $min_fixed_time)/(60*60*24)));
+	  $min_archive_days = max($min_archive_days,ceil($config{remove_age} - (time - $min_fixed_time)/(60*60*24)));
      }
      # If $param{ignore_time}, then we should ignore time.
      if ($param{ignore_time}) {
