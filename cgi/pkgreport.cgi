@@ -1,4 +1,14 @@
 #!/usr/bin/perl -wT
+# This script is part of debbugs, and is released
+# under the terms of the GPL version 2, or any later
+# version at your option.
+# See the file README and COPYING for more information.
+#
+# [Other people have contributed to this file; their copyrights should
+# go here too.]
+# Copyright 2004-2006 by Anthony Towns <ajt@debian.org>
+# Copyright 2007 by Don Armstrong <don@donarmstrong.com>.
+
 
 package debbugs;
 
@@ -7,11 +17,13 @@ use POSIX qw(strftime nice);
 
 require './common.pl';
 
-use Debbugs::Config qw(:globals :text);
+use Debbugs::Config qw(:globals :text :config);
 use Debbugs::User;
-use Debbugs::CGI qw(version_url);
-use Debbugs::Common qw(getparsedaddrs :date);
+use Debbugs::CGI qw(version_url maint_decode);
+use Debbugs::Common qw(getparsedaddrs :date make_list);
 use Debbugs::Bugs qw(get_bugs);
+use Debbugs::Packages qw(getsrcpkgs getpkgsrc get_versions);
+use Debbugs::Status qw(get_bug_status);
 
 use vars qw($gPackagePages $gWebDomain %gSeverityDisplay @gSeverityList);
 
@@ -23,7 +35,42 @@ if (defined $ENV{REQUEST_METHOD} and $ENV{REQUEST_METHOD} eq 'HEAD') {
 nice(5);
 
 my $userAgent = detect_user_agent();
-my %param = readparse();
+
+use CGI::Simple;
+my $q = new CGI::Simple;
+#my %param = readparse();
+
+my %param = cgi_parameters(query => $q,
+			   single => [qw(ordering archive repeatmerged),
+				      qw(bug-rev pend-rev sev-rev),
+				      qw(maxdays mindays version),
+				      qw(data which dist),
+				     ],
+			   default => {ordering => 'normal',
+				       archive  => 0,
+				       repeatmerged => 1,
+				      },
+			  );
+
+# map from yes|no to 1|0
+for my $key (qw(repeatmerged bug-rev pend-rev sev-rev)) {
+     if (exists $param{$key}){
+	  if ($param{$key} =~ /^no$/i) {
+	       $param{$key} = 0;
+	  }
+	  elsif ($param{$key}) {
+	       $param{$key} = 1;
+	  }
+     }
+}
+
+if (lc($param{archive}) eq 'no') {
+     $param{archive} = 0;
+}
+elsif (lc($param{archive}) eq 'yes') {
+     $param{archive} = 1;
+}
+
 
 my $repeatmerged = ($param{'repeatmerged'} || "yes") eq "yes";
 my $archive = ($param{'archive'} || "no") eq "yes";
@@ -81,8 +128,8 @@ my $show_list_footer = ($param{'show_list_footer'} || $userAgent->{'show_list_fo
 }
 
 
-my %hidden = map { $_, 1 } qw(status severity classification);
-my %cats = (
+our %hidden = map { $_, 1 } qw(status severity classification);
+our %cats = (
     "status" => [ {
         "nam" => "Status",
         "pri" => [map { "pending=$_" }
@@ -115,70 +162,52 @@ my %cats = (
     "normal" => [ qw(status severity classification) ],
 );
 
-my ($pkg, $src, $maint, $maintenc, $submitter, $severity, $status, $tag, $usertag,
-    $owner,
-   );
+my @select_key = (qw(submitter maint pkg package src usertag),
+		  qw(status tag maintenc owner)
+		 );
 
-my %which = (
-        'pkg' => \$pkg,
-        'src' => \$src,
-        'maint' => \$maint,
-        'maintenc' => \$maintenc,
-        'submitter' => \$submitter,
-        'severity' => \$severity,
-        'tag' => \$tag,
-	'usertag' => \$usertag,
-	'owner'   => \$owner,
-        );
-my @allowedEmpty = ( 'maint' );
+if (exists $param{which} and exists $param{data}) {
+     $param{$param{which}} = [exists $param{$param{which}}?(make_list($param{$param{which}})):(),
+			      make_list($param{data}),
+			     ];
+     delete $param{which};
+     delete $param{data};
+}
 
-my $found;
-foreach ( keys %which ) {
-        $status = $param{'status'} || 'open' if /^severity$/;
-        if (($found = $param{$_})) {
-                ${ $which{$_} } = $found;
-                last;
-        }
+if (defined $param{maintenc}) {
+     $param{maint} = maint_decode($param{maintenc});
+     delete $param{maintenc}
 }
-if (!$found && !$archive) {
-        foreach ( @allowedEmpty ) {
-                if (exists($param{$_})) {
-                        ${ $which{$_} } = '';
-                        $found = 1;
-                        last;
-                }
-        }
-}
-if (!$found) {
-        my $which;
-        if (($which = $param{'which'})) {
-                if (grep( /^\Q$which\E$/, @allowedEmpty)) {
-                        ${ $which{$which} } = $param{'data'};
-                        $found = 1;
-                } elsif (($found = $param{'data'})) {
-                        ${ $which{$which} } = $found if (exists($which{$which}));
-                }
-        }
-}
-quitcgi("You have to choose something to select by") if (!$found);
 
-my %bugusertags;
-my %ut;
-for my $user (split /[\s*,]+/, $users) {
-    next unless length($user) >= 4;
+
+if (not grep {exists $param{$_}} @select_key and exists $param{users}) {
+     $param{usertag} = [make_list($param{users})];
+}
+
+quitcgi("You have to choose something to select by") unless grep {exists $param{$_}} @select_key;
+
+if (exists $param{pkg}) {
+     $param{package} = $param{pkg};
+     delete $param{pkg};
+}
+
+our %bugusertags;
+our %ut;
+for my $user (map {split /[\s*,\s*]+/} make_list($param{users}||[])) {
+    next unless length($user);
     add_user($user);
 }
 
-if (defined $usertag) {
+if (defined $param{usertag}) {
     my %select_ut = ();
-    my ($u, $t) = split /:/, $usertag, 2;
+    my ($u, $t) = split /:/, $param{usertag}, 2;
     Debbugs::User::read_usertags(\%select_ut, $u);
     unless (defined $t && $t ne "") {
         $t = join(",", keys(%select_ut));
     }
 
     add_user($u);
-    $tag = $t;
+    push @{$param{tag}}, split /,/, $t;
 }
 
 my $Archived = $archive ? " Archived" : "";
@@ -192,23 +221,6 @@ my $dtime = strftime "%a, %e %b %Y %T UTC", gmtime;
 my $tail_html = $debbugs::gHTMLTail;
 $tail_html = $debbugs::gHTMLTail;
 $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
-
-set_option("repeatmerged", $repeatmerged);
-set_option("archive", $archive);
-set_option("include", $include);
-set_option("exclude", $exclude);
-set_option("pend-exc", $pend_exc);
-set_option("pend-inc", $pend_inc);
-set_option("sev-exc", $sev_exc);
-set_option("sev-inc", $sev_inc);
-set_option("maxdays", $maxdays);
-set_option("mindays", $mindays);
-set_option("version", $version);
-set_option("dist", $dist);
-set_option("arch", $arch);
-set_option("use-bug-idx", defined($param{'use-bug-idx'}) ? $param{'use-bug-idx'} : 0);
-set_option("show_list_header", $show_list_header);
-set_option("show_list_footer", $show_list_footer);
 
 our %seen_users;
 sub add_user {
@@ -241,128 +253,100 @@ sub add_user {
     set_option("bugusertags", \%bugusertags);
 }
 
-my $pseudodesc = getpseudodesc();
-if (defined $pseudodesc and defined $pkg and exists $pseudodesc->{$pkg}) {
-     undef $dist;
-     set_option('dist',$dist)
-}
-my $title;
 my @bugs;
-if (defined $pkg) {
-  $title = "package $pkg";
-  add_user("$pkg\@packages.debian.org");
-  # figure out the source package
-  my $pkgsrc = getpkgsrc();
-  add_user($pkgsrc->{$pkg}.'@packages.debian.org')
-       if defined $pkgsrc->{$pkg};
-  if (defined $version) {
-    $title .= " (version $version)";
-  } elsif (defined $dist) {
-    $title .= " in $dist";
-    my $verdesc = getversiondesc($pkg);
-    $title .= " ($verdesc)" if defined $verdesc;
-  }
-  my @pkgs = split /,/, $pkg;
-  @bugs = get_bugs(package=>\@pkgs,
-		   archive=>$archive
-		  );
-} elsif (defined $src) {
-  add_user("$src\@packages.debian.org");
-  $title = "source $src";
-  set_option('arch', 'source');
-  if (defined $version) {
-    $title .= " (version $version)";
-  } elsif (defined $dist) {
-    $title .= " in $dist";
-    my $verdesc = getversiondesc($src);
-    $title .= " ($verdesc)" if defined $verdesc;
-  }
-  @bugs = get_bugs(src=>[split /,/, $src],
-		   archive=>$archive
-		  );
-} elsif (defined $maint) {
-  add_user($maint);
-  $title = "maintainer $maint";
-  $title .= " in $dist" if defined $dist;
-  if ($maint eq "") {
-       my %maintainers = %{getmaintainers()};
-       @bugs = @{getbugs(sub {my %d=@_;
-			      foreach my $try (splitpackages($d{"pkg"})) {
-				   return 1 if !getparsedaddrs($maintainers{$try});
-			      }
-			      return 0;
-			 })};
-  } else {
-       @bugs = get_bugs(maint=>[map {lc ($_)} split /,/,$maint],
-			archive=>$archive
-		       );
-  }
-} elsif (defined $maintenc) {
-  my %maintainers = %{getmaintainers()};
-  $title = "encoded maintainer $maintenc";
-  $title .= " in $dist" if defined $dist;
-  @bugs = @{getbugs(sub {my %d=@_; 
-                         foreach my $try (splitpackages($d{"pkg"})) {
-                           my @me = getparsedaddrs($maintainers{$try});
-                           return 1 if grep {
-                             maintencoded($_->address) eq $maintenc
-                           } @me;
-                         }
-                         return 0;
-                        })};
-} elsif (defined $submitter) {
-  add_user($submitter);
-  $title = "submitter $submitter";
-  $title .= " in $dist" if defined $dist;
-  my @submitters = map {lc ($_)} split /,/, $submitter;
-  @bugs = get_bugs(submitter => \@submitters,
-		   archive=>$archive
-		  );
-} elsif (defined($severity) && defined($status)) {
-  $title = "$status $severity bugs";
-  $title .= " in $dist" if defined $dist;
-  my @severities = split /,/, $severity;
-  my @statuses = split /,/, $status;
-  @bugs = @{getbugs(sub {my %d=@_;
-                       return (grep($d{"severity"} eq $_, @severities))
-                         && (grep($d{"status"} eq $_, @statuses));
-                     })};
-} elsif (defined($severity)) {
-  $title = "$severity bugs";
-  $title .= " in $dist" if defined $dist;
-  my @severities = split /,/, $severity;
-  @bugs = @{getbugs(sub {my %d=@_;
-                       return (grep($d{"severity"} eq $_, @severities));
-                     }, 'severity', @severities)};
-} elsif (defined($tag)) {
-  $title = "bugs tagged $tag";
-  $title .= " in $dist" if defined $dist;
-  my @tags = split /,/, $tag;
-  my %bugs = ();
-  for my $t (@tags) {
-      for my $b (@{$ut{$t}}) {
-          $bugs{$b} = 1;
-       }
-  }
-  @bugs = @{getbugs(sub {my %d = @_;
-			 return 1 if $bugs{$d{"bug"}};
-                         my %tags = map { $_ => 1 } split ' ', $d{"tags"};
-                         return grep(exists $tags{$_}, @tags);
-                        })};
-}
-elsif (defined $owner) {
-     $title = "bugs owned by $owner";
-     $title .= " in $dist" if defined $dist;
-     my @owners = map {lc ($_)} split /,/, $owner;
-     my %bugs = ();
-     @bugs = get_bugs(owner=>\@owners,
-		      archive=>$archive
-		     );
 
+# addusers for source and binary packages being searched for
+my $pkgsrc = getpkgsrc();
+my $srcpkg = getsrcpkgs();
+for my $package (# For binary packages, add the binary package
+		 # and corresponding source package
+		 make_list($param{package}||[]),
+		 (map {defined $pkgsrc->{$_}?($pkgsrc->{$_}):()}
+		  make_list($param{package}||[]),
+		 ),
+		 # For source packages, add the source package
+		 # and corresponding binary packages
+		 make_list($param{src}||[]),
+		 (map {defined $srcpkg->{$_}?($srcpkg->{$_}):()}
+		  make_list($param{src}||[]),
+		 ),
+		) {
+     next unless defined $package;
+     add_user($package.'@'.$config{usertag_package_domain})
+	  if defined $config{usertag_package_domain};
 }
+
+
+# walk through the keys and make the right get_bugs query.
+
+my @search_key_order = (package   => 'in package',
+			tag       => 'tagged',
+			severity  => 'with severity',
+			src       => 'in source package',
+			maint     => 'in packages maintained by',
+			submitter => 'submitted by',
+			owner     => 'owned by',
+			status    => 'with status',
+		       );
+my %search_keys = @search_key_order;
+
+# Set the title sanely and clean up parameters
+my @title;
+use Data::Dumper;
+print STDERR Dumper(\%param);
+while (my ($key,$value) = splice @search_key_order, 0, 2) {
+     next unless exists $param{$key};
+     my @entries = ();
+     $param{$key} = [map {split /\s*,\s*/} make_list($param{$key})];
+     for my $entry (make_list($param{$key})) {
+	  my $extra = '';
+	  if (exists $param{dist} and ($key eq 'package' or $key eq 'src')) {
+	       my @versions = get_versions(package => $entry,
+					   (exists $param{dist}?(dist => $param{dist}):()),
+					   (exists $param{arch}?(arch => $param{arch}):()),
+					   ($key eq 'src'?(arch => q(source)):()),
+					  );
+	       my $verdesc = join(', ',@versions);
+	       $verdesc = 'version'.(@versions>1?'s ':' ').$verdesc;
+	       $extra= " ($verdesc)" if @versions;
+	  }
+	  push @entries, $entry.$extra;
+     }
+     push @title,$value.' '.join(' or ', @entries);
+}
+my $title = join(' and ', map {/ or /?"($_)":$_} @title);
+@title = ();
+
+# we have to special case the maint="" search, unfortunatly.
+if (defined $param{maint} and $param{maint} eq "") {
+     my %maintainers = %{getmaintainers()};
+     @bugs = get_bugs(function =>
+		      sub {my %d=@_;
+			   foreach my $try (splitpackages($d{"pkg"})) {
+				return 1 if !getparsedaddrs($maintainers{$try});
+			   }
+			   return 0;
+		      }
+		     );
+     $title = 'in packages with no maintainer';
+}
+else {
+     #yeah for magick!
+     @bugs = get_bugs(map {exists $param{$_}?($_,$param{$_}):()}
+		      keys %search_keys, 'archive'
+		     );
+}
+
+if (defined $param{version}) {
+     $title .= " at version $version";
+}
+elsif (defined $param{dist}) {
+     $title .= " in $dist";
+}
+
 $title = htmlsanit($title);
 
-my @names; my @prior; my @title; my @order;
+my @names; my @prior; my @order;
 determine_ordering();
 
 # strip out duplicate bugs
@@ -381,100 +365,127 @@ print "<HTML><HEAD>\n" .
     "</HEAD>\n" .
     '<BODY onload="pagemain();">' .
     "\n";
-print "<H1>" . "$gProject$Archived $gBug report logs: $title" .
+print "<H1>" . "$gProject$Archived $gBug report logs: $gBugs $title" .
       "</H1>\n";
 
 my $showresult = 1;
 
-if (defined $pkg || defined $src) {
-    my $showpkg = htmlsanit((defined $pkg) ? $pkg : "source package $src");
-    my %maintainers = %{getmaintainers()};
-    my $maint = $pkg ? $maintainers{$pkg} : $maintainers{$src} ? $maintainers{$src} : undef;
+my $pkg = $param{package} if defined $param{package};
+my $src = $param{src} if defined $param{src};
+
+my $pseudodesc = getpseudodesc();
+if (defined $pseudodesc and defined $pkg and exists $pseudodesc->{$pkg}) {
+     delete $param{dist};
+}
+
+# output infomration about the packages
+
+for my $package (make_list($param{package}||[])) {
+     output_package_info('binary',$package);
+}
+for my $package (make_list($param{src}||[])) {
+     output_package_info('source',$package);
+}
+
+sub output_package_info{
+    my ($srcorbin,$package) = @_;
+    my $showpkg = htmlsanit($package);
+    my $maintainers = getmaintainers();
+    my $maint = $maintainers->{$package};
     if (defined $maint) {
-        print '<p>';
-        print htmlmaintlinks(sub { $_[0] == 1 ? "Maintainer for $showpkg is "
-                                              : "Maintainers for $showpkg are "
-                                 },
-                             $maint);
-        print ".</p>\n";
+	 print '<p>';
+	 print htmlmaintlinks(sub { $_[0] == 1 ? "Maintainer for $showpkg is "
+					 : "Maintainers for $showpkg are "
+				    },
+			      $maint);
+	 print ".</p>\n";
     } else {
-        print "<p>No maintainer for $showpkg. Please do not report new bugs against this package.</p>\n";
+	 print "<p>No maintainer for $showpkg. Please do not report new bugs against this package.</p>\n";
     }
-    if (defined $maint or @bugs) {
-        my %pkgsrc = %{getpkgsrc()};
-        my $srcforpkg;
-        if (defined $pkg) {
-            $srcforpkg = $pkgsrc{$pkg};
-            defined $srcforpkg or $srcforpkg = $pkg;
-        }
-        my @pkgs = getsrcpkgs($pkg ? $srcforpkg : $src);
-        undef $srcforpkg unless @pkgs;
-        @pkgs = grep( !/^\Q$pkg\E$/, @pkgs ) if ( $pkg );
-        if ( @pkgs ) {
-            @pkgs = sort @pkgs;
-            if ($pkg) {
-                    print "<p>You may want to refer to the following packages that are part of the same source:\n";
-            } else {
-                    print "<p>You may want to refer to the following individual bug pages:\n";
-            }
-            push @pkgs, $src if ( $src && !grep(/^\Q$src\E$/, @pkgs) );
-            print join( ", ", map( "<A href=\"" . pkgurl($_) . "\">$_</A>", @pkgs ) );
-            print ".\n";
-        }
-        my @references;
-        my $pseudodesc = getpseudodesc();
-        if ($pkg and defined($pseudodesc) and exists($pseudodesc->{$pkg})) {
-            push @references, "to the <a href=\"http://${debbugs::gWebDomain}/pseudo-packages${debbugs::gHTMLSuffix}\">list of other pseudo-packages</a>";
-        } else {
-            if ($pkg and defined $gPackagePages) {
-                push @references, sprintf "to the <a href=\"%s\">%s package page</a>", urlsanit("http://${debbugs::gPackagePages}/$pkg"), htmlsanit("$pkg");
-            }
-            if (defined $gSubscriptionDomain) {
-                my $ptslink = $pkg ? $srcforpkg : $src;
-                push @references, "to the <a href=\"http://$gSubscriptionDomain/$ptslink\">Package Tracking System</a>";
-            }
-            # Only output this if the source listing is non-trivial.
-            if ($pkg and $srcforpkg and (@pkgs or $pkg ne $srcforpkg)) {
-                push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($srcforpkg), htmlsanit($srcforpkg);
-            }
-        }
-        if (@references) {
-            $references[$#references] = "or $references[$#references]" if @references > 1;
-            print "<p>You might like to refer ", join(", ", @references), ".</p>\n";
-        }
-	if (defined $maint || defined $maintenc) {
-	     print "<p>If you find a bug not listed here, please\n";
-	     printf "<a href=\"%s\">report it</a>.</p>\n",
-		  urlsanit("http://${debbugs::gWebDomain}/Reporting${debbugs::gHTMLSuffix}");
-	}
+    my %pkgsrc = %{getpkgsrc()};
+    my $srcforpkg = $package;
+    if ($srcorbin eq 'binary') {
+	 $srcforpkg = $pkgsrc{$package};
+	 defined $srcforpkg or $srcforpkg = $package;
+    }
+    my @pkgs = getsrcpkgs($srcforpkg);
+    @pkgs = grep( !/^\Q$package\E$/, @pkgs );
+    if ( @pkgs ) {
+	 @pkgs = sort @pkgs;
+	 if ($srcorbin eq 'binary') {
+	      print "<p>You may want to refer to the following packages that are part of the same source:\n";
+	 } else {
+	      print "<p>You may want to refer to the following individual bug pages:\n";
+	 }
+	 #push @pkgs, $src if ( $src && !grep(/^\Q$src\E$/, @pkgs) );
+	 print join( ", ", map( "<A href=\"" . pkgurl($_) . "\">$_</A>", @pkgs ) );
+	 print ".\n";
+    }
+    my @references;
+    my $pseudodesc = getpseudodesc();
+    if ($package and defined($pseudodesc) and exists($pseudodesc->{$package})) {
+	 push @references, "to the <a href=\"http://${debbugs::gWebDomain}/pseudo-packages${debbugs::gHTMLSuffix}\">".
+	      "list of other pseudo-packages</a>";
     } else {
-        print "<p>There is no record of the " .
-              (defined($pkg) ? htmlsanit($pkg) . " package"
-                             : htmlsanit($src) . " source package") .
-              ", and no bugs have been filed against it.</p>";
-        $showresult = 0;
+	 if ($package and defined $gPackagePages) {
+	      push @references, sprintf "to the <a href=\"%s\">%s package page</a>",
+		   urlsanit("http://${debbugs::gPackagePages}/$package"), htmlsanit("$package");
+	 }
+	 if (defined $gSubscriptionDomain) {
+	      my $ptslink = $package ? $srcforpkg : $src;
+	      push @references, "to the <a href=\"http://$gSubscriptionDomain/$ptslink\">Package Tracking System</a>";
+	 }
+	 # Only output this if the source listing is non-trivial.
+	 if ($srcorbin eq 'binary' and $srcforpkg) {
+	      push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($srcforpkg), htmlsanit($srcforpkg);
+	 }
     }
-} elsif (defined $maint || defined $maintenc) {
+    if (@references) {
+	 $references[$#references] = "or $references[$#references]" if @references > 1;
+	 print "<p>You might like to refer ", join(", ", @references), ".</p>\n";
+    }
+    if (defined $param{maint} || defined $param{maintenc}) {
+	 print "<p>If you find a bug not listed here, please\n";
+	 printf "<a href=\"%s\">report it</a>.</p>\n",
+	      urlsanit("http://${debbugs::gWebDomain}/Reporting${debbugs::gHTMLSuffix}");
+    }
+    if (not $maint and not @bugs) {
+	 print "<p>There is no record of the " .
+	      ($srcorbin eq 'binary' ? htmlsanit($package) . " package"
+	       : htmlsanit($src) . " source package").
+		    ", and no bugs have been filed against it.</p>";
+	 $showresult = 0;
+    }
+}
+
+if (exists $param{maint} or exists $param{maintenc}) {
     print "<p>Note that maintainers may use different Maintainer fields for\n";
     print "different packages, so there may be other reports filed under\n";
     print "different addresses.\n";
-} elsif (defined $submitter) {
+}
+if (exists $param{submitter}) {
     print "<p>Note that people may use different email accounts for\n";
     print "different bugs, so there may be other reports filed under\n";
     print "different addresses.\n";
 }
 
-set_option("archive", !$archive);
-printf "<p>See the <a href=\"%s\">%s reports</a></p>",
-     urlsanit(pkg_url((
+my $archive_links;
+my @archive_links;
+my %archive_values = (both => 'archived and unarchived',
+		      0    => 'not archived',
+		      1    => 'archived',
+		     );
+while (my ($key,$value) = each %archive_values) {
+     next if $key eq lc($param{archive});
+     push @archive_links, qq(<a href=").
+	  urlsanit(pkg_url((
 		       map {
 			    $_ eq 'archive'?():($_,$param{$_})
-		       } keys %param
-		      ),
-		      ('archive',($archive?"no":"yes"))
-		     )
-	     ), ($archive ? "active" : "archived");
-set_option("archive", $archive);
+		       } keys %param),
+			    archive => $key
+			   )).qq(">$value reports </a>);
+}
+print '<p>See the '.join (' or ',@archive_links)."</p>\n";
 
 print $result if $showresult;
 
@@ -728,7 +739,9 @@ sub pkg_htmlizebugs {
     my %section = ();
 
     foreach my $bug (@bugs) {
-        my %status = %{getbugstatus($bug)};
+        my %status = %{get_bug_status(bug=>$bug,
+				      (exists $param{dist}?(dist => $param{dist}):()),
+				     )};
         next unless %status;
         next if bugfilter($bug, %status);
 
