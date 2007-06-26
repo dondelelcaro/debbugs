@@ -46,18 +46,20 @@ BEGIN{
 
      @EXPORT = ();
      %EXPORT_TAGS = ();
-     @EXPORT_OK = (qw(get_bugs count_bugs newest_bug));
+     @EXPORT_OK = (qw(get_bugs count_bugs newest_bug bug_filter));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
 use Debbugs::Config qw(:config);
 use Params::Validate qw(validate_with :types);
 use IO::File;
-use Debbugs::Status qw(splitpackages);
+use Debbugs::Status qw(splitpackages get_bug_status);
 use Debbugs::Packages qw(getsrcpkgs);
 use Debbugs::Common qw(getparsedaddrs getmaintainers getmaintainers_reverse make_list);
 use Fcntl qw(O_RDONLY);
 use MLDBM qw(DB_File Storable);
+use List::Util qw(first);
+use Carp;
 
 =head2 get_bugs
 
@@ -289,6 +291,77 @@ sub newest_bug {
      close $nn_fh;
      chomp $next_number;
      return $next_number+0;
+}
+
+=head2 bug_filter
+
+     bug_filter
+
+Allows filtering bugs on commonly used criteria
+
+=cut
+
+sub bug_filter {
+     my %param = validate_with(params => \@_,
+			       spec   => {bug => {type  => SCALAR,
+						  regex => qr/^\d+$/,
+						 },
+					  status => {type => HASHREF,
+						     optional => 1,
+						    },
+					  seen_merged => {type => HASHREF,
+							  optional => 1,
+							 },
+					  repeat_merged => {type => BOOLEAN,
+							    optional => 1,
+							   },
+					  include => {type => HASHREF,
+						      optional => 1,
+						     },
+					  exclude => {type => HASHREF,
+						      optional => 1,
+						     },
+					  min_days => {type => SCALAR,
+						       optional => 1,
+						      },
+					  max_days => {type => SCALAR,
+						       optional => 1,
+						      },
+					 },
+			      );
+     if (exists $param{repeat_merged} and
+	 not $param{repeat_merged} and
+	 not defined $param{seen_merged}) {
+	  croak "repeat_merged false requires seen_merged to be passed";
+     }
+
+     if (not exists $param{status}) {
+	  my $location = getbuglocation($param{bug}, 'summary');
+	  return 0 if not defined $location or not length $location;
+	  $param{status} = readbug( $param{bug}, $location );
+	  return 0 if not defined $param{status};
+     }
+
+     if (exists $param{include}) {
+	  return 1 if (!__bug_matches($param{include}, $param{status}));
+     }
+     if (exists $param{exclude}) {
+	  return 1 if (__bug_matches($param{exclude}, $param{status}));
+     }
+     if (exists $param{repeat_merged} and not $param{repeat_merged}) {
+	  my @merged = sort {$a<=>$b} $param{bug}, split(/ /, $param{status}{mergedwith});
+	  return 1 if first {defined $_} @{$param{seen_merged}}{@merged};
+	  @{$param{seen_merged}}{@merged} = (1) x @merged;
+     }
+     my $daysold = int((time - $param{status}{date}) / 86400);   # seconds to days
+     if (exists $param{min_days}) {
+	  return 1 unless $param{min_days} <= $daysold;
+     }
+     if (exists $param{max_days}) {
+	  return 1 unless $param{max_days} == -1 or
+	       $param{max_days} >= $daysold;
+     }
+     return 0;
 }
 
 
@@ -530,6 +603,18 @@ sub get_bugs_flatfile{
      return @bugs;
 }
 
+=head1 PRIVATE FUNCTIONS
+
+=head2 __handle_pkg_src_and_maint
+
+     my @packages = __handle_pkg_src_and_maint(map {exists $param{$_}?($_,$param{$_}):()}
+					       qw(package src maint)
+					      );
+
+Turn package/src/maint into a list of packages
+
+=cut
+
 sub __handle_pkg_src_and_maint{
      my %param = validate_with(params => \@_,
 			       spec   => {package   => {type => SCALAR|ARRAYREF,
@@ -572,6 +657,51 @@ sub __handle_pkg_src_and_maint{
      }
      return grep {$packages{$_} >= $package_keys} keys %packages;
 }
+
+my %field_match = (
+    'subject' => \&__contains_field_match,
+    'tags' => sub {
+        my ($field, $values, $status) = @_; 
+	my %values = map {$_=>1} @$values;
+	foreach my $t (split /\s+/, $status->{$field}) {
+            return 1 if (defined $values{$t});
+        }
+        return 0;
+    },
+    'severity' => \&__exact_field_match,
+    'pending' => \&__exact_field_match,
+    'originator' => \&__contains_field_match,
+    'forwarded' => \&__contains_field_match,
+    'owner' => \&__contains_field_match,
+);
+
+sub __bug_matches {
+    my ($hash, $status) = @_;
+    foreach my $key( keys( %$hash ) ) {
+        my $value = $hash->{$key};
+	my $sub = $field_match{$key};
+	return 1 if ($sub->($key, $value, $status));
+    }
+    return 0;
+}
+
+sub __exact_field_match {
+    my ($field, $values, $status) = @_; 
+    my @values = @$values;
+    my @ret = grep {$_ eq $status->{$field} } @values;
+    $#ret != -1;
+}
+
+sub __contains_field_match {
+    my ($field, $values, $status) = @_; 
+    foreach my $data (@$values) {
+        return 1 if (index($status->{$field}, $data) > -1);
+    }
+    return 0;
+}
+
+
+
 
 
 1;
