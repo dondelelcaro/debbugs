@@ -739,7 +739,7 @@ currently not correctly implemented.
 
 =item arch -- optional architecture(s) to check package status at
 
-=item usertags -- optional hashref of usertags
+=item bugusertags -- optional hashref of bugusertags
 
 =item sourceversion -- optional arrayref of source/version; overrides
 dist, arch, and version. [The entries in this array must be in the
@@ -775,9 +775,9 @@ sub get_bug_status {
 					  arch       => {type => SCALAR|ARRAYREF,
 							 optional => 1,
 							},
-					  usertags   => {type => HASHREF,
-							 optional => 1,
-							},
+					  bugusertags   => {type => HASHREF,
+							    optional => 1,
+							   },
 					  sourceversions => {type => ARRAYREF,
 							     optional => 1,
 							    },
@@ -802,10 +802,10 @@ sub get_bug_status {
      }
      $status{id} = $param{bug};
 
-     if (defined $param{usertags}{$param{bug}}) {
+     if (defined $param{bugusertags}{$param{bug}}) {
 	  $status{keywords} = "" unless defined $status{keywords};
 	  $status{keywords} .= " " unless $status{keywords} eq "";
-	  $status{keywords} .= join(" ", @{$param{usertags}{$param{bug}}});
+	  $status{keywords} .= join(" ", @{$param{bugusertags}{$param{bug}}});
      }
      $status{tags} = $status{keywords};
      my %tags = map { $_ => 1 } split ' ', $status{tags};

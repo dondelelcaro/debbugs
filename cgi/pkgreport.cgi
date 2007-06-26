@@ -333,8 +333,9 @@ if (defined $param{maint} and $param{maint} eq "") {
 }
 else {
      #yeah for magick!
-     @bugs = get_bugs(map {exists $param{$_}?($_,$param{$_}):()}
-		      keys %search_keys, 'archive'
+     @bugs = get_bugs((map {exists $param{$_}?($_,$param{$_}):()}
+		       keys %search_keys, 'archive'),
+		      usertags => \%ut,
 		     );
 }
 
@@ -742,7 +743,7 @@ sub pkg_htmlizebugs {
     foreach my $bug (@bugs) {
         my %status = %{get_bug_status(bug=>$bug,
 				      (exists $param{dist}?(dist => $param{dist}):()),
-				      usertags => \%bugusertags,
+				      bugusertags => \%bugusertags,
 				      (exists $param{version}?(version => $param{version}):()),
 				      (exists $param{arch}?(arch => $param{arch}):()),
 				     )};

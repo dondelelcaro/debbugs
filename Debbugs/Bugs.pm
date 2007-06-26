@@ -415,20 +415,13 @@ sub get_bugs_by_idx{
      my @packages = __handle_pkg_src_and_maint(map {exists $param{$_}?($_,$param{$_}):()}
 					       qw(package src maint)
 					      );
-     my %usertag_bugs;
-     if (exists $param{tag} and exists $param{usertags}) {
-	  # This complex slice makes a hash with the bugs which have the
-          # usertags passed in $param{tag} set.
-	  @usertag_bugs{make_list(@{$param{usertags}}{make_list($param{tag})})
-			} = (1) x make_list(@{$param{usertags}}{make_list($param{tag})});
-     }
      if (exists $param{package} or
 	 exists $param{src} or
 	 exists $param{maint}) {
 	  delete @param{qw(maint src)};
 	  $param{package} = [@packages];
      }
-     my $keys = keys(%param) - 1;
+     my $keys = grep {$_ !~ /^(archive|usertags|bugs)$/} keys(%param);
      die "Need at least 1 key to search by" unless $keys;
      my $arc = $param{archive} ? '-arc':'';
      my %idx;
