@@ -109,6 +109,8 @@ sub get_status {
 
      my @bugs = get_bugs(...);
 
+Returns a list of bugs.
+
 See L<Debbugs::Bugs::get_bugs> for details.
 
 =cut
@@ -182,9 +184,7 @@ sub get_bug_log{
      my @messages;
      while (my $record = $log->read_record()) {
 	  $current_msg++;
-	  print STDERR "message $current_msg\n";
 	  #next if defined $msg_num and ($current_msg ne $msg_num);
-	  print STDERR "still message $current_msg\n";
 	  next unless $record->{type} eq 'incoming-recv';
 	  my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
 	  next if defined $msg_id and exists $seen_msg_ids{$msg_id};
@@ -193,7 +193,6 @@ sub get_bug_log{
 	  my $message = parse($record->{text});
 	  my ($header,$body) = map {join("\n",make_list($_))}
 	       values %{$message};
-	  print STDERR "still still message $current_msg\n";
 	  push @messages,{html => $record->{html},
 			  header => $header,
 			  body   => $body,
