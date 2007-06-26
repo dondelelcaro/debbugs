@@ -12,18 +12,18 @@
 
 package debbugs;
 
+use warnings;
 use strict;
 use POSIX qw(strftime nice);
-
-require './common.pl';
 
 use Debbugs::Config qw(:globals :text :config);
 use Debbugs::User;
 use Debbugs::CGI qw(version_url maint_decode);
-use Debbugs::Common qw(getparsedaddrs :date make_list);
-use Debbugs::Bugs qw(get_bugs);
+use Debbugs::Common qw(getparsedaddrs :date make_list getmaintainers);
+use Debbugs::Bugs qw(get_bugs bug_filter);
 use Debbugs::Packages qw(getsrcpkgs getpkgsrc get_versions);
-use Debbugs::Status qw(get_bug_status);
+use Debbugs::Status qw(:status);
+use Debbugs::CGI qw(:all);
 
 use vars qw($gPackagePages $gWebDomain %gSeverityDisplay @gSeverityList);
 
@@ -41,23 +41,20 @@ if (defined $ENV{REMOTE_ADDR} and $ENV{REMOTE_ADDR} =~ /(?:218\.175\.56\.14|64\.
 
 nice(5);
 
-my $userAgent = detect_user_agent();
-
 use CGI::Simple;
 my $q = new CGI::Simple;
-#my %param = readparse();
 
-my %param = cgi_parameters(query => $q,
-			   single => [qw(ordering archive repeatmerged),
-				      qw(bug-rev pend-rev sev-rev),
-				      qw(maxdays mindays version),
-				      qw(data which dist),
-				     ],
-			   default => {ordering => 'normal',
-				       archive  => 0,
-				       repeatmerged => 1,
-				      },
-			  );
+our %param = cgi_parameters(query => $q,
+			    single => [qw(ordering archive repeatmerged),
+				       qw(bug-rev pend-rev sev-rev),
+				       qw(maxdays mindays version),
+				       qw(data which dist),
+				      ],
+			    default => {ordering => 'normal',
+					archive  => 0,
+					repeatmerged => 1,
+				       },
+			   );
 
 # map from yes|no to 1|0
 for my $key (qw(repeatmerged bug-rev pend-rev sev-rev)) {
@@ -79,7 +76,6 @@ elsif (lc($param{archive}) eq 'yes') {
 }
 
 
-my $repeatmerged = ($param{'repeatmerged'} || "yes") eq "yes";
 my $archive = ($param{'archive'} || "no") eq "yes";
 my $include = $param{'&include'} || $param{'include'} || "";
 my $exclude = $param{'&exclude'} || $param{'exclude'} || "";
@@ -111,8 +107,6 @@ my $mindays = ($param{'mindays'} || 0);
 my $version = $param{'version'} || undef;
 my $dist = $param{'dist'} || undef;
 my $arch = $param{'arch'} || undef;
-my $show_list_header = ($param{'show_list_header'} || $userAgent->{'show_list_header'} || "yes" ) eq "yes";
-my $show_list_footer = ($param{'show_list_footer'} || $userAgent->{'show_list_footer'} || "yes" ) eq "yes";
 
 {
     if (defined $param{'vt'}) {
@@ -170,7 +164,7 @@ our %cats = (
 );
 
 my @select_key = (qw(submitter maint pkg package src usertag),
-		  qw(status tag maintenc owner)
+		  qw(status tag maintenc owner severity)
 		 );
 
 if (exists $param{which} and exists $param{data}) {
@@ -219,7 +213,9 @@ if (defined $param{usertag}) {
 
 my $Archived = $archive ? " Archived" : "";
 
-my $this = "";
+our $this = munge_url('pkgreport.cgi?',
+		      %param,
+		     );
 
 my %indexentry;
 my %strings = ();
@@ -257,7 +253,7 @@ sub add_user {
             push @{$bugusertags{$b}}, $t;
         }
     }
-    set_option("bugusertags", \%bugusertags);
+#    set_option("bugusertags", \%bugusertags);
 }
 
 my @bugs;
@@ -299,8 +295,6 @@ my %search_keys = @search_key_order;
 
 # Set the title sanely and clean up parameters
 my @title;
-use Data::Dumper;
-print STDERR Dumper(\%param);
 while (my ($key,$value) = splice @search_key_order, 0, 2) {
      next unless exists $param{$key};
      my @entries = ();
@@ -351,7 +345,7 @@ elsif (defined $param{dist}) {
      $title .= " in $dist";
 }
 
-$title = htmlsanit($title);
+$title = html_escape($title);
 
 my @names; my @prior; my @order;
 determine_ordering();
@@ -396,12 +390,12 @@ for my $package (make_list($param{src}||[])) {
 
 sub output_package_info{
     my ($srcorbin,$package) = @_;
-    my $showpkg = htmlsanit($package);
+    my $showpkg = html_escape($package);
     my $maintainers = getmaintainers();
     my $maint = $maintainers->{$package};
     if (defined $maint) {
 	 print '<p>';
-	 print htmlmaintlinks(sub { $_[0] == 1 ? "Maintainer for $showpkg is "
+	 print htmlize_maintlinks(sub { $_[0] == 1 ? "Maintainer for $showpkg is "
 					 : "Maintainers for $showpkg are "
 				    },
 			      $maint);
@@ -425,7 +419,7 @@ sub output_package_info{
 	      print "<p>You may want to refer to the following individual bug pages:\n";
 	 }
 	 #push @pkgs, $src if ( $src && !grep(/^\Q$src\E$/, @pkgs) );
-	 print join( ", ", map( "<A href=\"" . pkgurl($_) . "\">$_</A>", @pkgs ) );
+	 print join( ", ", map( "<A href=\"" . html_escape(munge_url($this,package=>$_)) . "\">$_</A>", @pkgs ) );
 	 print ".\n";
     }
     my @references;
@@ -436,7 +430,7 @@ sub output_package_info{
     } else {
 	 if ($package and defined $gPackagePages) {
 	      push @references, sprintf "to the <a href=\"%s\">%s package page</a>",
-		   urlsanit("http://${debbugs::gPackagePages}/$package"), htmlsanit("$package");
+		   html_escape("http://${debbugs::gPackagePages}/$package"), html_escape("$package");
 	 }
 	 if (defined $gSubscriptionDomain) {
 	      my $ptslink = $package ? $srcforpkg : $src;
@@ -444,7 +438,7 @@ sub output_package_info{
 	 }
 	 # Only output this if the source listing is non-trivial.
 	 if ($srcorbin eq 'binary' and $srcforpkg) {
-	      push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", srcurl($srcforpkg), htmlsanit($srcforpkg);
+	      push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", html_escape(munge_url($this,src=>$srcforpkg,package=>[])), html_escape($srcforpkg);
 	 }
     }
     if (@references) {
@@ -454,12 +448,12 @@ sub output_package_info{
     if (defined $param{maint} || defined $param{maintenc}) {
 	 print "<p>If you find a bug not listed here, please\n";
 	 printf "<a href=\"%s\">report it</a>.</p>\n",
-	      urlsanit("http://${debbugs::gWebDomain}/Reporting${debbugs::gHTMLSuffix}");
+	      html_escape("http://${debbugs::gWebDomain}/Reporting${debbugs::gHTMLSuffix}");
     }
     if (not $maint and not @bugs) {
 	 print "<p>There is no record of the " .
-	      ($srcorbin eq 'binary' ? htmlsanit($package) . " package"
-	       : htmlsanit($src) . " source package").
+	      ($srcorbin eq 'binary' ? html_escape($package) . " package"
+	       : html_escape($src) . " source package").
 		    ", and no bugs have been filed against it.</p>";
 	 $showresult = 0;
     }
@@ -485,7 +479,7 @@ my %archive_values = (both => 'archived and unarchived',
 while (my ($key,$value) = each %archive_values) {
      next if $key eq lc($param{archive});
      push @archive_links, qq(<a href=").
-	  urlsanit(pkg_url((
+	  html_escape(pkg_url((
 		       map {
 			    $_ eq 'archive'?():($_,$param{$_})
 		       } keys %param),
@@ -518,27 +512,27 @@ print "<tr><td></td>";
 print "    <td><input id=\"b_1_2\" name=vt value=bysuite type=radio onchange=\"enable(1);\" $checked_sui>" . pkg_htmlselectsuite(1,2,1) . " for " . pkg_htmlselectarch(1,2,2) . "</td></tr>\n";
 
 if (defined $pkg) {
-    my $v = htmlsanit($version) || "";
-    my $pkgsane = htmlsanit($pkg);
+    my $v = html_escape($version) || "";
+    my $pkgsane = html_escape($pkg);
     print "<tr><td></td>";
     print "    <td><input id=\"b_1_3\" name=vt value=bypkg type=radio onchange=\"enable(1);\" $checked_ver>$pkgsane version <input id=\"b_1_3_1\" name=version value=\"$v\"></td></tr>\n";
 } elsif (defined $src) {
-    my $v = htmlsanit($version) || "";
-    my $srcsane = htmlsanit($src);
+    my $v = html_escape($version) || "";
+    my $srcsane = html_escape($src);
     print "<tr><td></td>";
     print "    <td><input name=vt value=bysrc type=radio onchange=\"enable(1);\" $checked_ver>$srcsane version <input id=\"b_1_3_1\" name=version value=\"$v\"></td></tr>\n";
 }
 print "<tr><td>&nbsp;</td></tr>\n";
 
-my $includetags = htmlsanit(join(" ", grep { !m/^subj:/i } map {split /[\s,]+/} ref($include)?@{$include}:$include));
-my $excludetags = htmlsanit(join(" ", grep { !m/^subj:/i } map {split /[\s,]+/} ref($exclude)?@{$exclude}:$exclude));
-my $includesubj = htmlsanit(join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } map {split /[\s,]+/} ref($include)?@{$include}:$include));
-my $excludesubj = htmlsanit(join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } map {split /[\s,]+/} ref($exclude)?@{$exclude}:$exclude));
+my $includetags = html_escape(join(" ", grep { !m/^subj:/i } map {split /[\s,]+/} ref($include)?@{$include}:$include));
+my $excludetags = html_escape(join(" ", grep { !m/^subj:/i } map {split /[\s,]+/} ref($exclude)?@{$exclude}:$exclude));
+my $includesubj = html_escape(join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } map {split /[\s,]+/} ref($include)?@{$include}:$include));
+my $excludesubj = html_escape(join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } map {split /[\s,]+/} ref($exclude)?@{$exclude}:$exclude));
 my $vismindays = ($mindays == 0 ? "" : $mindays);
 my $vismaxdays = ($maxdays == -1 ? "" : $maxdays);
 
-my $sel_rmy = ($repeatmerged ? " selected" : "");
-my $sel_rmn = ($repeatmerged ? "" : " selected");
+my $sel_rmy = ($param{repeatmerged} ? " selected" : "");
+my $sel_rmn = ($param{repeatmerged} ? "" : " selected");
 my $sel_ordraw = ($ordering eq "raw" ? " selected" : "");
 my $sel_ordold = ($ordering eq "oldview" ? " selected" : "");
 my $sel_ordnor = ($ordering eq "normal" ? " selected" : "");
@@ -630,13 +624,13 @@ sub pkg_htmlindexentrystatus {
     my $showversions = '';
     if (@{$status{found_versions}}) {
         my @found = @{$status{found_versions}};
-        $showversions .= join ', ', map {s{/}{ }; htmlsanit($_)} @found;
+        $showversions .= join ', ', map {s{/}{ }; html_escape($_)} @found;
     }
     if (@{$status{fixed_versions}}) {
         $showversions .= '; ' if length $showversions;
         $showversions .= '<strong>fixed</strong>: ';
         my @fixed = @{$status{fixed_versions}};
-        $showversions .= join ', ', map {s{/}{ }; htmlsanit($_)} @fixed;
+        $showversions .= join ', ', map {s{/}{ }; html_escape($_)} @fixed;
     }
     $result .= ' (<a href="'.
 	 version_url($status{package},
@@ -648,10 +642,10 @@ sub pkg_htmlindexentrystatus {
     $result .= $showseverity;
     $result .= pkg_htmladdresslinks("Reported by: ", \&submitterurl,
                                 $status{originator});
-    $result .= ";\nOwned by: " . htmlsanit($status{owner})
+    $result .= ";\nOwned by: " . html_escape($status{owner})
                if length $status{owner};
     $result .= ";\nTags: <strong>" 
-                 . htmlsanit(join(", ", sort(split(/\s+/, $status{tags}))))
+                 . html_escape(join(", ", sort(split(/\s+/, $status{tags}))))
                  . "</strong>"
                        if (length($status{tags}));
 
@@ -663,7 +657,7 @@ sub pkg_htmlindexentrystatus {
         split(/ /,$status{blocks}));
 
     if (length($status{done})) {
-        $result .= "<br><strong>Done:</strong> " . htmlsanit($status{done});
+        $result .= "<br><strong>Done:</strong> " . html_escape($status{done});
         my $days = bug_archiveable(bug => $status{id},
 				   status => \%status,
 				   days_until => 1,
@@ -748,12 +742,19 @@ sub pkg_htmlizebugs {
     foreach my $bug (@bugs) {
         my %status = %{get_bug_status(bug=>$bug,
 				      (exists $param{dist}?(dist => $param{dist}):()),
+				      usertags => \%bugusertags,
+				      (exists $param{version}?(version => $param{version}):()),
+				      (exists $param{arch}?(arch => $param{arch}):()),
 				     )};
         next unless %status;
-        next if bugfilter($bug, %status);
+        next if bug_filter(bug => $bug,
+			   status => \%status,
+			   (exists $param{repeatmerged}?(repeat_merged => $param{repeatmerged}):()),
+			   seen_merged => \%seenmerged,
+			  );
 
 	my $html = sprintf "<li><a href=\"%s\">#%d: %s</a>\n<br>",
-            bugurl($bug), $bug, htmlsanit($status{subject});
+            bug_url($bug), $bug, html_escape($status{subject});
         $html .= pkg_htmlindexentrystatus(\%status) . "\n";
 	push @status, [ $bug, \%status, $html ];
     }
@@ -799,7 +800,7 @@ sub pkg_htmlizebugs {
 		$title .= join("; ", grep {($_ || "") ne ""}
 			map { $title[$_]->[$ttl[$_]] } 1..$#ttl);
 	    }
-	    $title = htmlsanit($title);
+	    $title = html_escape($title);
 
             my $count = $count{"_$order"};
             my $bugs = $count == 1 ? "bug" : "bugs";
@@ -853,8 +854,8 @@ sub pkg_htmlpackagelinks {
     return 'Package' . (@pkglist > 1 ? 's' : '') . ': ' .
            join(', ',
                 map {
-                    '<a class="submitter" href="' . pkgurl($_) . '">' .
-                    $openstrong . htmlsanit($_) . $closestrong . '</a>'
+                    '<a class="submitter" href="' . munge_url($this,src=>[],package=>$_) . '">' .
+                    $openstrong . html_escape($_) . $closestrong . '</a>'
                 } @pkglist
            );
 }
@@ -983,7 +984,7 @@ sub pkg_htmlselectarch {
 }
 
 sub myurl {
-     return urlsanit(pkg_url(map {exists $param{$_}?($_,$param{$_}):()}
+     return html_escape(pkg_url(map {exists $param{$_}?($_,$param{$_}):()}
 			     qw(archive repeatmerged mindays maxdays),
 			     qw(version dist arch pkg src tag maint submitter)
 			    )

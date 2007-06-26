@@ -454,7 +454,7 @@ sub allbugs {
     return @{getbugs(sub { 1 })};
 }
 
-sub bugmatches(\%\%) {
+sub bugmatches {
     my ($hash, $status) = @_;
     foreach my $key( keys( %$hash ) ) {
         my $value = $hash->{$key};
@@ -463,14 +463,14 @@ sub bugmatches(\%\%) {
     }
     return 0;
 }
-sub bugfilter($%) {
-    my ($bug, %status) = @_;
-    our (%seenmerged);
-    if (%common_include) {
-	return 1 if (!bugmatches(%common_include, %status));
+sub bugfilter {
+    my ($bug, $status,$seen_merged,$common_include,$common_exclude,$repeat_merged,) = @_;
+    #our (%seenmerged);
+    if ($common_include) {
+	return 1 if (!bugmatches($common_include, $status));
     }
-    if (%common_exclude) {
-	return 1 if (bugmatches(%common_exclude, %status));
+    if ($common_exclude) {
+	return 1 if (bugmatches($common_exclude, $status));
     }
     my @merged = sort {$a<=>$b} $bug, split(/ /, $status{mergedwith});
     my $daysold = int((time - $status{date}) / 86400);   # seconds to days
