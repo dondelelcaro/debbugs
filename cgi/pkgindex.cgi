@@ -6,8 +6,10 @@ use POSIX qw(strftime nice);
 
 use Debbugs::Config;
 use CGI::Simple;
-use Debbugs::CGI qw(cgi_parameters);
-require './common.pl';
+use Debbugs::CGI qw(:util :url :html);
+use Debbugs::Common qw(getmaintainers);
+use Debbugs::Bugs qw(count_bugs);
+use Debbugs::Status qw(:status);
 
 nice(5);
 
@@ -66,7 +68,7 @@ my %htmldescrip = ();
 my %sortkey = ();
 if ($indexon eq "pkg") {
   $tag = "package";
-  %count = countbugs(sub {my %d=@_; return splitpackages($d{"pkg"})});
+  %count = count_bugs(function => sub {my %d=@_; return splitpackages($d{"pkg"})});
   if (defined $param{first}) {
        %count = map {
 	    if (/^\Q$param{first}\E/) {
@@ -82,9 +84,9 @@ if ($indexon eq "pkg") {
   foreach my $pkg (keys %count) {
     $sortkey{$pkg} = lc $pkg;
     $htmldescrip{$pkg} = sprintf('<a href="%s">%s</a> (%s)',
-                           pkgurl($pkg),
-                           htmlsanit($pkg),
-                           htmlmaintlinks(sub { $_[0] == 1 ? 'maintainer: '
+                           pkg_url(pkg => $pkg),
+                           html_escape($pkg),
+                           htmlize_maintlinks(sub { $_[0] == 1 ? 'maintainer: '
                                                            : 'maintainers: ' },
                                           $maintainers{$pkg}));
   }
@@ -101,7 +103,7 @@ if ($indexon eq "pkg") {
 	    } 
        } keys %count;
   }
-  %count = countbugs(sub {my %d=@_;
+  %count = countbugs(function => sub {my %d=@_;
                           return map {
                             $pkgsrc->{$_} || $_
                           } splitpackages($d{"pkg"});
@@ -111,15 +113,15 @@ if ($indexon eq "pkg") {
     $sortkey{$src} = lc $src;
     $htmldescrip{$src} = sprintf('<a href="%s">%s</a> (%s)',
                            srcurl($src),
-                           htmlsanit($src),
-                           htmlmaintlinks(sub { $_[0] == 1 ? 'maintainer: '
+                           html_escape($src),
+                           htmlize_maintlinks(sub { $_[0] == 1 ? 'maintainer: '
                                                            : 'maintainers: ' },
                                           $maintainers{$src}));
   }
 } elsif ($indexon eq "maint") {
   $tag = "maintainer";
   my %email2maint = ();
-  %count = countbugs(sub {my %d=@_;
+  %count = count_bugs(function => sub {my %d=@_;
                           return map {
                             my @me = getparsedaddrs($maintainers{$_});
                             foreach my $addr (@me) {
@@ -144,12 +146,12 @@ if ($indexon eq "pkg") {
   $note .= "different addresses.</p>\n";
   foreach my $maint (keys %count) {
     $sortkey{$maint} = lc $email2maint{$maint} || "(unknown)";
-    $htmldescrip{$maint} = htmlmaintlinks('', $email2maint{$maint});
+    $htmldescrip{$maint} = htmlize_maintlinks('', $email2maint{$maint});
   }
 } elsif ($indexon eq "submitter") {
   $tag = "submitter";
   my %fullname = ();
-  %count = countbugs(sub {my %d=@_;
+  %count = count_bugs(function => sub {my %d=@_;
                           my @se = getparsedaddrs($d{"submitter"} || "");
                           foreach my $addr (@se) {
                             $fullname{$addr->address} = $addr->format
@@ -171,14 +173,14 @@ if ($indexon eq "pkg") {
     $sortkey{$sub} = lc $fullname{$sub};
     $htmldescrip{$sub} = sprintf('<a href="%s">%s</a>',
                            submitterurl($sub),
-			   htmlsanit($fullname{$sub}));
+			   html_escape($fullname{$sub}));
   }
   $note = "<p>Note that people may use different email accounts for\n";
   $note .= "different bugs, so there may be other reports filed under\n";
   $note .= "different addresses.</p>\n";
 } elsif ($indexon eq "tag") {
   $tag = "tag";
-  %count = countbugs(sub {my %d=@_; return split ' ', $d{tags}; });
+  %count = count_bugs(function => sub {my %d=@_; return split ' ', $d{tags}; });
   if (defined $param{first}) {
        %count = map {
 	    if (/^\Q$param{first}\E/) {
@@ -194,7 +196,7 @@ if ($indexon eq "pkg") {
     $sortkey{$keyword} = lc $keyword;
     $htmldescrip{$keyword} = sprintf('<a href="%s">%s</a>',
                                tagurl($keyword),
-                               htmlsanit($keyword));
+                               html_escape($keyword));
   }
 }
 
