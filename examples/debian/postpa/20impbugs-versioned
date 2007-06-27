@@ -3,7 +3,7 @@
 use warnings;
 use strict;
 use Debbugs::Config qw(:globals);
-use Debbugs::Status qw(splitpackages buggy);
+use Debbugs::Status qw(splitpackages buggy get_bug_status);
 use Debbugs::Packages qw(getversions makesourceversions);
 use Debbugs::Bugs qw(count_bugs);
 
@@ -28,7 +28,7 @@ for my $dist ('testing', 'unstable') {
     return () if (grep /^$d{bug}$/, @merged);
 
     # Unfortunately mergedwith isn't indexed.
-    my $status = getbugstatus($d{bug});
+    my $status = get_bug_status(bug => $d{bug});
     push(@merged, split(' ', $status->{'mergedwith'}));
 
     #set_option('dist', $dist);
