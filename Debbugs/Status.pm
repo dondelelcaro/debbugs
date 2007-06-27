@@ -705,7 +705,10 @@ sub bug_archiveable{
 	  return $param{days_until}?0:1;
      }
      # 6. at least 28 days have passed since the last action has occured or the bug was closed
-     my $age = ceil($config{remove_age} - -M getbugcomponent($param{bug},'log'));
+     my $age = ceil(max(map {$config{remove_age} - -M getbugcomponent($_,'log')} 
+			$param{bug}, split / /, $status->{mergedwith}
+		       )
+		   );
      if ($age > 0 or $min_archive_days > 0) {
 	  return $param{days_until}?max($age,$min_archive_days):0;
      }
