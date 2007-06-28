@@ -20,7 +20,7 @@ use Debbugs::Config qw(:globals :text :config);
 use Debbugs::User;
 use Debbugs::CGI qw(version_url maint_decode);
 use Debbugs::Common qw(getparsedaddrs :date make_list getmaintainers);
-use Debbugs::Bugs qw(get_bugs bug_filter);
+use Debbugs::Bugs qw(get_bugs bug_filter newest_bug);
 use Debbugs::Packages qw(getsrcpkgs getpkgsrc get_versions);
 use Debbugs::Status qw(:status);
 use Debbugs::CGI qw(:all);
@@ -41,7 +41,7 @@ our %param = cgi_parameters(query => $q,
 			    single => [qw(ordering archive repeatmerged),
 				       qw(bug-rev pend-rev sev-rev),
 				       qw(maxdays mindays version),
-				       qw(data which dist),
+				       qw(data which dist newest),
 				      ],
 			    default => {ordering => 'normal',
 					archive  => 0,
@@ -165,7 +165,7 @@ our %cats = (
 );
 
 my @select_key = (qw(submitter maint pkg package src usertag),
-		  qw(status tag maintenc owner severity)
+		  qw(status tag maintenc owner severity newest)
 		 );
 
 if (exists $param{which} and exists $param{data}) {
@@ -316,7 +316,7 @@ while (my ($key,$value) = splice @search_key_order, 0, 2) {
      }
      push @title,$value.' '.join(' or ', @entries);
 }
-my $title = join(' and ', map {/ or /?"($_)":$_} @title);
+my $title = $gBugs.' '.join(' and ', map {/ or /?"($_)":$_} @title);
 @title = ();
 
 # we have to special case the maint="" search, unfortunatly.
@@ -330,7 +330,12 @@ if (defined $param{maint} and $param{maint} eq "") {
 			   return 0;
 		      }
 		     );
-     $title = 'in packages with no maintainer';
+     $title = $gBugs.' in packages with no maintainer';
+}
+elsif (defined $param{newest}) {
+     my $newest_bug = newest_bug();
+     @bugs = ($newest_bug - $param{newest} + 1) .. $newest_bug;
+     $title = @bugs.' newest '.$gBugs;
 }
 else {
      #yeah for magick!
@@ -368,7 +373,7 @@ print "<HTML><HEAD>\n" .
     "</HEAD>\n" .
     '<BODY onload="pagemain();">' .
     "\n";
-print "<H1>" . "$gProject$Archived $gBug report logs: $gBugs $title" .
+print "<H1>" . "$gProject$Archived $gBug report logs: $title" .
       "</H1>\n";
 
 my $showresult = 1;

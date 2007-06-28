@@ -290,7 +290,7 @@ sub newest_bug {
      my $next_number = <$nn_fh>;
      close $nn_fh;
      chomp $next_number;
-     return $next_number+0;
+     return $next_number-1;
 }
 
 =head2 bug_filter

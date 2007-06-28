@@ -138,6 +138,22 @@ sub get_bugs{
      return \@bugs;
 }
 
+=head2 newest_bugs
+
+     my @bugs = newest_bugs(5);
+
+Returns a list of the newest bugs. [Note that all bugs are *not*
+guaranteed to exist, but they should in the most common cases.]
+
+=cut
+
+sub newest_bugs{
+     my $VERSION = __populate_version(pop);
+     my ($self,$num) = @_;
+     my $newest_bug = Debbugs::bugs::newest_bug();
+     @bugs = ($newest_bug - $num + 1) .. $newest_bug;
+}
+
 
 =head2 get_bug_log
 
