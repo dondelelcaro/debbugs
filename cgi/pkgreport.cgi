@@ -85,7 +85,7 @@ unless (defined $ordering) {
    $ordering = "raw" if $raw_sort;
    $ordering = 'age' if $age_sort;
 }
-my ($bug_order) = $ordering =~ /(age(?:rev)?)/;
+our ($bug_order) = $ordering =~ /(age(?:rev)?)/;
 $bug_order = '' if not defined $bug_order;
 
 my $bug_rev = ($param{'bug-rev'} || "no") eq "yes";

@@ -151,7 +151,7 @@ sub newest_bugs{
      my $VERSION = __populate_version(pop);
      my ($self,$num) = @_;
      my $newest_bug = Debbugs::bugs::newest_bug();
-     @bugs = ($newest_bug - $num + 1) .. $newest_bug;
+     return [$newest_bug - $num + 1) .. $newest_bug];
 }
 
 
@@ -208,9 +208,8 @@ sub get_bug_log{
 	  next if defined $msg_id and $msg_id =~ /handler\..+\.ack(?:info)?\@/;
 	  my $message = parse($record->{text});
 	  my ($header,$body) = map {join("\n",make_list($_))}
-	       values %{$message};
-	  push @messages,{html => $record->{html},
-			  header => $header,
+	       @{$message}{qw(header body)};
+	  push @messages,{header => $header,
 			  body   => $body,
 			  attachments => [],
 			  msg_num => $current_msg,
