@@ -195,6 +195,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Add bugspam.cgi with confirm string (closes: #348225)
     - Allow selecting both archived and unarchived bugs (closes: #320175)
     - Support intersecting sets of bugs (closes: #164421)
+    - Allow selecting the newest N bugs (closes: #84681)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
