@@ -426,7 +426,7 @@ sub output_package_info{
 	      print "<p>You may want to refer to the following individual bug pages:\n";
 	 }
 	 #push @pkgs, $src if ( $src && !grep(/^\Q$src\E$/, @pkgs) );
-	 print join( ", ", map( "<A href=\"" . html_escape(munge_url($this,package=>$_)) . "\">$_</A>", @pkgs ) );
+	 print join( ", ", map( "<A href=\"" . html_escape(munge_url($this,package=>$_,src=>[],newest=>[])) . "\">$_</A>", @pkgs ) );
 	 print ".\n";
     }
     my @references;
@@ -445,7 +445,7 @@ sub output_package_info{
 	 }
 	 # Only output this if the source listing is non-trivial.
 	 if ($srcorbin eq 'binary' and $srcforpkg) {
-	      push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", html_escape(munge_url($this,src=>$srcforpkg,package=>[])), html_escape($srcforpkg);
+	      push @references, sprintf "to the source package <a href=\"%s\">%s</a>'s bug page", html_escape(munge_url($this,src=>$srcforpkg,package=>[],newest=>[])), html_escape($srcforpkg);
 	 }
     }
     if (@references) {
@@ -876,7 +876,7 @@ sub pkg_htmlpackagelinks {
     return 'Package' . (@pkglist > 1 ? 's' : '') . ': ' .
            join(', ',
                 map {
-                    '<a class="submitter" href="' . munge_url($this,src=>[],package=>$_) . '">' .
+                    '<a class="submitter" href="' . munge_url($this,src=>[],package=>$_,newest=>[]) . '">' .
                     $openstrong . html_escape($_) . $closestrong . '</a>'
                 } @pkglist
            );
