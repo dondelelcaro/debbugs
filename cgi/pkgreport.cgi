@@ -91,36 +91,44 @@ $bug_order = '' if not defined $bug_order;
 my $bug_rev = ($param{'bug-rev'} || "no") eq "yes";
 my $pend_rev = ($param{'pend-rev'} || "no") eq "yes";
 my $sev_rev = ($param{'sev-rev'} || "no") eq "yes";
-my $pend_exc = $param{'&pend-exc'} || $param{'pend-exc'} || "";
-my $pend_inc = $param{'&pend-inc'} || $param{'pend-inc'} || "";
-my $sev_exc = $param{'&sev-exc'} || $param{'sev-exc'} || "";
-my $sev_inc = $param{'&sev-inc'} || $param{'sev-inc'} || "";
+
+my @inc_exc_mapping = ({name   => 'pending',
+			incexc => 'include',
+			key    => 'pend-inc',
+		       },
+		       {name   => 'pending',
+			incexc => 'exclude',
+			key    => 'pend-exc',
+		       },
+		       {name   => 'severity',
+			incexc => 'include',
+			key    => 'sev-inc',
+		       },
+		       {name   => 'severity',
+			incexc => 'exclude',
+			key    => 'sev-exc',
+		       },
+		       {name   => 'subject',
+			incexc => 'include',
+			key    => 'includesubj',
+		       },
+		       {name   => 'subject',
+			incexc => 'exclude',
+			key    => 'excludesubj',
+		       },
+		      );
+for my $incexcmap (@inc_exc_mapping) {
+     push @{$param{$incexcmap->{incexc}}}, map {"$incexcmap->{name}:$_"}
+	  map{split /\s*,\s*/} make_list($param{$incexcmap->{key}})
+	       if exists $param{$incexcmap->{key}};
+     delete $param{$incexcmap->{key}};
+}
+
 my $maxdays = ($param{'maxdays'} || -1);
 my $mindays = ($param{'mindays'} || 0);
 my $version = $param{'version'} || undef;
-my $dist = $param{'dist'} || undef;
-my $arch = $param{'arch'} || undef;
-
-{
-    if (defined $param{'vt'}) {
-        my $vt = $param{'vt'};
-        if ($vt eq "none") { $dist = undef; $arch = undef; $version = undef; }
-        if ($vt eq "bysuite") {
-            $version = undef;
-            $arch = undef if ($arch eq "any");
-        }
-        if ($vt eq "bypkg" || $vt eq "bysrc") { $dist = undef; $arch = undef; }
-    }
-    if (defined $param{'includesubj'}) {
-        my $is = $param{'includesubj'};
-        $include .= "," . join(",", map { "subj:$_" } (split /[\s,]+/, $is));
-    }
-    if (defined $param{'excludesubj'}) {
-        my $es = $param{'excludesubj'};
-        $exclude .= "," . join(",", map { "subj:$_" } (split /[\s,]+/, $es));
-    }
-}
-
+# XXX Once the options/selection is rewritten, this should go away
+my $dist = $param{dist} || undef;
 
 our %hidden = map { $_, 1 } qw(status severity classification);
 our %cats = (
@@ -333,10 +341,10 @@ else {
 }
 
 if (defined $param{version}) {
-     $title .= " at version $version";
+     $title .= " at version $param{version}";
 }
 elsif (defined $param{dist}) {
-     $title .= " in $dist";
+     $title .= " in $param{dist}";
 }
 
 $title = html_escape($title);
@@ -732,6 +740,19 @@ sub pkg_htmlizebugs {
     );
 
     my %section = ();
+    # Make the include/exclude map
+    my %include;
+    my %exclude;
+    for my $include (make_list($param{include})) {
+	 my ($key,$value) = split /\s*:\s*/,$include,2;
+	 next unless defined $value;
+	 push @{$include{$key}}, split /\s*,\s*/, $value;
+    }
+    for my $exclude (make_list($param{exclude})) {
+	 my ($key,$value) = split /\s*:\s*/,$exclude,2;
+	 next unless defined $value;
+	 push @{$exclude{$key}}, split /\s*,\s*/, $value;
+    }
 
     foreach my $bug (@bugs) {
         my %status = %{get_bug_status(bug=>$bug,
@@ -745,6 +766,8 @@ sub pkg_htmlizebugs {
 			   status => \%status,
 			   (exists $param{repeatmerged}?(repeat_merged => $param{repeatmerged}):()),
 			   seen_merged => \%seenmerged,
+			   (keys %include ? (include => \%include):()),
+			   (keys %exclude ? (exclude => \%exclude):()),
 			  );
 
 	my $html = sprintf "<li><a href=\"%s\">#%d: %s</a>\n<br>",
@@ -1057,7 +1080,7 @@ sub determine_ordering {
         while (defined $param{"pri$i"}) {
             my $h = {};
 
-            my $pri = $param{"pri$i"};
+            my ($pri) = make_list($param{"pri$i"});
             if ($pri =~ m/^([^:]*):(.*)$/) {
               $h->{"nam"} = $1;  # overridden later if necesary
               $h->{"pri"} = [ map { "$1=$_" } (split /,/, $2) ];
@@ -1065,12 +1088,12 @@ sub determine_ordering {
               $h->{"pri"} = [ split /,/, $pri ];
             }
 
-	    $h->{"nam"} = $param{"nam$i"}
-                if (defined $param{"nam$i"}); 
-            $h->{"ord"} = [ split /\s*,\s*/, $param{"ord$i"} ]
-                if (defined $param{"ord$i"}); 
-            $h->{"ttl"} = [ split /\s*,\s*/, $param{"ttl$i"} ]
-                if (defined $param{"ttl$i"}); 
+	    ($h->{"nam"}) = make_list($param{"nam$i"})
+                if (defined $param{"nam$i"});
+            $h->{"ord"} = [ split /\s*,\s*/, make_list($param{"ord$i"}) ]
+                if (defined $param{"ord$i"});
+            $h->{"ttl"} = [ split /\s*,\s*/, make_list($param{"ttl$i"}) ]
+                if (defined $param{"ttl$i"});
 
             push @c, $h;
 	    $i++;
