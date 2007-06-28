@@ -151,9 +151,9 @@ sub newest_bugs{
      my $VERSION = __populate_version(pop);
      my ($self,$num) = @_;
      my $newest_bug = Debbugs::bugs::newest_bug();
-     return [$newest_bug - $num + 1) .. $newest_bug];
-}
+     return [($newest_bug - $num + 1) .. $newest_bug];
 
+}
 
 =head2 get_bug_log
 
