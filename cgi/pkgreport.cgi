@@ -749,11 +749,13 @@ sub pkg_htmlizebugs {
     my %include;
     my %exclude;
     for my $include (make_list($param{include})) {
+	 next unless defined $include;
 	 my ($key,$value) = split /\s*:\s*/,$include,2;
 	 next unless defined $value;
 	 push @{$include{$key}}, split /\s*,\s*/, $value;
     }
     for my $exclude (make_list($param{exclude})) {
+	 next unless defined $exclude;
 	 my ($key,$value) = split /\s*:\s*/,$exclude,2;
 	 next unless defined $value;
 	 push @{$exclude{$key}}, split /\s*,\s*/, $value;
