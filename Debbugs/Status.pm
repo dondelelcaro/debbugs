@@ -631,6 +631,7 @@ sub bug_archiveable{
 	 and $config{remove_age} >
 	 -M getbugcomponent($param{bug},'log')
 	) {
+	  print STDERR "Cannot arhive $param{bug} because of time\n" if $DEBUG;
 	  return $cannot_archive;
      }
      # At this point, we have to get the versioning information for this bug.
@@ -668,6 +669,7 @@ sub bug_archiveable{
 				   version_cache  => $version_cache,
 				   package        => $status->{package},
 				  )) {
+	       print STDERR "Cannot archive $param{bug} because it's found\n" if $DEBUG;
 	       return $cannot_archive;
 	  }
 	  # Since the bug has at least been fixed in the architectures
@@ -907,9 +909,14 @@ sub bug_presence {
      }
 
      my @sourceversions;
+     my $pseudo_desc = getpseudodesc();
      if (not exists $param{sourceversions}) {
 	  my %sourceversions;
-	  if (defined $param{version}) {
+	  # pseudopackages do not have source versions by definition.
+	  if (exists $pseudo_desc->{$status{package}}) {
+	       # do nothing.
+	  }
+	  elsif (defined $param{version}) {
 	       foreach my $arch (make_list($param{arch})) {
 		    for my $package (split /\s*,\s*/, $status{package}) {
 			 my @temp = makesourceversions($package,
@@ -937,6 +944,7 @@ sub bug_presence {
 
 	  # TODO: This should probably be handled further out for efficiency and
 	  # for more ease of distinguishing between pkg= and src= queries.
+	  # DLA: src= queries should just pass arch=source, and they'll be happy.
 	  @sourceversions = keys %sourceversions;
      }
      else {
