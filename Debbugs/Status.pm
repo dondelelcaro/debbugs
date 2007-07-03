@@ -627,7 +627,7 @@ sub bug_archiveable{
      return $cannot_archive if not defined $status->{done} or not length $status->{done};
      # If we just are checking if the bug can be archived, we'll not even bother
      # checking the versioning information if the bug has been -done for less than 28 days.
-     my $log_file = getbugcomponent($_,'log');
+     my $log_file = getbugcomponent($param{bug},'log');
      if (not defined $log_file) {
 	  print STDERR "Cannot archive $param{bug} because the log doesn't exists\n" if $DEBUG;
      }
