@@ -627,10 +627,15 @@ sub bug_archiveable{
      return $cannot_archive if not defined $status->{done} or not length $status->{done};
      # If we just are checking if the bug can be archived, we'll not even bother
      # checking the versioning information if the bug has been -done for less than 28 days.
+     my $log_file = getbugcomponent($param{bug},'log');
+     if (not defined $log_file) {
+	  print STDERR "Cannot archive $param{bug} because the log doesn't exists\n" if $DEBUG;
+     }
      if (not $param{days_until} and not $param{ignore_time}
 	 and $config{remove_age} >
-	 -M getbugcomponent($param{bug},'log')
+	 -M $log_file
 	) {
+	  print STDERR "Cannot archive $param{bug} because of time\n" if $DEBUG;
 	  return $cannot_archive;
      }
      # At this point, we have to get the versioning information for this bug.
@@ -668,6 +673,7 @@ sub bug_archiveable{
 				   version_cache  => $version_cache,
 				   package        => $status->{package},
 				  )) {
+	       print STDERR "Cannot archive $param{bug} because it's found\n" if $DEBUG;
 	       return $cannot_archive;
 	  }
 	  # Since the bug has at least been fixed in the architectures
@@ -705,7 +711,7 @@ sub bug_archiveable{
 	  return $param{days_until}?0:1;
      }
      # 6. at least 28 days have passed since the last action has occured or the bug was closed
-     my $age = ceil(max(map {$config{remove_age} - -M getbugcomponent($_,'log')} 
+     my $age = ceil(max(map {$config{remove_age} - -M $log_file}
 			$param{bug}, split / /, $status->{mergedwith}
 		       )
 		   );
@@ -907,9 +913,14 @@ sub bug_presence {
      }
 
      my @sourceversions;
+     my $pseudo_desc = getpseudodesc();
      if (not exists $param{sourceversions}) {
 	  my %sourceversions;
-	  if (defined $param{version}) {
+	  # pseudopackages do not have source versions by definition.
+	  if (exists $pseudo_desc->{$status{package}}) {
+	       # do nothing.
+	  }
+	  elsif (defined $param{version}) {
 	       foreach my $arch (make_list($param{arch})) {
 		    for my $package (split /\s*,\s*/, $status{package}) {
 			 my @temp = makesourceversions($package,
@@ -937,6 +948,7 @@ sub bug_presence {
 
 	  # TODO: This should probably be handled further out for efficiency and
 	  # for more ease of distinguishing between pkg= and src= queries.
+	  # DLA: src= queries should just pass arch=source, and they'll be happy.
 	  @sourceversions = keys %sourceversions;
      }
      else {
@@ -1079,23 +1091,31 @@ sub buggy {
 				     );
      }
      if ($param{version} !~ m{/}) {
-	  $param{version} = makesourceversions($param{package},undef,
-					       $param{version}
-					      );
+	  my ($version) = makesourceversions($param{package},undef,
+					     $param{version}
+					    );
+	  $param{version} = $version if defined $version;
      }
      # Figure out which source packages we need
      my %sources;
      @sources{map {m{(.+)/}; $1} @found} = (1) x @found;
      @sources{map {m{(.+)/}; $1} @fixed} = (1) x @fixed;
-     @sources{map {m{(.+)/}; $1} $param{version}} = 1;
+     @sources{map {m{(.+)/}; $1} $param{version}} = 1 if
+	  $param{version} =~ m{/};
      my $version;
      if (not defined $param{version_cache} or
 	 not exists $param{version_cache}{join(',',sort keys %sources)}) {
 	  $version = Debbugs::Versions->new(\&Debbugs::Versions::Dpkg::vercmp);
 	  foreach my $source (keys %sources) {
 	       my $srchash = substr $source, 0, 1;
-	       my $version_fh = IO::File->new("$config{version_packages_dir}/$srchash/$source", 'r') or
-		    warn "Unable to open $config{version_packages_dir}/$srchash/$source: $!" and next;
+	       my $version_fh = IO::File->new("$config{version_packages_dir}/$srchash/$source", 'r');
+	       if (not defined $version_fh) {
+		    # We only want to warn if it's a package which actually has a maintainer
+		    my $maints = getmaintainers();
+		    next if not exists $maints->{$source};
+		    warn "Unable to open $config{version_packages_dir}/$srchash/$source: $!";
+		    next;
+	       }
 	       $version->load($version_fh);
 	  }
 	  if (defined $param{version_cache}) {

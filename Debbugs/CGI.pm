@@ -61,7 +61,6 @@ BEGIN{
 				qw(maybelink htmlize_addresslinks htmlize_maintlinks),
 			       ],
 		     util   => [qw(cgi_parameters quitcgi),
-				qw(getpseudodesc)
 			       ],
 		     misc   => [qw(maint_decode)],
 		     #status => [qw(getbugstatus)],
@@ -484,23 +483,6 @@ sub htmlize_maintlinks {
 
 our $_maintainer;
 our $_maintainer_rev;
-
-our $_pseudodesc;
-sub getpseudodesc {
-    return $_pseudodesc if $_pseudodesc;
-    my %pseudodesc;
-
-    my $pseudo = new IO::File $config{pseudo_desc_file},'r'
-	 or &quitcgi("Unable to open $config{pseudo_desc_file}: $!");
-    while(<$pseudo>) {
-	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
-	$pseudodesc{lc $1} = $2;
-    }
-    close($pseudo);
-    $_pseudodesc = \%pseudodesc;
-    return $_pseudodesc;
-}
-
 
 =head2 bug_links
 

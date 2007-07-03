@@ -19,7 +19,7 @@ use POSIX qw(strftime nice);
 use Debbugs::Config qw(:globals :text :config);
 use Debbugs::User;
 use Debbugs::CGI qw(version_url maint_decode);
-use Debbugs::Common qw(getparsedaddrs :date make_list getmaintainers);
+use Debbugs::Common qw(getparsedaddrs :date make_list getmaintainers getpseudodesc);
 use Debbugs::Bugs qw(get_bugs bug_filter newest_bug);
 use Debbugs::Packages qw(getsrcpkgs getpkgsrc get_versions);
 use Debbugs::Status qw(:status);
@@ -458,9 +458,8 @@ sub output_package_info{
 	      html_escape("http://${debbugs::gWebDomain}/Reporting${debbugs::gHTMLSuffix}");
     }
     if (not $maint and not @bugs) {
-	 print "<p>There is no record of the " .
-	      ($srcorbin eq 'binary' ? html_escape($package) . " package"
-	       : html_escape($src) . " source package").
+	 print "<p>There is no record of the " . html_escape($package) .
+	      ($srcorbin eq 'binary' ? " package" : " source package") .
 		    ", and no bugs have been filed against it.</p>";
 	 $showresult = 0;
     }

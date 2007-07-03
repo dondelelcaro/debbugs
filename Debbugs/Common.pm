@@ -40,7 +40,8 @@ BEGIN{
      @EXPORT = ();
      %EXPORT_TAGS = (util   => [qw(getbugcomponent getbuglocation getlocationpath get_hashname),
 				qw(appendfile buglog getparsedaddrs getmaintainers),
-				qw(getmaintainers_reverse)
+				qw(getmaintainers_reverse),
+				qw(getpseudodesc),
 			       ],
 		     misc   => [qw(make_list)],
 		     date   => [qw(secs_to_english)],
@@ -205,7 +206,10 @@ sub getparsedaddrs {
     return () unless defined $addr;
     return wantarray?@{$_parsedaddrs{$addr}}:$_parsedaddrs{$addr}[0]
 	 if exists $_parsedaddrs{$addr};
-    @{$_parsedaddrs{$addr}} = Mail::Address->parse($addr);
+    {
+	 no warnings;
+	 @{$_parsedaddrs{$addr}} = Mail::Address->parse($addr);
+    }
     return wantarray?@{$_parsedaddrs{$addr}}:$_parsedaddrs{$addr}[0];
 }
 
@@ -215,7 +219,7 @@ sub getmaintainers {
     return $_maintainer if $_maintainer;
     my %maintainer;
     my %maintainer_rev;
-    for my $file (@config{qw(maintainer_file maintainer_file_override)}) {
+    for my $file (@config{qw(maintainer_file maintainer_file_override pseduo_maint_file)}) {
 	 next unless defined $file;
 	 my $maintfile = new IO::File $file,'r' or
 	      &quitcgi("Unable to open $file: $!");
@@ -239,6 +243,40 @@ sub getmaintainers_reverse{
      getmaintainers();
      return $_maintainer_rev;
 }
+
+=head2 getpseudodesc
+
+     my $pseudopkgdesc = getpseudodesc(...);
+
+Returns the entry for a pseudo package from the
+$config{pseudo_desc_file}. In cases where pseudo_desc_file is not
+defined, returns an empty arrayref.
+
+This function can be used to see if a particular package is a
+pseudopackage or not.
+
+=cut
+
+our $_pseudodesc;
+sub getpseudodesc {
+    return $_pseudodesc if $_pseudodesc;
+    my %pseudodesc;
+
+    if (not defined $config{pseudo_desc_file}) {
+	 $_pseudodesc = {};
+	 return $_pseudodesc;
+    }
+    my $pseudo = IO::File->new($config{pseudo_desc_file},'r')
+	 or die "Unable to open $config{pseudo_desc_file}: $!";
+    while(<$pseudo>) {
+	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
+	$pseudodesc{lc $1} = $2;
+    }
+    close($pseudo);
+    $_pseudodesc = \%pseudodesc;
+    return $_pseudodesc;
+}
+
 
 =head1 DATE
 

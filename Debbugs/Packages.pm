@@ -312,6 +312,7 @@ sub get_versions{
 			 my $f_ver = $ver;
 			 if ($param{source}) {
 			      ($f_ver) = makesourceversions($package,$arch,$ver);
+			      next unless defined $f_ver;
 			 }
 			 if ($param{time}) {
 			      $versions{$f_ver} = max($versions{$f_ver}||0,$version->{$dist}{$arch}{$ver});

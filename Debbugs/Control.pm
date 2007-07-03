@@ -161,7 +161,7 @@ This routine archives a bug
 sub bug_archive {
      my %param = validate_with(params => \@_,
 			       spec   => {bug => {type   => SCALAR,
-						  regex  => qr/^\d+/,
+						  regex  => qr/^\d+$/,
 						 },
 					  check_archiveable => {type => BOOLEAN,
 								default => 1,
