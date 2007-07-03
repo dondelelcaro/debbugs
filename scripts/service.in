@@ -534,8 +534,8 @@ END
             }
         }
     } elsif (m{^found\s+\#?(-?\d+)
-	       (?:\s+(?:$config{package_name_re}\/)?
-		    ($config{package_version_re}))?$}ix) {
+	       (?:\s+((?:$config{package_name_re}\/)?
+		    $config{package_version_re}))?$}ix) {
         $ok++;
         $ref= $1;
         $version= $2;
@@ -565,6 +565,7 @@ END
 			     map {s{.+/}{}; $_;} @{$data->{fixed_versions}};
 			if (not @fixed_order or (Debbugs::Versions::Dpkg::vercmp($version_only,$fixed_order[-1]) >= 0)) {
 			     $data->{done} = '';
+			     $action = "$gBug marked as found in version $version and reopened.";
 			}
                     } else {
                         # Versionless found; assume old-style "not fixed at
@@ -575,7 +576,9 @@ END
                 } while (&getnextbug);
             }
         }
-    } elsif (m/^notfound\s+\#?(-?\d+)\s+(\d.*)$/i) {
+    } elsif (m[^notfound\s+\#?(-?\d+)
+	       (?:\s+(?:$config{package_name_re}\/)?
+		    ($config{package_version_re}))$]ix) {
         $ok++;
         $ref= $1;
         $version= $2;

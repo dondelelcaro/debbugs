@@ -55,7 +55,7 @@ BEGIN {
 				 qw($gBugs $gRemoveAge $gSaveOldBugs $gDefaultSeverity),
 				 qw($gShowSeverities $gBounceFroms $gConfigDir $gSpoolDir),
 				 qw($gIncomingDir $gWebDir $gDocDir $gMaintainerFile),
-				 qw($gMaintainerFileOverride $gPseudoDescFile $gPackageSource),
+				 qw($gMaintainerFileOverride $gPseudoMaintFile $gPseudoDescFile $gPackageSource),
 				 qw($gVersionPackagesDir $gVersionIndex $gBinarySourceMap $gSourceBinaryMap),
 				 qw($gVersionTimeIndex),
 				 qw($gSendmail $gLibPath $gSpamScan @gExcludeFromControl),
@@ -473,6 +473,7 @@ set_default(\%config,'lib_path','/usr/lib/debbugs');
 
 set_default(\%config,'maintainer_file',$config{config_dir}.'/Maintainers');
 set_default(\%config,'maintainer_file_override',$config{config_dir}.'/Maintainers.override');
+set_default(\%config,'pseudo_maint_file',$config{config_dir}.'/pseudo-packages.maint');
 set_default(\%config,'pseudo_desc_file',$config{config_dir}.'/pseudo-packages.description');
 set_default(\%config,'package_source',$config{config_dir}.'/indices/sources');
 
