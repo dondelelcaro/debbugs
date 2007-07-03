@@ -21,7 +21,7 @@ if (not defined $ok) {
    print "Content-Type: text/html\n\n";
    print "<HTML><HEAD><TITLE>Verify submission</TITLE></HEAD><BODY>\n";
    print "<H2>Verify report for bug $bug</H2>\n";
-   print qq(<A HREF="bugspam.cgi?bug=$bug;ok=ok">Yes, report bug $bug as spam</A>\n);
+   print qq(<A HREF="bugspam.cgi?bug=$bug;ok=ok">Yes, report that bug $bug has spam</A>\n);
    print "</BODY></HTML>\n";
    exit 0;
 }
