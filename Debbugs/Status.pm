@@ -629,11 +629,17 @@ sub bug_archiveable{
      # checking the versioning information if the bug has been -done for less than 28 days.
      my $log_file = getbugcomponent($param{bug},'log');
      if (not defined $log_file) {
-	  print STDERR "Cannot archive $param{bug} because the log doesn't exists\n" if $DEBUG;
+	  print STDERR "Cannot archive $param{bug} because the log doesn't exist\n" if $DEBUG;
+	  return $cannot_archive;
      }
+     my $max_log_age = max(map {$config{remove_age} - -M $_}
+			   $log_file, map {my $log = getbugcomponent($_,'log');
+					   defined $log ? ($log) : ();
+				      }
+			   split / /, $status->{mergedwith}
+		       );
      if (not $param{days_until} and not $param{ignore_time}
-	 and $config{remove_age} >
-	 -M $log_file
+	 and $max_log_age > 0
 	) {
 	  print STDERR "Cannot archive $param{bug} because of time\n" if $DEBUG;
 	  return $cannot_archive;
@@ -711,10 +717,7 @@ sub bug_archiveable{
 	  return $param{days_until}?0:1;
      }
      # 6. at least 28 days have passed since the last action has occured or the bug was closed
-     my $age = ceil(max(map {$config{remove_age} - -M $log_file}
-			$param{bug}, split / /, $status->{mergedwith}
-		       )
-		   );
+     my $age = ceil($max_log_age);
      if ($age > 0 or $min_archive_days > 0) {
 	  return $param{days_until}?max($age,$min_archive_days):0;
      }
@@ -1113,7 +1116,7 @@ sub buggy {
 		    # We only want to warn if it's a package which actually has a maintainer
 		    my $maints = getmaintainers();
 		    next if not exists $maints->{$source};
-		    warn "Unable to open $config{version_packages_dir}/$srchash/$source: $!";
+		    warn "Bug $param{bug}: unable to open $config{version_packages_dir}/$srchash/$source: $!";
 		    next;
 	       }
 	       $version->load($version_fh);
