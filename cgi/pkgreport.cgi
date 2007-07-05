@@ -320,7 +320,7 @@ my $title = $gBugs.' '.join(' and ', map {/ or /?"($_)":$_} @title);
 @title = ();
 
 # we have to special case the maint="" search, unfortunatly.
-if (defined $param{maint} and $param{maint} eq "") {
+if (defined $param{maint} and $param{maint} eq "" or ref($param{maint}) and not @{$param{maint}}) {
      my %maintainers = %{getmaintainers()};
      @bugs = get_bugs(function =>
 		      sub {my %d=@_;
