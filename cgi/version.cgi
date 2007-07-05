@@ -20,7 +20,7 @@ use Debbugs::Config qw(:config);
 use Debbugs::CGI qw(htmlize_packagelinks html_escape cgi_parameters munge_url);
 use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
-use Debbugs::Packages qw(getversions makesourceversions);
+use Debbugs::Packages qw(get_versions makesourceversions);
 use HTML::Entities qw(encode_entities);
 use File::Temp qw(tempdir);
 use IO::File;
@@ -55,7 +55,10 @@ my $this = munge_url('version.cgi?',
 my %versions;
 my %version_to_dist;
 for my $dist (@{$config{distributions}}) {
-     $versions{$dist} = [getversions($cgi_var{package},$dist)];
+     $versions{$dist} = [get_versions(package => [split /\s*,\s*/, $cgi_var{package}],
+				      dist => $dist,
+				      source => 1,
+				     )];
      # make version_to_dist
      foreach my $version (@{$versions{$dist}}){
 	  push @{$version_to_dist{$version}}, $dist;
@@ -105,7 +108,7 @@ END
 # turn found and fixed into full versions
 @{$cgi_var{found}} = map {makesourceversions($_,undef,@{$cgi_var{found}})} split/\s*,\s*/, $cgi_var{package};
 @{$cgi_var{fixed}} = map {makesourceversions($_,undef,@{$cgi_var{fixed}})} split/\s*,\s*/, $cgi_var{package};
-my @interesting_versions = makesourceversions($cgi_var{package},undef,keys %version_to_dist);
+my @interesting_versions = map {makesourceversions($_,undef,keys %version_to_dist)} split/\s*,\s*/, $cgi_var{package};
 
 # We need to be able to rip out leaves which the versions that do not affect the current versions of unstable/testing
 my %sources;

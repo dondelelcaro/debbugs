@@ -263,7 +263,7 @@ our %_versions_time;
 
 sub get_versions{
      my %param = validate_with(params => \@_,
-				spec   => {package => {type => SCALAR,
+				spec   => {package => {type => SCALAR|ARRAYREF,
 						      },
 					   dist    => {type => SCALAR|ARRAYREF,
 						       default => 'unstable',
