@@ -98,6 +98,8 @@ use Params::Validate qw(validate_with :types);
 use File::Path qw(mkpath);
 use IO::File;
 
+use POSIX qw(strftime);
+
 # These are a set of options which are common to all of these functions 
 
 my %common_options = (debug       => {type => SCALARREF,
@@ -460,12 +462,14 @@ sub __return_append_to_log_options{
      }
      if (not exists $param{message}) {
 	  $action = $param{action} if exists $param{action};
+	  my $date = strftime "%a, %d %h %Y %T +0000", gmtime;
 	  $param{message} = <<END;
 Received: (at fakecontrol) by fakecontrolmessage;
 To: $param{request_addr}
 From: $param{requester}
 Subject: Internal Control
 Message-Id: $action
+Date: $date
 User-Agent: Fakemail v42.6.9
 
 # A New Hope
