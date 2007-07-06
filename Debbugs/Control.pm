@@ -175,6 +175,13 @@ sub bug_archive {
 					  %append_action_options,
 					 },
 			      );
+     our $locks = 0;
+     local $SIG{__DIE__} = sub {
+	  if ($locks) {
+	       for (1..$locks) { unfilelock(); }
+	       $locks = 0;
+	  }
+     };
      my $action = "$config{bug} archived.";
      my ($debug,$transcript) = __handle_debug_transcript(%param);
      if ($param{check_archiveable} and
@@ -185,7 +192,8 @@ sub bug_archive {
 	  die "Bug $param{bug} cannot be archived";
      }
      print {$debug} "$param{bug} considering\n";
-     my ($locks, $data) = lockreadbugmerge($param{bug});
+     my ($data);
+     ($locks, $data) = lockreadbugmerge($param{bug});
      print {$debug} "$param{bug} read $locks\n";
      defined $data or die "No bug found for $param{bug}";
      print {$debug} "$param{bug} read ok (done $data->{done})\n";
