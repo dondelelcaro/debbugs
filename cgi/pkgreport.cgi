@@ -201,15 +201,16 @@ for my $user (map {split /[\s*,\s*]+/} make_list($param{users}||[])) {
 }
 
 if (defined $param{usertag}) {
-    my %select_ut = ();
-    my ($u, $t) = split /:/, $param{usertag}, 2;
-    Debbugs::User::read_usertags(\%select_ut, $u);
-    unless (defined $t && $t ne "") {
-        $t = join(",", keys(%select_ut));
-    }
-
-    add_user($u);
-    push @{$param{tag}}, split /,/, $t;
+     for my $usertag (make_list($param{usertag})) {
+	  my %select_ut = ();
+	  my ($u, $t) = split /:/, $usertag, 2;
+	  Debbugs::User::read_usertags(\%select_ut, $u);
+	  unless (defined $t && $t ne "") {
+	       $t = join(",", keys(%select_ut));
+	  }
+	  add_user($u);
+	  push @{$param{tag}}, split /,/, $t;
+     }
 }
 
 my $Archived = $archive ? " Archived" : "";
