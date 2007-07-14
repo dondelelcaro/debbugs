@@ -61,7 +61,9 @@ BEGIN {
 				 qw($gSendmail $gLibPath $gSpamScan @gExcludeFromControl),
 				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
 				 qw(%gSearchEstraier),
+				 qw(%gDistributionAliases),
 				 qw(@gPostProcessall @gRemovalDefaultDistributionTags @gRemovalDistributionTags @gRemovalArchitectures),
+				 qw(@gRemovalStrongSeverityDefaultDistributionTags),
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
@@ -335,15 +337,50 @@ Default: 1
 
 set_default(\%config,'save_old_bugs',1);
 
+=item distribution_aliases
+
+Map of distribution aliases to the distribution name
+
+Default:
+         {experimental => 'experimental',
+	  unstable     => 'unstable',
+	  testing      => 'testing',
+	  stable       => 'stable',
+	  oldstable    => 'oldstable',
+	  sid          => 'unstable',
+	  lenny        => 'testing',
+	  etch         => 'stable',
+	  sarge        => 'oldstable',
+	 }
+
+=cut
+
+set_default(\%config,'distribution_aliases',
+	    {experimental => 'experimental',
+	     unstable     => 'unstable',
+	     testing      => 'testing',
+	     stable       => 'stable',
+	     oldstable    => 'oldstable',
+	     sid          => 'unstable',
+	     lenny        => 'testing',
+	     etch         => 'stable',
+	     sarge        => 'oldstable',
+	    },
+	   );
+
+
+
 =item distributions
 
 List of valid distributions
 
-Default: qw(experimental unstable testing stable oldstable);
+Default: The values of the distribution aliases map.
 
 =cut
 
-set_default(\%config,'distributions',[qw(experimental unstable testing stable oldstable)]);
+my %_distributions_default;
+@_distributions_default{values %{$config{distribution_aliases}}} = values %{$config{distribution_aliases}};
+set_default(\%config,'distributions',[keys %_distributions_default]);
 
 =item removal_distribution_tags
 
@@ -368,6 +405,20 @@ Default: qw(unstable testing);
 set_default(\%config,'removal_default_distribution_tags',
 	    [qw(unstable testing)]
 	   );
+
+=item removal_strong_severity_default_distribution_tags
+
+For removal/archival purposes, all bugs with strong severity are
+assumed to have these tags set.
+
+Default: qw(unstable testing stable);
+
+=cut
+
+set_default(\%config,'removal_strong_severity_default_distribution_tags',
+	    [qw(unstable testing stable)]
+	   );
+
 
 =item removal_architectures
 

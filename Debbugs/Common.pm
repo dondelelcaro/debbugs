@@ -207,7 +207,8 @@ sub getparsedaddrs {
     return wantarray?@{$_parsedaddrs{$addr}}:$_parsedaddrs{$addr}[0]
 	 if exists $_parsedaddrs{$addr};
     {
-	 no warnings;
+	 # don't display the warnings from Mail::Address->parse
+	 local $SIG{__WARN__} = sub { };
 	 @{$_parsedaddrs{$addr}} = Mail::Address->parse($addr);
     }
     return wantarray?@{$_parsedaddrs{$addr}}:$_parsedaddrs{$addr}[0];

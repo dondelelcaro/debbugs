@@ -108,10 +108,14 @@ sub get_status {
 =head2 get_bugs
 
      my @bugs = get_bugs(...);
+     my @bugs = get_bugs([...]);
 
-Returns a list of bugs.
+Returns a list of bugs. In the second case, allows the variable
+parameters to be specified as an array reference in case your favorite
+language's SOAP implementation is craptacular.
 
-See L<Debbugs::Bugs::get_bugs> for details.
+See L<Debbugs::Bugs::get_bugs> for details on what C<...> actually
+means.
 
 =cut
 
@@ -120,6 +124,11 @@ use Debbugs::Bugs qw();
 sub get_bugs{
      my $VERSION = __populate_version(pop);
      my ($self,@params) = @_;
+     # Because some soap implementations suck and can't handle
+     # variable numbers of arguments we allow get_bugs([]);
+     if (@params == 1 and ref($params[0]) eq 'ARRAY') {
+	  @params = @{$params[0]};
+     }
      my %params;
      # Because some clients can't handle passing arrayrefs, we allow
      # options to be specified multiple times
@@ -177,12 +186,15 @@ the following
  ]
 
 
+Currently $msg_num is completely ignored.
+
 =cut
 
 use Debbugs::Log qw();
 use Debbugs::MIME qw(parse);
 
 sub get_bug_log{
+     my $VERSION = __populate_version(pop);
      my ($self,$bug,$msg_num) = @_;
 
      my $location = getbuglocation($bug,'log');
