@@ -980,7 +980,8 @@ sub bug_presence {
 				   version_cache => $version_cache,
 				  );
      }
-     elsif (defined $param{dist}) {
+     elsif (defined $param{dist} and
+	    not exists $pseudo_desc->{$status{package}}) {
 	  return 'absent';
      }
      if (length($status{done}) and
