@@ -564,8 +564,9 @@ END
 			my @fixed_order = sort {Debbugs::Versions::Dpkg::vercmp($a,$b);}
 			     map {s{.+/}{}; $_;} @{$data->{fixed_versions}};
 			if (not @fixed_order or (Debbugs::Versions::Dpkg::vercmp($version_only,$fixed_order[-1]) >= 0)) {
+			     $action = "$gBug marked as found in version $version and reopened."
+				  if length $data->{done};
 			     $data->{done} = '';
-			     $action = "$gBug marked as found in version $version and reopened.";
 			}
                     } else {
                         # Versionless found; assume old-style "not fixed at

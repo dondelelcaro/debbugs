@@ -98,6 +98,8 @@ use Params::Validate qw(validate_with :types);
 use File::Path qw(mkpath);
 use IO::File;
 
+use POSIX qw(strftime);
+
 # These are a set of options which are common to all of these functions 
 
 my %common_options = (debug       => {type => SCALARREF,
@@ -173,6 +175,13 @@ sub bug_archive {
 					  %append_action_options,
 					 },
 			      );
+     our $locks = 0;
+     local $SIG{__DIE__} = sub {
+	  if ($locks) {
+	       for (1..$locks) { unfilelock(); }
+	       $locks = 0;
+	  }
+     };
      my $action = "$config{bug} archived.";
      my ($debug,$transcript) = __handle_debug_transcript(%param);
      if ($param{check_archiveable} and
@@ -183,7 +192,8 @@ sub bug_archive {
 	  die "Bug $param{bug} cannot be archived";
      }
      print {$debug} "$param{bug} considering\n";
-     my ($locks, $data) = lockreadbugmerge($param{bug});
+     my ($data);
+     ($locks, $data) = lockreadbugmerge($param{bug});
      print {$debug} "$param{bug} read $locks\n";
      defined $data or die "No bug found for $param{bug}";
      print {$debug} "$param{bug} read ok (done $data->{done})\n";
@@ -460,12 +470,14 @@ sub __return_append_to_log_options{
      }
      if (not exists $param{message}) {
 	  $action = $param{action} if exists $param{action};
+	  my $date = strftime "%a, %d %h %Y %T +0000", gmtime;
 	  $param{message} = <<END;
 Received: (at fakecontrol) by fakecontrolmessage;
 To: $param{request_addr}
 From: $param{requester}
 Subject: Internal Control
 Message-Id: $action
+Date: $date
 User-Agent: Fakemail v42.6.9
 
 # A New Hope
