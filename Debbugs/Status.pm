@@ -649,6 +649,10 @@ sub bug_archiveable{
      # tags set, we assume a default set, otherwise we use the tags the bug
      # has set.
 
+     # In cases where we are assuming a default set, if the severity
+     # is strong, we use the strong severity default; otherwise, we
+     # use the normal default.
+
      # There must be fixed_versions for us to look at the versioning
      # information
      my $min_fixed_time = time;
@@ -658,11 +662,20 @@ sub bug_archiveable{
 	  @dist_tags{@{$config{removal_distribution_tags}}} =
 	       (1) x @{$config{removal_distribution_tags}};
 	  my %dists;
-	  @dists{@{$config{removal_default_distribution_tags}}} =
-	       (1) x @{$config{removal_default_distribution_tags}};
 	  for my $tag (split ' ', ($status->{tags}||'')) {
-	       next unless $dist_tags{$tag};
-	       $dists{$tag} = 1;
+	       next unless exists $config{distribution_aliases}{$tag};
+	       next unless $dist_tags{$config{distribution_aliases}{$tag}};
+	       $dists{$config{distribution_aliases}{$tag}} = 1;
+	  }
+	  if (not keys %dists) {
+	       if (isstrongseverity($status->{severity})) {
+		    @dists{@{$config{removal_strong_severity_default_distribution_tags}}} =
+			 (1) x @{$config{removal_strong_severity_default_distribution_tags}};
+	       }
+	       else {
+		    @dists{@{$config{removal_default_distribution_tags}}} =
+			 (1) x @{$config{removal_default_distribution_tags}};
+	       }
 	  }
 	  my %source_versions;
 	  my @sourceversions = get_versions(package => $status->{package},
