@@ -1104,9 +1104,9 @@ sub determine_ordering {
 
 	    ($h->{"nam"}) = make_list($param{"nam$i"})
                 if (defined $param{"nam$i"});
-            $h->{"ord"} = [ split /\s*,\s*/, make_list($param{"ord$i"}) ]
+            $h->{"ord"} = [ map {split /\s*,\s*/} make_list($param{"ord$i"}) ]
                 if (defined $param{"ord$i"});
-            $h->{"ttl"} = [ split /\s*,\s*/, make_list($param{"ttl$i"}) ]
+	    $h->{"ttl"} = [ map {split /\s*,\s*/} make_list($param{"ttl$i"}) ]
                 if (defined $param{"ttl$i"});
 
             push @c, $h;
