@@ -529,24 +529,20 @@ sub removefixedversions {
     my $version = shift;
     my $isbinary = shift;
     return unless defined $version;
-    undef $package if $package =~ m[(?:\s|/)];
-    my $source = $package;
-
-    if (defined $package and $isbinary) {
-        my @srcinfo = binarytosource($package, $version, undef);
-        if (@srcinfo) {
-            # We know the source package(s). Use a fully-qualified version.
-            removefixedversions($data, $_->[0], $_->[1], '') foreach @srcinfo;
-            return;
-        }
-        # Otherwise, an unqualified version will have to do.
-        undef $source;
-    }
 
     foreach my $ver (split /[,\s]+/, $version) {
-        my $sver = defined($source) ? "$source/$ver" : '';
-        @{$data->{fixed_versions}} =
-            grep { $_ ne $ver and $_ ne $sver } @{$data->{fixed_versions}};
+	 if ($ver =~ m{/}) {
+	      # fully qualified version
+	      @{$data->{fixed_versions}} =
+		   grep {$_ ne $ver}
+			@{$data->{fixed_versions}};
+	 }
+	 else {
+	      # non qualified version; delete all matchers
+	      @{$data->{fixed_versions}} =
+		   grep {$_ !~ m[(?:^|/)\Q$ver\E$]}
+			@{$data->{fixed_versions}};
+	 }
     }
 }
 
