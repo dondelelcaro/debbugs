@@ -286,7 +286,7 @@ END
 	    next;
         }
 	if (not $indicated_user and defined $user) {
-	     &transcript("User is $user");
+	     &transcript("User is $user\n");
 	     $indicated_user = 1;
 	}
 	while (++$procline <= $#bodylines) {
@@ -373,7 +373,7 @@ END
 	    $indicated_user = 1;
         } elsif (&setbug) {
 	    if (not $indicated_user and defined $user) {
-		 &transcript("User is $user");
+		 &transcript("User is $user\n");
 		 $indicated_user = 1;
 	    }
 	    &nochangebug;

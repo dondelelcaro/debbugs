@@ -52,9 +52,12 @@ our %DEBBUGS_SOAP_COOKIES;
 =head2 get_usertag
 
      my %ut = get_usertag('don@donarmstrong.com','this-bug-sucks','eat-this-bug');
+     my %ut = get_usertag('don@donarmstrong.com');
 
 Returns a hashref of bugs which have the specified usertags for the
 user set.
+
+In the second case, returns all of the usertags for the user passed.
 
 =cut
 

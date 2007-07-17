@@ -481,8 +481,10 @@ sub handle_record{
 	  }
 	  # Incomming Mail Message
 	  my ($received,$hostname) = $record->{text} =~ m/Received: \(at (\S+)\) by (\S+)\;/;
-	  $output .= qq|<hr><p class="msgreceived"><a name="$msg_number"></a><a name="msg$msg_number">Message received</a> at |.
-	       html_escape("$received\@$hostname") . q| (<a href="| . bug_url($ref, msg=>$msg_number) . '">full text</a>'.q|, <a href="| . bug_url($ref, msg=>$msg_number,mbox=>'yes') .'">mbox</a>)'.":</p>\n";
+	  $output .= qq|<hr><p class="msgreceived"><a name="$msg_number"></a><a name="msg$msg_number"></a><a href="#$msg_number">Message</a> received at |.
+	       html_escape("$received\@$hostname") .
+		    q| (<a href="| . bug_url($ref, msg=>$msg_number) . '">full text</a>'.
+			 q|, <a href="| . bug_url($ref, msg=>$msg_number,mbox=>'yes') .'">mbox</a>)'.":</p>\n";
 	  $output .= handle_email_message($record->{text},
 				    ref        => $bug_number,
 				    msg_number => $msg_number,
