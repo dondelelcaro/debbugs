@@ -90,7 +90,7 @@ BEGIN{
 
 use Debbugs::Config qw(:config);
 use Debbugs::Common qw(:lock buglog make_list get_hashname);
-use Debbugs::Status qw(bug_archiveable :read :hook);
+use Debbugs::Status qw(bug_archiveable :read :hook writebug);
 use Debbugs::CGI qw(html_escape);
 use Debbugs::Log qw(:misc);
 
