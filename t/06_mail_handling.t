@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 64;
+use Test::More tests => 66;
 
 use warnings;
 use strict;
@@ -246,3 +246,24 @@ EOF
      is_deeply($status->{$control_command->{status_key}},$control_command->{status_value},"bug 1 $command")
 	  or fail(Dumper($status));
 }
+
+# verify that archive/unarchive can then be modified afterwards
+
+send_message(to => 'control@bugs.something',
+	     headers => [To   => 'control@bugs.something',
+			 From => 'foo@bugs.something',
+			 Subject => "Munging a bug with unarchivearchive",
+			],
+	     body => <<'EOF') or fail 'message to control@bugs.something failed';
+archive 1
+unarchive 1
+submitter 1 bar@baz.com
+thanks
+EOF
+				  ;
+$SD_SIZE_NOW = dirsize($sendmail_dir);
+ok($SD_SIZE_NOW-$SD_SIZE_PREV >= 1,'control@bugs.something messages appear to have been sent out properly');
+$SD_SIZE_PREV=$SD_SIZE_NOW;
+# now we need to check to make sure the control message was processed without errors
+ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Munging a bug with unarchivearchive")) == 0,
+   'control@bugs.something'. "unarchive/archive message was parsed without errors");
