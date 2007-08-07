@@ -326,7 +326,9 @@ if (length($status{done})) {
 }
 
 if (length($status{forwarded})) {
-    push @descstates, "<strong>Forwarded</strong> to ".maybelink($status{forwarded});
+    my $forward_link = $status{forwarded};
+    $forward_link =~ s,((ftp|http|https)://[\S~-]+?/?)((\&gt\;)?[)]?[']?[:.\,]?(\s|$)),<a href=\"$1\">$1</a>$3,go;
+    push @descstates, "<strong>Forwarded</strong> to $forward_link";
 }
 
 
