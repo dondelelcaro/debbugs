@@ -46,8 +46,6 @@ use Storable qw(nstore retrieve);
 
 
 our $CURRENT_VERSION = 1;
-our %DEBBUGS_SOAP_COOKIES;
-
 
 =head2 get_usertag
 
@@ -84,9 +82,21 @@ use Debbugs::Status;
 =head2 get_status 
 
      my @statuses = get_status(@bugs);
+     my @statuses = get_status([bug => 304234,
+                                dist => 'unstable',
+                               ],
+                               [bug => 304233,
+                                dist => 'unstable',
+                               ],
+                              )
 
 Returns an arrayref of hashrefs which output the status for specific
 sets of bugs.
+
+In the first case, no options are passed to
+L<Debbugs::Status::get_bug_status> besides the bug number; in the
+second the bug, dist, arch, bugusertags, sourceversions, and version
+parameters are passed if they are present.
 
 See L<Debbugs::Status::get_bug_status> for details.
 
@@ -95,11 +105,19 @@ See L<Debbugs::Status::get_bug_status> for details.
 sub get_status {
      my $VERSION = __populate_version(pop);
      my ($self,@bugs) = @_;
-     @bugs = make_list(@bugs);
 
      my %status;
      for my $bug (@bugs) {
-	  my $bug_status = get_bug_status(bug => $bug);
+	  my $bug_status;
+	  if (ref($bug)) {
+	       my %param = __collapse_params(@{$bug});
+	       $bug_status = get_bug_status(map {(exists $param{$_})?($_,$param{$_}):()}
+					    qw(bug dist arch bugusertags sourceversions version)
+					   );
+	  }
+	  else {
+	       $bug_status = get_bug_status(bug => $bug);
+	  }
 	  if (defined $bug_status and keys %{$bug_status} > 0) {
 	       $status{$bug}  = $bug_status;
 	  }
@@ -132,19 +150,7 @@ sub get_bugs{
      if (@params == 1 and ref($params[0]) eq 'ARRAY') {
 	  @params = @{$params[0]};
      }
-     my %params;
-     # Because some clients can't handle passing arrayrefs, we allow
-     # options to be specified multiple times
-     while (my ($key,$value) = splice @params,0,2) {
-	  push @{$params{$key}}, make_list($value);
-     }
-     # However, for singly specified options, we want to pull them
-     # back out
-     for my $key (keys %params) {
-	  if (@{$params{$key}} == 1) {
-	       ($params{$key}) = @{$params{$key}}
-	  }
-     }
+     my %params = __collapse_params(@params);
      my @bugs;
      @bugs = Debbugs::Bugs::get_bugs(%params);
      return \@bugs;
@@ -162,7 +168,7 @@ guaranteed to exist, but they should in the most common cases.]
 sub newest_bugs{
      my $VERSION = __populate_version(pop);
      my ($self,$num) = @_;
-     my $newest_bug = Debbugs::bugs::newest_bug();
+     my $newest_bug = Debbugs::Bugs::newest_bug();
      return [($newest_bug - $num + 1) .. $newest_bug];
 
 }
@@ -249,6 +255,26 @@ sub __populate_version{
      my ($request) = @_;
      return $request->{___debbugs_soap_version};
 }
+
+sub __collapse_params{
+     my @params = @_;
+
+     my %params;
+     # Because some clients can't handle passing arrayrefs, we allow
+     # options to be specified multiple times
+     while (my ($key,$value) = splice @params,0,2) {
+	  push @{$params{$key}}, make_list($value);
+     }
+     # However, for singly specified options, we want to pull them
+     # back out
+     for my $key (keys %params) {
+	  if (@{$params{$key}} == 1) {
+	       ($params{$key}) = @{$params{$key}}
+	  }
+     }
+     return %params;
+}
+
 
 1;
 
