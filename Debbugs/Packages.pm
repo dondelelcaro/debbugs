@@ -254,6 +254,11 @@ matching this version was uploaded
 
 =item source -- returns source/version instead of just versions
 
+=item no_source_arch -- discards the source architecture when arch is
+not passed. [Used for finding the versions of binary packages only.]
+Defaults to 0, which does not discard the source architecture. (This
+may change in the future, so if you care, please code accordingly.)
+
 =back
 
 =cut
@@ -277,6 +282,9 @@ sub get_versions{
 					   source  => {type    => BOOLEAN,
 						       default => 0,
 						      },
+					   no_source_arch => {type => BOOLEAN,
+							      default => 0,
+							     },
 					  },
 			       );
      my $versions;
@@ -303,7 +311,9 @@ sub get_versions{
 	  for my $dist (make_list($param{dist})) {
 	       for my $arch (exists $param{arch}?
 			     make_list($param{arch}):
-			     (keys %{$version->{$dist}})) {
+			     (grep {not $param{no_source_arch} or
+					 $_ ne 'source'
+			       } keys %{$version->{$dist}})) {
 		    next unless defined $version->{$dist}{$arch};
 		    for my $ver (ref $version->{$dist}{$arch} ?
 				 keys %{$version->{$dist}{$arch}} :

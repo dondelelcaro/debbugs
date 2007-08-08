@@ -308,6 +308,7 @@ while (my ($key,$value) = splice @search_key_order, 0, 2) {
 					   (exists $param{dist}?(dist => $param{dist}):()),
 					   (exists $param{arch}?(arch => $param{arch}):()),
 					   ($key eq 'src'?(arch => q(source)):()),
+					   no_source_arch => 1,
 					  );
 	       my $verdesc = join(', ',@versions);
 	       $verdesc = 'version'.(@versions>1?'s ':' ').$verdesc;
@@ -398,9 +399,17 @@ for my $package (make_list($param{src}||[])) {
 
 sub output_package_info{
     my ($srcorbin,$package) = @_;
+
+    my %pkgsrc = %{getpkgsrc()};
+    my $srcforpkg = $package;
+    if ($srcorbin eq 'binary') {
+	 $srcforpkg = $pkgsrc{$package};
+	 defined $srcforpkg or $srcforpkg = $package;
+    }
+
     my $showpkg = html_escape($package);
     my $maintainers = getmaintainers();
-    my $maint = $maintainers->{$package};
+    my $maint = $maintainers->{$srcforpkg};
     if (defined $maint) {
 	 print '<p>';
 	 print htmlize_maintlinks(sub { $_[0] == 1 ? "Maintainer for $showpkg is "
@@ -410,12 +419,6 @@ sub output_package_info{
 	 print ".</p>\n";
     } else {
 	 print "<p>No maintainer for $showpkg. Please do not report new bugs against this package.</p>\n";
-    }
-    my %pkgsrc = %{getpkgsrc()};
-    my $srcforpkg = $package;
-    if ($srcorbin eq 'binary') {
-	 $srcforpkg = $pkgsrc{$package};
-	 defined $srcforpkg or $srcforpkg = $package;
     }
     my @pkgs = getsrcpkgs($srcforpkg);
     @pkgs = grep( !/^\Q$package\E$/, @pkgs );
