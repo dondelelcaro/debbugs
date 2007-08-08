@@ -584,7 +584,7 @@ END
         $ref= $1;
         $version= $2;
         if (&setbug) {
-            $action= "$gBug marked as not found in version $version.";
+            $action= "$gBug no longer marked as found in version $version.";
             if (length($data->{done})) {
                 $extramessage= "(By the way, this $gBug is currently marked as done.)\n";
             }
@@ -620,7 +620,7 @@ END
         if (&setbug) {
 	     $action=
 		  defined($version) ?
-		       "$gBug marked as not fixed in version $version." :
+		       "$gBug no longer marked as fixed in version $version." :
 			    "$gBug reopened.";
                 do {
                     &addmaintainers($data);
