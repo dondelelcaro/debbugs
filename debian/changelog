@@ -203,6 +203,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Make sendmail binary location configurable, and use flock instead of
       fcntl. (closes: #260791)
     - Make notfound/notfixed log verbiage more clear (closes: #434953)
+    - Verify submitter is a valid email according to RFC822
+      (closes: #182419)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
