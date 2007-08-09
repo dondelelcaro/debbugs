@@ -17,6 +17,8 @@ use Debbugs::CGI qw(html_escape);
 use Debbugs::Control qw(:archive :log);
 use Debbugs::Log qw(:misc);
 
+use Mail::RFC822::Address;
+
 $lib_path = $gLibPath;
 require "$lib_path/errorlib";
 $ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
@@ -584,7 +586,7 @@ END
         $ref= $1;
         $version= $2;
         if (&setbug) {
-            $action= "$gBug marked as not found in version $version.";
+            $action= "$gBug no longer marked as found in version $version.";
             if (length($data->{done})) {
                 $extramessage= "(By the way, this $gBug is currently marked as done.)\n";
             }
@@ -620,7 +622,7 @@ END
         if (&setbug) {
 	     $action=
 		  defined($version) ?
-		       "$gBug marked as not fixed in version $version." :
+		       "$gBug no longer marked as fixed in version $version." :
 			    "$gBug reopened.";
                 do {
                     &addmaintainers($data);
@@ -636,7 +638,11 @@ END
         if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
             $ref = $clonebugs{$ref};
         }
-        if (&getbug) {
+	if (not Mail::RFC822::Address::valid($newsubmitter)) {
+	     transcript("$newsubmitter is not a valid e-mail address; not changing submitter\n");
+	     $errors++;
+	}
+        elsif (&getbug) {
             if (&checkpkglimit) {
                 &foundbug;
                 &addmaintainers($data);

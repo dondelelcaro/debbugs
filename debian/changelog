@@ -198,6 +198,13 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Allow selecting the newest N bugs (closes: #84681)
     - Add anchor links to specific messages (closes: #431450)
     - Add missing newline after indicating what the user is (closes: #432466)
+    - Handle src/binary packages with the same name (but different src
+      packages) correctly. (closes: #435926)
+    - Make sendmail binary location configurable, and use flock instead of
+      fcntl. (closes: #260791)
+    - Make notfound/notfixed log verbiage more clear (closes: #434953)
+    - Verify submitter is a valid email according to RFC822
+      (closes: #182419)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
