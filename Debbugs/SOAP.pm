@@ -43,6 +43,7 @@ use IO::File;
 use Debbugs::Status qw(get_bug_status);
 use Debbugs::Common qw(make_list getbuglocation getbugcomponent);
 use Storable qw(nstore retrieve);
+use Scalar::Util qw(looks_like_number);
 
 
 our $CURRENT_VERSION = 1;
@@ -98,6 +99,12 @@ L<Debbugs::Status::get_bug_status> besides the bug number; in the
 second the bug, dist, arch, bugusertags, sourceversions, and version
 parameters are passed if they are present.
 
+As a special case for suboptimal SOAP implementations, if only one
+argument is passed to get_status and it is an arrayref which either
+has a number as the first element or also contains an arrayref as the
+first element, the outer arrayref is dereferenced, and processed as
+in the examples above.
+
 See L<Debbugs::Status::get_bug_status> for details.
 
 =cut
@@ -106,6 +113,15 @@ sub get_status {
      my $VERSION = __populate_version(pop);
      my ($self,@bugs) = @_;
 
+     if (@bugs == 1 and
+	 ref($bugs[0]) and
+	 @{$bugs[0]} and
+	 (ref($bugs[0][0]) or
+	  looks_like_number($bugs[0][0])
+	 )
+	) {
+	      @bugs = @{$bugs[0]};
+     }
      my %status;
      for my $bug (@bugs) {
 	  my $bug_status;
