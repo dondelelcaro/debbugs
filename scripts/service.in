@@ -16,7 +16,10 @@ use Debbugs::Config qw(:globals :config);
 use Debbugs::CGI qw(html_escape);
 use Debbugs::Control qw(:archive :log);
 use Debbugs::Log qw(:misc);
-
+BEGIN{
+# temporary hack until libmail-rfc822-address-perl is installed
+	push @INC,qw(/org/bugs.debian.org/perl);
+}
 use Mail::RFC822::Address;
 
 $lib_path = $gLibPath;
