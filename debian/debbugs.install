@@ -1,0 +1,5 @@
+usr/lib/debbugs
+usr/share/man/man8
+usr/sbin
+usr/share/doc/debbugs/examples
+var/lib/debbugs
