@@ -754,13 +754,19 @@ sub pkg_htmlizebugs {
     for my $include (make_list($param{include})) {
 	 next unless defined $include;
 	 my ($key,$value) = split /\s*:\s*/,$include,2;
-	 next unless defined $value;
+	 unless (defined $value) {
+	     $key = 'tags';
+	     $value = $include;
+	 }
 	 push @{$include{$key}}, split /\s*,\s*/, $value;
     }
     for my $exclude (make_list($param{exclude})) {
 	 next unless defined $exclude;
 	 my ($key,$value) = split /\s*:\s*/,$exclude,2;
-	 next unless defined $value;
+	 unless (defined $value) {
+	     $key = 'tags';
+	     $value = $exclude;
+	 }
 	 push @{$exclude{$key}}, split /\s*,\s*/, $value;
     }
 
