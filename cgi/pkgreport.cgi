@@ -530,12 +530,12 @@ print "    <td><input id=\"b_1_2\" name=vt value=bysuite type=radio onchange=\"e
 
 if (defined $pkg) {
     my $v = html_escape($version) || "";
-    my $pkgsane = html_escape($pkg);
+    my $pkgsane = html_escape($pkg->[0]);
     print "<tr><td></td>";
     print "    <td><input id=\"b_1_3\" name=vt value=bypkg type=radio onchange=\"enable(1);\" $checked_ver>$pkgsane version <input id=\"b_1_3_1\" name=version value=\"$v\"></td></tr>\n";
 } elsif (defined $src) {
     my $v = html_escape($version) || "";
-    my $srcsane = html_escape($src);
+    my $srcsane = html_escape($src->[0]);
     print "<tr><td></td>";
     print "    <td><input name=vt value=bysrc type=radio onchange=\"enable(1);\" $checked_ver>$srcsane version <input id=\"b_1_3_1\" name=version value=\"$v\"></td></tr>\n";
 }

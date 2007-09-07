@@ -488,8 +488,9 @@ END
               "Content-Type"            => 'text/plain; charset="utf-8"',
              ],<<END ,[join("\n",@msg)]),'',undef,1);
 This is an automatic notification regarding your $gBug report
-#$ref: $data->{subject},
-which was filed against the $data->{package} package.
+which was filed against the $data->{package} package:
+
+#$ref: $data->{subject}
 
 It has been closed by $markedby.
 
