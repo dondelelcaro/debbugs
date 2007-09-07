@@ -100,10 +100,10 @@ second the bug, dist, arch, bugusertags, sourceversions, and version
 parameters are passed if they are present.
 
 As a special case for suboptimal SOAP implementations, if only one
-argument is passed to get_status and it is an arrayref which either
-has a number as the first element or also contains an arrayref as the
-first element, the outer arrayref is dereferenced, and processed as
-in the examples above.
+argument is passed to get_status and it is an arrayref which either is
+empty, has a number as the first element, or contains an arrayref as
+the first element, the outer arrayref is dereferenced, and processed
+as in the examples above.
 
 See L<Debbugs::Status::get_bug_status> for details.
 
@@ -115,8 +115,9 @@ sub get_status {
 
      if (@bugs == 1 and
 	 ref($bugs[0]) and
-	 @{$bugs[0]} and
-	 (ref($bugs[0][0]) or
+	 @{$bugs[0]} <= 1 and
+	 (@{$bugs[0]} == 0 or
+	  ref($bugs[0][0]) or
 	  looks_like_number($bugs[0][0])
 	 )
 	) {
