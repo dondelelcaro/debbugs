@@ -148,6 +148,7 @@ $spam->compile_now(1); # use all user preferences
 			or die "print assassinated: $!";
 		}
 		close OUT or die "Close assassinated: $!";
+		unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
 	    }
 	    $out =~ tr/\n/\r/;
 	    print "$nseen\n$out\n";
