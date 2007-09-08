@@ -115,7 +115,6 @@ sub get_status {
 
      if (@bugs == 1 and
 	 ref($bugs[0]) and
-	 @{$bugs[0]} <= 1 and
 	 (@{$bugs[0]} == 0 or
 	  ref($bugs[0][0]) or
 	  looks_like_number($bugs[0][0])
