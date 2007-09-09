@@ -6,9 +6,7 @@
 
 use lib qw(/usr/lib/debbugs);
 use Mail::CrossAssassin;
-
 use Mail::SpamAssassin;
-use Mail::SpamAssassin::NoMailAudit;
 
 my $config_path = '/etc/debbugs';
 require "$config_path/config";
@@ -43,114 +41,105 @@ my $spam = Mail::SpamAssassin->new({
 });
 $spam->compile_now(1); # use all user preferences
 
-	while (my $id = <STDIN>) {
-	    chomp $id;
-	    my $nf = <STDIN> or die "Could not read nf: $!";
-	    chomp $nf;
-	    unless (rename "incoming/S$id", "incoming/R$id") {
-		die "Could not rename incoming/S$id: $!";
+while (my $id = <STDIN>) {
+    chomp $id;
+    my $nf = <STDIN> or die "Could not read nf: $!";
+    chomp $nf;
+    unless (rename "incoming/S$id", "incoming/R$id") {
+	die "Could not rename incoming/S$id: $!";
+    }
+    my $out = "[$nf] $id scanning ...\n";
+    open MESSAGE, "< incoming/R$id" or die "open incoming/R$id: $!";
+    # Kludge to work around Received: then From_ weirdness in receive;
+    # remove when receive is fixed? We may continue to need it for
+    # reprocessing old messages.
+    my @textarray = <MESSAGE>;
+    if ($textarray[0] !~ /^From /) {
+	($textarray[0], $textarray[1]) = ($textarray[1], $textarray[0]);
+    }
+    close MESSAGE;
+    my $mail = $spam->parse(\@textarray);
+    
+    my $messageid = header_or_empty($mail, 'Message-Id');
+    $out .= "  From: " . header_or_empty($mail, 'From') . "\n";
+    $out .= "  Subject: ". header_or_empty($mail, 'Subject') . "\n";
+    $out .= "  Date: " . header_or_empty($mail, 'Date') . "\n";
+    $out .= "  Message-Id: $messageid\n";
+    my $keys = ca_keys($mail->get_body);
+    print  "$keys\n$messageid\n"
+	or die "Could not send keys: $!";
+    my $ca_score = <STDIN> or die "Could not read ca_score: $!";
+    chomp $ca_score;
+    my $todo = 0;
+    my ($headers, $body);
+    my $seen = <STDIN> or die "Child could not read seen: $!";
+    chomp $seen;
+    my $status;
+    my $nseen = $seen;
+    if ($seen) {
+	$todo = 1;
+	$headers = join('',$mail->get_all_headers());
+	$body = join('', @{$mail->get_body()});
+	$out .= "  spam $seen duplicate\n";
+    } else {
+	$status = $spam->check($mail);
+	($headers, $body) = split /\n\n/, $status->rewrite_mail(), 2;
+	$headers .= "\n";
+	$body .= "\n";
+	
+	if ($status->is_spam()) {
+	    $todo = 1;
+	    my $score = sprintf "%.1f/%.1f %d",
+	            $status->get_score(), $status->get_required_score(),
+	            $ca_score;
+	    $out .= "  spam $score\n";
+	    $nseen = $score;
+	} elsif ($status->get_score() > 0 && $ca_score >= $gMaxCross) {
+	    $todo = 2;
+	    my $score = sprintf "%.1f/%.1f %d",
+	    $status->get_score(), $status->get_required_score(), $ca_score;
+	    $out .= "  spam $score\n";
+	    $nseen = $score;
+	} else {
+	    open OUT, "> incoming/I$id" or die "open incoming/I$id: $!";
+	    my ($received, $from, $other_headers) =
+		split(/\n/, $headers, 3);
+	    if ($recevied =~ /^From /) {
+		($received, $from) = ($from, $received);
 	    }
-	    my $out = "[$nf] $id scanning ...\n";
-	    open MESSAGE, "< incoming/R$id" or die "open incoming/R$id: $!";
-	    my @textarray;
-	    # Kludge to work around Received: then From_ weirdness in receive;
-	    # remove when receive is fixed? We may continue to need it for
-	    # reprocessing old messages.
-	    $textarray[0] = <MESSAGE>;
-	    if ($textarray[0] =~ /^Received:/) {
-		my $maybefrom = <MESSAGE>;
-		if ($maybefrom =~ /^From /) {
-		    $textarray[1] = $textarray[0];
-		    $textarray[0] = $maybefrom;
-		} else {
-		    $textarray[1] = $maybefrom;
-		}
+	    print OUT "$received\n$from\n$other_headers"
+		or die "print incoming/I$id: $!";
+	    if ($ca_score > 1) {
+		print OUT "X-CrossAssassin-Score: $ca_score\n"
+		    or die "print incoming/I$id: $!";
 	    }
-	    push @textarray, <MESSAGE>;
-	    close MESSAGE;
-	    my $mail = Mail::SpamAssassin::NoMailAudit->new(data => \@textarray);
-	    $mail->{noexit} = 1;
-
-	    my $messageid = header_or_empty($mail, 'Message-Id');
-	    $out .= "  From: " . header_or_empty($mail, 'From') . "\n";
-	    $out .= "  Subject: ". header_or_empty($mail, 'Subject') . "\n";
-	    $out .= "  Date: " . header_or_empty($mail, 'Date') . "\n";
-	    $out .= "  Message-Id: $messageid\n";
-	    my $keys = ca_keys($mail->get_body);
-	    print  "$keys\n$messageid\n"
-		or die "Could not send keys: $!";
-	    my $ca_score = <STDIN> or die "Could not read ca_score: $!";
-	    chomp $ca_score;
-	    my $todo = 0;
-	    my $seen = <STDIN> or die "Child could not read seen: $!";
-	    chomp $seen;
-	    my $status;
-	    my $nseen = $seen;
-	    if ($seen) {
-		$todo = 1;
-		$out .= "  spam $seen duplicate\n";
-	    } else {
-		$status = $spam->check($mail);
-		$status->rewrite_mail();
-
-		if ($status->is_spam()) {
-#		    $mail->accept($gSpamMailbox);
-#		    unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
-		    $todo = 1;
-		    my $score = sprintf "%.1f/%.1f %d",
-	                    $status->get_hits(), $status->get_required_hits(),
-		            $ca_score;
-		    $out .= "  spam $score\n";
-		    $nseen = $score;
-		} elsif ($status->get_hits() > 0 && $ca_score >= $gMaxCross) {
-#		    $mail->accept($gCrossMailbox);
-#		    unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
-		    $todo = 2;
-		    my $score = sprintf "%.1f/%.1f %d",
-	            $status->get_hits(), $status->get_required_hits(), $ca_score;
-		    $out .= "  spam $score\n";
-		    $nseen = $score;
-		} else {
-		    open OUT, "> incoming/I$id" or die "open incoming/I$id: $!";
-		    my @headers = $mail->get_all_headers();
-		    if ($headers[0] =~ /^From /) {
-			my $from = $headers[0];
-			$headers[0] = $headers[1];
-			$headers[1] = $from;
-		    }
-		    print OUT join '', @headers or die "print incoming/I$id: $!";
-		    if ($ca_score > 1) {
-			print OUT "X-CrossAssassin-Score: $ca_score\n"
-			    or die "print incoming/I$id: $!";
-		    }
-		    print OUT "\n" or die "print incoming/I$id: $!";
-		    print OUT @{$mail->get_body()} or die "print incoming/I$id: $!";
-		    close OUT or die "close incoming/I$id: $!";
-		    unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
-		    $out .= sprintf "  ok %.1f/%.1f %d\n",
-		    	    $status->get_hits(), $status->get_required_hits(),
-		    	    $ca_score;
-		}
-	    }
-	    print "$todo\n";
-	    my $x = <STDIN>;
-	    if ($todo) {
-		open OUT, '>>', ($todo == 1) ? $gSpamMailbox : $gCrossMailbox
-		    or die "Could not open assassinated: $!";
-		my @headers = $mail->get_all_headers();
-		print OUT @headers
-		    or die "print assassinated: $!";
-		print OUT "\n"
-		    or die "print assassinated: $!";
-		foreach (@{$mail->get_body()}) {
-		    s/^From />From /;
-		    print OUT $_
-			or die "print assassinated: $!";
-		}
-		close OUT or die "Close assassinated: $!";
-		unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
-	    }
-	    $out =~ tr/\n/\r/;
-	    print "$nseen\n$out\n";
-	    $status->finish() unless($seen);
+	    print OUT "\n" or die "print incoming/I$id: $!";
+	    print OUT $body or die "print incoming/I$id: $!";
+	    close OUT or die "close incoming/I$id: $!";
+	    unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
+	    $out .= sprintf "  ok %.1f/%.1f %d\n",
+	    $status->get_score(), $status->get_required_score(),
+	            $ca_score;
 	}
+    }
+    print "$todo\n";
+    <STDIN>;
+    if ($todo) {
+	open OUT, '>>', ($todo == 1) ? $gSpamMailbox : $gCrossMailbox
+	    or die "Could not open assassinated: $!";
+	print OUT $headers or die "print assassinated: $!";
+	if ($ca_score > 1) {
+	    print OUT "X-CrossAssassin-Score: $ca_score\n"
+		or die "print assassinated: $!";
+	}
+	print OUT "\n" or die "print assassinated: $!";
+	$body =~ s/^From />From /gm;
+	print OUT $body or die "print assassinated: $!";
+	close OUT or die "Close assassinated: $!";
+	unlink "incoming/R$id" or warn "unlink incoming/R$id: $!";
+    }
+    $out =~ tr/\n/\r/;
+    print "$nseen\n$out\n";
+    $status->finish() unless($seen);
+    $mail->finish();
+}
