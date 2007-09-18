@@ -18,7 +18,7 @@ use vars qw($VERSION @EXPORT_OK);
 BEGIN {
     $VERSION = 1.00;
 
-    @EXPORT_OK = qw(parse decode_rfc1522 encode_rfc1522 convert_to_utf8 create_mime_message);
+    @EXPORT_OK = qw(parse decode_rfc1522 encode_rfc1522 convert_to_utf8 create_mime_message getmailbody);
 }
 
 use File::Path;
@@ -31,8 +31,7 @@ use Encode qw(decode encode encode_utf8 decode_utf8 is_utf8);
 # for encode_rfc1522
 use MIME::Words qw();
 
-sub getmailbody ($);
-sub getmailbody ($)
+sub getmailbody
 {
     my $entity = shift;
     my $type = $entity->effective_type;
