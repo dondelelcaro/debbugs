@@ -40,7 +40,7 @@ use HTML::Entities;
 use Debbugs::Common qw(getparsedaddrs);
 use Params::Validate qw(validate_with :types);
 use Debbugs::Config qw(:config);
-use Debbugs::Status qw(splitpackages);
+use Debbugs::Status qw(splitpackages isstrongseverity);
 use Mail::Address;
 use POSIX qw(ceil);
 use Storable qw(dclone);
