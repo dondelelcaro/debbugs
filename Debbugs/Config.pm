@@ -64,6 +64,7 @@ BEGIN {
 				 qw(%gDistributionAliases),
 				 qw(@gPostProcessall @gRemovalDefaultDistributionTags @gRemovalDistributionTags @gRemovalArchitectures),
 				 qw(@gRemovalStrongSeverityDefaultDistributionTags),
+				 qw($gTemplateDir),
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
@@ -521,6 +522,16 @@ set_default(\%config,'incoming_dir','incoming');
 set_default(\%config,'web_dir','/var/lib/debbugs/www');
 set_default(\%config,'doc_dir','/var/lib/debbugs/www/txt');
 set_default(\%config,'lib_path','/usr/lib/debbugs');
+
+
+=item template_dir
+
+directory of templates; defaults to /usr/share/debbugs/templates.
+
+=cut
+
+set_default(\%config,'template_dir','/usr/share/debbugs/templates');
+
 
 set_default(\%config,'maintainer_file',$config{config_dir}.'/Maintainers');
 set_default(\%config,'maintainer_file_override',$config{config_dir}.'/Maintainers.override');
