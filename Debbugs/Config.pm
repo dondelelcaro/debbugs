@@ -247,7 +247,7 @@ Default: "$config{web_domain}/~owner"
 
 set_default(\%config,'maintainer_webpage',"$config{web_domain}/~owner");
 
-=item maintainer_email
+=item maintainer_email $gMaintainerEmail
 
 Email address of the maintainer of this Debbugs install
 
