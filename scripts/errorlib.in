@@ -1,7 +1,7 @@
 # -*- perl -*-
 
 use Mail::Address;
-use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
+use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522 getmailbody);
 use Debbugs::Packages qw(:all);
 use Debbugs::Common qw(:all);
 use Debbugs::Status qw(:all);
@@ -20,29 +20,6 @@ sub sani {
     carp "You should be using HTML::Entities instead.";
     $in =~ s/([<>&"])/$saniarray{$1}/g;
     return $in;
-}
-
-sub getmailbody {
-	my $entity = shift;
-	my $type = $entity->effective_type;
-	if ($type =~ m#text/(?!html|enriched)# or
-	    $type eq 'application/pgp') {
-		return $entity->bodyhandle;
-	} elsif ($type eq 'multipart/alternative') {
-		# RFC 2046 says we should use the last part we recognize.
-		for my $part (reverse $entity->parts) {
-			my $ret = getmailbody($part);
-			return $ret if $ret;
-		}
-	} else {
-		# For other multipart types, we just pretend they're
-		# multipart/mixed and run through in order.
-		for my $part ($entity->parts) {
-			my $ret = getmailbody($part);
-			return $ret if $ret;
-		}
-	}
-	return undef;
 }
 
 sub get_addresses {
