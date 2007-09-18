@@ -4,28 +4,27 @@
 # Usage: process nn
 # Temps:  incoming/Pnn
 
+use warnings;
+use strict;
+
 use POSIX qw(strftime);
 
 use MIME::Parser;
-use Debbugs::MIME qw(decode_rfc1522 create_mime_message);
+use Debbugs::MIME qw(decode_rfc1522 create_mime_message getmailbody);
 use Debbugs::Mail qw(send_mail_message encode_headers);
 use Debbugs::Packages qw(getpkgsrc);
 use Debbugs::User qw(read_usertags write_usertags);
+use Debbugs::Common qw(:lock get_hashname);
+use Debbugs::Status qw(writebug isstrongseverity lockreadbugmerge);
 
 use Debbugs::CGI qw(html_escape);
 
 use Debbugs::Log qw(:misc);
 
-# TODO DLA; needs config reworking and errorlib reworking
-# use warnings;
-# use strict;
+use Debbugs::Text qw(:templates);
 
 use Debbugs::Status qw(:versions);
 use Debbugs::Config qw(:globals);
-my $lib_path = $gLibPath;
-
-require "$lib_path/errorlib";
-$ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
 
 chdir( "$gSpoolDir" ) || die "chdir spool: $!\n";
 
@@ -75,6 +74,20 @@ END
 
 # header and decoded body respectively
 my (@headerlines, @bodylines);
+
+#maintainer address for this message
+our @maintaddrs;
+# other src addresses
+our @addsrcaddrs;
+our @resentccs;
+our @bccs;
+
+my $resentccexplain='';
+
+# whether there's a new reference with this email
+our $newref = 0;
+
+our $brokenness = '';
 
 my $parser = new MIME::Parser;
 mkdir "$gSpoolDir/mime.tmp", 0777;
@@ -128,6 +141,7 @@ for my $hdr (@headerlines) {
 	print DEBUG "!>$_<\n";
     }
 }
+$header{'message-id'} = '' if not defined $header{'message-id'};
 
 # remove blank lines
 shift @bodylines while @bodylines and $bodylines[0] !~ /\S/;
@@ -145,6 +159,8 @@ if (@bodylines and $bodylines[0] =~ /^-----BEGIN PGP SIGNED/) {
     map { s/^- // } @bodylines;
 }
 
+#psuedoheaders
+my %pheader;
 # extract pseudo-headers
 for my $phline (@bodylines)
 {
@@ -154,7 +170,7 @@ for my $phline (@bodylines)
     print DEBUG ">$fn|$fv|\n";
     $fn = lc $fn;
     # Don't lc owner or forwarded
-    $fv = lc $fv unless $fh =~ /^(?:owner|forwarded|usertags|version|source-version)$/;
+    $fv = lc $fv unless $fn =~ /^(?:owner|forwarded|usertags|version|source-version)$/;
     $pheader{$fn} = $fv;
     print DEBUG ">$fn~$fv<\n";
 }
@@ -200,9 +216,10 @@ $subject =~ s/^Re:\s*//i; $_= $subject."\n";
 if ($tryref < 0 && m/^Bug ?\#(\d+)\D/i) {
     $tryref= $1+0; 
 }
-
+my $data;
 if ($tryref >= 0) 
 {
+     my $bfound;
     ($bfound, $data)= &lockreadbugmerge($tryref);
     if ($bfound) { 
         $ref= $tryref; 
@@ -277,9 +294,14 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
     { 
         &quit("bounce detected !  Mwaap! Mwaap!"); 
     }
-    $markedby= $header{'from'} eq $replyto ? $replyto :
+    my $markedby= $header{'from'} eq $replyto ? $replyto :
                "$header{'from'} (reply to $replyto)";
     my @generalcc;
+    my $receivedat;
+    my $markaswhat;
+    my $set_forwarded;
+    my $generalcc;
+    my $set_done;
     if ($codeletter eq 'F') { # Forwarded
         (&appendlog,&finish) if length($data->{forwarded});
         $receivedat= "forwarded\@$gEmailDomain";
@@ -364,18 +386,18 @@ END
     &checkmaintainers;
 
     my @noticecc = grep($_ ne $replyto,@maintaddrs);
-    $noticeccval.= join(', ', grep($_ ne $replyto,@maintaddrs));
+    my $noticeccval.= join(', ', grep($_ ne $replyto,@maintaddrs));
     $noticeccval =~ s/\s+\n\s+/ /g; 
     $noticeccval =~ s/^\s+/ /; $noticeccval =~ s/\s+$//;
 
-    @process= ($ref,split(/ /,$data->{mergedwith}));
-    $orgref= $ref;
+    my @process= ($ref,split(/ /,$data->{mergedwith}));
+    my $orgref= $ref;
 
     for $ref (@process) {
  	if ($ref != $orgref) {
 	    &unfilelock;
 	    $data = &lockreadbug($ref)
-		|| die "huh ? $ref from $orgref out of @process";
+		|| die "huh ? $ref from $orgref out of ".join(' ',@process);
 	}
         $data->{done}= $set_done if defined($set_done);
         $data->{forwarded}= $set_forwarded if defined($set_forwarded);
@@ -401,7 +423,7 @@ END
 
 	my $hash = get_hashname($ref);
         open(O,"db-h/$hash/$ref.report") || &quit("read original report: $!");
-        $x= join('',<O>); close(O);
+        my $orig_report= join('',<O>); close(O);
         if ($codeletter eq 'F') {
 	    &htmllog("Reply","sent",$replyto,"You have marked $gBug as forwarded.");
             &sendmessage(create_mime_message(
@@ -451,7 +473,7 @@ END
               "X-$gProject-PR-Keywords" => $data->{keywords},
 	      # Only have a X-$gProject-PR-Source when we know the source package
 	      length($source_package)?("X-$gProject-PR-Source" => $source_package):(),
-             ],<<END ,[$x,join("\n",@msg)]),'',[$replyto,@generalbcc,@noticecc],1);
+             ],<<END ,[$orig_report,join("\n",@msg)]),'',[$replyto,@generalbcc,@noticecc],1);
 Your message dated $header{'date'}
 with message-id $header{'message-id'}
 and subject line $subject
@@ -622,7 +644,7 @@ END
 	$data->{severity}= $pheader{'priority'} unless ($data->{severity});
 	$data->{severity} =~ s/^\s*(.+)\s*$/$1/;
 
-	if (!grep($_ eq $data->{severity}, @severities, "$gDefaultSeverity")) {
+	if (!grep($_ eq $data->{severity}, @gSeverityList, "$gDefaultSeverity")) {
             $brokenness.= <<END;
 
 Your message specified a Severity: in the pseudo-header, but
@@ -644,9 +666,9 @@ END
     }
     &filelock("nextnumber.lock");
     open(N,"nextnumber") || &quit("nextnumber: read: $!");
-    $v=<N>; $v =~ s/\n$// || &quit("nextnumber bad format");
-    $ref= $v+0;  $v += 1;  $newref=1;
-    &overwrite('nextnumber', "$v\n");
+    my $nextnumber=<N>; $nextnumber =~ s/\n$// || &quit("nextnumber bad format");
+    $ref= $nextnumber+0;  $nextnumber += 1;  my $newref=1;
+    &overwrite('nextnumber', "$nextnumber\n");
     &unfilelock;
     my $hash = get_hashname($ref);
     &overwrite("db-h/$hash/$ref.log",'');
@@ -690,12 +712,12 @@ END
 
 &checkmaintainers;
 
-print DEBUG "maintainers >@maintaddrs<\n";
+print DEBUG "maintainers >".join(' ',@maintaddrs)."<\n";
 
-$orgsender= defined($header{'sender'}) ? "Original-Sender: $header{'sender'}\n" : '';
-$newsubject= $subject;  $newsubject =~ s/^$gBug#$ref:*\s*//;
+my $orgsender= defined($header{'sender'}) ? "Original-Sender: $header{'sender'}\n" : '';
+my $newsubject= $subject;  $newsubject =~ s/^$gBug#$ref:*\s*//;
 
-$xcchdr= $header{ 'x-debbugs-cc' };
+my $xcchdr= $header{ 'x-debbugs-cc' } || '';
 if ($xcchdr =~ m/\S/) {
     push(@resentccs,$xcchdr);
     $resentccexplain.= <<END;
@@ -738,7 +760,7 @@ if (defined $pheader{source}) {
     writebug($ref, $data);
 }
 
-$veryquiet= $codeletter eq 'Q';
+my $veryquiet= $codeletter eq 'Q';
 if ($codeletter eq 'M' && !@maintaddrs) {
     $veryquiet= 1;
     $brokenness.= <<END;
@@ -754,8 +776,9 @@ please contact $gMaintainerEmail quoting the $gBug number $ref.
 END
 }
 
-$resentccval.= join(', ',@resentccs);
+my $resentccval.= join(', ',@resentccs);
 $resentccval =~ s/\s+\n\s+/ /g; $resentccval =~ s/^\s+/ /; $resentccval =~ s/\s+$//;
+my $resentcc = '';
 if (length($resentccval)) { 
     $resentcc= "Resent-CC: $resentccval\n"; 
 }
@@ -825,12 +848,13 @@ ${source_pr_header}$fwd
 END
 }
 
-$htmlbreak= length($brokenness) ? "<p>\n".html_escape($brokenness)."\n<p>\n" : '';
+my $htmlbreak= length($brokenness) ? "<p>\n".html_escape($brokenness)."\n<p>\n" : '';
 $htmlbreak =~ s/\n\n/\n<P>\n\n/g;
 if (length($resentccval)) {
     $htmlbreak = "  Copy sent to <code>".html_escape($resentccval)."</code>.".
         $htmlbreak;
 }
+
 unless (exists $header{'x-debbugs-no-ack'}) {
     if ($newref) {
         &htmllog("Acknowledgement","sent",$replyto,
@@ -952,7 +976,8 @@ $gMaintainer
 END
 		   }
     } elsif ($codeletter ne 'U' and
-             $header{'precedence'} !~ /\b(?:bulk|junk|list)\b/) {
+             not defined $header{precedence} or
+	     $header{'precedence'} !~ /\b(?:bulk|junk|list)\b/) {
         &htmllog("Acknowledgement","sent",$replyto,
                  ($veryquiet ? "Extra info received and filed, but not forwarded." :
                   $codeletter eq 'M' ? "Extra info received and forwarded to maintainer." :
@@ -1058,7 +1083,7 @@ END
 &finish;
 
 sub overwrite {
-    local ($f,$v) = @_;
+    my ($f,$v) = @_;
     open(NEW,">$f.new") || &quit("$f.new: create: $!");
     print(NEW "$v") || &quit("$f.new: write: $!");
     close(NEW) || &quit("$f.new: close: $!");
@@ -1077,17 +1102,20 @@ sub appendlog {
 }
 
 sub finish {
+    my ($exit) = @_;
+    $exit ||= 0;
     utime(time,time,"db");
-    local ($u);
-    while ($u= $cleanups[$#cleanups]) { &$u; }
+    # cleanups are run in an end block now.
+    #my ($u);
+    #while ($u= $cleanups[$#cleanups]) { &$u; }
     unlink("incoming/P$nn") || &quit("unlinking incoming/P$nn: $!");
-    exit $_[0];
+    exit $exit;
 }
 
 &quit("wot no exit");
 
 sub htmllog {
-    local ($whatobj,$whatverb,$where,$desc) = @_;
+    my ($whatobj,$whatverb,$where,$desc) = @_;
     my $hash = get_hashname($ref);
     open(AP,">>db-h/$hash/$ref.log") || &quit("opening db-h/$hash/$ref.log (lh): $!");
     print(AP
@@ -1175,6 +1203,7 @@ my $maintainerschecked = 0;
 sub checkmaintainers {
     return if $maintainerschecked++;
     return if !length($data->{package});
+    my %maintainerof;
     open(MAINT,"$gMaintainerFile") || die &quit("maintainers open: $!");
     while (<MAINT>) {
 	m/^\n$/ && next;
@@ -1195,6 +1224,7 @@ sub checkmaintainers {
         $maintainerof{$a}= $2;
     }
     close(MAINT);
+    my %pkgsrc;
     open(SOURCES,"$gPackageSource") || &quit("pkgsrc open: $!");
     while (<SOURCES>) {
         next unless m/^(\S+)\s+\S+\s+(\S.*\S)\s*$/;
@@ -1203,8 +1233,8 @@ sub checkmaintainers {
 	$pkgsrc{$a} = $b;
     }
     close(SOURCES);
-    $anymaintfound=0; $anymaintnotfound=0;
-    for $p (split(m/[ \t?,():]+/,$data->{package})) {
+    my $anymaintfound=0; my $anymaintnotfound=0;
+    for my $p (split(m/[ \t?,():]+/,$data->{package})) {
         $p =~ y/A-Z/a-z/;
 	$p =~ /([a-z0-9.+-]+)/;
 	$p = $1;
@@ -1218,7 +1248,7 @@ sub checkmaintainers {
 	}
         if (defined($maintainerof{$p})) {
 	    print DEBUG "maintainer add >$p|$maintainerof{$p}<\n";
-            $addmaint= $maintainerof{$p};
+            my $addmaint= $maintainerof{$p};
             push(@maintaddrs,$addmaint) unless
                 $addmaint eq $replyto || grep($_ eq $addmaint, @maintaddrs);
             $anymaintfound++;
@@ -1230,9 +1260,9 @@ sub checkmaintainers {
         }
     }
 
-    if (length $data->{owner}) {
+    if (defined $data->{owner} and length $data->{owner}) {
         print DEBUG "owner add >$data->{package}|$data->{owner}<\n";
-        $addmaint = $data->{owner};
+        my $addmaint = $data->{owner};
         push(@maintaddrs, $addmaint) unless
             $addmaint eq $replyto or grep($_ eq $addmaint, @maintaddrs);
     }
