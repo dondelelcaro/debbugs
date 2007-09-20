@@ -17,14 +17,14 @@ use Debbugs::User qw(read_usertags write_usertags);
 use Debbugs::Common qw(:lock get_hashname);
 use Debbugs::Status qw(writebug isstrongseverity lockreadbugmerge);
 
-use Debbugs::CGI qw(html_escape);
+use Debbugs::CGI qw(html_escape bug_url);
 
 use Debbugs::Log qw(:misc);
 
 use Debbugs::Text qw(:templates);
 
 use Debbugs::Status qw(:versions);
-use Debbugs::Config qw(:globals);
+use Debbugs::Config qw(:globals :config);
 
 chdir( "$gSpoolDir" ) || die "chdir spool: $!\n";
 
@@ -587,6 +587,8 @@ END
         $data->{package} = $pheader{package};
     } else {
  	&htmllog("Warning","sent",$replyto,"Message not forwarded.");
+	my $body = message_body_template('mail/process_no_package',
+					);
         &sendmessage(create_mime_message(
                        ["X-Loop"      => "$gMaintainerEmail",
 			From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
@@ -645,16 +647,9 @@ END
 	$data->{severity} =~ s/^\s*(.+)\s*$/$1/;
 
 	if (!grep($_ eq $data->{severity}, @gSeverityList, "$gDefaultSeverity")) {
-            $brokenness.= <<END;
-
-Your message specified a Severity: in the pseudo-header, but
-the severity value $data->{severity} was not recognised.
-The default severity $gDefaultSeverity is being used instead.
-The recognised values are: $gShowSeverities.
-END
-# if we use @gSeverityList array in the above line, perl -c gives:
-# In string, @gSeverityList now must be written as \@gSeverityList at
-#          process line 452, near "$gDefaultSeverity is being used instead.
+            $brokenness.= fill_in_template('mail/invalid_severity',
+					   {severity=>$data->{severity}}
+					  );
             $data->{severity}= '';
         }
     }
@@ -667,7 +662,7 @@ END
     &filelock("nextnumber.lock");
     open(N,"nextnumber") || &quit("nextnumber: read: $!");
     my $nextnumber=<N>; $nextnumber =~ s/\n$// || &quit("nextnumber bad format");
-    $ref= $nextnumber+0;  $nextnumber += 1;  my $newref=1;
+    $ref= $nextnumber+0;  $nextnumber += 1;  $newref=1;
     &overwrite('nextnumber', "$nextnumber\n");
     &unfilelock;
     my $hash = get_hashname($ref);
@@ -700,10 +695,9 @@ END
 	      write_usertags(\%user_tags,$user);
 	 }
 	 else {
-	      $brokenness .=<<END;
-Your message tried to set a usertag, but didn't have a valid
-user set ('$user' isn't valid)
-END
+	      $brokenness .= fill_in_template('mail/invalid_user',
+					      {user => $user}
+					     );
 	 }
     }
     &overwrite("db-h/$hash/$ref.report",
@@ -720,20 +714,17 @@ my $newsubject= $subject;  $newsubject =~ s/^$gBug#$ref:*\s*//;
 my $xcchdr= $header{ 'x-debbugs-cc' } || '';
 if ($xcchdr =~ m/\S/) {
     push(@resentccs,$xcchdr);
-    $resentccexplain.= <<END;
-
-As you requested using X-Debbugs-CC, your message was also forwarded to
-   $xcchdr
-(after having been given a $gBug report number, if it did not have one).
-END
+    $resentccexplain.= fill_template('mail/xdebbugscc',
+				     {xcchdr => $xcchdr},
+				    );
 }
 
 if (@maintaddrs && ($codeletter eq 'B' || $codeletter eq 'M')) {
     push(@resentccs,@maintaddrs);
-    $resentccexplain.= <<END." ".join("\n ",@maintaddrs)."\n";
-
-Your message has been sent to the package maintainer(s):
-END
+    $resentccexplain.= fill_template('mail/maintainercc',
+				     {maintaddrs => \@maintaddrs,
+				     },
+				    );
 }
 
 @bccs = @addsrcaddrs;
@@ -763,17 +754,9 @@ if (defined $pheader{source}) {
 my $veryquiet= $codeletter eq 'Q';
 if ($codeletter eq 'M' && !@maintaddrs) {
     $veryquiet= 1;
-    $brokenness.= <<END;
-
-You requested that the message be sent to the package maintainer(s)
-but either the $gBug report is not associated with any package (probably
-because of a missing Package pseudo-header field in the original $gBug
-report), or the package(s) specified do not have any maintainer(s).
-
-Your message has *not* been sent to any package maintainers; it has
-merely been filed in the $gBug tracking system.  If you require assistance
-please contact $gMaintainerEmail quoting the $gBug number $ref.
-END
+    $brokenness.= fill_template('mail/invalid_maintainer',
+				{},
+			       );
 }
 
 my $resentccval.= join(', ',@resentccs);
@@ -855,228 +838,99 @@ if (length($resentccval)) {
         $htmlbreak;
 }
 
-unless (exists $header{'x-debbugs-no-ack'}) {
-    if ($newref) {
-        &htmllog("Acknowledgement","sent",$replyto,
-                 ($veryquiet ?
-                  "New $gBug report received and filed, but not forwarded." :
-                  "New $gBug report received and forwarded."). $htmlbreak);
-	if ($veryquiet) {
-	     &sendmessage(create_mime_message(
+# Should we send an ack out?
+if (not exists $header{'x-debbugs-no-ack'} and
+    ($newref or
+     ($codeletter ne 'U' and
+      not defined $header{precedence} or
+      $header{'precedence'} !~ /\b(?:bulk|junk|list)\b/
+     )
+    )
+   ){
+
+     # figure out forward explanation
+     my $forwardexplain = '';
+     my $thanks = '';
+     my $extra_vars;
+     # will contain info and -info in moreinfo messages
+     my $info = '';
+     my $infod = '';
+     # temporary headers
+     my %t_h;
+     if ($newref) {
+	  &htmllog("Acknowledgement","sent",$replyto,
+		   ($veryquiet ?
+		    "New $gBug report received and filed, but not forwarded." :
+		    "New $gBug report received and forwarded."). $htmlbreak);
+	  $thanks = fill_template('mail/process_ack_thanks_new');
+     }
+     else {
+	  &htmllog("Acknowledgement","sent",$replyto,
+		   ($veryquiet ? "Extra info received and filed, but not forwarded." :
+		    $codeletter eq 'M' ? "Extra info received and forwarded to maintainer." :
+		    "Extra info received and forwarded to list."). $htmlbreak);
+	  $thanks = fill_template('mail/process_ack_thanks_additional');
+	  $info = 'info';
+	  $infod = '-info';
+     }
+     if ($veryquiet) {
+	  $forwardexplain = fill_template('mail/forward_veryquiet',
+					 );
+	  # these are the headers that quiet messages override
+	  $t_h{messageid}  = "<handler.$ref.$nn.ack${info}quiet\@$gEmailDomain>";
+	  $t_h{pr_message} = "ack${infod}-quiet $ref";
+	  $t_h{reply_to}   = "$ref-quiet\@$gEmailDomain";
+	  $extra_vars->{refreplyto} = "$ref-quiet\@$gEmailDomain";
+	  $t_h{subject}    = length($info)?
+	       "$gBug#$ref: Info received and FILED only ($subject)":
+	       "$gBug#$ref: Acknowledgement of QUIET report ($subject)";
+     }
+     elsif ($codeletter eq 'M') {
+	  $forwardexplain = fill_template('mail/forward_maintonly',
+					 );
+	  # these are the headers that maintonly messages override
+	  $t_h{messageid}  = "<handler.$ref.$nn.ack{$info}maintonly\@$gEmailDomain>";
+	  $t_h{pr_message} = "ack${infod}-maintonly $ref";
+	  $t_h{reply_to}   = "$ref-maintonly\@$gEmailDomain";
+	  $extra_vars->{refreplyto} = "$ref-maintonly\@$gEmailDomain";
+	  $t_h{subject}    = length($info)?
+	       "$gBug#$ref: Info received for maintainer only ($subject)":
+	       "$gBug#$ref: Acknowledgement of maintainer-only report ($subject)";
+     }
+     else {
+	  $forwardexplain = fill_template('mail/forward_normal',
+					 );
+	  $t_h{messageid}  = "<handler.$ref.$nn.ack${info}\@$gEmailDomain>";
+	  $t_h{pr_message} = "ack${infod} $ref";
+	  $t_h{reply_to}   = "$ref\@$gEmailDomain";
+	  $extra_vars->{refreplyto} = "$ref\@$gEmailDomain";
+	  $t_h{subject}    = length($info)?
+	       "$gBug#$ref: Info received ($subject)" :
+	       "$gBug#$ref: Acknowledgement ($subject)";
+     }
+     my $body = message_body_template('mail/process_ack',
+				      {forwardexplain  => $forwardexplain,
+				       resentccexplain => $resentccexplain,
+				       thanks          => $thanks,
+				       %{$extra_vars}
+				      }
+				     );
+     &sendmessage(create_mime_message(
 		       ["X-Loop"      => "$gMaintainerEmail",
 			From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
 			To            => $replyto,
-                        Subject       => "$gBug#$ref: Acknowledgement of QUIET report ($subject)",
-                        "Message-ID"  => "<handler.$ref.$nn.ackquiet\@$gEmailDomain>",
-                        "In-Reply-To" => $header{'message-id'},
+			Subject       => $t_h{subject},
+			"Message-ID"  => $t_h{messageid},
+			"In-Reply-To" => $header{'message-id'},
                         References    => $header{'message-id'},
                         Precedence    => 'bulk',
-			"X-$gProject-PR-Message"  => "ack-quiet $ref",
+			"X-$gProject-PR-Message"  => $t_h{pr_message} || "ack $ref",
 			"X-$gProject-PR-Package"  => $data->{package},
 			"X-$gProject-PR-Keywords" => $data->{keywords},
 			# Only have a X-$gProject-PR-Source when we know the source package
 			length($source_package)?("X-$gProject-PR-Source" => $source_package):(),
-			"Reply-To"                => "$ref-quiet\@$gEmailDomain",
-		       ],<<END,[join("\n", @msg)]), '',undef,1);
-Thank you for the problem report you have sent regarding $gProject.
-This is an automatically generated reply, to let you know your message
-has been received.  It has not been forwarded to the package maintainers
-or other interested parties; you should ensure that the developers are
-aware of the problem you have entered into the system - preferably
-quoting the $gBug reference number, #$ref.
-$resentccexplain
-If you wish to submit further information on your problem, please send it
-to $ref-$baddressroot\@$gEmailDomain (and *not*
-to $baddress\@$gEmailDomain).
-
-If you have filed this report in error and wish to close it, please
-send mail to $ref-done\@$gEmailDomain with an explanation
-why the bug report should be closed.
-
-Please do not reply to the address at the top of this message,
-unless you wish to report a problem with the $gBug-tracking system.
-$brokenness
-$gMaintainer
-(administrator, $gProject $gBugs database)
-END
-	}
-	elsif ($codeletter eq 'M') { # Maintonly
-	     &sendmessage(create_mime_message(
-		       ["X-Loop"      => "$gMaintainerEmail",
-			From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
-			To            => $replyto,
-                        Subject       => "$gBug#$ref: Acknowledgement of maintainer-only report ($subject)",
-                        "Message-ID"  => "<handler.$ref.$nn.ackmaint\@$gEmailDomain>",
-                        "In-Reply-To" => $header{'message-id'},
-                        References    => $header{'message-id'},
-                        Precedence    => 'bulk',
-			"X-$gProject-PR-Message" => "ack-maintonly $ref",
-			"X-$gProject-PR-Package"  => $data->{package},
-			"X-$gProject-PR-Keywords" => $data->{keywords},
-			# Only have a X-$gProject-PR-Source when we know the source package
-			length($source_package)?("X-$gProject-PR-Source" => $source_package):(),
-			"Reply-To"               => "$ref-maintonly\@$gEmailDomain",
-		       ],<<END,[]), '',undef,1);
-Thank you for the problem report you have sent regarding $gProject.
-This is an automatically generated reply, to let you know your message has
-been received.  It is being forwarded to the package maintainers (but not
-other interested parties, as you requested) for their attention; they will
-reply in due course.
-$resentccexplain
-If you wish to submit further information on your problem, please send
-it to $ref-$baddressroot\@$gEmailDomain (and *not*
-to $baddress\@$gEmailDomain).
-
-If you have filed this report in error and wish to close it, please
-send mail to $ref-done\@$gEmailDomain with an explanation
-why the bug report should be closed.
-
-Please do not reply to the address at the top of this message,
-unless you wish to report a problem with the $gBug-tracking system.
-$brokenness
-$gMaintainer
-(administrator, $gProject $gBugs database)
-END
-		   }
-	else {
-	     &sendmessage(create_mime_message(
-		       ["X-Loop"      => "$gMaintainerEmail",
-			From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
-			To            => $replyto,
-                        Subject       => "$gBug#$ref: Acknowledgement ($subject)",
-                        "Message-ID"  => "<handler.$ref.$nn.ack\@$gEmailDomain>",
-                        "In-Reply-To" => $header{'message-id'},
-                        References    => $header{'message-id'},
-                        Precedence    => 'bulk',
-			"X-$gProject-PR-Message"  => "ack $ref",
-			"X-$gProject-PR-Package"  => $data->{package},
-			"X-$gProject-PR-Keywords" => $data->{keywords},
-			# Only have a X-$gProject-PR-Source when we know the source package
-			length($source_package)?("X-$gProject-PR-Source" => $source_package):(),
-			"Reply-To"                => "$ref\@$gEmailDomain",
-		       ],<<END,[]), '',undef,1);
-Thank you for the problem report you have sent regarding $gProject.
-This is an automatically generated reply, to let you know your message has
-been received.  It is being forwarded to the package maintainers and other
-interested parties for their attention; they will reply in due course.
-$resentccexplain
-If you wish to submit further information on your problem, please send
-it to $ref\@$gEmailDomain (and *not* to
-$baddress\@$gEmailDomain).
-
-If you have filed this report in error and wish to close it, please
-send mail to $ref-done\@$gEmailDomain with an explanation
-why the bug report should be closed.
-
-Please do not reply to the address at the top of this message,
-unless you wish to report a problem with the $gBug-tracking system.
-$brokenness
-$gMaintainer
-(administrator, $gProject $gBugs database)
-END
-		   }
-    } elsif ($codeletter ne 'U' and
-             not defined $header{precedence} or
-	     $header{'precedence'} !~ /\b(?:bulk|junk|list)\b/) {
-        &htmllog("Acknowledgement","sent",$replyto,
-                 ($veryquiet ? "Extra info received and filed, but not forwarded." :
-                  $codeletter eq 'M' ? "Extra info received and forwarded to maintainer." :
-                  "Extra info received and forwarded to list."). $htmlbreak);
-	if ($veryquiet) {
-	     &sendmessage(create_mime_message(
-		       ["X-Loop"      => "$gMaintainerEmail",
-			From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
-			To            => $replyto,
-                        Subject       => "$gBug#$ref: Info received and FILED only (was $subject)",
-                        "Message-ID"  => "<handler.$ref.$nn.ackinfoquiet\@$gEmailDomain>",
-                        "In-Reply-To" => $header{'message-id'},
-                        References    => $header{'message-id'},
-                        Precedence    => 'bulk',
-			"X-$gProject-PR-Message" => "ack-info-quiet $ref",
-			"X-$gProject-PR-Package"  => $data->{package},
-			"X-$gProject-PR-Keywords" => $data->{keywords},
-			# Only have a X-$gProject-PR-Source when we know the source package
-			length($source_package)?("X-$gProject-PR-Source" => $source_package):(),
-			"Reply-To"               => "$ref-maintonly\@$gEmailDomain",
-		       ],<<END,[]), '',undef,1);
-Thank you for the additional information you have supplied regarding
-this problem report.  It has NOT been forwarded to the package
-maintainers, but will accompany the original report in the $gBug
-tracking system.  Please ensure that you yourself have sent a copy of
-the additional information to any relevant developers or mailing lists.
-$resentccexplain
-If you wish to continue to submit further information on this problem,
-please send it to $ref-$baddressroot\@$gEmailDomain, as before.
-
-Please do not reply to the address at the top of this message,
-unless you wish to report a problem with the $gBug-tracking system.
-$brokenness
-$gMaintainer
-(administrator, $gProject $gBugs database)
-END
-		 }
-	elsif ($codeletter eq 'M') {
-	     &sendmessage(create_mime_message(
-		       ["X-Loop"      => "$gMaintainerEmail",
-			From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
-			To            => $replyto,
-                        Subject       => "$gBug#$ref: Info received for maintainer only (was $subject)",
-                        "Message-ID"  => "<handler.$ref.$nn.ackinfomaint\@$gEmailDomain>",
-                        "In-Reply-To" => $header{'message-id'},
-                        References    => "$header{'message-id'} $data->{msgid}",
-                        Precedence    => 'bulk',
-			"X-$gProject-PR-Message" => "ack-info-maintonly $ref",
-			"X-$gProject-PR-Package"  => $data->{package},
-			"X-$gProject-PR-Keywords" => $data->{keywords},
-			"Reply-To"               => "$ref-maintonly\@$gEmailDomain",
-		       ],<<END,[]), '',undef,1);
-Thank you for the additional information you have supplied regarding
-this problem report.  It has been forwarded to the package maintainer(s)
-(but not to other interested parties) to accompany the original report.
-$resentccexplain
-If you wish to continue to submit further information on this problem,
-please send it to $ref-$baddressroot\@$gEmailDomain, as before.
-
-Please do not reply to the address at the top of this message,
-unless you wish to report a problem with the $gBug-tracking system.
-$brokenness
-$gMaintainer
-(administrator, $gProject $gBugs database)
-END
-		   }
-	else {
-	     &sendmessage(create_mime_message(
-		       ["X-Loop"      => "$gMaintainerEmail",
-			From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
-			To            => $replyto,
-                        Subject       => "$gBug#$ref: Info received ($subject)",
-                        "Message-ID"  => "<handler.$ref.$nn.ackinfo\@$gEmailDomain>",
-                        "In-Reply-To" => $header{'message-id'},
-                        References    => "$header{'message-id'} $data->{msgid}",
-                        Precedence    => 'bulk',
-			"X-$gProject-PR-Message"  => "ack-info $ref",
-			"X-$gProject-PR-Package"  => $data->{package},
-			"X-$gProject-PR-Keywords" => $data->{keywords},
-			# Only have a X-$gProject-PR-Source when we know the source package
-			length($source_package)?("X-$gProject-PR-Source" => $source_package):(),
-			"Reply-To"                => "$ref\@$gEmailDomain",
-		       ],<<END,[]), '',undef,1);
-Thank you for the additional information you have supplied regarding
-this problem report.  It has been forwarded to the package maintainer(s)
-and to other interested parties to accompany the original report.
-$resentccexplain
-If you wish to continue to submit further information on this problem,
-please send it to $ref\@$gEmailDomain, as before.
-
-Please do not reply to the address at the top of this message,
-unless you wish to report a problem with the $gBug-tracking system.
-$brokenness
-$gMaintainer
-(administrator, $gProject $gBugs database)
-END
-
-		   }
-   }
+			"Reply-To"                => $t_h{reply_to} || "$ref\@$gEmailDomain",
+		       ],$body,[]), '',undef,1);
 }
 
 &appendlog;
@@ -1198,6 +1052,48 @@ sub sendmessage {
 		      encode_headers => 0,
 		      recipients     => $recips);
 }
+
+=head2 message_body_template
+
+     message_body_template('mail/ack',{ref=>'foo'});
+
+Creates a message body using a template
+
+=cut
+
+sub message_body_template{
+     my ($template,$extra_var) = @_;
+     $extra_var ||={};
+     my $body = fill_template($template,$extra_var);
+     return fill_in_template(template  => 'mail/message_body',
+			     variables => {%{$extra_var},
+					   body => $body,
+					  },
+			    );
+}
+
+=head2 fill_template
+
+     fill_template('mail/foo',{foo=>'bar'});
+
+Calls fill_in_template with a default set of variables and any extras
+added in.
+
+=cut
+
+sub fill_template{
+     my ($template,$extra_var) = @_;
+     $extra_var ||={};
+     my $variables = {config => \%config,
+		      defined($ref)?(ref    => $ref):(),
+		      bug_url => sub{bug_url($_[0])},
+		      %{$extra_var},
+		     };
+     return fill_in_template(template => $template,
+			     variables => $variables,
+			    );
+}
+
 
 my $maintainerschecked = 0;
 sub checkmaintainers {
