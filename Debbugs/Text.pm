@@ -155,11 +155,20 @@ sub _fill_in_template{
 	  $safe = Safe->new() or die "Unable to create safe compartment";
 	  $safe->deny_only();
 	  my @modules = ('Text::Template' => undef,
+			 # This doesn't work yet; have to figure it out
+			 #'Debbugs::Config' => [qw(:globals :config)],
 			);
 	  while (my ($module,$param) = splice (@modules,0,2)) {
 	       print STDERR "Eval $module\n" if $DEBUG;
-	       $safe->reval("use $module;");
-	       print STDERR "Error while attempting to 'use $module;' $@" if $@;
+	       my $code = '';
+	       if (not defined $param) {
+		    $code = "use $module;";
+	       }
+	       else {
+		    $code = "use $module ".(join(',',map {"q($_)"} @{$param})).';';
+	       }
+	       $safe->reval($code);
+	       print STDERR "Error while attempting to eval '$code': $@" if $@;
 	  }
 	  $safe->permit_only(':base_core',':base_io',':base_mem',':base_loop',
 			     qw(padsv padav padhv padany),
