@@ -242,7 +242,7 @@ sub _locate_text{
      }
      my $loc = $config{template_dir}.'/'.$language.'/'.$template.'.tmpl';
      if (not -e $loc) {
-	  print STDERR "Unable to locate tmeplate $loc";
+	  print STDERR "Unable to locate template $loc\n";
 	  return undef;
      }
      return $loc;
