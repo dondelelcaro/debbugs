@@ -200,12 +200,7 @@ unless (length $replyto) {
 my $subject = '(no subject)';
 if (!defined($header{'subject'})) 
 {
-	$brokenness.= <<END;
-
-Your message did not contain a Subject field. They are recommended and
-useful because the title of a $gBug is determined using this field.
-Please remember to include a Subject field in your messages in future.
-END
+	$brokenness.= fill_template('mail/process_broken_subject');
 
 } else { 
     $subject= $header{'subject'}; 
@@ -225,47 +220,23 @@ if ($tryref >= 0)
         $ref= $tryref; 
     } else {
         &htmllog("Reply","sent", $replyto,"Unknown problem report number <code>$tryref</code>.");
-        my $archivenote = '';
-        if ($gRemoveAge) {
-            $archivenote = <<END;
-This may be because that $gBug report has been resolved for more than $gRemoveAge
-days, and the record of it has been archived and made read-only, or
-because you mistyped the $gBug report number.
-
-END
-        }
-        &sendmessage(<<END, '');
-From: $gMaintainerEmail ($gProject $gBug Tracking System)
-To: $replyto
-Subject: Unknown problem report $gBug#$tryref ($subject)
-Message-ID: <handler.x.$nn.unknown\@$gEmailDomain>
-In-Reply-To: $header{'message-id'}
-References: $header{'message-id'} $data->{msgid}
-Precedence: bulk
-X-$gProject-PR-Message: error
-
-You sent a message to the $gBug tracking system which gave (in the
-Subject line or encoded into the recipient at $gEmailDomain),
-the number of a nonexistent $gBug report (#$tryref).
-
-${archivenote}Your message was dated $header{'date'} and was sent to
-$baddress\@$gEmailDomain.  It had
-Message-ID $header{'message-id'}
-and Subject $subject.
-
-It has been filed (under junk) but otherwise ignored.
-
-Please consult your records to find the correct $gBug report number, or
-contact me, the system administrator, for assistance.
-
-$gMaintainer
-(administrator, $gProject $gBugs database)
-
-(NB: If you are a system administrator and have no idea what I am
-talking about this indicates a serious mail system misconfiguration
-somewhere.  Please contact me immediately.)
-
-END
+        &sendmessage(create_mime_message(
+          [From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
+	   To            => $replyto,
+	   Subject       => "Unknown problem report $gBug#$tryref ($subject)",
+	   'Message-ID'  => "<handler.x.$nn.unknown\@$gEmailDomain>",
+	   'In-Reply-To' => $header{'message-id'},
+	   References    => "$header{'message-id'} $data->{msgid}",
+	   Precedence    => 'bulk',
+	   "X-$gProject-PR-Message" => 'error',
+	  ],message_body_template('process_unknown_bug_number',
+				  {subject => $subject,
+				   date    => $date,
+				   baddress => $baddress,
+				   tryref   => $tryref,
+				   messageid => $header{'message-id'},
+				  },
+				 )),'');
         &appendlog;
         &finish;
     }
@@ -340,45 +311,23 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
     }
     if ($ref<0) {
 	&htmllog("Warning","sent",$replyto,"Message ignored.");
-        &sendmessage(<<END, '');
-From: $gMaintainerEmail ($gProject $gBug Tracking System)
-To: $replyto
-Subject: Message with no $gBug number ignored by $receivedat
-         ($subject)
-Message-ID: <header.x.$nn.warnignore\@$gEmailDomain>
-In-Reply-To: $header{'message-id'}
-References: $header{'message-id'} $data->{msgid}
-Precedence: bulk
-X-$gProject-PR-Message: error
-
-You sent a message to the $gProject $gBug tracking system old-style
-unified mark as $markaswhat address ($receivedat),
-without a recognisable $gBug number in the Subject.
-Your message has been filed under junk but otherwise ignored.
-
-If you don't know what I'm talking about then probably either:
-
-(a) you unwittingly sent a message to done\@$gEmailDomain
-because you replied to all recipients of the message a developer used
-to mark a $gBug as done and you modified the Subject.  In this case,
-please do not be alarmed.  To avoid confusion do not do it again, but
-there is no need to apologise or mail anyone asking for an explanation.
-
-(b) you are a system administrator, reading this because the $gBug 
-tracking system is responding to a misdirected bounce message.  In this
-case there is a serious mail system misconfiguration somewhere - please
-contact me immediately.
-
-Your message was dated $header{'date'} and had
-message-id $header{'message-id'}
-and subject $subject.
-
-If you need any assistance or explanation please contact me.
-
-$gMaintainer
-(administrator, $gProject $gBugs database)
-
-END
+	&sendmessage(create_mime_message(
+          [From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
+	   To            => $replyto,
+	   Subject       => "Message with no $gBug number ignored by $receivedat ($subject)",
+	   'Message-ID'  => "<handler.x.$nn.warnignore\@$gEmailDomain>",
+	   'In-Reply-To' => $header{'message-id'},
+	   References    => "$header{'message-id'} $data->{msgid}",
+	   Precedence    => 'bulk',
+	   "X-$gProject-PR-Message" => 'error',
+	  ],message_body_template('process_no_bug_number',
+				  {subject => $subject,
+				   date    => $date,
+				   markaswhat => $markaswhat,
+				   receivedat => $receivedat,
+				   messageid => $header{'message-id'},
+				  },
+				 )),'');
 	&appendlog;
 	&finish;
     }
@@ -440,23 +389,13 @@ END
               "X-$gProject-PR-Keywords" => $data->{keywords},
 	      # Only have a X-$gProject-PR-Source when we know the source package
 	      length($source_package)?("X-$gProject-PR-Source" => $source_package):(),
-             ],<<END ,[join("\n",@msg)]),'',[$replyto,@generalbcc,@noticecc],1);
-Your message dated $header{'date'}
-with message-id $header{'message-id'}
-has caused the $gProject $gBug report #$ref,
-regarding $data->{subject}
-to be marked as having been forwarded to the upstream software
-author(s) $data->{forwarded}.
-
-(NB: If you are a system administrator and have no idea what I am
-talking about this indicates a serious mail system misconfiguration
-somewhere.  Please contact me immediately.)
-
-$gMaintainer
-(administrator, $gProject $gBugs database)
-
-END
-
+             ],message_body_template('mail/process_mark_as_forwarded',
+				     {date => $header{date},
+				      messageid => $header{'message-id'},
+				      data      => $data,
+				     },
+				    ),
+	     [join("\n",@msg)]),'',[$replyto,@generalbcc,@noticecc],1);
         } else {
 	    &htmllog("Reply","sent",$replyto,"You have taken responsibility.");
             &sendmessage(create_mime_message(
@@ -473,25 +412,15 @@ END
               "X-$gProject-PR-Keywords" => $data->{keywords},
 	      # Only have a X-$gProject-PR-Source when we know the source package
 	      length($source_package)?("X-$gProject-PR-Source" => $source_package):(),
-             ],<<END ,[$orig_report,join("\n",@msg)]),'',[$replyto,@generalbcc,@noticecc],1);
-Your message dated $header{'date'}
-with message-id $header{'message-id'}
-and subject line $subject
-has caused the attached $gBug report to be marked as done.
-
-This means that you claim that the problem has been dealt with.
-If this is not the case it is now your responsibility to reopen the
-$gBug report if necessary, and/or fix the problem forthwith.
-
-(NB: If you are a system administrator and have no idea what I am
-talking about this indicates a serious mail system misconfiguration
-somewhere.  Please contact me immediately.)
-
-$gMaintainer
-(administrator, $gProject $gBugs database)
-
-END
-            &htmllog("Notification","sent",$data->{originator}, 
+             ],message_body_template('mail/process_mark_as_done',
+				     {date => $header{date},
+				      messageid => $header{'message-id'},
+				      subject   => $header{subject},
+				      data      => $data,
+				     },
+				    ),
+	     [$orig_report,join("\n",@msg)]),'',[$replyto,@generalbcc,@noticecc],1);
+            &htmllog("Notification","sent",$data->{originator},
 		"$gBug acknowledged by developer.");
             &sendmessage(create_mime_message(
 	     ["X-Loop"      => "$gMaintainerEmail",
@@ -508,23 +437,12 @@ END
 	      length($source_package)?("X-$gProject-PR-Source" => $source_package):(),
               "Reply-To"                => "$ref\@$gEmailDomain",
               "Content-Type"            => 'text/plain; charset="utf-8"',
-             ],<<END ,[join("\n",@msg)]),'',undef,1);
-This is an automatic notification regarding your $gBug report
-which was filed against the $data->{package} package:
-
-#$ref: $data->{subject}
-
-It has been closed by $markedby.
-
-Their explanation is attached below.  If this explanation is
-unsatisfactory and you have not received a better one in a separate
-message then please contact $markedby by replying
-to this email.
-
-$gMaintainer
-(administrator, $gProject $gBugs database)
-
-END
+             ],message_body_template('mail/process_mark_as_done',
+				     {data      => $data,
+				      markedby  => $markedby,
+				     },
+				    ),
+	     [join("\n",@msg),$orig_report]),'',undef,1);
         }
 	&appendlog;
     }
@@ -534,46 +452,23 @@ END
 if ($ref<0) {
     if ($codeletter eq 'U') {
         &htmllog("Warning","sent",$replyto,"Message not forwarded.");
-        &sendmessage(<<END, '');
-From: $gMaintainerEmail ($gProject $gBug Tracking System)
-To: $replyto
-Subject: Message with no $gBug number cannot be sent to submitter !
-         ($subject)
-Message-ID: <handler.x.$nn.nonumnosub\@$gEmailDomain>
-In-Reply-To: $header{'message-id'}
-References: $header{'message-id'} $data->{msgid}
-Precedence: bulk
-X-$gProject-PR-Message: error
-
-You sent a message to the $gProject $gBug tracking system's $gBug 
-report submitter address $baddress\@$gEmailDomain, without a
-recognisable $gBug number in the Subject.  Your message has been filed
-under junk but otherwise ignored.
-
-If you don't know what I'm talking about then probably either:
-
-(a) you unwittingly sent a message to $baddress\@$gEmailDomain
-because you replied to all recipients of the message a developer sent
-to a $gBug\'s submitter and you modified the Subject.  In this case,
-please do not be alarmed.  To avoid confusion do not do it again, but
-there is no need to apologise or mail anyone asking for an
-explanation.
-
-(b) you are a system administrator, reading this because the $gBug 
-tracking system is responding to a misdirected bounce message.  In this
-case there is a serious mail system misconfiguration somewhere - please
-contact me immediately.
-
-Your message was dated $header{'date'} and had
-message-id $header{'message-id'}
-and subject $subject.
-
-If you need any assistance or explanation please contact me.
-
-$gMaintainer
-(administrator, $gProject $gBugs database)
-
-END
+	&sendmessage(create_mime_message(
+          [From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
+	   To            => $replyto,
+	   Subject       => "Message with no $gBug number cannot be sent to submitter! ($subject)",
+	   'Message-ID'  => "<handler.x.$nn.nonumnosub\@$gEmailDomain>",
+	   'In-Reply-To' => $header{'message-id'},
+	   References    => "$header{'message-id'} $data->{msgid}",
+	   Precedence    => 'bulk',
+	   "X-$gProject-PR-Message" => 'error',
+	  ],message_body_template('process_no_bug_number',
+				  {subject => $subject,
+				   date    => $date,
+				   markaswhat => 'submitter',
+				   receivedat => "$baddress\@$gEmailDomain",
+				   messageid => $header{'message-id'},
+				  },
+				 )),'');
 	&appendlog;
 	&finish;
     }
@@ -599,29 +494,14 @@ END
                         References    => "$header{'message-id'} $data->{msgid}",
                         Precedence    => 'bulk',
                         "X-$gProject-PR-Message" => 'error'
-		       ],<<END,[join("\n", @msg)]), '',undef,1);
-
-Your message didn't have a Package: line at the start (in the
-pseudo-header following the real mail header), or didn't have a
-pseudo-header at all.  Your message has been filed under junk but
-otherwise ignored.
-
-This makes it much harder for us to categorise and deal with your
-problem report. Please _resubmit_ your report to $baddress\@$gEmailDomain
-and tell us which package the report is on. For help, check out
-http://$gWebDomain/Reporting$gHTMLSuffix.
-
-Your message was dated $header{'date'} and had
-message-id $header{'message-id'}
-and subject $subject.
-The complete text of it is attached to this message.
-
-If you need any assistance or explanation please contact me.
-
-$gMaintainer
-(administrator, $gProject $gBugs database)
-
-END
+		       ],
+	   message_body_template('mail/process_mark_as_done',
+				 {date => $header{date},
+				  subject => $subject,
+				  messageid => $header{'message-id'},
+				  baddress => $baddress,
+				 },
+				),[join("\n", @msg)]), '',undef,1);
 	&appendlog;
 	&finish;
     }
@@ -1065,11 +945,11 @@ sub message_body_template{
      my ($template,$extra_var) = @_;
      $extra_var ||={};
      my $body = fill_template($template,$extra_var);
-     return fill_in_template(template  => 'mail/message_body',
-			     variables => {%{$extra_var},
-					   body => $body,
-					  },
-			    );
+     return fill_template('mail/message_body',
+			  {%{$extra_var},
+			   body => $body,
+			  },
+			 );
 }
 
 =head2 fill_template
@@ -1086,7 +966,8 @@ sub fill_template{
      $extra_var ||={};
      my $variables = {config => \%config,
 		      defined($ref)?(ref    => $ref):(),
-		      bug_url => sub{bug_url($_[0])},
+		      defined($data)?(data  => $data):(),
+		      bugurl => sub{"bug_url for $_[0] ".bug_url($_[0])},
 		      %{$extra_var},
 		     };
      return fill_in_template(template => $template,

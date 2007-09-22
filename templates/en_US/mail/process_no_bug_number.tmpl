@@ -1,0 +1,22 @@
+You sent a message to the {$config{project}} {$config{bug}} tracking system old-style
+{$markaswhat} address ({$receivedat}),
+without a recognisable $gBug number in the Subject.
+Your message has been filed under junk but otherwise ignored.
+
+If you don't know what I'm talking about then probably either:
+
+You unwittingly sent a message to {$receivedat}
+because you replied to all recipients of the message a developer used
+to mark a {$config{bug}} as {$markaswhat} and you modified the Subject.  In this case,
+please do not be alarmed.  To avoid confusion do not do it again, but
+there is no need to apologise or mail anyone asking for an explanation.
+
+-or-
+
+{include('mail/serious_mail_misconfiguration')}
+
+Your message was dated {$date} and had
+message-id {$messageid}
+and subject {$subject}.
+
+If you need any assistance or explanation please contact {$config{maintainer_email}}.

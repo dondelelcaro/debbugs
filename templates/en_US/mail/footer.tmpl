@@ -5,8 +5,7 @@ for my $bug ($ref,@refs) {
     next unless defined $bug;
     next if exists $ref_handled{$bug};
     $ref_handled{$bug} = 1;
-    $OUT .= bug_url($bug),qq(\n);
+    $OUT .= bugurl($bug).qq(\n);
 }
-}
-{$config{project}} {ucfirst($config{bug})} Tracking System
+}{$config{project}} {ucfirst($config{bug})} Tracking System
 Contact {$config{maintainer_email}} with problems
