@@ -74,6 +74,7 @@ fills the template in.
 our %tt_templates;
 our %filled_templates;
 our $safe;
+our $hole;
 our $language;
 sub fill_in_template{
      my %param = validate_with(params => \@_,
@@ -90,9 +91,12 @@ sub fill_in_template{
 					  safe      => {type => OBJECT,
 							optional => 1,
 						       },
+					  hole_var  => {type => HASHREF,
+							optional => 1,
+						       },
 					 },
 			      );
-     return _fill_in_template(@param{qw(template variables language safe output)});
+     return _fill_in_template(@param{qw(template variables language safe output hole_var)});
 }
 
 
@@ -109,6 +113,7 @@ sub include {
 							  $language,
 							  $safe,
 							  undef,
+							  {},
 							  1
 							 );
      };
@@ -123,7 +128,7 @@ sub include {
 
 sub _fill_in_template{
      my %param;
-     @param{qw(template variables language safe output nosafe)} = @_;
+     @param{qw(template variables language safe output hole_var no_safe)} = @_;
      print STDERR "_fill template $param{template} language $param{language} safe $param{safe}\n"
 	  if $DEBUG;
 
@@ -149,6 +154,9 @@ sub _fill_in_template{
 
      if (defined $param{safe}) {
 	  $safe = $param{safe};
+	  if (not defined $hole) {
+	       $hole = Safe::Hole->new();
+	  }
      }
      else {
 	  print STDERR "Created new safe\n" if $DEBUG;
@@ -192,6 +200,9 @@ sub _fill_in_template{
 		    no strict 'refs';
 		    ${"${root}::$key"} = $param{variables}{$key};
 	       }
+	  }
+	  for my $key (keys %{$param{hole_var}||{}}) {
+	       $hole->wrap($param{hole_var}{$key},$safe,$key);
 	  }
      }
      #$safe->deny_only();
