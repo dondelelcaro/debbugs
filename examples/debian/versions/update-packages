@@ -1,6 +1,7 @@
 #!/bin/sh
 
-/home/debbugs/get-packages ftp; 
-/home/debbugs/get-packages nonus; 
-/home/debbugs/get-packages security; 
-/org/bugs.debian.org/versions/bin/update-mldbm >/dev/null
+/home/debbugs/get-packages ftp
+/home/debbugs/get-packages security
+# non-US is dead since 2005 # /home/debbugs/get-packages nonus; 
+
+/org/bugs.debian.org/versions/bin/update-mldbm
