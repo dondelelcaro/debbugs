@@ -445,7 +445,7 @@ sub output_package_info{
 	 }
 	 if (defined $gSubscriptionDomain) {
 	      my $ptslink = $package ? $srcforpkg : $src;
-	      push @references, "to the <a href=\"http://$gSubscriptionDomain/$ptslink\">Package Tracking System</a>";
+	      push @references, q(to the <a href="http://).html_escape("$gSubscriptionDomain/$ptslink").q(">Package Tracking System</a>);
 	 }
 	 # Only output this if the source listing is non-trivial.
 	 if ($srcorbin eq 'binary' and $srcforpkg) {
