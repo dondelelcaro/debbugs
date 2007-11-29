@@ -616,11 +616,17 @@ sub bug_archiveable{
      my $status = $param{status};
      if (not exists $param{status} or not defined $status) {
 	  $status = read_bug(bug=>$param{bug});
-	  return undef if not defined $status;
+	  if (not defined $status) {
+	       print STDERR "Cannot archive $param{bug} because it does not exist\n" if $DEBUG;
+	       return undef;
+	  }
      }
      # Bugs can be archived if they are
      # 1. Closed
-     return $cannot_archive if not defined $status->{done} or not length $status->{done};
+     if (not defined $status->{done} or not length $status->{done}) {
+	  print STDERR "Cannot archive $param{bug} because it is not done\n";
+	  return $cannot_archive
+     }
      # If we just are checking if the bug can be archived, we'll not even bother
      # checking the versioning information if the bug has been -done for less than 28 days.
      my $log_file = getbugcomponent($param{bug},'log');
@@ -728,6 +734,7 @@ sub bug_archiveable{
      # 6. at least 28 days have passed since the last action has occured or the bug was closed
      my $age = ceil($max_log_age);
      if ($age > 0 or $min_archive_days > 0) {
+	  print STDERR "Cannot archive $param{bug} because not enough days have passed\n" if $DEBUG;
 	  return $param{days_until}?max($age,$min_archive_days):0;
      }
      else {
