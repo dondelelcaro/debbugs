@@ -64,6 +64,7 @@ BEGIN {
 				 qw(%gDistributionAliases),
 				 qw(@gPostProcessall @gRemovalDefaultDistributionTags @gRemovalDistributionTags @gRemovalArchitectures),
 				 qw(@gRemovalStrongSeverityDefaultDistributionTags),
+				 qw(@gDefaultArchitectures),
 				 qw($gTemplateDir),
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
@@ -394,7 +395,7 @@ Default: i386 amd64 arm ppc sparc alpha
 =cut
 
 set_default(\%config,'default_architectures',
-	    [qw(i386 amd64 arm ppc sparc alpha)]
+	    [qw(i386 amd64 arm powerpc sparc alpha)]
 	   );
 
 =item removal_distribution_tags
