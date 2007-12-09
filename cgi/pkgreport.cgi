@@ -304,15 +304,27 @@ while (my ($key,$value) = splice @search_key_order, 0, 2) {
      for my $entry (make_list($param{$key})) {
 	  my $extra = '';
 	  if (exists $param{dist} and ($key eq 'package' or $key eq 'src')) {
-	       my @versions = get_versions(package => $entry,
+	       my %versions = get_versions(package => $entry,
 					   (exists $param{dist}?(dist => $param{dist}):()),
-					   (exists $param{arch}?(arch => $param{arch}):()),
+					   (exists $param{arch}?(arch => $param{arch}):(arch => $config{default_architectures})),
 					   ($key eq 'src'?(arch => q(source)):()),
 					   no_source_arch => 1,
+					   return_archs => 1,
 					  );
-	       my $verdesc = join(', ',@versions);
-	       $verdesc = 'version'.(@versions>1?'s ':' ').$verdesc;
-	       $extra= " ($verdesc)" if @versions;
+	       my $verdesc;
+	       if (keys %versions > 1) {
+		    $verdesc = 'versions '. join(', ',
+				    map { $_ .' ['.join(', ',
+						    sort @{$versions{$_}}
+						   ).']';
+				   } keys %versions);
+	       }
+	       else {
+		    $verdesc = 'version '.join(', ',
+					       keys %versions
+					      );
+	       }
+	       $extra= " ($verdesc)" if keys %versions;
 	  }
 	  push @entries, $entry.$extra;
      }
@@ -775,7 +787,7 @@ sub pkg_htmlizebugs {
 				      (exists $param{dist}?(dist => $param{dist}):()),
 				      bugusertags => \%bugusertags,
 				      (exists $param{version}?(version => $param{version}):()),
-				      (exists $param{arch}?(arch => $param{arch}):()),
+				      (exists $param{arch}?(arch => $param{arch}):(arch => $config{default_architectures})),
 				     )};
         next unless %status;
         next if bug_filter(bug => $bug,
