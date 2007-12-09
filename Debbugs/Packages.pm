@@ -259,6 +259,9 @@ not passed. [Used for finding the versions of binary packages only.]
 Defaults to 0, which does not discard the source architecture. (This
 may change in the future, so if you care, please code accordingly.)
 
+=item return_archs -- returns a version=>[archs] hash indicating which
+architectures are at which versions.
+
 =back
 
 =cut
@@ -285,6 +288,9 @@ sub get_versions{
 					   no_source_arch => {type => BOOLEAN,
 							      default => 0,
 							     },
+					   return_archs => {type => BOOLEAN,
+							    default => 0,
+							   },
 					  },
 			       );
      my $versions;
@@ -328,14 +334,17 @@ sub get_versions{
 			      $versions{$f_ver} = max($versions{$f_ver}||0,$version->{$dist}{$arch}{$ver});
 			 }
 			 else {
-			      $versions{$f_ver} = 1;
+			      push @{$versions{$f_ver}},$arch;
 			 }
 		    }
 	       }
 	  }
      }
      if ($param{time}) {
-	  return %versions
+	  return %versions;
+     }
+     elsif ($param{return_archs}) {
+	  return %versions;
      }
      return keys %versions;
 }
