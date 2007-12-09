@@ -383,6 +383,20 @@ my %_distributions_default;
 @_distributions_default{values %{$config{distribution_aliases}}} = values %{$config{distribution_aliases}};
 set_default(\%config,'distributions',[keys %_distributions_default]);
 
+
+=item default_architectures
+
+List of default architectures to use when architecture(s) are not
+specified
+
+Default: i386 amd64 arm ppc sparc alpha
+
+=cut
+
+set_default(\%config,'default_architectures',
+	    [qw(i386 amd64 arm ppc sparc alpha)]
+	   );
+
 =item removal_distribution_tags
 
 Tags which specifiy distributions to check
@@ -428,12 +442,12 @@ there is more than one architecture applicable. If the bug is in a
 package not in any of these architectures, the architecture actually
 checked is undefined.
 
-Default: qw(i386 amd64 arm ppc sparc alpha);
+Default: value of default_architectures
 
 =cut
 
 set_default(\%config,'removal_architectures',
-	    [qw(i386 amd64 arm ppc sparc alpha)]
+	    $config{default_architectures},
 	   );
 
 
