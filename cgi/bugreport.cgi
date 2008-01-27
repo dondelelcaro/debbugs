@@ -122,7 +122,7 @@ sub display_entity ($$$$\$\@) {
 	push @dlargs, (filename=>$filename) if $filename ne '';
 	my $printname = $filename;
 	$printname = 'Message part ' . ($#$attachments + 1) if $filename eq '';
-	$$this .= '<pre class="mime">[<a href="' . bug_url(@dlargs) . qq{">$printname</a> } .
+	$$this .= '<pre class="mime">[<a href="' . html_escape(bug_url(@dlargs)) . qq{">$printname</a> } .
 		  "($type, $disposition)]</pre>\n";
 
 	if ($msg and defined($att) and $att == $#$attachments) {
@@ -186,7 +186,7 @@ sub display_entity ($$$$\$\@) {
 	      $body =~ s,((ftp|http|https)://[\S~-]+?/?)((\&gt\;)?[)]?[']?[:.\,]?(\s|$)),<a href=\"$1\">$1</a>$3,go;
 	      # Add links to bug closures
 	      $body =~ s[(closes:\s*(?:bug)?\#?\s?\d+(?:,?\s*(?:bug)?\#?\s?\d+)*)
-			][my $temp = $1; $temp =~ s{(\d+)}{qq(<a href=").bug_url($1).qq(">$1</a>)}ge; $temp;]gxie;
+			][my $temp = $1; $temp =~ s{(\d+)}{qq(<a href=").html_escape(bug_url($1)).qq(">$1</a>)}ge; $temp;]gxie;
 	      $$this .= qq(<pre class="message">$body</pre>\n);
 	 }
     }
@@ -237,17 +237,17 @@ if  ($status{severity} eq 'normal') {
 
 if (@{$status{found_versions}} or @{$status{fixed_versions}}) {
      $indexentry.= q(<div style="float:right"><a href=").
-	  version_url($status{package},
-		      $status{found_versions},
-		      $status{fixed_versions},
-		     ).
+	  html_escape(version_url($status{package},
+				  $status{found_versions},
+				  $status{fixed_versions},
+				 )).
 	  q("><img alt="version graph" src=").
-	  version_url($status{package},
-		      $status{found_versions},
-		      $status{fixed_versions},
-		      2,
-		      2,
-		     ).qq{"></a></div>};
+	       html_escape(version_url($status{package},
+				       $status{found_versions},
+				       $status{fixed_versions},
+				       2,
+				       2,
+				      )).qq{"></a></div>};
 }
 
 
@@ -263,7 +263,7 @@ foreach my $pkg (@tpacks) {
                                             : "Maintainers for $pkg are\n" },
                            $tmaint);
     $indexentry .= ";\nSource for $pkg is\n".
-            '<a href="'.pkg_url(src=>$tsrc)."\">$tsrc</a>" if ($tsrc ne "(unknown)");
+            '<a href="'.html_escape(pkg_url(src=>$tsrc))."\">$tsrc</a>" if ($tsrc ne "(unknown)");
     $indexentry .= ".\n";
 }
 
@@ -291,7 +291,7 @@ if (@merged) {
 	my $descmerged = 'Merged with ';
 	my $mseparator = '';
 	for my $m (@merged) {
-		$descmerged .= $mseparator."<a href=\"" . bug_url($m) . "\">#$m</a>";
+		$descmerged .= $mseparator."<a href=\"" . html_escape(bug_url($m)) . "\">#$m</a>";
 		$mseparator= ",\n";
 	}
 	push @descstates, $descmerged;
@@ -315,10 +315,10 @@ if (@{$status{fixed_versions}}) {
 
 if (@{$status{found_versions}} or @{$status{fixed_versions}}) {
      push @descstates, '<a href="'.
-	  version_url($status{package},
-		      $status{found_versions},
-		      $status{fixed_versions},
-		     ).qq{">Version Graph</a>};
+	  html_escape(version_url($status{package},
+				  $status{found_versions},
+				  $status{fixed_versions},
+				 )).qq{">Version Graph</a>};
 }
 
 if (length($status{done})) {
@@ -326,8 +326,8 @@ if (length($status{done})) {
 }
 
 if (length($status{forwarded})) {
-    my $forward_link = $status{forwarded};
-    $forward_link =~ s,((ftp|http|https)://[\S~-]+?/?)((\&gt\;)?[)]?[']?[:.\,]?(\s|$)),<a href=\"$1\">$1</a>$3,go;
+    my $forward_link = html_escape($status{forwarded});
+    $forward_link =~ s,((ftp|http|https)://[\S~-]+?/?)((\&gt\;)?[)]?[']?[:.\,]?(\s|$)),<a href="$1">$1</a>$3,go;
     push @descstates, "<strong>Forwarded</strong> to $forward_link";
 }
 
@@ -337,7 +337,7 @@ if (@blockedby && $status{"pending"} ne 'fixed' && ! length($status{done})) {
     for my $b (@blockedby) {
         my %s = %{get_bug_status($b)};
         next if $s{"pending"} eq 'fixed' || length $s{done};
-        push @descstates, "Fix blocked by <a href=\"" . bug_url($b) . "\">#$b</a>: ".html_escape($s{subject});
+        push @descstates, "Fix blocked by <a href=\"" . html_escape(bug_url($b)) . "\">#$b</a>: ".html_escape($s{subject});
     }
 }
 
@@ -346,7 +346,7 @@ if (@blocks && $status{"pending"} ne 'fixed' && ! length($status{done})) {
     for my $b (@blocks) {
         my %s = %{get_bug_status($b)};
         next if $s{"pending"} eq 'fixed' || length $s{done};
-        push @descstates, "Blocking fix for <a href=\"" . bug_url($b) . "\">#$b</a>: ".html_escape($s{subject});
+        push @descstates, "Blocking fix for <a href=\"" . html_escape(bug_url($b)) . "\">#$b</a>: ".html_escape($s{subject});
     }
 }
 
@@ -439,13 +439,13 @@ sub handle_record{
 		      {(defined $2?$1.bug_links($2):'').$3.
 			    join(' ',map {bug_links($_)} (split /\,?\s+/, $4))}eo;
 	  # Add links to reassigned packages
-	  $output =~ s{(Bug reassigned from package \`)([^']+)((?:'|\&\#39;) to \`)([^']+)((?:'|\&\#39;))}
-	  {$1.q(<a href=").pkg_url(pkg=>$2).qq(">$2</a>).$3.q(<a href=").pkg_url(pkg=>$4).qq(">$4</a>).$5}eo;
+	  $output =~ s{(Bug reassigned from package \`)([^']+?)((?:'|\&\#39;) to \`)([^']+?)((?:'|\&\#39;))}
+	  {$1.q(<a href=").html_escape(pkg_url(pkg=>$2)).qq(">$2</a>).$3.q(<a href=").html_escape(pkg_url(pkg=>$4)).qq(">$4</a>).$5}eo;
 	  if (defined $time) {
 	       $output .= ' ('.strftime('%a, %d %b %Y %T GMT',gmtime($time)).') ';
 	  }
-	  $output .= '<a href="' . bug_url($ref, msg => ($msg_number+1)) . '">Full text</a> and <a href="' .
-	       bug_url($ref, msg => ($msg_number+1), mbox => 'yes') . '">rfc822 format</a> available.';
+	  $output .= '<a href="' . html_escape(bug_url($ref, msg => ($msg_number+1))) . '">Full text</a> and <a href="' .
+	       html_escape(bug_url($ref, msg => ($msg_number+1)), mbox => 'yes') . '">rfc822 format</a> available.';
 
 	  $output = qq(<div class="$class"><hr>\n<a name="$msg_number"></a>\n) . $output . "</div>\n";
      }
@@ -458,7 +458,7 @@ sub handle_record{
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
 	  $output .= qq(<hr><p class="msgreceived"><a name="$msg_number"></a>\n);
-	  $output .= 'View this message in <a href="' . bug_url($ref, msg=>$msg_number, mbox=>'yes') . '">rfc822 format</a></p>';
+	  $output .= 'View this message in <a href="' . html_scape(bug_url($ref, msg=>$msg_number, mbox=>'yes')) . '">rfc822 format</a></p>';
 	  $output .= handle_email_message($record->{text},
 				    ref        => $bug_number,
 				    msg_number => $msg_number,
@@ -479,8 +479,8 @@ sub handle_record{
 	  my ($received,$hostname) = $record->{text} =~ m/Received: \(at (\S+)\) by (\S+)\;/;
 	  $output .= qq|<hr><p class="msgreceived"><a name="$msg_number"></a><a name="msg$msg_number"></a><a href="#$msg_number">Message</a> received at |.
 	       html_escape("$received\@$hostname") .
-		    q| (<a href="| . bug_url($ref, msg=>$msg_number) . '">full text</a>'.
-			 q|, <a href="| . bug_url($ref, msg=>$msg_number,mbox=>'yes') .'">mbox</a>)'.":</p>\n";
+		    q| (<a href="| . html_escape(bug_url($ref, msg=>$msg_number)) . '">full text</a>'.
+			 q|, <a href="| . html_escape(bug_url($ref, msg=>$msg_number,mbox=>'yes')) .'">mbox</a>)'.":</p>\n";
 	  $output .= handle_email_message($record->{text},
 				    ref        => $bug_number,
 				    msg_number => $msg_number,
