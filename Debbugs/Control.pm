@@ -97,6 +97,7 @@ use Debbugs::Log qw(:misc);
 use Params::Validate qw(validate_with :types);
 use File::Path qw(mkpath);
 use IO::File;
+use IO::Scalar;
 
 use POSIX qw(strftime);
 
