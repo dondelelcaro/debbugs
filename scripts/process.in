@@ -967,11 +967,17 @@ sub fill_template{
      my $variables = {config => \%config,
 		      defined($ref)?(ref    => $ref):(),
 		      defined($data)?(data  => $data):(),
-		      bugurl => sub{"bug_url for $_[0] ".bug_url($_[0])},
 		      %{$extra_var},
 		     };
+     my $hole_var = {'&bugurl' =>
+		     sub{"$_[0]: ".
+			      'http://'.$config{cgi_domain}.'/'.
+				   Debbugs::CGI::bug_url($_[0]);
+		    }
+		    };
      return fill_in_template(template => $template,
 			     variables => $variables,
+			     hole_var  => $hole_var,
 			    );
 }
 
