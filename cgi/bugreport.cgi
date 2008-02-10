@@ -7,6 +7,7 @@ use MIME::Parser;
 use MIME::Decoder;
 use IO::Scalar;
 use IO::File;
+use POSIX qw(nice);
 
 use Debbugs::Config qw(:globals :text);
 
@@ -28,6 +29,8 @@ if (defined $ENV{REMOTE_ADDR} and $ENV{REMOTE_ADDR} =~ /(?:218\.175\.56\.14|64\.
     sleep(5);
     exit 0;
 }
+
+nice(5);
 
 my %param = cgi_parameters(query => $q,
 			   single => [qw(bug msg att boring terse),

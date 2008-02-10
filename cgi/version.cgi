@@ -46,7 +46,7 @@ my %cgi_var = cgi_parameters(query   => $q,
 					 info          => 0,
 					},
 			    );
-my $this = munge_url('version.cgi?',
+my $this = munge_url('/cgi-bin/version.cgi?',
 		     %cgi_var,
 		    );
 

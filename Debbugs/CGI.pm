@@ -105,6 +105,9 @@ XXX use Params::Validate
 sub bug_url{
      my $ref = shift;
      my %params;
+     if (@_ == 0 || (@_ == 1 && %URL_PARAMS == 0)) {
+         return munge_url("/$ref");
+     }
      if (@_ % 2) {
 	  shift;
 	  %params = (%URL_PARAMS,@_);
@@ -112,7 +115,7 @@ sub bug_url{
      else {
 	  %params = @_;
      }
-     return munge_url('bugreport.cgi?',%params,bug=>$ref);
+     return munge_url('/cgi-bin/bugreport.cgi?',%params,bug=>$ref);
 }
 
 sub pkg_url{
@@ -124,7 +127,7 @@ sub pkg_url{
      else {
 	  %params = @_;
      }
-     return munge_url('pkgreport.cgi?',%params);
+     return munge_url('/cgi-bin/pkgreport.cgi?',%params);
 }
 
 =head2 munge_url
@@ -159,7 +162,7 @@ Creates a link to the version cgi script
 
 sub version_url{
      my ($package,$found,$fixed,$width,$height) = @_;
-     my $url = Debbugs::URI->new('version.cgi?');
+     my $url = Debbugs::URI->new('/cgi-bin/version.cgi?');
      $url->query_form(package => $package,
 		      found   => $found,
 		      fixed   => $fixed,
