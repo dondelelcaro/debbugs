@@ -99,9 +99,13 @@ use File::Path qw(mkpath);
 use IO::File;
 use IO::Scalar;
 
+use Debbugs::Text qw(:templates);
+
+use Debbugs::Mail qw(rfc822_date);
+
 use POSIX qw(strftime);
 
-# These are a set of options which are common to all of these functions 
+# These are a set of options which are common to all of these functions
 
 my %common_options = (debug       => {type => SCALARREF,
 				      optional => 1,
@@ -471,30 +475,14 @@ sub __return_append_to_log_options{
      }
      if (not exists $param{message}) {
 	  $action = $param{action} if exists $param{action};
-	  my $date = strftime "%a, %d %h %Y %T +0000", gmtime;
-	  $param{message} = <<END;
-Received: (at fakecontrol) by fakecontrolmessage;
-To: $param{request_addr}
-From: $param{requester}
-Subject: Internal Control
-Message-Id: $action
-Date: $date
-User-Agent: Fakemail v42.6.9
-
-# A New Hope
-# A log time ago, in a galaxy far, far away
-# something happened.
-#
-# Magically this resulted in the following
-# action being taken, but this fake control
-# message doesn't tell you why it happened
-#
-# The action:
-# $action
-thanks
-# This fakemail brought to you by your local debbugs
-# administrator
-END
+	  my $date = rfc822_date();
+	  $param{message} = fill_in_template(template  => 'fake_control_message',
+					     variables => {request_addr => $param{request_addr},
+							   requester    => $param{requester},
+							   date         => $date,
+							   action       => $action
+							  },
+					    );
      }
      return (action => $action,
 	     %param);
