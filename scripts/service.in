@@ -16,6 +16,7 @@ use Debbugs::Config qw(:globals :config);
 use Debbugs::CGI qw(html_escape);
 use Debbugs::Control qw(:archive :log);
 use Debbugs::Log qw(:misc);
+use Debbugs::Text qw(:templates);
 
 use Mail::RFC822::Address;
 
@@ -152,8 +153,7 @@ my $quickabort = 0;
 
 my $fuckheads = "(" . join("|", @gExcludeFromControl) . ")";
 if (@gExcludeFromControl and $replyto =~ m/$fuckheads/) {
-	&transcript("You have been specifically excluded from using the\ncontrol interface.\n\n");
-	&transcript("Have a nice day\n\n.");
+	&transcript(fill_template('excluded_from_control'));
 	$quickabort = 1;
 }
 
@@ -1351,6 +1351,45 @@ sub sendmailmessage {
 		      recipients => \@recips,
 		     );
     $midix++;
+}
+
+sub fill_template{
+     my ($template,$extra_var) = @_;
+     $extra_var ||={};
+     my $variables = {config => \%config,
+		      defined($ref)?(ref    => $ref):(),
+		      defined($data)?(data  => $data):(),
+		      %{$extra_var},
+		     };
+     my $hole_var = {'&bugurl' =>
+		     sub{"$_[0]: ".
+			      'http://'.$config{cgi_domain}.'/'.
+				   Debbugs::CGI::bug_url($_[0]);
+		    }
+		    };
+     return fill_in_template(template => $template,
+			     variables => $variables,
+			     hole_var  => $hole_var,
+			    );
+}
+
+=head2 message_body_template
+
+     message_body_template('mail/ack',{ref=>'foo'});
+
+Creates a message body using a template
+
+=cut
+
+sub message_body_template{
+     my ($template,$extra_var) = @_;
+     $extra_var ||={};
+     my $body = fill_template($template,$extra_var);
+     return fill_template('mail/message_body',
+			  {%{$extra_var},
+			   body => $body,
+			  },
+			 );
 }
 
 sub sendhelp {

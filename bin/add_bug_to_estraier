@@ -81,6 +81,12 @@ Display this manual.
 
   test_bts --bug 7 --host donbugs.donarmstrong.com
 
+=head1 DATABASE CREATION
+
+estcmd create -si -xh3 -attr status str -attr subject str \
+    -attr date num -attr submitter str -attr package str \
+    -attr severity str -attr tags str bts
+
 
 =cut
 

@@ -7,6 +7,7 @@ var_dir		:= $(DESTDIR)/var/lib/debbugs
 scripts_dir	:= $(DESTDIR)/usr/lib/debbugs
 perl_dir	:= $(DESTDIR)/usr/share/perl5/Debbugs
 doc_dir		:= $(DESTDIR)/usr/share/doc/debbugs
+templates_dir	:= $(DESTDIR)/usr/share/debbugs/templates
 man_dir		:= $(DESTDIR)/usr/share/man
 man8_dir	:= $(man_dir)/man8
 examples_dir	:= $(doc_dir)/examples
@@ -45,6 +46,7 @@ $(var_dir)/spool/db-h $(scripts_dir) $(perl_dir) $(examples_dir) $(man8_dir); \
 	  for dir in $(shell seq -w 00 99); \
 	    do test -d $$dir || $(install_exec) -d $$dir; done
 
+
 	# install the scripts
 	$(foreach script,$(scripts_in), $(install_exec) $(script) $(scripts_dir)/$(patsubst scripts/%.in,%,$(script));)
 	$(install_data) scripts/errorlib.in $(scripts_dir)/errorlib
@@ -82,5 +84,10 @@ $(var_dir)/spool/db-h $(scripts_dir) $(perl_dir) $(examples_dir) $(man8_dir); \
 
 	# install the updateseqs file
 	$(install_data) misc/updateseqs $(var_dir)/spool
+
+	# install the templates
+	$(foreach dir $(wildcard templates/*/*) $(install_exec) $(template_dir)/$(patsubst templates/%,%,$(dir)))
+	$(foreach tmpl $(wildcard templates/*/*/*.tmpl) $(install_data) $(template_dir)/$(patsubst templates/%,%,$(tmpl)))
+
 
 .PHONY: test
