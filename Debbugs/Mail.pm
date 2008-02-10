@@ -42,7 +42,7 @@ use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 
 use IPC::Open3;
-use POSIX ":sys_wait_h";
+use POSIX ":sys_wait_h strftime";
 use Time::HiRes qw(usleep);
 use Mail::Address ();
 use Debbugs::MIME qw(encode_rfc1522);
@@ -54,7 +54,7 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     @EXPORT_OK = qw(send_mail_message get_addresses encode_headers);
+     @EXPORT_OK = qw(send_mail_message get_addresses encode_headers rfc822_date);
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 
 }
@@ -191,6 +191,17 @@ sub encode_headers{
      return $header . qq(\n\n). $body;
 }
 
+=head2 rfc822_date
+
+     rfc822_date
+
+Return the current date in RFC822 format in the UTC timezone
+
+=cut
+
+sub rfc822_date{
+     return scalar strftime "%a, %d %h %Y %T +0000", gmtime;
+}
 
 =head1 PRIVATE FUNCTIONS
 
