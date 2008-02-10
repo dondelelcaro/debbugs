@@ -45,9 +45,11 @@ BEGIN {
      @EXPORT_OK = ();
      Exporter::export_ok_tags(qw(templates));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
+     push @ISA,qw(Safe::Hole::User);
 }
 
 use Safe;
+use Safe::Hole;
 use Text::Template;
 
 use Storable qw(dclone);
@@ -58,6 +60,39 @@ use Params::Validate qw(:types validate_with);
 use Carp;
 use IO::File;
 use Data::Dumper;
+
+our %tt_templates;
+our %filled_templates;
+our $safe;
+our $hole = Safe::Hole->new({});
+our $language;
+
+# This function is what is called when someone does include('foo/bar')
+# {include('foo/bar')}
+
+sub include {
+     my $template = shift;
+     $filled_templates{$template}++;
+     print STDERR "include template $template language $language safe $safe\n" if $DEBUG;
+     # Die if we're in a template loop
+     die "Template loop with $template" if $filled_templates{$template} > 10;
+     my $filled_tmpl = '';
+     eval {
+	  $filled_tmpl = fill_in_template(template  => $template,
+					  variables => {},
+					  language  => $language,
+					  safe      => $safe,
+					 );
+     };
+     if ($@) {
+	  print STDERR "failed to fill template $template: $@";
+     }
+     print STDERR "failed to fill template $template\n" if $filled_tmpl eq '' and $DEBUG;
+     print STDERR "template $template '$filled_tmpl'\n" if $DEBUG;
+     $filled_templates{$template}--;
+     return $filled_tmpl;
+};
+
 
 =head2 fill_in_template
 
@@ -71,11 +106,7 @@ fills the template in.
 
 =cut
 
-our %tt_templates;
-our %filled_templates;
-our $safe;
-our $hole;
-our $language;
+
 sub fill_in_template{
      my %param = validate_with(params => \@_,
 			       spec   => {template => SCALAR|HANDLE|SCALARREF,
@@ -96,41 +127,12 @@ sub fill_in_template{
 						       },
 					 },
 			      );
-     return _fill_in_template(@param{qw(template variables language safe output hole_var)});
-}
-
-
-sub include {
-     my $template = shift;
-     $filled_templates{$template}++;
-     print STDERR "include template $template language $language safe $safe\n" if $DEBUG;
-     # Die if we're in a template loop
-     die "Template loop with $template" if $filled_templates{$template} > 10;
-     my $filled_tmpl;
-     eval {
-	  $filled_tmpl = Debbugs::Text::_fill_in_template($template,
-							  {},
-							  $language,
-							  $safe,
-							  undef,
-							  {},
-							  1
-							 );
-     };
-     if ($@) {
-	  print STDERR "failed to fill template $template: $@";
+     #@param{qw(template variables language safe output hole_var no_safe)} = @_;
+     if ($DEBUG) {
+	  print STDERR "fill_in_template ";
+	  print STDERR join(" ",map {exists $param{$_}?"$_:$param{$_}":()} keys %param);
+	  print STDERR "\n";
      }
-     print STDERR "failed to fill template $template\n" if $filled_tmpl eq '' and $DEBUG;
-     print STDERR "template $template '$filled_tmpl'\n" if $DEBUG;
-     $filled_templates{$template}--;
-     return $filled_tmpl;
-};
-
-sub _fill_in_template{
-     my %param;
-     @param{qw(template variables language safe output hole_var no_safe)} = @_;
-     print STDERR "_fill template $param{template} language $param{language} safe $param{safe}\n"
-	  if $DEBUG;
 
      # Get the text
      my $tt_type = '';
@@ -154,39 +156,18 @@ sub _fill_in_template{
 
      if (defined $param{safe}) {
 	  $safe = $param{safe};
-	  if (not defined $hole) {
-	       $hole = Safe::Hole->new();
-	  }
      }
      else {
 	  print STDERR "Created new safe\n" if $DEBUG;
 	  $safe = Safe->new() or die "Unable to create safe compartment";
-	  $safe->deny_only();
-	  my @modules = ('Text::Template' => undef,
-			 # This doesn't work yet; have to figure it out
-			 #'Debbugs::Config' => [qw(:globals :config)],
-			);
-	  while (my ($module,$param) = splice (@modules,0,2)) {
-	       print STDERR "Eval $module\n" if $DEBUG;
-	       my $code = '';
-	       if (not defined $param) {
-		    $code = "use $module;";
-	       }
-	       else {
-		    $code = "use $module ".(join(',',map {"q($_)"} @{$param})).';';
-	       }
-	       $safe->reval($code);
-	       print STDERR "Error while attempting to eval '$code': $@" if $@;
-	  }
-	  $safe->permit_only(':base_core',':base_io',':base_mem',':base_loop',
+	  $safe->permit_only(':base_core',':base_loop',':base_mem',
 			     qw(padsv padav padhv padany),
 			     qw(rv2gv refgen srefgen ref),
+			     qw(caller require entereval),
 			    );
-	  $safe->share('$language','%tt_templates','$safe','$variables','%filled_templates');
 	  $safe->share('*STDERR');
-	  $safe->share('&_fill_in_template');
 	  $safe->share('%config');
-	  $safe->share('&include');
+	  $hole->wrap(\&Debbugs::Text::include,$safe,'&include');
 	  my $root = $safe->root();
 	  # load variables into the safe
 	  for my $key (keys %{$param{variables}||{}}) {
@@ -201,12 +182,11 @@ sub _fill_in_template{
 		    ${"${root}::$key"} = $param{variables}{$key};
 	       }
 	  }
-	  for my $key (keys %{$param{hole_var}||{}}) {
+	  for my $key (keys %{exists $param{hole_var}?$param{hole_var}:{}}) {
+	       print STDERR "Wraping $key as $param{hole_var}{$key}\n" if $DEBUG;
 	       $hole->wrap($param{hole_var}{$key},$safe,$key);
 	  }
      }
-     #$safe->deny_only();
-     # perldoc Opcode; for details
      $language = $param{language};
      my $tt;
      if ($tt_type eq 'FILE' and
@@ -231,9 +211,9 @@ sub _fill_in_template{
 	  die "Unable to create Text::Template for $tt_type:$tt_source";
      }
      my $ret = $tt->fill_in(#(defined $param{nosafe} and $param{nosafe})?():(HASH=>$param{variables}),
-			    (defined $param{nosafe} and $param{nosafe})?():(SAFE=>$safe),
-			    #SAFE => $safe,
-			    (defined $param{nosafe} and $param{nosafe})?(PACKAGE => 'main'):(),
+			    #(defined $param{nosafe} and $param{nosafe})?():(SAFE=>$safe),
+			    SAFE => $safe,
+			    #(defined $param{nosafe} and $param{nosafe})?(PACKAGE => 'main'):(),
 			    defined $param{output}?(OUTPUT=>$param{output}):(),
 			   );
      if (not defined $ret) {
@@ -246,8 +226,7 @@ sub _fill_in_template{
 	  my $temp = $param{nosafe}?'main':$safe->{Root};
 	  print STDERR "Variables for $param{template}\n";
 	  print STDERR "Safe $temp\n";
-	  print STDERR map {"$_:${$_}\n"} keys %{"${temp}::"};
-	  print STDERR ${"${temp}::search_value"},qq(\n);
+	  print STDERR map {"$_: ".*{$_}."\n"} keys %{"${temp}::"};
      }
 
      return $ret;
