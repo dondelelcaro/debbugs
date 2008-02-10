@@ -65,6 +65,7 @@ BEGIN {
 				 qw(@gPostProcessall @gRemovalDefaultDistributionTags @gRemovalDistributionTags @gRemovalArchitectures),
 				 qw(@gRemovalStrongSeverityDefaultDistributionTags),
 				 qw(@gDefaultArchitectures),
+				 qw($gTemplateDir),
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
@@ -141,7 +142,7 @@ concatenation of L</web_host> and L</web_host_bug_dir>
 
 =cut
 
-set_default(\%config,'web_domain',$config{web_host}.'/'.$config{web_host_bug_dir});
+set_default(\%config,'web_domain',$config{web_host}.($config{web_host}=~m{/$}?'':'/').$config{web_host_bug_dir});
 
 =item html_suffix $gHTMLSuffix
 
@@ -247,7 +248,7 @@ Default: "$config{web_domain}/~owner"
 
 set_default(\%config,'maintainer_webpage',"$config{web_domain}/~owner");
 
-=item maintainer_email
+=item maintainer_email $gMaintainerEmail
 
 Email address of the maintainer of this Debbugs install
 
@@ -442,12 +443,12 @@ there is more than one architecture applicable. If the bug is in a
 package not in any of these architectures, the architecture actually
 checked is undefined.
 
-Default: qw(i386 amd64 arm ppc sparc alpha);
+Default: value of default_architectures
 
 =cut
 
 set_default(\%config,'removal_architectures',
-	    [qw(i386 amd64 arm ppc sparc alpha)]
+	    $config{default_architectures},
 	   );
 
 
@@ -536,6 +537,16 @@ set_default(\%config,'incoming_dir','incoming');
 set_default(\%config,'web_dir','/var/lib/debbugs/www');
 set_default(\%config,'doc_dir','/var/lib/debbugs/www/txt');
 set_default(\%config,'lib_path','/usr/lib/debbugs');
+
+
+=item template_dir
+
+directory of templates; defaults to /usr/share/debbugs/templates.
+
+=cut
+
+set_default(\%config,'template_dir','/usr/share/debbugs/templates');
+
 
 set_default(\%config,'maintainer_file',$config{config_dir}.'/Maintainers');
 set_default(\%config,'maintainer_file_override',$config{config_dir}.'/Maintainers.override');

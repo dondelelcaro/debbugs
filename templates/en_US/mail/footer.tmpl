@@ -1,0 +1,11 @@
+-- 
+{
+my %ref_handled;
+for my $bug ($ref,@refs) {
+    next unless defined $bug;
+    next if exists $ref_handled{$bug};
+    $ref_handled{$bug} = 1;
+    $OUT .= bugurl($bug).qq(\n);
+}
+}{$config{project}} {ucfirst($config{bug})} Tracking System
+Contact {$config{maintainer_email}} with problems
