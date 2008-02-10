@@ -142,7 +142,7 @@ concatenation of L</web_host> and L</web_host_bug_dir>
 
 =cut
 
-set_default(\%config,'web_domain',$config{web_host}.'/'.$config{web_host_bug_dir});
+set_default(\%config,'web_domain',$config{web_host}.($config{web_host}=~m{/$}?'':'/').$config{web_host_bug_dir});
 
 =item html_suffix $gHTMLSuffix
 
