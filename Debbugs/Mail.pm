@@ -42,7 +42,7 @@ use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 
 use IPC::Open3;
-use POSIX ":sys_wait_h strftime";
+use POSIX qw(:sys_wait_h strftime);
 use Time::HiRes qw(usleep);
 use Mail::Address ();
 use Debbugs::MIME qw(encode_rfc1522);
