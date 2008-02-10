@@ -571,7 +571,6 @@ print <<EOF;
 
 <tr><td>&nbsp;</td></tr>
 
-</td></tr>
 <tr><td>Merged bugs should be</td><td>
 <select name=repeatmerged>
 <option value=yes$sel_rmy>displayed separately</option>
@@ -825,7 +824,7 @@ sub pkg_htmlizebugs {
     if ($ordering eq "raw") {
         $result .= "<UL class=\"bugs\">\n" . join("", map( { $_->[ 2 ] } @status ) ) . "</UL>\n";
     } else {
-        $header .= "<ul>\n<div class=\"msgreceived\">\n";
+        $header .= "<div class=\"msgreceived\">\n<ul>\n";
 	my @keys_in_order = ("");
 	for my $o (@order) {
 	    push @keys_in_order, "X";
@@ -866,7 +865,7 @@ sub pkg_htmlizebugs {
         } 
         $header .= "</ul></div>\n";
 
-        $footer .= "<ul>\n<div class=\"msgreceived\">";
+        $footer .= "<div class=\"msgreceived\">\n<ul>\n";
         for my $i (0..$#prior) {
             my $local_result = '';
             foreach my $key ( @{$order[$i]} ) {
@@ -878,7 +877,7 @@ sub pkg_htmlizebugs {
                 $footer .= "<li>$names[$i]<ul>\n$local_result</ul></li>\n";
             }
         }
-        $footer .= "</div></ul>\n";
+        $footer .= "</ul>\n</div>\n";
     }
 
     $result = $header . $result if ( $common{show_list_header} );

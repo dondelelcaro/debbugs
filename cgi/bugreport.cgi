@@ -586,7 +586,15 @@ else {
 $log = join("\n",@log);
 
 
-print "Content-Type: text/html; charset=utf-8\n\n";
+print "Content-Type: text/html; charset=utf-8\n";
+
+my @stat = stat $buglog;
+if (@stat) {
+     my $mtime = strftime '%a, %d %b %Y %T GMT', gmtime($stat[9]);
+     print "Last-Modified: $mtime\n";
+}
+
+print "\n";
 
 my $title = html_escape($status{subject});
 
