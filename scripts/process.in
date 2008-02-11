@@ -786,7 +786,7 @@ if (not exists $header{'x-debbugs-no-ack'} and
 	  $t_h{pr_message} = "ack${infod} $ref";
 	  $t_h{reply_to}   = "$ref\@$gEmailDomain";
 	  $extra_vars->{refreplyto} = "$ref\@$gEmailDomain";
-	  $t_h{subject}    = length($info)?
+	  $t_h{subject}    = (defined $info and length($info))?
 	       "$gBug#$ref: Info received ($subject)" :
 	       "$gBug#$ref: Acknowledgement ($subject)";
      }
