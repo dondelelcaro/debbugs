@@ -440,6 +440,8 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
              ],message_body_template('mail/process_mark_as_done',
 				     {data      => $data,
 				      markedby  => $markedby,
+				      messageid => $header{'message-id'},
+				      subject   => $header{subject},
 				     },
 				    ),
 	     [join("\n",@msg),$orig_report]),'',undef,1);

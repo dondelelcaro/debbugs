@@ -433,12 +433,19 @@ sub get_bugs_by_idx{
 	       or die "Unable to open $index: $!";
 	  my %bug_matching = ();
 	  for my $search (make_list($param{$key})) {
-	       next unless defined $idx{$search};
-	       for my $bug (keys %{$idx{$search}}) {
+	       for my $bug (keys %{$idx{$search}||{}}) {
 		    next if $bug_matching{$bug};
 		    # increment the number of searches that this bug matched
 		    $bugs{$bug}++;
 		    $bug_matching{$bug}=1;
+	       }
+	       if ($search ne lc($search)) {
+		    for my $bug (keys %{$idx{lc($search)}||{}}) {
+			 next if $bug_matching{$bug};
+			 # increment the number of searches that this bug matched
+			 $bugs{$bug}++;
+			 $bug_matching{$bug}=1;
+		    }
 	       }
 	  }
 	  if ($key eq 'tag' and exists $param{usertags}) {
