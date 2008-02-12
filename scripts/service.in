@@ -157,7 +157,7 @@ my $quickabort = 0;
 
 my $fuckheads = "(" . join("|", @gExcludeFromControl) . ")";
 if (@gExcludeFromControl and $replyto =~ m/$fuckheads/) {
-	&transcript(fill_template('excluded_from_control'));
+	&transcript(fill_template('mail/excluded_from_control'));
 	$quickabort = 1;
 }
 
