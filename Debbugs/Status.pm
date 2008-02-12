@@ -624,7 +624,7 @@ sub bug_archiveable{
      # Bugs can be archived if they are
      # 1. Closed
      if (not defined $status->{done} or not length $status->{done}) {
-	  print STDERR "Cannot archive $param{bug} because it is not done\n";
+	  print STDERR "Cannot archive $param{bug} because it is not done\n" if $DEBUG;
 	  return $cannot_archive
      }
      # If we just are checking if the bug can be archived, we'll not even bother
