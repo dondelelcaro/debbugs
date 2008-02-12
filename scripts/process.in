@@ -15,7 +15,7 @@ use Debbugs::Mail qw(send_mail_message encode_headers);
 use Debbugs::Packages qw(getpkgsrc);
 use Debbugs::User qw(read_usertags write_usertags);
 use Debbugs::Common qw(:lock get_hashname);
-use Debbugs::Status qw(writebug isstrongseverity lockreadbugmerge);
+use Debbugs::Status qw(writebug isstrongseverity lockreadbugmerge lockreadbug);
 
 use Debbugs::CGI qw(html_escape bug_url);
 
@@ -493,7 +493,7 @@ if ($ref<0) {
                         Subject       => "Message with no Package: tag cannot be processed! ($subject)",
                         "Message-ID"  => "<handler.x.$nn.nonumnosub\@$gEmailDomain>",
                         "In-Reply-To" => $header{'message-id'},
-                        References    => "$header{'message-id'} $data->{msgid}",
+                        References    => join(' ',grep {defined $_} $header{'message-id'},$data->{msgid}),
                         Precedence    => 'bulk',
                         "X-$gProject-PR-Message" => 'error'
 		       ],
@@ -724,8 +724,9 @@ if (length($resentccval)) {
 if (not exists $header{'x-debbugs-no-ack'} and
     ($newref or
      ($codeletter ne 'U' and
-      not defined $header{precedence} or
-      $header{'precedence'} !~ /\b(?:bulk|junk|list)\b/
+      (not defined $header{precedence} or
+       $header{'precedence'} !~ /\b(?:bulk|junk|list)\b/
+      )
      )
     )
    ){
