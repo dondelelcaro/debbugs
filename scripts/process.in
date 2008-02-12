@@ -569,7 +569,7 @@ if ($ref<0) {
 	      for my $tag (split /[,\s]+/, $pheader{usertags}) {
 		   if ($tag =~ /^[a-zA-Z0-9.+\@-]+/) {
 			my %bugs_with_tag; 
-			@bugs_with_tag{@{$user_tags{$tag}||[]]}} = (1) x @{$user_tags{$tag}||[]};
+			@bugs_with_tag{@{$user_tags{$tag}||[]}} = (1) x @{$user_tags{$tag}||[]};
 			$bugs_with_tag{$ref} = 1;
 			$user_tags{$tag} = [keys %bugs_with_tag];
 		   }

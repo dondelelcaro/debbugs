@@ -243,6 +243,8 @@ MIME::Words::encode_mimeword on distinct words as appropriate.
 sub encode_rfc1522 ($) {
      my ($rawstr) = @_;
 
+     # handle being passed undef properly
+     return undef if not defined $rawstr;
      # We process words in reverse so we can preserve spacing between
      # encoded words. This regex splits on word|nonword boundaries and
      # nonword|nonword boundaries.
