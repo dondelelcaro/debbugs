@@ -226,7 +226,7 @@ if ($tryref >= 0)
 	   Subject       => "Unknown problem report $gBug#$tryref ($subject)",
 	   'Message-ID'  => "<handler.x.$nn.unknown\@$gEmailDomain>",
 	   'In-Reply-To' => $header{'message-id'},
-	   References    => "$header{'message-id'} $data->{msgid}",
+	   References    => join(' ',grep {defined $_} $header{'message-id'},$data->{msgid}),
 	   Precedence    => 'bulk',
 	   "X-$gProject-PR-Message" => 'error',
 	  ],message_body_template('process_unknown_bug_number',
@@ -274,7 +274,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
     my $generalcc;
     my $set_done;
     if ($codeletter eq 'F') { # Forwarded
-        (&appendlog,&finish) if length($data->{forwarded});
+        (&appendlog,&finish) if defined $data->{forwarded} and length($data->{forwarded});
         $receivedat= "forwarded\@$gEmailDomain";
         $markaswhat= 'forwarded';
         $set_forwarded= $header{'to'};
@@ -317,10 +317,10 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	   Subject       => "Message with no $gBug number ignored by $receivedat ($subject)",
 	   'Message-ID'  => "<handler.x.$nn.warnignore\@$gEmailDomain>",
 	   'In-Reply-To' => $header{'message-id'},
-	   References    => "$header{'message-id'} $data->{msgid}",
+	   References    => join(' ',grep {defined $_} $header{'message-id'},$data->{msgid}),
 	   Precedence    => 'bulk',
 	   "X-$gProject-PR-Message" => 'error',
-	  ],message_body_template('process_no_bug_number',
+	  ],message_body_template('mail/process_no_bug_number',
 				  {subject => $subject,
 				   date    => $header{date},
 				   markaswhat => $markaswhat,
@@ -382,7 +382,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
               Subject       => "$gBug#$ref: marked as forwarded ($data->{subject})",
               "Message-ID"  => "<header.$ref.$nn.ackfwdd\@$gEmailDomain>",
               "In-Reply-To" => $header{'message-id'},
-              References    => "$header{'message-id'} $data->{msgid}",
+              References    => join(' ',grep {defined $_} $header{'message-id'},$data->{msgid}),
               Precedence    => 'bulk',
               "X-$gProject-PR-Message"  => "forwarded $ref",
               "X-$gProject-PR-Package"  => $data->{package},
@@ -405,7 +405,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
               Subject       => "$gBug#$ref: marked as done ($data->{subject})",
               "Message-ID"  => "<handler.$ref.$nn.ackdone\@$gEmailDomain>",
               "In-Reply-To" => $header{'message-id'},
-              References    => "$header{'message-id'} $data->{msgid}",
+              References    => join(' ',grep {defined $_} $header{'message-id'},$data->{msgid}),
               Precedence    => 'bulk',
               "X-$gProject-PR-Message"  => "closed $ref",
               "X-$gProject-PR-Package"  => $data->{package},
@@ -429,7 +429,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
               Subject       => "$gBug#$ref closed by $markedby ($header{'subject'})",
               "Message-ID"  => "<handler.$ref.$nn.notifdone\@$gEmailDomain>",
               "In-Reply-To" => "$data->{msgid}",
-              References    => "$header{'message-id'} $data->{msgid}",
+              References    => join(' ',grep {defined $_} $header{'message-id'},$data->{msgid}),
               "X-$gProject-PR-Message"  => "they-closed $ref",
               "X-$gProject-PR-Package"  => "$data->{package}",
               "X-$gProject-PR-Keywords" => "$data->{keywords}",
@@ -460,10 +460,10 @@ if ($ref<0) {
 	   Subject       => "Message with no $gBug number cannot be sent to submitter! ($subject)",
 	   'Message-ID'  => "<handler.x.$nn.nonumnosub\@$gEmailDomain>",
 	   'In-Reply-To' => $header{'message-id'},
-	   References    => "$header{'message-id'} $data->{msgid}",
+	   References    => join(' ',grep {defined $_} $header{'message-id'},$data->{msgid}),
 	   Precedence    => 'bulk',
 	   "X-$gProject-PR-Message" => 'error',
-	  ],message_body_template('process_no_bug_number',
+	  ],message_body_template('mail/process_no_bug_number',
 				  {subject => $subject,
 				   date    => $header{date},
 				   markaswhat => 'submitter',
@@ -497,7 +497,7 @@ if ($ref<0) {
                         Precedence    => 'bulk',
                         "X-$gProject-PR-Message" => 'error'
 		       ],
-	   message_body_template('mail/process_mark_as_done',
+	   message_body_template('mail/process_no_package',
 				 {date => $header{date},
 				  subject => $subject,
 				  messageid => $header{'message-id'},
@@ -569,7 +569,7 @@ if ($ref<0) {
 	      for my $tag (split /[,\s]+/, $pheader{usertags}) {
 		   if ($tag =~ /^[a-zA-Z0-9.+\@-]+/) {
 			my %bugs_with_tag; 
-			@bugs_with_tag{@{$user_tags{$tag}}} = (1) x @{$user_tags{$tag}};
+			@bugs_with_tag{@{$user_tags{$tag}||[]]}} = (1) x @{$user_tags{$tag}||[]};
 			$bugs_with_tag{$ref} = 1;
 			$user_tags{$tag} = [keys %bugs_with_tag];
 		   }
