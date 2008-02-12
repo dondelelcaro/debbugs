@@ -476,7 +476,7 @@ sub __return_append_to_log_options{
      if (not exists $param{message}) {
 	  $action = $param{action} if exists $param{action};
 	  my $date = rfc822_date();
-	  $param{message} = fill_in_template(template  => 'fake_control_message',
+	  $param{message} = fill_in_template(template  => 'mail/fake_control_message',
 					     variables => {request_addr => $param{request_addr},
 							   requester    => $param{requester},
 							   date         => $date,
