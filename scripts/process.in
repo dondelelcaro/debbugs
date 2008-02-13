@@ -262,8 +262,9 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 {
     if ($replyto =~ m/$gBounceFroms/o ||
         $header{'from'} =~ m/$gBounceFroms/o)
-    { 
-        &quit("bounce detected !  Mwaap! Mwaap!"); 
+    {
+	 print STDERR "bounce detected !  Mwaap! Mwaap!";
+	 exit 1;
     }
     my $markedby= $header{'from'} eq $replyto ? $replyto :
                "$header{'from'} (reply to $replyto)";
