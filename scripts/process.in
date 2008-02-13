@@ -438,7 +438,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	      (defined($source_package) and length($source_package))?("X-$gProject-PR-Source" => $source_package):(),
               "Reply-To"                => "$ref\@$gEmailDomain",
               "Content-Type"            => 'text/plain; charset="utf-8"',
-             ],message_body_template('mail/process_mark_as_done',
+             ],message_body_template('mail/process_your_bug_done',
 				     {data      => $data,
 				      markedby  => $markedby,
 				      messageid => $header{'message-id'},
