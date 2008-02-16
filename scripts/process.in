@@ -530,9 +530,9 @@ if ($ref<0) {
 	$data->{severity} =~ s/^\s*(.+)\s*$/$1/;
 
 	if (!grep($_ eq $data->{severity}, @gSeverityList, "$gDefaultSeverity")) {
-            $brokenness.= fill_in_template('mail/invalid_severity',
-					   {severity=>$data->{severity}}
-					  );
+            $brokenness.= fill_template('mail/invalid_severity',
+					{severity=>$data->{severity}}
+				       );
             $data->{severity}= '';
         }
     }
@@ -578,9 +578,9 @@ if ($ref<0) {
 	      write_usertags(\%user_tags,$user);
 	 }
 	 else {
-	      $brokenness .= fill_in_template('mail/invalid_user',
-					      {user => $user}
-					     );
+	      $brokenness .= fill_template('mail/invalid_user',
+					   {user => $user}
+					  );
 	 }
     }
     &overwrite("db-h/$hash/$ref.report",
