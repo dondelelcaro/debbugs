@@ -210,7 +210,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Output last-modified in bugreport.cgi (closes: #459709)
     - Fix various html syntax errors in pkgreport.cgi (closes: #462322)
     - Make search case insensitive (closes: #448861)
-    - Add the ability to return source/package mapping (closes: #465332)
+    - Add the ability to return source/package mapping
+      (closes: #465332,#458822)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

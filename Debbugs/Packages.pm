@@ -122,10 +122,15 @@ sub getsrcpkgs {
 =item binarytosource
 
 Returns a reference to the source package name and version pair
-corresponding to a given binary package name, version, and architecture. If
-undef is passed as the architecture, returns a list of references to all
-possible pairs of source package names and versions for all architectures,
-with any duplicates removed.
+corresponding to a given binary package name, version, and architecture.
+
+If undef is passed as the architecture, returns a list of references
+to all possible pairs of source package names and versions for all
+architectures, with any duplicates removed.
+
+If the binary version is not passed either, returns a list of possible
+source package names for all architectures at all versions, with any
+duplicates removed.
 
 =cut
 
@@ -146,7 +151,18 @@ sub binarytosource {
     my $binary = $_binarytosource{$binname};
     return () unless defined $binary;
     my %binary = %{$binary};
-    if (exists $binary{$binver}) {
+    if (not defined $binver) {
+	 my %uniq;
+	 for my $ver (keys %binary) {
+	      for my $ar (keys %{$binary{$binver}}) {
+		   my $src = $binary{$binver}{$ar};
+		   next unless defined $src;
+		   $uniq{$src->[0]} = 1;
+	      }
+	 }
+	 return keys %uniq;
+    }
+    elsif (exists $binary{$binver}) {
 	 if (defined $binarch) {
 	      my $src = $binary{$binver}{$binarch};
 	      return () unless defined $src; # not on this arch
