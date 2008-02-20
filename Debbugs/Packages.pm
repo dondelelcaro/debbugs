@@ -154,8 +154,8 @@ sub binarytosource {
     if (not defined $binver) {
 	 my %uniq;
 	 for my $ver (keys %binary) {
-	      for my $ar (keys %{$binary{$binver}}) {
-		   my $src = $binary{$binver}{$ar};
+	      for my $ar (keys %{$binary{$ver}}) {
+		   my $src = $binary{$ver}{$ar};
 		   next unless defined $src;
 		   $uniq{$src->[0]} = 1;
 	      }
