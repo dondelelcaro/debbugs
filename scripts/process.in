@@ -290,7 +290,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	    $generalcc=''; 
         }
     } else { # Done
-        if (length($data->{done}) and
+        if (defined $data->{done} and length($data->{done}) and
                 not defined $pheader{'source-version'} and
                 not defined $pheader{'version'}) {
             &appendlog;
