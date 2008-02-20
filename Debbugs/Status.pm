@@ -773,6 +773,11 @@ currently not correctly implemented.
 dist, arch, and version. [The entries in this array must be in the
 "source/version" format.] Eventually this can be used to for caching.
 
+=item indicatesource -- if true, indicate which source packages this
+bug could belong to. Defaults to false. [Note that eventually we will
+properly allow bugs that only affect a source package, and this will
+become always on.]
+
 =back
 
 Note: Currently the version information is cached; this needs to be
@@ -809,6 +814,9 @@ sub get_bug_status {
 					  sourceversions => {type => ARRAYREF,
 							     optional => 1,
 							    },
+					  indicatesource => {type => BOOLEAN,
+							     default => 0,
+							    },
 					 },
 			      );
      my %status;
@@ -839,6 +847,12 @@ sub get_bug_status {
      my %tags = map { $_ => 1 } split ' ', $status{tags};
 
      $status{"package"} =~ s/\s*$//;
+     if ($param{indicatesource} and $status{package} ne '') {
+	  $status{source} = join(', ',binarytosource($status{package}));
+     }
+     else {
+	  $status{source} = 'unknown';
+     }
      $status{"package"} = 'unknown' if ($status{"package"} eq '');
      $status{"severity"} = 'normal' if ($status{"severity"} eq '');
 
