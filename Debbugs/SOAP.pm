@@ -127,6 +127,8 @@ sub get_status {
 	  my $bug_status;
 	  if (ref($bug)) {
 	       my %param = __collapse_params(@{$bug});
+	       next unless defined $param{bug};
+	       $bug = $param{bug};
 	       $bug_status = get_bug_status(map {(exists $param{$_})?($_,$param{$_}):()}
 					    qw(bug dist arch bugusertags sourceversions version indicatesource)
 					   );
