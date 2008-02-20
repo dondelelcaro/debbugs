@@ -232,10 +232,10 @@ sub getversions {
 
 =head2 get_versions
 
-     get_version(package=>'foopkg',
-                 dist => 'unstable',
-                 arch => 'i386',
-                );
+     get_versions(package=>'foopkg',
+                  dist => 'unstable',
+                  arch => 'i386',
+                 );
 
 Returns a list of the versions of package in the distributions and
 architectures listed. This routine only returns unique values.
@@ -263,6 +263,10 @@ may change in the future, so if you care, please code accordingly.)
 architectures are at which versions.
 
 =back
+
+When called in scalar context, this function will return hashrefs or
+arrayrefs as appropriate, in list context, it will return paired lists
+or unpaired lists as appropriate.
 
 =cut
 
@@ -340,13 +344,10 @@ sub get_versions{
 	       }
 	  }
      }
-     if ($param{time}) {
-	  return %versions;
+     if ($param{time} or $param{return_archs}) {
+	  return wantarray?%versions :\%versions;
      }
-     elsif ($param{return_archs}) {
-	  return %versions;
-     }
-     return keys %versions;
+     return wantarray?keys %versions :[keys %versions];
 }
 
 

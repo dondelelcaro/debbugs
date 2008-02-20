@@ -205,11 +205,12 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Make notfound/notfixed log verbiage more clear (closes: #434953)
     - Verify submitter is a valid email according to RFC822
       (closes: #182419)
-    - Indicate what message number a message is (closes: #462653)
+    - Indicate what message number a message is (closes: #462653,#454248)
     - Fix casing of versions (closes: #441022)
     - Output last-modified in bugreport.cgi (closes: #459709)
     - Fix various html syntax errors in pkgreport.cgi (closes: #462322)
     - Make search case insensitive (closes: #448861)
+    - Add the ability to return source/package mapping (closes: #465332)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

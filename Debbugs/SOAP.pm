@@ -255,6 +255,89 @@ sub get_bug_log{
      return \@messages;
 }
 
+=head2 binary_to_source
+
+     binary_to_source($binary_name,$binary_version,$binary_architecture)
+
+Returns a reference to the source package name and version pair
+corresponding to a given binary package name, version, and
+architecture. If undef is passed as the architecture, returns a list
+of references to all possible pairs of source package names and
+versions for all architectures, with any duplicates removed.
+
+(This function corresponds to L<Debbugs::Packages::binarytosource>)
+
+=cut
+
+sub binary_to_source{
+     my $VERSION = __populate_version(pop);
+
+     return [binarytosource(@_)];
+}
+
+=head2 source_to_binary
+
+     source_to_binary($source_name,$source_version);
+
+Returns a reference to an array of references to binary package name,
+version, and architecture corresponding to a given source package name
+and version. In the case that the given name and version cannot be
+found, the unversioned package to source map is consulted, and the
+architecture is not returned.
+
+(This function corresponds to L<Debbugs::Packages::sourcetobinary>)
+
+=cut
+
+sub source_to_binary {
+     my $VERSION = __populate_version(pop);
+
+     return [source_to_binary(@_)];
+}
+
+=head2 get_versions
+
+     get_version(package=>'foopkg',
+                 dist => 'unstable',
+                 arch => 'i386',
+                );
+
+Returns a list of the versions of package in the distributions and
+architectures listed. This routine only returns unique values.
+
+=over
+
+=item package -- package to return list of versions
+
+=item dist -- distribution (unstable, stable, testing); can be an
+arrayref
+
+=item arch -- architecture (i386, source, ...); can be an arrayref
+
+=item time -- returns a version=>time hash at which the newest package
+matching this version was uploaded
+
+=item source -- returns source/version instead of just versions
+
+=item no_source_arch -- discards the source architecture when arch is
+not passed. [Used for finding the versions of binary packages only.]
+Defaults to 0, which does not discard the source architecture. (This
+may change in the future, so if you care, please code accordingly.)
+
+=item return_archs -- returns a version=>[archs] hash indicating which
+architectures are at which versions.
+
+=back
+
+This function correponds to L<Debbugs::Packages::get_versions>
+
+=cut
+
+sub get_versions{
+     my $VERSION = __populate_version(pop);
+
+     return scalar get_versions(@_);
+}
 
 =head1 VERSION COMPATIBILITY
 
