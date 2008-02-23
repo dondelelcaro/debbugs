@@ -212,6 +212,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Make search case insensitive (closes: #448861)
     - Add the ability to return source/package mapping
       (closes: #465332,#458822)
+    - Deal properly with \r line endings (closes: #467190)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

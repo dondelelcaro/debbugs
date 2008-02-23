@@ -75,6 +75,8 @@ END
 # header and decoded body respectively
 my (@headerlines, @bodylines);
 
+# whether maintainer addresses have been checked
+our $maintainerschecked = 0;
 #maintainer address for this message
 our @maintaddrs;
 # other src addresses
@@ -483,7 +485,10 @@ if ($ref<0) {
         $data->{package} = $pheader{source};
     } elsif (defined $pheader{package}) {
         $data->{package} = $pheader{package};
-    } else {
+    } elsif (defined $config{default_package}) {
+	$data->{package} = $config{default_package},
+    }
+    else {
  	&htmllog("Warning","sent",$replyto,"Message not forwarded.");
 	my $body = message_body_template('mail/process_no_package',
 					);
@@ -507,6 +512,22 @@ if ($ref<0) {
 				),[join("\n", @msg)]), '',undef,1);
 	&appendlog;
 	&finish;
+    }
+
+    if (defined $config{default_package}) {
+	 &checkmaintainers;
+	 # if there are no maintainers for this package, assign it to the default package
+	 if (not @maintaddrs) {
+	      $data->{package} = $config{default_package};
+	      $brokenness.= fill_template('mail/process_default_package_selected',
+					  {old_package => $pheader{source} || $pheader{package} || 'No package',
+					   new_package => $data->{package},
+					  }
+					 );
+	      # force the maintainers to be rechecked
+	      $maintainerschecked = 0;
+	      &checkmaintainers;
+	 }
     }
 
     $data->{keywords}= '';
@@ -986,7 +1007,6 @@ sub fill_template{
 }
 
 
-my $maintainerschecked = 0;
 sub checkmaintainers {
     return if $maintainerschecked++;
     return if !length($data->{package});

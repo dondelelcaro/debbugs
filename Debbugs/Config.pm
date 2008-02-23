@@ -66,6 +66,7 @@ BEGIN {
 				 qw(@gRemovalStrongSeverityDefaultDistributionTags),
 				 qw(@gDefaultArchitectures),
 				 qw($gTemplateDir),
+				 qw($gDefaultPackage),
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
@@ -471,8 +472,24 @@ Default: '[A-Za-z0-9:+\.-]+'
 
 =cut
 
+
 set_default(\%config,'package_version_re',
 	    '[A-Za-z0-9:+\.~-]+');
+
+
+=item default_package
+
+This is the name of the default package. If set, bugs assigned to
+packages without a maintainer and bugs missing a Package: psuedoheader
+will be assigned to this package instead.
+
+Defaults to unset, which is the traditional debbugs behavoir
+
+=cut
+
+set_default(\%config,'default_package',
+	    undef
+	   );
 
 
 =item control_internal_requester
