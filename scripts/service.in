@@ -61,12 +61,13 @@ my (@headerlines, @bodylines);
 my (%bug_affected);
 
 if ($entity and $entity->head->tags) {
-    @headerlines = @{$entity->head->header};
-    chomp @headerlines;
+    # Use map instead of chomp to also kill \r.
+    @headerlines = map {s/\r?\n?$//; $_;}
+	 @{$entity->head->header};
 
     my $entity_body = getmailbody($entity);
-    @bodylines = $entity_body ? $entity_body->as_lines() : ();
-    chomp @bodylines;
+    @bodylines = map {s/\r\n$//; $_;}
+	 $entity_body ? $entity_body->as_lines() : ();
 } else {
     # Legacy pre-MIME code, kept around in case MIME::Parser fails.
     my $i;
