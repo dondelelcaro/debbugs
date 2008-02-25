@@ -42,6 +42,7 @@ BEGIN{
 use IO::File;
 use Debbugs::Status qw(get_bug_status);
 use Debbugs::Common qw(make_list getbuglocation getbugcomponent);
+use Debbugs::Packages;
 use Storable qw(nstore retrieve);
 use Scalar::Util qw(looks_like_number);
 
@@ -338,7 +339,7 @@ This function correponds to L<Debbugs::Packages::get_versions>
 sub get_versions{
      my $VERSION = __populate_version(pop);
 
-     return scalar get_versions(@_);
+     return scalar Debbugs::Packages::get_versions(@_);
 }
 
 =head1 VERSION COMPATIBILITY
