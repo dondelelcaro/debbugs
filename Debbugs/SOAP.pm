@@ -274,8 +274,9 @@ versions for all architectures, with any duplicates removed.
 
 sub binary_to_source{
      my $VERSION = __populate_version(pop);
+     my ($self,@params) = @_;
 
-     return [binarytosource(@_)];
+     return [binarytosource(@params)];
 }
 
 =head2 source_to_binary
@@ -294,8 +295,9 @@ architecture is not returned.
 
 sub source_to_binary {
      my $VERSION = __populate_version(pop);
+     my ($self,@params) = @_;
 
-     return [source_to_binary(@_)];
+     return [source_to_binary(@params)];
 }
 
 =head2 get_versions
@@ -338,8 +340,9 @@ This function correponds to L<Debbugs::Packages::get_versions>
 
 sub get_versions{
      my $VERSION = __populate_version(pop);
+     my ($self,@params) = @_;
 
-     return scalar Debbugs::Packages::get_versions(@_);
+     return scalar Debbugs::Packages::get_versions(@params);
 }
 
 =head1 VERSION COMPATIBILITY
