@@ -276,7 +276,7 @@ sub binary_to_source{
      my $VERSION = __populate_version(pop);
      my ($self,@params) = @_;
 
-     return [binarytosource(@params)];
+     return [Debbugs::Packages::binarytosource(@params)];
 }
 
 =head2 source_to_binary
@@ -297,7 +297,7 @@ sub source_to_binary {
      my $VERSION = __populate_version(pop);
      my ($self,@params) = @_;
 
-     return [source_to_binary(@params)];
+     return [Debbugs::Packages::sourcetobinary(@params)];
 }
 
 =head2 get_versions
