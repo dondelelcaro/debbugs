@@ -104,13 +104,10 @@ while (my $id = <STDIN>) {
 	    $out .= "  spam $score\n";
 	    $nseen = $score;
 	} else {
+	    my ($before, $received, $after) = $headers =~
+		/(^.*?)(^Received\: \(at .*?\n)(.*$)/ms;
 	    open OUT, "> incoming/I$id" or die "open incoming/I$id: $!";
-	    my ($received, $from, $other_headers) =
-		split(/\n/, $headers, 3);
-	    if ($received =~ /^From /) {
-		($received, $from) = ($from, $received);
-	    }
-	    print OUT "$received\n$from\n$other_headers"
+	    print OUT $received . $before . $after
 		or die "print incoming/I$id: $!";
 	    if ($ca_score > 1) {
 		print OUT "X-CrossAssassin-Score: $ca_score\n"
