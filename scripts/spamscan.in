@@ -110,7 +110,7 @@ sub sa {
     return if $spamscan_stop;
     my ($sain, $saout);
 
-    my $pid = open2($saout, $sain, "spamscan-sa");
+    my $pid = open2($saout, $sain, "/usr/lib/debbugs/spamscan-sa");
 	lprint "{$mytid} forked $pid\n";
 	my $messages_handled=0;
 pp:	until ($spamscan_stop) {
@@ -134,14 +134,14 @@ getid:	    for (;;) {
 	    }
 	    print $sain "$id\n$nf\n";
 	    lprint "{$mytid} $id is $nf\n";
-	    my $keys;
-	    unless (defined($keys = <$saout>)) {
+	    my $keys = <$saout>;
+	    unless (defined $keys) {
 		lprint "{$mytid} Could not get keys: $!\n";
 		last pp;
 	    }
 	    chomp $keys;
-	    my $messageid;
-	    unless (defined($messageid = <$saout>)) {
+	    my $messageid = <$saout>;
+	    unless (defined($messageid)) {
 		lprint "{$mytid} Could not read messageid: $!\n";
 		last pp;
 	    }
@@ -180,8 +180,8 @@ crossret:   for (;;) {
 		lprint "{$mytid} Could not send ca_score: $!\n";
 		last pp;
 	    }
-	    my $todo;
-	    unless (defined($todo = <$saout>)) {
+	    my $todo = <$saout>;
+	    unless (defined($todo)) {
 		lprint "{$mytid} Could not read todo: $!\n";
 		last pp;
 	    }
@@ -199,7 +199,7 @@ crossret:   for (;;) {
 		print $sain "$todo\n";
 		$nseen = <$saout>;
 	    }
-	    unless($nseen) {
+	    unless(defined($nseen)) {
 		lprint "{$mytid} Could not read seen: $!\n";
 		start_sa() if (scalar(@ids) > ($threadsrunning * $config{spam_spams_per_thread})
 		    && $threadsrunning < $config{spam_max_threads});
@@ -207,8 +207,8 @@ crossret:   for (;;) {
 	    }
 	    chomp $nseen;
 	    $spamseen{$messageid} = $nseen if ($nseen);
-	    my $out;
-	    unless(defined($out = <$saout>)) {
+	    my $out = <$saout>;
+	    unless(defined($out)) {
 		lprint "{$mytid} Could not read out: $!\n";
 		last pp;
 	    }
