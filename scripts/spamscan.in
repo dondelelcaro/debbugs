@@ -136,13 +136,13 @@ getid:	    for (;;) {
 	    }
 	    print $sain "$id\n$nf\n";
 	    lprint "{$mytid} $id is $nf\n";
-	    my $keys = <$saout>
+	    my $keys = <$saout>;
 	    unless (defined $keys) {
 		lprint "{$mytid} Could not get keys: $!\n";
 		last pp;
 	    }
 	    chomp $keys;
-	    my $messageid = <$saout>
+	    my $messageid = <$saout>;
 	    unless (defined($messageid)) {
 		lprint "{$mytid} Could not read messageid: $!\n";
 		last pp;
