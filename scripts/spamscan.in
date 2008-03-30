@@ -112,7 +112,7 @@ sub sa {
     return if $spamscan_stop;
     my ($sain, $saout);
 
-    my $pid = open2($saout, $sain, "spamscan-sa");
+    my $pid = open2($saout, $sain, "/usr/lib/debbugs/spamscan-sa");
 	lprint "{$mytid} forked $pid\n";
 	my $messages_handled=0;
 pp:	until ($spamscan_stop) {
