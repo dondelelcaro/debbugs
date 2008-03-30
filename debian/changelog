@@ -125,7 +125,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Make the moreinfo ack more general (closes: #70810)
     - Use RFC compliant dates in headers (closes: #362935)
     - Add SOAP support (closes: #377520) Thanks to Raphael Hertzog.
-    - Split forwarded on commas for linking (closes: #367813)
+    - Split forwarded on commas for linking (closes: #367813,#473272)
     - Don't display duplicate bugs (closes: #348116)
     - Display links to archived bugs for all searches (closes: #53710)
     - Link to blocked bugs in the bugreport.cgi output (closes: #326077)

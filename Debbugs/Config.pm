@@ -67,6 +67,7 @@ BEGIN {
 				 qw(@gDefaultArchitectures),
 				 qw($gTemplateDir),
 				 qw($gDefaultPackage),
+				 qw($gSpamMaxThreads $gSpamSpamsPerThread $gSpamKeepRunning $gSpamScan $gSpamCrossassassinDb)
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
@@ -641,6 +642,92 @@ Whether or not spamscan is being used; defaults to 0 (not being used
 =cut
 
 set_default(\%config,'spam_scan',0);
+
+=item spam_crossassassin_db
+
+Location of the crosassassin database, defaults to
+spool_dir/../CrossAssassinDb
+
+=cut
+
+set_default(\%config,'spam_crossassassin_db',$config{spool_dir}.'/../CrossAssassinDb');
+
+=item spam_max_cross
+
+Maximum number of cross-posted messages
+
+=cut
+
+set_default(\%config,'spam_max_cross',6);
+
+
+=item spam_spams_per_thread
+
+Number of spams for each thread (on average). Defaults to 200
+
+=cut
+
+set_default(\%config,'spam_spams_per_thread',200);
+
+=item spam_max_threads
+
+Maximum number of threads to start. Defaults to 20
+
+=cut
+
+set_default(\%config,'spam_max_threads',20);
+
+=item spam_keep_running
+
+Maximum number of seconds to run without restarting. Defaults to 3600.
+
+=cut
+
+set_default(\%config,'spam_keep_running',3600);
+
+=item spam_mailbox
+
+Location to store spam messages; is run through strftime to allow for
+%d,%m,%Y, et al. Defaults to 'spool_dir/../mail/spam/assassinated.%Y-%m-%d'
+
+=cut
+
+set_default(\%config,'spam_mailbox',$config{spool_dir}.'/../mail/spam/assassinated.%Y-%m-%d');
+
+=item spam_crossassassin_mailbox
+
+Location to store crossassassinated messages; is run through strftime
+to allow for %d,%m,%Y, et al. Defaults to
+'spool_dir/../mail/spam/crossassassinated.%Y-%m-%d'
+
+=cut
+
+set_default(\%config,'spam_crossassassin_mailbox',$config{spool_dir}.'/../mail/spam/crossassassinated.%Y-%m-%d');
+
+=item spam_local_tests_only
+
+Whether only local tests are run, defaults to 0
+
+=cut
+
+set_default(\%config,'spam_local_tests_only',0);
+
+=item spam_user_prefs
+
+User preferences for spamassassin, defaults to $ENV{HOME}/.spamassassin/user_prefs
+
+=cut
+
+set_default(\%config,'spam_user_prefs',"$ENV{HOME}/.spamassassin/user_prefs");
+
+=item spam_rules_dir
+
+Site rules directory for spamassassin, defaults to
+'/usr/share/spamassassin'
+
+=cut
+
+set_default(\%config,'spam_rules_dir','/usr/share/spamassassin');
 
 
 =back

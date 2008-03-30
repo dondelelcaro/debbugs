@@ -4,16 +4,16 @@
 
 # unfortunatly we can't use strict;
 
-use lib qw(/usr/lib/debbugs);
+use warnings;
+use strict;
 use Mail::CrossAssassin;
 use Mail::SpamAssassin;
 
-my $config_path = '/etc/debbugs';
-require "$config_path/config";
+use Debbugs::Config qw(:config);
 # New versions of debbugs will not allow use in /etc/debbugs/config
 use POSIX qw(strftime);
-$gSpamMailbox = strftime($gSpamMailbox,gmtime);
-$gCrossMailbox = strftime($gCrossMailbox,gmtime);
+my $spam_mailbox = strftime($config{spam_mailbox},gmtime);
+my $cross_mailbox = strftime($config{spam_crossassassin_mailbox},gmtime);
 
 umask 002;
 $| = 1;
@@ -30,20 +30,21 @@ sub header_or_empty ($$) {
     return '';
 }
 
-my $user_prefs = "$ENV{HOME}/.spamassassin/user_prefs";
-
 my $spam = Mail::SpamAssassin->new({
         dont_copy_prefs => 1,
-        site_rules_filename => $gSpamRulesDir,
-        userprefs_filename => $user_prefs,
-        	local_tests_only => ($gSpamLocalTestsOnly || 0),
+        site_rules_filename => $config{spam_rules_dir},
+        userprefs_filename => $config{spam_user_prefs},
+        	local_tests_only => ($config{spam_local_tests_only} || 0),
         	debug => ($ENV{DEBBUGS_SPAM_DEBUG} || 0),
 });
 $spam->compile_now(1); # use all user preferences
 
 while (my $id = <STDIN>) {
     chomp $id;
-    my $nf = <STDIN> or die "Could not read nf: $!";
+    my $nf = <STDIN>;
+    if (not defined $nf) {
+	 die "Could not read nf: $!";
+    }
     chomp $nf;
     unless (rename "incoming/S$id", "incoming/R$id") {
 	die "Could not rename incoming/S$id: $!";
@@ -68,11 +69,13 @@ while (my $id = <STDIN>) {
     my $keys = ca_keys($mail->get_body);
     print  "$keys\n$messageid\n"
 	or die "Could not send keys: $!";
-    my $ca_score = <STDIN> or die "Could not read ca_score: $!";
+    my $ca_score = <STDIN>;
+    die "Could not read ca_score: $!" if not defined $ca_score;
     chomp $ca_score;
     my $todo = 0;
     my ($headers, $body);
-    my $seen = <STDIN> or die "Child could not read seen: $!";
+    my $seen = <STDIN>;
+    die "Child could not read seen: $!" if not defined $seen;
     chomp $seen;
     my $status;
     my $nseen = $seen;
@@ -94,7 +97,7 @@ while (my $id = <STDIN>) {
 	            $ca_score;
 	    $out .= "  spam $score\n";
 	    $nseen = $score;
-	} elsif ($status->get_score() > 0 && $ca_score >= $gMaxCross) {
+	} elsif ($status->get_score() > 0 && $ca_score >= $config{spam_max_cross}) {
 	    $todo = 2;
 	    my $score = sprintf "%.1f/%.1f %d",
 	    $status->get_score(), $status->get_required_score(), $ca_score;
@@ -122,7 +125,7 @@ while (my $id = <STDIN>) {
     print "$todo\n";
     <STDIN>;
     if ($todo) {
-	open OUT, '>>', ($todo == 1) ? $gSpamMailbox : $gCrossMailbox
+	open OUT, '>>', ($todo == 1) ? $spam_mailbox : $cross_mailbox
 	    or die "Could not open assassinated: $!";
 	print OUT $headers or die "print assassinated: $!";
 	if ($ca_score > 1) {
