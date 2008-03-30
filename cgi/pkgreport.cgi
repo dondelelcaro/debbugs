@@ -703,7 +703,7 @@ sub pkg_htmlindexentrystatus {
             $result .= ";\n<strong>Forwarded</strong> to "
                        . join(', ',
 			      map {maybelink($_)}
-			      split /[,\s]+/,$status{forwarded}
+			      split /\,\s+/,$status{forwarded}
 			     );
         }
 	# Check the age of the logfile

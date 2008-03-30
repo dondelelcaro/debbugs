@@ -103,7 +103,7 @@ if (not lockpid($config{spool_dir}.'/lock/gen-indices')) {
 }
 
 # NB: The reverse index is special; it's used to clean up during updates to bugs
-my @indexes = ('package', 'tag', 'severity','owner','submitter-email','reverse');
+my @indexes = ('package', 'tag', 'severity','owner','submitter-email','status','reverse');
 my $indexes;
 my %slow_index = ();
 my %fast_index = ();
