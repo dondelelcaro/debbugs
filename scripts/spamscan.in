@@ -11,32 +11,30 @@
 # Creates: incoming/I.nn
 # Stop:    spamscan-stop
 
-# unfortunatly we can't use strict;
-use lib qw(/usr/lib/debbugs);
+use warnings;
+use strict;
+
 use threads;
 use threads::shared;
 
-my $config_path = '/etc/debbugs';
-my $lib_path = '/usr/lib/debbugs';
-#use lib $lib_path;
-#use lib "/usr/lib/debbugs";
+use Debbugs::Config qw(:config);
+
+use Debbugs::Common qw(:lock);
+
 use Mail::CrossAssassin;
 use Socket;
 use IO::Handle;
 use IPC::Open2;
 
-require "$config_path/config";
-require "$lib_path/errorlib";
-$ENV{PATH} = $lib_path . ':' . $ENV{PATH};
 
-exit unless $gSpamScan;
+exit unless $config{spam_scan};
 
-chdir $gSpoolDir or die "chdir spool: $!\n";
+chdir $config{spool_dir} or die "chdir spool: $!\n";
 
 umask 002;
 
 eval {
-    &filelock('incoming-spamscan');
+    filelock('incoming-spamscan');
 };
 exit if $@;
 
@@ -52,6 +50,7 @@ my $assassinated_lock : shared;
 my $crossassassinated_lock : shared;
 my $threadsrunning : shared = 0;
 
+# flush output immediately
 $| = 1;
 
 sub lprint ($) {
@@ -69,7 +68,7 @@ if (-e $user_prefs) {
 
 # This thread handles the updating and querying of the crossassassin db
 sub cross {
-    ca_init('\b\d{3,8}(?:-(?:close|done|forwarded|maintonly|submitter|quiet|subscribe))?\@bugs\.debian\.org', '/org/bugs.debian.org/CrossAssassinDb');
+    ca_init('\b\d{3,8}(?:-(?:close|done|forwarded|maintonly|submitter|quiet|subscribe))?\@'.$config{email_domain}, $config{spam_crossassassin_db});
     my $mytid = threads->self->tid();
 crosscheck:
     while ($spamscan_stop <= 1) {
@@ -136,13 +135,13 @@ getid:	    for (;;) {
 	    print $sain "$id\n$nf\n";
 	    lprint "{$mytid} $id is $nf\n";
 	    my $keys;
-	    unless ($keys = <$saout>) {
+	    unless (defined($keys = <$saout>)) {
 		lprint "{$mytid} Could not get keys: $!\n";
 		last pp;
 	    }
 	    chomp $keys;
 	    my $messageid;
-	    unless ($messageid = <$saout>) {
+	    unless (defined($messageid = <$saout>)) {
 		lprint "{$mytid} Could not read messageid: $!\n";
 		last pp;
 	    }
@@ -182,7 +181,7 @@ crossret:   for (;;) {
 		last pp;
 	    }
 	    my $todo;
-	    unless ($todo = <$saout>) {
+	    unless (defined($todo = <$saout>)) {
 		lprint "{$mytid} Could not read todo: $!\n";
 		last pp;
 	    }
@@ -202,14 +201,14 @@ crossret:   for (;;) {
 	    }
 	    unless($nseen) {
 		lprint "{$mytid} Could not read seen: $!\n";
-		start_sa if (scalar(@ids) > ($threadsrunning * $gSpamsPerThread)
-		    && $threadsrunning < $gMaxThreads);
+		start_sa() if (scalar(@ids) > ($threadsrunning * $config{spam_spams_per_thread})
+		    && $threadsrunning < $config{spam_max_threads});
 		last pp;
 	    }
 	    chomp $nseen;
 	    $spamseen{$messageid} = $nseen if ($nseen);
 	    my $out;
-	    unless($out = <$saout>) {
+	    unless(defined($out = <$saout>)) {
 		lprint "{$mytid} Could not read out: $!\n";
 		last pp;
 	    }
@@ -227,16 +226,12 @@ crossret:   for (;;) {
 }
 
 my @sa_threads;
-sub start_sa() {
+sub start_sa {
     my $s = threads->create(\&sa)
 	or die "Could not start sa threads: $!";
     $s->detach;
     push @sa_threads, $s;
 }
-
-$gKeepRunning = 3600 unless $gKeepRunning > 0;
-$gSpamsPerThread = 200 unless defined($gSpamsPerThread);
-$gMaxThreads = 20 unless defined($gMaxThreads);
 
 my $cross_thread = threads->create(\&cross)
     or die "Could not start cross thread: $!";
@@ -244,7 +239,7 @@ $cross_thread->detach;
 start_sa;
 # start_sa;
 
-my $stopafter = time() + $gKeepRunning;
+my $stopafter = time() + $config{spam_keep_running};
 
 for (;;) {
     alarm 180;
@@ -279,8 +274,8 @@ for (;;) {
 	push @ids, @i;
 	cond_broadcast @ids;
     }
-    start_sa if (scalar(@ids) > (($threadsrunning - 1) * $gSpamsPerThread)
-		 && $threadsrunning < $gMaxThreads);
+    start_sa if (scalar(@ids) > (($threadsrunning - 1) * $config{spam_spams_per_thread})
+		 && $threadsrunning < $config{spam_max_threads});
     sleep 30;
 }
 
