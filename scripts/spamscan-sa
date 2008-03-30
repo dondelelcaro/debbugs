@@ -6,6 +6,9 @@
 
 use warnings;
 use strict;
+
+use lib qw(/usr/lib/debbugs);
+
 use Mail::CrossAssassin;
 use Mail::SpamAssassin;
 
