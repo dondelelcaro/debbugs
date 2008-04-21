@@ -445,7 +445,7 @@ sub handle_record{
 	       $output .= ' ('.strftime('%a, %d %b %Y %T GMT',gmtime($time)).') ';
 	  }
 	  $output .= '<a href="' . html_escape(bug_url($ref, msg => ($msg_number+1))) . '">Full text</a> and <a href="' .
-	       html_escape(bug_url($ref, msg => ($msg_number+1)), mbox => 'yes') . '">rfc822 format</a> available.';
+	       html_escape(bug_url($ref, msg => ($msg_number+1), mbox => 'yes')) . '">rfc822 format</a> available.';
 
 	  $output = qq(<div class="$class"><hr>\n<a name="$msg_number"></a>\n) . $output . "</div>\n";
      }
