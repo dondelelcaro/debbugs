@@ -814,7 +814,7 @@ END
 		$data->{keywords} =~ s/\s*$//;
             } while (&getnextbug);
 	}
-    } elsif (m/^(un)?block\s+\#?(-?\d+)\s+(by|with)\s+\s*(\S.*)?$/i) {
+    } elsif (m/^(un)?block\s+\#?(-?\d+)\s+(by|with)\s+(\S.*)?$/i) {
 	$ok++;
 	my $bugnum = $2; my $blockers = $4;
 	$addsub = "add";
