@@ -580,9 +580,9 @@ END
                 } while (&getnextbug);
             }
         }
-    } elsif (m[^notfound\s+\#?(-?\d+)
-	       (?:\s+(?:$config{package_name_re}\/)?
-		    ($config{package_version_re}))$]ix) {
+    } elsif (m[^notfound\s+\#?(-?\d+)\s+
+	       ((?:$config{package_name_re}\/)?
+		    \S+)\s*$]ix) {
         $ok++;
         $ref= $1;
         $version= $2;
@@ -616,7 +616,7 @@ END
    }
     elsif (m[^notfixed\s+\#?(-?\d+)\s+
 	     ((?:$config{package_name_re}\/)?
-		  $config{package_version_re})\s*$]ix) {
+		  \S+)\s*$]ix) {
         $ok++;
         $ref= $1;
         $version= $2;
