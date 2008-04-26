@@ -357,10 +357,24 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
             $data->{keywords} = join ' ', grep $_ ne 'pending',
                                      split ' ', $data->{keywords};
             if (defined $pheader{'source-version'}) {
-                addfixedversions($data, $pheader{source}, $pheader{'source-version'}, '');
-            } elsif (defined $pheader{version}) {
-                addfixedversions($data, $pheader{package}, $pheader{version}, 'binary');
-            }
+		 if ($pheader{'source-version'} !~ m/^$config{package_version_re}$/) {
+		      $brokenness .= fill_template('mail/invalid_version',
+						   {version => $pheader{'source-version'}},
+						  );
+		 }
+		 else {
+		      addfixedversions($data, $pheader{source}, $pheader{'source-version'}, '');
+		 }
+	    } elsif (defined $pheader{version}) {
+		 if ($pheader{version} !~ m/^$config{package_version_re}$/) {
+		      $brokenness .= fill_template('mail/invalid_version',
+						   {version => $pheader{version}},
+						  );
+		 }
+		 else {
+		      addfixedversions($data, $pheader{package}, $pheader{version}, '');
+		 }
+	    }
         }
 
 	# Add bug mailing list to $generalbcc as appropriate
@@ -644,15 +658,38 @@ if (defined $pheader{source}) {
     # appear that way in version trees so that we can deal with binary
     # packages moving from one source package to another.
     if (defined $pheader{'source-version'}) {
-        addfoundversions($data, $pheader{source}, $pheader{'source-version'}, '');
+	 if ($pheader{'source-version'} !~ m/^$config{package_version_re}$/) {
+	      $brokenness .= fill_template('mail/invalid_version',
+					   {version => $pheader{'source-version'}},
+					  );
+	 }
+	 else {
+	      addfoundversions($data, $pheader{source}, $pheader{'source-version'}, '');
+	 }
     } elsif (defined $pheader{version}) {
-        addfoundversions($data, $pheader{source}, $pheader{version}, '');
+	 if ($pheader{version} !~ m/^$config{package_version_re}$/) {
+	      $brokenness .= fill_template('mail/invalid_version',
+					   {version => $pheader{version}},
+					  );
+	 }
+	 else {
+	      addfoundversions($data, $pheader{source}, $pheader{version}, '');
+	 }
     }
     writebug($ref, $data);
 } elsif (defined $pheader{package}) {
     # TODO: could handle Source-Version: by looking up the source package?
-    addfoundversions($data, $pheader{package}, $pheader{version}, 'binary');
-    writebug($ref, $data);
+     if (defined $pheader{version}) {
+	  if ($pheader{version} !~ m/^$config{package_version_re}$/) {
+	       $brokenness .= fill_template('mail/invalid_version',
+					    {version => $pheader{version}},
+					   );
+	  }
+	  else {
+	       addfoundversions($data, $pheader{package}, $pheader{version}, 'binary');
+	  }
+     }
+     writebug($ref, $data);
 }
 
 my $veryquiet= $codeletter eq 'Q';
