@@ -616,7 +616,6 @@ function toggle_infmessages()
                 if (allDivs[i].className == "infmessage")
                 {
                         allDivs[i].style.display=(allDivs[i].style.display == 'none' | allDivs[i].style.display == '') ? 'block' : 'none';
-                        break;
                 }
         }
 }
