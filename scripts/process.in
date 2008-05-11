@@ -9,6 +9,8 @@ use strict;
 
 use POSIX qw(strftime);
 
+use IO::File;
+
 use MIME::Parser;
 use Debbugs::MIME qw(decode_rfc1522 create_mime_message getmailbody);
 use Debbugs::Mail qw(send_mail_message encode_headers);
@@ -468,8 +470,8 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
     &finish;
 }
 
-if ($ref<0) {
-    if ($codeletter eq 'U') {
+if ($ref<0) { # new bug report
+    if ($codeletter eq 'U') { # -submitter
         &htmllog("Warning","sent",$replyto,"Message not forwarded.");
 	&sendmessage(create_mime_message(
           [From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
@@ -707,7 +709,7 @@ if (length($resentccval)) {
     $resentcc= "Resent-CC: $resentccval\n"; 
 }
 
-if ($codeletter eq 'U') {
+if ($codeletter eq 'U') { # sent to -submitter
     &htmllog("Message", "sent on", $data->{originator}, "$gBug#$ref.");
     &sendmessage(<<END,[$data->{originator},@resentccs],[@bccs]);
 Subject: $gBug#$ref: $newsubject
@@ -722,6 +724,7 @@ X-$gProject-PR-Keywords: $data->{keywords}
 ${source_pr_header}$fwd
 END
 } elsif ($codeletter eq 'B') { # Sent to submit
+    my $report_followup = $newref ? 'report' : 'followup';
     &htmllog($newref ? "Report" : "Information", "forwarded",
              join(', ',"$gSubmitList\@$gListDomain",@resentccs),
              "<code>$gBug#$ref</code>".
@@ -735,7 +738,7 @@ ${orgsender}Resent-To: $gSubmitList\@$gListDomain
 ${resentcc}Resent-Date: $tdate
 Resent-Message-ID: <handler.$ref.$nn\@$gEmailDomain>
 Resent-Sender: $gMaintainerEmail
-X-$gProject-PR-Message: report $ref
+X-$gProject-PR-Message: $report_followup $ref
 X-$gProject-PR-Package: $data->{package}
 X-$gProject-PR-Keywords: $data->{keywords}
 ${source_pr_header}$fwd
@@ -744,6 +747,7 @@ END
     # D and F done far earlier; B just done - so this must be M or Q
     # We preserve whichever it was in the Reply-To (possibly adding
     # the $gBug#).
+    my $report_followup = $newref ? 'report' : 'followup';
     if (@resentccs) {
         &htmllog($newref ? "Report" : "Information", "forwarded",
                  $resentccval,
@@ -765,7 +769,7 @@ ${orgsender}Resent-To: $resentccval
 Resent-Date: $tdate
 Resent-Message-ID: <handler.$ref.$nn\@$gEmailDomain>
 Resent-Sender: $gMaintainerEmail
-X-$gProject-PR-Message: report $ref
+X-$gProject-PR-Message: $report_followup $ref
 X-$gProject-PR-Package: $data->{package}
 X-$gProject-PR-Keywords: $data->{keywords}
 ${source_pr_header}$fwd
@@ -1128,7 +1132,7 @@ sub bug_list_forward{
      # the mailing list
      my ($bug_number) = $bug_fn =~ /^L(\d+)\./;
      my ($bfound, $data)= lockreadbugmerge($bug_number);
-     my $bug_fh = new IO::File "incoming/P$bug_fn" or die "Unable to open incoming/P$bug_fn $!";
+     my $bug_fh = IO::File->new("incoming/P$bug_fn",'r') or die "Unable to open incoming/P$bug_fn $!";
 
      local $/ = undef;
      my $bug_message = <$bug_fh>;
