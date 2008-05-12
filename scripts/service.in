@@ -70,7 +70,7 @@ if ($entity and $entity->head->tags) {
 	 @{$entity->head->header};
 
     my $entity_body = getmailbody($entity);
-    @bodylines = map {s/\r\n$//; $_;}
+    @bodylines = map {s/\r?\n$//; $_;}
 	 $entity_body ? $entity_body->as_lines() : ();
 } else {
     # Legacy pre-MIME code, kept around in case MIME::Parser fails.
