@@ -104,8 +104,8 @@ if ($entity and $entity->head->tags) {
     chomp @headerlines;
 
     my $entity_body = getmailbody($entity);
-    @bodylines = $entity_body ? $entity_body->as_lines() : ();
-    chomp @bodylines;
+    @bodylines = map {s/\r?\n$//; $_;}
+	 $entity_body ? $entity_body->as_lines() : ();
 
     # set $i to beginning of encoded body data, so we can dump it out
     # verbatim later
