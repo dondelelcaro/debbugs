@@ -45,6 +45,8 @@ use Mail::Address;
 use POSIX qw(ceil);
 use Storable qw(dclone);
 
+use Debbugs::Text qw(fill_in_template);
+
 our %URL_PARAMS = ();
 
 
@@ -151,22 +153,64 @@ sub munge_url {
 
 =head2 version_url
 
-     version_url($package,$found,$fixed)
+     version_url(package => $package,found => $found,fixed => $fixed)
 
 Creates a link to the version cgi script
+
+=over
+
+=item package -- source package whose graph to display
+
+=item found -- arrayref of found versions
+
+=item fixed -- arrayref of fixed versions
+
+=item width -- optional width of graph
+
+=item height -- optional height of graph
+
+=item info -- display html info surrounding graph; defaults to 1 if
+width and height are not passed.
+
+=item collapse -- whether to collapse the graph; defaults to 1 if
+width and height are passed.
+
+=back
 
 =cut
 
 sub version_url{
-     my ($package,$found,$fixed,$width,$height) = @_;
+     my %params = validate_with(params => \@_,
+				spec   => {package => {type => SCALAR,
+						      },
+					   found   => {type => ARRAYREF,
+						       default => [],
+						      },
+					   fixed   => {type => ARRAYREF,
+						       default => [],
+						      },
+					   width   => {type => SCALAR,
+						       optional => 1,
+						      },
+					   height  => {type => SCALAR,
+						       optional => 1,
+						      },
+					   absolute => {type => BOOLEAN,
+							default => 0,
+						       },
+					   collapse => {type => BOOLEAN,
+							default => 1,
+						       },
+					   info     => {type => BOOLEAN,
+							optional => 1,
+						       },
+					  }
+			       );
+     if (not defined $params{width} and not defined $params{height}) {
+	  $params{info} = 1 if not exists $params{info};
+     }
      my $url = Debbugs::URI->new('version.cgi?');
-     $url->query_form(package => $package,
-		      found   => $found,
-		      fixed   => $fixed,
-		      (defined $width)?(width => $width):(),
-		      (defined $height)?(height => $height):(),
-		      (defined $width or defined $height)?(collapse => 1):(info => 1),
-		     );
+     $url->query_form(%params);
      return $url->as_string;
 }
 
@@ -231,10 +275,9 @@ sub cgi_parameters {
 sub quitcgi {
     my $msg = shift;
     print "Content-Type: text/html\n\n";
-    print "<HTML><HEAD><TITLE>Error</TITLE></HEAD><BODY>\n";
-    print "An error occurred. Dammit.\n";
-    print "Error was: $msg.\n";
-    print "</BODY></HTML>\n";
+    print fill_in_template(template=>'cgi/quit',
+			   variables => {msg => $msg}
+			  );
     exit 0;
 }
 
