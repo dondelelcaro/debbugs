@@ -654,9 +654,9 @@ sub pkg_htmlindexentrystatus {
         $showversions .= join ', ', map {s{/}{ }; html_escape($_)} @fixed;
     }
     $result .= ' (<a href="'.
-	 version_url($status{package},
-		     $status{found_versions},
-		     $status{fixed_versions},
+	 version_url(package => $status{package},
+		     found   => $status{found_versions},
+		     fixed   => $status{fixed_versions},
 		    ).qq{">$showversions</a>)} if length $showversions;
     $result .= ";\n";
 

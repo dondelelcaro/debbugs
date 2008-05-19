@@ -2,6 +2,7 @@
 
 use warnings;
 use strict;
+
 use POSIX qw(strftime tzset);
 use MIME::Parser;
 use MIME::Decoder;
@@ -81,8 +82,7 @@ if (defined $ENV{REQUEST_METHOD} and $ENV{REQUEST_METHOD} eq 'HEAD' and not defi
     exit 0;
 }
 
-sub display_entity ($$$$\$\@);
-sub display_entity ($$$$\$\@) {
+sub display_entity {
     my $entity = shift;
     my $ref = shift;
     my $top = shift;
@@ -191,173 +191,6 @@ sub display_entity ($$$$\$\@) {
 	 }
     }
 }
-
-my %maintainer = %{getmaintainers()};
-my %pkgsrc = %{getpkgsrc()};
-
-my $indexentry;
-my $showseverity;
-
-my $tpack;
-my $tmain;
-
-my $dtime = strftime "%a, %e %b %Y %T UTC", gmtime;
-$tail_html = $gHTMLTail;
-$tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
-
-my %status = %{get_bug_status(bug=>$ref)};
-unless (%status) {
-    print <<EOF;
-Content-Type: text/html; charset=utf-8
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-<head><title>$short - $gProject $gBug report logs</title></head>
-<body>
-<h1>$gProject $gBug report logs - $short</h1>
-<p>There is no record of $gBug $short.
-Try the <a href="http://$gWebDomain/">search page</a> instead.</p>
-$tail_html</body></html>
-EOF
-    exit 0;
-}
-
-$|=1;
-
-$tpack = lc $status{'package'};
-my @tpacks = splitpackages($tpack);
-
-if  ($status{severity} eq 'normal') {
-	$showseverity = '';
-} elsif (isstrongseverity($status{severity})) {
-	$showseverity = "Severity: <em class=\"severity\">$status{severity}</em>;\n";
-} else {
-	$showseverity = "Severity: $status{severity};\n";
-}
-
-if (@{$status{found_versions}} or @{$status{fixed_versions}}) {
-     $indexentry.= q(<div style="float:right"><a href=").
-	  html_escape(version_url($status{package},
-				  $status{found_versions},
-				  $status{fixed_versions},
-				 )).
-	  q("><img alt="version graph" src=").
-	       html_escape(version_url($status{package},
-				       $status{found_versions},
-				       $status{fixed_versions},
-				       2,
-				       2,
-				      )).qq{"></a></div>};
-}
-
-
-$indexentry .= "<div class=\"msgreceived\">\n";
-$indexentry .= htmlize_packagelinks($status{package}, 0) . ";\n";
-
-foreach my $pkg (@tpacks) {
-    my $tmaint = defined($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)';
-    my $tsrc = defined($pkgsrc{$pkg}) ? $pkgsrc{$pkg} : '(unknown)';
-
-    $indexentry .=
-            htmlize_maintlinks(sub { $_[0] == 1 ? "Maintainer for $pkg is\n"
-                                            : "Maintainers for $pkg are\n" },
-                           $tmaint);
-    $indexentry .= ";\nSource for $pkg is\n".
-            '<a href="'.html_escape(pkg_url(src=>$tsrc))."\">$tsrc</a>" if ($tsrc ne "(unknown)");
-    $indexentry .= ".\n";
-}
-
-$indexentry .= "<br>";
-$indexentry .= htmlize_addresslinks("Reported by: ", \&submitterurl,
-                                $status{originator}) . ";\n";
-$indexentry .= sprintf "Date: %s.\n",
-		(strftime "%a, %e %b %Y %T UTC", localtime($status{date}));
-
-$indexentry .= "<br>Owned by: " . html_escape($status{owner}) . ".\n"
-              if length $status{owner};
-
-$indexentry .= "</div>\n";
-
-my @descstates;
-
-$indexentry .= "<h3>$showseverity";
-$indexentry .= sprintf "Tags: %s;\n", 
-		html_escape(join(", ", sort(split(/\s+/, $status{tags}))))
-			if length($status{tags});
-$indexentry .= "<br>" if (length($showseverity) or length($status{tags}));
-
-my @merged= split(/ /,$status{mergedwith});
-if (@merged) {
-	my $descmerged = 'Merged with ';
-	my $mseparator = '';
-	for my $m (@merged) {
-		$descmerged .= $mseparator."<a href=\"" . html_escape(bug_url($m)) . "\">#$m</a>";
-		$mseparator= ",\n";
-	}
-	push @descstates, $descmerged;
-}
-
-if (@{$status{found_versions}}) {
-    my $foundtext = 'Found in ';
-    $foundtext .= (@{$status{found_versions}} == 1) ? 'version ' : 'versions ';
-    $foundtext .= join ', ', map html_escape($_), @{$status{found_versions}};
-    push @descstates, $foundtext;
-}
-if (@{$status{fixed_versions}}) {
-    my $fixedtext = '<strong>Fixed</strong> in ';
-    $fixedtext .= (@{$status{fixed_versions}} == 1) ? 'version ' : 'versions ';
-    $fixedtext .= join ', ', map html_escape($_), @{$status{fixed_versions}};
-    if (length($status{done})) {
-	$fixedtext .= ' by ' . html_escape(decode_rfc1522($status{done}));
-    }
-    push @descstates, $fixedtext;
-}
-
-if (@{$status{found_versions}} or @{$status{fixed_versions}}) {
-     push @descstates, '<a href="'.
-	  html_escape(version_url($status{package},
-				  $status{found_versions},
-				  $status{fixed_versions},
-				 )).qq{">Version Graph</a>};
-}
-
-if (length($status{done})) {
-    push @descstates, "<strong>Done:</strong> ".html_escape(decode_rfc1522($status{done}));
-}
-
-if (length($status{forwarded})) {
-    my $forward_link = html_escape($status{forwarded});
-    $forward_link =~ s,((ftp|http|https)://[\S~-]+?/?)((\&gt\;)?[)]?[']?[:.\,]?(\s|$)),<a href="$1">$1</a>$3,go;
-    push @descstates, "<strong>Forwarded</strong> to $forward_link";
-}
-
-
-my @blockedby= split(/ /, $status{blockedby});
-if (@blockedby && $status{"pending"} ne 'fixed' && ! length($status{done})) {
-    for my $b (@blockedby) {
-        my %s = %{get_bug_status($b)};
-        next if $s{"pending"} eq 'fixed' || length $s{done};
-        push @descstates, "Fix blocked by <a href=\"" . html_escape(bug_url($b)) . "\">#$b</a>: ".html_escape($s{subject});
-    }
-}
-
-my @blocks= split(/ /, $status{blocks});
-if (@blocks && $status{"pending"} ne 'fixed' && ! length($status{done})) {
-    for my $b (@blocks) {
-        my %s = %{get_bug_status($b)};
-        next if $s{"pending"} eq 'fixed' || length $s{done};
-        push @descstates, "Blocking fix for <a href=\"" . html_escape(bug_url($b)) . "\">#$b</a>: ".html_escape($s{subject});
-    }
-}
-
-if ($buglog !~ m#^\Q$gSpoolDir/db#) {
-    push @descstates, "Bug is archived. No further changes may be made";
-}
-
-$indexentry .= join(";\n<br>", @descstates) . ".\n" if @descstates;
-$indexentry .= "</h3>\n";
-
-my $descriptivehead = $indexentry;
 
 my $buglogfh;
 if ($buglog =~ m/\.gz$/) {
@@ -585,6 +418,167 @@ else {
 @log = reverse @log if $reverse;
 $log = join("\n",@log);
 
+
+my %maintainer = %{getmaintainers()};
+my %pkgsrc = %{getpkgsrc()};
+
+my $indexentry;
+my $showseverity;
+
+my $tpack;
+my $tmain;
+
+my $dtime = strftime "%a, %e %b %Y %T UTC", gmtime;
+$tail_html = $gHTMLTail;
+$tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
+
+my %status = %{get_bug_status(bug=>$ref)};
+unless (%status) {
+    print "Content-Type: text/html; charset=utf-8\n\n";
+    print fill_in_template(template=>'cgi/no_such_bug',
+			   variables => {modify_time => $dtime,
+					 bug_num     => $ref,
+					},
+			  )
+    exit 0;
+}
+
+$|=1;
+
+$tpack = lc $status{'package'};
+my @tpacks = splitpackages($tpack);
+
+if  ($status{severity} eq 'normal') {
+	$showseverity = '';
+} elsif (isstrongseverity($status{severity})) {
+	$showseverity = "Severity: <em class=\"severity\">$status{severity}</em>;\n";
+} else {
+	$showseverity = "Severity: $status{severity};\n";
+}
+
+if (@{$status{found_versions}} or @{$status{fixed_versions}}) {
+     $indexentry.= q(<div style="float:right"><a href=").
+	  html_escape(version_url(package => $status{package},
+				  found => $status{found_versions},
+				  fixed => $status{fixed_versions},
+				 )).
+	  q("><img alt="version graph" src=").
+	       html_escape(version_url(package => $status{package},
+				       found => $status{found_versions},
+				       fixed => $status{fixed_versions},
+				       width => 2,
+				       height => 2,
+				      )).qq{"></a></div>};
+}
+
+
+$indexentry .= "<div class=\"msgreceived\">\n";
+$indexentry .= htmlize_packagelinks($status{package}, 0) . ";\n";
+
+foreach my $pkg (@tpacks) {
+    my $tmaint = defined($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)';
+    my $tsrc = defined($pkgsrc{$pkg}) ? $pkgsrc{$pkg} : '(unknown)';
+
+    $indexentry .=
+            htmlize_maintlinks(sub { $_[0] == 1 ? "Maintainer for $pkg is\n"
+                                            : "Maintainers for $pkg are\n" },
+                           $tmaint);
+    $indexentry .= ";\nSource for $pkg is\n".
+            '<a href="'.html_escape(pkg_url(src=>$tsrc))."\">$tsrc</a>" if ($tsrc ne "(unknown)");
+    $indexentry .= ".\n";
+}
+
+$indexentry .= "<br>";
+$indexentry .= htmlize_addresslinks("Reported by: ", \&submitterurl,
+                                $status{originator}) . ";\n";
+$indexentry .= sprintf "Date: %s.\n",
+		(strftime "%a, %e %b %Y %T UTC", localtime($status{date}));
+
+$indexentry .= "<br>Owned by: " . html_escape($status{owner}) . ".\n"
+              if length $status{owner};
+
+$indexentry .= "</div>\n";
+
+my @descstates;
+
+$indexentry .= "<h3>$showseverity";
+$indexentry .= sprintf "Tags: %s;\n", 
+		html_escape(join(", ", sort(split(/\s+/, $status{tags}))))
+			if length($status{tags});
+$indexentry .= "<br>" if (length($showseverity) or length($status{tags}));
+
+my @merged= split(/ /,$status{mergedwith});
+if (@merged) {
+	my $descmerged = 'Merged with ';
+	my $mseparator = '';
+	for my $m (@merged) {
+		$descmerged .= $mseparator."<a href=\"" . html_escape(bug_url($m)) . "\">#$m</a>";
+		$mseparator= ",\n";
+	}
+	push @descstates, $descmerged;
+}
+
+if (@{$status{found_versions}}) {
+    my $foundtext = 'Found in ';
+    $foundtext .= (@{$status{found_versions}} == 1) ? 'version ' : 'versions ';
+    $foundtext .= join ', ', map html_escape($_), @{$status{found_versions}};
+    push @descstates, $foundtext;
+}
+if (@{$status{fixed_versions}}) {
+    my $fixedtext = '<strong>Fixed</strong> in ';
+    $fixedtext .= (@{$status{fixed_versions}} == 1) ? 'version ' : 'versions ';
+    $fixedtext .= join ', ', map html_escape($_), @{$status{fixed_versions}};
+    if (length($status{done})) {
+	$fixedtext .= ' by ' . html_escape(decode_rfc1522($status{done}));
+    }
+    push @descstates, $fixedtext;
+}
+
+if (@{$status{found_versions}} or @{$status{fixed_versions}}) {
+     push @descstates, '<a href="'.
+	  html_escape(version_url($status{package},
+				  $status{found_versions},
+				  $status{fixed_versions},
+				 )).qq{">Version Graph</a>};
+}
+
+if (length($status{done})) {
+    push @descstates, "<strong>Done:</strong> ".html_escape(decode_rfc1522($status{done}));
+}
+
+if (length($status{forwarded})) {
+    my $forward_link = html_escape($status{forwarded});
+    $forward_link =~ s,((ftp|http|https)://[\S~-]+?/?)((\&gt\;)?[)]?[']?[:.\,]?(\s|$)),<a href="$1">$1</a>$3,go;
+    push @descstates, "<strong>Forwarded</strong> to $forward_link";
+}
+
+
+my @blockedby= split(/ /, $status{blockedby});
+if (@blockedby && $status{"pending"} ne 'fixed' && ! length($status{done})) {
+    for my $b (@blockedby) {
+        my %s = %{get_bug_status($b)};
+        next if $s{"pending"} eq 'fixed' || length $s{done};
+        push @descstates, "Fix blocked by <a href=\"" . html_escape(bug_url($b)) . "\">#$b</a>: ".html_escape($s{subject});
+    }
+}
+
+my @blocks= split(/ /, $status{blocks});
+if (@blocks && $status{"pending"} ne 'fixed' && ! length($status{done})) {
+    for my $b (@blocks) {
+        my %s = %{get_bug_status($b)};
+        next if $s{"pending"} eq 'fixed' || length $s{done};
+        push @descstates, "Blocking fix for <a href=\"" . html_escape(bug_url($b)) . "\">#$b</a>: ".html_escape($s{subject});
+    }
+}
+
+if ($buglog !~ m#^\Q$gSpoolDir/db#) {
+    push @descstates, "Bug is archived. No further changes may be made";
+}
+
+$indexentry .= join(";\n<br>", @descstates) . ".\n" if @descstates;
+$indexentry .= "</h3>\n";
+
+my $descriptivehead = $indexentry;
 
 print "Content-Type: text/html; charset=utf-8\n";
 
