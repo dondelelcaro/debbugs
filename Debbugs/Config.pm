@@ -768,6 +768,8 @@ set_default(\%config,'text_instructions',$config{bad_email_prefix});
 
 This shows up at the end of (most) html pages
 
+In many pages this has been replaced by the html/tail template.
+
 =cut
 
 set_default(\%config,'html_tail',<<END);
