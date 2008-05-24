@@ -37,13 +37,15 @@ use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 use Debbugs::URI;
 use HTML::Entities;
-use Debbugs::Common qw(getparsedaddrs);
+use Debbugs::Common qw(getparsedaddrs make_list);
 use Params::Validate qw(validate_with :types);
 use Debbugs::Config qw(:config);
 use Debbugs::Status qw(splitpackages isstrongseverity);
 use Mail::Address;
 use POSIX qw(ceil);
 use Storable qw(dclone);
+
+use Carp;
 
 use Debbugs::Text qw(fill_in_template);
 
@@ -57,7 +59,8 @@ BEGIN{
      @EXPORT = ();
      %EXPORT_TAGS = (url    => [qw(bug_url bug_links bug_linklist maybelink),
 				qw(set_url_params pkg_url version_url),
-				qw(submitterurl mainturl munge_url)
+				qw(submitterurl mainturl munge_url),
+				qw(package_links bug_links),
 			       ],
 		     html   => [qw(html_escape htmlize_bugs htmlize_packagelinks),
 				qw(maybelink htmlize_addresslinks htmlize_maintlinks),
@@ -284,129 +287,6 @@ sub quitcgi {
 
 =head HTML
 
-=head2 htmlize_bugs
-
-     htmlize_bugs({bug=>1,status=>\%status,extravars=>\%extra},{bug=>...}});
-
-Turns a list of bugs into an html snippit of the bugs.
-
-=cut
-#     htmlize_bugs(bugs=>[@bugs]);
-sub htmlize_bugs{
-     my @bugs = @_;
-     my @html;
-
-     for my $bug (@bugs) {
-	  my $html = sprintf "<li><a href=\"%s\">#%d: %s</a>\n<br>",
-	       bug_url($bug->{bug}), $bug->{bug}, html_escape($bug->{status}{subject});
-	  $html .= htmlize_bugstatus($bug->{status}) . "\n";
-     }
-     return @html;
-}
-
-
-sub htmlize_bugstatus {
-     my %status = %{$_[0]};
-
-     my $result = "";
-
-     my $showseverity;
-     if  ($status{severity} eq $config{default_severity}) {
-	  $showseverity = '';
-     } elsif (isstrongseverity($status{severity})) {
-	  $showseverity = "Severity: <em class=\"severity\">$status{severity}</em>;\n";
-     } else {
-	  $showseverity = "Severity: <em>$status{severity}</em>;\n";
-     }
-
-     $result .= htmlize_packagelinks($status{"package"}, 1);
-
-     my $showversions = '';
-     if (@{$status{found_versions}}) {
-	  my @found = @{$status{found_versions}};
-	  local $_;
-	  s{/}{ } foreach @found;
-	  $showversions .= join ', ', map html_escape($_), @found;
-     }
-     if (@{$status{fixed_versions}}) {
-	  $showversions .= '; ' if length $showversions;
-	  $showversions .= '<strong>fixed</strong>: ';
-	  my @fixed = @{$status{fixed_versions}};
-	  $showversions .= join ', ', map {s#/##; html_escape($_)} @fixed;
-     }
-     $result .= " ($showversions)" if length $showversions;
-     $result .= ";\n";
-
-     $result .= $showseverity;
-     $result .= htmlize_addresslinks("Reported by: ", \&submitterurl,
-                                $status{originator});
-     $result .= ";\nOwned by: " . html_escape($status{owner})
-	  if length $status{owner};
-     $result .= ";\nTags: <strong>" 
-	  . html_escape(join(", ", sort(split(/\s+/, $status{tags}))))
-	       . "</strong>"
-		    if (length($status{tags}));
-
-     $result .= ";\nMerged with ".
-	  bug_linklist(', ',
-		       'submitter',
-		       split(/ /,$status{mergedwith}))
-	       if length $status{mergedwith};
-     $result .= ";\nBlocked by ".
-	  bug_linklist(", ",
-		       'submitter',
-		       split(/ /,$status{blockedby}))
-	       if length $status{blockedby};
-     $result .= ";\nBlocks ".
-	  bug_linklist(", ",
-		       'submitter',
-		       split(/ /,$status{blocks})
-		      )
-	       if length $status{blocks};
-
-     my $days = 0;
-     if (length($status{done})) {
-	  $result .= "<br><strong>Done:</strong> " . html_escape($status{done});
-	  $days = ceil($debbugs::gRemoveAge - -M buglog($status{id}));
-	  if ($days >= 0) {
-	       $result .= ";\n<strong>Will be archived" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" ) . "</strong>";
-	  } else {
-	       $result .= ";\n<strong>Archived</strong>";
-	  }
-     }
-     else {
-	  if (length($status{forwarded})) {
-	       $result .= ";\n<strong>Forwarded</strong> to "
-		    . maybelink($status{forwarded});
-	  }
-	  my $daysold = int((time - $status{date}) / 86400);   # seconds to days
-	  if ($daysold >= 7) {
-	       my $font = "";
-	       my $efont = "";
-	       $font = "em" if ($daysold > 30);
-	       $font = "strong" if ($daysold > 60);
-	       $efont = "</$font>" if ($font);
-	       $font = "<$font>" if ($font);
-
-	       my $yearsold = int($daysold / 365);
-	       $daysold -= $yearsold * 365;
-
-	       $result .= ";\n $font";
-	       my @age;
-	       push @age, "1 year" if ($yearsold == 1);
-	       push @age, "$yearsold years" if ($yearsold > 1);
-	       push @age, "1 day" if ($daysold == 1);
-	       push @age, "$daysold days" if ($daysold > 1);
-	       $result .= join(" and ", @age);
-	       $result .= " old$efont";
-        }
-    }
-
-    $result .= ".";
-
-    return $result;
-}
-
 =head2 htmlize_packagelinks
 
      htmlize_packagelinks
@@ -418,22 +298,171 @@ formatted set of links to packages.
 =cut
 
 sub htmlize_packagelinks {
-    my ($pkgs,$strong) = @_;
-    return unless defined $pkgs and $pkgs ne '';
+    my ($pkgs) = @_;
+    return '' unless defined $pkgs and $pkgs ne '';
     my @pkglist = splitpackages($pkgs);
 
-    $strong = 0;
-    my $openstrong  = $strong ? '<strong>' : '';
-    my $closestrong = $strong ? '</strong>' : '';
+    carp "htmlize_packagelinks is deprecated";
 
     return 'Package' . (@pkglist > 1 ? 's' : '') . ': ' .
            join(', ',
-                map {
-                    '<a class="submitter" href="' . pkg_url(pkg=>$_||'') . '">' .
-                    $openstrong . html_escape($_) . $closestrong . '</a>'
-                } @pkglist
+                package_links(package =>\@pkglist,
+			      class   => 'submitter'
+			     )
            );
 }
+
+=head2 package_links
+
+     join(', ', package_links(packages => \@packages))
+
+Given a list of packages, return a list of html which links to the package
+
+=over
+
+=item package -- arrayref or scalar of package(s)
+
+=item submitter -- arrayref or scalar of submitter(s)
+
+=item source -- arrayref or scalar of source(s)
+
+=item maintainer -- arrayref or scalar of maintainer(s)
+
+=item links_only -- return only links, not htmlized links, defaults to
+returning htmlized links.
+
+=item class -- class of the a href, defaults to ''
+
+=back
+
+=cut
+
+sub package_links {
+     my %param = validate_with(params => \@_,
+			       spec   => {package => {type => SCALAR|ARRAYREF,
+						      optional => 1,
+						     },
+					  source  => {type => SCALAR|ARRAYREF,
+						      optional => 1,
+						     },
+					  maintainer => {type => SCALAR|ARRAYREF,
+							 optional => 1,
+							},
+					  submitter => {type => SCALAR|ARRAYREF,
+							optional => 1,
+						       },
+					  owner     => {type => SCALAR|ARRAYREF,
+							optional => 1,
+						       },
+					  links_only => {type => BOOLEAN,
+							 default => 0,
+							},
+					  class => {type => SCALAR,
+						    default => '',
+						   },
+					  separator => {type => SCALAR,
+							default => ', ',
+						       },
+					 },
+			      );
+     my @links = ();
+     push @links, map {(pkg_url(source => $_),$_)
+		  } make_list($param{source}) if exists $param{source};
+     push @links, map {my $addr = getparsedaddrs($_);
+		       $addr = defined $addr?$addr->address:'';
+		       (pkg_url(maint => $addr),$_)
+		  } make_list($param{maintainer}) if exists $param{maintainer};
+     push @links, map {my $addr = getparsedaddrs($_);
+		       $addr = defined $addr?$addr->address:'';
+		       (pkg_url(owner => $addr),$_)
+		  } make_list($param{owner}) if exists $param{owner};
+     push @links, map {my $addr = getparsedaddrs($_);
+		       $addr = defined $addr?$addr->address:'';
+		       (pkg_url(submitter => $addr),$_)
+		  } make_list($param{submitter}) if exists $param{submitter};
+     push @links, map {(pkg_url(pkg => $_),
+			html_escape($_))
+		  } make_list($param{package}) if exists $param{package};
+     my @return = ();
+     my ($link,$link_name);
+     my $class = '';
+     if (length $param{class}) {
+	  $class = q( class=").html_escape($param{class}).q(");
+     }
+     while (($link,$link_name) = splice(@links,0,2)) {
+	  if ($param{links_only}) {
+	       push @return,$link
+	  }
+	  else {
+	       push @return,
+		    qq(<a$class href=").
+			 html_escape($link).q(">).
+			      html_escape($link_name).q(</a>);
+	  }
+     }
+     if (wantarray) {
+	  return @return;
+     }
+     else {
+	  return join($param{separator},@return);
+     }
+}
+
+=head2 bug_links
+
+     join(', ', bug_links(bug => \@packages))
+
+Given a list of bugs, return a list of html which links to the bugs
+
+=over
+
+=item bug -- arrayref or scalar of bug(s)
+
+=item links_only -- return only links, not htmlized links, defaults to
+returning htmlized links.
+
+=item class -- class of the a href, defaults to ''
+
+=back
+
+=cut
+
+sub bug_links {
+     my %param = validate_with(params => \@_,
+			       spec   => {bug => {type => SCALAR|ARRAYREF,
+						  optional => 1,
+						 },
+					  links_only => {type => BOOLEAN,
+							 default => 0,
+							},
+					  class => {type => SCALAR,
+						    default => '',
+						   },
+					 },
+			      );
+     my @links;
+     push @links, map {(bug_url($_),$_)
+		  } make_list($param{bug}) if exists $param{bug};
+     my @return;
+     my ($link,$link_name);
+     my $class = '';
+     if (length $param{class}) {
+	  $class = q( class=").html_escape($param{class}).q(");
+     }
+     while (($link,$link_name) = splice(@links,0,2)) {
+	  if ($param{links_only}) {
+	       push @return,$link
+	  }
+	  else {
+	       push @return,
+		    qq(<a$class href=").
+			 html_escape($link).q(">).
+			      html_escape($link_name).q(</a>);
+	  }
+     }
+     return @return;
+}
+
 
 
 =head2 maybelink
@@ -487,6 +516,8 @@ or submitterurl which returns the URL for each individual address.
 
 sub htmlize_addresslinks {
      my ($prefixfunc, $urlfunc, $addresses,$class) = @_;
+     carp "htmlize_addresslinks is deprecated";
+
      $class = defined $class?qq(class="$class" ):'';
      if (defined $addresses and $addresses ne '') {
 	  my @addrs = getparsedaddrs($addresses);
@@ -520,39 +551,13 @@ sub mainturl { pkg_url(maint => emailfromrfc822($_[0])); }
 sub submitterurl { pkg_url(submitter => emailfromrfc822($_[0])); }
 sub htmlize_maintlinks {
     my ($prefixfunc, $maints) = @_;
+    carp "htmlize_maintlinks is deprecated";
     return htmlize_addresslinks($prefixfunc, \&mainturl, $maints);
 }
 
 
 our $_maintainer;
 our $_maintainer_rev;
-
-=head2 bug_links
-
-     bug_links($one_bug);
-     bug_links($starting_bug,$stoping_bugs,);
-
-Creates a set of links to bugs, starting with bug number
-$starting_bug, and finishing with $stoping_bug; if only one bug is
-passed, makes a link to only a single bug.
-
-The content of the link is the bug number.
-
-XXX Use L<Params::Validate>; we want to be able to support query
-arguments here too.
-
-=cut
-
-sub bug_links{
-     my ($start,$stop,$query_arguments) = @_;
-     $stop = $stop || $start;
-     $query_arguments ||= '';
-     my @output;
-     for my $bug ($start..$stop) {
-	  push @output,'<a href="'.bug_url($bug,'').qq(">$bug</a>);
-     }
-     return join(', ',@output);
-}
 
 =head2 bug_linklist
 
@@ -571,12 +576,7 @@ too.]
 
 sub bug_linklist{
      my ($sep,$class,@bugs) = @_;
-     if (length $class) {
-	  $class = qq(class="$class" );
-     }
-     return join($sep,map{qq(<a ${class}href=").
-			       bug_url($_).qq(">#$_</a>)
-			  } @bugs);
+     return join($sep,bug_links(bug=>\@bugs,class=>$class));
 }
 
 

@@ -67,7 +67,7 @@ BEGIN {
 				 qw(@gDefaultArchitectures),
 				 qw($gTemplateDir),
 				 qw($gDefaultPackage),
-				 qw($gSpamMaxThreads $gSpamSpamsPerThread $gSpamKeepRunning $gSpamScan $gSpamCrossassassinDb)
+				 qw($gSpamMaxThreads $gSpamSpamsPerThread $gSpamKeepRunning $gSpamScan $gSpamCrossassassinDb),
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
@@ -76,6 +76,7 @@ BEGIN {
      @EXPORT_OK = ();
      Exporter::export_ok_tags(qw(globals text config));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
+     $ENV{HOME} = '' if not defined $ENV{HOME};
 }
 
 use File::Basename qw(dirname);
@@ -728,7 +729,6 @@ Site rules directory for spamassassin, defaults to
 =cut
 
 set_default(\%config,'spam_rules_dir','/usr/share/spamassassin');
-
 
 =back
 

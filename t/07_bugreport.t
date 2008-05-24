@@ -74,7 +74,7 @@ my $mech = Test::WWW::Mechanize->new();
 
 $mech->get_ok('http://localhost:'.$port.'/?bug=1',
 	      'Page received ok');
-ok($mech->content() =~ qr/\<title\>\#1\s+\-\s+Submitting a bug/i,
+ok($mech->content() =~ qr/\<title\>\#1.+Submitting a bug/i,
    'Title of bug is submitting a bug');
 
 # Other tests for bugs in the page should be added here eventually

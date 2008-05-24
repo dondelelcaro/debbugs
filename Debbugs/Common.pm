@@ -430,7 +430,7 @@ instead. (Or possibly a die handler, if the cleanups are important)
 =cut
 
 sub quit {
-    print $DEBUG_FH "quitting >$_[0]<\n" if $DEBUG;
+    print {$DEBUG_FH} "quitting >$_[0]<\n" if $DEBUG;
     my ($u);
     while ($u= $cleanups[$#cleanups]) { &$u; }
     die "*** $_[0]\n";

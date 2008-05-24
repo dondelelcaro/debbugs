@@ -31,6 +31,10 @@ use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 
 use IO::Scalar;
+use Params::Validate qw(validate_with :types);
+use Debbugs::MIME qw(convert_to_utf8 decode_rfc1522 create_mime_message);
+use Debbugs::CGI qw(:url :html :util);
+use POSIX qw(strftime);
 
 BEGIN{
      ($VERSION) = q$Revision: 494 $ =~ /^Revision:\s+([^\s+])/;
@@ -74,40 +78,43 @@ BEGIN{
 =cut
 
 sub display_entity {
-    my %param = valid_with(params => \@_,
-			   spec   => {entity      => {type => OBJECT,
-						     },
-				      bug_num     => {type => SCALAR,
-						      regex => qr/^\d+$/,
-						     },
-				      outer       => {type => BOOLEAN,
-						      default => 1,
-						      },
-				      msg_num     => {type => SCALAR,
-						     },
-				      attachments => {type => ARRAYREF,
-						      default => [],
-						     },
-				      output      => {type => SCALARREF|HANDLE,
-						      default => \*STDOUT,
-						     },
-				      terse       => {type => BOOLEAN,
-						      default => 0,
-						     },
-				      msg         => {type => SCALAR,
-						      optional => 1,
-						     },
-				      attachment => {type => SCALAR,
-						     optional => 1,
-						    },
-				     }
-			  );
+    my %param = validate_with(params => \@_,
+			      spec   => {entity      => {type => OBJECT,
+							},
+					 bug_num     => {type => SCALAR,
+							 regex => qr/^\d+$/,
+							},
+					 outer       => {type => BOOLEAN,
+							 default => 1,
+							},
+					 msg_num     => {type => SCALAR,
+							},
+					 attachments => {type => ARRAYREF,
+							 default => [],
+							},
+					 output      => {type => SCALARREF|HANDLE,
+							 default => \*STDOUT,
+							},
+					 terse       => {type => BOOLEAN,
+							 default => 0,
+							},
+					 msg         => {type => SCALAR,
+							 optional => 1,
+							},
+					 att         => {type => SCALAR,
+							 optional => 1,
+							},
+					 trim_headers => {type => BOOLEAN,
+							  default => 1,
+							 },
+					}
+			     );
 
     my $entity = $param{entity};
     my $ref = $param{bug_num};
-    my $top = $param{outer}
+    my $top = $param{outer};
     my $xmessage = $param{msg_num};
-    if (defined ref($options) and
+    if (defined ref($param{output}) and
 	ref($param{output}) eq 'SCALAR' and
 	not UNIVERSAL::isa($param{output},'GLOB')) {
 	 $param{output} = IO::Scalar->new($param{output});
@@ -125,7 +132,7 @@ sub display_entity {
     if ($top and not $param{terse}) {
 	 my $header = $entity->head;
 	 print {$param{output}} "<pre class=\"headers\">\n";
-	 if ($trim_headers) {
+	 if ($param{trim_headers}) {
 	      my @headers;
 	      foreach (qw(From To Cc Subject Date)) {
 		   my $head_field = $head->get($_);
@@ -150,7 +157,7 @@ sub display_entity {
 		  "($type, $disposition)]</pre>\n";
 
 	if (exists $param{msg} and exists $param{att} and
-	    $att == $#$attachments) {
+	    $param{att} == $#$attachments) {
 	    my $head = $entity->head;
 	    chomp(my $type = $entity->effective_type);
 	    my $body = $entity->stringify_body;
@@ -171,7 +178,7 @@ sub display_entity {
 	}
     }
 
-    return if not $top and $disposition eq 'attachment' and not defined($att);
+    return if not $top and $disposition eq 'attachment' and not defined($param{att});
     return unless ($type =~ m[^text/?] and
 		   $type !~ m[^text/(?:html|enriched)(?:;|$)]) or
 		  $type =~ m[^application/pgp(?:;|$)] or
@@ -223,9 +230,11 @@ sub display_entity {
 	      # flowed e-mails cause they don't really matter.
 	 }
 	 # Add links to URLs
-	 # We don't html escape here because we escape above
-	 $body =~ s{((ftp|http|https)://[\S~-]+?/?)((\&gt\;)?[)]?[']?[:.\,]?(\s|$))}
-		   {<a href=\"$1\">$1</a>$3}go;
+	 # We don't html escape here because we escape above;
+	 # wierd terminators are because of that
+	 $body =~ s{((?:ftp|http|https|svn|ftps|rsync)://[\S~-]+?/?) # Url
+		    ((?:\&gt\;)?[)]?(?:'|\&\#39\;)?[:.\,]?(?:\s|$)) # terminators
+	      }{<a href=\"$1\">$1</a>$2}gox;
 	 # Add links to bug closures
 	 $body =~ s[(closes:\s*(?:bug)?\#?\s?\d+(?:,?\s*(?:bug)?\#?\s?\d+)*)]
 		   [my $temp = $1;
@@ -244,7 +253,7 @@ sub display_entity {
 
      handle_email_message($record->{text},
 			  ref        => $bug_number,
-			  msg_number => $msg_number,
+			  msg_num => $msg_number,
 			 );
 
 Returns a decoded e-mail message and displays entities/attachments as
@@ -254,7 +263,7 @@ appropriate.
 =cut
 
 sub handle_email_message{
-     my ($email,%options) = @_;
+     my ($email,%param) = @_;
 
      my $output = '';
      my $parser = new MIME::Parser;
@@ -265,12 +274,12 @@ sub handle_email_message{
      my $entity = $parser->parse_data( $email);
      my @attachments = ();
      display_entity(entity  => $entity,
-		    bug_num => $options{ref},
+		    bug_num => $param{ref},
 		    outer   => 1,
-		    msg_number => $options{msg_number},
-		    ouput => $output,
+		    msg_num => $param{msg_num},
+		    output => \$output,
 		    attachments => \@attachments,
-		    terse       => $params{terse},
+		    terse       => $param{terse},
 		    exists $param{msg}?(msg=>$param{msg}):(),
 		    exists $param{att}?(attachment=>$param{att}):(),
 		   );
@@ -301,21 +310,21 @@ sub handle_record{
 	  # (even though these links already exist at the top)
 	  $output =~ s,((?:ftp|http|https)://[\S~-]+?/?)([\)\'\:\.\,]?(?:\s|\.<|$)),<a href=\"$1\">$1</a>$2,go;
 	  # Add links to the cloned bugs
-	  $output =~ s{(Bug )(\d+)( cloned as bugs? )(\d+)(?:\-(\d+)|)}{$1.bug_links($2).$3.bug_links($4,$5)}eo;
+	  $output =~ s{(Bug )(\d+)( cloned as bugs? )(\d+)(?:\-(\d+)|)}{$1.bug_links(bug=>$2).$3.bug_links(bug=>[$4..$5])}eo;
 	  # Add links to merged bugs
-	  $output =~ s{(?<=Merged )([\d\s]+)(?=\.)}{join(' ',map {bug_links($_)} (split /\s+/, $1))}eo;
+	  $output =~ s{(?<=Merged )([\d\s]+)(?=\.)}{join(' ',map {bug_links(bug=>$_)} (split /\s+/, $1))}eo;
 	  # Add links to blocked bugs
 	  $output =~ s{(?<=Blocking bugs)(?:( of )(\d+))?( (?:added|set to|removed):\s+)([\d\s\,]+)}
-		      {(defined $2?$1.bug_links($2):'').$3.
-			    join(' ',map {bug_links($_)} (split /\,?\s+/, $4))}eo;
+		      {(defined $2?$1.bug_links(bug=>$2):'').$3.
+			    join(' ',map {bug_links(bug=>$_)} (split /\,?\s+/, $4))}eo;
 	  # Add links to reassigned packages
 	  $output =~ s{(Bug reassigned from package \`)([^']+?)((?:'|\&\#39;) to \`)([^']+?)((?:'|\&\#39;))}
 	  {$1.q(<a href=").html_escape(pkg_url(pkg=>$2)).qq(">$2</a>).$3.q(<a href=").html_escape(pkg_url(pkg=>$4)).qq(">$4</a>).$5}eo;
 	  if (defined $time) {
 	       $output .= ' ('.strftime('%a, %d %b %Y %T GMT',gmtime($time)).') ';
 	  }
-	  $output .= '<a href="' . html_escape(bug_url($ref, msg => ($msg_number+1))) . '">Full text</a> and <a href="' .
-	       html_escape(bug_url($ref, msg => ($msg_number+1), mbox => 'yes')) . '">rfc822 format</a> available.';
+	  $output .= '<a href="' . html_escape(bug_url($bug_number, msg => ($msg_number+1))) . '">Full text</a> and <a href="' .
+	       html_escape(bug_url($bug_number, msg => ($msg_number+1), mbox => 'yes')) . '">rfc822 format</a> available.';
 
 	  $output = qq(<div class="$class"><hr>\n<a name="$msg_number"></a>\n) . $output . "</div>\n";
      }
@@ -328,11 +337,11 @@ sub handle_record{
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
 	  $output .= qq(<hr><p class="msgreceived"><a name="$msg_number"></a>\n);
-	  $output .= 'View this message in <a href="' . html_escape(bug_url($ref, msg=>$msg_number, mbox=>'yes')) . '">rfc822 format</a></p>';
+	  $output .= 'View this message in <a href="' . html_escape(bug_url($bug_number, msg=>$msg_number, mbox=>'yes')) . '">rfc822 format</a></p>';
 	  $output .= handle_email_message($record->{text},
-				    ref        => $bug_number,
-				    msg_number => $msg_number,
-				   );
+					  ref     => $bug_number,
+					  msg_num => $msg_number,
+					 );
      }
      elsif (/autocheck/) {
 	  # Do nothing
@@ -349,12 +358,12 @@ sub handle_record{
 	  my ($received,$hostname) = $record->{text} =~ m/Received: \(at (\S+)\) by (\S+)\;/;
 	  $output .= qq|<hr><p class="msgreceived"><a name="$msg_number"></a><a name="msg$msg_number"></a><a href="#$msg_number">Message #$msg_number</a> received at |.
 	       html_escape("$received\@$hostname") .
-		    q| (<a href="| . html_escape(bug_url($ref, msg=>$msg_number)) . '">full text</a>'.
-			 q|, <a href="| . html_escape(bug_url($ref, msg=>$msg_number,mbox=>'yes')) .'">mbox</a>)'.":</p>\n";
+		    q| (<a href="| . html_escape(bug_url($bug_number, msg=>$msg_number)) . '">full text</a>'.
+			 q|, <a href="| . html_escape(bug_url($bug_number, msg=>$msg_number,mbox=>'yes')) .'">mbox</a>)'.":</p>\n";
 	  $output .= handle_email_message($record->{text},
-				    ref        => $bug_number,
-				    msg_number => $msg_number,
-				   );
+					  ref     => $bug_number,
+					  msg_num => $msg_number,
+					 );
      }
      else {
 	  die "Unknown record type $_";

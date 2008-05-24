@@ -215,8 +215,7 @@ BEGIN {
 	]));
 }
 
-sub decode_rfc1522 ($)
-{
+sub decode_rfc1522 {
     my ($string) = @_;
 
     # this is craptacular, but leading space is hacked off by unmime.
@@ -240,7 +239,7 @@ MIME::Words::encode_mimeword on distinct words as appropriate.
 # We cannot use MIME::Words::encode_mimewords because that function
 # does not handle spaces properly at all.
 
-sub encode_rfc1522 ($) {
+sub encode_rfc1522 {
      my ($rawstr) = @_;
 
      # handle being passed undef properly

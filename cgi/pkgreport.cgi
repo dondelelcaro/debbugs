@@ -661,9 +661,8 @@ sub pkg_htmlindexentrystatus {
     $result .= ";\n";
 
     $result .= $showseverity;
-    $result .= pkg_htmladdresslinks("Reported by: ", \&submitterurl,
-                                $status{originator});
-    $result .= ";\nOwned by: " . html_escape($status{owner})
+    $result .= "Reported by: ".package_links(submitter=>$status{originator});
+    $result .= ";\nOwned by: " . package_links(owner => $status{owner})
                if length $status{owner};
     $result .= ";\nTags: <strong>" 
                  . html_escape(join(", ", sort(split(/\s+/, $status{tags}))))
@@ -902,10 +901,6 @@ sub pkg_htmlpackagelinks {
                     $openstrong . html_escape($_) . $closestrong . '</a>'
                 } @pkglist
            );
-}
-
-sub pkg_htmladdresslinks {
-     htmlize_addresslinks(@_,'submitter');
 }
 
 sub pkg_javascript {

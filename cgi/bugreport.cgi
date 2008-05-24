@@ -3,7 +3,7 @@
 use warnings;
 use strict;
 
-use POSIX qw(strftime tzset);
+use POSIX qw(strftime);
 use MIME::Parser;
 use MIME::Decoder;
 use IO::Scalar;
@@ -13,7 +13,6 @@ use Debbugs::Config qw(:globals :text);
 
 # for read_log_records
 use Debbugs::Log qw(read_log_records);
-use Debbugs::MIME qw(convert_to_utf8 decode_rfc1522 create_mime_message);
 use Debbugs::CGI qw(:url :html :util);
 use Debbugs::CGI::Bugreport qw(:all);
 use Debbugs::Common qw(buglog getmaintainers);
@@ -21,6 +20,9 @@ use Debbugs::Packages qw(getpkgsrc);
 use Debbugs::Status qw(splitpackages get_bug_status isstrongseverity);
 
 use Scalar::Util qw(looks_like_number);
+
+use Debbugs::Text qw(:templates);
+
 use CGI::Simple;
 my $q = new CGI::Simple;
 
@@ -44,14 +46,12 @@ my %param = cgi_parameters(query => $q,
 			  );
 # This is craptacular.
 
-my $tail_html;
-
 my $ref = $param{bug} or quitcgi("No bug number");
 $ref =~ /(\d+)/ or quitcgi("Invalid bug number");
 $ref = $1;
 my $short = "#$ref";
-my $msg = $param{'msg'};
-my $att = $param{'att'};
+my ($msg) = $param{msg} =~ /^\d+$/ if exists $param{msg};
+my ($att) = $param{att} =~ /^\d+$/ if exists $param{att};
 my $boring = $param{'boring'} eq 'yes';
 my $terse = $param{'terse'} eq 'yes';
 my $reverse = $param{'reverse'} eq 'yes';
@@ -71,16 +71,18 @@ my $archive = $param{'archive'} eq 'yes';
 my $repeatmerged = $param{'repeatmerged'} eq 'yes';
 
 my $buglog = buglog($ref);
+my @stat = stat $buglog;
+my $mtime = '';
+if (@stat) {
+     $mtime = strftime '%a, %d %b %Y %T GMT', gmtime($stat[9]);
+}
 
-if (defined $ENV{REQUEST_METHOD} and $ENV{REQUEST_METHOD} eq 'HEAD' and not defined($att) and not $mbox) {
-    print "Content-Type: text/html; charset=utf-8\n";
-    my @stat = stat $buglog;
-    if (@stat) {
-	my $mtime = strftime '%a, %d %b %Y %T GMT', gmtime($stat[9]);
-	print "Last-Modified: $mtime\n";
-    }
-    print "\n";
-    exit 0;
+if ($q->request_method() eq 'HEAD' and not defined($att) and not $mbox) {
+     print $q->header(-type => "text/html",
+		      -charset => 'utf-8',
+		      (length $mtime)?(-last_modified => $mtime):(),
+		     );
+     exit 0;
 }
 
 
@@ -88,12 +90,14 @@ my $buglogfh;
 if ($buglog =~ m/\.gz$/) {
     my $oldpath = $ENV{'PATH'};
     $ENV{'PATH'} = '/bin:/usr/bin';
-    $buglogfh = new IO::File "zcat $buglog |" or &quitcgi("open log for $ref: $!");
+    $buglogfh = IO::File->new("zcat $buglog |") or quitcgi("open log for $ref: $!");
     $ENV{'PATH'} = $oldpath;
 } else {
-    $buglogfh = new IO::File "<$buglog" or &quitcgi("open log for $ref: $!");
+    $buglogfh = IO::File->new($buglog,'r') or quitcgi("open log for $ref: $!");
 }
 
+
+my %status = %{get_bug_status(bug=>$ref)};
 
 my @records;
 eval{
@@ -211,218 +215,104 @@ my $tpack;
 my $tmain;
 
 my $dtime = strftime "%a, %e %b %Y %T UTC", gmtime;
-$tail_html = $gHTMLTail;
-$tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
 
-my %status = %{get_bug_status(bug=>$ref)};
 unless (%status) {
-    print "Content-Type: text/html; charset=utf-8\n\n";
+    print $q->header(-type => "text/html",
+		     -charset => 'utf-8',
+		     (length $mtime)?(-last_modified => $mtime):(),
+		    );
     print fill_in_template(template=>'cgi/no_such_bug',
 			   variables => {modify_time => $dtime,
 					 bug_num     => $ref,
 					},
-			  )
+			  );
     exit 0;
 }
 
-$|=1;
+#$|=1;
 
-$tpack = lc $status{'package'};
-my @tpacks = splitpackages($tpack);
+my %package;
+my @packages = splitpackages($status{package});
 
-if  ($status{severity} eq 'normal') {
-	$showseverity = '';
-} elsif (isstrongseverity($status{severity})) {
-	$showseverity = "Severity: <em class=\"severity\">$status{severity}</em>;\n";
-} else {
-	$showseverity = "Severity: $status{severity};\n";
+foreach my $pkg (@packages) {
+     $package{$pkg} = {maintainer => exists($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)',
+		       source     => exists($pkgsrc{$pkg}) ? $pkgsrc{$pkg} : '(unknown)',
+		       package    => $pkg,
+		      };
 }
 
+# fixup various bits of the status
+$status{tags_array} = [sort(split(/\s+/, $status{tags}))];
+$status{date_text} = strftime('%a, %e %b %Y %T UTC', gmtime($status{date}));
+$status{mergedwith_array} = [split(/ /,$status{mergedwith})];
+
+
+my $version_graph = '';
 if (@{$status{found_versions}} or @{$status{fixed_versions}}) {
-     $indexentry.= q(<div style="float:right"><a href=").
+     $version_graph = q(<a href=").
 	  html_escape(version_url(package => $status{package},
 				  found => $status{found_versions},
 				  fixed => $status{fixed_versions},
-				 )).
+				 )
+		     ).
 	  q("><img alt="version graph" src=").
-	       html_escape(version_url(package => $status{package},
-				       found => $status{found_versions},
-				       fixed => $status{fixed_versions},
-				       width => 2,
-				       height => 2,
-				      )).qq{"></a></div>};
+	  html_escape(version_url(package => $status{package},
+				  found => $status{found_versions},
+				  fixed => $status{fixed_versions},
+				  width => 2,
+				  height => 2,
+				 )
+		     ).
+	  qq{"></a>};
 }
 
-
-$indexentry .= "<div class=\"msgreceived\">\n";
-$indexentry .= htmlize_packagelinks($status{package}, 0) . ";\n";
-
-foreach my $pkg (@tpacks) {
-    my $tmaint = defined($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)';
-    my $tsrc = defined($pkgsrc{$pkg}) ? $pkgsrc{$pkg} : '(unknown)';
-
-    $indexentry .=
-            htmlize_maintlinks(sub { $_[0] == 1 ? "Maintainer for $pkg is\n"
-                                            : "Maintainers for $pkg are\n" },
-                           $tmaint);
-    $indexentry .= ";\nSource for $pkg is\n".
-            '<a href="'.html_escape(pkg_url(src=>$tsrc))."\">$tsrc</a>" if ($tsrc ne "(unknown)");
-    $indexentry .= ".\n";
-}
-
-$indexentry .= "<br>";
-$indexentry .= htmlize_addresslinks("Reported by: ", \&submitterurl,
-                                $status{originator}) . ";\n";
-$indexentry .= sprintf "Date: %s.\n",
-		(strftime "%a, %e %b %Y %T UTC", localtime($status{date}));
-
-$indexentry .= "<br>Owned by: " . html_escape($status{owner}) . ".\n"
-              if length $status{owner};
-
-$indexentry .= "</div>\n";
-
-my @descstates;
-
-$indexentry .= "<h3>$showseverity";
-$indexentry .= sprintf "Tags: %s;\n", 
-		html_escape(join(", ", sort(split(/\s+/, $status{tags}))))
-			if length($status{tags});
-$indexentry .= "<br>" if (length($showseverity) or length($status{tags}));
-
-my @merged= split(/ /,$status{mergedwith});
-if (@merged) {
-	my $descmerged = 'Merged with ';
-	my $mseparator = '';
-	for my $m (@merged) {
-		$descmerged .= $mseparator."<a href=\"" . html_escape(bug_url($m)) . "\">#$m</a>";
-		$mseparator= ",\n";
-	}
-	push @descstates, $descmerged;
-}
-
-if (@{$status{found_versions}}) {
-    my $foundtext = 'Found in ';
-    $foundtext .= (@{$status{found_versions}} == 1) ? 'version ' : 'versions ';
-    $foundtext .= join ', ', map html_escape($_), @{$status{found_versions}};
-    push @descstates, $foundtext;
-}
-if (@{$status{fixed_versions}}) {
-    my $fixedtext = '<strong>Fixed</strong> in ';
-    $fixedtext .= (@{$status{fixed_versions}} == 1) ? 'version ' : 'versions ';
-    $fixedtext .= join ', ', map html_escape($_), @{$status{fixed_versions}};
-    if (length($status{done})) {
-	$fixedtext .= ' by ' . html_escape(decode_rfc1522($status{done}));
-    }
-    push @descstates, $fixedtext;
-}
-
-if (@{$status{found_versions}} or @{$status{fixed_versions}}) {
-     push @descstates, '<a href="'.
-	  html_escape(version_url($status{package},
-				  $status{found_versions},
-				  $status{fixed_versions},
-				 )).qq{">Version Graph</a>};
-}
-
-if (length($status{done})) {
-    push @descstates, "<strong>Done:</strong> ".html_escape(decode_rfc1522($status{done}));
-}
-
-if (length($status{forwarded})) {
-    my $forward_link = html_escape($status{forwarded});
-    $forward_link =~ s,((ftp|http|https)://[\S~-]+?/?)((\&gt\;)?[)]?[']?[:.\,]?(\s|$)),<a href="$1">$1</a>$3,go;
-    push @descstates, "<strong>Forwarded</strong> to $forward_link";
-}
 
 
 my @blockedby= split(/ /, $status{blockedby});
+$status{blockedby_array} = [];
 if (@blockedby && $status{"pending"} ne 'fixed' && ! length($status{done})) {
     for my $b (@blockedby) {
         my %s = %{get_bug_status($b)};
         next if $s{"pending"} eq 'fixed' || length $s{done};
-        push @descstates, "Fix blocked by <a href=\"" . html_escape(bug_url($b)) . "\">#$b</a>: ".html_escape($s{subject});
-    }
+	push @{$status{blockedby_array}},{bug_num => $b, subject => $s{subject}, status => \%s};
+   }
 }
 
 my @blocks= split(/ /, $status{blocks});
+$status{blocks_array} = [];
 if (@blocks && $status{"pending"} ne 'fixed' && ! length($status{done})) {
     for my $b (@blocks) {
         my %s = %{get_bug_status($b)};
         next if $s{"pending"} eq 'fixed' || length $s{done};
-        push @descstates, "Blocking fix for <a href=\"" . html_escape(bug_url($b)) . "\">#$b</a>: ".html_escape($s{subject});
+	push @{$status{blocks_array}}, {bug_num => $b, subject => $s{subject}, status => \%s};
     }
 }
 
 if ($buglog !~ m#^\Q$gSpoolDir/db#) {
-    push @descstates, "Bug is archived. No further changes may be made";
+     $status{archived} = 1;
 }
-
-$indexentry .= join(";\n<br>", @descstates) . ".\n" if @descstates;
-$indexentry .= "</h3>\n";
 
 my $descriptivehead = $indexentry;
 
-print "Content-Type: text/html; charset=utf-8\n";
+print $q->header(-type => "text/html",
+		 -charset => 'utf-8',
+		 (length $mtime)?(-last_modified => $mtime):(),
+		);
 
-my @stat = stat $buglog;
-if (@stat) {
-     my $mtime = strftime '%a, %d %b %Y %T GMT', gmtime($stat[9]);
-     print "Last-Modified: $mtime\n";
-}
-
-print "\n";
-
-my $title = html_escape($status{subject});
-
-my $dummy2 = $gWebHostBugDir;
-
-print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
-print <<END;
-<HTML><HEAD>
-<TITLE>$short - $title - $gProject $gBug report logs</TITLE>
-<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-<link rel="stylesheet" href="$gWebHostBugDir/css/bugs.css" type="text/css">
-<script type="text/javascript">
-<!--
-function toggle_infmessages()
-{
-        allDivs=document.getElementsByTagName("div");
-        for (var i = 0 ; i < allDivs.length ; i++ )
-        {
-                if (allDivs[i].className == "infmessage")
-                {
-                        allDivs[i].style.display=(allDivs[i].style.display == 'none' | allDivs[i].style.display == '') ? 'block' : 'none';
-                }
-        }
-}
--->
-</script>
-</HEAD>
-<BODY>
-END
-print "<H1>" . "$gProject $gBug report logs - <A HREF=\"mailto:$ref\@$gEmailDomain\">$short</A>" .
-      "<BR>" . $title . "</H1>\n";
-print "$descriptivehead\n";
-
-if (looks_like_number($msg)) {
-     printf qq(<p><a href="%s">Full log</a></p>),html_escape(bug_url($ref));
-}
-else {
-     print qq(<p><a href="mailto:$ref\@$gEmailDomain">Reply</a> ),
-	  qq(or <a href="mailto:$ref-subscribe\@$gEmailDomain">subscribe</a> ),
-	       qq(to this bug.</p>\n);
-     print qq(<p><a href="javascript:toggle_infmessages();">Toggle useless messages</a></p>);
-     printf qq(<div class="msgreceived"><p>View this report as an <a href="%s">mbox folder</a>, ).
-	  qq(<a href="%s">status mbox</a>, <a href="%s">maintainer mbox</a></p></div>\n),
-	       html_escape(bug_url($ref, mbox=>'yes')),
-		    html_escape(bug_url($ref, mbox=>'yes',mboxstatus=>'yes')),
-			 html_escape(bug_url($ref, mbox=>'yes',mboxmaint=>'yes'));
-}
-print "$log";
-print "<HR>";
-print "<p class=\"msgreceived\">Send a report that <a href=\"/cgi-bin/bugspam.cgi?bug=$ref\">this bug log contains spam</a>.</p>\n<HR>\n";
-print $tail_html;
-
-print "</BODY></HTML>\n";
-
-exit 0;
+print fill_in_template(template => 'cgi/bugreport',
+		       variables => {status => \%status,
+				     package => \%package,
+				     log           => $log,
+				     bug_num       => $ref,
+				     version_graph => $version_graph,
+				     isstrongseverity => \&Debbugs::Status::isstrongseverity,
+				     html_escape   => \&Debbugs::CGI::html_escape,
+				     looks_like_number => \&Scalar::Util::looks_like_number,
+				    },
+		       hole_var  => {'&package_links' => \&Debbugs::CGI::package_links,
+				     '&bug_links'     => \&Debbugs::CGI::bug_links,
+				     '&version_url'   => \&Debbugs::CGI::version_url,
+				     '&bug_url'       => \&Debbugs::CGI::bug_url,
+				     '&strftime'      => \&POSIX::strftime,
+				    }
+		      );
