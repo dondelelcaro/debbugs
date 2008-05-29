@@ -43,7 +43,7 @@ BEGIN{
 				qw(getmaintainers_reverse),
 				qw(getpseudodesc),
 			       ],
-		     misc   => [qw(make_list)],
+		     misc   => [qw(make_list globify_scalar)],
 		     date   => [qw(secs_to_english)],
 		     quit   => [qw(quit)],
 		     lock   => [qw(filelock unfilelock @cleanups lockpid)],
@@ -56,6 +56,7 @@ BEGIN{
 #use Debbugs::Config qw(:globals);
 use Debbugs::Config qw(:config);
 use IO::File;
+use IO::Scalar;
 use Debbugs::MIME qw(decode_rfc1522);
 use Mail::Address;
 use Cwd qw(cwd);
@@ -456,6 +457,42 @@ sub make_list {
      return map {(ref($_) eq 'ARRAY')?@{$_}:$_} @_;
 }
 
+
+=head2 globify_scalar
+
+     my $handle = globify_scalar(\$foo);
+
+if $foo isn't already a glob or a globref, turn it into one using
+IO::Scalar. Gives a new handle to /dev/null if $foo isn't defined.
+
+Will carp if given a scalar which isn't a scalarref or a glob (or
+globref), and return /dev/null. May return undef if IO::Scalar or
+IO::File fails. (Check $!)
+
+=cut
+
+sub globify_scalar {
+     my ($scalar) = @_;
+     my $handle;
+     if (defined $scalar) {
+	  if (defined ref($scalar)) {
+	       if (ref($scalar) eq 'SCALAR' and
+		   not UNIVERSAL::isa($scalar,'GLOB')) {
+		    return IO::Scalar->new($scalar);
+	       }
+	       else {
+		    return $scalar;
+	       }
+	  }
+	  elsif (UNIVERSAL::isa(\$scalar,'GLOB')) {
+	       return $scalar;
+	  }
+	  else {
+	       carp "Given a non-scalar reference, non-glob to globify_scalar; returning /dev/null handle";
+	  }
+     }
+     return IO::File->new('/dev/null','w');
+}
 
 
 1;
