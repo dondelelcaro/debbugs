@@ -193,7 +193,10 @@ sub read_bug{
     }
 
     # Version 3 is the latest format version currently supported.
-    return undef if $version > 3;
+    if ($version > 3) {
+	 warn "Unsupported status version '$version'";
+	 return undef;
+    }
 
     my %namemap = reverse %fields;
     for my $line (@lines) {
@@ -226,6 +229,7 @@ sub read_bug{
     # Add log last modified time
     $data{log_modified} = (stat($log))[9];
     $data{location} = $location;
+    $data{bug_num} = $param{bug};
 
     return \%data;
 }
@@ -369,17 +373,17 @@ sub writebug {
     for my $version (keys %outputs) {
         next if defined $minversion and $version < $minversion;
         my $status = getbugcomponent($ref, $outputs{$version}, $location);
-        &quit("can't find location for $ref") unless defined $status;
-        open(S,"> $status.new") || &quit("opening $status.new: $!");
+        die "can't find location for $ref" unless defined $status;
+        open(S,"> $status.new") || die "opening $status.new: $!";
         print(S makestatus($data, $version)) ||
-            &quit("writing $status.new: $!");
-        close(S) || &quit("closing $status.new: $!");
+            die "writing $status.new: $!";
+        close(S) || die "closing $status.new: $!";
         if (-e $status) {
             $change = 'change';
         } else {
             $change = 'new';
         }
-        rename("$status.new",$status) || &quit("installing new $status: $!");
+        rename("$status.new",$status) || die "installing new $status: $!";
     }
 
     # $disablebughook is a bit of a hack to let format migration scripts use
