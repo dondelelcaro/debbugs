@@ -1025,7 +1025,7 @@ sub pkg_htmlselectarch {
 sub myurl {
      return html_escape(pkg_url(map {exists $param{$_}?($_,$param{$_}):()}
 			     qw(archive repeatmerged mindays maxdays),
-			     qw(version dist arch pkg src tag maint submitter)
+			     qw(version dist arch package src tag maint submitter)
 			    )
 		    );
 }
