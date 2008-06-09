@@ -89,7 +89,7 @@ BEGIN{
 }
 
 use Debbugs::Config qw(:config);
-use Debbugs::Common qw(:lock buglog make_list get_hashname);
+use Debbugs::Common qw(:lock buglog :misc get_hashname);
 use Debbugs::Status qw(bug_archiveable :read :hook writebug);
 use Debbugs::CGI qw(html_escape);
 use Debbugs::Log qw(:misc);
@@ -97,7 +97,6 @@ use Debbugs::Log qw(:misc);
 use Params::Validate qw(validate_with :types);
 use File::Path qw(mkpath);
 use IO::File;
-use IO::Scalar;
 
 use Debbugs::Text qw(:templates);
 
@@ -110,10 +109,13 @@ use POSIX qw(strftime);
 my %common_options = (debug       => {type => SCALARREF,
 				      optional => 1,
 				     },
-		      transcript  => {type => SCALARREF,
+		      transcript  => {type => SCALARREF|HANDLE,
 				      optional => 1,
 				     },
 		      affected_bugs => {type => HASHREF,
+					optional => 1,
+				       },
+		      recipients    => {type => HASHREF,
 					optional => 1,
 				       },
 		     );
@@ -163,6 +165,22 @@ my %append_action_options =
 
 This routine archives a bug
 
+=over
+
+=item bug -- bug number
+
+=item check_archiveable -- check wether a bug is archiveable before
+archiving; defaults to 1
+
+=item archive_unarchived -- whether to archive bugs which have not
+previously been archived; defaults to 1. [Set to 0 when used from
+control@]
+
+=item ignore_time -- whether to ignore time constraints when archiving
+a bug; defaults to 0.
+
+=back
+
 =cut
 
 sub bug_archive {
@@ -173,6 +191,9 @@ sub bug_archive {
 					  check_archiveable => {type => BOOLEAN,
 								default => 1,
 							       },
+					  archive_unarchived => {type => BOOLEAN,
+								 default => 1,
+								},
 					  ignore_time => {type => BOOLEAN,
 							  default => 0,
 							 },
@@ -203,6 +224,14 @@ sub bug_archive {
      defined $data or die "No bug found for $param{bug}";
      print {$debug} "$param{bug} read ok (done $data->{done})\n";
      print {$debug} "$param{bug} read done\n";
+
+     if (not $param{archive_unarchived} and
+	 not exists $data->{unarchived}
+	) {
+	  print {$transcript} "$param{bug} has not been archived previously\n";
+	  die "$param{bug} has not been archived previously";
+     }
+
      my @bugs = ($param{bug});
      # my %bugs;
      # @bugs{@bugs} = (1) x @bugs;
@@ -242,9 +271,7 @@ sub bug_archive {
 	  append_action_to_log(bug => $bug,
 			       get_lock => 0,
 			       __return_append_to_log_options(
-				 (map {exists $param{$_}?($_,$param{$_}):()}
-				  keys %append_action_options,
-				 ),
+				 %param,
 				 action => $action,
 				)
 			      )
@@ -366,9 +393,7 @@ sub bug_unarchive {
 	  append_action_to_log(bug => $bug,
 			       get_lock => 0,
 			       __return_append_to_log_options(
-				 (map {exists $param{$_}?($_,$param{$_}):()}
-				  keys %append_action_options,
-				 ),
+				 %param,
 				 action => $action,
 				)
 			      )
@@ -447,7 +472,7 @@ sub append_action_to_log{
 
      my ($debug,$transcript) = __handle_debug_transcript(%param);
 
-Returns a debug and transcript IO::Scalar filehandle
+Returns a debug and transcript filehandle
 
 
 =cut
@@ -457,16 +482,15 @@ sub __handle_debug_transcript{
 			       spec   => {%common_options},
 			       allow_extra => 1,
 			      );
-     my $fake_scalar;
-     my $debug = IO::Scalar->new(exists $param{debug}?$param{debug}:\$fake_scalar);
-     my $transcript = IO::Scalar->new(exists $param{transcript}?$param{transcript}:\$fake_scalar);
+     my $fake_scalar = '';
+     my $debug = globify_scalar(exists $param{debug}?$param{debug}:\$fake_scalar);
+     my $transcript = globify_scalar(exists $param{transcript}?$param{transcript}:\$fake_scalar);
      return ($debug,$transcript);
 
 }
 
 sub __return_append_to_log_options{
-     my %param = @_;
-     my $action = 'Unknown action';
+     my %param = @_
      if (not exists $param{requester}) {
 	  $param{requester} = $config{control_internal_requester};
      }
