@@ -34,10 +34,10 @@ chdir( "$gSpoolDir" ) || die "chdir spool: $!\n";
 umask(002);
 open DEBUG, ">/dev/null";
 
-my $intdate = time or quit("failed to get time: $!");
+my $intdate = time or die "failed to get time: $!";
 
 $_=shift;
-m/^([BMQFDUL])(\d*)\.\d+$/ or quit("bad argument: $_");
+m/^([BMQFDUL])(\d*)\.\d+$/ or die "bad argument: $_";
 my $codeletter= $1;
 my $tryref= length($2) ? $2 : -1;
 my $nn= $_;
@@ -45,7 +45,7 @@ my $nn= $_;
 if (!rename("incoming/G$nn","incoming/P$nn")) 
 {
     $_=$!.'';  m/no such file or directory/i && exit 0;
-    &quit("renaming to lock: $!");
+    die "renaming to lock: $!";
 }
 
 my $baddress= 'submit' if $codeletter eq 'B';
@@ -55,7 +55,7 @@ $baddress= 'forwarded' if $codeletter eq 'F';
 $baddress= 'done' if $codeletter eq 'D';
 $baddress= 'submitter' if $codeletter eq 'U';
 bug_list_forward($nn) if $codeletter eq 'L';
-$baddress || &quit("bad codeletter $codeletter");
+$baddress || die "bad codeletter $codeletter";
 my $baddressroot= $baddress;
 $baddress= "$tryref-$baddress" if $tryref>=0;
 
@@ -191,7 +191,7 @@ print DEBUG "***\n$fwd\n***\n";
 if (defined $header{'resent-from'} && !defined $header{'from'}) {
     $header{'from'} = $header{'resent-from'};
 }
-defined($header{'from'}) || &quit("no From header");
+defined($header{'from'}) || die "no From header";
 
 my $replyto = $header{'reply-to'};
 $replyto = '' unless defined $replyto;
@@ -390,7 +390,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	writebug($ref, $data);
 
 	my $hash = get_hashname($ref);
-        open(O,"db-h/$hash/$ref.report") || &quit("read original report: $!");
+        open(O,"db-h/$hash/$ref.report") || die "read original report: $!";
         my $orig_report= join('',<O>); close(O);
         if ($codeletter eq 'F') {
 	    &htmllog("Reply","sent",$replyto,"You have marked $gBug as forwarded.");
@@ -580,8 +580,8 @@ if ($ref<0) { # new bug report
 	$data->{'forwarded-to'} = $pheader{forwarded};
     }
     &filelock("nextnumber.lock");
-    open(N,"nextnumber") || &quit("nextnumber: read: $!");
-    my $nextnumber=<N>; $nextnumber =~ s/\n$// || &quit("nextnumber bad format");
+    open(N,"nextnumber") || die "nextnumber: read: $!";
+    my $nextnumber=<N>; $nextnumber =~ s/\n$// || die "nextnumber bad format";
     $ref= $nextnumber+0;  $nextnumber += 1;  $newref=1;
     &overwrite('nextnumber', "$nextnumber\n");
     &unfilelock;
@@ -884,10 +884,10 @@ if (not exists $header{'x-debbugs-no-ack'} and
 
 sub overwrite {
     my ($f,$v) = @_;
-    open(NEW,">$f.new") || &quit("$f.new: create: $!");
-    print(NEW "$v") || &quit("$f.new: write: $!");
-    close(NEW) || &quit("$f.new: close: $!");
-    rename("$f.new","$f") || &quit("rename $f.new to $f: $!");
+    open(NEW,">$f.new") || die "$f.new: create: $!";
+    print(NEW "$v") || die "$f.new: write: $!";
+    close(NEW) || die "$f.new: close: $!";
+    rename("$f.new","$f") || die "rename $f.new to $f: $!";
 }
 
 sub appendlog {
@@ -895,10 +895,10 @@ sub appendlog {
     if (!open(AP,">>db-h/$hash/$ref.log")) {
         print DEBUG "failed open log<\n";
         print DEBUG "failed open log err $!<\n";
-        &quit("opening db-h/$hash/$ref.log (li): $!");
+        die "opening db-h/$hash/$ref.log (li): $!";
     }
-    print(AP "\7\n",escape_log(@log),"\n\3\n") || &quit("writing db-h/$hash/$ref.log (li): $!");
-    close(AP) || &quit("closing db-h/$hash/$ref.log (li): $!");
+    print(AP "\7\n",escape_log(@log),"\n\3\n") || die "writing db-h/$hash/$ref.log (li): $!";
+    close(AP) || die "closing db-h/$hash/$ref.log (li): $!";
 }
 
 sub finish {
@@ -908,23 +908,23 @@ sub finish {
     # cleanups are run in an end block now.
     #my ($u);
     #while ($u= $cleanups[$#cleanups]) { &$u; }
-    unlink("incoming/P$nn") || &quit("unlinking incoming/P$nn: $!");
+    unlink("incoming/P$nn") || die "unlinking incoming/P$nn: $!";
     exit $exit;
 }
 
-&quit("wot no exit");
+die "wot no exit";
 
 sub htmllog {
     my ($whatobj,$whatverb,$where,$desc) = @_;
     my $hash = get_hashname($ref);
-    open(AP,">>db-h/$hash/$ref.log") || &quit("opening db-h/$hash/$ref.log (lh): $!");
+    open(AP,">>db-h/$hash/$ref.log") || die "opening db-h/$hash/$ref.log (lh): $!";
     print(AP
           "\6\n".
           "<strong>$whatobj $whatverb</strong>".
           ($where eq '' ? "" : " to <code>".html_escape($where)."</code>").
           ":<br>\n". $desc.
-          "\n\3\n") || &quit("writing db-h/$hash/$ref.log (lh): $!");
-    close(AP) || &quit("closing db-h/$hash/$ref.log (lh): $!");
+          "\n\3\n") || die "writing db-h/$hash/$ref.log (lh): $!";
+    close(AP) || die "closing db-h/$hash/$ref.log (lh): $!";
 }    
 
 sub stripbccs {
@@ -982,11 +982,11 @@ sub sendmessage {
 
     my $hash = get_hashname($ref);
     #save email to the log
-    open(AP,">>db-h/$hash/$ref.log") || &quit("opening db-h/$hash/$ref.log (lo): $!");
+    open(AP,">>db-h/$hash/$ref.log") || die "opening db-h/$hash/$ref.log (lo): $!";
     print(AP "\2\n",join("\4",@$recips),"\n\5\n",
           escape_log(stripbccs($msg)),"\n\3\n") ||
-        &quit("writing db-h/$hash/$ref.log (lo): $!");
-    close(AP) || &quit("closing db-h/$hash/$ref.log (lo): $!");
+        die "writing db-h/$hash/$ref.log (lo): $!";
+    close(AP) || die "closing db-h/$hash/$ref.log (lo): $!";
 
     if (ref($bcc)) {
         shift @$recips if $recips->[0] eq '-t';
@@ -1052,28 +1052,28 @@ sub checkmaintainers {
     return if $maintainerschecked++;
     return if !length($data->{package});
     my %maintainerof;
-    open(MAINT,"$gMaintainerFile") || die &quit("maintainers open: $!");
+    open(MAINT,"$gMaintainerFile") || die die "maintainers open: $!";
     while (<MAINT>) {
 	m/^\n$/ && next;
 	m/^\s*$/ && next;
-        m/^(\S+)\s+(\S.*\S)\s*\n$/ || &quit("maintainers bogus \`$_'");
+        m/^(\S+)\s+(\S.*\S)\s*\n$/ || die "maintainers bogus \`$_'";
         $a= $1; $b= $2; $a =~ y/A-Z/a-z/;
 	# use the package which is normalized to lower case; we do this because we lc the pseudo headers.
         $maintainerof{$a}= $2;
     }
     close(MAINT);
-    open(MAINT,"$gMaintainerFileOverride") || die &quit("maintainers.override open: $!");
+    open(MAINT,"$gMaintainerFileOverride") || die die "maintainers.override open: $!";
     while (<MAINT>) {
 	m/^\n$/ && next;
 	m/^\s*$/ && next;
-        m/^(\S+)\s+(\S.*\S)\s*\n$/ || &quit("maintainers.override bogus \`$_'");
+        m/^(\S+)\s+(\S.*\S)\s*\n$/ || die "maintainers.override bogus \`$_'";
         $a= $1; $b= $2; $a =~ y/A-Z/a-z/;
 	# use the package which is normalized to lower case; we do this because we lc the pseudo headers.
         $maintainerof{$a}= $2;
     }
     close(MAINT);
     my %pkgsrc;
-    open(SOURCES,"$gPackageSource") || &quit("pkgsrc open: $!");
+    open(SOURCES,"$gPackageSource") || die "pkgsrc open: $!";
     while (<SOURCES>) {
         next unless m/^(\S+)\s+\S+\s+(\S.*\S)\s*$/;
 	($a,$b)=($1,$2);
@@ -1164,6 +1164,6 @@ sub bug_list_forward{
 		       envelope_from  => $envelope_from,
 		       encode_headers => 0,
 		      );
-     unlink("incoming/P$bug_fn") || &quit("unlinking incoming/P$bug_fn: $!");
+     unlink("incoming/P$bug_fn") || die "unlinking incoming/P$bug_fn: $!";
      exit 0;
 }

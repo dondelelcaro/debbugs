@@ -17,11 +17,11 @@ chdir("$gSpoolDir") || die "chdir spool: $!\n";
 #global variables
 $debug = 0;
 
-@ARGV==0 and &quit( "no archive given on the commandline" );
+@ARGV==0 and die  "no archive given on the commandline" ;
 my $archive = shift(@ARGV);
 my $index = "index.$archive";
 $index = 'index.db' if $archive eq 'db-h';
-open IDXFILE, "> $index" or &quit( "trying to reset index file: $!" );
+open IDXFILE, "> $index" or die  "trying to reset index file: $!" ;
 
 #get list of bugs (ie, status files)
 my @files;
