@@ -705,12 +705,12 @@ END
 	$bug_affected{$ref}=1;
         $newseverity= $2;
         if (!grep($_ eq $newseverity, @gSeverityList, "$gDefaultSeverity")) {
-            &transcript("Severity level \`$newseverity' is not known.\n".
- 			"Recognized are: $gShowSeverities.\n\n");
+	     print {$transcript} "Severity level \`$newseverity' is not known.\n".
+		  "Recognized are: $gShowSeverities.\n\n";
 	    $errors++;
         } elsif (exists $gObsoleteSeverities{$newseverity}) {
-            &transcript("Severity level \`$newseverity' is obsolete. " .
-                        "Use $gObsoleteSeverities{$newseverity} instead.\n\n");
+            print {$transcript} "Severity level \`$newseverity' is obsolete. " .
+		 "Use $gObsoleteSeverities{$newseverity} instead.\n\n";
 	    	$errors++;
         } elsif (&setbug) {
             $printseverity= $data->{severity};
@@ -744,8 +744,8 @@ END
 	    }
 	}
 	if (@badtags) {
-            &transcript("Unknown tag/s: ".join(', ', @badtags).".\n".
- 			"Recognized are: ".join(' ', @gTags).".\n\n");
+            print {$transcript} "Unknown tag/s: ".join(', ', @badtags).".\n".
+		 "Recognized are: ".join(' ', @gTags).".\n\n";
 	    $errors++;
 	}
 	if (&setbug) {
@@ -940,7 +940,7 @@ END
 	my %fixed = ();
         &getmerge;
         while (defined($ref= shift(@tomerge))) {
-            &transcript("D| checking merge $ref\n") if $dl;
+            print {$transcript} "D| checking merge $ref\n" if $dl;
 	    $ref+= 0;
 	    if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
 		$ref = $clonebugs{$ref};
@@ -949,7 +949,7 @@ END
 	    if (!&getbug) { &notfoundbug; @newmergelist=(); last }
             if (!&checkpkglimit) { &cancelbug; @newmergelist=(); last; }
             &foundbug;
-            &transcript("D| adding $ref ($data->{mergedwith})\n") if $dl;
+            print {$transcript} "D| adding $ref ($data->{mergedwith})\n") if $dl;
 	    $mismatch= '';
 	    &checkmatch('package','m_package',$data->{package},@newmergelist);
 	    &checkmatch('forwarded addr','m_forwarded',$data->{forwarded},@newmergelist);
@@ -963,8 +963,8 @@ END
 	    foreach my $f (@{$data->{found_versions}}) { $found{$f} = 1; }
 	    foreach my $f (@{$data->{fixed_versions}}) { $fixed{$f} = 1; }
 	    if (length($mismatch)) {
-	        &transcript("Mismatch - only $gBugs in same state can be merged:\n".
-                            $mismatch."\n");
+	        print {$transcript} "Mismatch - only $gBugs in same state can be merged:\n".
+		     $mismatch."\n";
 		$errors++;
 		&cancelbug; @newmergelist=(); last;
 	    }
@@ -996,7 +996,7 @@ END
 	my $master_bug_data;
 	my @tomerge = sort { $a <=> $b } @temp;
         unshift @tomerge,$master_bug;
-	&transcript("D| force merging ".join(',',@tomerge)."\n") if $dl;
+	print {$transcript} "D| force merging ".join(',',@tomerge)."\n" if $dl;
 	my @newmergelist= ();
 	my %tags = ();
 	my %found = ();
@@ -1007,7 +1007,7 @@ END
 	# Everything else we set to the values of the first bug.
         &getmerge;
         while (defined($ref= shift(@tomerge))) {
-            &transcript("D| checking merge $ref\n") if $dl;
+            print {$transcript} "D| checking merge $ref\n" if $dl;
 	    $ref+= 0;
 	    if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
 		$ref = $clonebugs{$ref};
@@ -1016,11 +1016,11 @@ END
 	    if (!&getbug) { &notfoundbug; @newmergelist=(); last }
             if (!&checkpkglimit) { &cancelbug; @newmergelist=(); last; }
             &foundbug;
-            &transcript("D| adding $ref ($data->{mergedwith})\n") if $dl;
+            print {$transcript} "D| adding $ref ($data->{mergedwith})\n" if $dl;
 	    $master_bug_data = $data if not defined $master_bug_data;
 	    if ($data->{package} ne $master_bug_data->{package}) {
-		&transcript("Mismatch - only $gBugs in the same package can be forcibly merged:\n".
-			    "$gBug $ref is not in the same package as $master_bug\n");
+		 print {$transcript} "Mismatch - only $gBugs in the same package can be forcibly merged:\n".
+		     "$gBug $ref is not in the same package as $master_bug\n";
 		$errors++;
 		&cancelbug; @newmergelist=(); last;
 	    }
@@ -1121,8 +1121,8 @@ END
 	my @pkgs = split /\s+/, $1;
 	if (scalar(@pkgs) > 0) {
 		%limit_pkgs = map { ($_, 1) } @pkgs;
-		&transcript("Ignoring bugs not assigned to: " . 
-			join(" ", keys(%limit_pkgs)) . "\n\n");
+		print {$transcript} "Ignoring bugs not assigned to: " .
+			join(" ", keys(%limit_pkgs)) . "\n\n";
 	} else {
 		%limit_pkgs = ();
 		print {$transcript} "Not ignoring any bugs.\n\n";
@@ -1217,16 +1217,16 @@ if (!$ok && !quickabort) {
     print {$transcript} "\n";
 }
 
-&transcript("MC\n") if $dl>1;
+print {$transcript} "MC\n" if $dl>1;
 @maintccs= ();
 for $maint (keys %maintccreasons) {
-&transcript("MM|$maint|\n") if $dl>1;
+print {$transcript} "MM|$maint|\n" if $dl>1;
     next if $maint eq $replyto;
     $reasonstring= '';
     $reasonsref= $maintccreasons{$maint};
-&transcript("MY|$maint|\n") if $dl>2;
+print {$transcript} "MY|$maint|\n" if $dl>2;
     for $p (sort keys %$reasonsref) {
-&transcript("MP|$p|\n") if $dl>2;
+print {$transcript} "MP|$p|\n" if $dl>2;
         $reasonstring.= ', ' if length($reasonstring);
         $reasonstring.= $p.' ' if length($p);
         $reasonstring.= join(' ',map("#$_",sort keys %{$$reasonsref{$p}}));
@@ -1241,7 +1241,7 @@ for $maint (keys %maintccreasons) {
 
 $maintccs = ""; 
 if (@maintccs) {
-    &transcript("MC|@maintccs|\n") if $dl>2;
+    print {$transcript} "MC|@maintccs|\n" if $dl>2;
     $maintccs .= "Cc: " . join(",\n    ",@maintccs) . "\n";
 }
 
@@ -1365,7 +1365,7 @@ sub checkmatch {
     local ($mvarvalue);
     if (@newmergelist) {
         eval "\$mvarvalue= \$$mvarname";
-        &transcript("D| checkmatch \`$string' /$mvarname/$mvarvalue/$svarvalue/\n")
+        print {$transcript} "D| checkmatch \`$string' /$mvarname/$mvarvalue/$svarvalue/\n"
             if $dl;
         $mismatch .=
             "Values for \`$string' don't match:\n".
@@ -1373,8 +1373,8 @@ sub checkmatch {
             " #$ref has \`$svarvalue'\n"
             if $mvarvalue ne $svarvalue;
     } else {
-        &transcript("D| setupmatch \`$string' /$mvarname/$svarvalue/\n")
-            if $dl;
+	 print {$transcript} "D| setupmatch \`$string' /$mvarname/$svarvalue/\n"
+	      if $dl;
         eval "\$$mvarname= \$svarvalue";
     }
 }
@@ -1511,8 +1511,8 @@ sub getnextbug {
 #    &transcript("$action\n\n")
 #    endmerge
 
-sub notfoundbug { &transcript("$gBug number $ref not found. (Is it archived?)\n\n"); }
-sub foundbug { &transcript("$gBug#$ref: $data->{subject}\n"); }
+sub notfoundbug { print {$transcript} "$gBug number $ref not found. (Is it archived?)\n\n"; }
+sub foundbug { print {$transcript} "$gBug#$ref: $data->{subject}\n"; }
 
 sub getmerge {
     &dlen("getmerge");
@@ -1630,8 +1630,8 @@ sub sendlynxdocraw {
     while(<L>) { $doc.=$_; }
     $!=0; close(L);
     if ($? == 255 && $doc =~ m/^\n*lynx: Can\'t access start file/) {
-        &transcript("Information ($description) is not available -\n".
-                    "perhaps the $gBug does not exist or is not on the WWW yet.\n");
+        print {$transcript} "Information ($description) is not available -\n".
+	     "perhaps the $gBug does not exist or is not on the WWW yet.\n";
          $ok++;
     } elsif ($?) {
         print {$transcript} "Error getting $description (code $? $!):\n$doc\n";
@@ -1724,7 +1724,7 @@ sub addmaintainers {
         }
         if (defined(getmaintainers->{$p})) {
  	    $addmaint= getmaintainers->{$p};
-	    &transcript("MR|$addmaint|$p|$ref|\n") if $dl>2;
+	    print {$transcript} "MR|$addmaint|$p|$ref|\n" if $dl>2;
 	    add_recipients(recipients => $param{recipients},
 			   addrs => $addmaint,
 			   reason => $p,
@@ -1735,7 +1735,7 @@ sub addmaintainers {
         } else { 
 	    print "maintainer none >$p<\n" if $debug; 
 	    print {$transcript} "Warning: Unknown package '$p'\n";
-	    &transcript("MR|unknown-package|$p|$ref|\n") if $dl>2;
+	    print {$transcript} "MR|unknown-package|$p|$ref|\n" if $dl>2;
             add_recipients(recipients => $param{recipients},
 			   addrs => $config{unknown_maintainer_email},
 			   reason => $p,
@@ -1749,7 +1749,7 @@ sub addmaintainers {
 
     if (length $param{data}{owner}) {
         $addmaint = $param{data}{owner};
-        &transcript("MO|$addmaint|$param{data}{package}|$ref|\n") if $dl>2;
+        print {$transcript} "MO|$addmaint|$param{data}{package}|$ref|\n" if $dl>2;
         add_recipients(recipients => $param{recipients},
 		       addrs => $addmaint,
 		       reason => $p,
