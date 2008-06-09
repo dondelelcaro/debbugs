@@ -232,7 +232,7 @@ sub getmaintainers {
     for my $file (@config{qw(maintainer_file maintainer_file_override pseduo_maint_file)}) {
 	 next unless defined $file;
 	 my $maintfile = IO::File->new($file,'r') or
-	      die "Unable to open maintainer file $file: $!");
+	      die "Unable to open maintainer file $file: $!";
 	 while(<$maintfile>) {
 	      next unless m/^(\S+)\s+(\S.*\S)\s*$/;
 	      ($a,$b)=($1,$2);
