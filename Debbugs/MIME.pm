@@ -56,12 +56,12 @@ sub getmailbody
     return undef;
 }
 
-sub parse ($)
+sub parse
 {
     # header and decoded body respectively
     my (@headerlines, @bodylines);
 
-    my $parser = new MIME::Parser;
+    my $parser = MIME::Parser->new();
     mkdir "mime.tmp.$$", 0777;
     $parser->output_under("mime.tmp.$$");
     my $entity = eval { $parser->parse_data($_[0]) };
