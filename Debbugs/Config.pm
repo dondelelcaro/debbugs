@@ -531,16 +531,75 @@ set_default(\%config,'exclude_from_control',[]);
 
 
 
+=item default_severity
+
+The default severity of bugs which have no severity set
+
+Default: normal
+
+=cut
 
 set_default(\%config,'default_severity','normal');
-set_default(\%config,'show_severities','critical, grave, normal, minor, wishlist');
-set_default(\%config,'strong_severities',[qw(critical grave)]);
-set_default(\%config,'severity_list',[qw(critical grave normal wishlist)]);
+
+=item severity_display
+
+A hashref of severities and the informative text which describes them.
+
+Default:
+
+ {critical => "Critical $config{bugs}",
+  grave    => "Grave $config{bugs}",
+  normal   => "Normal $config{bugs}",
+  wishlist => "Wishlist $config{bugs}",
+ }
+
+=cut
+
 set_default(\%config,'severity_display',{critical => "Critical $config{bugs}",
 					 grave    => "Grave $config{bugs}",
 					 normal   => "Normal $config{bugs}",
 					 wishlist => "Wishlist $config{bugs}",
 					});
+
+=item show_severities
+
+A scalar list of the severities to show
+
+Defaults to the concatenation of the keys of the severity_display
+hashlist with ', ' above.
+
+=cut
+
+set_default(\%config,'show_severities',join(', ',keys %{$config{severity_display}}));
+
+=item strong_severities
+
+An arrayref of the serious severities which shoud be emphasized
+
+Default: [qw(critical grave)]
+
+=cut
+
+set_default(\%config,'strong_severities',[qw(critical grave)]);
+
+=item severity_list
+
+An arrayref of a list of the severities
+
+Defaults to the keys of the severity display hashref
+
+=cut
+
+set_default(\%config,'severity_list',[keys %{$config{severity_display}}]);
+
+=item tags
+
+An arrayref of the tags used
+
+Default: [qw(patch wontfix moreinfo unreproducible fixed)] and also
+includes the distributions.
+
+=cut
 
 set_default(\%config,'tags',[qw(patch wontfix moreinfo unreproducible fixed),
 			     @{$config{distributions}}
