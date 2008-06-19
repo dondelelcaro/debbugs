@@ -35,6 +35,7 @@ BEGIN {
     $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
+use Carp;
 
 use Debbugs::Common qw(getbuglocation getbugcomponent);
 use Params::Validate qw(:types validate_with);
@@ -177,7 +178,7 @@ sub new
 					  }
 			       );
     }
-    if (grep {exists $param{$_} and defined $param{$_}} qw(bug_num logfh log_name) ne 3) {
+    if (grep({exists $param{$_} and defined $param{$_}} qw(bug_num logfh log_name)) ne 1) {
 	 croak "Exactly one of bug_num, logfh, or log_name must be passed and must be defined";
     }
 
@@ -193,8 +194,8 @@ sub new
 	      die "Unable to open bug log $param{log_name} for reading: $!";
     }
     elsif (exists $param{bug_num}) {
-	 my $location = getbuglocation($bug,'log');
-	 my $bug_log = getbugcomponent($bug,'log',$location);
+	 my $location = getbuglocation($param{bug_num},'log');
+	 my $bug_log = getbugcomponent($param{bug_num},'log',$location);
 	 $self->{logfh} = IO::File->new($bug_log, 'r') or
 	      die "Unable to open bug log $bug_log for reading: $!";
     }
