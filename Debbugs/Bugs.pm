@@ -90,6 +90,8 @@ for limited regular expressions, and/or more complex expressions.
 
 =item owner -- owner of the bug
 
+=item correspondent -- address of someone who sent mail to the log
+
 =item dist -- distribution (I don't know about this one yet)
 
 =item bugs -- list of bugs to search within
@@ -177,6 +179,9 @@ sub get_bugs{
 					  dist      => {type => SCALAR|ARRAYREF,
 						        optional => 1,
 						       },
+					  correspondent => {type => SCALAR|ARRAYREF,
+							    optional => 1,
+							   },
 					  function  => {type => CODEREF,
 							optional => 1,
 						       },
@@ -402,6 +407,9 @@ sub get_bugs_by_idx{
 					  bugs      => {type => SCALAR|ARRAYREF,
 							optional => 1,
 						       },
+					  correspondent => {type => SCALAR|ARRAYREF,
+							    optional => 1,
+							   },
 					  usertags  => {type => HASHREF,
 							optional => 1,
 						       },
@@ -498,10 +506,13 @@ sub get_bugs_flatfile{
 					  tag       => {type => SCALAR|ARRAYREF,
 						        optional => 1,
 						       },
+ 					  owner     => {type => SCALAR|ARRAYREF,
+ 						        optional => 1,
+ 						       },
+					  correspondent => {type => SCALAR|ARRAYREF,
+							    optional => 1,
+							   },
 # not yet supported
-# 					  owner     => {type => SCALAR|ARRAYREF,
-# 						        optional => 1,
-# 						       },
 # 					  dist      => {type => SCALAR|ARRAYREF,
 # 						        optional => 1,
 # 						       },
@@ -544,11 +555,23 @@ sub get_bugs_flatfile{
 	  delete @param{qw(maint src)};
 	  $param{package} = [@packages];
      }
+     my $grep_bugs = 0;
+     my %bugs;
+     if (exists $param{bugs}) {
+	  $bugs{$_} = 1 for make_list($param{bugs});
+	  $grep_bugs = 1;
+     }
+     if (exists $param{owner} or exists $param{correspondent}) {
+	  $bugs{$_} = 1 for get_bugs_by_idx(exists $param{correspondent}?(correspondent => $param{correspondent}):(),
+					    exists $param{owner}?(owner => $param{owner}):(),
+					   );
+	  $grep_bugs = 1;
+     }
      my @bugs;
      while (<$flatfile>) {
 	  next unless m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/;
 	  my ($pkg,$bug,$time,$status,$submitter,$severity,$tags) = ($1,$2,$3,$4,$5,$6,$7);
-	  next if exists $param{bugs} and not grep {$bug == $_} make_list($param{bugs});
+	  next if $grep_bugs and not exists $bugs{$bug};
 	  if (exists $param{package}) {
 	       my @packages = splitpackages($pkg);
 	       next unless grep { my $pkg_list = $_;
