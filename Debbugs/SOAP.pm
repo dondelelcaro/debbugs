@@ -225,13 +225,7 @@ sub get_bug_log{
      my $VERSION = __populate_version(pop);
      my ($self,$bug,$msg_num) = @_;
 
-     my $location = getbuglocation($bug,'log');
-     my $bug_log = getbugcomponent($bug,'log',$location);
-
-     my $log_fh = IO::File->new($bug_log, 'r') or
-	  die "Unable to open bug log $bug_log for reading: $!";
-
-     my $log = Debbugs::Log->new($log_fh) or
+     my $log = Debbugs::Log->new(bug_num => $bug) or
 	  die "Debbugs::Log was unable to be initialized";
 
      my %seen_msg_ids;
