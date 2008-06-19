@@ -631,6 +631,16 @@ sub bug_archiveable{
 	  print STDERR "Cannot archive $param{bug} because it is not done\n" if $DEBUG;
 	  return $cannot_archive
      }
+     # Check to make sure that the bug has none of the unremovable tags set
+     if (@{$config{removal_unremovable_tags}}) {
+	  for my $tag (split ' ', ($status->{tags}||'')) {
+	       if (grep {$tag eq $_} @{$config{removal_unremovable_tags}}) {
+		    print STDERR "Cannot archive $param{bug} because it has an unremovable tag '$tag'\n" if $DEBUG;
+		    return $cannot_archive;
+	       }
+	  }
+     }
+
      # If we just are checking if the bug can be archived, we'll not even bother
      # checking the versioning information if the bug has been -done for less than 28 days.
      my $log_file = getbugcomponent($param{bug},'log');

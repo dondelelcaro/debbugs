@@ -401,6 +401,18 @@ set_default(\%config,'default_architectures',
 	    [qw(i386 amd64 arm powerpc sparc alpha)]
 	   );
 
+=item removal_unremovable_tags
+
+Bugs which have these tags set cannot be archived
+
+Default: []
+
+=cut
+
+set_default(\%config,'removal_unremovable_tags',
+	    [],
+	   );
+
 =item removal_distribution_tags
 
 Tags which specifiy distributions to check
@@ -611,6 +623,16 @@ set_default(\%config,'bounce_froms','^mailer|^da?emon|^post.*mast|^root|^wpuser|
 
 set_default(\%config,'config_dir',dirname(exists $ENV{DEBBUGS_CONFIG_FILE}?$ENV{DEBBUGS_CONFIG_FILE}:'/etc/debbugs/config'));
 set_default(\%config,'spool_dir','/var/lib/debbugs/spool');
+
+=item usertag_dir
+
+Directory which contains the usertags
+
+Default: $config{spool_dir}/user
+
+=cut
+
+set_default(\%config,'usertag_dir',$config{spool_dir}.'/user');
 set_default(\%config,'incoming_dir','incoming');
 set_default(\%config,'web_dir','/var/lib/debbugs/www');
 set_default(\%config,'doc_dir','/var/lib/debbugs/www/txt');
