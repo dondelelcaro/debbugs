@@ -6,7 +6,7 @@
 # [Other people have contributed to this file; their copyrights should
 # go here too.]
 # Copyright 2004 by Anthony Towns
-
+# Copyright 2008 by Don Armstrong <don@donarmstrong.com>
 
 
 package Debbugs::User;
@@ -36,6 +36,37 @@ $u->{"name"}
 read_usertags(\%ut, $userid);
 write_usertags(\%ut, $userid);
 
+=head1 USERTAG FILE FORMAT
+
+Usertags are in a file which has (roughly) RFC822 format, with stanzas
+separated by newlines. For example:
+
+ Tag: search
+ Bugs: 73671, 392392
+ 
+ Value: priority
+ Bug-73671: 5
+ Bug-73487: 2
+ 
+ Value: bugzilla
+ Bug-72341: http://bugzilla/2039471
+ Bug-1022: http://bugzilla/230941
+ 
+ Category: normal
+ Cat1: status
+ Cat2: debbugs.tasks
+ 
+ Category: debbugs.tasks
+ Hidden: yes
+ Cat1: debbugs.tasks
+
+ Cat1Options:
+  tag=quick
+  tag=medium
+  tag=arch
+  tag=not-for-me
+
+
 =head1 EXPORT TAGS
 
 =over
@@ -54,86 +85,24 @@ use Fcntl ':flock';
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 
-use Debbugs::Config qw(:globals);
+use Debbugs::Config qw(:config);
 use List::Util qw(min);
+
+use Carp;
+use IO::File;
 
 BEGIN {
     ($VERSION) = q$Revision: 1.4 $ =~ /^Revision:\s+([^\s+])/;
     $DEBUG = 0 unless defined $DEBUG;
 
     @EXPORT = ();
-    @EXPORT_OK = qw(is_valid_user open read_usertags write_usertags);
+    @EXPORT_OK = qw(is_valid_user read_usertags write_usertags);
     $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
-# Obsolete compatability functions
-
-sub read_usertags {
-    my $ut = shift;
-    my $u = shift;
-    
-    my $user = get_user($u);
-    for my $t (keys %{$user->{"tags"}}) {
-        $ut->{$t} = [] unless defined $ut->{$t};
-        push @{$ut->{$t}}, @{$user->{"tags"}->{$t}};
-    }
-}
-
-sub write_usertags {
-    my $ut = shift;
-    my $u = shift;
-    
-    my $user = get_user($u, 1); # locked
-    $user->{"tags"} = { %{$ut} };
-    $user->write();
-}
 
 #######################################################################
 # Helper functions
-
-sub filefromemail {
-    my $e = shift;
-    my $l = length($e) % 7;
-    return "$gSpoolDir/user/$l/" . join("", 
-        map { m/^[0-9a-zA-Z_+.-]$/ ? $_ : sprintf("%%%02X", ord($_)) }
-            split //, $e);
-}
-
-sub read_stanza {
-    my $f = shift;
-    my $field = 0;
-    my @res;
-    while (<$f>) {
-	   chomp;
-	   last if (m/^$/);
-
-        if ($field && m/^ (.*)$/) {
-            $res[-1] .= "\n" . $1;
-        } elsif (m/^([^:]+):(\s+(.*))?$/) {
-            $field = $1;
-            push @res, ($1, $3);
-        }
-    }
-    return @res;
-}
-
-sub fmt {
-    my $s = shift;
-    my $n = shift;
-    my $sofar = 0;
-    my $res = "";
-    while ($s =~ m/^([^,]*,\s*)(.*)$/ || $s =~ m/^([^,]+)()$/) {
-        my $k = $1;
-        $s = $2;
-        unless ($sofar == 0 or $sofar + length($k) <= $n) {
-	        $res .= "\n ";
-	        $sofar = 1;
-	    }
-	    $res .= $k;
-	    $sofar += length($k);
-    }
-    return $res . $s;
-}
 
 sub is_valid_user {
     my $u = shift;
@@ -144,32 +113,48 @@ sub is_valid_user {
 # The real deal
 
 sub get_user {
+     return Debbugs::User->new(@_);
+}
+
+=head2 new
+
+     my $user = Debbugs::User->new('foo@bar.com',$lock);
+
+Reads the user file associated with 'foo@bar.com' and returns a
+Debbugs::User object.
+
+=cut
+
+sub new {
+    my $class = shift;
+    $class = ref($class) || $class;
+    my ($email,$need_lock) = @_;
+    $need_lock ||= 0;
+
     my $ut = {};
-    my $user = { 
-        "tags" => $ut, 
-        "categories" => {}, 
-        "visible_cats" => [],
-        "unknown_stanzas" => [] 
-    };
+    my $self = {"tags" => $ut,
+		"categories" => {},
+		"visible_cats" => [],
+		"unknown_stanzas" => [],
+		values => {},
+		email => $email,
+	       };
+    bless $self, $class;
 
-    my $u = shift;
-    my $need_lock = shift || 0;
-    my $p = filefromemail($u);
-
-    my $uf;
-    $user->{"filename"} = $p;
+    $self->{filename} = _file_from_email($self->{email});
     if (not -r $p) {
 	 return bless $user, "Debbugs::User";
     }
-    open($uf, "< $p") or die "Unable to open file $p for reading: $!";
+    my $uf = IO::File->new($p,'r')
+	 or die "Unable to open file $p for reading: $!";
     if ($need_lock) {
-        flock($uf, LOCK_EX); 
+        flock($uf, LOCK_EX);
         $user->{"locked"} = $uf;
     }
-    
+
     while(1) {
-        my @stanza = read_stanza($uf);
-        last if ($#stanza == -1);
+        my @stanza = _read_stanza($uf);
+        last unless @stanza;
         if ($stanza[0] eq "Tag") {
             my %tag = @stanza;
             my $t = $tag{"Tag"};
@@ -208,52 +193,66 @@ sub get_user {
                     }
                     $c{"ttl"} = [@ttl];
                     $c{"pri"} = [@pri];
-                    push @cat, { %c };                    
+                    push @cat, { %c };
                 } else {
                     push @cat, $stanza{"Cat${i}"};
                 }
             }
-            $user->{"categories"}->{$catname} = [@cat];
-            push @{$user->{"visible_cats"}}, $catname
-                unless ($stanza{"Hidden"} || "no") eq "yes";                        
-        } else {
-            push @{$user->{"unknown_stanzas"}}, [@stanza];
+            $self->{"categories"}->{$catname} = [@cat];
+            push @{$self->{"visible_cats"}}, $catname
+                unless ($stanza{"Hidden"} || "no") eq "yes";
+	}
+	elsif ($stanza[0] eq 'Value') {
+	    my ($value,$value_name,%bug_values) = @stanza;
+	    while (my ($k,$v) = each %bug_values) {
+		my ($bug) = $k =~ m/^Bug-(\d+)/;
+		next unless defined $bug;
+		$self->{values}{$bug}{$value_name} = $v;
+	    }
+	}
+	else {
+            push @{$self->{"unknown_stanzas"}}, [@stanza];
         }
     }
-    close($uf) unless $need_lock;
 
-    bless $user, "Debbugs::User";
-    return $user;
+    return $self;
 }
 
 sub write {
-    my $user = shift;
+    my $self = shift;
     my $uf;
-    my $ut = $user->{"tags"};
-    my $p = $user->{"filename"};
+    my $ut = $self->{"tags"};
+    my $p = $self->{"filename"};
 
-    if ($p =~ m/^(.+)$/) { $p = $1; } else { return; } 
-    open $uf, "> $p" or return;
+    if (not defined $self->{filename} or not
+	length $self->{filename}) {
+	 carp "Tried to write a usertag with no filename defined";
+	 return;
+    }
+    my $uf = IO::File->new($self->{filename},'w');
+    if (not $uf) {
+	 carp "Unable to open $self->{filename} for writing: $!";
+	 return;
+    }
 
-    for my $us (@{$user->{"unknown_stanzas"}}) {
+    for my $us (@{$self->{"unknown_stanzas"}}) {
         my @us = @{$us};
-        while (@us) {
-            my $k = shift @us; my $v = shift @us;
+        while (my ($k,$v) = splice (@us,0,2)) {
 	    $v =~ s/\n/\n /g;
-            print $uf "$k: $v\n";
-        }
-        print $uf "\n";
+	    print {$uf} "$k: $v\n";
+	}
+        print {$uf} "\n";
     }
 
     for my $t (keys %{$ut}) {
         next if @{$ut->{$t}} == 0;
-        print $uf "Tag: $t\n";
-        print $uf fmt("Bugs: " . join(", ", @{$ut->{$t}}), 77) . "\n";
+        print {$uf} "Tag: $t\n";
+        print {$uf} _wrap_to_length("Bugs: " . join(", ", @{$ut->{$t}}), 77) . "\n";
         print $uf "\n";
     }
 
-    my $uc = $user->{"categories"};
-    my %vis = map { $_, 1 } @{$user->{"visible_cats"}};
+    my $uc = $self->{"categories"};
+    my %vis = map { $_, 1 } @{$self->{"visible_cats"}};
     for my $c (keys %{$uc}) {
         next if @{$uc->{$c}} == 0;
 
@@ -283,11 +282,144 @@ sub write {
 	}
 	print $uf "\n";
     }
+    # handle the value stanzas
+    my %value;
+    # invert the bug->value hash slightly
+    for my $bug (keys %{$self->{values}}) {
+	 for my $value (keys %{$self->{values}{$bug}}) {
+	      $value{$value}{$bug} = $self->{values}{$bug}{$value}
+	 }
+    }
+    for my $value (keys %value) {
+	 print {$uf} "Value: $value\n";
+	 for my $bug (keys %{$value{$value}}) {
+	      my $bug_value = $value{$value}{$bug};
+	      $bug_value =~ s/\n/\n /g;
+	      print {$uf} "Bug-$bug: $bug_value\n";
+	 }
+	 print {$uf} "\n";
+    }
 
     close($uf);
-    delete $user->{"locked"};
+    delete $self->{"locked"};
 }
+
+=head1 OBSOLETE FUNCTIONS
+
+=cut
+
+=head2 read_usertags
+
+     read_usertags($usertags,$email)
+
+
+=cut
+
+sub read_usertags {
+    my ($usertags,$email) = @_;
+
+    carp "read_usertags is deprecated";
+    my $user = get_user($email);
+    for my $t (keys %{$user->{"tags"}}) {
+        $ut->{$t} = [] unless defined $ut->{$t};
+        push @{$ut->{$t}}, @{$user->{"tags"}->{$t}};
+    }
+    return $usertags;
+}
+
+=head2 write_usertags
+
+     write_usertags($usertags,$email);
+
+Gets a lock on the usertags, applies the usertags passed, and writes
+them out.
+
+=cut
+
+sub write_usertags {
+    my ($usertags,$email) = @_;
+
+    carp "write_usertags is deprecated";
+    my $user = Debbugs::User->new($email,1); # locked
+    $user->{"tags"} = { %{$ut} };
+    $user->write();
+}
+
+
+=head1 PRIVATE FUNCTIONS
+
+=head2 _file_from_email
+
+     my $filename = _file_from_email($email)
+
+Turns an email into the filename where the usertag can be located.
+
+=cut
+
+sub _file_from_email {
+    my ($email) = @_;
+    my $email_length = length($email) % 7;
+    my $escaped_email = $email;
+    $escaped_email =~ s/([^0-9a-zA-Z_+.-])/sprintf("%%%02X", ord($1))/eg;
+    return "$config{usertag_dir}/$email_length/$escaped_email";
+}
+
+=head2 _read_stanza
+
+     my @stanza = _read_stanza($fh);
+
+Reads a single stanza from a filehandle and returns it
+
+=cut
+
+sub _read_stanza {
+    my ($file_handle) = @_;
+    my $field = 0;
+    my @res;
+    while (<$file_handle>) {
+	 chomp;
+	 last if (m/^$/);
+	 if ($field && m/^ (.*)$/) {
+	      $res[-1] .= "\n" . $1;
+	 } elsif (m/^([^:]+):(\s+(.*))?$/) {
+	      $field = $1;
+	      push @res, ($1, $3||'');
+	 }
+    }
+    return @res;
+}
+
+
+=head2 _wrap_to_length
+
+     _wrap_to_length
+
+Wraps a line to a specific length by splitting at commas
+
+=cut
+
+sub _wrap_to_length {
+    my ($content,$line_length) = @_;
+    my $current_line_length;
+    my $result = "";
+    while ($content =~ m/^([^,]*,\s*)(.*)$/ || $content =~ m/^([^,]+)()$/) {
+        my $current_word = $1;
+        $content = $2;
+        if ($current_line_length != 0 and
+	    $current_line_length + length($current_word) <= $line_length) {
+	    $result .= "\n ";
+	    $current_line_length = 1;
+	}
+	$result .= $current_word;
+	$current_line_length += length($current_word);
+    }
+    return $result . $content;
+}
+
+
+
 
 1;
 
 __END__
+# -*- cperl-set-style: PerlStyle -*-
