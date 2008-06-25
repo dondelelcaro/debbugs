@@ -178,7 +178,7 @@ sub read_bug{
 	 $log =~ s/\.summary$/.log/;
 	 ($location) = $status =~ m/(db-h|db|archive)/;
     }
-    my $status_fh = new IO::File $status, 'r' or
+    my $status_fh = IO::File->new($status, 'r') or
 	 warn "Unable to open $status for reading: $!" and return undef;
 
     my %data;
@@ -248,7 +248,7 @@ See readbug above for information on what this returns
 
 sub lockreadbug {
     my ($lref, $location) = @_;
-    &filelock("lock/$lref");
+    &filelock("$config{spool_dir}/lock/$lref");
     my $data = read_bug(bug => $lref, location => $location);
     &unfilelock unless defined $data;
     return $data;
@@ -274,7 +274,7 @@ sub lockreadbugmerge {
 	  return (1,$data);
      }
      unfilelock();
-     filelock('lock/merge');
+     filelock("$config{spool_dir}/lock/merge");
      $data = lockreadbug(@_);
      if (not defined $data) {
 	  unfilelock();
@@ -1248,7 +1248,7 @@ sub update_realtime {
 
 sub bughook_archive {
 	my @refs = @_;
-	&filelock("debbugs.trace.lock");
+	&filelock("$config{spool_dir}/debbugs.trace.lock");
 	&appendfile("debbugs.trace","archive ".join(',',@refs)."\n");
 	my %bugs = update_realtime("$config{spool_dir}/index.db.realtime",
 				   map{($_,'REMOVE')} @refs);
@@ -1259,7 +1259,7 @@ sub bughook_archive {
 
 sub bughook {
 	my ( $type, %bugs_temp ) = @_;
-	&filelock("debbugs.trace.lock");
+	&filelock("$config{spool_dir}/debbugs.trace.lock");
 
 	my %bugs;
 	for my $bug (keys %bugs_temp) {
