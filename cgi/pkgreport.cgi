@@ -25,17 +25,17 @@ use Debbugs::Packages qw(getsrcpkgs getpkgsrc get_versions);
 use Debbugs::Status qw(:status);
 use Debbugs::CGI qw(:all);
 
-use vars qw($gPackagePages $gWebDomain %gSeverityDisplay @gSeverityList);
-
-if (defined $ENV{REQUEST_METHOD} and $ENV{REQUEST_METHOD} eq 'HEAD') {
-    print "Content-Type: text/html; charset=utf-8\n\n";
-    exit 0;
-}
-
-nice(5);
+use Debbugs::Text qw(:templates);
 
 use CGI::Simple;
 my $q = new CGI::Simple;
+
+if ($q->request_method() eq 'HEAD') {
+     print $q->header(-type => "text/html",
+		      -charset => 'utf-8',
+		     );
+     exit 0;
+}
 
 our %param = cgi_parameters(query => $q,
 			    single => [qw(ordering archive repeatmerged),
@@ -46,6 +46,8 @@ our %param = cgi_parameters(query => $q,
 			    default => {ordering => 'normal',
 					archive  => 0,
 					repeatmerged => 1,
+					include      => [],
+					exclude      => [],
 				       },
 			   );
 
@@ -69,7 +71,6 @@ elsif (lc($param{archive}) eq 'yes') {
 }
 
 
-my $archive = ($param{'archive'} || "no") eq "yes";
 my $include = $param{'&include'} || $param{'include'} || "";
 my $exclude = $param{'&exclude'} || $param{'exclude'} || "";
 
@@ -165,7 +166,8 @@ our %cats = (
 );
 
 my @select_key = (qw(submitter maint pkg package src usertag),
-		  qw(status tag maintenc owner severity newest)
+		  qw(status tag maintenc owner severity newest),
+		  qw(correspondent),
 		 );
 
 if (exists $param{which} and exists $param{data}) {
@@ -213,7 +215,7 @@ if (defined $param{usertag}) {
      }
 }
 
-my $Archived = $archive ? " Archived" : "";
+my $Archived = $param{archive} ? " Archived" : "";
 
 our $this = munge_url('pkgreport.cgi?',
 		      %param,
@@ -339,7 +341,7 @@ if (defined $param{maint} and $param{maint} eq "" or ref($param{maint}) and not 
      @bugs = get_bugs(function =>
 		      sub {my %d=@_;
 			   foreach my $try (splitpackages($d{"pkg"})) {
-				return 1 if !getparsedaddrs($maintainers{$try});
+				return 1 if not exists $maintainers{$try};
 			   }
 			   return 0;
 		      }
