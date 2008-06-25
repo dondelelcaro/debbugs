@@ -78,3 +78,4 @@ ok($mech->content() =~ qr/\<title\>\#1.+Submitting a bug/i,
    'Title of bug is submitting a bug');
 
 # Other tests for bugs in the page should be added here eventually
+
