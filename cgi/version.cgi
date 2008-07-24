@@ -186,7 +186,7 @@ if ($cgi_var{collapse}) {
      # are in the same state as their parent, and are not in a suite
      foreach my $key (keys %reversed_nodes) {
 	  my ($short_version) = $key =~ m{/(.+)$};
-     	  if (not exists $version_to_dist{$short_version}
+     	  if (not exists $version_to_dist{$key}
 	      and @{$reversed_nodes{$key}} <= 1
 	      and defined $version->{parent}{$key}
 	      and $all_states{$key} eq $all_states{$version->{parent}{$key}}
