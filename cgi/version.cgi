@@ -241,8 +241,8 @@ foreach my $key (keys %all_states) {
 					  or $all_states{$key} eq 'absent');
      next if $cgi_var{ignore_boring} and not version_relevant($version,$key,\@interesting_versions);
      my @attributes = @{$state{$all_states{$key}}};
-     if (length $short_version and exists $version_to_dist{$short_version}) {
-	  push @attributes, 'label="'.$key.'\n'."(".join(', ',@{$version_to_dist{$short_version}}).")\"";
+     if (exists $version_to_dist{$key}) {
+	  push @attributes, 'label="'.$key.'\n'."(".join(', ',@{$version_to_dist{$key}}).")\"";
      }
      my $node_attributes = qq("$key" [).join(',',@attributes).qq(]\n);
      $dot .= $node_attributes;
