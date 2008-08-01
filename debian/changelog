@@ -217,6 +217,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     - Allow for the archiving of bugs in removed packages (closes: #475622)
     - Add Text::Template based templating system (closes: #36814)
     - Add new uservalue feature to Debbugs::User
+    - Don't serialize things as date/time in soap (closes: #484789)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
