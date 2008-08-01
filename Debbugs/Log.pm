@@ -165,7 +165,7 @@ sub new
 	 ($param{logfh}) = @_;
     }
     else {
-	 %param = validate_with(params => @_,
+	 %param = validate_with(params => \@_,
 				spec   => {bug_num => {type => SCALAR,
 						       optional => 1,
 						      },

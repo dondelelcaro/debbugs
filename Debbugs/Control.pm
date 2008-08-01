@@ -104,9 +104,11 @@ use Debbugs::Mail qw(rfc822_date);
 
 use POSIX qw(strftime);
 
+use Carp;
+
 # These are a set of options which are common to all of these functions
 
-my %common_options = (debug       => {type => SCALARREF,
+my %common_options = (debug       => {type => SCALARREF|HANDLE,
 				      optional => 1,
 				     },
 		      transcript  => {type => SCALARREF|HANDLE,
@@ -276,16 +278,17 @@ sub bug_archive {
 				)
 			      )
 	       if not exists $param{append_log} or $param{append_log};
-	  my @files_to_remove = map {s#db-h/$dir/##; $_} glob("db-h/$dir/$bug.*");
+	  my @files_to_remove = map {s#$config{spool_dir}/db-h/$dir/##; $_} glob("$config{spool_dir}/db-h/$dir/$bug.*");
 	  if ($config{save_old_bugs}) {
-	       mkpath("archive/$dir");
+	       mkpath("$config{spool_dir}/archive/$dir");
 	       foreach my $file (@files_to_remove) {
-		    link( "db-h/$dir/$file", "archive/$dir/$file" ) || copy( "db-h/$dir/$file", "archive/$dir/$file" );
+		    link( "$config{spool_dir}/db-h/$dir/$file", "$config{spool_dir}/archive/$dir/$file" ) or
+			 copy( "$config{spool_dir}/db-h/$dir/$file", "$config{spool_dir}/archive/$dir/$file" );
 	       }
 
 	       print {$transcript} "archived $bug to archive/$dir (from $param{bug})\n";
 	  }
-	  unlink(map {"db-h/$dir/$_"} @files_to_remove);
+	  unlink(map {"$config{spool_dir}/db-h/$dir/$_"} @files_to_remove);
 	  print {$transcript} "deleted $bug (from $param{bug})\n";
      }
      bughook_archive(@bugs);
@@ -370,15 +373,15 @@ sub bug_unarchive {
      for my $bug (@bugs) {
 	  print {$debug} "$param{bug} removing $bug\n";
 	  my $dir = get_hashname($bug);
-	  my @files_to_copy = map {s#archive/$dir/##; $_} glob("archive/$dir/$bug.*");
+	  my @files_to_copy = map {s#$config{spool_dir}/archive/$dir/##; $_} glob("$config{spool_dir}/archive/$dir/$bug.*");
 	  mkpath("archive/$dir");
 	  foreach my $file (@files_to_copy) {
 	       # die'ing here sucks
-	       link( "archive/$dir/$file", "db-h/$dir/$file" ) or
-		    copy( "archive/$dir/$file", "db-h/$dir/$file" ) or
-			 die "Unable to copy archive/$dir/$file to db-h/$dir/$file";
+	       link( "$config{spool_dir}/archive/$dir/$file", "$config{spool_dir}/db-h/$dir/$file" ) or
+		    copy( "$config{spool_dir}/archive/$dir/$file", "$config{spool_dir}/db-h/$dir/$file" ) or
+			 die "Unable to copy $config{spool_dir}/archive/$dir/$file to $config{spool_dir}/db-h/$dir/$file";
 	  }
-	  push @files_to_remove, map {"archive/$dir/$_"} @files_to_copy;
+	  push @files_to_remove, map {"$config{spool_dir}/archive/$dir/$_"} @files_to_copy;
 	  print {$transcript} "Unarchived $config{bug} $bug\n";
      }
      unlink(@files_to_remove) or die "Unable to unlink bugs";
@@ -482,15 +485,14 @@ sub __handle_debug_transcript{
 			       spec   => {%common_options},
 			       allow_extra => 1,
 			      );
-     my $fake_scalar = '';
-     my $debug = globify_scalar(exists $param{debug}?$param{debug}:\$fake_scalar);
-     my $transcript = globify_scalar(exists $param{transcript}?$param{transcript}:\$fake_scalar);
+     my $debug = globify_scalar(exists $param{debug}?$param{debug}:undef);
+     my $transcript = globify_scalar(exists $param{transcript}?$param{transcript}:undef);
      return ($debug,$transcript);
-
 }
 
 sub __return_append_to_log_options{
-     my %param = @_
+     my %param = @_;
+     my $action = $param{action} if exists $param{action};
      if (not exists $param{requester}) {
 	  $param{requester} = $config{control_internal_requester};
      }
@@ -498,7 +500,6 @@ sub __return_append_to_log_options{
 	  $param{request_addr} = $config{control_internal_request_addr};
      }
      if (not exists $param{message}) {
-	  $action = $param{action} if exists $param{action};
 	  my $date = rfc822_date();
 	  $param{message} = fill_in_template(template  => 'mail/fake_control_message',
 					     variables => {request_addr => $param{request_addr},
@@ -508,8 +509,14 @@ sub __return_append_to_log_options{
 							  },
 					    );
      }
+     if (not defined $action) {
+	  carp "Undefined action!";
+	  $action = "unknown action";
+     }
      return (action => $action,
-	     %param);
+	     (map {exists $append_action_options{$_}?($_,$param{$_}):()}
+	      keys %param),
+	    );
 }
 
 

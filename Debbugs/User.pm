@@ -142,14 +142,14 @@ sub new {
     bless $self, $class;
 
     $self->{filename} = _file_from_email($self->{email});
-    if (not -r $p) {
-	 return bless $user, "Debbugs::User";
+    if (not -r $self->{filename}) {
+	 return $self;
     }
-    my $uf = IO::File->new($p,'r')
-	 or die "Unable to open file $p for reading: $!";
+    my $uf = IO::File->new($self->{filename},'r')
+	 or die "Unable to open file $self->{filename} for reading: $!";
     if ($need_lock) {
         flock($uf, LOCK_EX);
-        $user->{"locked"} = $uf;
+        $self->{"locked"} = $uf;
     }
 
     while(1) {
@@ -220,7 +220,7 @@ sub new {
 
 sub write {
     my $self = shift;
-    my $uf;
+
     my $ut = $self->{"tags"};
     my $p = $self->{"filename"};
 
@@ -320,9 +320,9 @@ sub read_usertags {
 
     carp "read_usertags is deprecated";
     my $user = get_user($email);
-    for my $t (keys %{$user->{"tags"}}) {
-        $ut->{$t} = [] unless defined $ut->{$t};
-        push @{$ut->{$t}}, @{$user->{"tags"}->{$t}};
+    for my $tag (keys %{$user->{"tags"}}) {
+        $usertags->{$tag} = [] unless defined $usertags->{$tag};
+        push @{$usertags->{$tag}}, @{$user->{"tags"}->{$tag}};
     }
     return $usertags;
 }
@@ -341,7 +341,7 @@ sub write_usertags {
 
     carp "write_usertags is deprecated";
     my $user = Debbugs::User->new($email,1); # locked
-    $user->{"tags"} = { %{$ut} };
+    $user->{"tags"} = { %{$usertags} };
     $user->write();
 }
 

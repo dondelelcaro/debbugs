@@ -62,6 +62,7 @@ BEGIN {
 				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
 				 qw(%gSearchEstraier),
 				 qw(%gDistributionAliases),
+				 qw(%gObsoleteSeverities),
 				 qw(@gPostProcessall @gRemovalDefaultDistributionTags @gRemovalDistributionTags @gRemovalArchitectures),
 				 qw(@gRemovalStrongSeverityDefaultDistributionTags),
 				 qw(@gDefaultArchitectures),
@@ -603,6 +604,16 @@ Defaults to the keys of the severity display hashref
 =cut
 
 set_default(\%config,'severity_list',[keys %{$config{severity_display}}]);
+
+=item obsolete_severities
+
+A hashref of obsolete severities with the replacing severity
+
+Default: {}
+
+=cut
+
+set_default(\%config,'obsolete_severities',{});
 
 =item tags
 
