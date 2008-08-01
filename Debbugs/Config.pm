@@ -50,6 +50,7 @@ BEGIN {
 				 qw($gSubmitList $gMaintList $gQuietList $gForwardList),
 				 qw($gDoneList $gRequestList $gSubmitterList $gControlList),
 				 qw($gStrongList),
+				 qw($gBugSubscriptionDomain),
 				 qw($gPackageVersionRe),
 				 qw($gSummaryList $gMirrorList $gMailer $gBug),
 				 qw($gBugs $gRemoveAge $gSaveOldBugs $gDefaultSeverity),
@@ -297,8 +298,6 @@ set_default(\%config,'unknown_maintainer_email',$config{maintainer_email});
 
 =item mirror_list
 
-=back
-
 =cut
 
 set_default(\%config,   'submit_list',   'bug-submit-list');
@@ -312,6 +311,21 @@ set_default(\%config,  'control_list',  'bug-control-list');
 set_default(\%config,  'summary_list',  'bug-summary-list');
 set_default(\%config,   'mirror_list',   'bug-mirror-list');
 set_default(\%config,   'strong_list',   'bug-strong-list');
+
+=item bug_subscription_domain
+
+Domain of list for messages regarding a single bug; prefixed with
+bug=${bugnum}@ when bugs are actually sent out. Set to undef or '' to
+disable sending messages to the bug subscription list.
+
+Default: list_domain
+
+=back
+
+=cut
+
+set_default(\%config,'bug_subscription_domain',$config{list_domain});
+
 
 =head2 Misc Options
 
