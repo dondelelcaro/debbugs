@@ -32,6 +32,7 @@ status of a particular bug
 
 use warnings;
 use strict;
+
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 
@@ -129,6 +130,10 @@ path to the summary file instead of the bug number and/or location.
 
 =item summary -- complete path to the .summary file which will be read
 
+=item lock -- whether to obtain a lock for the bug to prevent
+something modifying it while the bug has been read. You B<must> call
+C<unfilelock();> if something not undef is returned from read_bug.
+
 =back
 
 One of C<bug> or C<summary> must be passed. This function will return
@@ -152,6 +157,9 @@ sub read_bug{
 						      optional => 1,
 						     },
 					 summary  => {type => SCALAR,
+						      optional => 1,
+						     },
+					 lock     => {type => BOOLEAN,
 						      optional => 1,
 						     },
 					},
@@ -178,8 +186,17 @@ sub read_bug{
 	 $log =~ s/\.summary$/.log/;
 	 ($location) = $status =~ m/(db-h|db|archive)/;
     }
-    my $status_fh = IO::File->new($status, 'r') or
-	 warn "Unable to open $status for reading: $!" and return undef;
+    if ($param{lock}) {
+	filelock("$config{spool_dir}/lock/$param{bug}");
+    }
+    my $status_fh = IO::File->new($status, 'r');
+    if (not defined $status_fh) {
+	warn "Unable to open $status for reading: $!";
+	if ($param{lock}) {
+	    unfilelock();
+	}
+	return undef;
+    }
 
     my %data;
     my @lines;
@@ -195,6 +212,9 @@ sub read_bug{
     # Version 3 is the latest format version currently supported.
     if ($version > 3) {
 	 warn "Unsupported status version '$version'";
+	 if ($param{lock}) {
+	     unfilelock();
+	 }
 	 return undef;
     }
 
@@ -248,10 +268,7 @@ See readbug above for information on what this returns
 
 sub lockreadbug {
     my ($lref, $location) = @_;
-    &filelock("$config{spool_dir}/lock/$lref");
-    my $data = read_bug(bug => $lref, location => $location);
-    &unfilelock unless defined $data;
-    return $data;
+    return read_bug(bug => $lref, location => $location, lock => 1);
 }
 
 =head2 lockreadbugmerge
@@ -281,6 +298,67 @@ sub lockreadbugmerge {
 	  return (0,undef);
      }
      return (2,$data);
+}
+
+=head2 lock_read_all_merged_bugs
+
+     my ($locks,@bug_data) = lock_read_all_merged_bugs($bug_num,$location);
+
+Performs a filelock, then reads the bug passed. If the bug is merged,
+locks the merge lock, then reads and locks all of the other merged
+bugs. Returns a list of the number of locks and the bug data for all
+of the merged bugs.
+
+Will also return undef if any of the merged bugs failed to be read,
+even if all of the others were read properly.
+
+=cut
+
+sub lock_read_all_merged_bugs {
+    my ($bug_num,$location) = @_;
+    my @data = (lockreadbug(@_));
+    if (not @data and not defined $data[0]) {
+	return (0,undef);
+    }
+    if (not length $data[0]->{mergedwith}) {
+	return (1,@data);
+    }
+    unfilelock();
+    filelock("$config{spool_dir}/lock/merge");
+    my $locks = 0;
+    @data = (lockreadbug(@_));
+    if (not @data and not defined $data[0]) {
+	unfilelock(); #for merge lock above
+	return (0,undef);
+    }
+    $locks++;
+    my @bugs = split / /, $data[0]->{mergedwith};
+    for my $bug (@bugs) {
+	my $newdata = undef;
+	if ($bug ne $bug_num) {
+	    $newdata = lockreadbug($bug,$location);
+	    if (not defined $newdata) {
+		for (1..$locks) {
+		    unfilelock();
+		}
+		$locks = 0;
+		warn "Unable to read bug: $bug while handling merged bug: $bug_num";
+		return ($locks,undef);
+	    }
+	    $locks++;
+	    push @data,$newdata;
+	}
+	# perform a sanity check to make sure that the merged bugs are
+	# all merged with eachother
+	my $expectmerge= join(' ',grep($_ != $bug, sort { $a <=> $b } @bugs));
+	if ($newdata->{mergedwith} ne $expectmerge) {
+	    for (1..$locks) {
+		unfilelock();
+	    }
+	    die "Bug $bug_num differs from bug $bug: ($newdata->{mergedwith}) vs. ($expectmerge) (".join(' ',@bugs).")";
+	}
+    }
+    return (2,@data);
 }
 
 

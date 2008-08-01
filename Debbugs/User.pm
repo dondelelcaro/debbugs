@@ -422,4 +422,3 @@ sub _wrap_to_length {
 1;
 
 __END__
-# -*- cperl-set-style: PerlStyle -*-

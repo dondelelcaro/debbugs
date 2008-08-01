@@ -304,14 +304,16 @@ sub newest_bug {
 
 Allows filtering bugs on commonly used criteria
 
+
+
 =cut
 
 sub bug_filter {
      my %param = validate_with(params => \@_,
-			       spec   => {bug => {type  => SCALAR,
-						  regex => qr/^\d+$/,
-						 },
-					  status => {type => HASHREF,
+			       spec   => {bug    => {type => ARRAYREF|SCALAR,
+						     optional => 1,
+						    },
+					  status => {type => HASHREF|ARRAYREF,
 						     optional => 1,
 						    },
 					  seen_merged => {type => HASHREF,
@@ -338,6 +340,9 @@ sub bug_filter {
 	 not $param{repeat_merged} and
 	 not defined $param{seen_merged}) {
 	  croak "repeat_merged false requires seen_merged to be passed";
+     }
+     if (not exists $param{bug} and not exists $param{status}) {
+	 croak "one of bug or status must be passed";
      }
 
      if (not exists $param{status}) {
