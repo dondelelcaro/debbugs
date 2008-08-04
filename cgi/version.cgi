@@ -125,7 +125,7 @@ my $version = Debbugs::Versions->new(\&Debbugs::Versions::Dpkg::vercmp);
 foreach my $source (keys %sources) {
      my $srchash = substr $source, 0, 1;
      next unless -e "$config{version_packages_dir}/$srchash/$source";
-     my $version_fh = IO::File->("$config{version_packages_dir}/$srchash/$source", 'r') or
+     my $version_fh = IO::File->new("$config{version_packages_dir}/$srchash/$source", 'r') or
 	  warn "Unable to open $config{version_packages_dir}/$srchash/$source for reading: $!";
      $version->load($version_fh);
 }
