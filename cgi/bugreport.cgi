@@ -32,7 +32,7 @@ my %param = cgi_parameters(query => $q,
 				      qw(mboxstat mboxmaint archive),
 				      qw(repeatmerged)
 				     ],
-			   default => {msg       => '',
+			   default => {# msg       => '',
 				       boring    => 'no',
 				       terse     => 'no',
 				       reverse   => 'no',
@@ -50,15 +50,15 @@ my $ref = $param{bug} or quitcgi("No bug number");
 $ref =~ /(\d+)/ or quitcgi("Invalid bug number");
 $ref = $1;
 my $short = "#$ref";
-my ($msg) = $param{msg} =~ /^\d+$/ if exists $param{msg};
-my ($att) = $param{att} =~ /^\d+$/ if exists $param{att};
+my ($msg) = $param{msg} =~ /^(\d+)$/ if exists $param{msg};
+my ($att) = $param{att} =~ /^(\d+)$/ if exists $param{att};
 my $boring = $param{'boring'} eq 'yes';
 my $terse = $param{'terse'} eq 'yes';
 my $reverse = $param{'reverse'} eq 'yes';
 my $mbox = $param{'mbox'} eq 'yes';
 my $mime = $param{'mime'} eq 'yes';
 
-my $trim_headers = ($param{trim} || ($msg?'no':'yes')) eq 'yes';
+my $trim_headers = ($param{trim} || ((defined $msg and $msg)?'no':'yes')) eq 'yes';
 
 my $mbox_status_message = $param{mboxstat} eq 'yes';
 my $mbox_maint = $param{mboxmaint} eq 'yes';
@@ -112,7 +112,7 @@ undef $buglogfh;
 my $log='';
 my $msg_num = 0;
 my $skip_next = 0;
-if (looks_like_number($msg) and ($msg-1) <= $#records) {
+if (defined($msg) and ($msg-1) <= $#records) {
      @records = ($records[$msg-1]);
      $msg_num = $msg - 1;
 }
@@ -187,6 +187,16 @@ END
 }
 
 else {
+     if (defined $att and defined $msg and @records) {
+	  $msg_num++;
+	  print handle_email_message($records[0]->{text},
+				     ref => $ref,
+				     msg_num => $msg_num,
+				     att => $att,
+				     msg => $msg,
+				    );
+	  exit 0;
+     }
      my %seen_msg_ids;
      for my $record (@records) {
 	  $msg_num++;
