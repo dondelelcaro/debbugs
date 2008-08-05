@@ -34,6 +34,7 @@ use IO::Scalar;
 use Params::Validate qw(validate_with :types);
 use Debbugs::MIME qw(convert_to_utf8 decode_rfc1522 create_mime_message);
 use Debbugs::CGI qw(:url :html :util);
+use Debbugs::Common qw(globify_scalar);
 use POSIX qw(strftime);
 
 BEGIN{
@@ -110,15 +111,11 @@ sub display_entity {
 					}
 			     );
 
+    $param{output} = globify_scalar($param{output});
     my $entity = $param{entity};
     my $ref = $param{bug_num};
     my $top = $param{outer};
     my $xmessage = $param{msg_num};
-    if (defined ref($param{output}) and
-	ref($param{output}) eq 'SCALAR' and
-	not UNIVERSAL::isa($param{output},'GLOB')) {
-	 $param{output} = IO::Scalar->new($param{output});
-    }
     my $attachments = $param{attachments};
 
     my $head = $entity->head;
@@ -129,7 +126,9 @@ sub display_entity {
     $filename = '' unless defined $filename;
     $filename = decode_rfc1522($filename);
 
-    if ($top and not $param{terse}) {
+    if ($param{outer} and
+	not $param{terse} and
+	not exists $param{att}) {
 	 my $header = $entity->head;
 	 print {$param{output}} "<pre class=\"headers\">\n";
 	 if ($param{trim_headers}) {
@@ -146,17 +145,12 @@ sub display_entity {
 	 print {$param{output}} "</pre>\n";
     }
 
-    unless (($top and $type =~ m[^text(?:/plain)?(?:;|$)]) or
-	    ($type =~ m[^multipart/])) {
-	push @$attachments, $entity;
-	my @dlargs = ($ref, msg=>$xmessage, att=>$#$attachments);
-	push @dlargs, (filename=>$filename) if $filename ne '';
-	my $printname = $filename;
-	$printname = 'Message part ' . ($#$attachments + 1) if $filename eq '';
-	print {$param{output}} '<pre class="mime">[<a href="' . html_escape(bug_url(@dlargs)) . qq{">$printname</a> } .
-		  "($type, $disposition)]</pre>\n";
-
-	if (exists $param{msg} and exists $param{att} and
+    if (not (($param{outer} and $type =~ m{^text(?:/plain)?(?:;|$)})
+	     or $type =~ m{^multipart/}
+	    )) {
+	push @$attachments, $param{entity};
+	# output this attachment
+	if (exists $param{att} and
 	    $param{att} == $#$attachments) {
 	    my $head = $entity->head;
 	    chomp(my $type = $entity->effective_type);
@@ -173,12 +167,20 @@ sub display_entity {
 	    }
 	    print {$param{output}} "\n";
 	    my $decoder = MIME::Decoder->new($head->mime_encoding);
-	    $decoder->decode(new IO::Scalar(\$body), \*STDOUT);
-	    exit(0);
+	    $decoder->decode(IO::Scalar->new(\$body), $param{output});
+	    return;
+	}
+	elsif (not exists $param{att}) {
+	     my @dlargs = ($ref, msg=>$xmessage, att=>$#$attachments);
+	     push @dlargs, (filename=>$filename) if $filename ne '';
+	     my $printname = $filename;
+	     $printname = 'Message part ' . ($#$attachments + 1) if $filename eq '';
+	     print {$param{output}} '<pre class="mime">[<a href="' . html_escape(bug_url(@dlargs)) . qq{">$printname</a> } .
+		  "($type, $disposition)]</pre>\n";
 	}
     }
 
-    return if not $top and $disposition eq 'attachment' and not defined($param{att});
+    return if not $param{outer} and $disposition eq 'attachment' and not exists $param{att};
     return unless ($type =~ m[^text/?] and
 		   $type !~ m[^text/(?:html|enriched)(?:;|$)]) or
 		  $type =~ m[^application/pgp(?:;|$)] or
@@ -195,13 +197,15 @@ sub display_entity {
 			   attachments => $attachments,
 			   terse => $param{terse},
 			   exists $param{msg}?(msg=>$param{msg}):(),
-			   exists $param{attachment}?(attachment=>$param{attachment}):(),
+			   exists $param{att}?(att=>$param{att}):(),
 			  );
-	    print {$param{output}} "\n";
+	    # print {$param{output}} "\n";
 	}
     } elsif ($entity->parts) {
 	# We must be dealing with a nested message.
-	print {$param{output}} "<blockquote>\n";
+	 if (not exists $param{att}) {
+	      print {$param{output}} "<blockquote>\n";
+	 }
 	my @parts = $entity->parts;
 	foreach my $part (@parts) {
 	    display_entity(entity => $part,
@@ -212,11 +216,13 @@ sub display_entity {
 			   attachments => $attachments,
 			   terse => $param{terse},
 			   exists $param{msg}?(msg=>$param{msg}):(),
-			   exists $param{attachment}?(attachment=>$param{attachment}):(),
+			   exists $param{att}?(att=>$param{att}):(),
 			  );
-	    print {$param{output}} "\n";
+	    # print {$param{output}} "\n";
 	}
-	print {$param{output}} "</blockquote>\n";
+	 if (not exists $param{att}) {
+	      print {$param{output}} "</blockquote>\n";
+	 }
     } elsif (not $param{terse}) {
 	 my $content_type = $entity->head->get('Content-Type:') || "text/html";
 	 my ($charset) = $content_type =~ m/charset\s*=\s*\"?([\w-]+)\"?/i;
@@ -244,7 +250,10 @@ sub display_entity {
 					 qq(">$1</a>)
 				    }ge;
 		    $temp;]gxie;
-	 print {$param{output}} qq(<pre class="message">$body</pre>\n);
+
+	 if (not exists $param{att}) {
+	      print {$param{output}} qq(<pre class="message">$body</pre>\n);
+	 }
     }
 }
 
@@ -266,7 +275,7 @@ sub handle_email_message{
      my ($email,%param) = @_;
 
      my $output = '';
-     my $parser = new MIME::Parser;
+     my $parser = MIME::Parser->new();
      # Because we are using memory, not tempfiles, there's no need to
      # clean up here like in Debbugs::MIME
      $parser->tmp_to_core(1);
@@ -281,7 +290,7 @@ sub handle_email_message{
 		    attachments => \@attachments,
 		    terse       => $param{terse},
 		    exists $param{msg}?(msg=>$param{msg}):(),
-		    exists $param{att}?(attachment=>$param{att}):(),
+		    exists $param{att}?(att=>$param{att}):(),
 		   );
      return $output;
 
