@@ -698,6 +698,7 @@ my %field_match = (
     },
     'severity' => \&__exact_field_match,
     'pending' => \&__exact_field_match,
+    'package' => \&__exact_field_match,
     'originator' => \&__contains_field_match,
     'forwarded' => \&__contains_field_match,
     'owner' => \&__contains_field_match,
