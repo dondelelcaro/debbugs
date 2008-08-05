@@ -196,7 +196,7 @@ my %append_action_options =
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to mark $ref as not having an owner: $@";
+	    print {$transcript} "Failed to mark $ref as having an owner: $@";
 	}
 
 Handles all setting of the owner field; given an owner of undef or of
