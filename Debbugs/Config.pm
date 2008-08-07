@@ -61,6 +61,7 @@ BEGIN {
 				 qw($gVersionTimeIndex),
 				 qw($gSendmail $gLibPath $gSpamScan @gExcludeFromControl),
 				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
+				 qw(%gTagsSingleLetter),
 				 qw(%gSearchEstraier),
 				 qw(%gDistributionAliases),
 				 qw(%gObsoleteSeverities),
@@ -641,6 +642,15 @@ includes the distributions.
 set_default(\%config,'tags',[qw(patch wontfix moreinfo unreproducible fixed),
 			     @{$config{distributions}}
 			    ]);
+
+set_default(\%config,'tags_single_letter',
+	    {patch => '+',
+	     wontfix => '',
+	     moreinfo => 'M',
+	     unreproducible => 'R',
+	     fixed   => 'F',
+	    }
+	   );
 
 set_default(\%config,'bounce_froms','^mailer|^da?emon|^post.*mast|^root|^wpuser|^mmdf|^smt.*|'.
 	    '^mrgate|^vmmail|^mail.*system|^uucp|-maiser-|^mal\@|'.
