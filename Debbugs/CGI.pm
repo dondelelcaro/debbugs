@@ -45,6 +45,8 @@ use Mail::Address;
 use POSIX qw(ceil);
 use Storable qw(dclone);
 
+use List::Util qw(max);
+
 use Carp;
 
 use Debbugs::Text qw(fill_in_template);
@@ -67,11 +69,13 @@ BEGIN{
 			       ],
 		     util   => [qw(cgi_parameters quitcgi),
 			       ],
+		     forms  => [qw(option_form form_options_and_normal_param)],
 		     misc   => [qw(maint_decode)],
+		     package_search => [qw(@package_search_key_order %package_search_keys)],
 		     #status => [qw(getbugstatus)],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(url html util misc));
+     Exporter::export_ok_tags(keys %EXPORT_TAGS);
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -117,6 +121,8 @@ sub bug_url{
      else {
 	  %params = @_;
      }
+     carp "bug_url is deprecated, use bug_links instead";
+
      return munge_url('bugreport.cgi?',%params,bug=>$ref);
 }
 
@@ -129,6 +135,7 @@ sub pkg_url{
      else {
 	  %params = @_;
      }
+     carp "pkg_url is deprecated, use package_links instead";
      return munge_url('pkgreport.cgi?',%params);
 }
 
@@ -293,7 +300,7 @@ sub quitcgi {
 
 Given a scalar containing a list of packages separated by something
 that L<Debbugs::CGI/splitpackages> can separate, returns a
-formatted set of links to packages.
+formatted set of links to packages in html.
 
 =cut
 
@@ -302,14 +309,12 @@ sub htmlize_packagelinks {
     return '' unless defined $pkgs and $pkgs ne '';
     my @pkglist = splitpackages($pkgs);
 
-    carp "htmlize_packagelinks is deprecated";
+    carp "htmlize_packagelinks is deprecated, use package_links instead";
 
     return 'Package' . (@pkglist > 1 ? 's' : '') . ': ' .
-           join(', ',
-                package_links(package =>\@pkglist,
-			      class   => 'submitter'
-			     )
-           );
+           package_links(package =>\@pkglist,
+			 class   => 'submitter'
+			);
 }
 
 =head2 package_links
@@ -324,7 +329,7 @@ Given a list of packages, return a list of html which links to the package
 
 =item submitter -- arrayref or scalar of submitter(s)
 
-=item source -- arrayref or scalar of source(s)
+=item src -- arrayref or scalar of source(s)
 
 =item maintainer -- arrayref or scalar of maintainer(s)
 
@@ -337,23 +342,27 @@ returning htmlized links.
 
 =cut
 
+our @package_search_key_order = (package   => 'in package',
+				 tag       => 'tagged',
+				 severity  => 'with severity',
+				 src       => 'in source package',
+				 maint     => 'in packages maintained by',
+				 submitter => 'submitted by',
+				 owner     => 'owned by',
+				 status    => 'with status',
+				 correspondent => 'with mail from',
+				 newest        => 'newest bugs',
+				);
+our %package_search_keys = @package_search_key_order;
+
+
 sub package_links {
      my %param = validate_with(params => \@_,
-			       spec   => {package => {type => SCALAR|ARRAYREF,
+			       spec   => {(map { ($_,{type => SCALAR|ARRAYREF,
 						      optional => 1,
-						     },
-					  source  => {type => SCALAR|ARRAYREF,
-						      optional => 1,
-						     },
-					  maintainer => {type => SCALAR|ARRAYREF,
-							 optional => 1,
-							},
-					  submitter => {type => SCALAR|ARRAYREF,
-							optional => 1,
-						       },
-					  owner     => {type => SCALAR|ARRAYREF,
-							optional => 1,
-						       },
+						     });
+					    } keys %package_search_keys,
+					  ),
 					  links_only => {type => BOOLEAN,
 							 default => 0,
 							},
@@ -363,26 +372,44 @@ sub package_links {
 					  separator => {type => SCALAR,
 							default => ', ',
 						       },
+					  options => {type => HASHREF,
+						      default => {},
+						     },
 					 },
+			       normalize_keys =>
+			       sub {
+				    my ($key) = @_;
+				    my %map = (source => 'src',
+					       maintainer => 'maint',
+					       pkg        => 'package',
+					      );
+				    return $map{$key} if exists $map{$key};
+				    return $key;
+			       }
 			      );
+     my %options = %{$param{options}};
+     for ((keys %package_search_keys,qw(msg att))) {
+	  delete $options{$_} if exists $options{$_};
+     }
      my @links = ();
-     push @links, map {(pkg_url(source => $_),$_)
-		  } make_list($param{source}) if exists $param{source};
-     push @links, map {my $addr = getparsedaddrs($_);
-		       $addr = defined $addr?$addr->address:'';
-		       (pkg_url(maint => $addr),$_)
-		  } make_list($param{maintainer}) if exists $param{maintainer};
-     push @links, map {my $addr = getparsedaddrs($_);
-		       $addr = defined $addr?$addr->address:'';
-		       (pkg_url(owner => $addr),$_)
-		  } make_list($param{owner}) if exists $param{owner};
-     push @links, map {my $addr = getparsedaddrs($_);
-		       $addr = defined $addr?$addr->address:'';
-		       (pkg_url(submitter => $addr),$_)
-		  } make_list($param{submitter}) if exists $param{submitter};
-     push @links, map {(pkg_url(pkg => $_),
-			html_escape($_))
-		  } make_list($param{package}) if exists $param{package};
+     for my $type (qw(src package)) {
+	  push @links, map {(munge_url('pkgreport.cgi?',
+				       %options,
+				       $type => $_,
+				      ),
+			     $_);
+		       } make_list($param{$type}) if exists $param{$type};
+     }
+     for my $type (qw(maint owner submitter correspondent)) {
+	  push @links, map {my $addr = getparsedaddrs($_);
+			    $addr = defined $addr?$addr->address:'';
+			    (munge_url('pkgreport.cgi?',
+				       %options,
+				       $type => $addr,
+				      ),
+			     $_);
+		       } make_list($param{$type}) if exists $param{$type};
+     }
      my @return = ();
      my ($link,$link_name);
      my $class = '';
@@ -438,10 +465,25 @@ sub bug_links {
 					  class => {type => SCALAR,
 						    default => '',
 						   },
+					  separator => {type => SCALAR,
+							default => ', ',
+						       },
+					  options => {type => HASHREF,
+						      default => {},
+						     },
 					 },
 			      );
+     my %options = %{$param{options}};
+
+     for (qw(bug)) {
+	  delete $options{$_} if exists $options{$_};
+     }
      my @links;
-     push @links, map {(bug_url($_),$_)
+     push @links, map {(munge_url('bugreport.cgi?',
+				  %options,
+				  bug => $_,
+				 ),
+			$_);
 		  } make_list($param{bug}) if exists $param{bug};
      my @return;
      my ($link,$link_name);
@@ -460,7 +502,12 @@ sub bug_links {
 			      html_escape($link_name).q(</a>);
 	  }
      }
-     return @return;
+     if (wantarray) {
+	  return @return;
+     }
+     else {
+	  return join($param{separator},@return);
+     }
 }
 
 
@@ -547,8 +594,8 @@ sub emailfromrfc822{
      return $addr;
 }
 
-sub mainturl { pkg_url(maint => emailfromrfc822($_[0])); }
-sub submitterurl { pkg_url(submitter => emailfromrfc822($_[0])); }
+sub mainturl { package_links(maint => $_[0], links_only => 1); }
+sub submitterurl { package_links(submitter => $_[0], links_only => 1); }
 sub htmlize_maintlinks {
     my ($prefixfunc, $maints) = @_;
     carp "htmlize_maintlinks is deprecated";
@@ -576,8 +623,233 @@ too.]
 
 sub bug_linklist{
      my ($sep,$class,@bugs) = @_;
-     return join($sep,bug_links(bug=>\@bugs,class=>$class));
+     carp "bug_linklist is deprecated; use bug_links instead";
+     return scalar bug_links(bug=>\@bugs,class=>$class,separator=>$sep);
 }
+
+
+
+=head1 Forms
+
+=cut
+
+=head2 form_options_and_normal_param
+
+     my ($form_option,$param) = form_options_and_normal_param(\%param)
+           if $param{form_options};
+     my $form_option = form_options_and_normal_param(\%param)
+           if $param{form_options};
+
+Translates from special form_options to a set of parameters which can
+be used to run the current page.
+
+The idea behind this is to allow complex forms to relatively easily
+cause options that the existing cgi scripts understand to be set.
+
+Currently there are two commands which are understood:
+combine, and concatenate.
+
+=head3 combine
+
+Combine works by entering key,value pairs into the parameters using
+the key field option input field, and the value field option input
+field.
+
+For example, you would have
+
+ <input type="hidden" name="_fo_combine_key_fo_searchkey_value_fo_searchvalue" value="1">
+
+which would combine the _fo_searchkey and _fo_searchvalue input fields, so
+
+ <input type="text" name="_fo_searchkey" value="foo">
+ <input type="text" name="_fo_searchvalue" value="bar">
+
+would yield foo=>'bar' in %param.
+
+=head3 concatenate
+
+Concatenate concatenates values into a single entry in a parameter
+
+For example, you would have
+
+ <input type="hidden" name="_fo_concatentate_into_foo_with_:_fo_blah_fo_bleargh" value="1">
+
+which would combine the _fo_searchkey and _fo_searchvalue input fields, so
+
+ <input type="text" name="_fo_blah" value="bar">
+ <input type="text" name="_fo_bleargh" value="baz">
+
+would yield foo=>'bar:baz' in %param.
+
+
+=cut
+
+my $form_option_leader = '_fo_';
+sub form_options_and_normal_param{
+     my ($orig_param) = @_;
+     # all form_option parameters start with _fo_
+     my ($param,$form_option) = ({},{});
+     for my $key (keys %{$orig_param}) {
+	  if ($key =~ /^\Q$form_option_leader\E/) {
+	       $form_option->{$key} = $orig_param->{$key};
+	  }
+	  else {
+	       $param->{$key} = $orig_param->{$key};
+	  }
+     }
+     # at this point, we check for commands
+ COMMAND: for my $key (keys %{$form_option}) {
+	  $key =~ s/^\Q$form_option_leader\E//;
+	  if (my ($key_name,$value_name) = 
+	      $key =~ /combine_key(\Q$form_option_leader\E.+)
+	      _value(\Q$form_option_leader\E.+)$/x
+	     ) {
+	       next unless defined $form_option->{$key_name};
+	       next unless defined $form_option->{$value_name};
+	       my @keys = make_list($form_option->{$key_name});
+	       my @values = make_list($form_option->{$value_name});
+	       for my $i (0 .. $#keys) {
+		    last if $i > $#values;
+		    next if not defined $keys[$i];
+		    next if not defined $values[$i];
+		    __add_to_param($param,
+				   $keys[$i],
+				   $values[$i],
+				  );
+	       }
+	  }
+	  elsif (my ($field,$concatenate_key,$fields) = 
+		 $key =~ /concatenate_into_(.+?)((?:_with_[^_])?)
+			  ((?:\Q$form_option_leader\E.+?)+)
+			  $/x
+		) {
+	       if (length $concatenate_key) {
+		    $concatenate_key =~ s/_with_//;
+	       }
+	       else {
+		    $concatenate_key = ':';
+	       }
+	       my @fields = $fields =~ m/(\Q$form_option_leader\E.+?)(?:(?=\Q$form_option_leader\E)|$)/g;
+	       my %field_list;
+	       my $max_num = 0;
+	       for my $f (@fields) {
+		    next COMMAND unless defined $form_option->{$f};
+		    $field_list{$f} = [make_list($form_option->{$f})];
+		    $max_num = max($max_num,$#{$field_list{$f}});
+	       }
+	       for my $i (0 .. $max_num) {
+		    next unless @fields == grep {$i <= $#{$field_list{$_}} and
+						      defined $field_list{$_}[$i]} @fields;
+		    __add_to_param($param,
+				   $field,
+				   join($concatenate_key,
+					map {$field_list{$_}[$i]} @fields
+				       )
+				  );
+	       }
+	  }
+     }
+     return wantarray?($form_option,$param):$form_option;
+}
+
+=head2 option_form
+
+     print option_form(template=>'pkgreport_options',
+		       param   => \%param,
+		       form_options => $form_options,
+		      )
+
+
+
+=cut
+
+sub option_form{
+     my %param = validate_with(params => \@_,
+			       spec   => {template => {type => SCALAR,
+						      },
+					  variables => {type => HASHREF,
+							default => {},
+						       },
+					  language => {type => SCALAR,
+						       optional => 1,
+						      },
+					  param => {type => HASHREF,
+						    default => {},
+						   },
+					  form_options => {type => HASHREF,
+							   default => {},
+							  },
+					 },
+			      );
+
+     # First, we need to see if we need to add particular types of
+     # parameters
+     my $variables = dclone($param{variables});
+     $variables->{param} = dclone($param{param});
+     for my $key (keys %{$param{form_option}}) {
+	  # strip out leader; shouldn't be anything here without one,
+	  # but skip stupid things anyway
+	  my $o_key = $key;
+	  next unless $key =~ s/^\Q$form_option_leader\E//;
+	  if ($key =~ /^add_(.+)$/) {
+	       # this causes a specific parameter to be added
+	       __add_to_param($variables->{param},
+			      $1,
+			      ''
+			     );
+	  }
+	  elsif ($key =~ /^delete_(.+?)(?:_(\d+))?$/) {
+	       next unless exists $variables->{param}{$1};
+	       if (ref $variables->{param}{$1} eq 'ARRAY' and
+		   defined $2 and
+		   defined $variables->{param}{$1}[$2]
+		  ) {
+		    splice @{$variables->{param}{$1}},$2,1;
+	       }
+	       else {
+		    delete $variables->{param}{$1};
+	       }
+	  }
+	  # we'll add extra comands here once I figure out what they
+	  # should be
+     }
+     # add in a few utility routines
+     $variables->{output_select_options} = sub {
+	  my ($options,$value) = @_;
+	  my @options = @{$options};
+	  my $output = '';
+	  while (my ($o_value,$name) = splice @options,0,2) {
+	       my $selected = '';
+	       if (defined $value and $o_value eq $value) {
+		    $selected = ' selected';
+	       }
+	       $output .= qq(<option value="$o_value"$selected>$name</option>\n);
+	  }
+	  return $output;
+     };
+     $variables->{make_list} = sub { make_list(@_);
+     };
+     # now at this point, we're ready to create the template
+     return Debbugs::Text::fill_in_template(template=>$param{template},
+					    (exists $param{language}?(language=>$param{language}):()),
+					    variables => $variables,
+					   );
+}
+
+sub __add_to_param{
+     my ($param,$key,@values) = @_;
+
+     if (exists $param->{$key} and not
+	 ref $param->{$key}) {
+	  @{$param->{$key}} = [$param->{$key},
+			       @values
+			      ];
+     }
+     else {
+	  push @{$param->{$key}}, @values;
+     }
+}
+
 
 
 =head1 misc

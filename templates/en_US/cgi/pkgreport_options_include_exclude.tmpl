@@ -1,0 +1,16 @@
+<input type="hidden" name="_fo_concatenate_into_{$incexc}_fo_{$incexc}key_fo_{$incexc}value" value="1">
+{ my $output = '';
+  our $value_index = 0;
+  our $key1 = '';
+  our $key2 = '';
+  for my $field (make_list($param{$incexc})) {
+    ($key1,$key2) = $field =~ m/^([^:]+)\:(.+)/;
+    next unless defined $key2;
+    $output .= include('cgi/pkgreport_options_include_exclude_key');
+  }
+  $key1 = '';
+  $key2 = '';
+  $output .= include('cgi/pkgreport_options_include_exclude_key');
+  $output;
+}
+
