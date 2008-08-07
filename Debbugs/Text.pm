@@ -164,7 +164,7 @@ sub fill_in_template{
 			     qw(padsv padav padhv padany),
 			     qw(rv2gv refgen srefgen ref),
 			     qw(caller require entereval),
-			     qw(gmtime sprintf prtf),
+			     qw(gmtime time sprintf prtf),
 			    );
 	  $safe->share('*STDERR');
 	  $safe->share('%config');
