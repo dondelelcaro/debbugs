@@ -249,6 +249,7 @@ sub read_bug{
     # Add log last modified time
     $data{log_modified} = (stat($log))[9];
     $data{location} = $location;
+    $data{archived} = $location eq 'archive';
     $data{bug_num} = $param{bug};
 
     return \%data;
