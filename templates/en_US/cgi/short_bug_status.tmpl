@@ -41,7 +41,6 @@
   [{package_links(package=>$status{package},options=>\%options,class=>"submitter")}]
   <a href="{html_escape(bug_links(bug=>$status{bug_num},links_only=>1))}">{html_escape($status{subject})}</a>
   <div id="extra_status_{html_escape($status{bug_num})}" class="shortbugstatusextra">
-  <!--<div style="float:right">[<a href="javascript:extra_status_visible(0)">X</a>]</div>-->
   <span>Reported by: {package_links(submitter=>$status{originator})};</span>
   <span>Date: {$status{date_text}};</span>
 { my $output = ''; 
@@ -135,51 +134,5 @@
   if (exists $status{archived} and $status{archived}) {
      $output .= q(<span>Bug is archived. No further changes may be made.<span> )
   }
-  $output}
-<!--  <p>Package: {package_links(package=>$status{package},options=>\%options,class=>"submitter")}
-  {my $output = ''; my $showversions = '';
-   if (@{$status{found_versions}}) {
-     my @found = @{$status{found_versions}};
-     $showversions .= join ', ', map {html_escape($_)} @found;
-   }
-   if (@{$status{fixed_versions}}) {
-     $showversions .= '; ' if length $showversions;
-     $showversions .= '<strong>fixed</strong>: ';
-     my @fixed = @{$status{fixed_versions}};
-     $showversions .= join ', ', map {html_escape($_)} @fixed;
-   }
-   $output .= ' (<a href="'.
-	  version_url(package => $status{package},
-		      found   => $status{found_versions},
-		      fixed   => $status{fixed_versions},
-		     ).qq{">$showversions</a>)} if length $showversions;
-   $output
-  };
-    Severity: {my $output = $status{severity};
-               if (isstrongseverity($status{severity})) {
-                  $output = q(<em class="severity">).$status{severity}.q(</em>);
-               }
-               $output;
-              };
-    Reported by: {package_links(submitter=>$status{originator},options=>\%options,class=>"submitter")}<a class="submitter" href="pkgreport.cgi?submitter=kbloom%40gmail.com">Ken Bloom &lt;kbloom@gmail.com&gt;</a>;
-    {@{$status{tags_array}}?q(Tags: ).html_escape(join(q(, ),@{$status{tags_array}})).q(; ):''}
-    {my $output = '';
-     if (@{$status{mergedwith_array}}) {
-        $output .= q(Merged with ).join(qq(,\n),bug_links(bug=>$status{mergedwith_array})).q(; )
-     }
-     $output;
-    }
-    { my $output = '';
-     if (@{$status{blockedby_array}}) {
-        $output .= q(Blocked by ).
-          bug_links(bug=>$status{blockedby_array}).q(; );
-     }
-     if (@{$status{blocks_array}}) {
-        $output .= q(Blocking ).
-         bug_links(bug=>$status{blocks_array}).q(; );
-     }
-     $output;
-    }
-    <strong>2 years and 238 days old</strong>;
-    <strong>Modified 1 year and 34 days ago</strong>.</p>--></div>
+  $output}</div>
 </div>
