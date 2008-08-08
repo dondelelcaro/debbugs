@@ -245,10 +245,7 @@ sub display_entity {
 	 $body =~ s[(closes:\s*(?:bug)?\#?\s?\d+(?:,?\s*(?:bug)?\#?\s?\d+)*)]
 		   [my $temp = $1;
 		    $temp =~ s{(\d+)}
-			      {qq(<a href=").
-				    html_escape(bug_url($1)).
-					 qq(">$1</a>)
-				    }ge;
+			      {bug_links(bug=>$1)}ge;
 		    $temp;]gxie;
 
 	 if (not exists $param{att}) {
@@ -332,8 +329,8 @@ sub handle_record{
 	  if (defined $time) {
 	       $output .= ' ('.strftime('%a, %d %b %Y %T GMT',gmtime($time)).') ';
 	  }
-	  $output .= '<a href="' . html_escape(bug_url($bug_number, msg => ($msg_number+1))) . '">Full text</a> and <a href="' .
-	       html_escape(bug_url($bug_number, msg => ($msg_number+1), mbox => 'yes')) . '">rfc822 format</a> available.';
+	  $output .= '<a href="' . html_escape(bug_links($bug_number, options => {msg => ($msg_number+1)},links_only => 1)) . '">Full text</a> and <a href="' .
+	       html_escape(html_escape(bug_links($bug_number, options => {msg => ($msg_number+1),mbox => 'yes'},links_only => 1)) . '">rfc822 format</a> available.';
 
 	  $output = qq(<div class="$class"><hr>\n<a name="$msg_number"></a>\n) . $output . "</div>\n";
      }
@@ -346,7 +343,7 @@ sub handle_record{
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
 	  $output .= qq(<hr><p class="msgreceived"><a name="$msg_number"></a>\n);
-	  $output .= 'View this message in <a href="' . html_escape(bug_url($bug_number, msg=>$msg_number, mbox=>'yes')) . '">rfc822 format</a></p>';
+	  $output .= 'View this message in <a href="' . html_escape(bug_links(bug=>$bug_number, links_only => 1, options=>{msg=>$msg_number, mbox=>'yes'})) . '">rfc822 format</a></p>';
 	  $output .= handle_email_message($record->{text},
 					  ref     => $bug_number,
 					  msg_num => $msg_number,
