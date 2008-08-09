@@ -43,10 +43,10 @@ BEGIN{
 				qw(getmaintainers_reverse),
 				qw(getpseudodesc),
 			       ],
-		     misc   => [qw(make_list)],
+		     misc   => [qw(make_list globify_scalar)],
 		     date   => [qw(secs_to_english)],
 		     quit   => [qw(quit)],
-		     lock   => [qw(filelock unfilelock @cleanups lockpid)],
+		     lock   => [qw(filelock unfilelock lockpid)],
 		    );
      @EXPORT_OK = ();
      Exporter::export_ok_tags(qw(lock quit date util misc));
@@ -54,8 +54,12 @@ BEGIN{
 }
 
 #use Debbugs::Config qw(:globals);
+
+use Carp;
+
 use Debbugs::Config qw(:config);
 use IO::File;
+use IO::Scalar;
 use Debbugs::MIME qw(decode_rfc1522);
 use Mail::Address;
 use Cwd qw(cwd);
@@ -178,14 +182,11 @@ Opens a file for appending and writes data to it.
 =cut
 
 sub appendfile {
-	my $file = shift;
-	if (!open(AP,">>$file")) {
-		print $DEBUG_FH "failed open log<\n" if $DEBUG;
-		print $DEBUG_FH "failed open log err $!<\n" if $DEBUG;
-		&quit("opening $file (appendfile): $!");
-	}
-	print(AP @_) || &quit("writing $file (appendfile): $!");
-	close(AP) || &quit("closing $file (appendfile): $!");
+	my ($file,@data) = @_;
+	my $fh = IO::File->new($file,'a') or
+	     die "Unable top open $file for appending: $!";
+	print {$fh} @data or die "Unable to write to $file: $!";
+	close $fh or die "Unable to close $file: $!";
 }
 
 =head2 getparsedaddrs
@@ -214,6 +215,14 @@ sub getparsedaddrs {
     return wantarray?@{$_parsedaddrs{$addr}}:$_parsedaddrs{$addr}[0];
 }
 
+=head2 getmaintainers
+
+     my $maintainer = getmaintainers()->{debbugs}
+
+Returns a hashref of package => maintainer pairs.
+
+=cut
+
 our $_maintainer;
 our $_maintainer_rev;
 sub getmaintainers {
@@ -222,8 +231,8 @@ sub getmaintainers {
     my %maintainer_rev;
     for my $file (@config{qw(maintainer_file maintainer_file_override pseduo_maint_file)}) {
 	 next unless defined $file;
-	 my $maintfile = new IO::File $file,'r' or
-	      &quitcgi("Unable to open $file: $!");
+	 my $maintfile = IO::File->new($file,'r') or
+	      die "Unable to open maintainer file $file: $!";
 	 while(<$maintfile>) {
 	      next unless m/^(\S+)\s+(\S.*\S)\s*$/;
 	      ($a,$b)=($1,$2);
@@ -239,6 +248,15 @@ sub getmaintainers {
     $_maintainer_rev = \%maintainer_rev;
     return $_maintainer;
 }
+
+=head2 getmaintainers_reverse
+
+     my @packages = @{getmaintainers_reverse->{'don@debian.org'}||[]};
+
+Returns a hashref of maintainer => [qw(list of packages)] pairs.
+
+=cut
+
 sub getmaintainers_reverse{
      return $_maintainer_rev if $_maintainer_rev;
      getmaintainers();
@@ -319,7 +337,6 @@ FLOCKs the passed file. Use unfilelock to unlock it.
 =cut
 
 our @filelocks;
-our @cleanups;
 
 sub filelock {
     # NB - NOT COMPATIBLE WITH `with-lock'
@@ -346,11 +363,17 @@ sub filelock {
 	}
         if (--$count <=0) {
             $errors =~ s/\n+$//;
-            &quit("failed to get lock on $lockfile -- $errors");
+            die "failed to get lock on $lockfile -- $errors";
         }
         sleep 10;
     }
-    push(@cleanups,\&unfilelock);
+}
+
+# clean up all outstanding locks at end time
+END {
+     while (@filelocks) {
+	  unfilelock();
+     }
 }
 
 
@@ -371,7 +394,6 @@ sub unfilelock {
         return;
     }
     my %fl = %{pop(@filelocks)};
-    pop(@cleanups);
     flock($fl{fh},LOCK_UN)
 	 or warn "Unable to unlock lockfile $fl{file}: $!";
     close($fl{fh})
@@ -379,6 +401,7 @@ sub unfilelock {
     unlink($fl{file})
 	 or warn "Unable to unlink lockfile $fl{file}: $!";
 }
+
 
 =head2 lockpid
 
@@ -422,19 +445,17 @@ These functions are exported with the :quit tag.
 
      quit()
 
-Exits the program by calling die after running some cleanups.
+Exits the program by calling die.
 
-This should be replaced with an END handler which runs the cleanups
-instead. (Or possibly a die handler, if the cleanups are important)
+Usage of quit is deprecated; just call die instead.
 
 =cut
 
 sub quit {
-    print $DEBUG_FH "quitting >$_[0]<\n" if $DEBUG;
-    my ($u);
-    while ($u= $cleanups[$#cleanups]) { &$u; }
-    die "*** $_[0]\n";
+     print {$DEBUG_FH} "quitting >$_[0]<\n" if $DEBUG;
+     carp "quit() is deprecated; call die directly instead";
 }
+
 
 =head1 MISC
 
@@ -456,6 +477,42 @@ sub make_list {
      return map {(ref($_) eq 'ARRAY')?@{$_}:$_} @_;
 }
 
+
+=head2 globify_scalar
+
+     my $handle = globify_scalar(\$foo);
+
+if $foo isn't already a glob or a globref, turn it into one using
+IO::Scalar. Gives a new handle to /dev/null if $foo isn't defined.
+
+Will carp if given a scalar which isn't a scalarref or a glob (or
+globref), and return /dev/null. May return undef if IO::Scalar or
+IO::File fails. (Check $!)
+
+=cut
+
+sub globify_scalar {
+     my ($scalar) = @_;
+     my $handle;
+     if (defined $scalar) {
+	  if (defined ref($scalar)) {
+	       if (ref($scalar) eq 'SCALAR' and
+		   not UNIVERSAL::isa($scalar,'GLOB')) {
+		    return IO::Scalar->new($scalar);
+	       }
+	       else {
+		    return $scalar;
+	       }
+	  }
+	  elsif (UNIVERSAL::isa(\$scalar,'GLOB')) {
+	       return $scalar;
+	  }
+	  else {
+	       carp "Given a non-scalar reference, non-glob to globify_scalar; returning /dev/null handle";
+	  }
+     }
+     return IO::File->new('/dev/null','w');
+}
 
 
 1;

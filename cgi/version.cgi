@@ -14,9 +14,15 @@ BEGIN{
 
 use CGI::Simple;
 
-use CGI::Alert 'don@donarmstrong.com';
+# by default send this message nowhere
+use CGI::Alert q(nobody@example.com);
 
 use Debbugs::Config qw(:config);
+
+BEGIN{
+     $CGI::Alert::Maintainer = $config{maintainer};
+}
+
 use Debbugs::CGI qw(htmlize_packagelinks html_escape cgi_parameters munge_url);
 use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
@@ -31,7 +37,7 @@ my %img_types = (svg => 'image/svg+xml',
 		 png => 'image/png',
 		);
 
-my $q = new CGI::Simple;
+my $q = CGI::Simple->new();
 
 my %cgi_var = cgi_parameters(query   => $q,
 			     single  => [qw(package format ignore_boring width height collapse info)],
@@ -118,7 +124,9 @@ my %sources;
 my $version = Debbugs::Versions->new(\&Debbugs::Versions::Dpkg::vercmp);
 foreach my $source (keys %sources) {
      my $srchash = substr $source, 0, 1;
-     my $version_fh = new IO::File "$config{version_packages_dir}/$srchash/$source", 'r';
+     next unless -e "$config{version_packages_dir}/$srchash/$source";
+     my $version_fh = IO::File->new("$config{version_packages_dir}/$srchash/$source", 'r') or
+	  warn "Unable to open $config{version_packages_dir}/$srchash/$source for reading: $!";
      $version->load($version_fh);
 }
 # Here, we need to generate a short version to full version map
@@ -186,7 +194,7 @@ if ($cgi_var{collapse}) {
      # are in the same state as their parent, and are not in a suite
      foreach my $key (keys %reversed_nodes) {
 	  my ($short_version) = $key =~ m{/(.+)$};
-     	  if (not exists $version_to_dist{$short_version}
+     	  if (not exists $version_to_dist{$key}
 	      and @{$reversed_nodes{$key}} <= 1
 	      and defined $version->{parent}{$key}
 	      and $all_states{$key} eq $all_states{$version->{parent}{$key}}
@@ -241,8 +249,8 @@ foreach my $key (keys %all_states) {
 					  or $all_states{$key} eq 'absent');
      next if $cgi_var{ignore_boring} and not version_relevant($version,$key,\@interesting_versions);
      my @attributes = @{$state{$all_states{$key}}};
-     if (length $short_version and exists $version_to_dist{$short_version}) {
-	  push @attributes, 'label="'.$key.'\n'."(".join(', ',@{$version_to_dist{$short_version}}).")\"";
+     if (exists $version_to_dist{$key}) {
+	  push @attributes, 'label="'.$key.'\n'."(".join(', ',@{$version_to_dist{$key}}).")\"";
      }
      my $node_attributes = qq("$key" [).join(',',@attributes).qq(]\n);
      $dot .= $node_attributes;
@@ -278,13 +286,13 @@ $dot .= "}\n";
 my $temp_dir = tempdir(CLEANUP => 1);
 
 if (not defined $cgi_var{dot}) {
-     my $dot_fh = new IO::File "$temp_dir/temp.dot",'w' or
+     my $dot_fh = IO::File->new("$temp_dir/temp.dot",'w') or
 	  die "Unable to open $temp_dir/temp.dot for writing: $!";
      print {$dot_fh} $dot or die "Unable to print output to the dot file: $!";
      close $dot_fh or die "Unable to close the dot file: $!";
      system('dot','-T'.$cgi_var{format},"$temp_dir/temp.dot",'-o',"$temp_dir/temp.$cgi_var{format}") == 0
 	  or print "Content-Type: text\n\nDot failed." and die "Dot failed: $?";
-     my $img_fh = new IO::File "$temp_dir/temp.$cgi_var{format}", 'r' or
+     my $img_fh = IO::File->new("$temp_dir/temp.$cgi_var{format}", 'r') or
 	  die "Unable to open $temp_dir/temp.$cgi_var{format} for reading: $!";
      print "Content-Type: $img_types{$cgi_var{format}}\n\n";
      print <$img_fh>;

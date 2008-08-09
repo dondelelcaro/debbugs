@@ -2,14 +2,14 @@ html {
     color: #000; 
     background: #fefefe;
     font-family: serif;
-    margin: 1em;
+    margin: 0;
     border: 0;
     padding: 0;
     line-height: 120%;
 }
 
 body {
-    margin: 0;
+    margin: 10px;
     border: 0;
     padding: 0;
 }
@@ -120,6 +120,42 @@ pre.mime {
     color: #686868;
 }
 
+.buginfo p
+{ 
+  font-family: sans-serif;
+  font-size: 110%;
+  margin-bottom: 0px
+}
+
+.buginfo p + p
+{ 
+  margin: 0;
+  margin-top: 0px;
+  border: 0;
+}
+
+
+.pkginfo p
+{ font-family: sans-serif;
+  font-size: 110%;
+  margin-bottom: 0px
+}
+
+.pkginfo p + p
+{ 
+  margin: 0;
+  margin-top: 0px;
+  padding: 0;
+  border: 0;
+}
+
+
+.versiongraph
+{
+  float: right
+  
+}
+
 pre.tags {
     color: #a3a3a3;
     font-size: 90%;
@@ -161,6 +197,36 @@ a.options:link, a.options:visited {
 li {
     list-style-type: square;
 }
+
+.shortbugstatus
+{ 
+  font-family: sans-serif;
+  
+  }
+
+.shortbugstatusextra
+{ font-family: sans-serif;
+  margin: 5px;
+  margin-top: 2px;
+  padding: 5px;
+  /* display: none; */
+  /* z-index: 1; */
+  /* position: absolute; */
+  left: 120px;
+  background-color: #ffffff;
+/*  border: #000 1px solid; */
+  position: static;
+  display: block;
+  border: 0;
+  }
+
+.shortbugstatusextra span
+{ margin: 0;
+  margin-top: 0px;
+  padding: 0;
+  border: 0;
+  display: block;
+  }
 
 .bugs li {
     margin-top: 5px;

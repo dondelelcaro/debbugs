@@ -12,7 +12,7 @@ man_dir		:= $(DESTDIR)/usr/share/man
 man8_dir	:= $(man_dir)/man8
 examples_dir	:= $(doc_dir)/examples
 
-scripts_in	:= $(filter-out scripts/config.in scripts/errorlib.in scripts/text.in, $(wildcard scripts/*.in))
+scripts_in	:= $(filter-out scripts/config scripts/errorlib scripts/text, $(wildcard scripts/*))
 htmls_in	:= $(wildcard html/*.html.in)
 cgis		:= $(wildcard cgi/*.cgi cgi/*.pl)
 
@@ -48,13 +48,13 @@ $(var_dir)/spool/db-h $(scripts_dir) $(perl_dir) $(examples_dir) $(man8_dir); \
 
 
 	# install the scripts
-	$(foreach script,$(scripts_in), $(install_exec) $(script) $(scripts_dir)/$(patsubst scripts/%.in,%,$(script));)
-	$(install_data) scripts/errorlib.in $(scripts_dir)/errorlib
+	$(foreach script,$(scripts_in), $(install_exec) $(script) $(scripts_dir)/$(script);)
+	$(install_data) scripts/errorlib $(scripts_dir)/errorlib
 
 	# install examples
-	$(install_data) scripts/config.in $(examples_dir)/config
+	$(install_data) scripts/config $(examples_dir)/config
 	$(install_data) scripts/config.debian $(examples_dir)/config.debian
-	$(install_data) scripts/text.in $(examples_dir)/text
+	$(install_data) scripts/text $(examples_dir)/text
 	$(install_data) debian/crontab misc/nextnumber misc/Maintainers \
 	  misc/Maintainers.override misc/pseudo-packages.description \
 	  misc/sources $(examples_dir)
@@ -67,7 +67,7 @@ $(var_dir)/spool/db-h $(scripts_dir) $(perl_dir) $(examples_dir) $(man8_dir); \
 
 	# install the CGIs
 	for cgi in $(cgis); do $(install_exec) $$cgi $(var_dir)/www/cgi; done
-	$(install_exec) cgi/bugs-fetch2.pl.in $(var_dir)/www/cgi/bugs-fetch2.pl
+	$(install_exec) cgi/bugs-fetch2.pl $(var_dir)/www/cgi/bugs-fetch2.pl
 
 #	# install Perl modules
 #	for perl in $(perls); do $(install_data) $$perl $(perl_dir); done

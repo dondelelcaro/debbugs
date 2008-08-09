@@ -1,0 +1,16 @@
+<div class="pkginfo">
+  <p>{if (keys %package > 1) { q(Packages)} else {q(Package)}}:
+     {join(q(, ),package_links(package => [map {$_->{package}} values %package],
+                               class => q(submitter),
+                              )
+          )};
+{my $output ='';
+ for my $package (values %package) {
+     $output .= q(Maintainer for ).package_links(package=>$package->{package}).qq( is ).
+                package_links(maintainer => $package->{maintainer}).qq(; );
+     $output .= q(Source for ).package_links(package=>$package->{package}).qq( is ).
+                package_links(source => $package->{source}).qq(. );
+ }
+ $output;
+}</p>
+</div>

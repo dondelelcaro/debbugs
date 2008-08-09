@@ -8,6 +8,8 @@
 
 package Debbugs::Versions;
 
+use warnings;
+
 use strict;
 
 =head1 NAME
@@ -61,7 +63,7 @@ function.
 
 =cut
 
-sub new ($$)
+sub new
 {
     my $this = shift;
     my $class = ref($this) || $this;
@@ -81,7 +83,7 @@ This method is expected mainly to be used internally by the C<merge> method.
 
 =cut
 
-sub isancestor ($$$)
+sub isancestor
 {
     my $self = shift;
     my $ancestor = shift;
@@ -104,7 +106,7 @@ This method is mainly for internal use.
 
 =cut
 
-sub leaves ($)
+sub leaves
 {
     my $self = shift;
 
@@ -126,7 +128,7 @@ the next in the list.
 
 =cut
 
-sub merge ($@)
+sub merge
 {
     my $self = shift;
     return unless @_;
@@ -157,7 +159,7 @@ whitespace.
 
 =cut
 
-sub load ($*)
+sub load
 {
     my $self = shift;
     my $fh = shift;
@@ -175,7 +177,7 @@ method.
 
 =cut
 
-sub save ($*)
+sub save
 {
     my $self = shift;
     my $fh = shift;
@@ -217,7 +219,7 @@ that nothing is known about any of the found versions.
 
 =cut
 
-sub buggy ($$$$)
+sub buggy
 {
     my $self = shift;
     my $version = shift;
@@ -275,7 +277,7 @@ number of known and interested versions.
 
 =cut
 
-sub allstates ($$$;$)
+sub allstates
 {
     my $self = shift;
     my $found = shift;

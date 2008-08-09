@@ -50,6 +50,7 @@ BEGIN {
 				 qw($gSubmitList $gMaintList $gQuietList $gForwardList),
 				 qw($gDoneList $gRequestList $gSubmitterList $gControlList),
 				 qw($gStrongList),
+				 qw($gBugSubscriptionDomain),
 				 qw($gPackageVersionRe),
 				 qw($gSummaryList $gMirrorList $gMailer $gBug),
 				 qw($gBugs $gRemoveAge $gSaveOldBugs $gDefaultSeverity),
@@ -60,14 +61,16 @@ BEGIN {
 				 qw($gVersionTimeIndex),
 				 qw($gSendmail $gLibPath $gSpamScan @gExcludeFromControl),
 				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
+				 qw(%gTagsSingleLetter),
 				 qw(%gSearchEstraier),
 				 qw(%gDistributionAliases),
+				 qw(%gObsoleteSeverities),
 				 qw(@gPostProcessall @gRemovalDefaultDistributionTags @gRemovalDistributionTags @gRemovalArchitectures),
 				 qw(@gRemovalStrongSeverityDefaultDistributionTags),
 				 qw(@gDefaultArchitectures),
 				 qw($gTemplateDir),
 				 qw($gDefaultPackage),
-				 qw($gSpamMaxThreads $gSpamSpamsPerThread $gSpamKeepRunning $gSpamScan $gSpamCrossassassinDb)
+				 qw($gSpamMaxThreads $gSpamSpamsPerThread $gSpamKeepRunning $gSpamScan $gSpamCrossassassinDb),
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
@@ -76,6 +79,7 @@ BEGIN {
      @EXPORT_OK = ();
      Exporter::export_ok_tags(qw(globals text config));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
+     $ENV{HOME} = '' if not defined $ENV{HOME};
 }
 
 use File::Basename qw(dirname);
@@ -295,8 +299,6 @@ set_default(\%config,'unknown_maintainer_email',$config{maintainer_email});
 
 =item mirror_list
 
-=back
-
 =cut
 
 set_default(\%config,   'submit_list',   'bug-submit-list');
@@ -310,6 +312,21 @@ set_default(\%config,  'control_list',  'bug-control-list');
 set_default(\%config,  'summary_list',  'bug-summary-list');
 set_default(\%config,   'mirror_list',   'bug-mirror-list');
 set_default(\%config,   'strong_list',   'bug-strong-list');
+
+=item bug_subscription_domain
+
+Domain of list for messages regarding a single bug; prefixed with
+bug=${bugnum}@ when bugs are actually sent out. Set to undef or '' to
+disable sending messages to the bug subscription list.
+
+Default: list_domain
+
+=back
+
+=cut
+
+set_default(\%config,'bug_subscription_domain',$config{list_domain});
+
 
 =head2 Misc Options
 
@@ -398,6 +415,18 @@ Default: i386 amd64 arm ppc sparc alpha
 
 set_default(\%config,'default_architectures',
 	    [qw(i386 amd64 arm powerpc sparc alpha)]
+	   );
+
+=item removal_unremovable_tags
+
+Bugs which have these tags set cannot be archived
+
+Default: []
+
+=cut
+
+set_default(\%config,'removal_unremovable_tags',
+	    [],
 	   );
 
 =item removal_distribution_tags
@@ -530,20 +559,98 @@ set_default(\%config,'exclude_from_control',[]);
 
 
 
+=item default_severity
+
+The default severity of bugs which have no severity set
+
+Default: normal
+
+=cut
 
 set_default(\%config,'default_severity','normal');
-set_default(\%config,'show_severities','critical, grave, normal, minor, wishlist');
-set_default(\%config,'strong_severities',[qw(critical grave)]);
-set_default(\%config,'severity_list',[qw(critical grave normal wishlist)]);
+
+=item severity_display
+
+A hashref of severities and the informative text which describes them.
+
+Default:
+
+ {critical => "Critical $config{bugs}",
+  grave    => "Grave $config{bugs}",
+  normal   => "Normal $config{bugs}",
+  wishlist => "Wishlist $config{bugs}",
+ }
+
+=cut
+
 set_default(\%config,'severity_display',{critical => "Critical $config{bugs}",
 					 grave    => "Grave $config{bugs}",
 					 normal   => "Normal $config{bugs}",
 					 wishlist => "Wishlist $config{bugs}",
 					});
 
+=item show_severities
+
+A scalar list of the severities to show
+
+Defaults to the concatenation of the keys of the severity_display
+hashlist with ', ' above.
+
+=cut
+
+set_default(\%config,'show_severities',join(', ',keys %{$config{severity_display}}));
+
+=item strong_severities
+
+An arrayref of the serious severities which shoud be emphasized
+
+Default: [qw(critical grave)]
+
+=cut
+
+set_default(\%config,'strong_severities',[qw(critical grave)]);
+
+=item severity_list
+
+An arrayref of a list of the severities
+
+Defaults to the keys of the severity display hashref
+
+=cut
+
+set_default(\%config,'severity_list',[keys %{$config{severity_display}}]);
+
+=item obsolete_severities
+
+A hashref of obsolete severities with the replacing severity
+
+Default: {}
+
+=cut
+
+set_default(\%config,'obsolete_severities',{});
+
+=item tags
+
+An arrayref of the tags used
+
+Default: [qw(patch wontfix moreinfo unreproducible fixed)] and also
+includes the distributions.
+
+=cut
+
 set_default(\%config,'tags',[qw(patch wontfix moreinfo unreproducible fixed),
 			     @{$config{distributions}}
 			    ]);
+
+set_default(\%config,'tags_single_letter',
+	    {patch => '+',
+	     wontfix => '',
+	     moreinfo => 'M',
+	     unreproducible => 'R',
+	     fixed   => 'F',
+	    }
+	   );
 
 set_default(\%config,'bounce_froms','^mailer|^da?emon|^post.*mast|^root|^wpuser|^mmdf|^smt.*|'.
 	    '^mrgate|^vmmail|^mail.*system|^uucp|-maiser-|^mal\@|'.
@@ -551,6 +658,16 @@ set_default(\%config,'bounce_froms','^mailer|^da?emon|^post.*mast|^root|^wpuser|
 
 set_default(\%config,'config_dir',dirname(exists $ENV{DEBBUGS_CONFIG_FILE}?$ENV{DEBBUGS_CONFIG_FILE}:'/etc/debbugs/config'));
 set_default(\%config,'spool_dir','/var/lib/debbugs/spool');
+
+=item usertag_dir
+
+Directory which contains the usertags
+
+Default: $config{spool_dir}/user
+
+=cut
+
+set_default(\%config,'usertag_dir',$config{spool_dir}.'/user');
 set_default(\%config,'incoming_dir','incoming');
 set_default(\%config,'web_dir','/var/lib/debbugs/www');
 set_default(\%config,'doc_dir','/var/lib/debbugs/www/txt');
@@ -729,7 +846,6 @@ Site rules directory for spamassassin, defaults to
 
 set_default(\%config,'spam_rules_dir','/usr/share/spamassassin');
 
-
 =back
 
 
@@ -767,6 +883,8 @@ set_default(\%config,'text_instructions',$config{bad_email_prefix});
 =item html_tail
 
 This shows up at the end of (most) html pages
+
+In many pages this has been replaced by the html/tail template.
 
 =cut
 

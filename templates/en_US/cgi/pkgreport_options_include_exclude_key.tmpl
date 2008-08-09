@@ -1,0 +1,14 @@
+<nobr><select name="_fo_{$incexc}key">
+{output_select_options([subject => 'with subject containing',
+                       	tags => 'tagged',
+			severity => 'with severity',
+                        pending  => 'with pending state',
+                        originator => 'with submitter containing',
+			forwarded  => 'with forwarded containing',
+			owner      => 'with owner containing',
+			package    => 'with package',
+                       ],$key1||'')}
+</select>
+<input type="text" name="_fo_{$incexc}value" value ="{$key2||''}">
+<!-- {$value_index} -->
+</nobr>

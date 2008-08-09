@@ -4,86 +4,73 @@
 # Usage: service <code>.nn
 # Temps:  incoming/P<code>.nn
 
+use warnings;
+use strict;
+
+
+use Debbugs::Config qw(:globals :config);
+
 use File::Copy;
 use MIME::Parser;
+
+use Params::Validate qw(:types validate_with);
+
+use Debbugs::Common qw(:util :quit :misc :lock);
+
+use Debbugs::Status qw(:read :status :write :versions);
+
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
 use Debbugs::Mail qw(send_mail_message);
 use Debbugs::User;
+use Debbugs::Recipients qw(:all);
 use HTML::Entities qw(encode_entities);
 use Debbugs::Versions::Dpkg;
 
-use Debbugs::Config qw(:globals :config);
+use Debbugs::Status qw(splitpackages);
+
 use Debbugs::CGI qw(html_escape);
-use Debbugs::Control qw(:archive :log);
+use Debbugs::Control qw(:archive :log :owner);
 use Debbugs::Log qw(:misc);
 use Debbugs::Text qw(:templates);
 
 use Mail::RFC822::Address;
 
-$lib_path = $gLibPath;
-require "$lib_path/errorlib";
-$ENV{'PATH'} = $lib_path.':'.$ENV{'PATH'};
+chdir($config{spool_dir}) or
+     die "Unable to chdir to spool_dir '$config{spool_dir}': $!";
 
-chdir("$gSpoolDir") || die "chdir spool: $!\n";
-
-# open(DEBUG,">&4");
-open DEBUG, ">/dev/null";
-$debug = 0;
+my $debug = 0;
 umask(002);
 
-$_=shift;
-m/^[RC]\.\d+$/ || &quit("bad argument");
-$control= m/C/;
-$nn= $_;
+my ($nn,$control) = $ARGV[0] =~ m/^(([RC])\.\d+)$/;
+if (not defined $control or not defined $nn) {
+     die "Bad argument to service.in";
+}
 if (!rename("incoming/G$nn","incoming/P$nn")) {
-    $_=$!.'';  m/no such file or directory/i && exit 0;
-    &quit("renaming to lock: $!");
-}    
+    defined $! and $! =~ m/no such file or directory/i and exit 0;
+    die "Failed to rename incoming/G$nn to incoming/P$nn: $!";
+}
 
-open(M,"incoming/P$nn");
-@log=<M>;
-@msg=@log;
-close(M);
+my $log_fh = IO::File->new("incoming/P$nn",'r') or
+     die "Unable to open incoming/P$nn for reading: $!";
+my @log=<$log_fh>;
+my @msg=@log;
+close($log_fh);
 
 chomp @msg;
 
 print "###\n",join("##\n",@msg),"\n###\n" if $debug;
 
-my $parser = new MIME::Parser;
-mkdir "$gSpoolDir/mime.tmp", 0777;
-$parser->output_under("$gSpoolDir/mime.tmp");
-my $entity = eval { $parser->parse_data(join('',@log)) };
-
-# header and decoded body respectively
-my (@headerlines, @bodylines);
 # Bug numbers to send e-mail to, hash so that we don't send to the
 # same bug twice.
 my (%bug_affected);
 
-if ($entity and $entity->head->tags) {
-    # Use map instead of chomp to also kill \r.
-    @headerlines = map {s/\r?\n?$//; $_;}
-	 @{$entity->head->header};
+my (@headerlines,@bodylines);
 
-    my $entity_body = getmailbody($entity);
-    @bodylines = map {s/\r?\n$//; $_;}
-	 $entity_body ? $entity_body->as_lines() : ();
-} else {
-    # Legacy pre-MIME code, kept around in case MIME::Parser fails.
-    my $i;
-    for ($i = 0; $i <= $#msg; $i++) {
-	$_ = $msg[$i];
-	last unless length($_);
-	while ($msg[$i+1] =~ m/^\s/) {
-	    $i++;
-	    $_ .= "\n".$msg[$i];
-	}
-	push @headerlines, $_;
-    }
+my $parse_output = Debbugs::MIME::parse(join('',@log));
+@headerlines = @{$parse_output->{header}};
+@bodylines = @{$parse_output->{body}};
 
-    @bodylines = @msg[$i..$#msg];
-}
-
+my %header;
 for (@headerlines) {
     $_ = decode_rfc1522($_);
     s/\n\s/ /g;
@@ -96,19 +83,7 @@ for (@headerlines) {
 	print "!>$_<\n" if $debug;
     }
 }
-
-# Strip off RFC2440-style PGP clearsigning.
-if (@bodylines and $bodylines[0] =~ /^-----BEGIN PGP SIGNED/) {
-    shift @bodylines while @bodylines and length $bodylines[0];
-    shift @bodylines while @bodylines and $bodylines[0] !~ /\S/;
-    for my $findsig (0 .. $#bodylines) {
-	if ($bodylines[$findsig] =~ /^-----BEGIN PGP SIGNATURE/) {
-	    $#bodylines = $findsig - 1;
-	    last;
-	}
-    }
-    map { s/^- // } @bodylines;
-}
+$header{'message-id'} ||= '';
 
 grep(s/\s+$//,@bodylines);
 
@@ -118,11 +93,12 @@ if (defined $header{'resent-from'} && !defined $header{'from'}) {
     $header{'from'} = $header{'resent-from'};
 }
 
-defined($header{'from'}) || &quit("no From header");
+defined($header{'from'}) || die "no From header";
 
 delete $header{'reply-to'} 
 	if ( defined($header{'reply-to'}) && $header{'reply-to'} =~ m/^\s*$/ );
 
+my $replyto;
 if ( defined($header{'reply-to'}) && $header{'reply-to'} ne "" ) {
     $replyto = $header{'reply-to'};
 } else {
@@ -131,16 +107,18 @@ if ( defined($header{'reply-to'}) && $header{'reply-to'} ne "" ) {
 
 # This is an error counter which should be incremented every time there is an error.
 my $errors = 0;
-$controlrequestaddr= $control ? "control\@$gEmailDomain" : "request\@$gEmailDomain";
-$transcript='';
-&transcript("Processing commands for $controlrequestaddr:\n\n");
+my $controlrequestaddr= ($control ? 'control' : 'request').$config{email_domain};
+my $transcript_scalar = '';
+my $transcript = IO::Scalar->new(\$transcript_scalar) or
+     die "Unable to create new IO::Scalar";
+print {$transcript} "Processing commands for $controlrequestaddr:\n\n";
 
-$dl= 0;
-$state= 'idle';
-$lowstate= 'idle';
-$mergelowstate= 'idle';
-$midix=0;    
-$extras="";
+# debug level
+my $dl = 0;
+my $state= 'idle';
+my $lowstate= 'idle';
+my $mergelowstate= 'idle';
+my $midix=0;
 
 my $user = $replyto;
 $user =~ s/,.*//;
@@ -152,39 +130,61 @@ my $indicated_user = 0;
 
 my $quickabort = 0;
 
-my $fuckheads = "(" . join("|", @gExcludeFromControl) . ")";
-if (@gExcludeFromControl and $replyto =~ m/$fuckheads/) {
-	&transcript(fill_template('mail/excluded_from_control'));
+
+if (@gExcludeFromControl and grep {$replyto =~ m/\Q$_\E/} @gExcludeFromControl) {
+	print {$transcript} fill_template('mail/excluded_from_control');
 	$quickabort = 1;
 }
 
 my %limit_pkgs = ();
 my %clonebugs = ();
-my @bcc = ();
+my %bcc = ();
 
+
+my @bcc;
 sub addbcc {
     push @bcc, $_[0] unless grep { $_ eq $_[0] } @bcc;
 }
 
+our $data;
+our $message;
+our $extramessage;
+our $ref;
+
+our $mismatch;
+our $action;
+
+
+# recipients of mail
+my %recipients;
+# affected_packages
+my %affected_packages;
+my $ok = 0;
+my $unknowns = 0;
+my $procline=0;
 for ($procline=0; $procline<=$#bodylines; $procline++) {
-    $state eq 'idle' || print "$state ?\n";
-    $lowstate eq 'idle' || print "$lowstate ?\n";
-    $mergelowstate eq 'idle' || print "$mergelowstate ?\n";
+    my $noriginator;
+    my $newsubmitter;
+    my $oldsubmitter;
+    my $newowner;
+    $state eq 'idle' || print "state: $state ?\n";
+    $lowstate eq 'idle' || print "lowstate: $lowstate ?\n";
+    $mergelowstate eq 'idle' || print "mergelowstate: $mergelowstate ?\n";
     if ($quickabort) {
-         &transcript("Stopping processing here.\n\n");
+         print {$transcript} "Stopping processing here.\n\n";
 	 last;
     }
     $_= $bodylines[$procline]; s/\s+$//;
     next unless m/\S/;
-    &transcript("> $_\n");
+    print {$transcript} "> $_\n";
     next if m/^\s*\#/;
     $action= '';
     if (m/^stop\s*$/i || m/^quit\s*$/i || m/^--\s*$/ || m/^thank(?:s|\s*you)?\s*$/i || m/^kthxbye\s*$/i) {
-	&transcript("Stopping processing here.\n\n");
+	print {$transcript} "Stopping processing here.\n\n";
         last;
     } elsif (m/^debug\s+(\d+)$/i && $1 >= 0 && $1 <= 1000) {
         $dl= $1+0;
-        &transcript("Debug level $dl.\n\n");
+        print {$transcript} "Debug level $dl.\n\n";
     } elsif (m/^(send|get)\s+\#?(\d{2,})$/i) {
         $ref= $2+0;
         &sendlynxdoc("bugreport.cgi?bug=$ref","logs for $gBug#$ref");
@@ -193,15 +193,15 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
 	&sendlynxdoc("bugreport.cgi?bug=$ref&boring=yes",
 		     "detailed logs for $gBug#$ref");
     } elsif (m/^index(\s+full)?$/i) {
-	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	print {$transcript} "This BTS function is currently disabled, sorry.\n\n";
 	$errors++;
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
     } elsif (m/^index-summary\s+by-package$/i) {
-	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	print {$transcript} "This BTS function is currently disabled, sorry.\n\n";
 	$errors++;
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
     } elsif (m/^index-summary(\s+by-number)?$/i) {
-	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	print {$transcript} "This BTS function is currently disabled, sorry.\n\n";
 	$errors++;
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
     } elsif (m/^index(\s+|-)pack(age)?s?$/i) {
@@ -209,55 +209,55 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
     } elsif (m/^index(\s+|-)maints?$/i) {
 	&sendlynxdoc("pkgindex.cgi?indexon=maint",'index of maintainers');
     } elsif (m/^index(\s+|-)maint\s+(\S+)$/i) {
-	$maint = $2;
+	my $maint = $2;
 	&sendlynxdoc("pkgreport.cgi?maint=" . urlsanit($maint),
 		     "$gBug list for maintainer \`$maint'");
         $ok++;
     } elsif (m/^index(\s+|-)pack(age)?s?\s+(\S.*\S)$/i) {
-	$package = $+;
+	my $package = $+;
 	&sendlynxdoc("pkgreport.cgi?pkg=" . urlsanit($package),
 		     "$gBug list for package $package");
         $ok++;
     } elsif (m/^send-unmatched(\s+this|\s+-?0)?$/i) {
-	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	print {$transcript} "This BTS function is currently disabled, sorry.\n\n";
 	$errors++;
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
     } elsif (m/^send-unmatched\s+(last|-1)$/i) {
-	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	print {$transcript} "This BTS function is currently disabled, sorry.\n\n";
 	$errors++;
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
     } elsif (m/^send-unmatched\s+(old|-2)$/i) {
-	&transcript("This BTS function is currently disabled, sorry.\n\n");
+	print {$transcript} "This BTS function is currently disabled, sorry.\n\n";
 	$errors++;
 	$ok++; # well, it's not really ok, but it fixes #81224 :)
-    } elsif (m/^getinfo\s+([\w-.]+)$/i) {
+    } elsif (m/^getinfo\s+([\w.-]+)$/i) {
         # the following is basically a Debian-specific kludge, but who cares
-        $req = $1;
+        my $req = $1;
 	if ($req =~ /^maintainers$/i && -f "$gConfigDir/Maintainers") {
 	    &sendinfo("local", "$gConfigDir/Maintainers", "Maintainers file");
-	} elsif ($req =~ /^override\.(\w+)\.([\w-.]+)$/i) {
+	} elsif ($req =~ /^override\.(\w+)\.([\w.-]+)$/i) {
 	    $req =~ s/.gz$//;
 	    &sendinfo("ftp.d.o", "$req", "override file for $2 part of $1 distribution");
 	} elsif ($req =~ /^pseudo-packages\.(description|maintainers)$/i && -f "$gConfigDir/$req") {
 	    &sendinfo("local", "$gConfigDir/$req", "$req file");
 	} else {
-	    &transcript("Info file $req does not exist.\n\n");
+	    print {$transcript} "Info file $req does not exist.\n\n";
 	}
     } elsif (m/^help/i) {
         &sendhelp;
-        &transcript("\n");
+        print {$transcript} "\n";
         $ok++;
     } elsif (m/^refcard/i) {
         &sendtxthelp("bug-mailserver-refcard.txt","mail servers' reference card");
     } elsif (m/^subscribe/i) {
-        &transcript(<<END);
+        print {$transcript} <<END;
 There is no $gProject $gBug mailing list.  If you wish to review bug reports
 please do so via http://$gWebDomain/ or ask this mail server
 to send them to you.
 soon: MAILINGLISTS_TEXT
 END
     } elsif (m/^unsubscribe/i) {
-        &transcript(<<END);
+        print {$transcript} <<END;
 soon: UNSUBSCRIBE_TEXT
 soon: MAILINGLISTS_TEXT
 END
@@ -265,11 +265,11 @@ END
         my $newuser = $1;
 	if (Debbugs::User::is_valid_user($newuser)) {
 	    my $olduser = ($user ne "" ? " (was $user)" : "");
-            &transcript("Setting user to $newuser$olduser.\n");
+            print {$transcript} "Setting user to $newuser$olduser.\n";
 	    $user = $newuser;
 	    $indicated_user = 1;
 	} else {
-	    &transcript("Selected user id ($newuser) invalid, sorry\n");
+	    print {$transcript} "Selected user id ($newuser) invalid, sorry\n";
 	    $errors++;
 	    $user = "";
 	    $indicated_user = 1;
@@ -284,24 +284,25 @@ END
         my $bad = 0;
 	my $catsec = 0;
 	if ($user eq "") {
-	    &transcript("No valid user selected\n");
+	    print {$transcript} "No valid user selected\n";
 	    $errors++;
 	    next;
         }
 	if (not $indicated_user and defined $user) {
-	     &transcript("User is $user\n");
+	     print {$transcript} "User is $user\n";
 	     $indicated_user = 1;
 	}
+	my @ords = ();
 	while (++$procline <= $#bodylines) {
             unless ($bodylines[$procline] =~ m/^\s*([*+])\s*(\S.*)$/) {
                 $procline--;
                 last;
             }
-            &transcript("> $bodylines[$procline]\n");
+            print {$transcript} "> $bodylines[$procline]\n";
             next if $bad;
             my ($o, $txt) = ($1, $2);
             if ($#cats == -1 && $o eq "+") {
-                &transcript("User defined category specification must start with a category name. Skipping.\n\n");
+                print {$transcript} "User defined category specification must start with a category name. Skipping.\n\n";
 		$errors++;
                 $bad = 1;
                 next;
@@ -320,7 +321,7 @@ END
                 } elsif ($txt =~ m/^([^[\s]+)\s*$/) {
                     $desc = ""; $op = $1;
                 } else {
-                    &transcript("Unrecognised syntax for category section. Skipping.\n\n");
+                    print {$transcript} "Unrecognised syntax for category section. Skipping.\n\n";
 		    $errors++;
                     $bad = 1;
                     next;
@@ -332,7 +333,7 @@ END
 		    push @{$cats[-1]->{"ttl"}}, $desc;
 		    push @ords, "$ord $catsec";
 		} else {
-		    @cats[-1]->{"def"} = $desc;
+		    $cats[-1]->{"def"} = $desc;
 		    push @ords, "$ord DEF";
 		    $catsec--;
 		}
@@ -353,30 +354,32 @@ END
         # XXX: got @cats, now do something with it
 	my $u = Debbugs::User::get_user($user);
 	if (@cats) {
-	    &transcript("Added usercategory $catname.\n\n");
+	    print {$transcript} "Added usercategory $catname.\n\n";
 	    $u->{"categories"}->{$catname} = [ @cats ];
 	    if (not $hidden) {
 		 push @{$u->{visible_cats}},$catname;
 	    }
 	} else {
-	    &transcript("Removed usercategory $catname.\n\n");
+	    print {$transcript} "Removed usercategory $catname.\n\n";
 	    delete $u->{"categories"}->{$catname};
 	    @{$u->{visible_cats}} = grep {$_ ne $catname} @{$u->{visible_cats}};
 	}
 	$u->write();
     } elsif (m/^usertags?\s+\#?(-?\d+)\s+(([=+-])\s*)?(\S.*)?$/i) {
 	$ok++;
-	$ref = $1; $addsubcode = $3 || "+"; $tags = $4;
+	$ref = $1;
+	my $addsubcode = $3 || "+";
+	my $tags = $4;
 	if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
 	     $ref = $clonebugs{$ref};
         }
 	if ($user eq "") {
-	    &transcript("No valid user selected\n");
+	    print {$transcript} "No valid user selected\n";
 	    $errors++;
 	    $indicated_user = 1;
         } elsif (&setbug) {
 	    if (not $indicated_user and defined $user) {
-		 &transcript("User is $user\n");
+		 print {$transcript} "User is $user\n";
 		 $indicated_user = 1;
 	    }
 	    &nochangebug;
@@ -392,7 +395,7 @@ END
 		}
 	    }
 	    if (@badtags) {
-                &transcript("Ignoring illegal tag/s: ".join(', ', @badtags).".\nPlease use only alphanumerics, at, dot, plus and dash.\n");
+                print {$transcript} "Ignoring illegal tag/s: ".join(', ', @badtags).".\nPlease use only alphanumerics, at, dot, plus and dash.\n";
 		$errors++;
 	    }
             for my $t (keys %chtags) {
@@ -410,22 +413,22 @@ END
 		$ut{$t} = [ sort { $a <=> $b } (keys %res) ];
 	    }
 	    if (@oldtags == 0) {
-		&transcript("There were no usertags set.\n");
+		print {$transcript} "There were no usertags set.\n";
 	    } else {
-		&transcript("Usertags were: " . join(" ", @oldtags) . ".\n");
+		print {$transcript} "Usertags were: " . join(" ", @oldtags) . ".\n";
 	    }
-	    &transcript("Usertags are now: " . join(" ", @newtags) . ".\n");
+	    print {$transcript} "Usertags are now: " . join(" ", @newtags) . ".\n";
 	    Debbugs::User::write_usertags(\%ut, $user);
 	}
     } elsif (!$control) {
-        &transcript(<<END);
+        print {$transcript} <<END;
 Unknown command or malformed arguments to command.
 (Use control\@$gEmailDomain to manipulate reports.)
 
 END
 	$errors++;
         if (++$unknowns >= 3) {
-            &transcript("Too many unknown commands, stopping here.\n\n");
+            print {$transcript} "Too many unknown commands, stopping here.\n\n";
             last;
         }
 #### "developer only" ones start here
@@ -433,11 +436,11 @@ END
 	$ok++;
 	$ref= $1;
 	$bug_affected{$ref}=1;
-	$version= $2;
+	my $version= $2;
 	if (&setbug) {
-	    &transcript("'close' is deprecated; see http://$gWebDomain/Developer$gHTMLSuffix#closing.\n");
+	    print {$transcript} "'close' is deprecated; see http://$gWebDomain/Developer$gHTMLSuffix#closing.\n";
 	    if (length($data->{done}) and not defined($version)) {
-		&transcript("$gBug is already closed, cannot re-close.\n\n");
+		print {$transcript} "$gBug is already closed, cannot re-close.\n\n";
                 &nochangebug;
             } else {
                 $action= "$gBug " .
@@ -446,11 +449,14 @@ END
                         "closed") .
                     ", send any further explanations to $data->{originator}";
                 do {
-                    &addmaintainers($data);
-					if ( length( $gDoneList ) > 0 && length( $gListDomain ) >
-					0 ) { &addccaddress("$gDoneList\@$gListDomain"); }
-                    $data->{done}= $replyto;
+		   $affected_packages{$data->{package}} = 1;
+                   add_recipients(data => $data,
+				   recipients => \%recipients,
+				   actions_taken => {done => 1},
+				  );
+		    $data->{done}= $replyto;
                     my @keywords= split ' ', $data->{keywords};
+		    my $extramessage = '';
                     if (grep $_ eq 'pending', @keywords) {
                         $extramessage= "Removed pending tag.\n";
                         $data->{keywords}= join ' ', grep $_ ne 'pending',
@@ -458,7 +464,7 @@ END
                     }
                     addfixedversions($data, $data->{package}, $version, 'binary');
 
-		    $message= <<END;
+		    my $message= <<END;
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $data->{originator}
 Subject: $gBug#$ref acknowledged by developer
@@ -489,9 +495,10 @@ END
         }
     } elsif (m/^reassign\s+\#?(-?\d+)\s+(\S+)(?:\s+(\d.*))?$/i) {
         $ok++;
-        $ref= $1; $newpackage= $2;
+        $ref= $1;
+	my $newpackage= $2;
 	$bug_affected{$ref}=1;
-        $version= $3;
+        my $version= $3;
     	$newpackage =~ y/A-Z/a-z/;
         if (&setbug) {
             if (length($data->{package})) {
@@ -501,13 +508,14 @@ END
                 $action= "$gBug assigned to package \`$newpackage'.";
             }
             do {
-                &addmaintainers($data);
+		$affected_packages{$data->{package}} = 1;
+                add_recipients(data => $data, recipients => \%recipients);
                 $data->{package}= $newpackage;
                 $data->{found_versions}= [];
                 $data->{fixed_versions}= [];
                 # TODO: what if $newpackage is a source package?
                 addfoundversions($data, $data->{package}, $version, 'binary');
-                &addmaintainers($data);
+                add_recipients(data => $data, recipients => \%recipients);
             } while (&getnextbug);
         }
     } elsif (m/^reopen\s+\#?(-?\d+)$/i ? ($noriginator='', 1) :
@@ -519,17 +527,18 @@ END
 	$bug_affected{$ref}=1;
         if (&setbug) {
             if (@{$data->{fixed_versions}}) {
-                &transcript("'reopen' may be inappropriate when a bug has been closed with a version;\nyou may need to use 'found' to remove fixed versions.\n");
+                print {$transcript} "'reopen' may be inappropriate when a bug has been closed with a version;\nyou may need to use 'found' to remove fixed versions.\n";
             }
             if (!length($data->{done})) {
-                &transcript("$gBug is already open, cannot reopen.\n\n");
+                print {$transcript} "$gBug is already open, cannot reopen.\n\n";
                 &nochangebug;
             } else {
                 $action=
                     $noriginator eq '' ? "$gBug reopened, originator not changed." :
                         "$gBug reopened, originator set to $noriginator.";
                 do {
-                    &addmaintainers($data);
+		    $affected_packages{$data->{package}} = 1;
+                    add_recipients(data => $data, recipients => \%recipients);
                     $data->{originator}= $noriginator eq '' ?  $data->{originator} : $noriginator;
                     $data->{fixed_versions}= [];
                     $data->{done}= '';
@@ -541,10 +550,10 @@ END
 		    $config{package_version_re}))?$}ix) {
         $ok++;
         $ref= $1;
-        $version= $2;
+        my $version= $2;
         if (&setbug) {
             if (!length($data->{done}) and not defined($version)) {
-                &transcript("$gBug is already open, cannot reopen.\n\n");
+                print {$transcript} "$gBug is already open, cannot reopen.\n\n";
 		$errors++;
                 &nochangebug;
             } else {
@@ -553,7 +562,8 @@ END
                         "$gBug marked as found in version $version." :
                         "$gBug reopened.";
                 do {
-                    &addmaintainers($data);
+                    $affected_packages{$data->{package}} = 1;
+		    add_recipients(data => $data, recipients => \%recipients);
                     # The 'done' field gets a bit weird with version
                     # tracking, because a bug may be closed by multiple
                     # people in different branches. Until we have something
@@ -585,14 +595,15 @@ END
 		    \S+)\s*$]ix) {
         $ok++;
         $ref= $1;
-        $version= $2;
+        my $version= $2;
         if (&setbug) {
             $action= "$gBug no longer marked as found in version $version.";
             if (length($data->{done})) {
                 $extramessage= "(By the way, this $gBug is currently marked as done.)\n";
             }
             do {
-                &addmaintainers($data);
+                $affected_packages{$data->{package}} = 1;
+		add_recipients(data => $data, recipients => \%recipients);
                 removefoundversions($data, $data->{package}, $version, 'binary');
             } while (&getnextbug);
        }
@@ -602,14 +613,15 @@ END
 		  $config{package_version_re})\s*$]ix) {
         $ok++;
         $ref= $1;
-        $version= $2;
+        my $version= $2;
         if (&setbug) {
 	     $action=
 		  defined($version) ?
 		       "$gBug marked as fixed in version $version." :
 			    "$gBug reopened.";
                 do {
-                    &addmaintainers($data);
+                    $affected_packages{$data->{package}} = 1;
+		    add_recipients(data => $data, recipients => \%recipients);
                     addfixedversions($data, $data->{package}, $version, 'binary');
 	       } while (&getnextbug);
 	}
@@ -619,14 +631,15 @@ END
 		  \S+)\s*$]ix) {
         $ok++;
         $ref= $1;
-        $version= $2;
+        my $version= $2;
         if (&setbug) {
 	     $action=
 		  defined($version) ?
 		       "$gBug no longer marked as fixed in version $version." :
 			    "$gBug reopened.";
                 do {
-                    &addmaintainers($data);
+                    $affected_packages{$data->{package}} = 1;
+		    add_recipients(data => $data, recipients => \%recipients);
                     removefixedversions($data, $data->{package}, $version, 'binary');
 	       } while (&getnextbug);
 	}
@@ -646,16 +659,17 @@ END
         elsif (&getbug) {
             if (&checkpkglimit) {
                 &foundbug;
-                &addmaintainers($data);
+                $affected_packages{$data->{package}} = 1;
+		add_recipients(data => $data, recipients => \%recipients);
                 $oldsubmitter= $data->{originator};
                 $data->{originator}= $newsubmitter;
                 $action= "Changed $gBug submitter from $oldsubmitter to $newsubmitter.";
                 &savebug;
-                &transcript("$action\n");
+                print {$transcript} "$action\n";
                 if (length($data->{done})) {
-                    &transcript("(By the way, that $gBug is currently marked as done.)\n");
+                    print {$transcript} "(By the way, that $gBug is currently marked as done.)\n";
                 }
-                &transcript("\n");
+                print {$transcript} "\n";
                 $message= <<END;
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $oldsubmitter
@@ -693,7 +707,8 @@ END
         }
     } elsif (m/^forwarded\s+\#?(-?\d+)\s+(\S.*\S)$/i) {
         $ok++;
-        $ref= $1; $whereto= $2;
+        $ref= $1;
+	my $whereto= $2;
 	$bug_affected{$ref}=1;
         if (&setbug) {
             if (length($data->{forwarded})) {
@@ -705,11 +720,12 @@ END
                 $extramessage= "(By the way, this $gBug is currently marked as done.)\n";
             }
             do {
-                &addmaintainers($data);
-		if (length($gForwardList)>0 && length($gListDomain)>0 ) {
-		     &addccaddress("$gForwardList\@$gListDomain"); 
-		}
-                $data->{forwarded}= $whereto;
+                $affected_packages{$data->{package}} = 1;
+		add_recipients(data => $data,
+			       recipients => \%recipients,
+			       actions_taken => {forwarded => 1},
+			      );
+		$data->{forwarded}= $whereto;
             } while (&getnextbug);
         }
     } elsif (m/^notforwarded\s+\#?(-?\d+)$/i) {
@@ -718,12 +734,13 @@ END
 	$bug_affected{$ref}=1;
         if (&setbug) {
             if (!length($data->{forwarded})) {
-                &transcript("$gBug is not marked as having been forwarded.\n\n");
+                print {$transcript} "$gBug is not marked as having been forwarded.\n\n";
                 &nochangebug;
             } else {
     $action= "Removed annotation that $gBug had been forwarded to $data->{forwarded}.";
                 do {
-                    &addmaintainers($data);
+                    $affected_packages{$data->{package}} = 1;
+		    add_recipients(data => $data, recipients => \%recipients);
                     $data->{forwarded}= '';
                 } while (&getnextbug);
             }
@@ -733,21 +750,22 @@ END
         $ok++;
         $ref= $1;
 	$bug_affected{$ref}=1;
-        $newseverity= $2;
+        my $newseverity= $2;
         if (!grep($_ eq $newseverity, @gSeverityList, "$gDefaultSeverity")) {
-            &transcript("Severity level \`$newseverity' is not known.\n".
- 			"Recognized are: $gShowSeverities.\n\n");
+	     print {$transcript} "Severity level \`$newseverity' is not known.\n".
+		  "Recognized are: $gShowSeverities.\n\n";
 	    $errors++;
         } elsif (exists $gObsoleteSeverities{$newseverity}) {
-            &transcript("Severity level \`$newseverity' is obsolete. " .
-                        "Use $gObsoleteSeverities{$newseverity} instead.\n\n");
+            print {$transcript} "Severity level \`$newseverity' is obsolete. " .
+		 "Use $gObsoleteSeverities{$newseverity} instead.\n\n";
 	    	$errors++;
         } elsif (&setbug) {
-            $printseverity= $data->{severity};
+            my $printseverity= $data->{severity};
             $printseverity= "$gDefaultSeverity" if $printseverity eq '';
 	    $action= "Severity set to \`$newseverity' from \`$printseverity'";
 	    do {
-                &addmaintainers($data);
+                $affected_packages{$data->{package}} = 1;
+		add_recipients(data => $data, recipients => \%recipients);
                 if (defined $gStrongList and isstrongseverity($newseverity)) {
                     addbcc("$gStrongList\@$gListDomain");
                 }
@@ -756,9 +774,11 @@ END
         }
     } elsif (m/^tags?\s+\#?(-?\d+)\s+(([=+-])\s*)?(\S.*)?$/i) {
 	$ok++;
-	$ref = $1; $addsubcode = $3; $tags = $4;
+	$ref = $1;
+	my $addsubcode = $3;
+	my $tags = $4;
 	$bug_affected{$ref}=1;
-	$addsub = "add";
+	my $addsub = "add";
 	if (defined $addsubcode) {
 	    $addsub = "sub" if ($addsubcode eq "-");
 	    $addsub = "add" if ($addsubcode eq "+");
@@ -774,15 +794,15 @@ END
 	    }
 	}
 	if (@badtags) {
-            &transcript("Unknown tag/s: ".join(', ', @badtags).".\n".
- 			"Recognized are: ".join(' ', @gTags).".\n\n");
+            print {$transcript} "Unknown tag/s: ".join(', ', @badtags).".\n".
+		 "Recognized are: ".join(' ', @gTags).".\n\n";
 	    $errors++;
 	}
 	if (&setbug) {
 	    if ($data->{keywords} eq '') {
-		&transcript("There were no tags set.\n");
+		print {$transcript} "There were no tags set.\n";
 	    } else {
-		&transcript("Tags were: $data->{keywords}\n");
+		print {$transcript} "Tags were: $data->{keywords}\n";
 	    }
 	    if ($addsub eq "set") {
 		$action= "Tags set to: " . join(", ", @okaytags);
@@ -792,7 +812,8 @@ END
 		$action= "Tags removed: " . join(", ", @okaytags);
 	    }
 	    do {
-                &addmaintainers($data);
+                $affected_packages{$data->{package}} = 1;
+		add_recipients(data => $data, recipients => \%recipients);
 	        $data->{keywords} = '' if ($addsub eq "set");
 		# Allow removing obsolete tags.
 		if ($addsub eq "sub") {
@@ -813,7 +834,7 @@ END
     } elsif (m/^(un)?block\s+\#?(-?\d+)\s+(by|with)\s+(\S.*)?$/i) {
 	$ok++;
 	my $bugnum = $2; my $blockers = $4;
-	$addsub = "add";
+	my $addsub = "add";
 	$addsub = "sub" if ($1 eq "un");
 	if ($bugnum =~ m/^-\d+$/ && defined $clonebugs{$bugnum}) {
 	     $bugnum = $clonebugs{$bugnum};
@@ -834,7 +855,7 @@ END
 
 		    # add to the list all bugs that are merged with $b,
 		    # because all of their data must be kept in sync
-		    @thisbugmergelist= split(/ /,$data->{mergedwith});
+		    my @thisbugmergelist= split(/ /,$data->{mergedwith});
 		    &cancelbug;
 
 		    foreach $ref (@thisbugmergelist) {
@@ -854,16 +875,16 @@ END
 	    }
 	}
 	if (@badblockers) {
-            &transcript("Unknown blocking bug/s: ".join(', ', @badblockers).".\n");
+            print {$transcript} "Unknown blocking bug/s: ".join(', ', @badblockers).".\n";
 	    $errors++;
 	}
 	
 	$ref=$bugnum;
 	if (&setbug) {
 	    if ($data->{blockedby} eq '') {
-		&transcript("Was not blocked by any bugs.\n");
+		print {$transcript} "Was not blocked by any bugs.\n";
 	    } else {
-		&transcript("Was blocked by: $data->{blockedby}\n");
+		print {$transcript} "Was blocked by: $data->{blockedby}\n";
 	    }
 	    if ($addsub eq "set") {
 		$action= "Blocking bugs of $bugnum set to: " . join(", ", @okayblockers);
@@ -875,7 +896,8 @@ END
 	    my %removedblocks;
 	    my %addedblocks;
 	    do {
-                &addmaintainers($data);
+                $affected_packages{$data->{package}} = 1;
+		add_recipients(data => $data, recipients => \%recipients);
 		my @oldblockerlist = split ' ', $data->{blockedby};
 	        $data->{blockedby} = '' if ($addsub eq "set");
 	        foreach my $b (@okayblockers) {
@@ -916,7 +938,7 @@ END
 	}
     } elsif (m/^retitle\s+\#?(-?\d+)\s+(\S.*\S)\s*$/i) {
         $ok++;
-        $ref= $1; $newtitle= $2;
+        $ref= $1; my $newtitle= $2;
 	$bug_affected{$ref}=1;
 	if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
 	    $ref = $clonebugs{$ref};
@@ -924,16 +946,17 @@ END
         if (&getbug) {
             if (&checkpkglimit) {
                 &foundbug;
-                &addmaintainers($data);
+                $affected_packages{$data->{package}} = 1;
+		add_recipients(data => $data, recipients => \%recipients);
 		my $oldtitle = $data->{subject};
                 $data->{subject}= $newtitle;
                 $action= "Changed $gBug title to `$newtitle' from `$oldtitle'.";
                 &savebug;
-                &transcript("$action\n");
+                print {$transcript} "$action\n";
                 if (length($data->{done})) {
-                    &transcript("(By the way, that $gBug is currently marked as done.)\n");
+                    print {$transcript} "(By the way, that $gBug is currently marked as done.)\n";
                 }
-                &transcript("\n");
+                print {$transcript} "\n";
             } else {
                 &cancelbug;
             }
@@ -946,16 +969,17 @@ END
 	$bug_affected{$ref} = 1;
 	if (&setbug) {
 	    if (!length($data->{mergedwith})) {
-		&transcript("$gBug is not marked as being merged with any others.\n\n");
+		print {$transcript} "$gBug is not marked as being merged with any others.\n\n";
 		&nochangebug;
 	    } else {
                 $mergelowstate eq 'locked' || die "$mergelowstate ?";
 		$action= "Disconnected #$ref from all other report(s).";
-		@newmergelist= split(/ /,$data->{mergedwith});
-                $discref= $ref;
+		my @newmergelist= split(/ /,$data->{mergedwith});
+                my $discref= $ref;
 		@bug_affected{@newmergelist} = 1 x @newmergelist;
                 do {
-                    &addmaintainers($data);
+                    $affected_packages{$data->{package}} = 1;
+		    add_recipients(data => $data, recipients => \%recipients);
 		    $data->{mergedwith}= ($ref == $discref) ? ''
                         : join(' ',grep($_ ne $ref,@newmergelist));
                 } while (&getnextbug);
@@ -970,7 +994,7 @@ END
 	my %fixed = ();
         &getmerge;
         while (defined($ref= shift(@tomerge))) {
-            &transcript("D| checking merge $ref\n") if $dl;
+            print {$transcript} "D| checking merge $ref\n" if $dl;
 	    $ref+= 0;
 	    if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
 		$ref = $clonebugs{$ref};
@@ -979,7 +1003,7 @@ END
 	    if (!&getbug) { &notfoundbug; @newmergelist=(); last }
             if (!&checkpkglimit) { &cancelbug; @newmergelist=(); last; }
             &foundbug;
-            &transcript("D| adding $ref ($data->{mergedwith})\n") if $dl;
+            print {$transcript} "D| adding $ref ($data->{mergedwith})\n" if $dl;
 	    $mismatch= '';
 	    &checkmatch('package','m_package',$data->{package},@newmergelist);
 	    &checkmatch('forwarded addr','m_forwarded',$data->{forwarded},@newmergelist);
@@ -993,8 +1017,8 @@ END
 	    foreach my $f (@{$data->{found_versions}}) { $found{$f} = 1; }
 	    foreach my $f (@{$data->{fixed_versions}}) { $fixed{$f} = 1; }
 	    if (length($mismatch)) {
-	        &transcript("Mismatch - only $gBugs in same state can be merged:\n".
-                            $mismatch."\n");
+	        print {$transcript} "Mismatch - only $gBugs in same state can be merged:\n".
+		     $mismatch."\n";
 		$errors++;
 		&cancelbug; @newmergelist=(); last;
 	    }
@@ -1008,7 +1032,8 @@ END
 	    delete @fixed{keys %found};
 	    for $ref (@newmergelist) {
 		&getbug || die "huh ?  $gBug $ref disappeared during merge";
-                &addmaintainers($data);
+                $affected_packages{$data->{package}} = 1;
+		add_recipients(data => $data, recipients => \%recipients);
 		@bug_affected{@newmergelist} = 1 x @newmergelist;
 		$data->{mergedwith}= join(' ',grep($_ != $ref,@newmergelist));
 		$data->{keywords}= join(' ', keys %tags);
@@ -1016,7 +1041,7 @@ END
 		$data->{fixed_versions}= [sort keys %fixed];
 		&savebug;
 	    }
-    	    &transcript("$action\n\n");
+    	    print {$transcript} "$action\n\n";
 	}
         &endmerge;
     } elsif (m/^forcemerge\s+\#?(-?\d+(?:\s+\#?-?\d+)+)\s*$/i) {
@@ -1026,7 +1051,7 @@ END
 	my $master_bug_data;
 	my @tomerge = sort { $a <=> $b } @temp;
         unshift @tomerge,$master_bug;
-	&transcript("D| force merging ".join(',',@tomerge)."\n") if $dl;
+	print {$transcript} "D| force merging ".join(',',@tomerge)."\n" if $dl;
 	my @newmergelist= ();
 	my %tags = ();
 	my %found = ();
@@ -1037,7 +1062,7 @@ END
 	# Everything else we set to the values of the first bug.
         &getmerge;
         while (defined($ref= shift(@tomerge))) {
-            &transcript("D| checking merge $ref\n") if $dl;
+            print {$transcript} "D| checking merge $ref\n" if $dl;
 	    $ref+= 0;
 	    if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
 		$ref = $clonebugs{$ref};
@@ -1046,11 +1071,11 @@ END
 	    if (!&getbug) { &notfoundbug; @newmergelist=(); last }
             if (!&checkpkglimit) { &cancelbug; @newmergelist=(); last; }
             &foundbug;
-            &transcript("D| adding $ref ($data->{mergedwith})\n") if $dl;
+            print {$transcript} "D| adding $ref ($data->{mergedwith})\n" if $dl;
 	    $master_bug_data = $data if not defined $master_bug_data;
 	    if ($data->{package} ne $master_bug_data->{package}) {
-		&transcript("Mismatch - only $gBugs in the same package can be forcibly merged:\n".
-			    "$gBug $ref is not in the same package as $master_bug\n");
+		 print {$transcript} "Mismatch - only $gBugs in the same package can be forcibly merged:\n".
+		     "$gBug $ref is not in the same package as $master_bug\n";
 		$errors++;
 		&cancelbug; @newmergelist=(); last;
 	    }
@@ -1069,7 +1094,8 @@ END
 	    delete @fixed{keys %found};
 	    for $ref (@newmergelist) {
 		&getbug || die "huh ?  $gBug $ref disappeared during merge";
-                &addmaintainers($data);
+                $affected_packages{$data->{package}} = 1;
+		add_recipients(data => $data, recipients => \%recipients);
 		@bug_affected{@newmergelist} = 1 x @newmergelist;
 		$data->{mergedwith}= join(' ',grep($_ != $ref,@newmergelist));
 		$data->{keywords}= join(' ', keys %tags);
@@ -1079,32 +1105,33 @@ END
 		@{$data}{@field_list} = @{$master_bug_data}{@field_list};
 		&savebug;
 	    }
-    	    &transcript("$action\n\n");
+    	    print {$transcript} "$action\n\n";
 	}
         &endmerge;
     } elsif (m/^clone\s+#?(\d+)\s+((-\d+\s+)*-\d+)\s*$/i) {
 	$ok++;
 
-	$origref = $1;
-	@newclonedids = split /\s+/, $2;
-	$newbugsneeded = scalar(@newclonedids);
+	my $origref = $1;
+	my @newclonedids = split /\s+/, $2;
+	my $newbugsneeded = scalar(@newclonedids);
 
 	$ref = $origref;
 	$bug_affected{$ref} = 1;
 	if (&setbug) {
+	    $affected_packages{$data->{package}} = 1;
 	    if (length($data->{mergedwith})) {
-		&transcript("$gBug is marked as being merged with others. Use an existing clone.\n\n");
+		print {$transcript} "$gBug is marked as being merged with others. Use an existing clone.\n\n";
 		$errors++;
 		&nochangebug;
 	    } else {
         	&filelock("nextnumber.lock");
-        	open(N,"nextnumber") || &quit("nextnumber: read: $!");
-        	$v=<N>; $v =~ s/\n$// || &quit("nextnumber bad format");
-        	$firstref= $v+0;  $v += $newbugsneeded;
+        	open(N,"nextnumber") || die "nextnumber: read: $!";
+        	my $v=<N>; $v =~ s/\n$// || die "nextnumber bad format";
+        	my $firstref= $v+0;  $v += $newbugsneeded;
 		open(NN,">nextnumber"); print NN "$v\n"; close(NN);
         	&unfilelock;
 
-		$lastref = $firstref + $newbugsneeded - 1;
+		my $lastref = $firstref + $newbugsneeded - 1;
 
 		if ($newbugsneeded == 1) {
 		    $action= "$gBug $origref cloned as bug $firstref.";
@@ -1119,7 +1146,7 @@ END
 		my $ohash = get_hashname($origref);
 		my $clone = $firstref;
                 @bug_affected{@newclonedids} = 1 x @newclonedids;
-		for $newclonedid (@newclonedids) {
+		for my $newclonedid (@newclonedids) {
 		    $clonebugs{$newclonedid} = $clone;
 	    
 		    my $hash = get_hashname($clone);
@@ -1151,155 +1178,123 @@ END
 	my @pkgs = split /\s+/, $1;
 	if (scalar(@pkgs) > 0) {
 		%limit_pkgs = map { ($_, 1) } @pkgs;
-		&transcript("Ignoring bugs not assigned to: " . 
-			join(" ", keys(%limit_pkgs)) . "\n\n");
+		print {$transcript} "Ignoring bugs not assigned to: " .
+			join(" ", keys(%limit_pkgs)) . "\n\n";
 	} else {
 		%limit_pkgs = ();
-		&transcript("Not ignoring any bugs.\n\n");
+		print {$transcript} "Not ignoring any bugs.\n\n";
 	}
-    } elsif (m/^owner\s+\#?(-?\d+)\s+!$/i ? ($newowner = $replyto, 1) :
-             m/^owner\s+\#?(-?\d+)\s+(\S.*\S)$/i ? ($newowner = $2, 1) : 0) {
+    } elsif (m/^owner\s+\#?(-?\d+)\s+((?:\S.*\S)|\!)\s*$/i) {
+	$ok++;
+        $ref = $1;
+	my $newowner = $2;
+	if ($newowner eq '!') {
+	    $newowner = $replyto;
+	}
+	$bug_affected{$ref} = 1;
+	eval {
+	    owner(bug          => $ref,
+		  transcript   => $transcript,
+		  ($dl > 0 ? (debug => $transcript):()),
+		  requester    => $header{from},
+		  request_addr => $controlrequestaddr,
+		  message      => \@log,
+		  recipients   => \%recipients,
+		  owner        => $newowner,
+		 );
+	};
+    } elsif (m/^noowner\s+\#?(-?\d+)\s*$/i) {
         $ok++;
         $ref = $1;
 	$bug_affected{$ref} = 1;
-        if (&setbug) {
-            if (length $data->{owner}) {
-                $action = "Owner changed from $data->{owner} to $newowner.";
-            } else {
-                $action = "Owner recorded as $newowner.";
-            }
-            if (length $data->{done}) {
-                $extramessage = "(By the way, this $gBug is currently " .
-                                "marked as done.)\n";
-            }
-            do {
-                &addmaintainers($data);
-                $data->{owner} = $newowner;
-            } while (&getnextbug);
-        }
-    } elsif (m/^noowner\s+\#?(-?\d+)$/i) {
-        $ok++;
-        $ref = $1;
-	$bug_affected{$ref} = 1;
-        if (&setbug) {
-            if (length $data->{owner}) {
-                $action = "Removed annotation that $gBug was owned by " .
-                          "$data->{owner}.";
-                do {
-                    &addmaintainers($data);
-                    $data->{owner} = '';
-                } while (&getnextbug);
-            } else {
-                &transcript("$gBug is not marked as having an owner.\n\n");
-                &nochangebug;
-            }
-        }
+	eval {
+	    owner(bug          => $ref,
+		  transcript   => $transcript,
+		  ($dl > 0 ? (debug => $transcript):()),
+		  requester    => $header{from},
+		  request_addr => $controlrequestaddr,
+		  message      => \@log,
+		  recipients   => \%recipients,
+		  owner        => undef,
+		 );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to mark $ref as not having an owner: $@";
+	}
     } elsif (m/^unarchive\s+#?(\d+)$/i) {
 	 $ok++;
 	 $ref = $1;
 	 $bug_affected{$ref} = 1;
-	 my $transcript;
 	 eval {
 	      bug_unarchive(bug        => $ref,
-			    transcript => \$transcript,
+			    transcript => $transcript,
+			    ($dl > 0 ? (debug => $transcript):()),
 			    affected_bugs => \%bug_affected,
 			    requester => $header{from},
 			    request_addr => $controlrequestaddr,
 			    message => \@log,
+			    recipients => \%recipients,
 			   );
 	 };
 	 if ($@) {
 	      $errors++;
 	 }
-	 transcript($transcript."\n");
     } elsif (m/^archive\s+#?(\d+)$/i) {
 	 $ok++;
 	 $ref = $1;
 	 $bug_affected{$ref} = 1;
-	 if (&setbug) {
-	      if (exists $data->{unarchived}) {
-		   my $transcript;
-		   nochangebug();
-		   eval {
-			bug_archive(bug => $ref,
-				    transcript => \$transcript,
-				    ignore_time => 1,
-				    affected_bugs => \%bug_affected,
-				    requester => $header{from},
-				    request_addr => $controlrequestaddr,
-				    message => \@log,
-				   );
-		   };
-		   if ($@) {
-			$errors++;
-		   }
-		   transcript($transcript."\n");
-	      }
-	      else {
-		   transcript("$gBug $ref has not been archived previously\n\n");
-		   nochangebug();
-		   $errors++;
-	      }
+	 eval {
+	      bug_archive(bug => $ref,
+			  transcript => $transcript,
+			  ($dl > 0 ? (debug => $transcript):()),
+			  ignore_time => 1,
+			  archive_unarchived => 0,
+			  affected_bugs => \%bug_affected,
+			  requester => $header{from},
+			  request_addr => $controlrequestaddr,
+			  message => \@log,
+			  recipients => \%recipients,
+			 );
+	 };
+	 if ($@) {
+	      $errors++;
 	 }
     } else {
-        &transcript("Unknown command or malformed arguments to command.\n\n");
+        print {$transcript} "Unknown command or malformed arguments to command.\n\n";
 	$errors++;
         if (++$unknowns >= 5) {
-            &transcript("Too many unknown commands, stopping here.\n\n");
+            print {$transcript} "Too many unknown commands, stopping here.\n\n";
             last;
         }
     }
 }
 if ($procline>$#bodylines) {
-    &transcript(">\nEnd of message, stopping processing here.\n\n");
+    print {$transcript} ">\nEnd of message, stopping processing here.\n\n";
 }
-if (!$ok && !quickabort) {
+if (!$ok && !$quickabort) {
     $errors++;
-    &transcript("No commands successfully parsed; sending the help text(s).\n");
+    print {$transcript} "No commands successfully parsed; sending the help text(s).\n";
     &sendhelp;
-    &transcript("\n");
+    print {$transcript} "\n";
 }
 
-&transcript("MC\n") if $dl>1;
-@maintccs= ();
-for $maint (keys %maintccreasons) {
-&transcript("MM|$maint|\n") if $dl>1;
-    next if $maint eq $replyto;
-    $reasonstring= '';
-    $reasonsref= $maintccreasons{$maint};
-&transcript("MY|$maint|\n") if $dl>2;
-    for $p (sort keys %$reasonsref) {
-&transcript("MP|$p|\n") if $dl>2;
-        $reasonstring.= ', ' if length($reasonstring);
-        $reasonstring.= $p.' ' if length($p);
-        $reasonstring.= join(' ',map("#$_",sort keys %{$$reasonsref{$p}}));
-    }
-    if (length($reasonstring) > 40) {
-	(substr $reasonstring, 37) = "...";
-    }
-    $reasonstring = "" if (!defined($reasonstring));
-    push(@maintccs,"$maint ($reasonstring)");
-    push(@maintccaddrs,"$maint");
-}
+my @maintccs = determine_recipients(recipients => \%recipients,
+				    address_only => 1,
+				    cc => 1,
+				   );
+my $maintccs = 'Cc: '.join(",\n    ",
+		    determine_recipients(recipients => \%recipients,
+					 cc => 1,
+					)
+		   )."\n";
 
-$maintccs = ""; 
-if (@maintccs) {
-    &transcript("MC|@maintccs|\n") if $dl>2;
-    $maintccs .= "Cc: " . join(",\n    ",@maintccs) . "\n";
-}
-
-my %packagepr;
-for my $maint (keys %maintccreasons) {
-     for my $package (keys %{$maintccreasons{$maint}}) {
-	  next unless length $package;
-	  $packagepr{$package} = 1;
-     }
-}
 my $packagepr = '';
-$packagepr = "X-${gProject}-PR-Package: " . join(keys %packagepr) . "\n" if keys %packagepr;
+$packagepr = "X-${gProject}-PR-Package: " . join(keys %affected_packages) . "\n" if keys %affected_packages;
 
 # Add Bcc's to subscribed bugs
-push @bcc, map {"bugs=$_\@$gListDomain"} keys %bug_affected;
+# now handled by Debbugs::Recipients
+#push @bcc, map {"bugs=$_\@$gListDomain"} keys %bug_affected;
 
 if (!defined $header{'subject'} || $header{'subject'} eq "") {
   $header{'subject'} = "your mail";
@@ -1308,27 +1303,33 @@ if (!defined $header{'subject'} || $header{'subject'} eq "") {
 # Error text here advertises how many errors there were
 my $error_text = $errors > 0 ? " (with $errors errors)":'';
 
-$reply= <<END;
+my $reply= <<END;
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
 ${maintccs}Subject: Processed${error_text}: $header{'subject'}
 In-Reply-To: $header{'message-id'}
+END
+$reply .= <<END;
 References: $header{'message-id'}
 Message-ID: <handler.s.$nn.transcript\@$gEmailDomain>
 Precedence: bulk
 ${packagepr}X-$gProject-PR-Message: transcript
 
-${transcript}Please contact me if you need assistance.
+${transcript_scalar}Please contact me if you need assistance.
 
 $gMaintainer
 (administrator, $gProject $gBugs database)
-$extras
 END
 
-$repliedshow= join(', ',$replyto,@maintccaddrs);
+my $repliedshow= join(', ',$replyto,
+		      determine_recipients(recipients => \%recipients,
+					   cc => 1,
+					   address_only => 1,
+					  )
+		     );
 # -1 is the service.in log
 &filelock("lock/-1");
-open(AP,">>db-h/-1.log") || &quit("open db-h/-1.log: $!");
+open(AP,">>db-h/-1.log") || die "open db-h/-1.log: $!";
 print(AP
       "\2\n$repliedshow\n\5\n$reply\n\3\n".
       "\6\n".
@@ -1336,17 +1337,23 @@ print(AP
       html_escape($header{'from'})."</code>\n".
       "to <code>".html_escape($controlrequestaddr)."</code>\n".
       "\3\n".
-      "\7\n",escape_log(@log),"\n\3\n") || &quit("writing db-h/-1.log: $!");
-close(AP) || &quit("open db-h/-1.log: $!");
+      "\7\n",escape_log(@log),"\n\3\n") || die "writing db-h/-1.log: $!";
+close(AP) || die "open db-h/-1.log: $!";
 &unfilelock;
 utime(time,time,"db-h");
 
-&sendmailmessage($reply,exists $header{'x-debbugs-no-ack'}?():$replyto,@maintccaddrs,@bcc);
+&sendmailmessage($reply,
+		 exists $header{'x-debbugs-no-ack'}?():$replyto,
+		 make_list(values %{{determine_recipients(recipients => \%recipients,
+							  address_only => 1,
+							 )}}
+			  ),
+		);
 
-unlink("incoming/P$nn") || &quit("unlinking incoming/P$nn: $!");
+unlink("incoming/P$nn") || die "unlinking incoming/P$nn: $!";
 
 sub sendmailmessage {
-    local ($message,@recips) = @_;
+    my ($message,@recips) = @_;
     $message = "X-Loop: $gMaintainerEmail\n" . $message;
     send_mail_message(message    => $message,
 		      recipients => \@recips,
@@ -1400,15 +1407,15 @@ sub sendhelp {
 }
 
 #sub unimplemented {
-#    &transcript("Sorry, command $_[0] not yet implemented.\n\n");
+#    print {$transcript} "Sorry, command $_[0] not yet implemented.\n\n";
 #}
 
 sub checkmatch {
-    local ($string,$mvarname,$svarvalue,@newmergelist) = @_;
-    local ($mvarvalue);
+    my ($string,$mvarname,$svarvalue,@newmergelist) = @_;
+    my ($mvarvalue);
     if (@newmergelist) {
         eval "\$mvarvalue= \$$mvarname";
-        &transcript("D| checkmatch \`$string' /$mvarname/$mvarvalue/$svarvalue/\n")
+        print {$transcript} "D| checkmatch \`$string' /$mvarname/$mvarvalue/$svarvalue/\n"
             if $dl;
         $mismatch .=
             "Values for \`$string' don't match:\n".
@@ -1416,15 +1423,15 @@ sub checkmatch {
             " #$ref has \`$svarvalue'\n"
             if $mvarvalue ne $svarvalue;
     } else {
-        &transcript("D| setupmatch \`$string' /$mvarname/$svarvalue/\n")
-            if $dl;
+	 print {$transcript} "D| setupmatch \`$string' /$mvarname/$svarvalue/\n"
+	      if $dl;
         eval "\$$mvarname= \$svarvalue";
     }
 }
 
 sub checkpkglimit {
     if (keys %limit_pkgs and not defined $limit_pkgs{$data->{package}}) {
-        &transcript("$gBug number $ref belongs to package $data->{package}, skipping.\n\n");
+        print {$transcript} "$gBug number $ref belongs to package $data->{package}, skipping.\n\n";
         $errors++;
         return 0;
     }
@@ -1462,6 +1469,8 @@ sub manipset {
 #      (modify s_* variables)
 #    } while (getnextbug);
 
+our $manybugs;
+
 sub nochangebug {
     &dlen("nochangebug");
     $state eq 'single' || $state eq 'multiple' || die "$state ?";
@@ -1470,6 +1479,9 @@ sub nochangebug {
     $state= 'idle';
     &dlex("nochangebug");
 }
+
+our $sref;
+our @thisbugmergelist;
 
 sub setbug {
     &dlen("setbug $ref");
@@ -1523,7 +1535,7 @@ sub getnextbug {
     &savebug;
     if (!$manybugs || !@thisbugmergelist) {
         length($action) || die;
-        &transcript("$action\n$extramessage\n");
+        print {$transcript} "$action\n$extramessage\n";
         &endmerge if $manybugs;
         $state= 'idle';
         &dlex("getnextbug => 0");
@@ -1554,8 +1566,8 @@ sub getnextbug {
 #    &transcript("$action\n\n")
 #    endmerge
 
-sub notfoundbug { &transcript("$gBug number $ref not found. (Is it archived?)\n\n"); }
-sub foundbug { &transcript("$gBug#$ref: $data->{subject}\n"); }
+sub notfoundbug { print {$transcript} "$gBug number $ref not found. (Is it archived?)\n\n"; }
+sub foundbug { print {$transcript} "$gBug#$ref: $data->{subject}\n"; }
 
 sub getmerge {
     &dlen("getmerge");
@@ -1616,17 +1628,12 @@ sub savebug {
 
 sub dlen {
     return if !$dl;
-    &transcript("C> @_ ($state $lowstate $mergelowstate)\n");
+    print {$transcript} "C> @_ ($state $lowstate $mergelowstate)\n";
 }
 
 sub dlex {
     return if !$dl;
-    &transcript("R> @_ ($state $lowstate $mergelowstate)\n");
-}
-
-sub transcript {
-    print $_[0] if $debug;
-    $transcript.= $_[0];
+    print {$transcript} "R> @_ ($state $lowstate $mergelowstate)\n";
 }
 
 sub urlsanit {
@@ -1640,23 +1647,25 @@ sub urlsanit {
 
 sub sendlynxdoc {
     &sendlynxdocraw;
-    &transcript("\n");
+    print {$transcript} "\n";
     $ok++;
 }
 
 sub sendtxthelp {
     &sendtxthelpraw;
-    &transcript("\n");
+    print {$transcript} "\n";
     $ok++;
 }
 
+
+our $doc;
 sub sendtxthelpraw {
-    local ($relpath,$description) = @_;
+    my ($relpath,$description) = @_;
     $doc='';
-    open(D,"$gDocDir/$relpath") || &quit("open doc file $relpath: $!");
+    open(D,"$gDocDir/$relpath") || die "open doc file $relpath: $!";
     while(<D>) { $doc.=$_; }
     close(D);
-    &transcript("Sending $description in separate message.\n");
+    print {$transcript} "Sending $description in separate message.\n";
     &sendmailmessage(<<END.$doc,$replyto);
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
@@ -1672,19 +1681,19 @@ END
 }
 
 sub sendlynxdocraw {
-    local ($relpath,$description) = @_;
+    my ($relpath,$description) = @_;
     $doc='';
-    open(L,"lynx -nolist -dump http://$gCGIDomain/\Q$relpath\E 2>&1 |") || &quit("fork for lynx: $!");
+    open(L,"lynx -nolist -dump http://$gCGIDomain/\Q$relpath\E 2>&1 |") || die "fork for lynx: $!";
     while(<L>) { $doc.=$_; }
     $!=0; close(L);
     if ($? == 255 && $doc =~ m/^\n*lynx: Can\'t access start file/) {
-        &transcript("Information ($description) is not available -\n".
-                    "perhaps the $gBug does not exist or is not on the WWW yet.\n");
+        print {$transcript} "Information ($description) is not available -\n".
+	     "perhaps the $gBug does not exist or is not on the WWW yet.\n";
          $ok++;
     } elsif ($?) {
-        &transcript("Error getting $description (code $? $!):\n$doc\n");
+        print {$transcript} "Error getting $description (code $? $!):\n$doc\n";
     } else {
-        &transcript("Sending $description.\n");
+        print {$transcript} "Sending $description.\n";
         &sendmailmessage(<<END.$doc,$replyto);
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
@@ -1700,95 +1709,17 @@ END
     }
 }
 
-sub addccaddress {
-    my ($cca) = @_;
-    $maintccreasons{$cca}{''}{$ref}= 1;
-}
-
-sub addmaintainers {
-    # Data structure is:
-    #   maintainer email address &c -> assoc of packages -> assoc of bug#'s
-    my $data = shift;
-    my ($p, $addmaint);
-    &ensuremaintainersloaded;
-    $anymaintfound=0; $anymaintnotfound=0;
-    for $p (split(m/[ \t?,():]+/, $data->{package})) {
- 	$p =~ y/A-Z/a-z/;
-	$p =~ /([a-z0-9.+-]+)/;
-	$p = $1;
-	next unless defined $p;
-	if (defined $gSubscriptionDomain) {
-	    if (defined($pkgsrc{$p})) {
-		addbcc("$pkgsrc{$p}\@$gSubscriptionDomain");
-	    } else {
-		addbcc("$p\@$gSubscriptionDomain");
-	    }
-	}
-        if (defined $data->{severity} and defined $gStrongList and
-                isstrongseverity($data->{severity})) {
-            addbcc("$gStrongList\@$gListDomain");
-        }
-        if (defined($maintainerof{$p})) {
- 	    $addmaint= $maintainerof{$p};
-	    &transcript("MR|$addmaint|$p|$ref|\n") if $dl>2;
-            $maintccreasons{$addmaint}{$p}{$ref}= 1;
-	    print "maintainer add >$p|$addmaint<\n" if $debug;
-        } else { 
-	    print "maintainer none >$p<\n" if $debug; 
-	    &transcript("Warning: Unknown package '$p'\n");
-	    &transcript("MR|unknown-package|$p|$ref|\n") if $dl>2;
-            $maintccreasons{$gUnknownMaintainerEmail}{$p}{$ref}= 1;
-	}
-    }
-
-    if (length $data->{owner}) {
-        $addmaint = $data->{owner};
-        &transcript("MO|$addmaint|$data->{package}|$ref|\n") if $dl>2;
-        $maintccreasons{$addmaint}{$data->{package}}{$ref} = 1;
-        print "owner add >$data->{package}|$addmaint<\n" if $debug;
-    }
-}
-
-sub ensuremaintainersloaded {
-    my ($a,$b);
-    return if $maintainersloaded++;
-    open(MAINT,"$gMaintainerFile") || die &quit("maintainers open: $!");
-    while (<MAINT>) {
-	m/^\n$/ && next;
-	m/^\s*$/ && next;
-        m/^(\S+)\s+(\S.*\S)\s*\n$/ || &quit("maintainers bogus \`$_'");
-        $a= $1; $b= $2; $a =~ y/A-Z/a-z/;
-        $maintainerof{$a}= $2;
-    }
-    close(MAINT);
-    open(MAINT,"$gMaintainerFileOverride") || die &quit("maintainers.override open: $!");
-    while (<MAINT>) {
-        m/^\n$/ && next;
-        m/^\s*$/ && next;
-        m/^(\S+)\s+(\S.*\S)\s*\n$/ || &quit("maintainers.override bogus \`$_'");
-        $a= $1; $b= $2; $a =~ y/A-Z/a-z/;
-        $maintainerof{$a}= $2;
-    }
-
-    open(SOURCES, "$gPackageSource") || &quit("pkgsrc open: $!");
-    while (<SOURCES>) {
-	next unless m/^(\S+)\s+\S+\s+(\S.*\S)\s*$/;
-	my ($a, $b) = ($1, $2);
-	$pkgsrc{lc($a)} = $b;
-    }
-    close(SOURCES);
-}
 
 sub sendinfo {
-    local ($wherefrom,$path,$description) = @_;
+    my ($wherefrom,$path,$description) = @_;
     if ($wherefrom eq "ftp.d.o") {
-      $doc = `lynx -nolist -dump http://ftp.debian.org/debian/indices/$path.gz 2>&1 | gunzip -cf` or &quit("fork for lynx/gunzip: $!");
+      $doc = `lynx -nolist -dump http://ftp.debian.org/debian/indices/$path.gz 2>&1 | gunzip -cf` or die "fork for lynx/gunzip: $!";
       $! = 0;
       if ($? == 255 && $doc =~ m/^\n*lynx: Can\'t access start file/) {
-          &transcript("$description is not available.\n");
+          print {$transcript} "$description is not available.\n";
           $ok++; return;
       } elsif ($?) {
-          &transcript("Error getting $description (code $? $!):\n$doc\n");
+          print {$transcript} "Error getting $description (code $? $!):\n$doc\n";
           return;
       }
     } elsif ($wherefrom eq "local") {
@@ -1796,10 +1727,10 @@ sub sendinfo {
       $doc = do { local $/; <P> };
       close P;
     } else {
-      &transcript("internal errror: info files location unknown.\n");
+      print {$transcript} "internal errror: info files location unknown.\n";
       $ok++; return;
     }
-    &transcript("Sending $description.\n");
+    print {$transcript} "Sending $description.\n";
     &sendmailmessage(<<END.$doc,$replyto);
 From: $gMaintainerEmail ($gProject $gBug Tracking System)
 To: $replyto
@@ -1814,5 +1745,5 @@ $description follows:
 
 END
     $ok++;
-    &transcript("\n");
+    print {$transcript} "\n";
 }

@@ -64,7 +64,7 @@ the above information is faked, and appended to the log file. When it
 is true, the above options must be present, and their values are used.
 
 
-=head1 FUNCTIONS
+=head1 GENERAL FUNCTIONS
 
 =cut
 
@@ -78,26 +78,27 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (archive => [qw(bug_archive bug_unarchive),
+     %EXPORT_TAGS = (owner   => [qw(owner)],
+		     archive => [qw(bug_archive bug_unarchive),
 				],
 		     log     => [qw(append_action_to_log),
 				],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(archive log));
+     Exporter::export_ok_tags(keys %EXPORT_TAGS);
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
 use Debbugs::Config qw(:config);
-use Debbugs::Common qw(:lock buglog make_list get_hashname);
+use Debbugs::Common qw(:lock buglog :misc get_hashname);
 use Debbugs::Status qw(bug_archiveable :read :hook writebug);
 use Debbugs::CGI qw(html_escape);
 use Debbugs::Log qw(:misc);
+use Debbugs::Recipients qw(:add);
 
 use Params::Validate qw(validate_with :types);
 use File::Path qw(mkpath);
 use IO::File;
-use IO::Scalar;
 
 use Debbugs::Text qw(:templates);
 
@@ -105,16 +106,27 @@ use Debbugs::Mail qw(rfc822_date);
 
 use POSIX qw(strftime);
 
+use Carp;
+
 # These are a set of options which are common to all of these functions
 
-my %common_options = (debug       => {type => SCALARREF,
+my %common_options = (debug       => {type => SCALARREF|HANDLE,
 				      optional => 1,
 				     },
-		      transcript  => {type => SCALARREF,
+		      transcript  => {type => SCALARREF|HANDLE,
 				      optional => 1,
 				     },
 		      affected_bugs => {type => HASHREF,
 					optional => 1,
+				       },
+		      affected_packages => {type => HASHREF,
+					    optional => 1,
+					   },
+		      recipients    => {type => HASHREF,
+					default => {},
+				       },
+		      limit         => {type => HASHREF,
+					default => {},
 				       },
 		     );
 
@@ -144,6 +156,127 @@ my %append_action_options =
      );
 
 
+# this is just a generic stub for Debbugs::Control functions.
+# sub foo {
+#     my %param = validate_with(params => \@_,
+# 			      spec   => {bug => {type   => SCALAR,
+# 						 regex  => qr/^\d+$/,
+# 						},
+# 					 # specific options here
+# 					 %common_options,
+# 					 %append_action_options,
+# 					},
+# 			     );
+#     our $locks = 0;
+#     $locks = 0;
+#     local $SIG{__DIE__} = sub {
+# 	if ($locks) {
+# 	    for (1..$locks) { unfilelock(); }
+# 	    $locks = 0;
+# 	}
+#     };
+#     my ($debug,$transcript) = __handle_debug_transcript(%param);
+#     my (@data);
+#     ($locks, @data) = lock_read_all_merged_bugs($param{bug});
+#     __handle_affected_packages(data => \@data,%param);
+#     add_recipients(data => \@data,
+# 		     recipients => $param{recipients}
+# 		    );
+# }
+
+=head1 OWNER FUNCTIONS
+
+=head2 owner
+
+     eval {
+	    owner(bug          => $ref,
+		  transcript   => $transcript,
+		  ($dl > 0 ? (debug => $transcript):()),
+		  requester    => $header{from},
+		  request_addr => $controlrequestaddr,
+		  message      => \@log,
+		  recipients   => \%recipients,
+		  owner        => undef,
+		 );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to mark $ref as having an owner: $@";
+	}
+
+Handles all setting of the owner field; given an owner of undef or of
+no length, indicates that a bug is not owned by anyone.
+
+=cut
+
+sub owner {
+     my %param = validate_with(params => \@_,
+			       spec   => {bug => {type   => SCALAR,
+						  regex  => qr/^\d+$/,
+						 },
+					  owner => {type => SCALAR|UNDEF,
+						   },
+					  %common_options,
+					  %append_action_options,
+					 },
+			      );
+     our $locks = 0;
+     $locks = 0;
+     local $SIG{__DIE__} = sub {
+	  if ($locks) {
+	       for (1..$locks) { unfilelock(); }
+	       $locks = 0;
+	  }
+     };
+     my ($debug,$transcript) = __handle_debug_transcript(%param);
+     my (@data);
+     ($locks, @data) = lock_read_all_merged_bugs($param{bug});
+     __handle_affected_packages(data => \@data,%param);
+     @data and defined $data[0] or die "No bug found for $param{bug}";
+     add_recipients(data => \@data,
+		    recipients => $param{recipients}
+		   );
+     my $action = '';
+     for my $data (@data) {
+	  print {$debug} "Going to change owner to '".(defined $param{owner}?$param{owner}:'(going to unset it)')."'\n";
+	  print {$debug} "Owner is currently '$data->{owner}' for bug $data->{bug_num}\n";
+	  if (not defined $param{owner} or not length $param{owner}) {
+	       $param{owner} = '';
+	       $action = "Removed annotation that $config{bug} was owned by " .
+		    "$data->{owner}.";
+	  }
+	  else {
+	       if (length $data->{owner}) {
+		    $action = "Owner changed from $data->{owner} to $param{owner}.";
+	       }
+	       else {
+		    $action = "Owner recorded as $param{owner}."
+	       }
+	  }
+	  $data->{owner} = $param{owner};
+	  append_action_to_log(bug => $data->{bug_num},
+			       get_lock => 0,
+	       __return_append_to_log_options(
+					      %param,
+					      action => $action,
+					     ),
+			      )
+	       if not exists $param{append_log} or $param{append_log};
+	  writebug($data->{bug_num},$data);
+	  print {$transcript} "$action\n";
+	  add_recipients(data => $data,
+			 recipients => $param{recipients},
+			);
+     }
+     if ($locks) {
+	  for (1..$locks) { unfilelock(); }
+     }
+}
+
+
+=head1 ARCHIVE FUNCTIONS
+
+
 =head2 bug_archive
 
      my $error = '';
@@ -163,6 +296,22 @@ my %append_action_options =
 
 This routine archives a bug
 
+=over
+
+=item bug -- bug number
+
+=item check_archiveable -- check wether a bug is archiveable before
+archiving; defaults to 1
+
+=item archive_unarchived -- whether to archive bugs which have not
+previously been archived; defaults to 1. [Set to 0 when used from
+control@]
+
+=item ignore_time -- whether to ignore time constraints when archiving
+a bug; defaults to 0.
+
+=back
+
 =cut
 
 sub bug_archive {
@@ -173,6 +322,9 @@ sub bug_archive {
 					  check_archiveable => {type => BOOLEAN,
 								default => 1,
 							       },
+					  archive_unarchived => {type => BOOLEAN,
+								 default => 1,
+								},
 					  ignore_time => {type => BOOLEAN,
 							  default => 0,
 							 },
@@ -181,6 +333,7 @@ sub bug_archive {
 					 },
 			      );
      our $locks = 0;
+     $locks = 0;
      local $SIG{__DIE__} = sub {
 	  if ($locks) {
 	       for (1..$locks) { unfilelock(); }
@@ -197,41 +350,31 @@ sub bug_archive {
 	  die "Bug $param{bug} cannot be archived";
      }
      print {$debug} "$param{bug} considering\n";
-     my ($data);
-     ($locks, $data) = lockreadbugmerge($param{bug});
+     my (@data);
+     ($locks, @data) = lock_read_all_merged_bugs($param{bug});
+     __handle_affected_packages(data => \@data,%param);
      print {$debug} "$param{bug} read $locks\n";
-     defined $data or die "No bug found for $param{bug}";
-     print {$debug} "$param{bug} read ok (done $data->{done})\n";
+     @data and defined $data[0] or die "No bug found for $param{bug}";
      print {$debug} "$param{bug} read done\n";
-     my @bugs = ($param{bug});
-     # my %bugs;
-     # @bugs{@bugs} = (1) x @bugs;
-     if (length($data->{mergedwith})) {
-	  push(@bugs,split / /,$data->{mergedwith});
+
+     if (not $param{archive_unarchived} and
+	 not exists $data[0]{unarchived}
+	) {
+	  print {$transcript} "$param{bug} has not been archived previously\n";
+	  die "$param{bug} has not been archived previously";
      }
+     add_recipients(recipients => $param{recipients},
+		    data => \@data,
+		   );
+     my @bugs = map {$_->{bug_num}} @data;
      print {$debug} "$param{bug} bugs ".join(' ',@bugs)."\n";
      for my $bug (@bugs) {
-	  my $newdata;
-	  print {$debug} "$param{bug} $bug check\n";
-	  if ($bug != $param{bug}) {
-	       print {$debug} "$param{bug} $bug reading\n";
-	       $newdata = lockreadbug($bug) || die "huh $bug ?";
-	       print {$debug} "$param{bug} $bug read ok\n";
-	       $locks++;
-	  } else {
-	       $newdata = $data;
-	  }
-	  print {$debug} "$param{bug} $bug read/not\n";
-	  my $expectmerge= join(' ',grep($_ != $bug, sort { $a <=> $b } @bugs));
-	  $newdata->{mergedwith} eq $expectmerge ||
-	       die "$param{bug} differs from $bug: ($newdata->{mergedwith}) vs. ($expectmerge) (".join(' ',@bugs).")";
-	  print {$debug} "$param{bug} $bug merge-ok\n";
-	  if ($param{check_archiveable}) {
-	       die "Bug $bug cannot be archived (but $param{bug} can?)"
-		    unless bug_archiveable(bug=>$bug,
-					   ignore_time => $param{ignore_time},
-					  );
-	  }
+	 if ($param{check_archiveable}) {
+	     die "Bug $bug cannot be archived (but $param{bug} can?)"
+		 unless bug_archiveable(bug=>$bug,
+					ignore_time => $param{ignore_time},
+				       );
+	 }
      }
      # If we get here, we can archive/remove this bug
      print {$debug} "$param{bug} removing\n";
@@ -242,23 +385,22 @@ sub bug_archive {
 	  append_action_to_log(bug => $bug,
 			       get_lock => 0,
 			       __return_append_to_log_options(
-				 (map {exists $param{$_}?($_,$param{$_}):()}
-				  keys %append_action_options,
-				 ),
+				 %param,
 				 action => $action,
 				)
 			      )
 	       if not exists $param{append_log} or $param{append_log};
-	  my @files_to_remove = map {s#db-h/$dir/##; $_} glob("db-h/$dir/$bug.*");
+	  my @files_to_remove = map {s#$config{spool_dir}/db-h/$dir/##; $_} glob("$config{spool_dir}/db-h/$dir/$bug.*");
 	  if ($config{save_old_bugs}) {
-	       mkpath("archive/$dir");
+	       mkpath("$config{spool_dir}/archive/$dir");
 	       foreach my $file (@files_to_remove) {
-		    link( "db-h/$dir/$file", "archive/$dir/$file" ) || copy( "db-h/$dir/$file", "archive/$dir/$file" );
+		    link( "$config{spool_dir}/db-h/$dir/$file", "$config{spool_dir}/archive/$dir/$file" ) or
+			 copy( "$config{spool_dir}/db-h/$dir/$file", "$config{spool_dir}/archive/$dir/$file" );
 	       }
 
 	       print {$transcript} "archived $bug to archive/$dir (from $param{bug})\n";
 	  }
-	  unlink(map {"db-h/$dir/$_"} @files_to_remove);
+	  unlink(map {"$config{spool_dir}/db-h/$dir/$_"} @files_to_remove);
 	  print {$transcript} "deleted $bug (from $param{bug})\n";
      }
      bughook_archive(@bugs);
@@ -300,58 +442,41 @@ sub bug_unarchive {
 					  %append_action_options,
 					 },
 			      );
+     our $locks = 0;
+     local $SIG{__DIE__} = sub {
+	  if ($locks) {
+	       for (1..$locks) { unfilelock(); }
+	       $locks = 0;
+	  }
+     };
      my $action = "$config{bug} unarchived.";
      my ($debug,$transcript) = __handle_debug_transcript(%param);
      print {$debug} "$param{bug} considering\n";
-     my ($locks, $data) = lockreadbugmerge($param{bug},'archive');
+     my @data = ();
+     ($locks, @data) = lock_read_all_merged_bugs($param{bug},'archive');
+     __handle_affected_packages(data => \@data,%param);
      print {$debug} "$param{bug} read $locks\n";
-     if (not defined $data) {
-	  print {$transcript} "No bug found for $param{bug}\n";
-	  die "No bug found for $param{bug}";
+     if (not @data or not defined $data[0]) {
+	 print {$transcript} "No bug found for $param{bug}\n";
+	 die "No bug found for $param{bug}";
      }
-     print {$debug} "$param{bug} read ok (done $data->{done})\n";
      print {$debug} "$param{bug} read done\n";
-     my @bugs = ($param{bug});
-     # my %bugs;
-     # @bugs{@bugs} = (1) x @bugs;
-     if (length($data->{mergedwith})) {
-	  push(@bugs,split / /,$data->{mergedwith});
-     }
+     my @bugs = map {$_->{bug_num}} @data;
      print {$debug} "$param{bug} bugs ".join(' ',@bugs)."\n";
-     for my $bug (@bugs) {
-	  my $newdata;
-	  print {$debug} "$param{bug} $bug check\n";
-	  if ($bug != $param{bug}) {
-	       print {$debug} "$param{bug} $bug reading\n";
-	       $newdata = lockreadbug($bug,'archive') or die "huh $bug ?";
-	       print {$debug} "$param{bug} $bug read ok\n";
-	       $locks++;
-	  } else {
-	       $newdata = $data;
-	  }
-	  print {$debug} "$param{bug} $bug read/not\n";
-	  my $expectmerge= join(' ',grep($_ != $bug, sort { $a <=> $b } @bugs));
-	  if ($newdata->{mergedwith} ne $expectmerge ) {
-	       print {$transcript} "$param{bug} differs from $bug: ($newdata->{mergedwith}) vs. ($expectmerge) (@bugs)";
-	       die "$param{bug} differs from $bug: ($newdata->{mergedwith}) vs. ($expectmerge) (@bugs)";
-	  }
-	  print {$debug} "$param{bug} $bug merge-ok\n";
-     }
-     # If we get here, we can archive/remove this bug
-     print {$debug} "$param{bug} removing\n";
+     print {$debug} "$param{bug} unarchiving\n";
      my @files_to_remove;
      for my $bug (@bugs) {
 	  print {$debug} "$param{bug} removing $bug\n";
 	  my $dir = get_hashname($bug);
-	  my @files_to_copy = map {s#archive/$dir/##; $_} glob("archive/$dir/$bug.*");
+	  my @files_to_copy = map {s#$config{spool_dir}/archive/$dir/##; $_} glob("$config{spool_dir}/archive/$dir/$bug.*");
 	  mkpath("archive/$dir");
 	  foreach my $file (@files_to_copy) {
 	       # die'ing here sucks
-	       link( "archive/$dir/$file", "db-h/$dir/$file" ) or
-		    copy( "archive/$dir/$file", "db-h/$dir/$file" ) or
-			 die "Unable to copy archive/$dir/$file to db-h/$dir/$file";
+	       link( "$config{spool_dir}/archive/$dir/$file", "$config{spool_dir}/db-h/$dir/$file" ) or
+		    copy( "$config{spool_dir}/archive/$dir/$file", "$config{spool_dir}/db-h/$dir/$file" ) or
+			 die "Unable to copy $config{spool_dir}/archive/$dir/$file to $config{spool_dir}/db-h/$dir/$file";
 	  }
-	  push @files_to_remove, map {"archive/$dir/$_"} @files_to_copy;
+	  push @files_to_remove, map {"$config{spool_dir}/archive/$dir/$_"} @files_to_copy;
 	  print {$transcript} "Unarchived $config{bug} $bug\n";
      }
      unlink(@files_to_remove) or die "Unable to unlink bugs";
@@ -366,14 +491,15 @@ sub bug_unarchive {
 	  append_action_to_log(bug => $bug,
 			       get_lock => 0,
 			       __return_append_to_log_options(
-				 (map {exists $param{$_}?($_,$param{$_}):()}
-				  keys %append_action_options,
-				 ),
+				 %param,
 				 action => $action,
 				)
 			      )
 	       if not exists $param{append_log} or $param{append_log};
 	  writebug($bug,$newdata);
+	  add_recipients(recipients => $param{recipients},
+			 data       => $newdata,
+			);
      }
      print {$debug} "$param{bug} unlocking $locks\n";
      if ($locks) {
@@ -443,11 +569,34 @@ sub append_action_to_log{
 
 =head1 PRIVATE FUNCTIONS
 
+=head2 __handle_affected_packages
+
+     __handle_affected_packages(affected_packages => {},
+                                data => [@data],
+                               )
+
+
+
+=cut
+
+sub __handle_affected_packages{
+     my %param = validate_with(params => \@_,
+			       spec   => {%common_options,
+					  data => {type => ARRAYREF|HASHREF
+						  },
+					 },
+			       allow_extra => 1,
+			      );
+     for my $data (make_list($param{data})) {
+	  $param{affected_packages}{$data->{package}} = 1;
+     }
+}
+
 =head2 __handle_debug_transcript
 
      my ($debug,$transcript) = __handle_debug_transcript(%param);
 
-Returns a debug and transcript IO::Scalar filehandle
+Returns a debug and transcript filehandle
 
 
 =cut
@@ -457,16 +606,14 @@ sub __handle_debug_transcript{
 			       spec   => {%common_options},
 			       allow_extra => 1,
 			      );
-     my $fake_scalar;
-     my $debug = IO::Scalar->new(exists $param{debug}?$param{debug}:\$fake_scalar);
-     my $transcript = IO::Scalar->new(exists $param{transcript}?$param{transcript}:\$fake_scalar);
+     my $debug = globify_scalar(exists $param{debug}?$param{debug}:undef);
+     my $transcript = globify_scalar(exists $param{transcript}?$param{transcript}:undef);
      return ($debug,$transcript);
-
 }
 
 sub __return_append_to_log_options{
      my %param = @_;
-     my $action = 'Unknown action';
+     my $action = $param{action} if exists $param{action};
      if (not exists $param{requester}) {
 	  $param{requester} = $config{control_internal_requester};
      }
@@ -474,7 +621,6 @@ sub __return_append_to_log_options{
 	  $param{request_addr} = $config{control_internal_request_addr};
      }
      if (not exists $param{message}) {
-	  $action = $param{action} if exists $param{action};
 	  my $date = rfc822_date();
 	  $param{message} = fill_in_template(template  => 'mail/fake_control_message',
 					     variables => {request_addr => $param{request_addr},
@@ -484,8 +630,14 @@ sub __return_append_to_log_options{
 							  },
 					    );
      }
+     if (not defined $action) {
+	  carp "Undefined action!";
+	  $action = "unknown action";
+     }
      return (action => $action,
-	     %param);
+	     (map {exists $append_action_options{$_}?($_,$param{$_}):()}
+	      keys %param),
+	    );
 }
 
 

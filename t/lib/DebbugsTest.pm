@@ -151,16 +151,16 @@ sub send_message{
      my $output='';
      local $SIG{PIPE} = 'IGNORE';
      local $SIG{CHLD} = sub {};
-     my $pid = open3($wfd,$rfd,$rfd,'scripts/receive.in')
-	  or die "Unable to start receive.in: $!";
+     my $pid = open3($wfd,$rfd,$rfd,'scripts/receive')
+	  or die "Unable to start receive: $!";
      print {$wfd} create_mime_message($param{headers},
-					 $param{body}) or die "Unable to to print to receive.in";
-     close($wfd) or die "Unable to close receive.in";
+					 $param{body}) or die "Unable to to print to receive";
+     close($wfd) or die "Unable to close receive";
      my $err = $? >> 8;
      my $childpid = waitpid($pid,0);
      if ($childpid != -1) {
 	  $err = $? >> 8;
-	  print STDERR "receive.in pid: $pid doesn't match childpid: $childpid\n" if $childpid != $pid;
+	  print STDERR "receive pid: $pid doesn't match childpid: $childpid\n" if $childpid != $pid;
      }
      if ($err != 0 ) {
 	  my $rfh =  IO::Handle->new_from_fd($rfd,'r') or die "Unable to create filehandle: $!";
@@ -171,11 +171,11 @@ sub send_message{
 	       print STDERR "Reading from STDOUT/STDERR would have blocked.";
 	  }
 	  print STDERR $output,qq(\n);
-	  die "receive.in failed with exit status $err";
+	  die "receive failed with exit status $err";
      }
      # now we should run processall to see if the message gets processed
      if ($param{run_processall}) {
-	  system('scripts/processall.in') == 0 or die "processall.in failed";
+	  system('scripts/processall') == 0 or die "processall failed";
      }
 }
 
@@ -190,8 +190,10 @@ sub send_message{
      END {
 	  if (defined $child_pid) {
 	       # stop the child
+	       my $temp_exit = $?;
 	       kill(15,$child_pid);
 	       waitpid(-1,0);
+	       $? = $temp_exit;
 	  }
      }
 

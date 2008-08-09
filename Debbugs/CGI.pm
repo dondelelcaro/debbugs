@@ -37,13 +37,19 @@ use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 use Debbugs::URI;
 use HTML::Entities;
-use Debbugs::Common qw(getparsedaddrs);
+use Debbugs::Common qw(getparsedaddrs make_list);
 use Params::Validate qw(validate_with :types);
 use Debbugs::Config qw(:config);
 use Debbugs::Status qw(splitpackages isstrongseverity);
 use Mail::Address;
 use POSIX qw(ceil);
 use Storable qw(dclone);
+
+use List::Util qw(max);
+
+use Carp;
+
+use Debbugs::Text qw(fill_in_template);
 
 our %URL_PARAMS = ();
 
@@ -55,18 +61,21 @@ BEGIN{
      @EXPORT = ();
      %EXPORT_TAGS = (url    => [qw(bug_url bug_links bug_linklist maybelink),
 				qw(set_url_params pkg_url version_url),
-				qw(submitterurl mainturl munge_url)
+				qw(submitterurl mainturl munge_url),
+				qw(package_links bug_links),
 			       ],
 		     html   => [qw(html_escape htmlize_bugs htmlize_packagelinks),
 				qw(maybelink htmlize_addresslinks htmlize_maintlinks),
 			       ],
 		     util   => [qw(cgi_parameters quitcgi),
 			       ],
+		     forms  => [qw(option_form form_options_and_normal_param)],
 		     misc   => [qw(maint_decode)],
+		     package_search => [qw(@package_search_key_order %package_search_keys)],
 		     #status => [qw(getbugstatus)],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(url html util misc));
+     Exporter::export_ok_tags(keys %EXPORT_TAGS);
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -112,6 +121,8 @@ sub bug_url{
      else {
 	  %params = @_;
      }
+     carp "bug_url is deprecated, use bug_links instead";
+
      return munge_url('bugreport.cgi?',%params,bug=>$ref);
 }
 
@@ -124,6 +135,7 @@ sub pkg_url{
      else {
 	  %params = @_;
      }
+     carp "pkg_url is deprecated, use package_links instead";
      return munge_url('pkgreport.cgi?',%params);
 }
 
@@ -151,22 +163,64 @@ sub munge_url {
 
 =head2 version_url
 
-     version_url($package,$found,$fixed)
+     version_url(package => $package,found => $found,fixed => $fixed)
 
 Creates a link to the version cgi script
+
+=over
+
+=item package -- source package whose graph to display
+
+=item found -- arrayref of found versions
+
+=item fixed -- arrayref of fixed versions
+
+=item width -- optional width of graph
+
+=item height -- optional height of graph
+
+=item info -- display html info surrounding graph; defaults to 1 if
+width and height are not passed.
+
+=item collapse -- whether to collapse the graph; defaults to 1 if
+width and height are passed.
+
+=back
 
 =cut
 
 sub version_url{
-     my ($package,$found,$fixed,$width,$height) = @_;
+     my %params = validate_with(params => \@_,
+				spec   => {package => {type => SCALAR,
+						      },
+					   found   => {type => ARRAYREF,
+						       default => [],
+						      },
+					   fixed   => {type => ARRAYREF,
+						       default => [],
+						      },
+					   width   => {type => SCALAR,
+						       optional => 1,
+						      },
+					   height  => {type => SCALAR,
+						       optional => 1,
+						      },
+					   absolute => {type => BOOLEAN,
+							default => 0,
+						       },
+					   collapse => {type => BOOLEAN,
+							default => 1,
+						       },
+					   info     => {type => BOOLEAN,
+							optional => 1,
+						       },
+					  }
+			       );
+     if (not defined $params{width} and not defined $params{height}) {
+	  $params{info} = 1 if not exists $params{info};
+     }
      my $url = Debbugs::URI->new('version.cgi?');
-     $url->query_form(package => $package,
-		      found   => $found,
-		      fixed   => $fixed,
-		      (defined $width)?(width => $width):(),
-		      (defined $height)?(height => $height):(),
-		      (defined $width or defined $height)?(collapse => 1):(info => 1),
-		     );
+     $url->query_form(%params);
      return $url->as_string;
 }
 
@@ -231,138 +285,14 @@ sub cgi_parameters {
 sub quitcgi {
     my $msg = shift;
     print "Content-Type: text/html\n\n";
-    print "<HTML><HEAD><TITLE>Error</TITLE></HEAD><BODY>\n";
-    print "An error occurred. Dammit.\n";
-    print "Error was: $msg.\n";
-    print "</BODY></HTML>\n";
+    print fill_in_template(template=>'cgi/quit',
+			   variables => {msg => $msg}
+			  );
     exit 0;
 }
 
 
 =head HTML
-
-=head2 htmlize_bugs
-
-     htmlize_bugs({bug=>1,status=>\%status,extravars=>\%extra},{bug=>...}});
-
-Turns a list of bugs into an html snippit of the bugs.
-
-=cut
-#     htmlize_bugs(bugs=>[@bugs]);
-sub htmlize_bugs{
-     my @bugs = @_;
-     my @html;
-
-     for my $bug (@bugs) {
-	  my $html = sprintf "<li><a href=\"%s\">#%d: %s</a>\n<br>",
-	       bug_url($bug->{bug}), $bug->{bug}, html_escape($bug->{status}{subject});
-	  $html .= htmlize_bugstatus($bug->{status}) . "\n";
-     }
-     return @html;
-}
-
-
-sub htmlize_bugstatus {
-     my %status = %{$_[0]};
-
-     my $result = "";
-
-     my $showseverity;
-     if  ($status{severity} eq $config{default_severity}) {
-	  $showseverity = '';
-     } elsif (isstrongseverity($status{severity})) {
-	  $showseverity = "Severity: <em class=\"severity\">$status{severity}</em>;\n";
-     } else {
-	  $showseverity = "Severity: <em>$status{severity}</em>;\n";
-     }
-
-     $result .= htmlize_packagelinks($status{"package"}, 1);
-
-     my $showversions = '';
-     if (@{$status{found_versions}}) {
-	  my @found = @{$status{found_versions}};
-	  local $_;
-	  s{/}{ } foreach @found;
-	  $showversions .= join ', ', map html_escape($_), @found;
-     }
-     if (@{$status{fixed_versions}}) {
-	  $showversions .= '; ' if length $showversions;
-	  $showversions .= '<strong>fixed</strong>: ';
-	  my @fixed = @{$status{fixed_versions}};
-	  $showversions .= join ', ', map {s#/##; html_escape($_)} @fixed;
-     }
-     $result .= " ($showversions)" if length $showversions;
-     $result .= ";\n";
-
-     $result .= $showseverity;
-     $result .= htmlize_addresslinks("Reported by: ", \&submitterurl,
-                                $status{originator});
-     $result .= ";\nOwned by: " . html_escape($status{owner})
-	  if length $status{owner};
-     $result .= ";\nTags: <strong>" 
-	  . html_escape(join(", ", sort(split(/\s+/, $status{tags}))))
-	       . "</strong>"
-		    if (length($status{tags}));
-
-     $result .= ";\nMerged with ".
-	  bug_linklist(', ',
-		       'submitter',
-		       split(/ /,$status{mergedwith}))
-	       if length $status{mergedwith};
-     $result .= ";\nBlocked by ".
-	  bug_linklist(", ",
-		       'submitter',
-		       split(/ /,$status{blockedby}))
-	       if length $status{blockedby};
-     $result .= ";\nBlocks ".
-	  bug_linklist(", ",
-		       'submitter',
-		       split(/ /,$status{blocks})
-		      )
-	       if length $status{blocks};
-
-     my $days = 0;
-     if (length($status{done})) {
-	  $result .= "<br><strong>Done:</strong> " . html_escape($status{done});
-	  $days = ceil($debbugs::gRemoveAge - -M buglog($status{id}));
-	  if ($days >= 0) {
-	       $result .= ";\n<strong>Will be archived" . ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" ) . "</strong>";
-	  } else {
-	       $result .= ";\n<strong>Archived</strong>";
-	  }
-     }
-     else {
-	  if (length($status{forwarded})) {
-	       $result .= ";\n<strong>Forwarded</strong> to "
-		    . maybelink($status{forwarded});
-	  }
-	  my $daysold = int((time - $status{date}) / 86400);   # seconds to days
-	  if ($daysold >= 7) {
-	       my $font = "";
-	       my $efont = "";
-	       $font = "em" if ($daysold > 30);
-	       $font = "strong" if ($daysold > 60);
-	       $efont = "</$font>" if ($font);
-	       $font = "<$font>" if ($font);
-
-	       my $yearsold = int($daysold / 365);
-	       $daysold -= $yearsold * 365;
-
-	       $result .= ";\n $font";
-	       my @age;
-	       push @age, "1 year" if ($yearsold == 1);
-	       push @age, "$yearsold years" if ($yearsold > 1);
-	       push @age, "1 day" if ($daysold == 1);
-	       push @age, "$daysold days" if ($daysold > 1);
-	       $result .= join(" and ", @age);
-	       $result .= " old$efont";
-        }
-    }
-
-    $result .= ".";
-
-    return $result;
-}
 
 =head2 htmlize_packagelinks
 
@@ -370,27 +300,216 @@ sub htmlize_bugstatus {
 
 Given a scalar containing a list of packages separated by something
 that L<Debbugs::CGI/splitpackages> can separate, returns a
-formatted set of links to packages.
+formatted set of links to packages in html.
 
 =cut
 
 sub htmlize_packagelinks {
-    my ($pkgs,$strong) = @_;
-    return unless defined $pkgs and $pkgs ne '';
+    my ($pkgs) = @_;
+    return '' unless defined $pkgs and $pkgs ne '';
     my @pkglist = splitpackages($pkgs);
 
-    $strong = 0;
-    my $openstrong  = $strong ? '<strong>' : '';
-    my $closestrong = $strong ? '</strong>' : '';
+    carp "htmlize_packagelinks is deprecated, use package_links instead";
 
     return 'Package' . (@pkglist > 1 ? 's' : '') . ': ' .
-           join(', ',
-                map {
-                    '<a class="submitter" href="' . pkg_url(pkg=>$_||'') . '">' .
-                    $openstrong . html_escape($_) . $closestrong . '</a>'
-                } @pkglist
-           );
+           package_links(package =>\@pkglist,
+			 class   => 'submitter'
+			);
 }
+
+=head2 package_links
+
+     join(', ', package_links(packages => \@packages))
+
+Given a list of packages, return a list of html which links to the package
+
+=over
+
+=item package -- arrayref or scalar of package(s)
+
+=item submitter -- arrayref or scalar of submitter(s)
+
+=item src -- arrayref or scalar of source(s)
+
+=item maintainer -- arrayref or scalar of maintainer(s)
+
+=item links_only -- return only links, not htmlized links, defaults to
+returning htmlized links.
+
+=item class -- class of the a href, defaults to ''
+
+=back
+
+=cut
+
+our @package_search_key_order = (package   => 'in package',
+				 tag       => 'tagged',
+				 severity  => 'with severity',
+				 src       => 'in source package',
+				 maint     => 'in packages maintained by',
+				 submitter => 'submitted by',
+				 owner     => 'owned by',
+				 status    => 'with status',
+				 correspondent => 'with mail from',
+				 newest        => 'newest bugs',
+				);
+our %package_search_keys = @package_search_key_order;
+
+
+sub package_links {
+     my %param = validate_with(params => \@_,
+			       spec   => {(map { ($_,{type => SCALAR|ARRAYREF,
+						      optional => 1,
+						     });
+					    } keys %package_search_keys,
+					  ),
+					  links_only => {type => BOOLEAN,
+							 default => 0,
+							},
+					  class => {type => SCALAR,
+						    default => '',
+						   },
+					  separator => {type => SCALAR,
+							default => ', ',
+						       },
+					  options => {type => HASHREF,
+						      default => {},
+						     },
+					 },
+			       normalize_keys =>
+			       sub {
+				    my ($key) = @_;
+				    my %map = (source => 'src',
+					       maintainer => 'maint',
+					       pkg        => 'package',
+					      );
+				    return $map{$key} if exists $map{$key};
+				    return $key;
+			       }
+			      );
+     my %options = %{$param{options}};
+     for ((keys %package_search_keys,qw(msg att))) {
+	  delete $options{$_} if exists $options{$_};
+     }
+     my @links = ();
+     for my $type (qw(src package)) {
+	  push @links, map {(munge_url('pkgreport.cgi?',
+				       %options,
+				       $type => $_,
+				      ),
+			     $_);
+		       } make_list($param{$type}) if exists $param{$type};
+     }
+     for my $type (qw(maint owner submitter correspondent)) {
+	  push @links, map {my $addr = getparsedaddrs($_);
+			    $addr = defined $addr?$addr->address:'';
+			    (munge_url('pkgreport.cgi?',
+				       %options,
+				       $type => $addr,
+				      ),
+			     $_);
+		       } make_list($param{$type}) if exists $param{$type};
+     }
+     my @return = ();
+     my ($link,$link_name);
+     my $class = '';
+     if (length $param{class}) {
+	  $class = q( class=").html_escape($param{class}).q(");
+     }
+     while (($link,$link_name) = splice(@links,0,2)) {
+	  if ($param{links_only}) {
+	       push @return,$link
+	  }
+	  else {
+	       push @return,
+		    qq(<a$class href=").
+			 html_escape($link).q(">).
+			      html_escape($link_name).q(</a>);
+	  }
+     }
+     if (wantarray) {
+	  return @return;
+     }
+     else {
+	  return join($param{separator},@return);
+     }
+}
+
+=head2 bug_links
+
+     join(', ', bug_links(bug => \@packages))
+
+Given a list of bugs, return a list of html which links to the bugs
+
+=over
+
+=item bug -- arrayref or scalar of bug(s)
+
+=item links_only -- return only links, not htmlized links, defaults to
+returning htmlized links.
+
+=item class -- class of the a href, defaults to ''
+
+=back
+
+=cut
+
+sub bug_links {
+     my %param = validate_with(params => \@_,
+			       spec   => {bug => {type => SCALAR|ARRAYREF,
+						  optional => 1,
+						 },
+					  links_only => {type => BOOLEAN,
+							 default => 0,
+							},
+					  class => {type => SCALAR,
+						    default => '',
+						   },
+					  separator => {type => SCALAR,
+							default => ', ',
+						       },
+					  options => {type => HASHREF,
+						      default => {},
+						     },
+					 },
+			      );
+     my %options = %{$param{options}};
+
+     for (qw(bug)) {
+	  delete $options{$_} if exists $options{$_};
+     }
+     my @links;
+     push @links, map {(munge_url('bugreport.cgi?',
+				  %options,
+				  bug => $_,
+				 ),
+			$_);
+		  } make_list($param{bug}) if exists $param{bug};
+     my @return;
+     my ($link,$link_name);
+     my $class = '';
+     if (length $param{class}) {
+	  $class = q( class=").html_escape($param{class}).q(");
+     }
+     while (($link,$link_name) = splice(@links,0,2)) {
+	  if ($param{links_only}) {
+	       push @return,$link
+	  }
+	  else {
+	       push @return,
+		    qq(<a$class href=").
+			 html_escape($link).q(">).
+			      html_escape($link_name).q(</a>);
+	  }
+     }
+     if (wantarray) {
+	  return @return;
+     }
+     else {
+	  return join($param{separator},@return);
+     }
+}
+
 
 
 =head2 maybelink
@@ -444,6 +563,8 @@ or submitterurl which returns the URL for each individual address.
 
 sub htmlize_addresslinks {
      my ($prefixfunc, $urlfunc, $addresses,$class) = @_;
+     carp "htmlize_addresslinks is deprecated";
+
      $class = defined $class?qq(class="$class" ):'';
      if (defined $addresses and $addresses ne '') {
 	  my @addrs = getparsedaddrs($addresses);
@@ -473,43 +594,17 @@ sub emailfromrfc822{
      return $addr;
 }
 
-sub mainturl { pkg_url(maint => emailfromrfc822($_[0])); }
-sub submitterurl { pkg_url(submitter => emailfromrfc822($_[0])); }
+sub mainturl { package_links(maint => $_[0], links_only => 1); }
+sub submitterurl { package_links(submitter => $_[0], links_only => 1); }
 sub htmlize_maintlinks {
     my ($prefixfunc, $maints) = @_;
+    carp "htmlize_maintlinks is deprecated";
     return htmlize_addresslinks($prefixfunc, \&mainturl, $maints);
 }
 
 
 our $_maintainer;
 our $_maintainer_rev;
-
-=head2 bug_links
-
-     bug_links($one_bug);
-     bug_links($starting_bug,$stoping_bugs,);
-
-Creates a set of links to bugs, starting with bug number
-$starting_bug, and finishing with $stoping_bug; if only one bug is
-passed, makes a link to only a single bug.
-
-The content of the link is the bug number.
-
-XXX Use L<Params::Validate>; we want to be able to support query
-arguments here too.
-
-=cut
-
-sub bug_links{
-     my ($start,$stop,$query_arguments) = @_;
-     $stop = $stop || $start;
-     $query_arguments ||= '';
-     my @output;
-     for my $bug ($start..$stop) {
-	  push @output,'<a href="'.bug_url($bug,'').qq(">$bug</a>);
-     }
-     return join(', ',@output);
-}
 
 =head2 bug_linklist
 
@@ -528,13 +623,233 @@ too.]
 
 sub bug_linklist{
      my ($sep,$class,@bugs) = @_;
-     if (length $class) {
-	  $class = qq(class="$class" );
-     }
-     return join($sep,map{qq(<a ${class}href=").
-			       bug_url($_).qq(">#$_</a>)
-			  } @bugs);
+     carp "bug_linklist is deprecated; use bug_links instead";
+     return scalar bug_links(bug=>\@bugs,class=>$class,separator=>$sep);
 }
+
+
+
+=head1 Forms
+
+=cut
+
+=head2 form_options_and_normal_param
+
+     my ($form_option,$param) = form_options_and_normal_param(\%param)
+           if $param{form_options};
+     my $form_option = form_options_and_normal_param(\%param)
+           if $param{form_options};
+
+Translates from special form_options to a set of parameters which can
+be used to run the current page.
+
+The idea behind this is to allow complex forms to relatively easily
+cause options that the existing cgi scripts understand to be set.
+
+Currently there are two commands which are understood:
+combine, and concatenate.
+
+=head3 combine
+
+Combine works by entering key,value pairs into the parameters using
+the key field option input field, and the value field option input
+field.
+
+For example, you would have
+
+ <input type="hidden" name="_fo_combine_key_fo_searchkey_value_fo_searchvalue" value="1">
+
+which would combine the _fo_searchkey and _fo_searchvalue input fields, so
+
+ <input type="text" name="_fo_searchkey" value="foo">
+ <input type="text" name="_fo_searchvalue" value="bar">
+
+would yield foo=>'bar' in %param.
+
+=head3 concatenate
+
+Concatenate concatenates values into a single entry in a parameter
+
+For example, you would have
+
+ <input type="hidden" name="_fo_concatentate_into_foo_with_:_fo_blah_fo_bleargh" value="1">
+
+which would combine the _fo_searchkey and _fo_searchvalue input fields, so
+
+ <input type="text" name="_fo_blah" value="bar">
+ <input type="text" name="_fo_bleargh" value="baz">
+
+would yield foo=>'bar:baz' in %param.
+
+
+=cut
+
+my $form_option_leader = '_fo_';
+sub form_options_and_normal_param{
+     my ($orig_param) = @_;
+     # all form_option parameters start with _fo_
+     my ($param,$form_option) = ({},{});
+     for my $key (keys %{$orig_param}) {
+	  if ($key =~ /^\Q$form_option_leader\E/) {
+	       $form_option->{$key} = $orig_param->{$key};
+	  }
+	  else {
+	       $param->{$key} = $orig_param->{$key};
+	  }
+     }
+     # at this point, we check for commands
+ COMMAND: for my $key (keys %{$form_option}) {
+	  $key =~ s/^\Q$form_option_leader\E//;
+	  if (my ($key_name,$value_name) = 
+	      $key =~ /combine_key(\Q$form_option_leader\E.+)
+	      _value(\Q$form_option_leader\E.+)$/x
+	     ) {
+	       next unless defined $form_option->{$key_name};
+	       next unless defined $form_option->{$value_name};
+	       my @keys = make_list($form_option->{$key_name});
+	       my @values = make_list($form_option->{$value_name});
+	       for my $i (0 .. $#keys) {
+		    last if $i > $#values;
+		    next if not defined $keys[$i];
+		    next if not defined $values[$i];
+		    __add_to_param($param,
+				   $keys[$i],
+				   $values[$i],
+				  );
+	       }
+	  }
+	  elsif (my ($field,$concatenate_key,$fields) = 
+		 $key =~ /concatenate_into_(.+?)((?:_with_[^_])?)
+			  ((?:\Q$form_option_leader\E.+?)+)
+			  $/x
+		) {
+	       if (length $concatenate_key) {
+		    $concatenate_key =~ s/_with_//;
+	       }
+	       else {
+		    $concatenate_key = ':';
+	       }
+	       my @fields = $fields =~ m/(\Q$form_option_leader\E.+?)(?:(?=\Q$form_option_leader\E)|$)/g;
+	       my %field_list;
+	       my $max_num = 0;
+	       for my $f (@fields) {
+		    next COMMAND unless defined $form_option->{$f};
+		    $field_list{$f} = [make_list($form_option->{$f})];
+		    $max_num = max($max_num,$#{$field_list{$f}});
+	       }
+	       for my $i (0 .. $max_num) {
+		    next unless @fields == grep {$i <= $#{$field_list{$_}} and
+						      defined $field_list{$_}[$i]} @fields;
+		    __add_to_param($param,
+				   $field,
+				   join($concatenate_key,
+					map {$field_list{$_}[$i]} @fields
+				       )
+				  );
+	       }
+	  }
+     }
+     return wantarray?($form_option,$param):$form_option;
+}
+
+=head2 option_form
+
+     print option_form(template=>'pkgreport_options',
+		       param   => \%param,
+		       form_options => $form_options,
+		      )
+
+
+
+=cut
+
+sub option_form{
+     my %param = validate_with(params => \@_,
+			       spec   => {template => {type => SCALAR,
+						      },
+					  variables => {type => HASHREF,
+							default => {},
+						       },
+					  language => {type => SCALAR,
+						       optional => 1,
+						      },
+					  param => {type => HASHREF,
+						    default => {},
+						   },
+					  form_options => {type => HASHREF,
+							   default => {},
+							  },
+					 },
+			      );
+
+     # First, we need to see if we need to add particular types of
+     # parameters
+     my $variables = dclone($param{variables});
+     $variables->{param} = dclone($param{param});
+     for my $key (keys %{$param{form_option}}) {
+	  # strip out leader; shouldn't be anything here without one,
+	  # but skip stupid things anyway
+	  my $o_key = $key;
+	  next unless $key =~ s/^\Q$form_option_leader\E//;
+	  if ($key =~ /^add_(.+)$/) {
+	       # this causes a specific parameter to be added
+	       __add_to_param($variables->{param},
+			      $1,
+			      ''
+			     );
+	  }
+	  elsif ($key =~ /^delete_(.+?)(?:_(\d+))?$/) {
+	       next unless exists $variables->{param}{$1};
+	       if (ref $variables->{param}{$1} eq 'ARRAY' and
+		   defined $2 and
+		   defined $variables->{param}{$1}[$2]
+		  ) {
+		    splice @{$variables->{param}{$1}},$2,1;
+	       }
+	       else {
+		    delete $variables->{param}{$1};
+	       }
+	  }
+	  # we'll add extra comands here once I figure out what they
+	  # should be
+     }
+     # add in a few utility routines
+     $variables->{output_select_options} = sub {
+	  my ($options,$value) = @_;
+	  my @options = @{$options};
+	  my $output = '';
+	  while (my ($o_value,$name) = splice @options,0,2) {
+	       my $selected = '';
+	       if (defined $value and $o_value eq $value) {
+		    $selected = ' selected';
+	       }
+	       $output .= qq(<option value="$o_value"$selected>$name</option>\n);
+	  }
+	  return $output;
+     };
+     $variables->{make_list} = sub { make_list(@_);
+     };
+     # now at this point, we're ready to create the template
+     return Debbugs::Text::fill_in_template(template=>$param{template},
+					    (exists $param{language}?(language=>$param{language}):()),
+					    variables => $variables,
+					   );
+}
+
+sub __add_to_param{
+     my ($param,$key,@values) = @_;
+
+     if (exists $param->{$key} and not
+	 ref $param->{$key}) {
+	  @{$param->{$key}} = [$param->{$key},
+			       @values
+			      ];
+     }
+     else {
+	  push @{$param->{$key}}, @values;
+     }
+}
+
 
 
 =head1 misc

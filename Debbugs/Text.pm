@@ -16,8 +16,8 @@ Debbugs::Text -- General routines for text templates
 
 =head1 SYNOPSIS
 
-use Debbugs::Text qw(:templates);
-print fill_in_template(template => 'cgi/foo');
+ use Debbugs::Text qw(:templates);
+ print fill_in_template(template => 'cgi/foo');
 
 =head1 DESCRIPTION
 
@@ -164,6 +164,7 @@ sub fill_in_template{
 			     qw(padsv padav padhv padany),
 			     qw(rv2gv refgen srefgen ref),
 			     qw(caller require entereval),
+			     qw(gmtime time sprintf prtf),
 			    );
 	  $safe->share('*STDERR');
 	  $safe->share('%config');
@@ -191,7 +192,7 @@ sub fill_in_template{
      my $tt;
      if ($tt_type eq 'FILE' and
 	 defined $tt_templates{$tt_source} and
-	 (stat $tt_source)[9] > $tt_templates{$tt_source}{mtime}
+	 (stat $tt_source)[9] <= $tt_templates{$tt_source}{mtime}
 	) {
 	  $tt = $tt_templates{$tt_source}{template};
      }
@@ -202,6 +203,7 @@ sub fill_in_template{
 	  }
 	  $tt = Text::Template->new(TYPE => $tt_type,
 				    SOURCE => $tt_source,
+				    UNTAINT => 1,
 				   );
 	  if ($tt_type eq 'FILE') {
 	       $tt_templates{$tt_source}{template} = $tt;
@@ -210,10 +212,7 @@ sub fill_in_template{
      if (not defined $tt) {
 	  die "Unable to create Text::Template for $tt_type:$tt_source";
      }
-     my $ret = $tt->fill_in(#(defined $param{nosafe} and $param{nosafe})?():(HASH=>$param{variables}),
-			    #(defined $param{nosafe} and $param{nosafe})?():(SAFE=>$safe),
-			    SAFE => $safe,
-			    #(defined $param{nosafe} and $param{nosafe})?(PACKAGE => 'main'):(),
+     my $ret = $tt->fill_in(SAFE => $safe,
 			    defined $param{output}?(OUTPUT=>$param{output}):(),
 			   );
      if (not defined $ret) {

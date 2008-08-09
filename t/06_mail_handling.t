@@ -228,6 +228,7 @@ while (my ($command,$control_command) = splice(@control_commands,0,2)) {
 			      Subject => "Munging a bug with $command",
 			     ],
 		  body => <<EOF) or fail 'message to control@bugs.something failed';
+debug 10
 $control_command->{command} 1$control_command->{value}
 thanks
 EOF

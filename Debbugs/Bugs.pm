@@ -90,6 +90,8 @@ for limited regular expressions, and/or more complex expressions.
 
 =item owner -- owner of the bug
 
+=item correspondent -- address of someone who sent mail to the log
+
 =item dist -- distribution (I don't know about this one yet)
 
 =item bugs -- list of bugs to search within
@@ -177,6 +179,9 @@ sub get_bugs{
 					  dist      => {type => SCALAR|ARRAYREF,
 						        optional => 1,
 						       },
+					  correspondent => {type => SCALAR|ARRAYREF,
+							    optional => 1,
+							   },
 					  function  => {type => CODEREF,
 							optional => 1,
 						       },
@@ -299,14 +304,16 @@ sub newest_bug {
 
 Allows filtering bugs on commonly used criteria
 
+
+
 =cut
 
 sub bug_filter {
      my %param = validate_with(params => \@_,
-			       spec   => {bug => {type  => SCALAR,
-						  regex => qr/^\d+$/,
-						 },
-					  status => {type => HASHREF,
+			       spec   => {bug    => {type => ARRAYREF|SCALAR,
+						     optional => 1,
+						    },
+					  status => {type => HASHREF|ARRAYREF,
 						     optional => 1,
 						    },
 					  seen_merged => {type => HASHREF,
@@ -333,6 +340,9 @@ sub bug_filter {
 	 not $param{repeat_merged} and
 	 not defined $param{seen_merged}) {
 	  croak "repeat_merged false requires seen_merged to be passed";
+     }
+     if (not exists $param{bug} and not exists $param{status}) {
+	 croak "one of bug or status must be passed";
      }
 
      if (not exists $param{status}) {
@@ -402,6 +412,9 @@ sub get_bugs_by_idx{
 					  bugs      => {type => SCALAR|ARRAYREF,
 							optional => 1,
 						       },
+					  correspondent => {type => SCALAR|ARRAYREF,
+							    optional => 1,
+							   },
 					  usertags  => {type => HASHREF,
 							optional => 1,
 						       },
@@ -498,10 +511,13 @@ sub get_bugs_flatfile{
 					  tag       => {type => SCALAR|ARRAYREF,
 						        optional => 1,
 						       },
+ 					  owner     => {type => SCALAR|ARRAYREF,
+ 						        optional => 1,
+ 						       },
+					  correspondent => {type => SCALAR|ARRAYREF,
+							    optional => 1,
+							   },
 # not yet supported
-# 					  owner     => {type => SCALAR|ARRAYREF,
-# 						        optional => 1,
-# 						       },
 # 					  dist      => {type => SCALAR|ARRAYREF,
 # 						        optional => 1,
 # 						       },
@@ -544,11 +560,23 @@ sub get_bugs_flatfile{
 	  delete @param{qw(maint src)};
 	  $param{package} = [@packages];
      }
+     my $grep_bugs = 0;
+     my %bugs;
+     if (exists $param{bugs}) {
+	  $bugs{$_} = 1 for make_list($param{bugs});
+	  $grep_bugs = 1;
+     }
+     if (exists $param{owner} or exists $param{correspondent}) {
+	  $bugs{$_} = 1 for get_bugs_by_idx(exists $param{correspondent}?(correspondent => $param{correspondent}):(),
+					    exists $param{owner}?(owner => $param{owner}):(),
+					   );
+	  $grep_bugs = 1;
+     }
      my @bugs;
      while (<$flatfile>) {
 	  next unless m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/;
 	  my ($pkg,$bug,$time,$status,$submitter,$severity,$tags) = ($1,$2,$3,$4,$5,$6,$7);
-	  next if exists $param{bugs} and not grep {$bug == $_} make_list($param{bugs});
+	  next if $grep_bugs and not exists $bugs{$bug};
 	  if (exists $param{package}) {
 	       my @packages = splitpackages($pkg);
 	       next unless grep { my $pkg_list = $_;
@@ -670,6 +698,7 @@ my %field_match = (
     },
     'severity' => \&__exact_field_match,
     'pending' => \&__exact_field_match,
+    'package' => \&__exact_field_match,
     'originator' => \&__contains_field_match,
     'forwarded' => \&__contains_field_match,
     'owner' => \&__contains_field_match,

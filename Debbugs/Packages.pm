@@ -12,10 +12,10 @@ package Debbugs::Packages;
 use warnings;
 use strict;
 
-use Debbugs::Config qw(:config :globals);
-
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS @EXPORT);
+
+use Debbugs::Config qw(:config :globals);
 
 BEGIN {
     $VERSION = 1.00;
@@ -38,6 +38,8 @@ use Params::Validate qw(validate_with :types);
 use Debbugs::Common qw(make_list);
 
 use List::Util qw(min max);
+
+use IO::File;
 
 $MLDBM::DumpMeth = 'portable';
 $MLDBM::RemoveTaint = 1;
@@ -75,17 +77,17 @@ sub getpkgsrc {
     my %pkgcomponent;
     my %srcpkg;
 
-    open(MM,"$Debbugs::Packages::gPackageSource")
-	or die("open $Debbugs::Packages::gPackageSource: $!");
-    while(<MM>) {
+    my $fh = IO::File->new($config{package_source},'r')
+	or die("Unable to open $config{package_source} for reading: $!");
+    while(<$fh>) {
 	next unless m/^(\S+)\s+(\S+)\s+(\S.*\S)\s*$/;
 	my ($bin,$cmp,$src)=($1,$2,$3);
-	$bin =~ y/A-Z/a-z/;
+	$bin = lc($bin);
 	$pkgsrc{$bin}= $src;
 	push @{$srcpkg{$src}}, $bin;
 	$pkgcomponent{$bin}= $cmp;
     }
-    close(MM);
+    close($fh);
     $_pkgsrc = \%pkgsrc;
     $_pkgcomponent = \%pkgcomponent;
     $_srcpkg = \%srcpkg;
