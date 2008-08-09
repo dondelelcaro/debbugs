@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 72;
+use Test::More tests => 78;
 
 use warnings;
 use strict;
@@ -204,6 +204,16 @@ my @control_commands =
       nosummary    => {command => 'summary',
 		       value   => '',
 		       status_key => 'summary',
+		       status_value => '',
+		      },
+      affects      => {command => 'affects',
+		       value   => 'foo',
+		       status_key => 'affects',
+		       status_value => 'foo',
+		      },
+      noaffects    => {command => 'affects',
+		       value   => '',
+		       status_key => 'affects',
 		       status_value => '',
 		      },
       close        => {command => 'close',
