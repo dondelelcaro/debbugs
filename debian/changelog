@@ -195,7 +195,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
   * Allow selecting both archived and unarchived bugs (closes: #320175)
   * Support intersecting sets of bugs (closes: #164421)
   * Allow selecting the newest N bugs (closes: #84681)
-  * Add anchor links to specific messages (closes: #431450)
+  * Add anchor links to specific messages (closes: #431459)
   * Add missing newline after indicating what the user is (closes: #432466)
   * Handle src/binary packages with the same name (but different src
     packages) correctly. (closes: #435926)
@@ -217,6 +217,9 @@ debbugs (2.4.2) UNRELEASED; urgency=low
   * Add Text::Template based templating system (closes: #36814)
   * Add new uservalue feature to Debbugs::User
   * Don't serialize things as date/time in soap (closes: #484789)
+  * Link to packages in bugreport page (closes: #229067)
+  * Totally revamp the pkgreport templates (closes: #434504)
+  * Add correspondent option to track bug correpondents (closes: #485804)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
