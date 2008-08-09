@@ -104,10 +104,9 @@ sub generate_package_info{
      my $maint = $maintainers->{$srcforpkg};
      if (defined $maint) {
 	  print {$output} '<p>';
-	  print {$output} htmlize_maintlinks(sub { $_[0] == 1 ? "Maintainer for $showpkg is "
-							: "Maintainers for $showpkg are "
-						   },
-					     $maint);
+	  print {$output} (($maint =~ /,/)? "Maintainer for $showpkg is "
+			   : "Maintainers for $showpkg are ") .
+				package_links(maint => $maint);
 	  print {$output} ".</p>\n";
      }
      else {
