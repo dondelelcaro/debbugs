@@ -6,13 +6,6 @@ use Test::More tests => 4;
 use warnings;
 use strict;
 
-# Here, we're going to shoot messages through a set of things that can
-# happen.
-
-# First, we're going to send mesages to receive.
-# To do so, we'll first send a message to submit,
-# then send messages to the newly created bugnumber.
-
 use IO::File;
 use File::Temp qw(tempdir);
 use Cwd qw(getcwd);
@@ -32,7 +25,7 @@ if ($@) {
      BAIL_OUT($@);
 }
 
-# Output some debugging information if there's an error
+# Output some debugging information if we're debugging
 END{
      if ($ENV{DEBUG}) {
 	  foreach my $key (keys %config) {
@@ -55,7 +48,7 @@ This is a silly bug
 EOF
 
 
-# test bugreport.cgi
+# test the soap server
 
 my $port = 11343;
 
@@ -69,8 +62,10 @@ our $child_pid = undef;
 
 END{
      if (defined $child_pid) {
+	  my $temp_exit = $?;
 	  kill(15,$child_pid);
 	  waitpid(-1,0);
+	  $? = $temp_exit;
      }
 }
 

@@ -35,6 +35,11 @@ BEGIN {
     $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
+use Carp;
+
+use Debbugs::Common qw(getbuglocation getbugcomponent);
+use Params::Validate qw(:types validate_with);
+
 =head1 NAME
 
 Debbugs::Log - an interface to debbugs .log files
@@ -132,15 +137,69 @@ C<[html]> as above; C<recips> is a reference to an array of recipients
 
 Creates a new log reader based on a .log filehandle.
 
+      my $log = Debbugs::Log->new($logfh);
+      my $log = Debbugs::Log->new(bug_num => $nnn);
+      my $log = Debbugs::Log->new(logfh => $logfh);
+
+Parameters
+
+=over
+
+=item bug_num -- bug number
+
+=item logfh -- log filehandle
+
+=item log_name -- name of log
+
+=back
+
+One of the above options must be passed.
+
 =cut
 
 sub new
 {
     my $this = shift;
+    my %param;
+    if (@_ == 1) {
+	 ($param{logfh}) = @_;
+    }
+    else {
+	 %param = validate_with(params => \@_,
+				spec   => {bug_num => {type => SCALAR,
+						       optional => 1,
+						      },
+					   logfh   => {type => SCALAR,
+						       optional => 1,
+						      },
+					   log_name => {type => SCALAR,
+							optional => 1,
+						       },
+					  }
+			       );
+    }
+    if (grep({exists $param{$_} and defined $param{$_}} qw(bug_num logfh log_name)) ne 1) {
+	 croak "Exactly one of bug_num, logfh, or log_name must be passed and must be defined";
+    }
+
     my $class = ref($this) || $this;
     my $self = {};
     bless $self, $class;
-    $self->{logfh} = shift;
+
+    if (exists $param{logfh}) {
+	 $self->{logfh} = $param{logfh}
+    }
+    elsif (exists $param{log_name}) {
+	 $self->{logfh} = IO::File->new($param{log_name},'r') or
+	      die "Unable to open bug log $param{log_name} for reading: $!";
+    }
+    elsif (exists $param{bug_num}) {
+	 my $location = getbuglocation($param{bug_num},'log');
+	 my $bug_log = getbugcomponent($param{bug_num},'log',$location);
+	 $self->{logfh} = IO::File->new($bug_log, 'r') or
+	      die "Unable to open bug log $bug_log for reading: $!";
+    }
+
     $self->{state} = 'kill-init';
     $self->{linenum} = 0;
     return $self;

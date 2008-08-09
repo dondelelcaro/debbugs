@@ -1,0 +1,138 @@
+<div class="shortbugstatus">
+  <a href="{html_escape(bug_links(bug=>$status{bug_num},links_only=>1))}"{length($status{done})?' style="text-decoration:line-through"':''}>#{html_escape($status{bug_num})}</a>
+  [<font face="fixed"><a href="javascript:extra_status_visible({html_escape($status{bug_num})})">{
+  my $output = qq(<span title="$status{severity}">);
+  my $temp = $status{severity};
+  $temp = substr $temp,0,1;
+  if (isstrongseverity($status{severity})){
+     $temp = q(<em class="severity">).uc($temp).q(</em);
+  }
+  $output .= $temp.qq(</span>);
+  $output;
+  }|{
+  my $output = '';
+  for my $tag (@{$status{tags_array}}) {
+     next unless exists $config{tags_single_letter}{$tag};
+     $output .= q(<span title=").$tag.q(">).$config{tags_single_letter}{$tag}.q(</span>);
+  }
+  $output;
+  }|{
+  my $output = '';
+  if (@{$status{mergedwith_array}}) {
+     $output .= qq(<span title="merged">=</span>);
+  }
+  if (@{$status{fixed_versions}}) {
+     $output .= qq(<span title="fixed versions">☺</span>);
+  }
+  if (@{$status{blockedby_array}}) {
+     $output .= qq(<span title="blocked by">┫</span>);
+  }
+  if (@{$status{blocks_array}}) {
+     $output .= qq(<span title="blocks">┣</span>);
+  }
+  if (length($status{forwarded})) {
+     $output .= qq(<span title="forwarded">↝</span>);
+  }
+  if ($status{archived}) {
+     $output .= qq(<span title="archived">♲</span>);
+  }
+  $output;
+  }</a></font>]
+  [{package_links(package=>$status{package},options=>\%options,class=>"submitter")}]
+  <a href="{html_escape(bug_links(bug=>$status{bug_num},links_only=>1))}">{html_escape($status{subject})}</a>
+  <div id="extra_status_{html_escape($status{bug_num})}" class="shortbugstatusextra">
+  <span>Reported by: {package_links(submitter=>$status{originator})};</span>
+  <span>Date: {$status{date_text}};</span>
+{ my $output = ''; 
+  if (defined $status{owner} and length $status{owner}) {
+     $output = q(<span>Owned by: ).package_links(owner=>$status{owner}).q(;</span>);
+  }
+  $output;
+}
+<span>Severity: {my $output = $status{severity};
+              if (isstrongseverity($status{severity})) {
+                   $output = q(<em class="severity">).$status{severity}.q(</em>);
+              }
+              $output;
+             };</span>
+<span>{@{$status{tags_array}}?q(Tags: ).html_escape(join(q(, ),@{$status{tags_array}})).';':''}</span>
+{my $output = '';
+ if (@{$status{mergedwith_array}}) {
+    $output .= q(<span>Merged with ).join(qq(,\n),bug_links(bug=>$status{mergedwith_array})).qq(;</span>\n);
+ }
+ $output;
+}
+{my $output = '';
+ if (@{$status{found_versions}} or @{$status{fixed_versions}}) {
+    $output .= '<a href="'.
+	  version_url(package => $status{package},
+		      found   => $status{found_versions},
+		      fixed   => $status{fixed_versions},
+		     ).'") ';
+ }
+ if (@{$status{found_versions}}) {
+    $output .= q(<span>Found in );
+    $output .= (@{$status{found_versions}} == 1) ? 'version ' : 'versions ';
+    $output .= join(qq(, ),map {html_escape($_);} @{$status{found_versions}}).qq(;</span>\n);
+ }
+ if (@{$status{fixed_versions}}) {
+    $output .= q(<span>Fixed in );
+    $output .= (@{$status{fixed_versions}} == 1) ? 'version ' : 'versions ';
+    $output .= join(qq(, ),map {html_escape($_);} @{$status{fixed_versions}}).qq(;</span>\n);
+ }
+ if (@{$status{found_versions}} or @{$status{fixed_versions}}) {
+    $output .= qq(</a>);
+ }
+ $output;
+}
+{ my $output = '';
+  if (length($status{done})) {
+     $output .= q(<span><strong>Done:</strong> ).html_escape($status{done}).q(;</span> )
+  }
+  $output;
+}
+{ my $output = '';
+  if (@{$status{blockedby_array}}) {
+     $output .= q(<span>Fix blocked by ).
+        join(q(, ),
+         map {bug_links(bug=>$_->{bug_num}).q(: ).html_escape($_->{subject})}
+         @{$status{blockedby_array}}).q(;</span> )
+  }
+  if (@{$status{blocks_array}}) {
+     $output .= q(<span>Blocking fix for ).
+        join(q(, ),
+         map {bug_links(bug=>$_->{bug_num}).q(: ).html_escape($_->{subject})}
+         @{$status{blocks_array}}).q(;</span> )
+  }
+  $output;
+}{ my $output = '';
+ my ($days_last,$eng_last) = secs_to_english(time - $status{log_modified});
+ my ($days,$eng) = secs_to_english(time - $status{date});
+
+ if ($days >= 7) {
+   my $font = "";
+   my $efont = "";
+   $font = "em" if ($days > 30);
+   $font = "strong" if ($days > 60);
+   $efont = "</$font>" if ($font);
+   $font = "<$font>" if ($font);
+
+   $output .= "<span>${font}Filed $eng ago$efont;</span>\n";
+ }
+ if ($days_last > 7) {
+   my $font = "";
+   my $efont = "";
+   $font = "em" if ($days_last > 30);
+   $font = "strong" if ($days_last > 60);
+   $efont = "</$font>" if ($font);
+   $font = "<$font>" if ($font);
+
+   $output .= "<span>${font}Modified $eng_last ago$efont;</span>\n";
+ }
+ $output;
+ }{ my $output = '';
+  if (exists $status{archived} and $status{archived}) {
+     $output .= q(<span>Bug is archived. No further changes may be made.<span> )
+  }
+  $output}</div>
+</div>

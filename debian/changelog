@@ -1,219 +1,222 @@
 debbugs (2.4.2) UNRELEASED; urgency=low
 
-  * Anthony Towns:
-    - Add "package" command to service (control@) to limit the bugs that
-      the following commands apply to.
+  [ Anthony Towns ]
+  * Add "package" command to service (control@) to limit the bugs that
+    the following commands apply to.
 
-  * Colin Watson:
-    - Add (slightly) fancy CGI decoding of message/* MIME types.
-    - CGI scripts now support multiple maintainers for a single package.
-    - Add support for an X-Debbugs-No-Ack: mail header to suppress
-      acknowledgements.
-    - Document how to deliver mail to debbugs via procmail and SpamAssassin.
-    - Implement new .status format that's extensible and easier to read; it
-      now lives in .summary rather than .status. Use debbugs-upgradestatus
-      to convert existing bug databases.
-    - Implement bug ownership, with new 'owner' and 'noowner' commands and
-      Owner: pseudo-header (closes: #133453).
-    - Install Debian configuration in the binary package's examples
-      directory (closes: #222118).
-    - New standalone SpamAssassin queue runner, spamscan.
-    - Allow # prefix on bug numbers in 'merge' command.
-    - Fix some ordering issues in old-style package pages and summaries.
-    - Add X-$gProject-PR-Message: headers to all mails sent by service.
-    - debbugsconfig creates required directories in $gSpoolDir
-      (closes: #222077).
-    - Decode RFC1522 mail headers for display in the web interface.
-      bugreport.cgi and pkgreport.cgi now output UTF-8.
-    - Properly support multiple submitter addresses on a single bug.
-    - Add a number of extra htmlsanit() calls to prevent cross-site
-      scripting attacks.
+  [ Colin Watson ]
+  * Add (slightly) fancy CGI decoding of message/* MIME types.
+  * CGI scripts now support multiple maintainers for a single package.
+  * Add support for an X-Debbugs-No-Ack: mail header to suppress
+    acknowledgements.
+  * Document how to deliver mail to debbugs via procmail and SpamAssassin.
+  * Implement new .status format that's extensible and easier to read; it
+    now lives in .summary rather than .status. Use debbugs-upgradestatus
+    to convert existing bug databases.
+  * Implement bug ownership, with new 'owner' and 'noowner' commands and
+    Owner: pseudo-header (closes: #133453).
+  * Install Debian configuration in the binary package's examples
+    directory (closes: #222118).
+  * New standalone SpamAssassin queue runner, spamscan.
+  * Allow # prefix on bug numbers in 'merge' command.
+  * Fix some ordering issues in old-style package pages and summaries.
+  * Add X-$gProject-PR-Message: headers to all mails sent by service.
+  * debbugsconfig creates required directories in $gSpoolDir
+    (closes: #222077).
+  * Decode RFC1522 mail headers for display in the web interface.
+    bugreport.cgi and pkgreport.cgi now output UTF-8.
+  * Properly support multiple submitter addresses on a single bug.
+  * Add a number of extra htmlsanit() calls to prevent cross-site
+    scripting attacks.
 
-  * Adam Heath:
-    - Rewrite filtering in cgi's common.pl, to make it completely generic.
-      Filtering can now work against any field.
-    - Rewrite grouping logic in cgi's common.pl, to make it completely
-      generic.  There is now no longer 2 nested loops, to do the grouping.
-      This makes adding new grouping levels simpler for the future.
-    - Add in a Table of Contents to pkgreport.cgi.
-    - Display how long until a resolved bug will be archived in
-      pkgreport.cgi.
-    - Add user-agent detection.  This currently doesn't change anything,
-      however.
-    - Add options show_list_(head|foot)er.
+  [ Adam Heath ]
+  * Rewrite filtering in cgi's common.pl, to make it completely generic.
+    Filtering can now work against any field.
+  * Rewrite grouping logic in cgi's common.pl, to make it completely
+    generic.  There is now no longer 2 nested loops, to do the grouping.
+    This makes adding new grouping levels simpler for the future.
+  * Add in a Table of Contents to pkgreport.cgi.
+  * Display how long until a resolved bug will be archived in
+    pkgreport.cgi.
+  * Add user-agent detection.  This currently doesn't change anything,
+    however.
+  * Add options show_list_(head|foot)er.
 
-  * Don Armstrong:
-
-    - Don't remove the maintainer address if the message was sent by the
-      maintainer and we're submitting to maintonly (closes: #140061)
-    - Use uri_escape to escape URI's before sending them back out so the
-      name of the file doesn't munge the query string. [#301606 pt. 1]
-    - call decode_rfc1522 on the filename returned so that encoded
-      filenames get decoded to something "reasonable." (closes: #301606)
-    - We now require URI::Escape
-    - Added apache.conf to examples, which is a sample apache
-      configuration file which implements the rewrite rules that are
-      currently used on bugs.debian.org. (closes: #222264)
-    - Change spamscan.in to work with SA 3.0; This is an incompatible
-      change with SA 2.6, and as such, we now Suggests: spamassassin 
-      (>=3.0) (closes: #290501)
-    - Update MTA to exim4 (closes: #228597) and add instructions on using
-      exim 4 (thanks to Marc Haber) (closes: #248335)
-    - Added per bug subscription support to debbugs, which relies on an
-      external MLM to actually deal with the requests; currently works with
-      eoc and sends messages to bugnum\@$gListDomain. (closes: #34071)
-    - Change bugreport.cgi to use Debbugs::Log and greately simplify the
-      process of outputing the bug log.
-    - All RFC1522 subject lines are decoded, both in the html information
-      and the message headers. All messages are converted to UTF-8 whereever
-      possible; all bugreport.cgi pages are now completely in UTF-8 to the
-      degree possible using Encode.pm (closes: #46848,#238984)
-    - Add a convert_to_utf8 function to Debbugs::Mime to make the above
-      possible; abstracts functionality that was already present in the
-      decode_rfc1522 fucntionality.
-    - Individual messages can now be downloaded from each bug report
-      (closes: #95373)
-    - Uninteresting headers are now hidden by default, can be renabled
-      with &trim=no (closes: #188561)
-    - Fix postfix instructions in README.mail (thanks to Jeff Teunissen)
-      (closes: #134166)
-    - Display old severity when changing severity (closes: #196947)
-    - All messages that originate from the BTS and either go to .log files
-      or out to users are now properly RFC1522 encoded. (closes: #306068)
-    - Add links to cloned bugs (closes: #217960) and forwarded records
-      that look like urls in the html records output by bugreport.cgi.
-    - Things that look like urls in message bodies are now linked
-      (closes: #168962)
-    - Add Debbugs::Mail module that has two important functions:
-      send_mail_message and encode_headers. All mail handling in service.in
-      and process.in now uses send_mail_message to send mail messages which
-      tries as hard as possible to send a message; if it fails, only
-      warnings are returned. This fixes bad addresses causing sendmail to
-      exit and destroying the bug log. (closes: #191306)
-    - Add rudimentary Test::More modules for testing Debbugs::Mime and
-      Debbugs::Mail.
-    - Allow X-debbugs-* to be set in pseudo headers. (closes: #179340)
-    - Obey X-Debbugs-No-Ack in control@ messages. (closes: #201825)
-    - Allow forwarded: and owner to be set at submit@ time.
-      (closes:#128320)
-    - Fix example rewrite rules to allow for #1234 and foo+bar@baz.com
-      (closes: #321925)
-    - Output proper charset for attachments (closes: #335813)
-    - Use MIME encodings to attach messages in close and done.
-      (closes: #136654)
-    - Add a forcemerge command to service.in to allow forcibly merging
-      bugs which are in the same package. (closes: #286792)
-    - Make all packages lowercase to support packages with uppercase
-      names, even though that's insane. (closes: #67067)
-    - Change acknowledged to close (closes: #61341) and indicate who
-      actually closed the bug (closes: #355968, #132274)
-    - Fix the documentation of clone to indicate that you need at least
-      one newID (closes: #276747)
-    - Use create_mime_message to send all of the mails which may contain
-      UTF8 material. (closes: #364026)
-    - Add links to Closes: text for closed bugs. (closes: #320986)
-    - Add X-$gProject-PR-Source: line (closes: #219230)
-    - Use the %cats data structure properly in pkgreport.cgi
-      (closes: #367514)  
-    - Document nnn.*@foobar addresses (closes: #188670)
-    - Support cloned bugs in control blocking (closes: #337329)
-    - Indicate which bugs are blocked after blocking (closes: #367496)
-    - Obey package for usertags (closes: #376528)
-    - Add link to subscribe to a bug (closes: #353260)
-    - Don't lc owner or forwarded at submit time (closes: #288384)
-    - Explain how to close bugs in the ack message (closes: #37605)
-    - Make the moreinfo ack more general (closes: #70810)
-    - Use RFC compliant dates in headers (closes: #362935)
-    - Add SOAP support (closes: #377520) Thanks to Raphael Hertzog.
-    - Split forwarded on commas for linking (closes: #367813,#473272)
-    - Don't display duplicate bugs (closes: #348116)
-    - Display links to archived bugs for all searches (closes: #53710)
-    - Link to blocked bugs in the bugreport.cgi output (closes: #326077)
-    - Don't ask for more bugs if there is no maintainer (closes: #355190)
-    - Stop refering to developers on the index page (closes: #355786)
-    - Change control@ stop regex and documentation to match eachother
-      (closes: #366093)
-    - Make it obvious when commands to control have failed
-      (closes: #344184)
-    - Fix javascript error in pkgreport.cgi (closes: #346043)
-    - When a bug can't be found in control@; indicate to user that it may
-      be archived. (closes: #153536)
-    - my_url in pkgreport.cgi now returns the complete url (closes: #378566)
-    - Document precisely how forwarded works (closes: #228049)
-    - Dissallow forwarded being set to a $gEmailDomain address
-      (closes: #397486)
-    - Fix broken sorting by usertags by forcing numeric (closes: #395027)
-    - Add support for hiding useless messages; thanks to Sune Vuorela.
-      (closes: #406020)
-    - Fix arrayrefs leaking into the myurl function (closes: #397344)
-    - List bugs being blocked (closes: #356680)
-    - Fix multiple submitters for a single bug in the index
-      (closes: #402362)
-    - Marking a bug as fixed now overrides a found at that exact version
-      (closes: #395865)
-    - When searching by source package, include the source package itself
-      in the list of packages to search for, even if there is no binary
-      package called that. (closes: #414825)
-    - Add link from singlemsg page to main page; remove useless links
-      (closes: #404806)
-    - Support usertagging cloned bugs (closes: #375697)
-    - List previous/new title when retitling, and show date of control
-      actions (closes: #127354)
-    - Add searching by owner (closes: #345407)
-    - Accept colon after package in control mails (closes: #319720)
-    - Make e-mail addresses case insensitive for searching
-      (closes: #89569)
-    - pkgindex.cgi limits its output with pagination (closes: #23018)
-    - lc submitter address for comparsion in pkgreport.cgi
-      (closes: #415628)
-    - Add quotes around retitle'd titles (closes: #419202)
-    - Don't automatically make categories hidden (closes: #415932)
-    - Don't duplicate ordering (closes: #415931)
-    - Make file locking portable (closes: #293277)
-    - Allow the package pages to be optional (closes: #234362)
-    - Fix package link code and link both packages (closes: #419553)
-    - Save leading space when we unmime (closes: #416321)
-    - Make the version regex correct (closes: #425614)
-    - Indicate the selected user (closes: #422934)
-    - Use source package for usertags where possible (closes: #415933)
-    - Add PR-Package header for control messages (closes: #414023)
-    - Fix double leading spaces of format=flowed messages
-      (closes: #428056)
-    - Don't doubly select users
-    - Implement versioning aware archiving support (closes: #339141)
-    - Split out packages so that you don't have to install the mail stuff
-      unless you want it.
-    - Only mail duplicated recipients once (closes: #172635)
-    - Indicate date of last activity (closes: #207065)
-    - Reorder title (closes: #265267)
-    - Reopen bugs when a bug is found with a version greater than any
-      fixed version (closes: #365352)
-    - Allow ordering bugs by last action (closes: #318898)
-    - Add notfixed/notfound commands (closes: #389634)
-    - Fix soapy insanity (closes: #422062)
-    - Add script to split index.db by severities (closes: #422062)
-    - Add bugspam.cgi with confirm string (closes: #348225)
-    - Allow selecting both archived and unarchived bugs (closes: #320175)
-    - Support intersecting sets of bugs (closes: #164421)
-    - Allow selecting the newest N bugs (closes: #84681)
-    - Add anchor links to specific messages (closes: #431450)
-    - Add missing newline after indicating what the user is (closes: #432466)
-    - Handle src/binary packages with the same name (but different src
-      packages) correctly. (closes: #435926)
-    - Make sendmail binary location configurable, and use flock instead of
-      fcntl. (closes: #260791)
-    - Make notfound/notfixed log verbiage more clear (closes: #434953)
-    - Verify submitter is a valid email according to RFC822
-      (closes: #182419)
-    - Indicate what message number a message is (closes: #462653,#454248)
-    - Fix casing of versions (closes: #441022)
-    - Output last-modified in bugreport.cgi (closes: #459709)
-    - Fix various html syntax errors in pkgreport.cgi (closes: #462322)
-    - Make search case insensitive (closes: #448861)
-    - Add the ability to return source/package mapping
-      (closes: #465332,#458822)
-    - Deal properly with \r line endings (closes: #467190)
-    - Distinguish between reports and followups (closes: #459866)
+  [ Don Armstrong ]
+  * Don't remove the maintainer address if the message was sent by the
+    maintainer and we're submitting to maintonly (closes: #140061)
+  * Use uri_escape to escape URI's before sending them back out so the
+    name of the file doesn't munge the query string. [#301606 pt. 1]
+  * call decode_rfc1522 on the filename returned so that encoded
+    filenames get decoded to something "reasonable." (closes: #301606)
+  * We now require URI::Escape
+  * Added apache.conf to examples, which is a sample apache
+    configuration file which implements the rewrite rules that are
+    currently used on bugs.debian.org. (closes: #222264)
+  * Change spamscan.in to work with SA 3.0; This is an incompatible
+    change with SA 2.6, and as such, we now Suggests: spamassassin 
+    (>=3.0) (closes: #290501)
+  * Update MTA to exim4 (closes: #228597) and add instructions on using
+    exim 4 (thanks to Marc Haber) (closes: #248335)
+  * Added per bug subscription support to debbugs, which relies on an
+    external MLM to actually deal with the requests; currently works with
+    eoc and sends messages to bugnum\@$gListDomain. (closes: #34071)
+  * Change bugreport.cgi to use Debbugs::Log and greately simplify the
+    process of outputing the bug log.
+  * All RFC1522 subject lines are decoded, both in the html information
+    and the message headers. All messages are converted to UTF-8 whereever
+    possible; all bugreport.cgi pages are now completely in UTF-8 to the
+    degree possible using Encode.pm (closes: #46848,#238984)
+  * Add a convert_to_utf8 function to Debbugs::Mime to make the above
+    possible; abstracts functionality that was already present in the
+    decode_rfc1522 fucntionality.
+  * Individual messages can now be downloaded from each bug report
+    (closes: #95373)
+  * Uninteresting headers are now hidden by default, can be renabled
+    with &trim=no (closes: #188561)
+  * Fix postfix instructions in README.mail (thanks to Jeff Teunissen)
+    (closes: #134166)
+  * Display old severity when changing severity (closes: #196947)
+  * All messages that originate from the BTS and either go to .log files
+    or out to users are now properly RFC1522 encoded. (closes: #306068)
+  * Add links to cloned bugs (closes: #217960) and forwarded records
+    that look like urls in the html records output by bugreport.cgi.
+  * Things that look like urls in message bodies are now linked
+    (closes: #168962)
+  * Add Debbugs::Mail module that has two important functions:
+    send_mail_message and encode_headers. All mail handling in service.in
+    and process.in now uses send_mail_message to send mail messages which
+    tries as hard as possible to send a message; if it fails, only
+    warnings are returned. This fixes bad addresses causing sendmail to
+    exit and destroying the bug log. (closes: #191306)
+  * Add rudimentary Test::More modules for testing Debbugs::Mime and
+    Debbugs::Mail.
+  * Allow X-debbugs-* to be set in pseudo headers. (closes: #179340)
+  * Obey X-Debbugs-No-Ack in control@ messages. (closes: #201825)
+  * Allow forwarded: and owner to be set at submit@ time.
+    (closes:#128320)
+  * Fix example rewrite rules to allow for #1234 and foo+bar@baz.com
+    (closes: #321925)
+  * Output proper charset for attachments (closes: #335813)
+  * Use MIME encodings to attach messages in close and done.
+    (closes: #136654)
+  * Add a forcemerge command to service.in to allow forcibly merging
+    bugs which are in the same package. (closes: #286792)
+  * Make all packages lowercase to support packages with uppercase
+    names, even though that's insane. (closes: #67067)
+  * Change acknowledged to close (closes: #61341) and indicate who
+    actually closed the bug (closes: #355968, #132274)
+  * Fix the documentation of clone to indicate that you need at least
+    one newID (closes: #276747)
+  * Use create_mime_message to send all of the mails which may contain
+    UTF8 material. (closes: #364026)
+  * Add links to Closes: text for closed bugs. (closes: #320986)
+  * Add X-$gProject-PR-Source: line (closes: #219230)
+  * Use the %cats data structure properly in pkgreport.cgi
+    (closes: #367514)  
+  * Document nnn.*@foobar addresses (closes: #188670)
+  * Support cloned bugs in control blocking (closes: #337329)
+  * Indicate which bugs are blocked after blocking (closes: #367496)
+  * Obey package for usertags (closes: #376528)
+  * Add link to subscribe to a bug (closes: #353260)
+  * Don't lc owner or forwarded at submit time (closes: #288384)
+  * Explain how to close bugs in the ack message (closes: #37605)
+  * Make the moreinfo ack more general (closes: #70810)
+  * Use RFC compliant dates in headers (closes: #362935)
+  * Add SOAP support (closes: #377520) Thanks to Raphael Hertzog.
+  * Split forwarded on commas for linking (closes: #367813,#473272)
+  * Don't display duplicate bugs (closes: #348116)
+  * Display links to archived bugs for all searches (closes: #53710)
+  * Link to blocked bugs in the bugreport.cgi output (closes: #326077)
+  * Don't ask for more bugs if there is no maintainer (closes: #355190)
+  * Stop refering to developers on the index page (closes: #355786)
+  * Change control@ stop regex and documentation to match eachother
+    (closes: #366093)
+  * Make it obvious when commands to control have failed
+    (closes: #344184)
+  * Fix javascript error in pkgreport.cgi (closes: #346043)
+  * When a bug can't be found in control@; indicate to user that it may
+    be archived. (closes: #153536)
+  * my_url in pkgreport.cgi now returns the complete url (closes: #378566)
+  * Document precisely how forwarded works (closes: #228049)
+  * Dissallow forwarded being set to a $gEmailDomain address
+    (closes: #397486)
+  * Fix broken sorting by usertags by forcing numeric (closes: #395027)
+  * Add support for hiding useless messages; thanks to Sune Vuorela.
+    (closes: #406020)
+  * Fix arrayrefs leaking into the myurl function (closes: #397344)
+  * List bugs being blocked (closes: #356680)
+  * Fix multiple submitters for a single bug in the index
+    (closes: #402362)
+  * Marking a bug as fixed now overrides a found at that exact version
+    (closes: #395865)
+  * When searching by source package, include the source package itself
+    in the list of packages to search for, even if there is no binary
+    package called that. (closes: #414825)
+  * Add link from singlemsg page to main page; remove useless links
+    (closes: #404806)
+  * Support usertagging cloned bugs (closes: #375697)
+  * List previous/new title when retitling, and show date of control
+    actions (closes: #127354)
+  * Add searching by owner (closes: #345407)
+  * Accept colon after package in control mails (closes: #319720)
+  * Make e-mail addresses case insensitive for searching
+    (closes: #89569)
+  * pkgindex.cgi limits its output with pagination (closes: #23018)
+  * lc submitter address for comparsion in pkgreport.cgi
+    (closes: #415628)
+  * Add quotes around retitle'd titles (closes: #419202)
+  * Don't automatically make categories hidden (closes: #415932)
+  * Don't duplicate ordering (closes: #415931)
+  * Make file locking portable (closes: #293277)
+  * Allow the package pages to be optional (closes: #234362)
+  * Fix package link code and link both packages (closes: #419553)
+  * Save leading space when we unmime (closes: #416321)
+  * Make the version regex correct (closes: #425614)
+  * Indicate the selected user (closes: #422934)
+  * Use source package for usertags where possible (closes: #415933)
+  * Add PR-Package header for control messages (closes: #414023)
+  * Fix double leading spaces of format=flowed messages
+    (closes: #428056)
+  * Don't doubly select users
+  * Implement versioning aware archiving support (closes: #339141)
+  * Split out packages so that you don't have to install the mail stuff
+    unless you want it.
+  * Only mail duplicated recipients once (closes: #172635)
+  * Indicate date of last activity (closes: #207065)
+  * Reorder title (closes: #265267)
+  * Reopen bugs when a bug is found with a version greater than any
+    fixed version (closes: #365352)
+  * Allow ordering bugs by last action (closes: #318898)
+  * Add notfixed/notfound commands (closes: #389634)
+  * Fix soapy insanity (closes: #422062)
+  * Add script to split index.db by severities (closes: #422062)
+  * Add bugspam.cgi with confirm string (closes: #348225)
+  * Allow selecting both archived and unarchived bugs (closes: #320175)
+  * Support intersecting sets of bugs (closes: #164421)
+  * Allow selecting the newest N bugs (closes: #84681)
+  * Add anchor links to specific messages (closes: #431450)
+  * Add missing newline after indicating what the user is (closes: #432466)
+  * Handle src/binary packages with the same name (but different src
+    packages) correctly. (closes: #435926)
+  * Make sendmail binary location configurable, and use flock instead of
+    fcntl. (closes: #260791)
+  * Make notfound/notfixed log verbiage more clear (closes: #434953)
+  * Verify submitter is a valid email according to RFC822
+    (closes: #182419)
+  * Indicate what message number a message is (closes: #462653,#454248)
+  * Fix casing of versions (closes: #441022)
+  * Output last-modified in bugreport.cgi (closes: #459709)
+  * Fix various html syntax errors in pkgreport.cgi (closes: #462322)
+  * Make search case insensitive (closes: #448861)
+  * Add the ability to return source/package mapping
+    (closes: #465332,#458822)
+  * Deal properly with \r line endings (closes: #467190)
+  * Distinguish between reports and followups (closes: #459866)
+  * Allow for the archiving of bugs in removed packages (closes: #475622)
+  * Add Text::Template based templating system (closes: #36814)
+  * Add new uservalue feature to Debbugs::User
+  * Don't serialize things as date/time in soap (closes: #484789)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

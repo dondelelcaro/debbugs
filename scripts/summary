@@ -14,7 +14,7 @@ chdir("$gSpoolDir") || die "chdir spool: $!\n";
 
 $mode= shift(@ARGV);
 
-open(M,"$gMaintainerFile") || &quit("open $gMaintainerFile: $!");
+open(M,"$gMaintainerFile") || die "open $gMaintainerFile: $!";
 while (<M>) {
     m/^(\S+)\s+(\S.*\S)\s*$/ || warn "$_ ?";
     ($a,$b)=($1,$2);
@@ -22,7 +22,7 @@ while (<M>) {
     $maintainer{$a}= $b;
 }
 close(M);
-open(M,"$gMaintainerFileOverride") || &quit("open $gMaintainerFileOverride: $!");
+open(M,"$gMaintainerFileOverride") || die "open $gMaintainerFileOverride: $!";
 while (<M>) {
     m/^(\S+)\s+(\S.*\S)\s*$/ || warn "$_ ?";
     ($a,$b)=($1,$2);
@@ -32,9 +32,9 @@ while (<M>) {
 close(M);
 		
 
-defined($startdate= time) || &quit("failed to get time: $!");
+defined($startdate= time) || die "failed to get time: $!";
 
-opendir(DIR,"db-h") || &quit("opendir db-h: $!\n");
+opendir(DIR,"db-h") || die "opendir db-h: $!\n";
 @dirs = grep(s,^,db-h/,, grep(m/^\d+$/,readdir(DIR)));
 closedir(DIR);
 foreach my $dir (@dirs) {
@@ -71,7 +71,7 @@ while (length($f=shift(@list))) {
         }
         printf("%6d %-10.10s %-30.30s %-.31s\n", $f, $data->{package},
                (length($data->{keywords}) ? $data->{keywords}.'/' : '').$data->{subject},
-               $data->{maintainer}) || &quit("output undone: $!");
+               $data->{maintainer}) || die "output undone: $!";
     } elsif ($mode eq 'bymaint') {
         &unfilelock;
         next if length($data->{done}) || length($data->{forwarded});
@@ -81,19 +81,19 @@ while (length($f=shift(@list))) {
         $maintainercnt{$data->{maintainer}}++;
         $maintainerlist{$data->{maintainer}}.= " $f";
     } else {
-        &quit("badmode $mode");
+        die "badmode $mode";
     }
 }
 
 if ($mode eq 'bymaint') {
-    print("$head\n") || &quit("output head: $!");
+    print("$head\n") || die "output head: $!";
     for $m (sort { $maintainercnt{$a} <=> $maintainercnt{$b} } keys %maintainercnt) {
         printf("\n%s (%d $gBugs):\n",$m,$maintainercnt{$m})
-            || &quit("output mainthead: $!");
+            || die "output mainthead: $!";
         for $i (sort { $string{$a} cmp $string{$b} } split(/ /,$maintainerlist{$m})) {
-            printf($string{$i}) || &quit("output 1bymaint: $!");
+            printf($string{$i}) || die "output 1bymaint: $!";
         }
     }
 }
 
-close(STDOUT) || &quit("close stdout: $!");
+close(STDOUT) || die "close stdout: $!";

@@ -42,7 +42,7 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
     elsif ($ARGV[0] =~ m/^-lastrun\=([0-9.]+)$/) { $lastrun= $1; undef $stampfile; }
     elsif ($ARGV[0] =~ m/^-full$/) { undef $lastrun; undef $stampfile; }
     elsif ($ARGV[0] =~ m/^-stampfile\=(\S+)$/) { $stampfile= $1; }
-    else { &quit("bad usage"); }
+    else { die "bad usage"; }
     shift;
 }
 
@@ -51,7 +51,7 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
 $wwwbase= shift(@ARGV);
 
 #get starting time
-defined($startdate= time) || &quit("failed to get time: $!");
+defined($startdate= time) || die "failed to get time: $!";
 
 $|=1;
 
@@ -76,9 +76,9 @@ if (defined($lastrun) && -M "db-h" > $lastrun)
 }
 
 #parse maintainer file
-open(MM,"$gMaintainerFile") || &quit("open $gMaintainerFile: $!");
+open(MM,"$gMaintainerFile") || die "open $gMaintainerFile: $!";
 while(<MM>) 
-{	m/^(\S+)\s+(\S.*\S)\s*$/ || &quit("$gMaintainerFile: \`$_'");
+{	m/^(\S+)\s+(\S.*\S)\s*$/ || die "$gMaintainerFile: \`$_'";
     ($a,$b)=($1,$2);
     $a =~ y/A-Z/a-z/;
     $maintainer{$a}= $b;
@@ -86,7 +86,7 @@ while(<MM>)
 close(MM);
 
 #load all database files
-opendir(D,'db-h') || &quit("opendir db-h: $!");
+opendir(D,'db-h') || die "opendir db-h: $!";
 @dirs = grep(s#^#db-h/#,grep(/^\d+$/,readdir(D)));
 closedir(D);
 foreach my $dir (@dirs) {
@@ -99,7 +99,7 @@ foreach my $dir (@dirs) {
 for $pending (qw(pending done forwarded)) 
 {	for $severity (@showseverities) 
 	{ 	eval "\$index${pending}${severity}= \$iiindex${pending}${severity}= ''; 1;"
-            or &quit("reset \$index${pending}${severity}: $@");
+            or die "reset \$index${pending}${severity}: $@";
     }
 }
 
@@ -233,24 +233,24 @@ for $f (@files)
     $indexadd .= "<!--/iid-->" if defined($iiref);
     $indexadd .= "\n";
     $estr= "\$index$indexpart = \$indexadd.\$index$indexpart; 1;";
-    eval($estr) || &quit("eval add to \$index$indexpart ($estr) failed: $@");
+    eval($estr) || die "eval add to \$index$indexpart ($estr) failed: $@";
 	#print STDERR ">$estr|$indexadd<\n";
     $indexadd= "<!--ii $iiref-->\n" if defined($iiref);
     eval("\$iiindex$indexpart = \$indexadd.\$iiindex$indexpart; 1;") ||
-        &quit("eval add to \$iiindex$indexpart failed: $@");
+        die "eval add to \$iiindex$indexpart failed: $@";
     if (defined($tmaint)) 
 	{ 	$countpermaint{$tmaint} += length($data->{done}) ? 0 : length($data->{forwarded}) ? 0 : 1;
         eval("\$permaint${indexpart}{\$tmaint} .= \$indexadd; 1;") ||
-            &quit("eval add to \$permaint${indexpart}{\$tmaint} failed: $@");
+            die "eval add to \$permaint${indexpart}{\$tmaint} failed: $@";
     }
     if (defined($tpack)) 
 	{ 	$countperpack{$tpack} += length($data->{done}) ? 0 : length($data->{forwarded}) ? 0 : 1;
         eval("\$perpack${indexpart}{\$tpack} .= \$indexadd; 1;") ||
-            &quit("eval add to \$perpack${indexpart}{\$tpack} failed: $@");
+            die "eval add to \$perpack${indexpart}{\$tpack} failed: $@";
     }
     if ($preserveonly) { &preserve("$linkto.html"); &preserve("$linkto-b.html"); &unfilelock; next; }
     my $hash = get_hashname($ref);
-    open(L,"db-h/$hash/$ref.log") || &quit("open db-h/$hash/$ref.log: $!");
+    open(L,"db-h/$hash/$ref.log") || die "open db-h/$hash/$ref.log: $!";
     $log='';
     $boring=''; $xmessage= 0;
     $normstate= 'kill-init';
@@ -258,19 +258,19 @@ for $f (@files)
     while(<L>) {
         if (m/^\07$/) {
             $normstate eq 'kill-init' || $normstate eq 'kill-end' ||
-                &quit("$ref ^G in state $normstate");
+                die "$ref ^G in state $normstate";
             $normstate= 'incoming-recv';
         } elsif (m/^\01$/) {
             $normstate eq 'kill-init' || $normstate eq 'kill-end' ||
-                &quit("$ref ^A in state $normstate");
+                die "$ref ^A in state $normstate";
             $normstate= 'autocheck';
         } elsif (m/^\02$/) {
             $normstate eq 'kill-init' || $normstate eq 'kill-end' ||
-                &quit("$ref ^B in state $normstate");
+                die "$ref ^B in state $normstate";
             $normstate= 'recips';
         } elsif (m/^\03$/) {
             $normstate eq 'go' || $normstate eq 'go-nox' || $normstate eq 'html' ||
-                &quit("$ref ^C in state $normstate");
+                die "$ref ^C in state $normstate";
             $this .= "</pre>\n" if $normstate eq 'go' || $normstate eq 'go-nox';
             if ($normstate eq 'html') {
                 $xmessage++;
@@ -286,17 +286,17 @@ for $f (@files)
             $suppressnext= $normstate eq 'html';
             $normstate= 'kill-end';
         } elsif (m/^\05$/) {
-            $normstate eq 'kill-body' || &quit("^E in state $normstate");
+            $normstate eq 'kill-body' || die "^E in state $normstate";
             $this .= "<pre>\n";
             $normstate= 'go';
         } elsif (m/^\06$/) {
             $normstate eq 'kill-init' || $normstate eq 'kill-end' ||
-                &quit("$ref ^F in state $normstate");
+                die "$ref ^F in state $normstate";
             $normstate= 'html'; $this= '';
         } elsif ($normstate eq 'incoming-recv') {
             $pl= $_; $pl =~ s/\n+$//;
             m/^Received: \(at (\S+)\) by (\S+)\;/ ||
-                &quit("bad line \`$pl' in state incoming-recv");
+                die "bad line \`$pl' in state incoming-recv";
             $this = "<h2>Message received at ".&sani("$1\@$2").":</h2><br>\n".
                     "<pre>\n".
                     "$_";
@@ -326,10 +326,10 @@ for $f (@files)
             $normstate= 'go-nox';
             $this .= "<pre>\n";
         } else {
-            &quit("$ref state $normstate line \`$_'");
+            die "$ref state $normstate line \`$_'";
         }
     }
-    &quit("$ref state $normstate at end") unless $normstate eq 'kill-end';
+    die "$ref state $normstate at end" unless $normstate eq 'kill-end';
     close(L);
     if (length($boring)) {
         &file("$linkto-b.html",'non',
@@ -415,7 +415,7 @@ sub makeindex ($$$) {
             $estr= "\$value= \\${varprefix}${pending}${severity}${varsuffix}; 1;";
 #print STDERR $estr;
             eval $estr
-                or &quit("eval get \$${varprefix}${pending}${severity} failed: $@");
+                or die "eval get \$${varprefix}${pending}${severity} failed: $@";
 #print STDERR ">$$value<\n";
             next unless length($$value);
             $text.= "<hr>\n<h2>".&heading($pending,$severity).":</h2>\n".
@@ -456,7 +456,7 @@ contents WWW page</A>.
 for $pending (qw(pending forwarded done)) {
     for $severity (@showseverities) {
         eval "\$value= \\\$iiindex${pending}${severity}; 1;"
-            or &quit("eval get \$iiindex${pendingtype}${severity} failed: $@");
+            or die "eval get \$iiindex${pendingtype}${severity} failed: $@";
         $value= \$nobugs_html if !length($$value);
         $headstring= &heading($pending,$severity);
         &file("si/$pending$severity.html",'ref',
@@ -591,7 +591,7 @@ for $k (map {$_->[0] }
       $tail_html."</body></html>\n");
 
 open(P,"$gPseudoDescFile") ||
-    &quit("$gPseudoDescFile: $!");
+    die "$gPseudoDescFile: $!";
 $ppd=''; while(<P>) { s/\s*\n$//; $ppd.= &sani($_)."\n"; } close(P);
 &file('ix/pseudopackages.html','non',
       $gPseudoIndex.
@@ -620,7 +620,7 @@ sub file {
 		print "preserve $name\n";
 		return;
 	    }
-            defined($c= open(P,"-|")) or &quit("pipe/fork for diff: $!");
+            defined($c= open(P,"-|")) or die "pipe/fork for diff: $!";
             if (!$c) {
                 open(Q,"|diff -e $cmppath -") or die "pipe/fork II for diff: $!\n";
                 print Q $file or die "write orig to diff: $!\n";
@@ -635,12 +635,12 @@ sub file {
             }
             $v= (split(/\n/,$difftxt));
             print "diff $v $ii $name\n${difftxt}thatdiff $name\n"
-                or &quit("stdout (diff): $!");
+                or die "stdout (diff): $!";
             return;
         }
     } 
     $v= (split(/\n/,$file));
-    print "file $v $ii $name\n${file}thatfile $name\n" or &quit("stdout: $!");
+    print "file $v $ii $name\n${file}thatfile $name\n" or die "stdout: $!";
 }
 
 sub preserve {
