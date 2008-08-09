@@ -78,13 +78,14 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (archive => [qw(bug_archive bug_unarchive),
+     %EXPORT_TAGS = (owner   => [qw(owner)],
+		     archive => [qw(bug_archive bug_unarchive),
 				],
 		     log     => [qw(append_action_to_log),
 				],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(archive log));
+     Exporter::export_ok_tags(keys %EXPORT_TAGS);
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -118,6 +119,9 @@ my %common_options = (debug       => {type => SCALARREF|HANDLE,
 		      affected_bugs => {type => HASHREF,
 					optional => 1,
 				       },
+		      affected_packages => {type => HASHREF,
+					    optional => 1,
+					   },
 		      recipients    => {type => HASHREF,
 					default => {},
 				       },
@@ -174,6 +178,7 @@ my %append_action_options =
 #     my ($debug,$transcript) = __handle_debug_transcript(%param);
 #     my (@data);
 #     ($locks, @data) = lock_read_all_merged_bugs($param{bug});
+#     __handle_affected_packages(data => \@data,%param);
 #     add_recipients(data => \@data,
 # 		     recipients => $param{recipients}
 # 		    );
@@ -205,59 +210,67 @@ no length, indicates that a bug is not owned by anyone.
 =cut
 
 sub owner {
-    my %param = validate_with(params => \@_,
-			      spec   => {bug => {type   => SCALAR,
-						 regex  => qr/^\d+$/,
-						},
-					 owner => {type => SCALAR|UNDEF,
-						  },
-					 %common_options,
-					 %append_action_options,
-					},
-			     );
-    our $locks = 0;
-    $locks = 0;
-    local $SIG{__DIE__} = sub {
-	if ($locks) {
-	    for (1..$locks) { unfilelock(); }
-	    $locks = 0;
-	}
-    };
-    my ($debug,$transcript) = __handle_debug_transcript(%param);
-    my (@data);
-    ($locks, @data) = lock_read_all_merged_bugs($param{bug});
-    @data and defined $data[0] or die "No bug found for $param{bug}";
-    add_recipients(data => \@data,
-		   recipients => $param{recipients}
-		  );
-    my $action = '';
-    for my $data (@data) {
-	if (not defined $param{owner} or not length $param{owner}) {
-	    $param{owner} = '';
-	    $action = "Removed annotation that $gBug was owned by " .
-		"$data->{owner}.";
-	}
-	else {
-	    if (length $data->{owner}) {
-		$action = "Owner changed from $data->{owner} to $param{owner}.";
-	    }
-	    else {
-		$action = "Owner recorded as $param{owner}."
-	    }
-	}
-	$data->{owner} = $param{owner};
-	append_action_to_log(bug => $data->{bug_num},
-			     get_lock => 0,
-			     __return_append_to_log_options(
-				 %param,
-				 action => $action,
-				),
-			    )
-	    if not exists $param{append_log} or $param{append_log};
-    }
-    if ($locks) {
-	for (1..$locks) { unfilelock(); }
-    }
+     my %param = validate_with(params => \@_,
+			       spec   => {bug => {type   => SCALAR,
+						  regex  => qr/^\d+$/,
+						 },
+					  owner => {type => SCALAR|UNDEF,
+						   },
+					  %common_options,
+					  %append_action_options,
+					 },
+			      );
+     our $locks = 0;
+     $locks = 0;
+     local $SIG{__DIE__} = sub {
+	  if ($locks) {
+	       for (1..$locks) { unfilelock(); }
+	       $locks = 0;
+	  }
+     };
+     my ($debug,$transcript) = __handle_debug_transcript(%param);
+     my (@data);
+     ($locks, @data) = lock_read_all_merged_bugs($param{bug});
+     __handle_affected_packages(data => \@data,%param);
+     @data and defined $data[0] or die "No bug found for $param{bug}";
+     add_recipients(data => \@data,
+		    recipients => $param{recipients}
+		   );
+     my $action = '';
+     for my $data (@data) {
+	  print {$debug} "Going to change owner to '".(defined $param{owner}?$param{owner}:'(going to unset it)')."'\n";
+	  print {$debug} "Owner is currently '$data->{owner}' for bug $data->{bug_num}\n";
+	  if (not defined $param{owner} or not length $param{owner}) {
+	       $param{owner} = '';
+	       $action = "Removed annotation that $config{bug} was owned by " .
+		    "$data->{owner}.";
+	  }
+	  else {
+	       if (length $data->{owner}) {
+		    $action = "Owner changed from $data->{owner} to $param{owner}.";
+	       }
+	       else {
+		    $action = "Owner recorded as $param{owner}."
+	       }
+	  }
+	  $data->{owner} = $param{owner};
+	  append_action_to_log(bug => $data->{bug_num},
+			       get_lock => 0,
+	       __return_append_to_log_options(
+					      %param,
+					      action => $action,
+					     ),
+			      )
+	       if not exists $param{append_log} or $param{append_log};
+	  writebug($data->{bug_num},$data);
+	  print {$transcript} "$action\n";
+	  add_recipients(data => $data,
+			 recipients => $param{recipients},
+			);
+     }
+     if ($locks) {
+	  for (1..$locks) { unfilelock(); }
+     }
 }
 
 
@@ -339,6 +352,7 @@ sub bug_archive {
      print {$debug} "$param{bug} considering\n";
      my (@data);
      ($locks, @data) = lock_read_all_merged_bugs($param{bug});
+     __handle_affected_packages(data => \@data,%param);
      print {$debug} "$param{bug} read $locks\n";
      @data and defined $data[0] or die "No bug found for $param{bug}";
      print {$debug} "$param{bug} read done\n";
@@ -440,6 +454,7 @@ sub bug_unarchive {
      print {$debug} "$param{bug} considering\n";
      my @data = ();
      ($locks, @data) = lock_read_all_merged_bugs($param{bug},'archive');
+     __handle_affected_packages(data => \@data,%param);
      print {$debug} "$param{bug} read $locks\n";
      if (not @data or not defined $data[0]) {
 	 print {$transcript} "No bug found for $param{bug}\n";
@@ -553,6 +568,29 @@ sub append_action_to_log{
 
 
 =head1 PRIVATE FUNCTIONS
+
+=head2 __handle_affected_packages
+
+     __handle_affected_packages(affected_packages => {},
+                                data => [@data],
+                               )
+
+
+
+=cut
+
+sub __handle_affected_packages{
+     my %param = validate_with(params => \@_,
+			       spec   => {%common_options,
+					  data => {type => ARRAYREF|HASHREF
+						  },
+					 },
+			       allow_extra => 1,
+			      );
+     for my $data (make_list($param{data})) {
+	  $param{affected_packages}{$data->{package}} = 1;
+     }
+}
 
 =head2 __handle_debug_transcript
 
