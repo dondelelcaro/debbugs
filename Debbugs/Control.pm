@@ -78,7 +78,8 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (owner   => [qw(owner)],
+     %EXPORT_TAGS = (summary => [qw(summary)],
+		     owner   => [qw(owner)],
 		     archive => [qw(bug_archive bug_unarchive),
 				],
 		     log     => [qw(append_action_to_log),
@@ -183,6 +184,168 @@ my %append_action_options =
 # 		     recipients => $param{recipients}
 # 		    );
 # }
+
+=head1 SUMMARY FUNCTIONS
+
+=head2 summary
+
+     eval {
+	    summary(bug          => $ref,
+		    transcript   => $transcript,
+		    ($dl > 0 ? (debug => $transcript):()),
+		    requester    => $header{from},
+		    request_addr => $controlrequestaddr,
+		    message      => \@log,
+                    affected_packages => \%affected_packages,
+		    recipients   => \%recipients,
+		    summary      => undef,
+                   );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to mark $ref with summary foo: $@";
+	}
+
+Handles all setting of summary fields
+
+If summary is undef, unsets the summary
+
+If summary is 0, sets the summary to the first paragraph contained in
+the message passed.
+
+If summary is numeric, sets the summary to the message specified.
+
+
+=cut
+
+
+sub summary {
+    my %param = validate_with(params => \@_,
+			      spec   => {bug => {type   => SCALAR,
+						 regex  => qr/^\d+$/,
+						},
+					 # specific options here
+					 summary => {type => SCALAR|UNDEF,
+						     default => 0,
+						    },
+					 %common_options,
+					 %append_action_options,
+					},
+			     );
+    croak "summary must be numeric or undef" if
+	 defined $param{summary} and not $param{summary} =~ /^\d+$/;
+    our $locks = 0;
+    $locks = 0;
+    local $SIG{__DIE__} = sub {
+	if ($locks) {
+	    for (1..$locks) { unfilelock(); }
+	    $locks = 0;
+	}
+    };
+    my ($debug,$transcript) = __handle_debug_transcript(%param);
+    my (@data);
+    ($locks, @data) = lock_read_all_merged_bugs($param{bug});
+    __handle_affected_packages(data => \@data,%param);
+    add_recipients(data => \@data,
+		   recipients => $param{recipients}
+		  );
+    # figure out the log that we're going to use
+    my $summary = '';
+    my $summary_msg = '';
+    my $action = '';
+    if (not defined $param{summary}) {
+	 # do nothing
+	 print {$debug} "Removing summary fields";
+	 $action = 'Removed summary';
+    }
+    else {
+	 my $log = [];
+	 my @records = Debbugs::Log::read_log_records(bug_num => $param{bug});
+	 if ($param{summary} == 0) {
+	      $log = $param{log};
+	      $summary_msg = @records + 1;
+	 }
+	 else {
+	      if (($param{summary} - 1 ) > $#records) {
+		   die "Message number '$param{summary}' exceeds the maximum message '$#records'";
+	      }
+	      my $record = $records[($param{summary} - 1 )];
+	      if ($record->{type} !~ /incoming-recv|recips/) {
+		   die "Message number '$param{summary}' is a invalid message type '$record->{type}'";
+	      }
+	      $summary_msg = $param{summary};
+	      $log = [$record->{text}];
+	 }
+	 my $p_o = Debbugs::MIME::parse(join('',@{$log}));
+	 my $body = $p_o->{body};
+	 my $in_pseudoheaders = 0;
+	 my $paragraph = '';
+	 # walk through body until we get non-blank lines
+	 for my $line (@{$body}) {
+	      if ($line =~ /^\s*$/) {
+		   if (length $paragraph) {
+			last;
+		   }
+		   $in_pseudoheaders = 0;
+		   next;
+	      }
+	      # skip a paragraph if it looks like it's control or
+	      # pseudo-headers
+	      if ($line =~ m{^\s*(?:(?:Package|Source|Version)\:| #pseudo headers
+				 (?:package|(?:no|)owner|severity|tag|summary| #control
+				      reopen|close|(?:not|)(?:fixed|found)|clone|
+				      (?:force|)merge|user(?:category|tag|)
+				 )
+			    )\s+\S}x) {
+		   if (not length $paragraph) {
+			print {$debug} "Found control/pseudo-headers and skiping them\n";
+			$in_pseudoheaders = 1;
+			next;
+		   }
+	      }
+	      next if $in_pseudoheaders;
+	      $paragraph .= $line;
+	 }
+	 print {$debug} "Summary is going to be '$paragraph'\n";
+	 $summary = $paragraph;
+	 $summary =~ s/[\n\r]//g;
+	 if (not length $summary) {
+	      die "Unable to find summary message to use";
+	 }
+    }
+    for my $data (@data) {
+	 print {$debug} "Going to change summary";
+	 if (length $summary) {
+	      if (length $data->{summary}) {
+		   $action = "Summary replaced with message bug $param{bug} message $summary_msg";
+	      }
+	      else {
+		   $action = "Summary recorded from message bug $param{bug} message $summary_msg";
+	      }
+	 }
+	 $data->{summary} = $summary;
+	 append_action_to_log(bug => $data->{bug_num},
+			      get_lock => 0,
+			      __return_append_to_log_options(
+							     %param,
+							     action => $action,
+							    ),
+			     )
+	       if not exists $param{append_log} or $param{append_log};
+	  writebug($data->{bug_num},$data);
+	  print {$transcript} "$action\n";
+	  add_recipients(data => $data,
+			 recipients => $param{recipients},
+			);
+     }
+     if ($locks) {
+	  for (1..$locks) { unfilelock(); }
+     }
+
+}
+
+
+
 
 =head1 OWNER FUNCTIONS
 

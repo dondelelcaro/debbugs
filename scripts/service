@@ -29,7 +29,7 @@ use Debbugs::Versions::Dpkg;
 use Debbugs::Status qw(splitpackages);
 
 use Debbugs::CGI qw(html_escape);
-use Debbugs::Control qw(:archive :log :owner);
+use Debbugs::Control qw(:all);
 use Debbugs::Log qw(:misc);
 use Debbugs::Text qw(:templates);
 
@@ -1184,9 +1184,32 @@ END
 		%limit_pkgs = ();
 		print {$transcript} "Not ignoring any bugs.\n\n";
 	}
+    } elsif (m/^summary\s+\#?(-?\d+)\s*(\d+|)\s*$/i) {
+	$ok++;
+        $ref = $1;
+	my $summary_msg = length($2)?$2:undef;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	$bug_affected{$ref} = 1;
+	eval {
+	    summary(bug          => $ref,
+		    transcript   => $transcript,
+		    ($dl > 0 ? (debug => $transcript):()),
+		    requester    => $header{from},
+		    request_addr => $controlrequestaddr,
+		    message      => \@log,
+		    recipients   => \%recipients,
+		    summary      => $summary_msg,
+		   );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to give $ref a summary: $@";
+	}
+
     } elsif (m/^owner\s+\#?(-?\d+)\s+((?:\S.*\S)|\!)\s*$/i) {
 	$ok++;
         $ref = $1;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	my $newowner = $2;
 	if ($newowner eq '!') {
 	    $newowner = $replyto;
@@ -1203,9 +1226,14 @@ END
 		  owner        => $newowner,
 		 );
 	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to mark $ref as having an owner: $@";
+	}
     } elsif (m/^noowner\s+\#?(-?\d+)\s*$/i) {
         $ok++;
         $ref = $1;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	$bug_affected{$ref} = 1;
 	eval {
 	    owner(bug          => $ref,
@@ -1225,6 +1253,7 @@ END
     } elsif (m/^unarchive\s+#?(\d+)$/i) {
 	 $ok++;
 	 $ref = $1;
+	 $ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	 $bug_affected{$ref} = 1;
 	 eval {
 	      bug_unarchive(bug        => $ref,
@@ -1243,6 +1272,7 @@ END
     } elsif (m/^archive\s+#?(\d+)$/i) {
 	 $ok++;
 	 $ref = $1;
+	 $ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	 $bug_affected{$ref} = 1;
 	 eval {
 	      bug_archive(bug => $ref,
