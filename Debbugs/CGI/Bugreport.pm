@@ -171,12 +171,16 @@ sub display_entity {
 	    return;
 	}
 	elsif (not exists $param{att}) {
-	     my @dlargs = ($ref, msg=>$xmessage, att=>$#$attachments);
+	     my @dlargs = (msg=>$xmessage, att=>$#$attachments);
 	     push @dlargs, (filename=>$filename) if $filename ne '';
 	     my $printname = $filename;
 	     $printname = 'Message part ' . ($#$attachments + 1) if $filename eq '';
-	     print {$param{output}} '<pre class="mime">[<a href="' . html_escape(bug_url(@dlargs)) . qq{">$printname</a> } .
-		  "($type, $disposition)]</pre>\n";
+	     print {$param{output}} '<pre class="mime">[<a href="' .
+		  html_escape(bug_links(bug => $ref,
+					links_only => 1,
+					options => {@dlargs})
+			     ) . qq{">$printname</a> } .
+				  "($type, $disposition)]</pre>\n";
 	}
     }
 
@@ -373,8 +377,13 @@ sub handle_record{
 	  my ($received,$hostname) = $record->{text} =~ m/Received: \(at (\S+)\) by (\S+)\;/;
 	  $output .= qq|<hr><p class="msgreceived"><a name="$msg_number"></a><a name="msg$msg_number"></a><a href="#$msg_number">Message #$msg_number</a> received at |.
 	       html_escape("$received\@$hostname") .
-		    q| (<a href="| . html_escape(bug_url($bug_number, msg=>$msg_number)) . '">full text</a>'.
-			 q|, <a href="| . html_escape(bug_url($bug_number, msg=>$msg_number,mbox=>'yes')) .'">mbox</a>)'.":</p>\n";
+		    q| (<a href="| . html_escape(bug_links(bug => $bug_number, links_only => 1, options => {msg=>$msg_number})) . '">full text</a>'.
+			 q|, <a href="| . html_escape(bug_links(bug => $bug_number,
+								links_only => 1,
+								options => {msg=>$msg_number,
+									    mbox=>'yes'}
+							       )
+						     ) .'">mbox</a>)'.":</p>\n";
 	  $output .= handle_email_message($record->{text},
 					  ref     => $bug_number,
 					  msg_num => $msg_number,
