@@ -43,7 +43,7 @@ BEGIN{
 				qw(getmaintainers_reverse),
 				qw(getpseudodesc),
 			       ],
-		     misc   => [qw(make_list globify_scalar)],
+		     misc   => [qw(make_list globify_scalar english_join)],
 		     date   => [qw(secs_to_english)],
 		     quit   => [qw(quit)],
 		     lock   => [qw(filelock unfilelock lockpid)],
@@ -475,6 +475,27 @@ b)],[qw(c d)] returns qw(a b c d);
 
 sub make_list {
      return map {(ref($_) eq 'ARRAY')?@{$_}:$_} @_;
+}
+
+
+=head2 english_join
+
+     print english_join(', ',' and ',@list);
+
+Joins list properly to make an english phrase.
+
+
+
+=cut
+
+sub english_join {
+     my ($normal,$last,@list) = @_;
+     if (@list <= 1) {
+	  return @list?$list[0]:();
+     }
+     my $ret = $last . pop(@list);
+     $ret = join($normal,@list) . $ret;
+     return $ret;
 }
 
 
