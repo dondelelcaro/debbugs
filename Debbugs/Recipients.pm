@@ -305,7 +305,7 @@ sub determine_recipients {
      for (qw(to cc bcc)) {
 	  if ($param{$_}) {
 	       if (exists $final_recipients{$_}) {
-		    return @{$final_recipients{$_}|[]};
+		    return @{$final_recipients{$_}||[]};
 	       }
 	       return ();
 	  }
