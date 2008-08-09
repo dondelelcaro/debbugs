@@ -169,7 +169,7 @@ sub new
 				spec   => {bug_num => {type => SCALAR,
 						       optional => 1,
 						      },
-					   logfh   => {type => SCALAR,
+					   logfh   => {type => HANDLE,
 						       optional => 1,
 						      },
 					   log_name => {type => SCALAR,
@@ -299,14 +299,36 @@ Takes a .log filehandle as input, and returns an array of all records in
 that file. Throws exceptions using die(), so you may want to wrap this in an
 eval().
 
+Uses exactly the same options as Debbugs::Log::new
+
 =cut
 
-sub read_log_records (*)
+sub read_log_records
 {
-    my $logfh = shift;
+    my %param;
+    if (@_ == 1) {
+	 ($param{logfh}) = @_;
+    }
+    else {
+	 %param = validate_with(params => \@_,
+				spec   => {bug_num => {type => SCALAR,
+						       optional => 1,
+						      },
+					   logfh   => {type => HANDLE,
+						       optional => 1,
+						      },
+					   log_name => {type => SCALAR,
+							optional => 1,
+						       },
+					  }
+			       );
+    }
+    if (grep({exists $param{$_} and defined $param{$_}} qw(bug_num logfh log_name)) ne 1) {
+	 croak "Exactly one of bug_num, logfh, or log_name must be passed and must be defined";
+    }
 
     my @records;
-    my $reader = Debbugs::Log->new($logfh);
+    my $reader = Debbugs::Log->new(%param);
     while (defined(my $record = $reader->read_record())) {
 	push @records, $record;
     }
