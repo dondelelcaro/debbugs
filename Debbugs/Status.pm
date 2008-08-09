@@ -56,7 +56,9 @@ BEGIN{
      %EXPORT_TAGS = (status => [qw(splitpackages get_bug_status buggy bug_archiveable),
 				qw(isstrongseverity bug_presence),
 			       ],
-		     read   => [qw(readbug read_bug lockreadbug lockreadbugmerge)],
+		     read   => [qw(readbug read_bug lockreadbug lockreadbugmerge),
+				qw(lock_read_all_merged_bugs),
+			       ],
 		     write  => [qw(writebug makestatus unlockwritebug)],
 		     versions => [qw(addfoundversions addfixedversions),
 				  qw(removefoundversions removefixedversions)
