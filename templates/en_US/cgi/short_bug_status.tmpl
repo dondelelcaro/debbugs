@@ -48,8 +48,7 @@
      $output = q(<span>Owned by: ).package_links(owner=>$status{owner}).q(;</span>);
   }
   $output;
-}
-<span>Severity: {my $output = $status{severity};
+}<span>Severity: {my $output = $status{severity};
               if (isstrongseverity($status{severity})) {
                    $output = q(<em class="severity">).$status{severity}.q(</em>);
               }
@@ -61,8 +60,7 @@
     $output .= q(<span>Merged with ).join(qq(,\n),bug_links(bug=>$status{mergedwith_array})).qq(;</span>\n);
  }
  $output;
-}
-{my $output = '';
+}{my $output = '';
  if (@{$status{found_versions}} or @{$status{fixed_versions}}) {
     $output .= '<a href="'.
 	  version_url(package => $status{package},
@@ -84,14 +82,21 @@
     $output .= qq(</a>);
  }
  $output;
-}
-{ my $output = '';
+}{ my $output = '';
+ if (length($status{forwarded})) {
+    $output = "<span><strong>Forwarded</strong> to " . 
+              join(', ',
+		   map {maybelink($_)}
+	            split /\,\s+/,$status{forwarded}
+	          ).";</span>\n";
+ }
+ $output;
+}{ my $output = '';
   if (length($status{done})) {
      $output .= q(<span><strong>Done:</strong> ).html_escape($status{done}).q(;</span> )
   }
   $output;
-}
-{ my $output = '';
+}{ my $output = '';
   if (@{$status{blockedby_array}}) {
      $output .= q(<span>Fix blocked by ).
         join(q(, ),
