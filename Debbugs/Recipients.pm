@@ -46,6 +46,8 @@ use Params::Validate qw(:types validate_with);
 use Debbugs::Common qw(:misc :util);
 use Debbugs::Status qw(splitpackages isstrongseverity);
 
+use Debbugs::Packages qw(binarytosource);
+
 use Debbugs::Mail qw(get_addresses);
 
 use Carp;
