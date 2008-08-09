@@ -248,6 +248,7 @@ sub short_bug_status_html {
 					   '&version_url'   => \&Debbugs::CGI::version_url,
 					   '&secs_to_english' => \&Debbugs::Common::secs_to_english,
 					   '&strftime'      => \&POSIX::strftime,
+					   '&maybelink'     => \&Debbugs::CGI::maybelink,
 					  },
 			    );
 
@@ -402,6 +403,9 @@ sub pkg_htmlizebugs {
 						      },
 					  options  => {type => HASHREF,
 						       default => {},
+						      },
+					  dist     => {type => SCALAR,
+						       optional => 1,
 						      },
 					 }
 			      );
