@@ -493,7 +493,7 @@ sub summary {
 		   }
 	      }
 	      next if $in_pseudoheaders;
-	      $paragraph .= $line;
+	      $paragraph .= $line ."\n";
 	 }
 	 print {$debug} "Summary is going to be '$paragraph'\n";
 	 $summary = $paragraph;
