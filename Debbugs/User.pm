@@ -318,7 +318,7 @@ sub write {
 sub read_usertags {
     my ($usertags,$email) = @_;
 
-    carp "read_usertags is deprecated";
+#    carp "read_usertags is deprecated";
     my $user = get_user($email);
     for my $tag (keys %{$user->{"tags"}}) {
         $usertags->{$tag} = [] unless defined $usertags->{$tag};
@@ -339,7 +339,7 @@ them out.
 sub write_usertags {
     my ($usertags,$email) = @_;
 
-    carp "write_usertags is deprecated";
+#    carp "write_usertags is deprecated";
     my $user = Debbugs::User->new($email,1); # locked
     $user->{"tags"} = { %{$usertags} };
     $user->write();
