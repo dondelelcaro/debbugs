@@ -17,7 +17,7 @@ use Params::Validate qw(:types validate_with);
 
 use Debbugs::Common qw(:util :quit :misc :lock);
 
-use Debbugs::Status qw(:read :status :write :versions);
+use Debbugs::Status qw(:read :status :write :versions :hook);
 
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
 use Debbugs::Mail qw(send_mail_message);
