@@ -208,6 +208,8 @@ my %append_action_options =
 #     print {$transcript} __bug_info(@data);
 #     add_recipients(data => \@data,
 # 		     recipients => $param{recipients}
+#  		     debug      => $debug,
+#  		     transcript => $transcript,
 # 		    );
 #     for my $data (@data) {
 # 	 append_action_to_log(bug => $data->{bug_num},
@@ -222,6 +224,8 @@ my %append_action_options =
 # 	  print {$transcript} "$action\n";
 # 	  add_recipients(data => $data,
 # 			 recipients => $param{recipients},
+#  		         debug      => $debug,
+#  		         transcript => $transcript,
 # 			);
 #      }
 #      if ($locks) {
@@ -297,7 +301,9 @@ sub affects {
     __handle_affected_packages(data => \@data,%param);
     print {$transcript} __bug_info(@data);
     add_recipients(data => \@data,
-		   recipients => $param{recipients}
+		   recipients => $param{recipients},
+		   debug      => $debug,
+		   transcript => $transcript,
 		  );
     my $action = 'Did not alter affected packages';
     for my $data (@data) {
@@ -350,6 +356,8 @@ sub affects {
 	  print {$transcript} "$action\n";
 	  add_recipients(data => $data,
 			 recipients => $param{recipients},
+			 debug      => $debug,
+			 transcript => $transcript,
 			);
      }
      if ($locks) {
@@ -423,6 +431,8 @@ sub summary {
     print {$transcript} __bug_info(@data);
     add_recipients(data => \@data,
 		   recipients => $param{recipients}
+		   debug      => $debug,
+		   transcript => $transcript,
 		  );
     # figure out the log that we're going to use
     my $summary = '';
@@ -511,6 +521,8 @@ sub summary {
 	  print {$transcript} "$action\n";
 	  add_recipients(data => $data,
 			 recipients => $param{recipients},
+			 debug      => $debug,
+			 transcript => $transcript,
 			);
      }
      if ($locks) {
@@ -574,6 +586,8 @@ sub owner {
      @data and defined $data[0] or die "No bug found for $param{bug}";
      add_recipients(data => \@data,
 		    recipients => $param{recipients}
+		    debug      => $debug,
+		    transcript => $transcript,
 		   );
      my $action = '';
      for my $data (@data) {
@@ -605,6 +619,8 @@ sub owner {
 	  print {$transcript} "$action\n";
 	  add_recipients(data => $data,
 			 recipients => $param{recipients},
+			 debug      => $debug,
+			 transcript => $transcript,
 			);
      }
      if ($locks) {
@@ -705,6 +721,8 @@ sub bug_archive {
      }
      add_recipients(recipients => $param{recipients},
 		    data => \@data,
+		    debug      => $debug,
+		    transcript => $transcript,
 		   );
      my @bugs = map {$_->{bug_num}} @data;
      print {$debug} "$param{bug} bugs ".join(' ',@bugs)."\n";
@@ -840,6 +858,8 @@ sub bug_unarchive {
 	  writebug($bug,$newdata);
 	  add_recipients(recipients => $param{recipients},
 			 data       => $newdata,
+			 debug      => $debug,
+			 transcript => $transcript,
 			);
      }
      print {$debug} "$param{bug} unlocking $locks\n";
