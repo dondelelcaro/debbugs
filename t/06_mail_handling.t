@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 84;
+use Test::More tests => 96;
 
 use warnings;
 use strict;
@@ -206,6 +206,27 @@ my @control_commands =
 		       status_key => 'owner',
 		       status_value => '',
 		      },
+      clone        => {command => 'clone',
+		       value   => '-1',
+		       status_key => 'package',
+		       status_value => 'foo',
+		       bug          => '2',
+		      },
+      merge        => {command => 'merge',
+		       value   => '1 2',
+		       status_key => 'mergedwith',
+		       status_value => '2',
+		      },
+      unmerge      => {command => 'unmerge',
+		       value   => '',
+		       status_key => 'mergedwith',
+		       status_value => '',
+		      },
+      forcemerge   => {command => 'forcemerge',
+		       value   => '2',
+		       status_key => 'mergedwith',
+		       status_value => '2',
+		      },
       summary      => {command => 'summary',
 		       value   => '5',
 		       status_key => 'summary',
@@ -271,10 +292,15 @@ EOF
 	'control@bugs.something'. "$command message was parsed without errors");
      # now we need to check to make sure that the control message actually did anything
      my $status;
-     $status = read_bug(bug=>1,
+     $status = read_bug(exists $control_command->{bug}?(bug => $control_command->{bug}):(bug=>1),
 			exists $control_command->{location}?(location => $control_command->{location}):(),
 		       );
-     is_deeply($status->{$control_command->{status_key}},$control_command->{status_value},"bug 1 $command")
+     is_deeply($status->{$control_command->{status_key}},
+	       $control_command->{status_value},
+	       "bug " .
+	       (exists $control_command->{bug}?$control_command->{bug}:1).
+	       " $command"
+	      )
 	  or fail(Dumper($status));
 }
 
@@ -286,6 +312,7 @@ send_message(to => 'control@bugs.something',
 			 Subject => "Munging a bug with unarchivearchive",
 			],
 	     body => <<'EOF') or fail 'message to control@bugs.something failed';
+debug 10
 archive 1
 unarchive 1
 submitter 1 bar@baz.com
