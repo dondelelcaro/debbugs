@@ -491,7 +491,7 @@ Joins list properly to make an english phrase.
 sub english_join {
      my ($normal,$last,@list) = @_;
      if (@list <= 1) {
-	  return @list?$list[0]:();
+	  return @list?$list[0]:'';
      }
      my $ret = $last . pop(@list);
      $ret = join($normal,@list) . $ret;
