@@ -235,8 +235,11 @@ sub short_bug_status_html {
 	       push @{$status{blocks_array}}, {bug_num => $b, subject => $s{subject}, status => \%s};
 	  }
      }
-
-
+     my $days = bug_archiveable(bug => $status{id},
+				status => \%status,
+				days_until => 1,
+			       );
+     $status{archive_days} = $days;
      return fill_in_template(template => 'cgi/short_bug_status',
 			     variables => {status => \%status,
 					   isstrongseverity => \&Debbugs::Status::isstrongseverity,
