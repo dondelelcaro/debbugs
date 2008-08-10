@@ -321,20 +321,24 @@ even if all of the others were read properly.
 
 sub lock_read_all_merged_bugs {
     my ($bug_num,$location) = @_;
+    my $locks = 0;
     my @data = (lockreadbug(@_));
     if (not @data and not defined $data[0]) {
-	return (0,undef);
+	return ($locks,undef);
     }
+    $locks++;
     if (not length $data[0]->{mergedwith}) {
-	return (1,@data);
+	return ($locks,@data);
     }
     unfilelock();
+    $locks--;
     filelock("$config{spool_dir}/lock/merge");
-    my $locks = 0;
+    $locks++;
     @data = (lockreadbug(@_));
     if (not @data and not defined $data[0]) {
 	unfilelock(); #for merge lock above
-	return (0,undef);
+	$locks--;
+	return ($locks,undef);
     }
     $locks++;
     my @bugs = split / /, $data[0]->{mergedwith};
@@ -355,15 +359,15 @@ sub lock_read_all_merged_bugs {
 	}
 	# perform a sanity check to make sure that the merged bugs are
 	# all merged with eachother
-	my $expectmerge= join(' ',grep($_ != $bug, sort { $a <=> $b } @bugs));
+	my $expectmerge= join(' ',grep {$_ != $bug } sort { $a <=> $b } (@bugs,$bug_num));
 	if ($newdata->{mergedwith} ne $expectmerge) {
 	    for (1..$locks) {
 		unfilelock();
 	    }
-	    die "Bug $bug_num differs from bug $bug: ($newdata->{mergedwith}) vs. ($expectmerge) (".join(' ',@bugs).")";
+	    die "Bug $bug_num differs from bug $bug: ($newdata->{bug_num}: $newdata->{mergedwith}) vs. ($expectmerge) (".join(' ',@bugs).")";
 	}
     }
-    return (2,@data);
+    return ($locks,@data);
 }
 
 

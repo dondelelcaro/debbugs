@@ -400,7 +400,7 @@ Wraps a line to a specific length by splitting at commas
 
 sub _wrap_to_length {
     my ($content,$line_length) = @_;
-    my $current_line_length;
+    my $current_line_length = 0;
     my $result = "";
     while ($content =~ m/^([^,]*,\s*)(.*)$/ || $content =~ m/^([^,]+)()$/) {
         my $current_word = $1;
