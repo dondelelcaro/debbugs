@@ -1466,12 +1466,12 @@ sub sendhelp {
 #sub unimplemented {
 #    print {$transcript} "Sorry, command $_[0] not yet implemented.\n\n";
 #}
-
+our %checkmatch_values;
 sub checkmatch {
     my ($string,$mvarname,$svarvalue,@newmergelist) = @_;
     my ($mvarvalue);
     if (@newmergelist) {
-        eval "\$mvarvalue= \$$mvarname";
+	$mvarvalue = $checkmatch_values{$mvarname};
         print {$transcript} "D| checkmatch \`$string' /$mvarname/$mvarvalue/$svarvalue/\n"
             if $dl;
         $mismatch .=
@@ -1482,7 +1482,7 @@ sub checkmatch {
     } else {
 	 print {$transcript} "D| setupmatch \`$string' /$mvarname/$svarvalue/\n"
 	      if $dl;
-        eval "\$$mvarname= \$svarvalue";
+	 $checkmatch_values{$mvarname} = $svarvalue;
     }
 }
 
