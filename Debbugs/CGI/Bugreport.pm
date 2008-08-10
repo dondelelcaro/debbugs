@@ -43,7 +43,7 @@ BEGIN{
 
      @EXPORT = ();
      %EXPORT_TAGS = ();
-     @EXPORT_OK = (qw(display_entities handle_record handle_email_message));
+     @EXPORT_OK = (qw(display_entity handle_record handle_email_message));
      Exporter::export_ok_tags(keys %EXPORT_TAGS);
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
@@ -216,7 +216,7 @@ sub display_entity {
 			   bug_num => $ref,
 			   outer => 1,
 			   msg_num => $xmessage,
-			   ouput => $param{output},
+			   output => $param{output},
 			   attachments => $attachments,
 			   terse => $param{terse},
 			   exists $param{msg}?(msg=>$param{msg}):(),
