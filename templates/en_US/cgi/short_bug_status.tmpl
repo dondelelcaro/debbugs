@@ -99,12 +99,12 @@
 }{ my $output = '';
    my $days = $status{archive_days};
    if ($days >= 0 and defined $status{location} and $status{location} ne 'archive') {
-       $output .= ";\n<strong>Can be archived" .
+       $output .= "<span><strong>Can be archived" .
           ( $days == 0 ? " today" : $days == 1 ? " in $days day" : " in $days days" ) .
-              "</strong>";
+              "</strong></span>;\n";
    }
    elsif (defined $status{location} and $status{location} eq 'archived') {
-       $output .= ";\n<strong>Archived.</strong>";
+       $output .= "<span><strong>Archived</strong></span>;\n";
    }
    $output;
 }{ my $output = '';
