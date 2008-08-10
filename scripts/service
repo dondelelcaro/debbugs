@@ -451,9 +451,11 @@ END
                 do {
 		   $affected_packages{$data->{package}} = 1;
                    add_recipients(data => $data,
-				   recipients => \%recipients,
-				   actions_taken => {done => 1},
-				  );
+				  recipients => \%recipients,
+				  actions_taken => {done => 1},
+				  transcript   => $transcript,
+				  ($dl > 0 ? (debug => $transcript):()),
+				 );
 		    $data->{done}= $replyto;
                     my @keywords= split ' ', $data->{keywords};
 		    my $extramessage = '';
@@ -509,13 +511,21 @@ END
             }
             do {
 		$affected_packages{$data->{package}} = 1;
-                add_recipients(data => $data, recipients => \%recipients);
+                add_recipients(data => $data,
+			       recipients => \%recipients,
+			       transcript   => $transcript,
+			       ($dl > 0 ? (debug => $transcript):()),
+			      );
                 $data->{package}= $newpackage;
                 $data->{found_versions}= [];
                 $data->{fixed_versions}= [];
                 # TODO: what if $newpackage is a source package?
                 addfoundversions($data, $data->{package}, $version, 'binary');
-                add_recipients(data => $data, recipients => \%recipients);
+                add_recipients(data => $data,
+			       recipients => \%recipients,
+			       transcript   => $transcript,
+			       ($dl > 0 ? (debug => $transcript):()),
+			      );
             } while (&getnextbug);
         }
     } elsif (m/^reopen\s+\#?(-?\d+)$/i ? ($noriginator='', 1) :
@@ -538,7 +548,11 @@ END
                         "$gBug reopened, originator set to $noriginator.";
                 do {
 		    $affected_packages{$data->{package}} = 1;
-                    add_recipients(data => $data, recipients => \%recipients);
+                    add_recipients(data => $data,
+				   recipients => \%recipients,
+				   transcript   => $transcript,
+				   ($dl > 0 ? (debug => $transcript):()),
+				  );
                     $data->{originator}= $noriginator eq '' ?  $data->{originator} : $noriginator;
                     $data->{fixed_versions}= [];
                     $data->{done}= '';
@@ -563,7 +577,11 @@ END
                         "$gBug reopened.";
                 do {
                     $affected_packages{$data->{package}} = 1;
-		    add_recipients(data => $data, recipients => \%recipients);
+		    add_recipients(data => $data,
+				   recipients => \%recipients,
+				   transcript   => $transcript,
+				   ($dl > 0 ? (debug => $transcript):()),
+				  );
                     # The 'done' field gets a bit weird with version
                     # tracking, because a bug may be closed by multiple
                     # people in different branches. Until we have something
@@ -603,7 +621,11 @@ END
             }
             do {
                 $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data, recipients => \%recipients);
+		add_recipients(data => $data,
+			       recipients => \%recipients,
+			       transcript   => $transcript,
+			       ($dl > 0 ? (debug => $transcript):()),
+			      );
                 removefoundversions($data, $data->{package}, $version, 'binary');
             } while (&getnextbug);
        }
@@ -621,7 +643,11 @@ END
 			    "$gBug reopened.";
                 do {
                     $affected_packages{$data->{package}} = 1;
-		    add_recipients(data => $data, recipients => \%recipients);
+		    add_recipients(data => $data,
+				   recipients => \%recipients,
+				   transcript   => $transcript,
+				   ($dl > 0 ? (debug => $transcript):()),
+				  );
                     addfixedversions($data, $data->{package}, $version, 'binary');
 	       } while (&getnextbug);
 	}
@@ -639,7 +665,11 @@ END
 			    "$gBug reopened.";
                 do {
                     $affected_packages{$data->{package}} = 1;
-		    add_recipients(data => $data, recipients => \%recipients);
+		    add_recipients(data => $data,
+				   recipients => \%recipients,
+				   transcript   => $transcript,
+				   ($dl > 0 ? (debug => $transcript):()),
+				  );
                     removefixedversions($data, $data->{package}, $version, 'binary');
 	       } while (&getnextbug);
 	}
@@ -660,7 +690,11 @@ END
             if (&checkpkglimit) {
                 &foundbug;
                 $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data, recipients => \%recipients);
+		add_recipients(data => $data,
+			       recipients => \%recipients,
+			       transcript   => $transcript,
+			       ($dl > 0 ? (debug => $transcript):()),
+			      );
                 $oldsubmitter= $data->{originator};
                 $data->{originator}= $newsubmitter;
                 $action= "Changed $gBug submitter from $oldsubmitter to $newsubmitter.";
@@ -724,6 +758,8 @@ END
 		add_recipients(data => $data,
 			       recipients => \%recipients,
 			       actions_taken => {forwarded => 1},
+			       transcript   => $transcript,
+			       ($dl > 0 ? (debug => $transcript):()),
 			      );
 		$data->{forwarded}= $whereto;
             } while (&getnextbug);
@@ -740,7 +776,11 @@ END
     $action= "Removed annotation that $gBug had been forwarded to $data->{forwarded}.";
                 do {
                     $affected_packages{$data->{package}} = 1;
-		    add_recipients(data => $data, recipients => \%recipients);
+		    add_recipients(data => $data,
+				   recipients => \%recipients.
+				   transcript   => $transcript,
+				   ($dl > 0 ? (debug => $transcript):()),
+				  );
                     $data->{forwarded}= '';
                 } while (&getnextbug);
             }
@@ -765,7 +805,11 @@ END
 	    $action= "Severity set to \`$newseverity' from \`$printseverity'";
 	    do {
                 $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data, recipients => \%recipients);
+		add_recipients(data => $data,
+			       recipients => \%recipients,
+			       transcript   => $transcript,
+			       ($dl > 0 ? (debug => $transcript):()),
+			      );
                 if (defined $gStrongList and isstrongseverity($newseverity)) {
                     addbcc("$gStrongList\@$gListDomain");
                 }
@@ -813,7 +857,11 @@ END
 	    }
 	    do {
                 $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data, recipients => \%recipients);
+		add_recipients(data => $data,
+			       recipients => \%recipients,
+			       transcript   => $transcript,
+			       ($dl > 0 ? (debug => $transcript):()),
+			      );
 	        $data->{keywords} = '' if ($addsub eq "set");
 		# Allow removing obsolete tags.
 		if ($addsub eq "sub") {
@@ -897,7 +945,11 @@ END
 	    my %addedblocks;
 	    do {
                 $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data, recipients => \%recipients);
+		add_recipients(data => $data,
+			       recipients => \%recipients,
+			       transcript   => $transcript,
+			       ($dl > 0 ? (debug => $transcript):()),
+			      );
 		my @oldblockerlist = split ' ', $data->{blockedby};
 	        $data->{blockedby} = '' if ($addsub eq "set");
 	        foreach my $b (@okayblockers) {
@@ -947,7 +999,11 @@ END
             if (&checkpkglimit) {
                 &foundbug;
                 $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data, recipients => \%recipients);
+		add_recipients(data => $data,
+			       recipients => \%recipients,
+			       transcript   => $transcript,
+			       ($dl > 0 ? (debug => $transcript):()),
+			      );
 		my $oldtitle = $data->{subject};
                 $data->{subject}= $newtitle;
                 $action= "Changed $gBug title to `$newtitle' from `$oldtitle'.";
@@ -979,7 +1035,11 @@ END
 		@bug_affected{@newmergelist} = 1 x @newmergelist;
                 do {
                     $affected_packages{$data->{package}} = 1;
-		    add_recipients(data => $data, recipients => \%recipients);
+		    add_recipients(data => $data,
+				   recipients => \%recipients,
+				   transcript   => $transcript,
+				   ($dl > 0 ? (debug => $transcript):()),
+				  );
 		    $data->{mergedwith}= ($ref == $discref) ? ''
                         : join(' ',grep($_ ne $ref,@newmergelist));
                 } while (&getnextbug);
@@ -1035,7 +1095,11 @@ END
 	    for $ref (@newmergelist) {
 		&getbug || die "huh ?  $gBug $ref disappeared during merge";
                 $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data, recipients => \%recipients);
+		add_recipients(data => $data,
+			       recipients => \%recipients,
+			       transcript   => $transcript,
+			       ($dl > 0 ? (debug => $transcript):()),
+			      );
 		@bug_affected{@newmergelist} = 1 x @newmergelist;
 		$data->{mergedwith}= join(' ',grep($_ != $ref,@newmergelist));
 		$data->{keywords}= join(' ', keys %tags);
@@ -1097,7 +1161,11 @@ END
 	    for $ref (@newmergelist) {
 		&getbug || die "huh ?  $gBug $ref disappeared during merge";
                 $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data, recipients => \%recipients);
+		add_recipients(data => $data,
+			       recipients => \%recipients,
+			       transcript   => $transcript,
+			       ($dl > 0 ? (debug => $transcript):()),
+			      );
 		@bug_affected{@newmergelist} = 1 x @newmergelist;
 		$data->{mergedwith}= join(' ',grep($_ != $ref,@newmergelist));
 		$data->{keywords}= join(' ', keys %tags);
