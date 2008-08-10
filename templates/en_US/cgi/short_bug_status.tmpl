@@ -1,6 +1,6 @@
 <div class="shortbugstatus">
   <a href="{html_escape(bug_links(bug=>$status{bug_num},links_only=>1))}"{length($status{done})?' style="text-decoration:line-through"':''}>#{html_escape($status{bug_num})}</a>
-  [<font face="fixed"><a href="javascript:extra_status_visible({html_escape($status{bug_num})})">{
+  [<font face="fixed"><span class="link" onclick="javascript:extra_status_visible({html_escape($status{bug_num})})">{
   my $output = qq(<span title="$status{severity}">);
   my $temp = $status{severity};
   $temp = substr $temp,0,1;
@@ -37,7 +37,7 @@
      $output .= qq(<span title="archived">♲</span>);
   }
   $output;
-  }</a></font>]
+  }</span></font>]
   [{package_links(package=>$status{package},options=>\%options,class=>"submitter")}]
   <a href="{html_escape(bug_links(bug=>$status{bug_num},links_only=>1))}">{html_escape($status{subject})}</a>
   <div id="extra_status_{html_escape($status{bug_num})}" class="shortbugstatusextra">
@@ -66,7 +66,7 @@
 	  version_url(package => $status{package},
 		      found   => $status{found_versions},
 		      fixed   => $status{fixed_versions},
-		     ).'") ';
+		     ).'"> ';
  }
  if (@{$status{found_versions}}) {
     $output .= q(<span>Found in );

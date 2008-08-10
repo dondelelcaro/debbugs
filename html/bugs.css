@@ -49,6 +49,17 @@ a:link:hover, a:visited:hover {
     color: #d81e1e;
 }
 
+.link span {
+    color: #1b56ce;
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.link span:hover {
+    color: #d81e1e;
+}
+
+
 a.submitter:link {
     color: #242424;
     font-family: sans-serif;
