@@ -29,7 +29,7 @@ use Debbugs::Versions::Dpkg;
 use Debbugs::Status qw(splitpackages);
 
 use Debbugs::CGI qw(html_escape);
-use Debbugs::Control qw(:archive :log :owner);
+use Debbugs::Control qw(:all);
 use Debbugs::Log qw(:misc);
 use Debbugs::Text qw(:templates);
 
@@ -1013,6 +1013,8 @@ END
 	    &checkmatch('blocked-by','m_blockedby',$data->{blockedby},@newmergelist);
 	    &checkmatch('done mark','m_done',length($data->{done}) ? 'done' : 'open',@newmergelist);
 	    &checkmatch('owner','m_owner',$data->{owner},@newmergelist);
+	    &checkmatch('summary','m_summary',$data->{summary},@newmergelist);
+	    &checkmatch('affects','m_affects',$data->{affects},@newmergelist);
 	    foreach my $t (split /\s+/, $data->{keywords}) { $tags{$t} = 1; }
 	    foreach my $f (@{$data->{found_versions}}) { $found{$f} = 1; }
 	    foreach my $f (@{$data->{fixed_versions}}) { $fixed{$f} = 1; }
@@ -1101,7 +1103,7 @@ END
 		$data->{keywords}= join(' ', keys %tags);
 		$data->{found_versions}= [sort keys %found];
 		$data->{fixed_versions}= [sort keys %fixed];
-		my @field_list = qw(forwarded package severity blocks blockedby owner done);
+		my @field_list = qw(forwarded package severity blocks blockedby owner done affects summary);
 		@{$data}{@field_list} = @{$master_bug_data}{@field_list};
 		&savebug;
 	    }
@@ -1184,9 +1186,57 @@ END
 		%limit_pkgs = ();
 		print {$transcript} "Not ignoring any bugs.\n\n";
 	}
+    } elsif (m/^affects?\s+\#?(-?\d+)(?:\s+((?:[=+-])?)\s*(\S.*)?)?\s*$/i) {
+	$ok++;
+        $ref = $1;
+	my $add_remove = $2 || '';
+	my $packages = $3 || '';
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	$bug_affected{$ref} = 1;
+	eval {
+	     affects(bug          => $ref,
+		     transcript   => $transcript,
+		     ($dl > 0 ? (debug => $transcript):()),
+		     requester    => $header{from},
+		     request_addr => $controlrequestaddr,
+		     message      => \@log,
+		     recipients   => \%recipients,
+		     packages     => [splitpackages($3)],
+		     ($add_remove eq '+'?(add => 1):()),
+		     ($add_remove eq '-'?(remove => 1):()),
+		    );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to give $ref a summary: $@";
+	}
+
+    } elsif (m/^summary\s+\#?(-?\d+)\s*(\d+|)\s*$/i) {
+	$ok++;
+        $ref = $1;
+	my $summary_msg = length($2)?$2:undef;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	$bug_affected{$ref} = 1;
+	eval {
+	    summary(bug          => $ref,
+		    transcript   => $transcript,
+		    ($dl > 0 ? (debug => $transcript):()),
+		    requester    => $header{from},
+		    request_addr => $controlrequestaddr,
+		    message      => \@log,
+		    recipients   => \%recipients,
+		    summary      => $summary_msg,
+		   );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to give $ref a summary: $@";
+	}
+
     } elsif (m/^owner\s+\#?(-?\d+)\s+((?:\S.*\S)|\!)\s*$/i) {
 	$ok++;
         $ref = $1;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	my $newowner = $2;
 	if ($newowner eq '!') {
 	    $newowner = $replyto;
@@ -1203,9 +1253,14 @@ END
 		  owner        => $newowner,
 		 );
 	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to mark $ref as having an owner: $@";
+	}
     } elsif (m/^noowner\s+\#?(-?\d+)\s*$/i) {
         $ok++;
         $ref = $1;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	$bug_affected{$ref} = 1;
 	eval {
 	    owner(bug          => $ref,
@@ -1225,6 +1280,7 @@ END
     } elsif (m/^unarchive\s+#?(\d+)$/i) {
 	 $ok++;
 	 $ref = $1;
+	 $ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	 $bug_affected{$ref} = 1;
 	 eval {
 	      bug_unarchive(bug        => $ref,
@@ -1243,6 +1299,7 @@ END
     } elsif (m/^archive\s+#?(\d+)$/i) {
 	 $ok++;
 	 $ref = $1;
+	 $ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	 $bug_affected{$ref} = 1;
 	 eval {
 	      bug_archive(bug => $ref,

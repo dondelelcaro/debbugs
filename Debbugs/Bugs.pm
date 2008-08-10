@@ -92,6 +92,8 @@ for limited regular expressions, and/or more complex expressions.
 
 =item correspondent -- address of someone who sent mail to the log
 
+=item affects -- bugs which affect this package
+
 =item dist -- distribution (I don't know about this one yet)
 
 =item bugs -- list of bugs to search within
@@ -182,6 +184,9 @@ sub get_bugs{
 					  correspondent => {type => SCALAR|ARRAYREF,
 							    optional => 1,
 							   },
+					  affects   => {type => SCALAR|ARRAYREF,
+							optional => 1,
+						       },
 					  function  => {type => CODEREF,
 							optional => 1,
 						       },
@@ -415,6 +420,9 @@ sub get_bugs_by_idx{
 					  correspondent => {type => SCALAR|ARRAYREF,
 							    optional => 1,
 							   },
+					  affects => {type => SCALAR|ARRAYREF,
+						      optional => 1,
+						     },
 					  usertags  => {type => HASHREF,
 							optional => 1,
 						       },
@@ -517,6 +525,9 @@ sub get_bugs_flatfile{
 					  correspondent => {type => SCALAR|ARRAYREF,
 							    optional => 1,
 							   },
+					  affects   => {type => SCALAR|ARRAYREF,
+							optional => 1,
+						       },
 # not yet supported
 # 					  dist      => {type => SCALAR|ARRAYREF,
 # 						        optional => 1,
@@ -566,9 +577,10 @@ sub get_bugs_flatfile{
 	  $bugs{$_} = 1 for make_list($param{bugs});
 	  $grep_bugs = 1;
      }
-     if (exists $param{owner} or exists $param{correspondent}) {
+     if (exists $param{owner} or exists $param{correspondent} or exists $param{affects}) {
 	  $bugs{$_} = 1 for get_bugs_by_idx(exists $param{correspondent}?(correspondent => $param{correspondent}):(),
 					    exists $param{owner}?(owner => $param{owner}):(),
+					    exists $param{affects}?(affects => $param{affects}):(),
 					   );
 	  $grep_bugs = 1;
      }

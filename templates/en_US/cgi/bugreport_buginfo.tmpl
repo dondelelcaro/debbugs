@@ -59,4 +59,9 @@
      $output .= q(<p>Bug is archived. No further changes may be made.<p>)
   }
   $output
+}{ my $output = '';
+  if (exists $status{summary} and defined $status{summary} and length $status{summary}) {
+     $output .= q(<p>).html_escape($status{summary}).q(</p>);
+  }
+  $output;
 }</div>

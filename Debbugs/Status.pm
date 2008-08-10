@@ -100,6 +100,8 @@ my %fields = (originator     => 'submitter',
               blocks         => 'blocks',
               blockedby      => 'blocked-by',
 	      unarchived     => 'unarchived',
+	      summary        => 'summary',
+	      affects        => 'affects',
              );
 
 # Fields which need to be RFC1522-decoded in format versions earlier than 3.

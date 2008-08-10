@@ -78,7 +78,9 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (owner   => [qw(owner)],
+     %EXPORT_TAGS = (affects => [qw(affects)],
+		     summary => [qw(summary)],
+		     owner   => [qw(owner)],
 		     archive => [qw(bug_archive bug_unarchive),
 				],
 		     log     => [qw(append_action_to_log),
@@ -91,7 +93,7 @@ BEGIN{
 
 use Debbugs::Config qw(:config);
 use Debbugs::Common qw(:lock buglog :misc get_hashname);
-use Debbugs::Status qw(bug_archiveable :read :hook writebug);
+use Debbugs::Status qw(bug_archiveable :read :hook writebug splitpackages);
 use Debbugs::CGI qw(html_escape);
 use Debbugs::Log qw(:misc);
 use Debbugs::Recipients qw(:add);
@@ -157,6 +159,30 @@ my %append_action_options =
 
 
 # this is just a generic stub for Debbugs::Control functions.
+#
+# =head2 foo
+#
+#      eval {
+# 	    foo(bug          => $ref,
+# 		transcript   => $transcript,
+# 		($dl > 0 ? (debug => $transcript):()),
+# 		requester    => $header{from},
+# 		request_addr => $controlrequestaddr,
+# 		message      => \@log,
+#               affected_packages => \%affected_packages,
+# 		recipients   => \%recipients,
+# 		summary      => undef,
+#              );
+# 	};
+# 	if ($@) {
+# 	    $errors++;
+# 	    print {$transcript} "Failed to foo $ref bar: $@";
+# 	}
+#
+# Foo frobinates
+#
+# =cut
+#
 # sub foo {
 #     my %param = validate_with(params => \@_,
 # 			      spec   => {bug => {type   => SCALAR,
@@ -179,10 +205,322 @@ my %append_action_options =
 #     my (@data);
 #     ($locks, @data) = lock_read_all_merged_bugs($param{bug});
 #     __handle_affected_packages(data => \@data,%param);
+#     print {$transcript} __bug_info(@data);
 #     add_recipients(data => \@data,
 # 		     recipients => $param{recipients}
 # 		    );
+#     for my $data (@data) {
+# 	 append_action_to_log(bug => $data->{bug_num},
+# 			      get_lock => 0,
+# 			      __return_append_to_log_options(
+# 							     %param,
+# 							     action => $action,
+# 							    ),
+# 			     )
+# 	       if not exists $param{append_log} or $param{append_log};
+# 	  writebug($data->{bug_num},$data);
+# 	  print {$transcript} "$action\n";
+# 	  add_recipients(data => $data,
+# 			 recipients => $param{recipients},
+# 			);
+#      }
+#      if ($locks) {
+# 	  for (1..$locks) { unfilelock(); }
+#      }
+#
 # }
+
+=head2 affects
+
+     eval {
+	    affects(bug          => $ref,
+		    transcript   => $transcript,
+		    ($dl > 0 ? (debug => $transcript):()),
+		    requester    => $header{from},
+		    request_addr => $controlrequestaddr,
+		    message      => \@log,
+                    affected_packages => \%affected_packages,
+		    recipients   => \%recipients,
+		    packages     => undef,
+                    add          => 1,
+                    remove       => 0,
+                   );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to mark $ref as affecting $packages: $@";
+	}
+
+This marks a bug as affecting packages which the bug is not actually
+in. This should only be used in cases where fixing the bug instantly
+resolves the problem in the other packages.
+
+By default, the packages are set to the list of packages passed.
+However, if you pass add => 1 or remove => 1, the list of packages
+passed are added or removed from the affects list, respectively.
+
+=cut
+
+sub affects {
+    my %param = validate_with(params => \@_,
+			      spec   => {bug => {type   => SCALAR,
+						 regex  => qr/^\d+$/,
+						},
+					 # specific options here
+					 packages => {type => SCALAR|ARRAYREF,
+						      default => [],
+						     },
+					 add      => {type => BOOLEAN,
+						      default => 0,
+						     },
+					 remove   => {type => BOOLEAN,
+						      default => 0,
+						     },
+					 %common_options,
+					 %append_action_options,
+					},
+			     );
+    if ($param{add} and $param{remove}) {
+	 croak "Asking to both add and remove affects is nonsensical";
+    }
+    our $locks = 0;
+    $locks = 0;
+    local $SIG{__DIE__} = sub {
+	if ($locks) {
+	    for (1..$locks) { unfilelock(); }
+	    $locks = 0;
+	}
+    };
+    my ($debug,$transcript) = __handle_debug_transcript(%param);
+    my (@data);
+    ($locks, @data) = lock_read_all_merged_bugs($param{bug});
+    __handle_affected_packages(data => \@data,%param);
+    print {$transcript} __bug_info(@data);
+    add_recipients(data => \@data,
+		   recipients => $param{recipients}
+		  );
+    my $action = 'Did not alter affected packages';
+    for my $data (@data) {
+	 print {$debug} "Going to change affects\n";
+	 my @packages = splitpackages($data->{affects});
+	 my %packages;
+	 @packages{@packages} = (1) x @packages;
+	 if ($param{add}) {
+	      my @added = ();
+	      for my $package (make_list($param{packages})) {
+		   if (not $packages{$package}) {
+			$packages{$package} = 1;
+			push @added,$package;
+		   }
+	      }
+	      if (@added) {
+		   $action = "Added indication that $data->{bug_num} affects ".
+			english_join(', ',' and ',@added);
+	      }
+	 }
+	 elsif ($param{remove}) {
+	      my @removed = ();
+	      for my $package (make_list($param{packages})) {
+		   if ($packages{$package}) {
+			delete $packages{$package};
+			push @removed,$package;
+		   }
+	      }
+	      $action = "Removed indication that $data->{bug_num} affects " .
+		   english_join(', ',' and ',@removed);
+	 }
+	 else {
+	      %packages = ();
+	      for my $package (make_list($param{packages})) {
+		   $packages{$package} = 1;
+	      }
+	      $action = "Noted that $data->{bug_num} affects ".
+		   english_join(', ',' and ', keys %packages);
+	 }
+	 $data->{affects} = join(',',keys %packages);
+	 append_action_to_log(bug => $data->{bug_num},
+			      get_lock => 0,
+			      __return_append_to_log_options(
+							     %param,
+							     action => $action,
+							    ),
+			     )
+	       if not exists $param{append_log} or $param{append_log};
+	  writebug($data->{bug_num},$data);
+	  print {$transcript} "$action\n";
+	  add_recipients(data => $data,
+			 recipients => $param{recipients},
+			);
+     }
+     if ($locks) {
+	  for (1..$locks) { unfilelock(); }
+     }
+
+}
+
+
+=head1 SUMMARY FUNCTIONS
+
+=head2 summary
+
+     eval {
+	    summary(bug          => $ref,
+		    transcript   => $transcript,
+		    ($dl > 0 ? (debug => $transcript):()),
+		    requester    => $header{from},
+		    request_addr => $controlrequestaddr,
+		    message      => \@log,
+                    affected_packages => \%affected_packages,
+		    recipients   => \%recipients,
+		    summary      => undef,
+                   );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to mark $ref with summary foo: $@";
+	}
+
+Handles all setting of summary fields
+
+If summary is undef, unsets the summary
+
+If summary is 0, sets the summary to the first paragraph contained in
+the message passed.
+
+If summary is numeric, sets the summary to the message specified.
+
+
+=cut
+
+
+sub summary {
+    my %param = validate_with(params => \@_,
+			      spec   => {bug => {type   => SCALAR,
+						 regex  => qr/^\d+$/,
+						},
+					 # specific options here
+					 summary => {type => SCALAR|UNDEF,
+						     default => 0,
+						    },
+					 %common_options,
+					 %append_action_options,
+					},
+			     );
+    croak "summary must be numeric or undef" if
+	 defined $param{summary} and not $param{summary} =~ /^\d+$/;
+    our $locks = 0;
+    $locks = 0;
+    local $SIG{__DIE__} = sub {
+	if ($locks) {
+	    for (1..$locks) { unfilelock(); }
+	    $locks = 0;
+	}
+    };
+    my ($debug,$transcript) = __handle_debug_transcript(%param);
+    my (@data);
+    ($locks, @data) = lock_read_all_merged_bugs($param{bug});
+    __handle_affected_packages(data => \@data,%param);
+    print {$transcript} __bug_info(@data);
+    add_recipients(data => \@data,
+		   recipients => $param{recipients}
+		  );
+    # figure out the log that we're going to use
+    my $summary = '';
+    my $summary_msg = '';
+    my $action = '';
+    if (not defined $param{summary}) {
+	 # do nothing
+	 print {$debug} "Removing summary fields";
+	 $action = 'Removed summary';
+    }
+    else {
+	 my $log = [];
+	 my @records = Debbugs::Log::read_log_records(bug_num => $param{bug});
+	 if ($param{summary} == 0) {
+	      $log = $param{log};
+	      $summary_msg = @records + 1;
+	 }
+	 else {
+	      if (($param{summary} - 1 ) > $#records) {
+		   die "Message number '$param{summary}' exceeds the maximum message '$#records'";
+	      }
+	      my $record = $records[($param{summary} - 1 )];
+	      if ($record->{type} !~ /incoming-recv|recips/) {
+		   die "Message number '$param{summary}' is a invalid message type '$record->{type}'";
+	      }
+	      $summary_msg = $param{summary};
+	      $log = [$record->{text}];
+	 }
+	 my $p_o = Debbugs::MIME::parse(join('',@{$log}));
+	 my $body = $p_o->{body};
+	 my $in_pseudoheaders = 0;
+	 my $paragraph = '';
+	 # walk through body until we get non-blank lines
+	 for my $line (@{$body}) {
+	      if ($line =~ /^\s*$/) {
+		   if (length $paragraph) {
+			last;
+		   }
+		   $in_pseudoheaders = 0;
+		   next;
+	      }
+	      # skip a paragraph if it looks like it's control or
+	      # pseudo-headers
+	      if ($line =~ m{^\s*(?:(?:Package|Source|Version)\:| #pseudo headers
+				 (?:package|(?:no|)owner|severity|tag|summary| #control
+				      reopen|close|(?:not|)(?:fixed|found)|clone|
+				      (?:force|)merge|user(?:category|tag|)
+				 )
+			    )\s+\S}x) {
+		   if (not length $paragraph) {
+			print {$debug} "Found control/pseudo-headers and skiping them\n";
+			$in_pseudoheaders = 1;
+			next;
+		   }
+	      }
+	      next if $in_pseudoheaders;
+	      $paragraph .= $line;
+	 }
+	 print {$debug} "Summary is going to be '$paragraph'\n";
+	 $summary = $paragraph;
+	 $summary =~ s/[\n\r]//g;
+	 if (not length $summary) {
+	      die "Unable to find summary message to use";
+	 }
+    }
+    for my $data (@data) {
+	 print {$debug} "Going to change summary";
+	 if (length $summary) {
+	      if (length $data->{summary}) {
+		   $action = "Summary replaced with message bug $param{bug} message $summary_msg";
+	      }
+	      else {
+		   $action = "Summary recorded from message bug $param{bug} message $summary_msg";
+	      }
+	 }
+	 $data->{summary} = $summary;
+	 append_action_to_log(bug => $data->{bug_num},
+			      get_lock => 0,
+			      __return_append_to_log_options(
+							     %param,
+							     action => $action,
+							    ),
+			     )
+	       if not exists $param{append_log} or $param{append_log};
+	  writebug($data->{bug_num},$data);
+	  print {$transcript} "$action\n";
+	  add_recipients(data => $data,
+			 recipients => $param{recipients},
+			);
+     }
+     if ($locks) {
+	  for (1..$locks) { unfilelock(); }
+     }
+
+}
+
+
+
 
 =head1 OWNER FUNCTIONS
 
@@ -232,6 +570,7 @@ sub owner {
      my (@data);
      ($locks, @data) = lock_read_all_merged_bugs($param{bug});
      __handle_affected_packages(data => \@data,%param);
+     print {$transcript} __bug_info(@data);
      @data and defined $data[0] or die "No bug found for $param{bug}";
      add_recipients(data => \@data,
 		    recipients => $param{recipients}
@@ -353,6 +692,7 @@ sub bug_archive {
      my (@data);
      ($locks, @data) = lock_read_all_merged_bugs($param{bug});
      __handle_affected_packages(data => \@data,%param);
+     print {$transcript} __bug_info(@data);
      print {$debug} "$param{bug} read $locks\n";
      @data and defined $data[0] or die "No bug found for $param{bug}";
      print {$debug} "$param{bug} read done\n";
@@ -455,6 +795,7 @@ sub bug_unarchive {
      my @data = ();
      ($locks, @data) = lock_read_all_merged_bugs($param{bug},'archive');
      __handle_affected_packages(data => \@data,%param);
+     print {$transcript} __bug_info(@data);
      print {$debug} "$param{bug} read $locks\n";
      if (not @data or not defined $data[0]) {
 	 print {$transcript} "No bug found for $param{bug}\n";
@@ -610,6 +951,25 @@ sub __handle_debug_transcript{
      my $transcript = globify_scalar(exists $param{transcript}?$param{transcript}:undef);
      return ($debug,$transcript);
 }
+
+=head2 __bug_info
+
+     __bug_info($data)
+
+Produces a small bit of bug information to kick out to the transcript
+
+=cut
+
+sub __bug_info{
+     my $return = '';
+     for my $data (@_) {
+	  $return .= "Bug ".($data->{bug_num}||'').
+	       " [".($data->{package}||''). "] ".
+		    ($data->{subject}||'')."\n";
+     }
+     return $return;
+}
+
 
 sub __return_append_to_log_options{
      my %param = @_;
