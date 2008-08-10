@@ -469,6 +469,10 @@ sub summary {
 	 for my $line (@{$body}) {
 	      if ($line =~ /^\s*$/) {
 		   if (length $paragraph) {
+			if ($paragraph =~ m/^(?:.+\n\>)+.+\n/x) {
+			     $paragraph = '';
+			     next;
+			}
 			last;
 		   }
 		   $in_pseudoheaders = 0;
