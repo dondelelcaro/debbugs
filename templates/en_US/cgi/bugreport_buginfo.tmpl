@@ -61,7 +61,7 @@
   $output
 }{ my $output = '';
   if (exists $status{summary} and defined $status{summary} and length $status{summary}) {
-     $output .= q(<p>).html_escape($status{summary}).q(</p>);
+     $output .= q(<p>Summary: ).html_escape($status{summary}).q(</p>);
   }
   $output;
 }</div>
