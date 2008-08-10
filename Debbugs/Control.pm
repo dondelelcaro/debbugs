@@ -430,7 +430,7 @@ sub summary {
     __handle_affected_packages(data => \@data,%param);
     print {$transcript} __bug_info(@data);
     add_recipients(data => \@data,
-		   recipients => $param{recipients}
+		   recipients => $param{recipients},
 		   debug      => $debug,
 		   transcript => $transcript,
 		  );
@@ -585,7 +585,7 @@ sub owner {
      print {$transcript} __bug_info(@data);
      @data and defined $data[0] or die "No bug found for $param{bug}";
      add_recipients(data => \@data,
-		    recipients => $param{recipients}
+		    recipients => $param{recipients},
 		    debug      => $debug,
 		    transcript => $transcript,
 		   );

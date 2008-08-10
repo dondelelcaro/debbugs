@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
-# $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
+#
 
-use Test::More tests => 84;
+use Test::More tests => 21;
 
 use warnings;
 use strict;
@@ -120,113 +120,7 @@ ok($status->{severity} eq 'wishlist','bug 1 wishlisted');
 
 # now we're going to go through and methododically test all of the control commands.
 my @control_commands =
-     (severity_wishlist => {command => 'severity',
-			    value   => 'wishlist',
-			    status_key => 'severity',
-			    status_value => 'wishlist',
-			   },
-      reassign_bar => {command => 'reassign',
-		       value   => 'bar',
-		       status_key => 'package',
-		       status_value => 'bar',
-		      },
-      reassign_foo => {command => 'reassign',
-		       value   => 'foo',
-		       status_key => 'package',
-		       status_value => 'foo',
-		      },
-      'found_1.0'        => {command => 'found',
-			     value   => '1.0',
-			     status_key => 'found_versions',
-			     status_value => ['1.0'],
-			    },
-      'notfound_1.0'     => {command => 'notfound',
-			     value   => '1.0',
-			     status_key => 'found_versions',
-			     status_value => [],
-			    },
-      'found_1.0~5+1b2'  => {command => 'found',
-			     value   => '1.0~5+1b2',
-			     status_key => 'found_versions',
-			     status_value => ['1.0~5+1b2'],
-			    },
-      'notfound_1.0~5+1b2' => {command => 'notfound',
-			       value   => '1.0~5+1b2',
-			       status_key => 'found_versions',
-			       status_value => [],
-			      },
-      'fixed_1.1'        => {command => 'fixed',
-			     value   => '1.1',
-			     status_key => 'fixed_versions',
-			     status_value => ['1.1'],
-			    },
-      'notfixed_1.1'     => {command => 'notfixed',
-			     value   => '1.1',
-			     status_key => 'fixed_versions',
-			     status_value => [],
-			    },
-      'found_1.0~5+1b2'  => {command => 'found',
-			     value   => '1.0~5+1b2',
-			     status_key => 'found_versions',
-			     status_value => ['1.0~5+1b2'],
-			    },
-      'fixed_1.2'        => {command => 'fixed',
-			     value   => '1.2',
-			     status_key => 'fixed_versions',
-			     status_value => ['1.2'],
-			    },
-      close              => {command => 'close',
-			     value   => '',
-			     status_key => 'done',
-			     status_value => 'foo@bugs.something',
-			    },
-      'found_1.3'        => {command => 'found',
-			     value   => '1.3',
-			     status_key => 'done',
-			     status_value => '',
-			    },
-      submitter_foo      => {command => 'submitter',
-			     value   => 'foo@bar.com',
-			     status_key => 'originator',
-			     status_value => 'foo@bar.com',
-			    },
-
-      forwarded_foo      => {command => 'forwarded',
-			     value   => 'foo@bar.com',
-			     status_key => 'forwarded',
-			     status_value => 'foo@bar.com',
-			    },
-      owner_foo          => {command => 'owner',
-			     value   => 'foo@bar.com',
-			     status_key => 'owner',
-			     status_value => 'foo@bar.com',
-			    },
-      noowner      => {command => 'noowner',
-		       value   => '',
-		       status_key => 'owner',
-		       status_value => '',
-		      },
-      summary      => {command => 'summary',
-		       value   => '5',
-		       status_key => 'summary',
-		       status_value => 'This is a silly bug',
-		      },
-      nosummary    => {command => 'summary',
-		       value   => '',
-		       status_key => 'summary',
-		       status_value => '',
-		      },
-      affects      => {command => 'affects',
-		       value   => 'foo',
-		       status_key => 'affects',
-		       status_value => 'foo',
-		      },
-      noaffects    => {command => 'affects',
-		       value   => '',
-		       status_key => 'affects',
-		       status_value => '',
-		      },
-      close        => {command => 'close',
+     (close        => {command => 'close',
 		       value   => '',
 		       status_key => 'done',
 		       status_value => 'foo@bugs.something',
@@ -278,23 +172,17 @@ EOF
 	  or fail(Dumper($status));
 }
 
-# verify that archive/unarchive can then be modified afterwards
+# now we need to run expire, and make sure that bug is expired
+# afterwards
+# we punt and touch to set it to something that is archiveable
 
-send_message(to => 'control@bugs.something',
-	     headers => [To   => 'control@bugs.something',
-			 From => 'foo@bugs.something',
-			 Subject => "Munging a bug with unarchivearchive",
-			],
-	     body => <<'EOF') or fail 'message to control@bugs.something failed';
-archive 1
-unarchive 1
-submitter 1 bar@baz.com
-thanks
-EOF
-				  ;
-$SD_SIZE_NOW = dirsize($sendmail_dir);
-ok($SD_SIZE_NOW-$SD_SIZE_PREV >= 1,'control@bugs.something messages appear to have been sent out properly');
-$SD_SIZE_PREV=$SD_SIZE_NOW;
-# now we need to check to make sure the control message was processed without errors
-ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Munging a bug with unarchivearchive")) == 0,
-   'control@bugs.something'. "unarchive/archive message was parsed without errors");
+# set the access time to twice the remove age
+my $old_time = time - 28*2*24*60*60;
+
+system('touch','-d','@'.$old_time,"$spool_dir/db-h/01/1.log",    );
+system('touch','-d','@'.$old_time,"$spool_dir/db-h/01/1.summary",);
+system('touch','-d','@'.$old_time,"$spool_dir/db-h/01/1.status", );
+system('touch','-d','@'.$old_time,"$spool_dir/db-h/01/1.report", );
+ok(system('scripts/expire') == 0,'expire completed successfully');
+
+ok($status = read_bug(bug => 1,location => 'archive'),'read bug from archive correctly');
