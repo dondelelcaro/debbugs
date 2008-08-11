@@ -124,7 +124,8 @@ sub verrevcmp($$)
 	  }
 	  return 1 if defined $vc and $vc =~ /^\d$/;
 	  return -1 if defined $rc and $rc =~ /^\d$/;
-	  return $first_diff if $first_diff;
+	  return (($first_diff  > 0) ? 1 : -1) if $first_diff;
+	  # return $first_diff if $first_diff;
      }
      return 0;
 }
