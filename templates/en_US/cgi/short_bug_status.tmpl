@@ -1,42 +1,42 @@
 <div class="shortbugstatus">
   <a href="{html_escape(bug_links(bug=>$status{bug_num},links_only=>1))}"{length($status{done})?' style="text-decoration:line-through"':''}>#{html_escape($status{bug_num})}</a>
   [<font face="fixed"><span class="link" onclick="javascript:extra_status_visible({html_escape($status{bug_num})})">{
-  my $output = qq(<span title="$status{severity}">);
+  my $output = qq(<abbr title="$status{severity}">);
   my $temp = $status{severity};
   $temp = substr $temp,0,1;
   if (isstrongseverity($status{severity})){
      $temp = q(<em class="severity">).uc($temp).q(</em);
   }
-  $output .= $temp.qq(</span>);
-  $output;
+  $output .= $temp.qq(</abbr>);
+  length($output)?$output:'&nbsp;&nbsp;';
   }|{
   my $output = '';
   for my $tag (@{$status{tags_array}}) {
      next unless exists $config{tags_single_letter}{$tag};
-     $output .= q(<span title=").$tag.q(">).$config{tags_single_letter}{$tag}.q(</span>);
+     $output .= q(<abbr title=").$tag.q(">).$config{tags_single_letter}{$tag}.q(</abbr>);
   }
-  $output;
+  length($output)?$output:'&nbsp;&nbsp;';
   }|{
   my $output = '';
   if (@{$status{mergedwith_array}}) {
-     $output .= qq(<span title="merged">=</span>);
+     $output .= qq(<abbr title="merged">=</abbr>);
   }
   if (@{$status{fixed_versions}}) {
-     $output .= qq(<span title="fixed versions">☺</span>);
+     $output .= qq(<abbr title="fixed versions">☺</abbr>);
   }
   if (@{$status{blockedby_array}}) {
-     $output .= qq(<span title="blocked by">┫</span>);
+     $output .= qq(<abbr title="blocked by">┫</abbr>);
   }
   if (@{$status{blocks_array}}) {
-     $output .= qq(<span title="blocks">┣</span>);
+     $output .= qq(<abbr title="blocks">┣</abbr>);
   }
   if (length($status{forwarded})) {
-     $output .= qq(<span title="forwarded">↝</span>);
+     $output .= qq(<abbr title="forwarded">↝</abbr>);
   }
   if ($status{archived}) {
-     $output .= qq(<span title="archived">♲</span>);
+     $output .= qq(<abbr title="archived">♲</abbr>);
   }
-  $output;
+  length($output)?$output:'&nbsp;&nbsp;';
   }</span></font>]
   [{package_links(package=>$status{package},options=>\%options,class=>"submitter")}]
   <a href="{html_escape(bug_links(bug=>$status{bug_num},links_only=>1))}">{html_escape($status{subject})}</a>
