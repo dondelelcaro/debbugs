@@ -501,6 +501,8 @@ sub summary {
 	 if (not length $summary) {
 	      die "Unable to find summary message to use";
 	 }
+	 # trim off a trailing space
+	 $summary =~ s/\ $//;
     }
     for my $data (@data) {
 	 print {$debug} "Going to change summary";
