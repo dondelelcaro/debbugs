@@ -149,7 +149,7 @@ sub vercmp ($$)
     return verrevcmp($version{revision}, $refversion{revision});
 }
 
- =back
+=back
 
 =head1 AUTHOR
 
