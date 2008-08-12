@@ -107,7 +107,7 @@ if ( defined($header{'reply-to'}) && $header{'reply-to'} ne "" ) {
 
 # This is an error counter which should be incremented every time there is an error.
 my $errors = 0;
-my $controlrequestaddr= ($control ? 'control' : 'request').$config{email_domain};
+my $controlrequestaddr= ($control ? 'control' : 'request').'@'.$config{email_domain};
 my $transcript_scalar = '';
 my $transcript = IO::Scalar->new(\$transcript_scalar) or
      die "Unable to create new IO::Scalar";
@@ -777,7 +777,7 @@ END
                 do {
                     $affected_packages{$data->{package}} = 1;
 		    add_recipients(data => $data,
-				   recipients => \%recipients.
+				   recipients => \%recipients,
 				   transcript   => $transcript,
 				   ($dl > 0 ? (debug => $transcript):()),
 				  );
@@ -883,7 +883,7 @@ END
 	$ok++;
 	my $bugnum = $2; my $blockers = $4;
 	my $addsub = "add";
-	$addsub = "sub" if ($1 eq "un");
+	$addsub = "sub" if (defined $1 and $1 eq "un");
 	if ($bugnum =~ m/^-\d+$/ && defined $clonebugs{$bugnum}) {
 	     $bugnum = $clonebugs{$bugnum};
 	}
