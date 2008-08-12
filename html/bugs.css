@@ -49,11 +49,24 @@ a:link:hover, a:visited:hover {
     color: #d81e1e;
 }
 
-.link span {
+.link {
     color: #1b56ce;
     font-weight: bold;
     text-decoration: underline;
 }
+
+.link abbr {
+    color: #1b56ce;
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.link abbr:hover {
+    color: #1b56ce;
+    font-weight: bold;
+    text-decoration: underline;
+}
+
 
 .link span:hover {
     color: #d81e1e;
