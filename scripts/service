@@ -777,7 +777,7 @@ END
                 do {
                     $affected_packages{$data->{package}} = 1;
 		    add_recipients(data => $data,
-				   recipients => \%recipients.
+				   recipients => \%recipients,
 				   transcript   => $transcript,
 				   ($dl > 0 ? (debug => $transcript):()),
 				  );
