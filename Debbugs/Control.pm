@@ -447,7 +447,7 @@ sub summary {
 	 my $log = [];
 	 my @records = Debbugs::Log::read_log_records(bug_num => $param{bug});
 	 if ($param{summary} == 0) {
-	      $log = $param{log};
+	      $log = $param{message};
 	      $summary_msg = @records + 1;
 	 }
 	 else {
