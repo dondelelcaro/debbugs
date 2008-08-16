@@ -324,5 +324,6 @@ print fill_in_template(template => 'cgi/bugreport',
 				     '&version_url'   => \&Debbugs::CGI::version_url,
 				     '&bug_url'       => \&Debbugs::CGI::bug_url,
 				     '&strftime'      => \&POSIX::strftime,
-				    }
+				     '&maybelink'     => \&Debbugs::CGI::maybelink,
+				    },
 		      );
