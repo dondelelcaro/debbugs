@@ -895,14 +895,20 @@ sub append_action_to_log{
 					  action => {type => SCALAR,
 						    },
 					  requester => {type => SCALAR,
+							default => '',
 						       },
 					  request_addr => {type => SCALAR,
+							   default => '',
 							  },
 					  location => {type => SCALAR,
 						       optional => 1,
 						      },
 					  message  => {type => SCALAR|ARRAYREF,
+						       default => '',
 						      },
+					  desc       => {type => SCALAR,
+							 default => '',
+							},
 					  get_lock   => {type => BOOLEAN,
 							 default => 1,
 							},
@@ -917,17 +923,30 @@ sub append_action_to_log{
      }
      my $log = IO::File->new(">>$log_location") or
 	  die "Unable to open $log_location for appending: $!";
-     print {$log} "\6\n".
+     my $msg = "\6\n".
 	  "<!-- time:".time." -->\n".
-          "<strong>".html_escape($param{action})."</strong>\n".
-          "Request was from <code>".html_escape($param{requester})."</code>\n".
-          "to <code>".html_escape($param{request_addr})."</code>. \n".
-	  "\3\n".
-	  "\7\n",escape_log(make_list($param{message})),"\n\3\n"
+          "<strong>".html_escape($param{action})."</strong>\n";
+     if (length $param{requester}) {
+          $msg .= "Request was from <code>".html_escape($param{requester})."</code>\n";
+     }
+     if (length $param{request_addr}) {
+          $msg .= "to <code>".html_escape($param{request_addr})."</code>";
+     }
+     if (length $param{desc}) {
+	  $msg .= ":<br>\n$param{desc}\n";
+     }
+     else {
+	  $msg .= ".\n";
+     }
+     $msg .= "\3\n";
+     if ((ref($param{message}) and @{$param{message}}) or length($param{message})) {
+	  $msg .= "\7\n".join('',escape_log(make_list($param{message})))."\n\3\n"
 	       or die "Unable to append to $log_location: $!";
+     }
+     print {$log} $msg or die "Unable to append to $log_location: $!";
      close $log or die "Unable to close $log_location: $!";
      if ($param{get_lock}) {
-	  unlockfile();
+	  unfilelock();
      }
 
 
