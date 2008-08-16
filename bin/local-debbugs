@@ -1,0 +1,209 @@
+#! /usr/bin/perl
+# local-debbugs is part of debbugs, and is released
+# under the terms of the GPL version 2, or any later version, at your
+# option. See the file README and COPYING for more information.
+# Copyright 2008 by Don Armstrong <don@donarmstrong.com>.
+
+
+use warnings;
+use strict;
+
+use Getopt::Long;
+use Pod::Usage;
+
+=head1 NAME
+
+local-debbugs - use a local mirror of debbugs
+
+=head1 SYNOPSIS
+
+ [options]
+
+ Options:
+  --mirror, -M update local mirror
+  --daemon, -D start the daemon
+  --search, -S run a search
+  --show, -s show a bug
+  --debug, -d debugging level (Default 0)
+  --help, -h display this help
+  --man, -m display manual
+
+=head1 OPTIONS
+
+=over
+
+=item B<--mirror, -M>
+
+Update the local mirror of debbugs bugs
+
+=item B<--daemon, -D>
+
+Start up the daemon on the configured local port to serve bugs which
+have been previously retried
+
+=item B<--search, -S>
+
+Cause the running daemon to show the pkgreport.cgi page corresponding
+to the search by invoking sensible-browser and an appropriate url
+
+=item B<--show, -s>
+
+Cause the running daemon to show the bugreport.cgi page corresponding
+to the bug by invoking sensible-browser and an appropriate url
+
+=item B<--port,-p>
+
+The port that the daemon is running on (or will be running on.)
+
+Defaults to the value of the currently running daemon, the value in
+the configuration file, or 8080 if nothing is set.
+
+=item B<--bugs-to-get>
+
+File which contains the set of bugs to get.
+Defaults to ~/.debbugs/bugs_to_get
+
+=item B<--debug, -d>
+
+Debug verbosity. (Default 0)
+
+=item B<--help, -h>
+
+Display brief useage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+=head1 EXAMPLES
+
+
+=cut
+
+
+use vars qw($DEBUG);
+
+use User;
+use Config::Simple;
+use File::Temp qw(tempdir);
+
+my %options = (debug           => 0,
+	       help            => 0,
+	       man             => 0,
+	       );
+
+my %option_defaults = (port => 8080,
+		       debbugs_config => User->Home.'/.debbugs/debbugs_config',
+		       mirror_location => User->Home.'/.debbugs/mirror/',
+		       bugs_to_get => User->Home.'/.debbugs/bugs_to_get',
+		      );
+
+GetOptions(\%options,
+	   'daemon|D','show|s','search|select|S','mirror|M',
+	   'debug|d+','help|h|?','man|m');
+
+pod2usage() if $options{help};
+pod2usage({verbose=>2}) if $options{man};
+
+$DEBUG = $options{debug};
+
+my @USAGE_ERRORS;
+if (1 != scalar @options{qw(daemon show search mirror)}) {
+     push @USAGE_ERRORS,"You must pass one (and only one) of --daemon --show --search or --mirror";
+}
+
+pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
+
+
+# munge in local configuration
+
+local_config(\%options);
+
+if ($options{daemon}) {
+     # daemonize, do stuff
+}
+elsif ($options{mirror}) {
+     # run the mirror jobies
+     # figure out which bugs we need
+     my @bugs = select_bugs();
+     # get them
+     my $tempdir = tempdir(CLEANUP => 1);
+     my $mirror_log = IO::File->new($options{mirror_location}.'/mirror.log') or
+	  die "Unable to open $options{mirror_location}/mirror.log for writing: $!";
+     my $inc_fh = IO::File->new("$tempdir/include_list",'w') or
+	  die "Unable to open $tempdir/include_list for writing: $!";
+     foreach my $bug (@bugs) {
+	  print {$inc_fh} "*/${bugs}.*\n" or
+	       die "Unable to write to $tempdir/include_list: $!";
+     }
+     close $inc_fh or
+	  die "Unable to close $tempdir/include_list: $!";
+     my ($wrf,$rfh);
+     run_rsync(log => $mirror_log,
+	       ($options{debug}?(debug => \*STDERR):()),
+	       options => ['-avz','--partial',
+			   '--delete',
+			   '--include-from',"$tempdir/include_list",
+			   # skip things not specifically included
+			   '--exclude','*/*',
+			   # skip the -1,-2,-3.log files
+			   '--exclude','*.log',
+			   'rsync://'.$options{bug_mirror}.'/bts-spool-db/',
+			   $options{mirror_location}.'/db-h/']
+	      );
+	  
+     
+     
+
+}
+elsif ($options{show}) {
+
+}
+elsif ($options{search}) {
+}
+else {
+     # you get here, you were an idiot in checking for @USAGE_ERRORS
+     # above
+     die "No option that we understand was passed (the first check for this is now buggy, so shoot your maintainer)"
+}
+
+
+# determine the local configuration
+sub local_config{
+     my ($options) = @_;
+     my $config = {};
+     if (-e '/etc/debbugs/local_debbugs.conf') {
+	  Config::Simple->import_from('/etc/debbugs/local_debbugs.conf', $config) or
+		    die "Unable to read configuration from /etc/debbugs/local_debbugs.conf: $!";
+     }
+     if (-e User->Home.'/.debbugs/local_debbugs.conf') {
+	  Config::Simple->import_from(User->Home.'/.debbugs/local_debbugs.conf', $config) or
+		    die "Unable to read configuration from ".User->Home.'/.debbugs/local_debbugs.conf: '.$!;
+     }
+     for (keys %default_options) {
+	  if (exists $config->{$_} and not defined $options->{$_}) {
+	       $options->{$_} = $config->{$_};
+	  }
+	  if (not defined $options->{$_}) {
+	       $options->{$_} = $default_options{$_};
+	  }
+     }
+}
+
+sub run_rsync{
+     my ($output_fh,@rsync_options) = @_;
+     my ($wfh,$rfh);
+     my $pid = open3($wfh,$rfh,
+		     'rsync',
+		     @rsync_options,
+		    ) or die "Unable to start rsync: $!";
+     close $wfh or die "Unable to close the writer filehandle $?";
+     print {$output_fh}
+
+
+}
+
+
+__END__
