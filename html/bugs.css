@@ -249,7 +249,7 @@ li {
   margin-top: 0px;
   padding: 0;
   border: 0;
-  display: block;
+  display: inline;
   }
 
 .bugs li {
