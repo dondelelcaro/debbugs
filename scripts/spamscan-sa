@@ -40,6 +40,9 @@ my $spam = Mail::SpamAssassin->new({
         	local_tests_only => ($config{spam_local_tests_only} || 0),
         	debug => ($ENV{DEBBUGS_SPAM_DEBUG} || 0),
 });
+# wait longer for a lock
+$spam->init_learner(wait_for_lock => 1);
+
 $spam->compile_now(1); # use all user preferences
 
 while (my $id = <STDIN>) {
