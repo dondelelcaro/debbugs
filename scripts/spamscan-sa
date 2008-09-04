@@ -41,7 +41,7 @@ my $spam = Mail::SpamAssassin->new({
         	debug => ($ENV{DEBBUGS_SPAM_DEBUG} || 0),
 });
 # wait longer for a lock
-$spam->init_learner(wait_for_lock => 1);
+$spam->init_learner({wait_for_lock => 1});
 
 $spam->compile_now(1); # use all user preferences
 
