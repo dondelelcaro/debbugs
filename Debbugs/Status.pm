@@ -323,7 +323,7 @@ sub lock_read_all_merged_bugs {
     my ($bug_num,$location) = @_;
     my $locks = 0;
     my @data = (lockreadbug(@_));
-    if (not @data and not defined $data[0]) {
+    if (not @data or not defined $data[0]) {
 	return ($locks,undef);
     }
     $locks++;
@@ -335,7 +335,7 @@ sub lock_read_all_merged_bugs {
     filelock("$config{spool_dir}/lock/merge");
     $locks++;
     @data = (lockreadbug(@_));
-    if (not @data and not defined $data[0]) {
+    if (not @data or not defined $data[0]) {
 	unfilelock(); #for merge lock above
 	$locks--;
 	return ($locks,undef);
@@ -1095,12 +1095,12 @@ sub bug_presence {
      my $maxbuggy = 'undef';
      if (@sourceversions) {
 	  $maxbuggy = max_buggy(bug => $param{bug},
-				   sourceversions => \@sourceversions,
-				   found => $status{found_versions},
-				   fixed => $status{fixed_versions},
-				   package => $status{package},
-				   version_cache => $version_cache,
-				  );
+				sourceversions => \@sourceversions,
+				found => $status{found_versions},
+				fixed => $status{fixed_versions},
+				package => $status{package},
+				version_cache => $version_cache,
+			       );
      }
      elsif (defined $param{dist} and
 	    not exists $pseudo_desc->{$status{package}}) {
