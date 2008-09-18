@@ -183,6 +183,7 @@ sub read_bug{
 	 $status = getbugcomponent($lref, 'summary', $location);
 	 $log    = getbugcomponent($lref, 'log'    , $location);
 	 return undef unless defined $status;
+	 return undef if not -e $status;
     }
     else {
 	 $status = $param{summary};
@@ -1074,7 +1075,7 @@ sub bug_presence {
 		    (1) x @{$config{affects_distribution_tags}};
 	       my $some_distributions_disallowed = 0;
 	       my %allowed_distributions;
-	       for my $tag (split ' ', ($status->{tags}||'')) {
+	       for my $tag (split ' ', ($status{tags}||'')) {
 		    if (exists $affects_distribution_tags{$tag}) {
 			 $some_distributions_disallowed = 1;
 			 $allowed_distributions{$tag} = 1;
@@ -1090,7 +1091,7 @@ sub bug_presence {
 			      # distribution for the purposees of
 			      # finding versions
 			      if ($some_distributions_disallowed and
-				  not exists $allowed_distributions{$tag}) {
+				  not exists $allowed_distributions{$dist}) {
 				   next;
 			      }
 			      push @versions, getversions($package, $dist, $arch);

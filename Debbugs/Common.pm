@@ -92,8 +92,6 @@ sub getbugcomponent {
 	# getbuglocation() directly first.
 	return undef if defined $location and
 			($location ne 'db' and $location ne 'db-h');
-	# if there is no location, the bug doesn't exist
-	return undef if not defined $location;
     }
     my $dir = getlocationpath($location);
     return undef if not defined $dir;
