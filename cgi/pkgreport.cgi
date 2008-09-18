@@ -77,6 +77,11 @@ if (exists $param{form_options} and defined $param{form_options}) {
 	  next unless exists $param{$incexc};
 	  $param{$incexc} = [grep /\S\:\S/, make_list($param{$incexc})];
      }
+     # kill off keys for which empty values are meaningless
+     for my $key (qw(package src submitter severity status dist)) {
+	  next unless exists $param{$key};
+	  $param{$key} = [grep {length $_}  make_list($param{$key})];
+     }
      print $q->redirect(munge_url('pkgreport.cgi?',%param));
      exit 0;
 }
@@ -100,6 +105,10 @@ elsif (lc($param{archive}) eq 'yes') {
      $param{archive} = 1;
 }
 
+# fixup dist
+if (exists $param{dist} and $param{dist} eq '') {
+     delete $param{dist};
+}
 
 my $include = $param{'&include'} || $param{'include'} || "";
 my $exclude = $param{'&exclude'} || $param{'exclude'} || "";
@@ -161,8 +170,7 @@ for my $incexcmap (@inc_exc_mapping) {
 my $maxdays = ($param{'maxdays'} || -1);
 my $mindays = ($param{'mindays'} || 0);
 my $version = $param{'version'} || undef;
-# XXX Once the options/selection is rewritten, this should go away
-my $dist = $param{dist} || undef;
+
 
 our %hidden = map { $_, 1 } qw(status severity classification);
 our %cats = (
@@ -325,7 +333,7 @@ while (my ($key,$value) = splice @temp, 0, 2) {
      next unless exists $param{$key};
      my @entries = ();
      $param{$key} = [map {split /\s*,\s*/} make_list($param{$key})];
-     for my $entry (make_list($param{$key})) {
+     for my $entry (grep {defined $_ and length $_ } make_list($param{$key})) {
 	  my $extra = '';
 	  if (exists $param{dist} and ($key eq 'package' or $key eq 'src')) {
 	       my %versions = get_versions(package => $entry,
@@ -352,7 +360,7 @@ while (my ($key,$value) = splice @temp, 0, 2) {
 	  }
 	  push @entries, $entry.$extra;
      }
-     push @title,$value.' '.join(' or ', @entries);
+     push @title,$value.' '.join(' or ', @entries) if @entries;
 }
 my $title = $gBugs.' '.join(' and ', map {/ or /?"($_)":$_} @title);
 @title = ();
