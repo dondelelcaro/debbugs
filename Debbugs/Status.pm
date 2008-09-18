@@ -1069,12 +1069,33 @@ sub bug_presence {
 		    }
 	       }
 	  } elsif (defined $param{dist}) {
+	       my %affects_distribution_tags;
+	       @affects_distribution_tags{@{$config{affects_distribution_tags}}} =
+		    (1) x @{$config{affects_distribution_tags}};
+	       my $some_distributions_disallowed = 0;
+	       my %allowed_distributions;
+	       for my $tag (split ' ', ($status->{tags}||'')) {
+		    if (exists $affects_distribution_tags{$tag}) {
+			 $some_distributions_disallowed = 1;
+			 $allowed_distributions{$tag} = 1;
+		    }
+	       }
 	       foreach my $arch (make_list($param{arch})) {
-		    my @versions;
 		    for my $package (split /\s*,\s*/, $status{package}) {
+			 my @versions;
 			 foreach my $dist (make_list($param{dist})) {
+			      # if some distributions are disallowed,
+			      # and this isn't an allowed
+			      # distribution, then we ignore this
+			      # distribution for the purposees of
+			      # finding versions
+			      if ($some_distributions_disallowed and
+				  not exists $allowed_distributions{$tag}) {
+				   next;
+			      }
 			      push @versions, getversions($package, $dist, $arch);
 			 }
+			 next unless @versions;
 			 my @temp = makesourceversions($package,
 						       $arch,
 						       @versions
