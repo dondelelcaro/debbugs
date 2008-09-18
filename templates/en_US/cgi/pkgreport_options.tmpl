@@ -66,6 +66,11 @@ $output;
 <input type="checkbox" name="bug-rev" {exists $param{"bug-rev"} and $param{"bug-rev"}?' checked':''}> Reverse Bugs<br>
 <input type="checkbox" name="pend-rev" {exists $param{"pend-rev"} and $param{"pend-rev"}?' checked':''}> Reverse Pending<br>
 <input type="checkbox" name="sev-rev" {exists $param{"sev-rev"} and $param{"sev-rev"}?' checked':''}> Reverse Severity<br>
+<select name="dist">
+{output_select_options(['' => 'None',
+                        map {($_,$_)} @{$config{distributions}},
+                       ],$param{dist}||'')
+}</select><br>
 <select name="archive">
 {output_select_options([0 => 'Unarchived',
                         1 => 'Archived', 
