@@ -417,6 +417,25 @@ set_default(\%config,'default_architectures',
 	    [qw(i386 amd64 arm powerpc sparc alpha)]
 	   );
 
+=item affects_distribution_tags
+
+List of tags which restrict the buggy state to a set of distributions.
+
+The set of distributions that are buggy is the intersection of the set
+of distributions that would be buggy without reference to these tags
+and the set of these tags that are distributions which are set on a
+bug.
+
+Setting this to [] will remove this feature.
+
+Default: @{$config{distributions}}
+
+=cut
+
+set_default(\%config,'affects_distribution_tags',
+	    [@{$config{distributions}}],
+	   );
+
 =item removal_unremovable_tags
 
 Bugs which have these tags set cannot be archived
@@ -585,7 +604,10 @@ Default:
 
 set_default(\%config,'severity_display',{critical => "Critical $config{bugs}",
 					 grave    => "Grave $config{bugs}",
+					 serious  => "Serious $config{bugs}",
+					 important=> "Important $config{bugs}",
 					 normal   => "Normal $config{bugs}",
+					 minor    => "Minor $config{bugs}",
 					 wishlist => "Wishlist $config{bugs}",
 					});
 

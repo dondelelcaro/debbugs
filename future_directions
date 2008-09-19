@@ -4,7 +4,9 @@ codebase and things that should be done.
 PACKAGE CLEANUP
 
 * Stop doing the .in -> foo translation
+  - We no longer do this
 * Use ExtUtils::Makemaker instead of a custom makefile
+  - We use Makemaker for the easy perl bits
 * More testing of modules so it's not so easy to break things
 
 

@@ -183,6 +183,7 @@ sub read_bug{
 	 $status = getbugcomponent($lref, 'summary', $location);
 	 $log    = getbugcomponent($lref, 'log'    , $location);
 	 return undef unless defined $status;
+	 return undef if not -e $status;
     }
     else {
 	 $status = $param{summary};
@@ -323,7 +324,7 @@ sub lock_read_all_merged_bugs {
     my ($bug_num,$location) = @_;
     my $locks = 0;
     my @data = (lockreadbug(@_));
-    if (not @data and not defined $data[0]) {
+    if (not @data or not defined $data[0]) {
 	return ($locks,undef);
     }
     $locks++;
@@ -335,7 +336,7 @@ sub lock_read_all_merged_bugs {
     filelock("$config{spool_dir}/lock/merge");
     $locks++;
     @data = (lockreadbug(@_));
-    if (not @data and not defined $data[0]) {
+    if (not @data or not defined $data[0]) {
 	unfilelock(); #for merge lock above
 	$locks--;
 	return ($locks,undef);
@@ -1069,12 +1070,33 @@ sub bug_presence {
 		    }
 	       }
 	  } elsif (defined $param{dist}) {
+	       my %affects_distribution_tags;
+	       @affects_distribution_tags{@{$config{affects_distribution_tags}}} =
+		    (1) x @{$config{affects_distribution_tags}};
+	       my $some_distributions_disallowed = 0;
+	       my %allowed_distributions;
+	       for my $tag (split ' ', ($status{tags}||'')) {
+		    if (exists $affects_distribution_tags{$tag}) {
+			 $some_distributions_disallowed = 1;
+			 $allowed_distributions{$tag} = 1;
+		    }
+	       }
 	       foreach my $arch (make_list($param{arch})) {
-		    my @versions;
 		    for my $package (split /\s*,\s*/, $status{package}) {
+			 my @versions;
 			 foreach my $dist (make_list($param{dist})) {
+			      # if some distributions are disallowed,
+			      # and this isn't an allowed
+			      # distribution, then we ignore this
+			      # distribution for the purposees of
+			      # finding versions
+			      if ($some_distributions_disallowed and
+				  not exists $allowed_distributions{$dist}) {
+				   next;
+			      }
 			      push @versions, getversions($package, $dist, $arch);
 			 }
+			 next unless @versions;
 			 my @temp = makesourceversions($package,
 						       $arch,
 						       @versions
@@ -1095,12 +1117,12 @@ sub bug_presence {
      my $maxbuggy = 'undef';
      if (@sourceversions) {
 	  $maxbuggy = max_buggy(bug => $param{bug},
-				   sourceversions => \@sourceversions,
-				   found => $status{found_versions},
-				   fixed => $status{fixed_versions},
-				   package => $status{package},
-				   version_cache => $version_cache,
-				  );
+				sourceversions => \@sourceversions,
+				found => $status{found_versions},
+				fixed => $status{fixed_versions},
+				package => $status{package},
+				version_cache => $version_cache,
+			       );
      }
      elsif (defined $param{dist} and
 	    not exists $pseudo_desc->{$status{package}}) {

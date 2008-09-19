@@ -1,0 +1,511 @@
+#! /usr/bin/perl
+# local-debbugs is part of debbugs, and is released
+# under the terms of the GPL version 2, or any later version, at your
+# option. See the file README and COPYING for more information.
+# Copyright 2008 by Don Armstrong <don@donarmstrong.com>.
+
+
+use warnings;
+use strict;
+
+use Getopt::Long;
+use Pod::Usage;
+
+=head1 NAME
+
+local-debbugs - use a local mirror of debbugs
+
+=head1 SYNOPSIS
+
+ [options]
+
+ Options:
+  --mirror, -M update local mirror
+  --daemon, -D start the daemon
+  --search, -S run a search
+  --show, -s show a bug
+  --debug, -d debugging level (Default 0)
+  --help, -h display this help
+  --man, -m display manual
+
+=head1 OPTIONS
+
+=over
+
+=item B<--mirror, -M>
+
+Update the local mirror of debbugs bugs
+
+=item B<--daemon, -D>
+
+Start up the daemon on the configured local port to serve bugs which
+have been previously retried
+
+=item B<--search, -S>
+
+Cause the running daemon to show the pkgreport.cgi page corresponding
+to the search by invoking sensible-browser and an appropriate url
+
+=item B<--show, -s>
+
+Cause the running daemon to show the bugreport.cgi page corresponding
+to the bug by invoking sensible-browser and an appropriate url
+
+=item B<--port,-p>
+
+The port that the daemon is running on (or will be running on.)
+
+Defaults to the value of the currently running daemon, the value in
+the configuration file, or 8080 if nothing is set.
+
+=item B<--bugs-to-get>
+
+File which contains the set of bugs to get.
+Defaults to ~/.debbugs/bugs_to_get
+
+=item B<--debug, -d>
+
+Debug verbosity. (Default 0)
+
+=item B<--help, -h>
+
+Display brief useage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+=head1 EXAMPLES
+
+
+=cut
+
+
+use vars qw($DEBUG);
+
+use User;
+use Config::Simple;
+use File::Temp qw(tempdir);
+use Params::Validate qw(validate_with :types);
+use POSIX 'setsid';
+use Debbugs::Common qw(checkpid lockpid);
+
+my %options = (debug           => 0,
+	       help            => 0,
+	       man             => 0,
+	       verbose         => 0,
+	       quiet           => 0,
+	       detach          => 1,
+	       cgi_bin         => '/var/lib/debbugs/www/cgi-bin',
+	       css             => '/var/lib/debbugs/www/bugs.css',
+	       );
+
+my %option_defaults = (port => 8080,
+		       debbugs_config => User->Home.'/.debbugs/debbugs_config',
+		       mirror_location => User->Home.'/.debbugs/mirror/',
+		       bugs_to_get => User->Home.'/.debbugs/bugs_to_get',
+		      );
+
+GetOptions(\%options,
+	   'daemon|D','show|s','search|select|S','mirror|M', 'stop',
+	   'detach!',
+	   'css=s','cgi_bin|cgi-bin|cgi=s',
+	   'verbose|v+','quiet|q+',
+	   'debug|d+','help|h|?','man|m');
+
+pod2usage() if $options{help};
+pod2usage({verbose=>2}) if $options{man};
+
+$DEBUG = $options{debug};
+
+my @USAGE_ERRORS;
+if (1 != grep {exists $options{$_}} qw(daemon show search mirror stop)) {
+     push @USAGE_ERRORS,"You must pass one (and only one) of --daemon --show --search or --mirror";
+}
+$options{verbose} = $options{verbose} - $options{quiet};
+
+pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
+
+
+# munge in local configuration
+
+local_config(\%options);
+
+if ($options{daemon}) {
+     # daemonize, do stuff
+     my $pid = checkpid($options{mirror_location}.'/local-debbugs.pid');
+     if (defined $pid and $pid != 0) {
+	  print STDERR "Unable to start daemon; it's already running\n";
+	  exit 1;
+     }
+     if (-e $options{mirror_location}.'/local-debbugs.pid' and
+	 not defined $pid) {
+	  print STDERR "Unable to determine if daemon is running: $!\n";
+	  exit 1;
+     }
+     # ok, now lets daemonize
+
+     # XXX make sure that all paths have been turned into absolute
+     # paths
+     chdir '/' or die "Can't chdir to /: $!";
+     # allow us not to detach for debugging
+     if ($options{detach}) {
+          open STDIN, '/dev/null' or die "Can't read /dev/null: $!";
+	  open STDOUT, '>/dev/null'
+	       or die "Can't write to /dev/null: $!";
+	  defined(my $pid = fork) or die "Can't fork: $!";
+	  exit if $pid;
+	  setsid or die "Can't start a new session: $!";
+	  open STDERR, '>&STDOUT' or die "Can't dup stdout: $!";
+     }
+     lockpid($options{mirror_location}.'/local-debbugs.pid') or
+	  die "Unable to deal with the pidfile";
+     # this is the subclass of HTTP::Server::Simple::CGI which handles
+     # the "hard" bits of actually running a tiny webserver for us
+     {
+	  package local_debbugs::server;
+	  use IO::File;
+	  use HTTP::Server::Simple;
+	  use base qw(HTTP::Server::Simple::CGI);
+
+	  sub net_server {
+	       return 'Net::Server::Fork';
+	  }
+
+	  sub redirect {
+	       my ($cgi,$url) = @_;
+	       print "HTTP/1.1 302 Found\r\n";
+	       print "Location: $url\r\n";
+	  }
+
+	  # here we want to call cgi-bin/pkgreport or cgi-bin/bugreport
+	  sub handle_request {
+	       my ($self,$cgi) = @_;
+
+	       my $base_uri = 'http://'.$cgi->virtual_host;
+	       if ($cgi->virtual_port ne 80) {
+		    $base_uri .= ':'.$cgi->virtual_port;
+	       }
+	       my $path = $cgi->path_info();
+	       # RewriteRule ^/[[:space:]]*#?([[:digit:]][[:digit:]][[:digit:]]+)([;&].+)?$ /cgi-bin/bugreport.cgi?bug=$1$2 [L,R,NE]
+	       if ($path =~ m{^/?\s*\#?(\d+)((?:[;&].+)?)$}) {
+		    redirect($cgi,$base_uri."/cgi-bin/bugreport.cgi?bug=$1$2");
+	       }
+	       # RewriteRule ^/[Ff][Rr][Oo][Mm]:([^/]+\@.+)$ /cgi-bin/pkgreport.cgi?submitter=$1 [L,R,NE]
+	       elsif ($path =~ m{^/?\s*from:([^/]+\@.+)$}i) {
+		    redirect($cgi,$base_uri."/cgi-bin/pkgreport.cgi?submitter=$1");
+	       }
+	       # RewriteRule ^/([^/]+\@.+)$ /cgi-bin/pkgreport.cgi?maint=$1 [L,R,NE]
+	       elsif ($path =~ m{^/?\s*([^/]+\@.+)$}i) {
+		    redirect($cgi,$base_uri."/cgi-bin/pkgreport.cgi?maint=$1");
+	       }
+	       # RewriteRule ^/mbox:([[:digit:]][[:digit:]][[:digit:]]+)([;&].+)?$ /cgi-bin/bugreport.cgi?mbox=yes&bug=$1$2 [L,R,NE]
+	       elsif ($path =~ m{^/?\s*mbox:\#?(\d+)((?:[;&].+)?)$}i) {
+		    redirect($cgi,$base_uri."/cgi-bin/bugreport.cgi?mbox=yes;bug=$1$2");
+	       }
+	       # RewriteRule ^/src:([^/]+)$ /cgi-bin/pkgreport.cgi?src=$1 [L,R,NE]
+	       elsif ($path =~ m{^/?src:([^/]+)$}i) {
+		    redirect($cgi,$base_uri."/cgi-bin/pkgreport.cgi?src=$1");
+	       }
+	       # RewriteRule ^/severity:([^/]+)$ /cgi-bin/pkgreport.cgi?severity=$1 [L,R,NE]
+	       elsif ($path =~ m{^/?severity:([^/]+)$}i) {
+		    redirect($cgi,$base_uri."/cgi-bin/pkgreport.cgi?severity=$1");
+	       }
+	       # RewriteRule ^/tag:([^/]+)$ /cgi-bin/pkgreport.cgi?tag=$1 [L,R,NE]
+	       elsif ($path =~ m{^/?tag:([^/]+)$}i) {
+		    redirect($cgi,$base_uri."/cgi-bin/pkgreport.cgi?tag=$1");
+	       }
+	       # RewriteRule ^/([^/]+)$ /cgi-bin/pkgreport.cgi?pkg=$1 [L,R,NE]
+	       elsif ($path =~ m{^/?([^/]+)$}i) {
+		    redirect($cgi,$base_uri."/cgi-bin/pkgreport.cgi?pkg=$1");
+	       }
+	       elsif ($path =~ m{^/?cgi(?:-bin)?/((?:(?:bug|pkg)report|version)\.cgi)}) {
+		    # dispatch to pkgreport.cgi
+		    print "HTTP/1.1 200 OK\n";
+		    exec("$options{cgi_bin}/$1") or
+			 die "Unable to execute $options{cgi_bin}/$1";
+	       }
+	       elsif ($path =~ m{^/?css/bugs.css}) {
+		    my $fh = IO::File->new($options{css},'r') or
+			 die "Unable to open $options{css} for reading: $!";
+		    print "HTTP/1.1 200 OK\n";
+		    print "Content-type: text/css\n";
+		    print "\n";
+		    print <$fh>;
+	       }
+	       elsif ($path =~ m{^/?$}) {
+		    redirect($cgi,$base_uri."/cgi-bin/pkgreport.cgi?package=put%20package%20here");
+	       }
+	       else {
+		    print "HTTP/1.1 404 Not Found\n";
+		    print "Content-Type: text/html\n";
+		    print "\n";
+		    print "<h1>That which you were seeking, found I have not.</h1>\n";
+	       }
+	       # RewriteRule ^/$ /Bugs/ [L,R,NE]
+	  }
+     }
+     my $debbugs_server = local_debbugs::server->new($options{port}) or
+	  die "Unable to create debbugs server";
+     $debbugs_server->run() or
+	  die 'Unable to run debbugs server';
+}
+elsif ($options{stop}) {
+     # stop the daemon
+     my $pid = checkpid($options{mirror_location}.'/local-debbugs.pid');
+     if (not defined $pid or $pid == 0) {
+	  print STDERR "Unable to open pidfile or daemon not running: $!\n";
+	  exit 1;
+     }
+     exit !(kill(15,$pid) == 1);
+}
+elsif ($options{mirror}) {
+     # run the mirror jobies
+     # figure out which bugs we need
+     my @bugs = select_bugs(\%options);
+     # get them
+     my $tempdir = tempdir(CLEANUP => 1);
+     my $mirror_log = IO::File->new($options{mirror_location}.'/mirror.log') or
+	  die "Unable to open $options{mirror_location}/mirror.log for writing: $!";
+     my $inc_fh = IO::File->new("$tempdir/include_list",'w') or
+	  die "Unable to open $tempdir/include_list for writing: $!";
+     foreach my $bug (@bugs) {
+	  print {$inc_fh} "*/${bug}.*\n" or
+	       die "Unable to write to $tempdir/include_list: $!";
+     }
+     close $inc_fh or
+	  die "Unable to close $tempdir/include_list: $!";
+     my ($wrf,$rfh);
+     my @common_rsync_options = ('-avz','--partial');
+     print "Rsyncing bugs\n" if not $options{quiet};
+     run_rsync(log => $mirror_log,
+	       ($options{debug}?(debug => \*STDERR):()),
+	       options => [@common_rsync_options,
+			   '--delete-after',
+			   '--include-from',"$tempdir/include_list",
+			   # skip things not specifically included
+			   '--exclude','*/*',
+			   # skip the -1,-2,-3.log files
+			   '--exclude','*.log',
+			   'rsync://'.$options{bug_mirror}.'/bts-spool-db/',
+			   $options{mirror_location}.'/db-h/']
+	      );
+     print "Rsyncing archived bugs\n" if $options{verbose};
+     run_rsync(log => $mirror_log,
+	       ($options{debug}?(debug => \*STDERR):()),
+	       options => [@common_rsync_options,
+			   '--delete-after',
+			   '--include-from',"$tempdir/include_list",
+			   # skip things not specifically included
+			   '--exclude','*/*',
+			   # skip the -1,-2,-3.log files
+			   '--exclude','*.log',
+			   'rsync://'.$options{bug_mirror}.'/bts-spool-archive/',
+			   $options{mirror_location}.'/archive/',
+			  ],
+	      );
+     print "Rsyncing indexes\n" if $options{verbose};
+     run_rsync(log => $mirror_log,
+	       ($options{debug}?(debug => \*STDERR):()),
+	       options => [@common_rsync_options,
+			   '--exclude','*old',
+			   '--exclude','*.bak',
+			   '--exclude','by-reverse*',
+			   'rsync://'.$options{bug_mirror}.'/bts-spool-index/',
+			   $options{mirror_location}.'/',
+			  ],
+	      );
+     print "Rsyncing versions\n" if $options{verbose};
+     run_rsync(log => $mirror_log,
+	       ($options{debug}?(debug => \*STDERR):()),
+	       options => [@common_rsync_options,
+			   '--delete-after',
+			   '--exclude','*old',
+			   '--exclude','*.bak',
+			   'rsync://'.$options{bug_mirror}.'/bts-spool-versions/',
+			   $options{mirror_location}.'/versions/',
+			  ],
+	      );
+}
+elsif ($options{show}) {
+     # figure out the url
+     # see if the daemon is running
+     my $pid = checkpid($options{mirror_location}.'/local-debbugs.pid');
+     if (not defined $pid or $pid == 0) {
+	  print STDERR "Unable to open pidfile or daemon not running: $!\n";
+	  print STDERR qq(Mr. T: "I pity da fool who tries to show a bug without a running daemon"\n);
+	  print STDERR "Hint: try the --daemon option first\n";
+	  exit 1;
+     }
+     # twist and shout
+     my $url = qq(http://localhost:$options{port}/$ARGV[0]);
+     exec('/usr/bin/sensible-browser',$url) or
+	  die "Unable to run sensible-browser (try feeding me cheetos?)";
+}
+elsif ($options{search}) {
+     my $url = qq(http://localhost:$options{port}/cgi-bin/pkgreport.cgi?).
+	  join(';',map {if (/:/) {s/:/=/; $_;} else {qq(pkg=$_);}} @ARGV);
+     my $pid = checkpid($options{mirror_location}.'/local-debbugs.pid');
+     if (not defined $pid or $pid == 0) {
+	  print STDERR "Unable to open pidfile or daemon not running: $!\n";
+	  print STDERR qq(Mr. T: "I pity da fool who tries to show a bug without a running daemon"\n);
+	  print STDERR "Hint: try the --daemon option first\n";
+	  exit 1;
+     }
+     # twist and shout
+     exec('/usr/bin/sensible-browser',$url) or
+	  die "Unable to run sensible-browser (Maybe chorizo is required?)";
+}
+else {
+     # you get here, you were an idiot in checking for @USAGE_ERRORS
+     # above
+     die "No option that we understand was passed (the first check for this is now buggy, so shoot your maintainer)"
+}
+
+
+# determine the local configuration
+sub local_config{
+     my ($options) = @_;
+     my $config = {};
+     if (-e '/etc/debbugs/local_debbugs.conf') {
+	  Config::Simple->import_from('/etc/debbugs/local_debbugs.conf', $config) or
+		    die "Unable to read configuration from /etc/debbugs/local_debbugs.conf: $!";
+     }
+     if (-e User->Home.'/.debbugs/local_debbugs.conf') {
+	  Config::Simple->import_from(User->Home.'/.debbugs/local_debbugs.conf', $config) or
+		    die "Unable to read configuration from ".User->Home.'/.debbugs/local_debbugs.conf: '.$!;
+     }
+     for (keys %option_defaults) {
+	  if (exists $config->{$_} and not defined $options->{$_}) {
+	       $options->{$_} = $config->{$_};
+	  }
+	  if (not defined $options->{$_}) {
+	       $options->{$_} = $option_defaults{$_};
+	  }
+     }
+}
+
+# actually run rsync with the passed options
+sub run_rsync{
+     my %param = validate_with(params => \@_,
+			       spec   => {log => {type => HANDLE,
+						 },
+					  debug => {type => HANDLE,
+						    optional => 1,
+						   },
+					  options => {type => ARRAYREF,
+						     },
+					 }
+			      );
+     my ($output_fh,@rsync_options) = @_;
+     my ($wfh,$rfh);
+     my $pid = open3($wfh,$rfh,
+		     'rsync',
+		     @{$param{options}}
+		    ) or die "Unable to start rsync: $!";
+     close $wfh or die "Unable to close the writer filehandle $?";
+     while (<$rfh>) {
+	  print {$param{log}} $_;
+	  if (exists $param{debug}) {
+	       print {$param{debug}} $_;
+	  }
+     }
+}
+
+
+
+# select a set of bugs
+sub select_bugs{
+     my ($options) = @_;
+
+     my %valid_keys = (package => 'package',
+                       pkg     => 'package',
+                       src     => 'src',
+                       source  => 'src',
+                       maint   => 'maint',
+                       maintainer => 'maint',
+                       submitter => 'submitter',
+                       from => 'submitter',
+                       status    => 'status',
+                       tag       => 'tag',
+                       tags      => 'tag',
+                       usertag   => 'tag',
+                       usertags  => 'tag',
+                       owner     => 'owner',
+                       dist      => 'dist',
+                       distribution => 'dist',
+                       bugs       => 'bugs',
+                       archive    => 'archive',
+                       severity   => 'severity',
+		       correspondent => 'correspondent',
+		       affects       => 'affects',
+                      );
+
+     my $soap = SOAP::Lite
+	  -> uri('Debbugs/SOAP/V1')
+	       -> proxy("http://$options{bug_mirror}/cgi-bin/soap.cgi");
+     my @bugs;
+     my @bug_selections = ();
+     if (not -e $options{bugs_to_get}) {
+	  my ($addr) = get_addresses(exists $ENV{DEBEMAIL}?
+				     $ENV{DEBEMAIL} :
+				     (User->Login . '@' . qx(hostname --fqdn)));
+	  # by default include bugs talked to by this user packages
+	  # maintained by this user, submitted by this user, and rc
+	  # bugs
+	  push @bug_selections,
+	       ("correspondent:$addr archive:both",
+		"maint:$addr archive:both",
+		"submitter:$addr archive:both",
+		"severity:serious severity:grave severity:critical archive:both",
+	       );
+     }
+     else {
+	  my $btg_fh = IO::File->new($options{bugs_to_get},'r') or
+	       die "unable to open bugs to get file '$options{bugs_to_get}' for reading: $!";
+	  while (<$btg_fh>) {
+	       chomp;
+	       next if /^\s*#/;
+	       if (/^\d+$/) {
+		    push @bugs,$_;
+	       }
+	       elsif (/\s\w+\:/) {
+		    push @bug_selections, $_;
+	       }
+	  }
+     }
+     for my $selection (@bug_selections) {
+	  my @subselects = split /\s+/,$selection;
+	  my %search_parameters;
+	  my %users;
+	  for my $subselect (@subselects) {
+	       my ($key,$value) = split /:/, $subselect, 2;
+	       next unless $key;
+	       if (exists $valid_keys{$key}) {
+		    push @{$search_parameters{$valid_keys{$key}}},
+			 $value if $value;
+	       } elsif ($key =~/users?$/) {
+		    $users{$value} = 1 if $value;
+	       }
+	  }
+	  my %usertags;
+	  for my $user (keys %users) {
+	       my $ut = $soap->get_usertag($user)->result();
+	       next unless defined $ut and $ut ne "";
+	       for my $tag (keys %{$ut}) {
+		    push @{$usertags{$tag}},
+			 @{$ut->{$tag}};
+	       }
+	  }
+	  my $bugs = $soap->get_bugs(%search_parameters,
+				     (keys %usertags)?(usertags=>\%usertags):()
+				    )->result();
+	  push @bugs,@{$bugs} if defined $bugs and @{$bugs};
+     }
+     return @bugs;
+}
+
+
+__END__
