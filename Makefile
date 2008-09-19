@@ -12,7 +12,7 @@ man_dir		:= $(DESTDIR)/usr/share/man
 man8_dir	:= $(man_dir)/man8
 examples_dir	:= $(doc_dir)/examples
 
-scripts_in	:= $(filter-out scripts/config scripts/errorlib scripts/text, $(wildcard scripts/*))
+scripts_in	:= $(foreach script, $(filter-out scripts/config scripts/errorlib scripts/text, $(wildcard scripts/*)),$(patsubst scripts/%,%,$(script)))
 htmls_in	:= $(wildcard html/*.html.in)
 cgis		:= $(wildcard cgi/*.cgi cgi/*.pl)
 
@@ -38,17 +38,17 @@ install_mostfiles:
 	for dir in $(sbin_dir) $(etc_dir)/html $(etc_dir)/indices \
 $(var_dir)/indices $(var_dir)/www/cgi $(var_dir)/www/db $(var_dir)/www/txt \
 $(var_dir)/spool/lock $(var_dir)/spool/archive $(var_dir)/spool/incoming \
-$(var_dir)/spool/db-h $(scripts_dir) $(perl_dir) $(examples_dir) $(man8_dir); \
+$(var_dir)/spool/db-h $(scripts_dir) $(examples_dir) $(man8_dir); \
           do test -d $$dir || $(install_exec) -d $$dir; done
-
+# we shouldn't ship db-h spool directories
 	# make db-h spool dirs if they don't exist
-	cd $(var_dir)/spool/db-h; \
-	  for dir in $(shell seq -w 00 99); \
-	    do test -d $$dir || $(install_exec) -d $$dir; done
+#	cd $(var_dir)/spool/db-h; \
+#	  for dir in $(shell seq -w 00 99); \
+#	    do test -d $$dir || $(install_exec) -d $$dir; done
 
 
 	# install the scripts
-	$(foreach script,$(scripts_in), $(install_exec) $(script) $(scripts_dir)/$(script);)
+	$(foreach script,$(scripts_in), $(exec $(install_exec) $(script) $(scripts_dir)/$(script)))
 	$(install_data) scripts/errorlib $(scripts_dir)/errorlib
 
 	# install examples
@@ -86,8 +86,8 @@ $(var_dir)/spool/db-h $(scripts_dir) $(perl_dir) $(examples_dir) $(man8_dir); \
 	$(install_data) misc/updateseqs $(var_dir)/spool
 
 	# install the templates
-	$(foreach dir $(wildcard templates/*/*) $(install_exec) $(template_dir)/$(patsubst templates/%,%,$(dir)))
-	$(foreach tmpl $(wildcard templates/*/*/*.tmpl) $(install_data) $(template_dir)/$(patsubst templates/%,%,$(tmpl)))
+	$(foreach dir, $(wildcard templates/*/*), $(exec -d $(install_exec) $(template_dir)/$(patsubst templates/%,%,$(dir))))
+	$(foreach tmpl, $(wildcard templates/*/*/*.tmpl), $(exec $(install_data) $(tmpl) $(template_dir)/$(patsubst templates/%,%,$(tmpl))))
 
 
 .PHONY: test

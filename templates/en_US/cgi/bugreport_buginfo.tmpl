@@ -60,6 +60,15 @@
   }
   $output
 }{ my $output = '';
+ if (length($status{forwarded})) {
+    $output = "<p>Forwarded to " . 
+              join(', ',
+		   map {maybelink($_)}
+	            split /\,\s+/,$status{forwarded}
+	          )."</p>\n";
+ }
+ $output;
+}{ my $output = '';
   if (exists $status{summary} and defined $status{summary} and length $status{summary}) {
      $output .= q(<p>Summary: ).html_escape($status{summary}).q(</p>);
   }

@@ -43,7 +43,7 @@ BEGIN{
 				qw(getmaintainers_reverse),
 				qw(getpseudodesc),
 			       ],
-		     misc   => [qw(make_list globify_scalar english_join)],
+		     misc   => [qw(make_list globify_scalar english_join checkpid)],
 		     date   => [qw(secs_to_english)],
 		     quit   => [qw(quit)],
 		     lock   => [qw(filelock unfilelock lockpid)],
@@ -418,15 +418,9 @@ Returns 1 on success, false on failure; dies on unusual errors.
 sub lockpid {
      my ($pidfile) = @_;
      if (-e $pidfile) {
-	  my $pidfh = IO::File->new($pidfile, 'r') or
-	       die "Unable to open pidfile $pidfile: $!";
-	  local $/;
-	  my $pid = <$pidfh>;
-	  ($pid) = $pid =~ /(\d+)/;
-	  if (defined $pid and kill(0,$pid)) {
-	       return 0;
-	  }
-	  close $pidfh;
+	  my $pid = checkpid($pidfile);
+	  die "Unable to read pidfile $pidfile: $!" if not defined $pid;
+	  return 0 if $pid != 0;
 	  unlink $pidfile or
 	       die "Unable to unlink stale pidfile $pidfile $!";
      }
@@ -435,6 +429,35 @@ sub lockpid {
      print {$pidfh} $$ or die "Unable to write to $pidfile $!";
      close $pidfh or die "Unable to close $pidfile $!";
      return 1;
+}
+
+=head2 checkpid
+
+     checkpid('/path/to/pidfile');
+
+Checks a pid file and determines if the process listed in the pidfile
+is still running. Returns the pid if it is, 0 if it isn't running, and
+undef if the pidfile doesn't exist or cannot be read.
+
+=cut
+
+sub checkpid{
+     my ($pidfile) = @_;
+     if (-e $pidfile) {
+	  my $pidfh = IO::File->new($pidfile, 'r') or
+	       return undef;
+	  local $/;
+	  my $pid = <$pidfh>;
+	  close $pidfh;
+	  ($pid) = $pid =~ /(\d+)/;
+	  if (defined $pid and kill(0,$pid)) {
+	       return $pid;
+	  }
+	  return 0;
+     }
+     else {
+	  return undef;
+     }
 }
 
 

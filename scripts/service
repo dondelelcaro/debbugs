@@ -391,12 +391,14 @@ END
 	    Debbugs::User::read_usertags(\%ut, $user);
             my @oldtags = (); my @newtags = (); my @badtags = ();
 	    my %chtags;
-	    for my $t (split /[,\s]+/, $tags) {
-	        if ($t =~ m/^[a-zA-Z0-9.+\@-]+$/) {
-		    $chtags{$t} = 1;
-		} else {
-		    push @badtags, $t;
-		}
+	    if (defined $tags and length $tags) {
+		 for my $t (split /[,\s]+/, $tags) {
+		      if ($t =~ m/^[a-zA-Z0-9.+\@-]+$/) {
+			   $chtags{$t} = 1;
+		      } else {
+			   push @badtags, $t;
+		      }
+		 }
 	    }
 	    if (@badtags) {
                 print {$transcript} "Ignoring illegal tag/s: ".join(', ', @badtags).".\nPlease use only alphanumerics, at, dot, plus and dash.\n";

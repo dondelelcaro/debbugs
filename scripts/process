@@ -28,6 +28,8 @@ use Debbugs::Text qw(:templates);
 use Debbugs::Status qw(:versions);
 use Debbugs::Config qw(:globals :config);
 
+use Debbugs::Control qw(append_action_to_log);
+
 chdir( "$gSpoolDir" ) || die "chdir spool: $!\n";
 
 #open(DEBUG,"> /tmp/debbugs.debug");
@@ -916,16 +918,14 @@ die "wot no exit";
 
 sub htmllog {
     my ($whatobj,$whatverb,$where,$desc) = @_;
-    my $hash = get_hashname($ref);
-    open(AP,">>db-h/$hash/$ref.log") || die "opening db-h/$hash/$ref.log (lh): $!";
-    print(AP
-          "\6\n".
-          "<strong>$whatobj $whatverb</strong>".
-          ($where eq '' ? "" : " to <code>".html_escape($where)."</code>").
-          ":<br>\n". $desc.
-          "\n\3\n") || die "writing db-h/$hash/$ref.log (lh): $!";
-    close(AP) || die "closing db-h/$hash/$ref.log (lh): $!";
-}    
+    append_action_to_log(bug => $ref,
+			 action => "$whatobj $whatverb",
+			 requester => '',
+			 request_addr => $where,
+			 desc         => $desc,
+			 get_lock     => 0,
+			);
+}
 
 sub stripbccs {
     my $msg = shift;

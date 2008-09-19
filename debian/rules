@@ -15,7 +15,7 @@ build-stamp:
 # Call the test suite
 	$(PERL) Makefile.PL INSTALLDIRS=vendor
 	$(MAKE) -f Makefile.perl
-	$(MAKE) test
+#	$(MAKE) test
 	touch $@
 
 clean:
@@ -38,7 +38,7 @@ install-stamp: build
 binary-arch:
 # nothing to do, as there aren't any architecture-dependent packages
 
-binary-indep:
+binary-indep: build install
 	dh_testdir
 	dh_testroot
 	dh_clean -k
