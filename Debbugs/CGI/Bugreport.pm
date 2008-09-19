@@ -320,7 +320,7 @@ sub handle_record{
 	  # (even though these links already exist at the top)
 	  $output =~ s,((?:ftp|http|https)://[\S~-]+?/?)([\)\'\:\.\,]?(?:\s|\.<|$)),<a href=\"$1\">$1</a>$2,go;
 	  # Add links to the cloned bugs
-	  $output =~ s{(Bug )(\d+)( cloned as bugs? )(\d+)(?:\-(\d+)|)}{$1.bug_links(bug=>$2).$3.bug_links(bug=>[$4..$5])}eo;
+	  $output =~ s{(Bug )(\d+)( cloned as bugs? )(\d+)(?:\-(\d+)|)}{$1.bug_links(bug=>$2).$3.bug_links(bug=>(defined $5)?[$4..$5]:$4)}eo;
 	  # Add links to merged bugs
 	  $output =~ s{(?<=Merged )([\d\s]+)(?=\.)}{join(' ',map {bug_links(bug=>$_)} (split /\s+/, $1))}eo;
 	  # Add links to blocked bugs
