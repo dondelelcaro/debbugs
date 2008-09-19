@@ -11,6 +11,7 @@ use lib qw(/usr/lib/debbugs);
 
 use Mail::CrossAssassin;
 use Mail::SpamAssassin;
+use Mail::SpamAssassin::Logger;
 
 use Debbugs::Config qw(:config);
 # New versions of debbugs will not allow use in /etc/debbugs/config
@@ -35,12 +36,14 @@ sub header_or_empty ($$) {
 }
 
 my $spam = Mail::SpamAssassin->new({
-        dont_copy_prefs => 1,
-        site_rules_filename => $config{spam_rules_dir},
-        userprefs_filename => $config{spam_user_prefs},
-        	local_tests_only => ($config{spam_local_tests_only} || 0),
-        	debug => ($ENV{DEBBUGS_SPAM_DEBUG} || 0),
+        #dont_copy_prefs => 1,
+#	debug => 'all',
+        #site_rules_filename => $config{spam_rules_dir},
+        #userprefs_filename => $config{spam_user_prefs},
+        #	local_tests_only => ($config{spam_local_tests_only} || 0),
+#        	debug => ($ENV{DEBBUGS_SPAM_DEBUG} || 0),
 });
+#Mail::SpamAssassin::Logger::add(method => 'file',filename => "/home/debbugs/.spamassassin/debuglog_".time."_$$");
 # wait longer for a lock
 $spam->init_learner({wait_for_lock => 1});
 
