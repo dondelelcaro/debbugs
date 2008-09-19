@@ -225,7 +225,6 @@ if ($tryref >= 0)
     if ($bfound) { 
         $ref= $tryref; 
     } else {
-        &htmllog("Reply","sent", $replyto,"Unknown problem report number <code>$tryref</code>.");
         &sendmessage(create_mime_message(
           [From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
 	   To            => $replyto,
@@ -317,7 +316,6 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	push @generalcc,"$gStrongList\@$gListDomain";
     }
     if ($ref<0) {
-	&htmllog("Warning","sent",$replyto,"Message ignored.");
 	&sendmessage(create_mime_message(
           [From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
 	   To            => $replyto,
@@ -474,7 +472,6 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 
 if ($ref<0) { # new bug report
     if ($codeletter eq 'U') { # -submitter
-        &htmllog("Warning","sent",$replyto,"Message not forwarded.");
 	&sendmessage(create_mime_message(
           [From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
 	   To            => $replyto,
@@ -507,7 +504,6 @@ if ($ref<0) { # new bug report
 	$data->{package} = $config{default_package},
     }
     else {
- 	&htmllog("Warning","sent",$replyto,"Message not forwarded.");
 	my $body = message_body_template('mail/process_no_package',
 					);
         &sendmessage(create_mime_message(
