@@ -40,8 +40,8 @@ my $spam = Mail::SpamAssassin->new({
 #	debug => 'all',
         #site_rules_filename => $config{spam_rules_dir},
         #userprefs_filename => $config{spam_user_prefs},
-        #	local_tests_only => ($config{spam_local_tests_only} || 0),
-#        	debug => ($ENV{DEBBUGS_SPAM_DEBUG} || 0),
+        	local_tests_only => ($config{spam_local_tests_only} || 0),
+        	debug => ($ENV{DEBBUGS_SPAM_DEBUG} || 0),
 });
 #Mail::SpamAssassin::Logger::add(method => 'file',filename => "/home/debbugs/.spamassassin/debuglog_".time."_$$");
 # wait longer for a lock
