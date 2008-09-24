@@ -26,7 +26,7 @@ function toggle_extra_status_visible() \{
 	 else \{
 	    all_divs[i].style.position = "absolute";
       	    all_divs[i].style.display = "none"
-	    all_divs[i].style.zIndex = 1;
+	    all_divs[i].style.zIndex = 2;
 	    all_divs[i].style.border = "#000 1px solid";
 	    var subspans = all_divs[i].getElementsByTagName("span");
 	    for (var j = 0; j < subspans.length; j++) \{
@@ -38,9 +38,13 @@ function toggle_extra_status_visible() \{
 \}
 
 function extra_status_visible(id) \{
+  var m = document.getElementById("status_mask");
   if (visible_extra_status) \{
      var t = document.getElementById("extra_status_"+visible_extra_status);
      t.style.display = "none";
+     if (m) \{
+        m.style.display = "none";
+     \}
      if (visible_extra_status == id) \{
      	visible_extra_status = 0;
         return;
@@ -51,6 +55,10 @@ function extra_status_visible(id) \{
   if (e) \{
      e.style.display = "block";
      visible_extra_status = id;
+     if (m) \{
+        m.onclick = function() \{ extra_status_visible(id); \};
+        m.style.display = "block";
+     \}
   \}
 \}
 

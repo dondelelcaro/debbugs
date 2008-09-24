@@ -220,6 +220,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
   * Link to packages in bugreport page (closes: #229067)
   * Totally revamp the pkgreport templates (closes: #434504)
   * Add correspondent option to track bug correpondents (closes: #485804)
+  * Allow clicking anywhere outside the extra status box to close the
+    extra status box (closes: #499990) Thanks to James Vega for the patch.
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

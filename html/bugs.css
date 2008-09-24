@@ -252,6 +252,19 @@ li {
   display: inline;
   }
 
+#status_mask {
+    -moz-opacity: 0;
+    opacity: 0;
+    filter: alpha(opacity=0);
+    z-index: 1;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0px;
+    left: 0px;
+    display: none;
+}
+
 .bugs li {
     margin-top: 5px;
 }
