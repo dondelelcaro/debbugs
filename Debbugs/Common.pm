@@ -162,6 +162,8 @@ sub get_hashname {
 
 Returns the path to the logfile corresponding to the bug.
 
+Returns undef if the bug does not exist.
+
 =cut
 
 sub buglog {
@@ -169,7 +171,8 @@ sub buglog {
     my $location = getbuglocation($bugnum, 'log');
     return getbugcomponent($bugnum, 'log', $location) if ($location);
     $location = getbuglocation($bugnum, 'log.gz');
-    return getbugcomponent($bugnum, 'log.gz', $location);
+    return getbugcomponent($bugnum, 'log.gz', $location) if ($location);
+    return undef;
 }
 
 

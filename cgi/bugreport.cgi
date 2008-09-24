@@ -79,6 +79,14 @@ my $archive = $param{'archive'} eq 'yes';
 my $repeatmerged = $param{'repeatmerged'} eq 'yes';
 
 my $buglog = buglog($ref);
+if (not defined $buglog) {
+     print $q->header(-status => "404 No such bug",
+		      -type => "text/html",
+		      -charset => 'utf-8',
+		     );
+     exit 0;
+}
+
 my @stat = stat $buglog;
 my $mtime = '';
 if (@stat) {

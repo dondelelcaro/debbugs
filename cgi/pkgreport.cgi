@@ -448,6 +448,7 @@ print "<HTML><HEAD>\n" .
     "</HEAD>\n" .
     '<BODY onload="pagemain();">' .
     "\n";
+print qq(<DIV id="status_mask"></DIV>\n);
 print "<H1>" . "$gProject$Archived $gBug report logs: $title" .
       "</H1>\n";
 
