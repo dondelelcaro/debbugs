@@ -21,7 +21,7 @@ my $soap = Debbugs::SOAP::Server
 # kill off all of the date/time related bits in the serializer.
 my $typelookup = $soap->serializer()->{_typelookup};
 for my $key (keys %{$typelookup}) {
-     next unless /Month|Day|Year|date|time|duration/i;
+     next unless defined $_ and /Month|Day|Year|date|time|duration/i;
      delete $typelookup->{$key};
 }
 $soap->handle;
