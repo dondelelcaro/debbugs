@@ -224,6 +224,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     extra status box (closes: #499990) Thanks to James Vega for the patch.
   * Return 404 when a bug number that does not exist is used
     (closes: #499997)
+  * Comment out CGI::Alert use for the time being (closes: #499681)
+  * No longer hard-code paths in age-1 (closes: #499682)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

@@ -24,6 +24,8 @@ use Debbugs::Common qw(getparsedaddrs make_list getmaintainers getpseudodesc);
 use Debbugs::Bugs qw(get_bugs bug_filter newest_bug);
 use Debbugs::Packages qw(getsrcpkgs getpkgsrc get_versions);
 
+use Debbugs::Status qw(splitpackages);
+
 use Debbugs::CGI qw(:all);
 
 use Debbugs::CGI::Pkgreport qw(:all);
@@ -77,10 +79,15 @@ if (exists $param{form_options} and defined $param{form_options}) {
 	  next unless exists $param{$incexc};
 	  $param{$incexc} = [grep /\S\:\S/, make_list($param{$incexc})];
      }
+     for my $key (keys %package_search_keys) {
+	  next unless exists $param{key};
+	  $param{$key} = [map {split /\s*,\s*/} make_list($param{$key})];
+     }
      # kill off keys for which empty values are meaningless
-     for my $key (qw(package src submitter severity status dist)) {
+     for my $key (qw(package src submitter affects severity status dist)) {
 	  next unless exists $param{$key};
-	  $param{$key} = [grep {length $_}  make_list($param{$key})];
+	  $param{$key} = [grep {defined $_ and length $_}
+			  make_list($param{$key})];
      }
      print $q->redirect(munge_url('pkgreport.cgi?',%param));
      exit 0;
@@ -332,8 +339,9 @@ my @temp = @package_search_key_order;
 while (my ($key,$value) = splice @temp, 0, 2) {
      next unless exists $param{$key};
      my @entries = ();
-     $param{$key} = [map {split /\s*,\s*/} make_list($param{$key})];
-     for my $entry (grep {defined $_ and length $_ } make_list($param{$key})) {
+     for my $entry (make_list($param{$key})) {
+	  # we'll handle newest below
+	  next if $key eq 'newest';
 	  my $extra = '';
 	  if (exists $param{dist} and ($key eq 'package' or $key eq 'src')) {
 	       my %versions = get_versions(package => $entry,
@@ -358,38 +366,33 @@ while (my ($key,$value) = splice @temp, 0, 2) {
 	       }
 	       $extra= " ($verdesc)" if keys %versions;
 	  }
-	  push @entries, $entry.$extra;
+	  if ($key eq 'maint' and $entry eq '') {
+	       push @entries, "no one (packages without maintainers)"
+	  }
+	  else {
+	       push @entries, $entry.$extra;
+	  }
      }
      push @title,$value.' '.join(' or ', @entries) if @entries;
 }
+if (defined $param{newest}) {
+     my $newest_bug = newest_bug();
+     @bugs = ($newest_bug - $param{newest} + 1) .. $newest_bug;
+     push @title, 'in '.@bugs.' newest reports';
+     $param{bugs} = [exists $param{bugs}?make_list($param{bugs}):(),
+		     @bugs,
+		    ];
+}
+
 my $title = $gBugs.' '.join(' and ', map {/ or /?"($_)":$_} @title);
 @title = ();
 
-# we have to special case the maint="" search, unfortunatly.
-if (defined $param{maint} and $param{maint} eq "" or ref($param{maint}) and not @{$param{maint}}) {
-     my %maintainers = %{getmaintainers()};
-     @bugs = get_bugs(function =>
-		      sub {my %d=@_;
-			   foreach my $try (splitpackages($d{"pkg"})) {
-				return 1 if not exists $maintainers{$try};
-			   }
-			   return 0;
-		      }
-		     );
-     $title = $gBugs.' in packages with no maintainer';
-}
-elsif (defined $param{newest}) {
-     my $newest_bug = newest_bug();
-     @bugs = ($newest_bug - $param{newest} + 1) .. $newest_bug;
-     $title = @bugs.' newest '.$gBugs;
-}
-else {
-     #yeah for magick!
-     @bugs = get_bugs((map {exists $param{$_}?($_,$param{$_}):()}
-		       keys %package_search_keys, 'archive'),
-		      usertags => \%ut,
-		     );
-}
+#yeah for magick!
+@bugs = get_bugs((map {exists $param{$_}?($_,$param{$_}):()}
+		  grep {$_ ne 'newest'}
+		  keys %package_search_keys, 'archive'),
+		 usertags => \%ut,
+		);
 
 if (defined $param{version}) {
      $title .= " at version $param{version}";

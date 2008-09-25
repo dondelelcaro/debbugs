@@ -14,7 +14,7 @@ BEGIN{
 
 use CGI::Simple;
 
-use CGI::Alert 'don@donarmstrong.com';
+# use CGI::Alert 'nobody@example.com';
 
 use Search::Estraier;
 use Debbugs::Config qw(:config);

@@ -430,6 +430,14 @@ sub get_bugs_by_idx{
 			      );
      my %bugs = ();
 
+     # If we're given an empty maint (unmaintained packages), we can't
+     # handle it, so bail out here
+     for my $maint (make_list(exists $param{maint}?$param{maint}:[])) {
+	  if (defined $maint and $maint eq '') {
+	       die "Can't handle empty maint (unmaintained packages) in get_bugs_by_idx";
+	  }
+     }
+
      # We handle src packages, maint and maintenc by mapping to the
      # appropriate binary packages, then removing all packages which
      # don't match all queries
@@ -532,6 +540,9 @@ sub get_bugs_flatfile{
 # 					  dist      => {type => SCALAR|ARRAYREF,
 # 						        optional => 1,
 # 						       },
+					  bugs      => {type => SCALAR|ARRAYREF,
+							optional => 1,
+						       },
 					  archive   => {type => BOOLEAN,
 							default => 1,
 						       },
@@ -559,6 +570,23 @@ sub get_bugs_flatfile{
 	  @usertag_bugs{make_list(@{$param{usertags}}{make_list($param{tag})})
 			} = (1) x make_list(@{$param{usertags}}{make_list($param{tag})});
      }
+     my $unmaintained_packages = 0;
+     # unmaintained packages is a special case
+     for my $maint (make_list(exists $param{maint}?$param{maint}:[])) {
+	  if (defined $maint and $maint eq '' and not $unmaintained_packages) {
+	       $unmaintained_packages = 1;
+	       our %maintainers = %{getmaintainers()};
+	       $param{function} = [exists $param{function}?
+				   (ref $param{function}?@{$param{function}}:$param{function}):(),
+				   sub {my %d=@_;
+					foreach my $try (splitpackages($d{"pkg"})) {
+					     return 1 if not exists $maintainers{$try};
+					}
+					return 0;
+				   }
+				  ];
+	  }
+     }
      # We handle src packages, maint and maintenc by mapping to the
      # appropriate binary packages, then removing all packages which
      # don't match all queries
@@ -569,7 +597,7 @@ sub get_bugs_flatfile{
 	 exists $param{src} or
 	 exists $param{maint}) {
 	  delete @param{qw(maint src)};
-	  $param{package} = [@packages];
+	  $param{package} = [@packages] if @packages;
      }
      my $grep_bugs = 0;
      my %bugs;
@@ -577,15 +605,17 @@ sub get_bugs_flatfile{
 	  $bugs{$_} = 1 for make_list($param{bugs});
 	  $grep_bugs = 1;
      }
-     if (exists $param{owner} or exists $param{correspondent} or exists $param{affects}) {
-	  $bugs{$_} = 1 for get_bugs_by_idx(exists $param{correspondent}?(correspondent => $param{correspondent}):(),
-					    exists $param{owner}?(owner => $param{owner}):(),
-					    exists $param{affects}?(affects => $param{affects}):(),
+     # These queries have to be handled by get_bugs_by_idx
+     if (exists $param{owner}
+	 or exists $param{correspondent}
+	 or exists $param{affects}) {
+	  $bugs{$_} = 1 for get_bugs_by_idx(map {exists $param{$_}?($_,$param{$_}):()}
+					    qw(owner correspondent affects),
 					   );
 	  $grep_bugs = 1;
      }
      my @bugs;
-     while (<$flatfile>) {
+     BUG: while (<$flatfile>) {
 	  next unless m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/;
 	  my ($pkg,$bug,$time,$status,$submitter,$severity,$tags) = ($1,$2,$3,$4,$5,$6,$7);
 	  next if $grep_bugs and not exists $bugs{$bug};
@@ -629,14 +659,16 @@ sub get_bugs_flatfile{
 	       my @bug_tags = split ' ', $tags;
 	       my @packages = splitpackages($pkg);
 	       my $package = (@packages > 1)?\@packages:$packages[0];
-	       next unless
-		    $param{function}->(pkg       => $package,
-				       bug       => $bug,
-				       status    => $status,
-				       submitter => $submitter,
-				       severity  => $severity,
-				       tags      => \@bug_tags,
-				      );
+	       for my $function (make_list($param{function})) {
+		    next BUG unless
+			 $function->(pkg       => $package,
+				     bug       => $bug,
+				     status    => $status,
+				     submitter => $submitter,
+				     severity  => $severity,
+				     tags      => \@bug_tags,
+				    );
+	       }
 	  }
 	  push @bugs, $bug;
      }

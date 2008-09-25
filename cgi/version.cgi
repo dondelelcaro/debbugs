@@ -15,12 +15,12 @@ BEGIN{
 use CGI::Simple;
 
 # by default send this message nowhere
-use CGI::Alert q(nobody@example.com);
+# use CGI::Alert q(nobody@example.com);
 
 use Debbugs::Config qw(:config);
 
 BEGIN{
-     $CGI::Alert::Maintainer = $config{maintainer};
+     # $CGI::Alert::Maintainer = $config{maintainer};
 }
 
 use Debbugs::CGI qw(htmlize_packagelinks html_escape cgi_parameters munge_url);
