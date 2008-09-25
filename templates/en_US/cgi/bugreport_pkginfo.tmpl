@@ -8,8 +8,10 @@
  for my $package (values %package) {
      $output .= q(Maintainer for ).package_links(package=>$package->{package}).qq( is ).
                 package_links(maintainer => $package->{maintainer}).qq(; );
-     $output .= q(Source for ).package_links(package=>$package->{package}).qq( is ).
-                package_links(source => $package->{source}).qq(. );
+     if (exists $package->{source}) {
+     	$output .= q(Source for ).package_links(package=>$package->{package}).qq( is ).
+        	    package_links(source => $package->{source}).qq(. );
+     }
  }
  $output;
 }</p>

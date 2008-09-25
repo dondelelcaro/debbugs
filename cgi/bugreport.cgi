@@ -84,6 +84,11 @@ if (not defined $buglog) {
 		      -type => "text/html",
 		      -charset => 'utf-8',
 		     );
+     print fill_in_template(template=>'cgi/no_such_bug',
+			    variables => {modify_time => strftime('%a, %e %b %Y %T UTC', gmtime),
+					  bug_num     => $ref,
+					 },
+			   );
      exit 0;
 }
 
@@ -262,7 +267,7 @@ my @packages = splitpackages($status{package});
 
 foreach my $pkg (@packages) {
      $package{$pkg} = {maintainer => exists($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)',
-		       source     => exists($pkgsrc{$pkg}) ? $pkgsrc{$pkg} : '(unknown)',
+		       exists($pkgsrc{$pkg}) ? (source => $pkgsrc{$pkg}) : (),
 		       package    => $pkg,
 		      };
 }
