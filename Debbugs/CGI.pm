@@ -350,8 +350,10 @@ our @package_search_key_order = (package   => 'in package',
 				 submitter => 'submitted by',
 				 owner     => 'owned by',
 				 status    => 'with status',
+				 affects   => 'which affect package',
 				 correspondent => 'with mail from',
 				 newest        => 'newest bugs',
+				 bugs          => 'in bug',
 				);
 our %package_search_keys = @package_search_key_order;
 

@@ -76,6 +76,11 @@ if (not defined $buglog) {
 		      -type => "text/html",
 		      -charset => 'utf-8',
 		     );
+     print fill_in_template(template=>'cgi/no_such_bug',
+			    variables => {modify_time => strftime('%a, %e %b %Y %T UTC', gmtime),
+					  bug_num     => $ref,
+					 },
+			   );
      exit 0;
 }
 
