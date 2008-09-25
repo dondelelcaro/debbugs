@@ -129,17 +129,18 @@ sub generate_package_info{
      my @references;
      my $pseudodesc = getpseudodesc();
      if ($package and defined($pseudodesc) and exists($pseudodesc->{$package})) {
-	  push @references, "to the <a href=\"http://${debbugs::gWebDomain}/pseudo-packages${debbugs::gHTMLSuffix}\">".
+	  push @references, "to the <a href=\"http://$config{web_domain}/pseudo-packages$config{html_suffix}\">".
 	       "list of other pseudo-packages</a>";
      }
      else {
-	  if ($package and defined $gPackagePages) {
+	  if ($package and defined $config{package_pages} and length $config{package_pages}) {
 	       push @references, sprintf "to the <a href=\"%s\">%s package page</a>",
-		    html_escape("http://${gPackagePages}/$package"), html_escape("$package");
+		    html_escape("http://$config{package_pages}/$package"), html_escape("$package");
 	  }
-	  if (defined $gSubscriptionDomain) {
+	  if (defined $config{subscription_domain} and
+	      length $config{subscription_domain}) {
 	       my $ptslink = $param{binary} ? $srcforpkg : $package;
-	       push @references, q(to the <a href="http://).html_escape("$gSubscriptionDomain/$ptslink").q(">Package Tracking System</a>);
+	       push @references, q(to the <a href="http://).html_escape("$config{subscription_domain}/$ptslink").q(">Package Tracking System</a>);
 	  }
 	  # Only output this if the source listing is non-trivial.
 	  if ($param{binary} and $srcforpkg) {
@@ -154,12 +155,12 @@ sub generate_package_info{
 	  $references[$#references] = "or $references[$#references]" if @references > 1;
 	  print {$output} "<p>You might like to refer ", join(", ", @references), ".</p>\n";
      }
-     if (defined $param{maint} || defined $param{maintenc}) {
+     if (defined $maint) {
 	  print {$output} "<p>If you find a bug not listed here, please\n";
 	  printf {$output} "<a href=\"%s\">report it</a>.</p>\n",
-	       html_escape("http://${debbugs::gWebDomain}/Reporting${debbugs::gHTMLSuffix}");
+	       html_escape("http://$config{web_domain}/Reporting$config{html_suffix}");
      }
-     if (not $maint and not @{$param{bugs}}) {
+     if (not defined $maint and not @{$param{bugs}}) {
 	  print {$output} "<p>There is no record of the " . html_escape($package) .
 	       ($param{binary} ? " package" : " source package") .
 		    ", and no bugs have been filed against it.</p>";

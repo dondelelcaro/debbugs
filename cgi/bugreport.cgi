@@ -259,7 +259,7 @@ my @packages = splitpackages($status{package});
 
 foreach my $pkg (@packages) {
      $package{$pkg} = {maintainer => exists($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)',
-		       source     => exists($pkgsrc{$pkg}) ? $pkgsrc{$pkg} : '(unknown)',
+		       exists($pkgsrc{$pkg}) ? (source => $pkgsrc{$pkg}) : (),
 		       package    => $pkg,
 		      };
 }
