@@ -299,6 +299,8 @@ set_default(\%config,'unknown_maintainer_email',$config{maintainer_email});
 
 =item mirror_list
 
+=item strong_list
+
 =cut
 
 set_default(\%config,   'submit_list',   'bug-submit-list');
