@@ -1529,9 +1529,12 @@ sub message_body_template{
 }
 
 sub sendhelp {
-        &sendtxthelpraw("bug-log-mailserver.txt","instructions for request\@$gEmailDomain");
-        &sendtxthelpraw("bug-maint-mailcontrol.txt","instructions for control\@$gEmailDomain")
-            if $control;
+     if ($control) {
+	  &sendtxthelpraw("bug-maint-mailcontrol.txt","instructions for control\@$gEmailDomain")
+     }
+     else {
+	  &sendtxthelpraw("bug-log-mailserver.txt","instructions for request\@$gEmailDomain");
+     }
 }
 
 #sub unimplemented {
