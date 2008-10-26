@@ -314,7 +314,7 @@ sub handle_record{
      local $_ = $record->{type};
      if (/html/) {
 	  my ($time) = $record->{text} =~ /<!--\s+time:(\d+)\s+-->/;
-	  my $class = $record->{text} =~ /^<strong>(?:Acknowledgement|Reply|Information|Report|Notification)/ ? 'infmessage':'msgreceived';
+	  my $class = $record->{text} =~ /^<strong>(?:Acknowledgement|Reply|Information|Report|Notification)/m ? 'infmessage':'msgreceived';
 	  $output .= decode_rfc1522($record->{text});
 	  # Link to forwarded http:// urls in the midst of the report
 	  # (even though these links already exist at the top)
