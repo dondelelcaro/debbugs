@@ -84,6 +84,7 @@ for (@headerlines) {
     }
 }
 $header{'message-id'} ||= '';
+$header{subject} ||= '';
 
 grep(s/\s+$//,@bodylines);
 
