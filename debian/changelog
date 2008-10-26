@@ -226,6 +226,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     (closes: #499997)
   * Comment out CGI::Alert use for the time being (closes: #499681)
   * No longer hard-code paths in age-1 (closes: #499682)
+  * Change how maybelink links links (closes: #501757)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
