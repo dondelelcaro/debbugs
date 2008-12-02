@@ -176,6 +176,9 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
 	 last;
     }
     $_= $bodylines[$procline]; s/\s+$//;
+    # Remove BOM markers from UTF-8 strings
+    # Fixes #488554
+    s/\xef\xbb\xbf//g;
     next unless m/\S/;
     print {$transcript} "> $_\n";
     next if m/^\s*\#/;
