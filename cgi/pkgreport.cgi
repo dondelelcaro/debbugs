@@ -236,11 +236,13 @@ if (exists $param{pkg}) {
      delete $param{pkg};
 }
 
-our %bugusertags;
-our %ut;
+my %bugusertags;
+my %ut;
+my %seen_users;
+
 for my $user (map {split /[\s*,\s*]+/} make_list($param{users}||[])) {
     next unless length($user);
-    add_user($user);
+    add_user($user,\%ut,\%bugusertags,\%seen_users,\%cats,\%hidden);
 }
 
 if (defined $param{usertag}) {
@@ -251,7 +253,7 @@ if (defined $param{usertag}) {
 	  unless (defined $t && $t ne "") {
 	       $t = join(",", keys(%select_ut));
 	  }
-	  add_user($u);
+	  add_user($u,\%ut,\%bugusertags,\%seen_users,\%cats,\%hidden);
 	  push @{$param{tag}}, split /,/, $t;
      }
 }
@@ -273,36 +275,6 @@ my $tail_html = $gHTMLTail;
 $tail_html = $gHTMLTail;
 $tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
 
-our %seen_users;
-sub add_user {
-    my $ut = \%ut;
-    my $u = shift;
-
-    return if $seen_users{$u};
-    $seen_users{$u} = 1;
-
-    my $user = Debbugs::User::get_user($u);
-
-    my %vis = map { $_, 1 } @{$user->{"visible_cats"}};
-    for my $c (keys %{$user->{"categories"}}) {
-        $cats{$c} = $user->{"categories"}->{$c};
-	$hidden{$c} = 1 unless defined $vis{$c};
-    }
-
-    for my $t (keys %{$user->{"tags"}}) {
-        $ut->{$t} = [] unless defined $ut->{$t};
-        push @{$ut->{$t}}, @{$user->{"tags"}->{$t}};
-    }
-
-    %bugusertags = ();
-    for my $t (keys %{$ut}) {
-        for my $b (@{$ut->{$t}}) {
-            $bugusertags{$b} = [] unless defined $bugusertags{$b};
-            push @{$bugusertags{$b}}, $t;
-        }
-    }
-#    set_option("bugusertags", \%bugusertags);
-}
 
 my @bugs;
 
@@ -323,7 +295,8 @@ for my $package (# For binary packages, add the binary package
 		 ),
 		) {
      next unless defined $package;
-     add_user($package.'@'.$config{usertag_package_domain})
+     add_user($package.'@'.$config{usertag_package_domain},
+	      \%ut,\%bugusertags,\%seen_users,\%cats,\%hidden)
 	  if defined $config{usertag_package_domain};
 }
 
