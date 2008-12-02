@@ -867,7 +867,8 @@ sub option_form{
 	       if (defined $value and $o_value eq $value) {
 		    $selected = ' selected';
 	       }
-	       $output .= qq(<option value="$o_value"$selected>$name</option>\n);
+	       $output .= q(<option value=").html_escape($o_value).qq("$selected>).
+		   html_escape($name).qq(</option>\n);
 	  }
 	  return $output;
      };
