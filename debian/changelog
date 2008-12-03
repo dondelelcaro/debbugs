@@ -236,6 +236,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
   * Strip BOM before regexes involving spaces (closes: #488554)
   * Display link to full log again (closes: #507506)
   * Add Last-Modified: header support to mbox download (closes: #456786)
+  * Add Date headers if missing (closes: #458757)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
