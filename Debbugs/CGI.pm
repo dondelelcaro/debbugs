@@ -878,6 +878,8 @@ sub option_form{
      return Debbugs::Text::fill_in_template(template=>$param{template},
 					    (exists $param{language}?(language=>$param{language}):()),
 					    variables => $variables,
+					    hole_var  => {'&html_escape' => \&html_escape,
+							 },
 					   );
 }
 
