@@ -453,24 +453,6 @@ if (exists $param{submitter}) {
     print "different addresses.\n";
 }
 
-# my $archive_links;
-# my @archive_links;
-# my %archive_values = (both => 'archived and unarchived',
-# 		      0    => 'not archived',
-# 		      1    => 'archived',
-# 		     );
-# while (my ($key,$value) = each %archive_values) {
-#      next if $key eq lc($param{archive});
-#      push @archive_links, qq(<a href=").
-# 	  html_escape(pkg_url((
-# 		       map {
-# 			    $_ eq 'archive'?():($_,$param{$_})
-# 		       } keys %param),
-# 			    archive => $key
-# 			   )).qq(">$value reports </a>);
-# }
-# print '<p>See the '.join (' or ',@archive_links)."</p>\n";
-
 print $result;
 
 print pkg_javascript() . "\n";
@@ -482,113 +464,6 @@ print option_form(template => 'cgi/pkgreport_options',
 		  form_options => $form_options,
 		  variables => $form_option_variables,
 		 );
-
-# print "<h2 class=\"outstanding\"><a class=\"options\" href=\"javascript:toggle(1)\">Options</a></h2>\n";
-# print "<div id=\"a_1\">\n";
-# printf "<form action=\"%s\" method=POST>\n", myurl();
-# 
-# print "<table class=\"forms\">\n";
-# 
-# my ($checked_any, $checked_sui, $checked_ver) = ("", "", "");
-# if (defined $dist) {
-#   $checked_sui = "CHECKED";
-# } elsif (defined $version) {
-#   $checked_ver = "CHECKED";
-# } else {
-#   $checked_any = "CHECKED";
-# }
-# 
-# print "<tr><td>Show bugs applicable to</td>\n";
-# print "    <td><input id=\"b_1_1\" name=vt value=none type=radio onchange=\"enable(1);\" $checked_any>anything</td></tr>\n";
-# print "<tr><td></td>";
-# print "    <td><input id=\"b_1_2\" name=vt value=bysuite type=radio onchange=\"enable(1);\" $checked_sui>" . pkg_htmlselectsuite(1,2,1) . " for " . pkg_htmlselectarch(1,2,2) . "</td></tr>\n";
-# 
-# if (defined $pkg) {
-#     my $v = html_escape($version) || "";
-#     my $pkgsane = html_escape($pkg->[0]);
-#     print "<tr><td></td>";
-#     print "    <td><input id=\"b_1_3\" name=vt value=bypkg type=radio onchange=\"enable(1);\" $checked_ver>$pkgsane version <input id=\"b_1_3_1\" name=version value=\"$v\"></td></tr>\n";
-# } elsif (defined $src) {
-#     my $v = html_escape($version) || "";
-#     my $srcsane = html_escape($src->[0]);
-#     print "<tr><td></td>";
-#     print "    <td><input name=vt value=bysrc type=radio onchange=\"enable(1);\" $checked_ver>$srcsane version <input id=\"b_1_3_1\" name=version value=\"$v\"></td></tr>\n";
-# }
-# print "<tr><td>&nbsp;</td></tr>\n";
-# 
-# my $includetags = html_escape(join(" ", grep { !m/^subj:/i } map {split /[\s,]+/} ref($include)?@{$include}:$include));
-# my $excludetags = html_escape(join(" ", grep { !m/^subj:/i } map {split /[\s,]+/} ref($exclude)?@{$exclude}:$exclude));
-# my $includesubj = html_escape(join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } map {split /[\s,]+/} ref($include)?@{$include}:$include));
-# my $excludesubj = html_escape(join(" ", map { s/^subj://i; $_ } grep { m/^subj:/i } map {split /[\s,]+/} ref($exclude)?@{$exclude}:$exclude));
-# my $vismindays = ($mindays == 0 ? "" : $mindays);
-# my $vismaxdays = ($maxdays == -1 ? "" : $maxdays);
-# 
-# my $sel_rmy = ($param{repeatmerged} ? " selected" : "");
-# my $sel_rmn = ($param{repeatmerged} ? "" : " selected");
-# my $sel_ordraw = ($ordering eq "raw" ? " selected" : "");
-# my $sel_ordold = ($ordering eq "oldview" ? " selected" : "");
-# my $sel_ordnor = ($ordering eq "normal" ? " selected" : "");
-# my $sel_ordage = ($ordering eq "age" ? " selected" : "");
-# 
-# my $chk_bugrev = ($bug_rev ? " checked" : "");
-# my $chk_pendrev = ($pend_rev ? " checked" : "");
-# my $chk_sevrev = ($sev_rev ? " checked" : "");
-# 
-# print <<EOF;
-# <tr><td>Only include bugs tagged with </td><td><input name=include value="$includetags"> or that have <input name=includesubj value="$includesubj"> in their subject</td></tr>
-# <tr><td>Exclude bugs tagged with </td><td><input name=exclude value="$excludetags"> or that have <input name=excludesubj value="$excludesubj"> in their subject</td></tr>
-# <tr><td>Only show bugs older than</td><td><input name=mindays value="$vismindays" size=5> days, and younger than <input name=maxdays value="$vismaxdays" size=5> days</td></tr>
-# 
-# <tr><td>&nbsp;</td></tr>
-# 
-# <tr><td>Merged bugs should be</td><td>
-# <select name=repeatmerged>
-# <option value=yes$sel_rmy>displayed separately</option>
-# <option value=no$sel_rmn>combined</option>
-# </select>
-# <tr><td>Categorise bugs by</td><td>
-# <select name=ordering>
-# <option value=raw$sel_ordraw>bug number only</option>
-# <option value=old$sel_ordold>status and severity</option>
-# <option value=normal$sel_ordnor>status, severity and classification</option>
-# <option value=age$sel_ordage>status, severity, classification, and age</option>
-# EOF
-# 
-# {
-# my $any = 0;
-# my $o = $param{"ordering"} || "";
-# for my $n (keys %cats) {
-#     next if ($n eq "normal" || $n eq "oldview");
-#     next if defined $hidden{$n};
-#     unless ($any) {
-#         $any = 1;
-# 	print "<option disabled>------</option>\n";
-#     }
-#     my @names = map { ref($_) eq "HASH" ? $_->{"nam"} : $_ } @{$cats{$n}};
-#     my $name;
-#     if (@names == 1) { $name = $names[0]; }
-#     else { $name = " and " . pop(@names); $name = join(", ", @names) . $name; }
-# 
-#     printf "<option value=\"%s\"%s>%s</option>\n",
-#         $n, ($o eq $n ? " selected" : ""), $name;
-# }
-# }
-# 
-# print "</select></td></tr>\n";
-# 
-# printf "<tr><td>Order bugs by</td><td>%s</td></tr>\n",
-#     pkg_htmlselectyesno("pend-rev", "outstanding bugs first", "done bugs first", $pend_rev);
-# printf "<tr><td></td><td>%s</td></tr>\n",
-#     pkg_htmlselectyesno("sev-rev", "highest severity first", "lowest severity first", $sev_rev);
-# printf "<tr><td></td><td>%s</td></tr>\n",
-#     pkg_htmlselectyesno("bug-rev", "oldest bugs first", "newest bugs first", $bug_rev);
-# 
-# print <<EOF;
-# <tr><td>&nbsp;</td></tr>
-# <tr><td colspan=2><input value="Reload page" type="submit"> with new settings</td></tr>
-# EOF
-# 
-# print "</table></form></div>\n";
 
 print "<hr>\n";
 print fill_in_template(template=>'html/html_tail',
