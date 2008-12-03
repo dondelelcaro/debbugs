@@ -234,6 +234,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
   * Only send out control help when control is mailed (closes: #499941)
   * Resolve two XSS (closes: #504608)
   * Strip BOM before regexes involving spaces (closes: #488554)
+  * Display link to full log again (closes: #507506)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
