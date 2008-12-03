@@ -270,12 +270,6 @@ my $this = munge_url('pkgreport.cgi?',
 my %indexentry;
 my %strings = ();
 
-my $dtime = strftime "%a, %e %b %Y %T UTC", gmtime;
-my $tail_html = $gHTMLTail;
-$tail_html = $gHTMLTail;
-$tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
-
-
 my @bugs;
 
 # addusers for source and binary packages being searched for
@@ -597,7 +591,9 @@ print option_form(template => 'cgi/pkgreport_options',
 # print "</table></form></div>\n";
 
 print "<hr>\n";
-print "<p>$tail_html";
-
+print fill_in_template(template=>'html/html_tail',
+		       hole_var => {'&strftime' => \&POSIX::strftime,
+				   },
+		      );
 print "</body></html>\n";
 

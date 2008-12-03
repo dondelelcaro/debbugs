@@ -3,6 +3,10 @@ Last modified:
 <!--timestamp-->
 {$last_modified||strftime('%c',gmtime)}
 <!--timestamp-->
+Machine Name:
+<!--machinename-->
+{$config{machine_name}||'Unknown'}
+<!--machinename-->
 <P>
 <A HREF="http://{$config{web_domain}}/">{$config{project}} {$config{bug}} tracking system</A><BR>
 Copyright (C) 1999 Darren O. Benham,

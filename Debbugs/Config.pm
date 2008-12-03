@@ -68,6 +68,7 @@ BEGIN {
 				 qw(@gPostProcessall @gRemovalDefaultDistributionTags @gRemovalDistributionTags @gRemovalArchitectures),
 				 qw(@gRemovalStrongSeverityDefaultDistributionTags),
 				 qw(@gDefaultArchitectures),
+				 qw($gMachineName),
 				 qw($gTemplateDir),
 				 qw($gDefaultPackage),
 				 qw($gSpamMaxThreads $gSpamSpamsPerThread $gSpamKeepRunning $gSpamScan $gSpamCrossassassinDb),
@@ -275,6 +276,20 @@ Default: $config{maintainer_email}
 =cut
 
 set_default(\%config,'unknown_maintainer_email',$config{maintainer_email});
+
+=item machine_name
+
+The name of the machine that this instance of debbugs is running on
+(currently used for debbuging purposes and web page output.)
+
+Default: qx(hostname --fqdn)
+
+=back
+
+=cut
+
+set_default(\%config,'machine_name',qx(hostname --fqdn));
+
 
 =head2 BTS Mailing Lists
 
