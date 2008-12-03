@@ -159,13 +159,17 @@ my @log;
 if ( $mbox ) {
      my $date = strftime "%a %b %d %T %Y", localtime;
      if (@records > 1) {
-	  print qq(Content-Disposition: attachment; filename="bug_${ref}.mbox"\n);
-	  print "Content-Type: text/plain\n\n";
+	 print $q->header(-type => "text/plain",
+			  content_disposition => qq(attachment; filename="bug_${ref}.mbox"),
+			  (length $mtime)?(-last_modified => $mtime):(),
+			 );
      }
      else {
 	  $msg_num++;
-	  print qq(Content-Disposition: attachment; filename="bug_${ref}_message_${msg_num}.mbox"\n);
-	  print "Content-Type: message/rfc822\n\n";
+	  print $q->header(-type => "message/rfc822",
+			   content_disposition => qq(attachment; filename="bug_${ref}_message_${msg_num}.mbox"),
+			   (length $mtime)?(-last_modified => $mtime):(),
+			  );
      }
      if ($mbox_status_message and @records > 1) {
 	  my $status_message='';
