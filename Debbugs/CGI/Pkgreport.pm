@@ -110,7 +110,8 @@ sub generate_package_info{
 	  print {$output} ".</p>\n";
      }
      else {
-	  print {$output} "<p>No maintainer for $showpkg. Please do not report new bugs against this package.</p>\n";
+	  print {$output} "<p>There is no maintainer for $showpkg. ".
+	       "Please do not report new bugs against this package.</p>\n";
      }
      my @pkgs = getsrcpkgs($srcforpkg);
      @pkgs = grep( !/^\Q$package\E$/, @pkgs );
@@ -131,6 +132,11 @@ sub generate_package_info{
      if ($package and defined($pseudodesc) and exists($pseudodesc->{$package})) {
 	  push @references, "to the <a href=\"http://$config{web_domain}/pseudo-packages$config{html_suffix}\">".
 	       "list of other pseudo-packages</a>";
+     }
+     elsif (not defined $maint and not @{$param{bugs}}) {
+	  print {$output} "<p>There is no record of the " . html_escape($package) .
+	       ($param{binary} ? " package" : " source package") .
+		    ", and no bugs have been filed against it.</p>";
      }
      else {
 	  if ($package and defined $config{package_pages} and length $config{package_pages}) {
@@ -159,11 +165,6 @@ sub generate_package_info{
 	  print {$output} "<p>If you find a bug not listed here, please\n";
 	  printf {$output} "<a href=\"%s\">report it</a>.</p>\n",
 	       html_escape("http://$config{web_domain}/Reporting$config{html_suffix}");
-     }
-     if (not defined $maint and not @{$param{bugs}}) {
-	  print {$output} "<p>There is no record of the " . html_escape($package) .
-	       ($param{binary} ? " package" : " source package") .
-		    ", and no bugs have been filed against it.</p>";
      }
      return $output_scalar;
 }

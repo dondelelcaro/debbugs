@@ -711,8 +711,12 @@ sub __handle_pkg_src_and_maint{
 	  # We only want to increment the number of keys if there is
 	  # something to match
 	  my $key_inc = 0;
-	  for my $package ((map { getsrcpkgs($_)} make_list($param{src})),make_list($param{src})) {
+	  for my $package ((map { getsrcpkgs($_)} make_list($param{src}))) {
 	       $packages{$package}++;
+	       $key_inc=1;
+	  }
+	  for my $package (make_list($param{src})) {
+	       $packages{"src:$package"}++;
 	       $key_inc=1;
 	  }
 	  $package_keys += $key_inc;

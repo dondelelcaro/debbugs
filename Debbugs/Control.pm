@@ -826,7 +826,7 @@ sub bug_unarchive {
 	 die "No bug found for $param{bug}";
      }
      print {$debug} "$param{bug} read done\n";
-     my @bugs = map {$_->{bug_num}} @data;
+     my @bugs = map {(defined $_ and exists $_->{bug_num} and defined $_->{bug_num})?$_->{bug_num}:()} @data;
      print {$debug} "$param{bug} bugs ".join(' ',@bugs)."\n";
      print {$debug} "$param{bug} unarchiving\n";
      my @files_to_remove;
@@ -974,6 +974,7 @@ sub __handle_affected_packages{
 			       allow_extra => 1,
 			      );
      for my $data (make_list($param{data})) {
+	  next unless exists $data->{package} and defined $data->{package};
 	  $param{affected_packages}{$data->{package}} = 1;
      }
 }

@@ -24,6 +24,9 @@ BEGIN {
 use File::Path;
 use MIME::Parser;
 
+use POSIX qw(strftime);
+use List::MoreUtils qw(apply);
+
 # for decode_rfc1522
 use MIME::WordDecoder qw();
 use Encode qw(decode encode encode_utf8 decode_utf8 is_utf8);
@@ -114,12 +117,16 @@ sub parse
 
 =head2 create_mime_message
 
-     create_mime_message([To=>'don@debian.org'],$body,[$attach1, $attach2]);
+     create_mime_message([To=>'don@debian.org'],$body,[$attach1, $attach2],$include_date);
 
 Creates a MIME encoded message with headers given by the first
 argument, and a message given by the second.
 
 Optional attachments can be specified in the third arrayref argument.
+
+Whether to include the date in the header is the final argument; it
+defaults to true, setting the Date header if one is not already
+present.
 
 Headers are passed directly to MIME::Entity::build, the message is the
 first attachment.
@@ -132,11 +139,22 @@ MIME::Entity::attach
 =cut
 
 sub create_mime_message{
-     my ($headers,$body,$attachments) = @_;
+     my ($headers,$body,$attachments,$include_date) = @_;
      $attachments = [] if not defined $attachments;
+     $include_date = 1 if not defined $include_date;
 
      die "The first argument to create_mime_message must be an arrayref" unless ref($headers) eq 'ARRAY';
      die "The third argument to create_mime_message must be an arrayref" unless ref($attachments) eq 'ARRAY';
+
+     if ($include_date) {
+	 my %headers = apply {lc($_)} @{$headers};
+	 if (not exists $headers{date}) {
+	     push @{$headers},
+		 ('Date',
+		  strftime("%a, %d %b %Y %H:%M:%S +0000",gmtime)
+		 );
+	 }
+     }
 
      # Build the message
      # MIME::Entity is stupid, and doesn't rfc1522 encode its headers, so we do it for it.

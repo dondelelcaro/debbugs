@@ -16,13 +16,14 @@ use Debbugs::Config qw(:globals :text);
 use Debbugs::Log qw(read_log_records);
 use Debbugs::CGI qw(:url :html :util);
 use Debbugs::CGI::Bugreport qw(:all);
-use Debbugs::Common qw(buglog getmaintainers);
+use Debbugs::Common qw(buglog getmaintainers make_list);
 use Debbugs::Packages qw(getpkgsrc);
 use Debbugs::Status qw(splitpackages get_bug_status isstrongseverity);
 
 use Scalar::Util qw(looks_like_number);
 
 use Debbugs::Text qw(:templates);
+
 
 use CGI::Simple;
 my $q = new CGI::Simple;
@@ -65,6 +66,29 @@ my $terse = $param{'terse'} eq 'yes';
 my $reverse = $param{'reverse'} eq 'yes';
 my $mbox = $param{'mbox'} eq 'yes';
 my $mime = $param{'mime'} eq 'yes';
+
+my %bugusertags;
+my %ut;
+my %seen_users;
+
+for my $user (map {split /[\s*,\s*]+/} make_list($param{users}||[])) {
+    next unless length($user);
+    add_user($user,\%ut,\%bugusertags,\%seen_users);
+}
+
+if (defined $param{usertag}) {
+     for my $usertag (make_list($param{usertag})) {
+	  my %select_ut = ();
+	  my ($u, $t) = split /:/, $usertag, 2;
+	  Debbugs::User::read_usertags(\%select_ut, $u);
+	  unless (defined $t && $t ne "") {
+	       $t = join(",", keys(%select_ut));
+	  }
+	  add_user($u,\%ut,\%bugusertags,\%seen_users);
+	  push @{$param{tag}}, split /,/, $t;
+     }
+}
+
 
 my $trim_headers = ($param{trim} || ((defined $msg and $msg)?'no':'yes')) eq 'yes';
 
@@ -118,7 +142,9 @@ if ($buglog =~ m/\.gz$/) {
 }
 
 
-my %status = %{get_bug_status(bug=>$ref)};
+my %status = %{get_bug_status(bug=>$ref,
+			      bugusertags => \%bugusertags,
+			     )};
 
 my @records;
 eval{
@@ -141,13 +167,17 @@ my @log;
 if ( $mbox ) {
      my $date = strftime "%a %b %d %T %Y", localtime;
      if (@records > 1) {
-	  print qq(Content-Disposition: attachment; filename="bug_${ref}.mbox"\n);
-	  print "Content-Type: text/plain\n\n";
+	 print $q->header(-type => "text/plain",
+			  content_disposition => qq(attachment; filename="bug_${ref}.mbox"),
+			  (length $mtime)?(-last_modified => $mtime):(),
+			 );
      }
      else {
 	  $msg_num++;
-	  print qq(Content-Disposition: attachment; filename="bug_${ref}_message_${msg_num}.mbox"\n);
-	  print "Content-Type: message/rfc822\n\n";
+	  print $q->header(-type => "message/rfc822",
+			   content_disposition => qq(attachment; filename="bug_${ref}_message_${msg_num}.mbox"),
+			   (length $mtime)?(-last_modified => $mtime):(),
+			  );
      }
      if ($mbox_status_message and @records > 1) {
 	  my $status_message='';
@@ -336,6 +366,7 @@ print fill_in_template(template => 'cgi/bugreport',
 				     log           => $log,
 				     bug_num       => $ref,
 				     version_graph => $version_graph,
+				     msg           => $msg,
 				     isstrongseverity => \&Debbugs::Status::isstrongseverity,
 				     html_escape   => \&Debbugs::CGI::html_escape,
 				     looks_like_number => \&Scalar::Util::looks_like_number,
