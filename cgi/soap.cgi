@@ -1,4 +1,7 @@
-#!/usr/bin/perl -wT
+#!/usr/bin/perl -T
+
+use warnings;
+use strict;
 
 #use SOAP::Transport::HTTP;
 
@@ -24,5 +27,13 @@ for my $key (keys %{$typelookup}) {
      next unless defined $_ and /Month|Day|Year|date|time|duration/i;
      delete $typelookup->{$key};
 }
-$soap->handle;
 
+our $warnings = '';
+eval {
+    # Ignore stupid warning because elements (hashes) can't start with
+    # numbers
+    local $SIG{__WARN__} = sub {$warnings .= $_[0] unless $_[0] =~ /Cannot encode unnamed element/};
+    $soap->handle;
+};
+die $@ if $@;
+warn $warnings if length $warnings;
