@@ -208,12 +208,12 @@ debbugs (2.4.2) UNRELEASED; urgency=low
   * Fix casing of versions (closes: #441022)
   * Output last-modified in bugreport.cgi (closes: #459709)
   * Fix various html syntax errors in pkgreport.cgi (closes: #462322)
-  * Make search case insensitive (closes: #448861)
+  * Make search case insensitive (closes: #448861, #444416)
   * Add the ability to return source/package mapping
     (closes: #465332,#458822)
   * Deal properly with \r line endings (closes: #467190)
   * Distinguish between reports and followups (closes: #459866)
-  * Allow for the archiving of bugs in removed packages (closes: #475622)
+  * Allow for the archiving of bugs in removed packages (closes: #475622, #470146)
   * Add Text::Template based templating system (closes: #36814)
   * Add new uservalue feature to Debbugs::User
   * Don't serialize things as date/time in soap (closes: #484789)
@@ -226,6 +226,18 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     (closes: #499997)
   * Comment out CGI::Alert use for the time being (closes: #499681)
   * No longer hard-code paths in age-1 (closes: #499682)
+  * Change how maybelink links links (closes: #501757)
+  * Use bug_subscription_domain in process (closes: #499680)
+  * Clean up links when there is no information about a package
+    (closes: #452905)
+  * Deal properly with leading spaces in query arguments (closes: #158375)
+  * Only send out control help when control is mailed (closes: #499941)
+  * Resolve two XSS (closes: #504608)
+  * Strip BOM before regexes involving spaces (closes: #488554)
+  * Display link to full log again (closes: #507506)
+  * Add Last-Modified: header support to mbox download (closes: #456786)
+  * Add Date headers if missing (closes: #458757)
+  * Indiciate what machine has built webpages (closes: #507022)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

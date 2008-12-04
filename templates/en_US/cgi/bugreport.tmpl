@@ -24,7 +24,7 @@ function toggle_infmessages()
 {include(q(cgi/bugreport_buginfo))}
 { my $output = '';
   if (looks_like_number($msg)) {
-     $output .= sprintf qq(<p><a href="%s">Full log</a></p>),html_escape(bug_links(bug=>$ref,links_only=>1));
+     $output .= sprintf qq(<p><a href="%s">Full log</a></p>),html_escape(bug_links(bug=>$bug_num,links_only=>1));
   }
   else {
      $output .=  qq(<p><a href="mailto:$bug_num\@$config{email_domain}">Reply</a> ).

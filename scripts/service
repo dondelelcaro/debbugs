@@ -84,6 +84,7 @@ for (@headerlines) {
     }
 }
 $header{'message-id'} ||= '';
+$header{subject} ||= '';
 
 grep(s/\s+$//,@bodylines);
 
@@ -175,6 +176,9 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
 	 last;
     }
     $_= $bodylines[$procline]; s/\s+$//;
+    # Remove BOM markers from UTF-8 strings
+    # Fixes #488554
+    s/\xef\xbb\xbf//g;
     next unless m/\S/;
     print {$transcript} "> $_\n";
     next if m/^\s*\#/;
@@ -1528,9 +1532,12 @@ sub message_body_template{
 }
 
 sub sendhelp {
-        &sendtxthelpraw("bug-log-mailserver.txt","instructions for request\@$gEmailDomain");
-        &sendtxthelpraw("bug-maint-mailcontrol.txt","instructions for control\@$gEmailDomain")
-            if $control;
+     if ($control) {
+	  &sendtxthelpraw("bug-maint-mailcontrol.txt","instructions for control\@$gEmailDomain")
+     }
+     else {
+	  &sendtxthelpraw("bug-log-mailserver.txt","instructions for request\@$gEmailDomain");
+     }
 }
 
 #sub unimplemented {

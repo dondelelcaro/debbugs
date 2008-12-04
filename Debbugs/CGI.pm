@@ -35,12 +35,16 @@ use warnings;
 use strict;
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
+
 use Debbugs::URI;
 use HTML::Entities;
 use Debbugs::Common qw(getparsedaddrs make_list);
 use Params::Validate qw(validate_with :types);
+
 use Debbugs::Config qw(:config);
 use Debbugs::Status qw(splitpackages isstrongseverity);
+use Debbugs::User qw();
+
 use Mail::Address;
 use POSIX qw(ceil);
 use Storable qw(dclone);
@@ -70,6 +74,7 @@ BEGIN{
 		     util   => [qw(cgi_parameters quitcgi),
 			       ],
 		     forms  => [qw(option_form form_options_and_normal_param)],
+		     usertags => [qw(add_user)],
 		     misc   => [qw(maint_decode)],
 		     package_search => [qw(@package_search_key_order %package_search_keys)],
 		     #status => [qw(getbugstatus)],
@@ -530,6 +535,11 @@ the split links with commas and spaces.
 
 sub maybelink {
     my ($links,$regex,$join) = @_;
+    if (not defined $regex and not defined $join) {
+	 $links =~ s{((?:ftp|http|https)://[\S~-]+?/?)([\)\'\:\.\,]?(?:\s|\.<|$))}
+		    {q(<a href=\").html_escape($1).q(\">).html_escape($1).q(</a>).$2}geimo;
+	 return $links;
+    }
     $join = ' ' if not defined $join;
     my @return;
     my @segments;
@@ -627,6 +637,38 @@ sub bug_linklist{
      my ($sep,$class,@bugs) = @_;
      carp "bug_linklist is deprecated; use bug_links instead";
      return scalar bug_links(bug=>\@bugs,class=>$class,separator=>$sep);
+}
+
+
+sub add_user {
+     my ($user,$usertags,$bug_usertags,$seen_users,$cats,$hidden) = @_;
+     $seen_users = {} if not defined $seen_users;
+     $bug_usertags = {} if not defined $bug_usertags;
+     $usertags = {} if not defined $usertags;
+     $cats = {} if not defined $cats;
+     $hidden = {} if not defined $hidden;
+     return if exists $seen_users->{$user};
+     $seen_users->{$user} = 1;
+
+     my $u = Debbugs::User::get_user($user);
+
+     my %vis = map { $_, 1 } @{$u->{"visible_cats"}};
+     for my $c (keys %{$u->{"categories"}}) {
+	  $cats->{$c} = $u->{"categories"}->{$c};
+	  $hidden->{$c} = 1 unless defined $vis{$c};
+     }
+     for my $t (keys %{$u->{"tags"}}) {
+	  $usertags->{$t} = [] unless defined $usertags->{$t};
+	  push @{$usertags->{$t}}, @{$u->{"tags"}->{$t}};
+     }
+
+     %{$bug_usertags} = ();
+     for my $t (keys %{$usertags}) {
+	  for my $b (@{$usertags->{$t}}) {
+	       $bug_usertags->{$b} = [] unless defined $bug_usertags->{$b};
+	       push @{$bug_usertags->{$b}}, $t;
+	  }
+     }
 }
 
 
@@ -825,7 +867,8 @@ sub option_form{
 	       if (defined $value and $o_value eq $value) {
 		    $selected = ' selected';
 	       }
-	       $output .= qq(<option value="$o_value"$selected>$name</option>\n);
+	       $output .= q(<option value=").html_escape($o_value).qq("$selected>).
+		   html_escape($name).qq(</option>\n);
 	  }
 	  return $output;
      };
@@ -835,6 +878,8 @@ sub option_form{
      return Debbugs::Text::fill_in_template(template=>$param{template},
 					    (exists $param{language}?(language=>$param{language}):()),
 					    variables => $variables,
+					    hole_var  => {'&html_escape' => \&html_escape,
+							 },
 					   );
 }
 
