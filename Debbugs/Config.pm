@@ -288,8 +288,10 @@ Default: qx(hostname --fqdn)
 
 =cut
 
+my $_old_path = $ENV{PATH};
+$ENV{PATH} = '/bin:/usr/bin:/usr/local/bin';
 set_default(\%config,'machine_name',qx(hostname --fqdn));
-
+$ENV{PATH} = $_old_path;
 
 =head2 BTS Mailing Lists
 
