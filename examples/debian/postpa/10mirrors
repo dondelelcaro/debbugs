@@ -3,13 +3,15 @@
 # This script signals merkel.debian.org to mirror debbugs at most once
 # every 800 seconds
 
+# changing this to 400 seconds
+
 set -e
 
 umask 002
 
 cd /org/bugs.debian.org
 
-[ $(( $(date +%s) - $(stat -c %Y /org/bugs.debian.org/log/mirrors.log) )) -gt 800 ] || exit 0;
+[ $(( $(date +%s) - $(stat -c %Y /org/bugs.debian.org/log/mirrors.log) )) -gt 400 ] || exit 0;
 
 exec >>log/mirrors.log 2>&1
 
@@ -24,4 +26,5 @@ signal () {
 date
 
 signal merkel debbugs
-signal piatti debbugs
+# disabled weasel, 20081202
+#signal piatti debbugs
