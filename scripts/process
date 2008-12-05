@@ -17,7 +17,7 @@ use Debbugs::Mail qw(send_mail_message encode_headers);
 use Debbugs::Packages qw(getpkgsrc);
 use Debbugs::User qw(read_usertags write_usertags);
 use Debbugs::Common qw(:lock get_hashname);
-use Debbugs::Status qw(writebug isstrongseverity lockreadbugmerge lockreadbug);
+use Debbugs::Status qw(writebug isstrongseverity lockreadbugmerge lockreadbug read_bug :versions);
 
 use Debbugs::CGI qw(html_escape bug_url);
 
@@ -25,7 +25,6 @@ use Debbugs::Log qw(:misc);
 
 use Debbugs::Text qw(:templates);
 
-use Debbugs::Status qw(:versions);
 use Debbugs::Config qw(:globals :config);
 
 use Debbugs::Control qw(append_action_to_log);

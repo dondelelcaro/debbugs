@@ -174,6 +174,7 @@ sub emailfromrfc822 {
 	return $email;
 }
 
+my $modification_made = 0;
 my $cnt = 0;
 
 my @dirs = ($initialdir);
@@ -196,6 +197,7 @@ while (my $dir = shift @dirs) {
 		}
 		next if $stat->mtime < $time;
 		my $fdata = readbug($bug, $initialdir);
+		$modification_made = 1;
 		addbugtoindex("package", $bug, split /[\s,]+/, $fdata->{"package"});
 		addbugtoindex("tag", $bug, split /[\s,]+/, $fdata->{"keywords"});
 		addbugtoindex('submitter-email', $bug,
@@ -232,12 +234,17 @@ if (not $options{quick}) {
      }
 }
 
-
 for my $i (@indexes) {
-	untie %{$slow_index{$i}};
+    untie %{$slow_index{$i}};
+    # Only move if we've made changes, otherwise unlink
+    if ($modification_made) {
 	move("$indexdest/by-$i$suffix.idx.new", "$indexdest/by-$i$suffix.idx");
 	# We do this, because old versions of touch don't support -d '@epoch'
 	system('touch','-d',"1/1/1970 UTC + ${start_time}secs","$indexdest/by-$i$suffix.idx");
+    }
+    else {
+	unlink("$indexdest/by-$i$suffix.idx.new");
+    }
 }
 
 unlink($config{spool_dir}.'/lock/gen-indices')
