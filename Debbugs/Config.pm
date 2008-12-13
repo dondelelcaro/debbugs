@@ -67,6 +67,7 @@ BEGIN {
 				 qw(%gObsoleteSeverities),
 				 qw(@gPostProcessall @gRemovalDefaultDistributionTags @gRemovalDistributionTags @gRemovalArchitectures),
 				 qw(@gRemovalStrongSeverityDefaultDistributionTags),
+				 qw(@gAffectsDistributionTags),
 				 qw(@gDefaultArchitectures),
 				 qw($gMachineName),
 				 qw($gTemplateDir),
@@ -290,7 +291,9 @@ Default: qx(hostname --fqdn)
 
 my $_old_path = $ENV{PATH};
 $ENV{PATH} = '/bin:/usr/bin:/usr/local/bin';
-set_default(\%config,'machine_name',qx(hostname --fqdn));
+my $temp_hostname = qx(hostname --fqdn);
+chomp $temp_hostname;
+set_default(\%config,'machine_name',$temp_hostname);
 $ENV{PATH} = $_old_path;
 
 =head2 BTS Mailing Lists
