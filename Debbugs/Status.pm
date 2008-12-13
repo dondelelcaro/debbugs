@@ -1076,10 +1076,15 @@ sub bug_presence {
 	       my $some_distributions_disallowed = 0;
 	       my %allowed_distributions;
 	       for my $tag (split ' ', ($status{tags}||'')) {
-		    if (exists $affects_distribution_tags{$tag}) {
-			 $some_distributions_disallowed = 1;
-			 $allowed_distributions{$tag} = 1;
-		    }
+		   if (exists $config{distribution_aliases}{$tag} and
+			exists $affects_distribution_tags{$config{distribution_aliases}{$tag}}) {
+		       $some_distributions_disallowed = 1;
+		       $allowed_distributions{$config{distribution_aliases}{$tag}} = 1;
+		   }
+		   elsif (exists $affects_distribution_tags{$tag}) {
+		       $some_distributions_disallowed = 1;
+		       $allowed_distributions{$tag} = 1;
+		   }
 	       }
 	       foreach my $arch (make_list($param{arch})) {
 		    for my $package (split /\s*,\s*/, $status{package}) {
