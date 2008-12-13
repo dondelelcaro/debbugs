@@ -67,6 +67,7 @@ BEGIN {
 				 qw(%gObsoleteSeverities),
 				 qw(@gPostProcessall @gRemovalDefaultDistributionTags @gRemovalDistributionTags @gRemovalArchitectures),
 				 qw(@gRemovalStrongSeverityDefaultDistributionTags),
+				 qw(@gAffectsDistributionTags),
 				 qw(@gDefaultArchitectures),
 				 qw($gMachineName),
 				 qw($gTemplateDir),
