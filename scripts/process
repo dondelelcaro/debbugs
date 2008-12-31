@@ -224,7 +224,7 @@ if ($tryref >= 0)
 {
      my $bfound;
     ($bfound, $data)= &lockreadbugmerge($tryref);
-    if ($bfound) { 
+    if ($bfound and not $data->{archived}) {
         $ref= $tryref; 
     } else {
         &sendmessage(create_mime_message(
@@ -236,7 +236,7 @@ if ($tryref >= 0)
 	   References    => join(' ',grep {defined $_} $header{'message-id'},$data->{msgid}),
 	   Precedence    => 'bulk',
 	   "X-$gProject-PR-Message" => 'error',
-	  ],message_body_template('process_unknown_bug_number',
+	  ],message_body_template('mail/process_unknown_bug_number',
 				  {subject => $subject,
 				   date    => $header{date},
 				   baddress => $baddress,
@@ -449,8 +449,8 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
               To            => "$data->{originator}",
               Subject       => "$gBug#$ref closed by $markedby ($header{'subject'})",
               "Message-ID"  => "<handler.$ref.$nn.notifdone\@$gEmailDomain>",
-              "In-Reply-To" => "$data->{msgid}",
-              References    => join(' ',grep {defined $_} $header{'message-id'},$data->{msgid}),
+              (defined $data->{msgid})?("In-Reply-To" => $data->{msgid}):(),
+              References    => join(' ',grep {defined $_} ($header{'message-id'},$data->{msgid})),
               "X-$gProject-PR-Message"  => "they-closed $ref",
               "X-$gProject-PR-Package"  => "$data->{package}",
               "X-$gProject-PR-Keywords" => "$data->{keywords}",
@@ -499,7 +499,8 @@ if ($ref<0) { # new bug report
     $data->{fixed_versions} = [];
 
     if (defined $pheader{source}) {
-        $data->{package} = $pheader{source};
+	# source packages are identified by the src: prefix
+        $data->{package} = 'src:'.$pheader{source};
     } elsif (defined $pheader{package}) {
         $data->{package} = $pheader{package};
     } elsif (defined $config{default_package}) {
