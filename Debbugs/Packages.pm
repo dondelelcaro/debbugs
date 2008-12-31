@@ -15,13 +15,15 @@ use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS @EXPORT);
 
+use Carp;
+
 use Debbugs::Config qw(:config :globals);
 
 BEGIN {
     $VERSION = 1.00;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (versions => [qw(getversions get_versions)],
+     %EXPORT_TAGS = (versions => [qw(getversions get_versions make_source_versions)],
 		     mapping  => [qw(getpkgsrc getpkgcomponent getsrcpkgs),
 				  qw(binarytosource sourcetobinary makesourceversions)
 				 ],
@@ -35,7 +37,7 @@ use Fcntl qw(O_RDONLY);
 use MLDBM qw(DB_File Storable);
 use Storable qw(dclone);
 use Params::Validate qw(validate_with :types);
-use Debbugs::Common qw(make_list);
+use Debbugs::Common qw(make_list globify_scalar);
 
 use List::Util qw(min max);
 
@@ -349,7 +351,9 @@ sub get_versions{
 				) {
 			 my $f_ver = $ver;
 			 if ($param{source}) {
-			      ($f_ver) = makesourceversions($package,$arch,$ver);
+			      ($f_ver) = make_source_versions(package => $package,
+							      arch => $arch,
+							      versions => $ver);
 			      next unless defined $f_ver;
 			 }
 			 if ($param{time}) {
@@ -382,50 +386,131 @@ version numbers differ from binary version numbers.
 
 our %_sourceversioncache = ();
 sub makesourceversions {
-    my $pkg = shift;
-    my $arch = shift;
-    my %sourceversions;
-    die "Package $pkg is multiple packages; split on , and call makesourceversions multiple times"
-	 if $pkg =~ /,/;
+    my ($package,$arch,@versions) = @_;
+    die "Package $package is multiple packages; split on , and call makesourceversions multiple times"
+	 if $package =~ /,/;
+    return make_source_versions(package => $package,
+				(defined $arch)?(arch => $arch):(),
+				versions => \@versions
+			       );
+}
 
-    for my $version (@_) {
-        if ($version =~ m[/]) {
+=head2 make_source_versions
+
+     make_source_versions(package => 'foo',
+                          arch    => 'source',
+                          versions => '0.1.1',
+                          guess_source => 1,
+                          debug    => \$debug,
+                          warnings => \$warnings,
+                         );
+
+An extended version of makesourceversions (which calls this function
+internally) that allows for multiple packages, architectures, and
+outputs warnings and debugging information to provided SCALARREFs or
+HANDLEs.
+
+The guess_source option determines whether the source package is
+guessed at if there is no obviously correct package. Things that use
+this function for non-transient output should set this to false,
+things that use it for transient output can set this to true.
+Currently it defaults to true, but that is not a sane option.
+
+
+=cut
+
+sub make_source_versions {
+    my %param = validate_with(params => \@_,
+			      spec   => {package => {type => SCALAR|ARRAYREF,
+						    },
+					 arch    => {type => SCALAR|ARRAYREF,
+						     default => ''
+						    },
+					 versions => {type => SCALAR|ARRAYREF,
+						      default => [],
+						     },
+					 guess_source => {type => BOOLEAN,
+							  default => 1,
+							 },
+					 source_version_cache => {type => HASHREF,
+								  optional => 1,
+								 },
+					 debug    => {type => SCALARREF|HANDLE,
+						      optional => 1,
+						     },
+					 warnings => {type => SCALARREF|HANDLE,
+						      optional => 1,
+						     },
+					},
+			     );
+    my ($warnings) = globify_scalar(exists $param{warnings}?$param{warnings}:undef);
+    my ($debug)    = globify_scalar(exists $param{debug}   ?$param{debug}   :undef);
+
+
+    my @packages = grep {defined $_ and length $_ } make_list($param{package});
+    my @archs    = grep {defined $_ } make_list ($param{archs});
+    if (not @archs) {
+	push @archs, '';
+    }
+    if (not exists $param{source_version_cache}) {
+	$param{source_version_cache} = \%_sourceversioncache;
+    }
+    if (grep {/,/} make_list($param{package})) {
+	croak "Package names contain ,; split on /,/ and call make_source_versions with an arrayref of packages"
+    }
+    my %sourceversions;
+    for my $version (make_list($param{versions})) {
+        if ($version =~ m{(.+)/([^/]+)$}) {
+	    # check to see if this source version is even possible
+	    my @bin_versions = sourcetobinary($1,$2);
+	    if (not @bin_versions or
+		@{$bin_versions[0]} != 3) {
+		print {$warnings} "The source $1 and version $2 do not appear to match any binary packages\n";
+	    }
             # Already a source version.
             $sourceversions{$version} = 1;
         } else {
-            my $cachearch = (defined $arch) ? $arch : '';
-            my $cachekey = "$pkg/$cachearch/$version";
-            if (exists($_sourceversioncache{$cachekey})) {
-                for my $v (@{$_sourceversioncache{$cachekey}}) {
-		    $sourceversions{$v} = 1;
+	    if (not @packages) {
+		croak "You must provide at least one package if the versions are not fully qualified";
+	    }
+	    for my $pkg (@packages) {
+		for my $arch (@archs) {
+		    my $cachearch = (defined $arch) ? $arch : '';
+		    my $cachekey = "$pkg/$cachearch/$version";
+		    if (exists($param{source_version_cache}{$cachekey})) {
+			for my $v (@{$param{source_version_cache}{$cachekey}}) {
+			    $sourceversions{$v} = 1;
+			}
+			next;
+		    }
+		    my @srcinfo = binarytosource($pkg, $version, $arch);
+		    if (not @srcinfo) {
+			# We don't have explicit information about the
+			# binary-to-source mapping for this version
+			# (yet).
+			print {$warnings} "There is no source info for the package '$pkg' at version '$version' with architecture '$arch'\n";
+			if ($param{guess_source}) {
+			    # Lets guess it
+			    my $pkgsrc = getpkgsrc();
+			    if (exists $pkgsrc->{$pkg}) {
+				@srcinfo = ([$pkgsrc->{$pkg}, $version]);
+			    } elsif (getsrcpkgs($pkg)) {
+				# If we're looking at a source package
+				# that doesn't have a binary of the
+				# same name, just try the same
+				# version.
+				@srcinfo = ([$pkg, $version]);
+			    } else {
+				next;
+			    }
+			}
+		    }
+		    $sourceversions{"$_->[0]/$_->[1]"} = 1 foreach @srcinfo;
+		    $param{source_version_cache}{$cachekey} = [ map { "$_->[0]/$_->[1]" } @srcinfo ];
 		}
-                next;
-            }
-
-            my @srcinfo = binarytosource($pkg, $version, $arch);
-            unless (@srcinfo) {
-                # We don't have explicit information about the
-                # binary-to-source mapping for this version (yet). Since
-                # this is a CGI script and our output is transient, we can
-                # get away with just looking in the unversioned map; if it's
-                # wrong (as it will be when binary and source package
-                # versions differ), too bad.
-                my $pkgsrc = getpkgsrc();
-                if (exists $pkgsrc->{$pkg}) {
-                    @srcinfo = ([$pkgsrc->{$pkg}, $version]);
-                } elsif (getsrcpkgs($pkg)) {
-                    # If we're looking at a source package that doesn't have
-                    # a binary of the same name, just try the same version.
-                    @srcinfo = ([$pkg, $version]);
-                } else {
-                    next;
-                }
-            }
-            $sourceversions{"$_->[0]/$_->[1]"} = 1 foreach @srcinfo;
-            $_sourceversioncache{$cachekey} = [ map { "$_->[0]/$_->[1]" } @srcinfo ];
+	    }
         }
     }
-
     return sort keys %sourceversions;
 }
 
