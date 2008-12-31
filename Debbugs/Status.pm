@@ -879,9 +879,8 @@ dist, arch, and version. [The entries in this array must be in the
 "source/version" format.] Eventually this can be used to for caching.
 
 =item indicatesource -- if true, indicate which source packages this
-bug could belong to. Defaults to false. [Note that eventually we will
-properly allow bugs that only affect a source package, and this will
-become always on.]
+bug could belong to (or does belong to in the case of bugs assigned to
+a source package). Defaults to true.
 
 =back
 
@@ -920,7 +919,7 @@ sub get_bug_status {
 							     optional => 1,
 							    },
 					  indicatesource => {type => BOOLEAN,
-							     default => 0,
+							     default => 1,
 							    },
 					 },
 			      );
@@ -951,15 +950,30 @@ sub get_bug_status {
      $status{tags} = $status{keywords};
      my %tags = map { $_ => 1 } split ' ', $status{tags};
 
+     $status{package} = '' if not defined $status{package};
      $status{"package"} =~ s/\s*$//;
-     if ($param{indicatesource} and $status{package} ne '') {
-	  $status{source} = join(', ',binarytosource($status{package}));
+     # if we aren't supposed to indicate the source, we'll return
+     # unknown here.
+     $status{source} = 'unknown';
+     if ($param{indicatesource}) {
+	 my @packages = split /\s*,\s*/, $status{package};
+	 my @source;
+	 for my $package (@packages) {
+	     next if $package eq '';
+	     if ($package =~ /^src\:$/) {
+		 push @source,$1;
+	     }
+	     else {
+		 push @source, binarytosource($package);
+	     }
+	 }
+	 if (@source) {
+	     $status{source} = join(', ',@source);
+	 }
      }
-     else {
-	  $status{source} = 'unknown';
-     }
+
      $status{"package"} = 'unknown' if ($status{"package"} eq '');
-     $status{"severity"} = 'normal' if ($status{"severity"} eq '');
+     $status{"severity"} = 'normal' if (not defined $status{severity} or $status{"severity"} eq '');
 
      $status{"pending"} = 'pending';
      $status{"pending"} = 'forwarded'	    if (length($status{"forwarded"}));
