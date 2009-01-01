@@ -483,6 +483,13 @@ sub make_source_versions {
 			}
 			next;
 		    }
+		    elsif ($param{guess_source} and
+			   exists$param{source_version_cache}{$cachekey.'/guess'}) {
+			for my $v (@{$param{source_version_cache}{$cachekey}}) {
+			    $sourceversions{$v} = 1;
+			}
+			next;
+		    }
 		    my @srcinfo = binarytosource($pkg, $version, $arch);
 		    if (not @srcinfo) {
 			# We don't have explicit information about the
@@ -503,10 +510,15 @@ sub make_source_versions {
 			    } else {
 				next;
 			    }
+			    # store guesses in a slightly different location
+			    $param{source_version_cache}{$cachekey.'/guess'} = [ map { "$_->[0]/$_->[1]" } @srcinfo ];
 			}
 		    }
+		    else {
+			# only store this if we didn't have to guess it
+			$param{source_version_cache}{$cachekey} = [ map { "$_->[0]/$_->[1]" } @srcinfo ];
+		    }
 		    $sourceversions{"$_->[0]/$_->[1]"} = 1 foreach @srcinfo;
-		    $param{source_version_cache}{$cachekey} = [ map { "$_->[0]/$_->[1]" } @srcinfo ];
 		}
 	    }
         }
