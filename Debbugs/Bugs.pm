@@ -54,7 +54,7 @@ use Debbugs::Config qw(:config);
 use Params::Validate qw(validate_with :types);
 use IO::File;
 use Debbugs::Status qw(splitpackages get_bug_status);
-use Debbugs::Packages qw(getsrcpkgs);
+use Debbugs::Packages qw(getsrcpkgs getpkgsrc);
 use Debbugs::Common qw(getparsedaddrs getmaintainers getmaintainers_reverse make_list);
 use Fcntl qw(O_RDONLY);
 use MLDBM qw(DB_File Storable);
