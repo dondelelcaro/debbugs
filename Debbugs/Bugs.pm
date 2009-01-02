@@ -711,22 +711,36 @@ sub __handle_pkg_src_and_maint{
 	  # We only want to increment the number of keys if there is
 	  # something to match
 	  my $key_inc = 0;
-	  for my $package ((map { getsrcpkgs($_)} make_list($param{src}))) {
-	       $packages{$package}++;
+	  # in case there are binaries with the same name as the
+	  # source
+	  my %_temp_p = ();
+	  for my $package ((map {getsrcpkgs($_)} make_list($param{src}))) {
+	       $packages{$package}++ unless exists $_temp_p{$package};
+	       $_temp_p{$package} = 1;
 	       $key_inc=1;
 	  }
 	  for my $package (make_list($param{src})) {
-	       $packages{"src:$package"}++;
+	       $packages{"src:$package"}++ unless exists $_temp_p{"src:$package"};
+	       $_temp_p{"src:$package"} = 1;
 	       $key_inc=1;
+	       # As a temporary hack, we will also include $param{src}
+	       # in this list for packages passed which do not have a
+	       # corresponding binary package
+	       if (not exists getpkgsrc()->{$package}) {
+		   $packages{$package}++ unless exists $_temp_p{$package};
+		   $_temp_p{$package} = 1;
+	       }
 	  }
 	  $package_keys += $key_inc;
      }
      if (exists $param{maint}) {
 	  my $key_inc = 0;
 	  my $maint_rev = getmaintainers_reverse();
+	  my %_temp_p = ();
 	  for my $package (map { exists $maint_rev->{$_}?@{$maint_rev->{$_}}:()}
 			   make_list($param{maint})) {
-	       $packages{$package}++;
+	       $packages{$package}++ unless exists $_temp_p{$package};
+	       $_temp_p{$package} = 1;
 	       $key_inc = 1;
 	  }
 	  $package_keys += $key_inc;
