@@ -246,6 +246,7 @@ for my $user (map {split /[\s*,\s*]+/} make_list($param{users}||[])) {
 }
 
 if (defined $param{usertag}) {
+    my $do_not_add_usertags = grep {exists $param{$_}} keys %package_search_keys;
      for my $usertag (make_list($param{usertag})) {
 	  my %select_ut = ();
 	  my ($u, $t) = split /:/, $usertag, 2;
@@ -254,7 +255,7 @@ if (defined $param{usertag}) {
 	       $t = join(",", keys(%select_ut));
 	  }
 	  add_user($u,\%ut,\%bugusertags,\%seen_users,\%cats,\%hidden);
-	  push @{$param{tag}}, split /,/, $t;
+	  push @{$param{tag}}, split /,/, $t unless $do_not_add_usertags;
      }
 }
 
