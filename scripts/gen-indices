@@ -208,15 +208,15 @@ while (my $dir = shift @dirs) {
 		# handle log entries
 		# do this in eval to avoid exploding on jacked logs
 		eval {
-		     my $log = Debbugs::Log->new(bug_num => $bug);
-		     while (my $record = $log->read_record()) {
-			  next unless $record->{type} eq 'incoming-recv';
-			  # we use a regex here, because a full mime parse will be slow.
-			  my ($from) = $record->{text} =~ /^From:\s+(.+?)^\S/ism;
-			  addbugtoindex('correspondent',$bug,
-					map {lc($_->address)} getparsedaddrs($from)
-				       );
-		     }
+		    my $log = Debbugs::Log->new(bug_num => $bug);
+		    my @correspondents;
+		    while (my $record = $log->read_record()) {
+			next unless $record->{type} eq 'incoming-recv';
+			# we use a regex here, because a full mime parse will be slow.
+			my ($from) = $record->{text} =~ /^From:\s+(.+?)^\S/ism;
+			push @correspondents, map {lc($_->address)} getparsedaddrs($from);
+		    }
+		    addbugtoindex('correspondent',$bug,@correspondents) if @correspondents;
 		};
 		if ($@) {
 		     print STDERR "Problem dealing with log of $bug: $@";
