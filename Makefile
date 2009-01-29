@@ -23,8 +23,21 @@ cgis		:= $(wildcard cgi/*.cgi cgi/*.pl)
 install_exec	:= install -m755 -p
 install_data	:= install -m644 -p
 
-test:
-	perl -MTest::Harness -I. -e 'runtests(glob(q(t/*.t)))'
+PERL ?= /usr/bin/perl
+
+all: build test
+
+build:
+	$(PERL) Makefile.PL
+	$(MAKE) -f Makefile.perl
+
+test: build
+	$(PERL) -MTest::Harness -I. -e 'runtests(glob(q(t/*.t)))'
+
+clean:
+	if [ -e Makefile.perl ]; then \
+		$(MAKE) -f Makefile.perl clean; \
+	fi;
 
 install: install_mostfiles
 	# install basic debbugs documentation
@@ -90,4 +103,4 @@ $(var_dir)/spool/db-h $(scripts_dir) $(examples_dir) $(man8_dir); \
 	$(foreach tmpl, $(wildcard templates/*/*/*.tmpl), $(exec $(install_data) $(tmpl) $(template_dir)/$(patsubst templates/%,%,$(tmpl))))
 
 
-.PHONY: test
+.PHONY: test build
