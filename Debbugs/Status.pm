@@ -253,8 +253,10 @@ sub read_bug{
 	    $data{$field} = decode_rfc1522($data{$field});
 	}
     }
+    my $status_modified = (stat($status))[9];
     # Add log last modified time
     $data{log_modified} = (stat($log))[9];
+    $data{last_modified} = max($status_modified,$data{log_modified});
     $data{location} = $location;
     $data{archived} = (defined($location) and ($location eq 'archive'))?1:0;
     $data{bug_num} = $param{bug};
