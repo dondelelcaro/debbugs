@@ -242,6 +242,7 @@ debbugs (2.4.2) UNRELEASED; urgency=low
   * Indicate the update location of source (closes: #512306)
   * Use get_addresses to parse X-Debbugs-Cc: to allow multiple Cc:'s
     (closes: #514183)
+  * Calculate last modified using summary as well as log (closes: #515063)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
