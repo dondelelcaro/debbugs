@@ -533,9 +533,9 @@ element, returns that element.
 
 sub english_join {
     if (ref $_[0] eq 'ARRAY') {
-	english_join(list=>$_[0]);
+	return english_join(list=>$_[0]);
     }
-    my %param = validate_with(param => \@_,
+    my %param = validate_with(params => \@_,
 			      spec  => {normal => {type => SCALAR,
 						   default => ', ',
 						  },
