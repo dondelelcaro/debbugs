@@ -13,7 +13,7 @@ use IO::File;
 
 use MIME::Parser;
 use Debbugs::MIME qw(decode_rfc1522 create_mime_message getmailbody);
-use Debbugs::Mail qw(send_mail_message encode_headers);
+use Debbugs::Mail qw(send_mail_message encode_headers get_addresses);
 use Debbugs::Packages qw(getpkgsrc);
 use Debbugs::User qw(read_usertags write_usertags);
 use Debbugs::Common qw(:lock get_hashname);
@@ -634,7 +634,7 @@ my $newsubject= $subject;  $newsubject =~ s/^$gBug#$ref:*\s*//;
 
 my $xcchdr= $header{ 'x-debbugs-cc' } || '';
 if ($xcchdr =~ m/\S/) {
-    push(@resentccs,$xcchdr);
+    push(@resentccs,get_addresses($xcchdr));
     $resentccexplain.= fill_template('mail/xdebbugscc',
 				     {xcchdr => $xcchdr},
 				    );

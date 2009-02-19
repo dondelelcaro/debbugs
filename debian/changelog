@@ -240,6 +240,8 @@ debbugs (2.4.2) UNRELEASED; urgency=low
   * Add Date headers if missing (closes: #458757)
   * Indicate what machine has built webpages (closes: #507022)
   * Indicate the update location of source (closes: #512306)
+  * Use get_addresses to parse X-Debbugs-Cc: to allow multiple Cc:'s
+    (closes: #514183)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
