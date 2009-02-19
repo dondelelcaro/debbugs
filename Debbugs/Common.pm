@@ -40,6 +40,7 @@ BEGIN{
      @EXPORT = ();
      %EXPORT_TAGS = (util   => [qw(getbugcomponent getbuglocation getlocationpath get_hashname),
 				qw(appendfile buglog getparsedaddrs getmaintainers),
+				qw(bug_status),
 				qw(getmaintainers_reverse),
 				qw(getpseudodesc),
 			       ],
@@ -177,6 +178,23 @@ sub buglog {
     return undef;
 }
 
+=head2 bug_status
+
+     bug_status($bugnum)
+
+
+Returns the path to the summary file corresponding to the bug.
+
+Returns undef if the bug does not exist.
+
+=cut
+
+sub bug_status{
+    my ($bugnum) = @_;
+    my $location = getbuglocation($bugnum, 'summary');
+    return getbugcomponent($bugnum, 'summary', $location) if ($location);
+    return undef;
+}
 
 =head2 appendfile
 
