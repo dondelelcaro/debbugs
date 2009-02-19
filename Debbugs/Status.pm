@@ -64,9 +64,10 @@ BEGIN{
 				  qw(removefoundversions removefixedversions)
 				 ],
 		     hook     => [qw(bughook bughook_archive)],
+		     fields   => [qw(%fields)],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(status read write versions hook));
+     Exporter::export_ok_tags(qw(status read write versions hook fields));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -81,8 +82,9 @@ location. Valid locations are those understood by L</getbugcomponent>
 
 =cut
 
-
-my %fields = (originator     => 'submitter',
+# these probably shouldn't be imported by most people, but
+# Debbugs::Control needs them, so they're now exportable
+our %fields = (originator     => 'submitter',
               date           => 'date',
               subject        => 'subject',
               msgid          => 'message-id',
