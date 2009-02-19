@@ -297,7 +297,7 @@ sub quitcgi {
 }
 
 
-=head HTML
+=head1 HTML
 
 =head2 htmlize_packagelinks
 
