@@ -60,9 +60,7 @@ may not make sense in other contexts.)
 
 =head1 METHODS
 
-=over 8
-
-=item getpkgsrc
+=head2 getpkgsrc
 
 Returns a reference to a hash of binary package names to their corresponding
 source package names.
@@ -96,7 +94,7 @@ sub getpkgsrc {
     return $_pkgsrc;
 }
 
-=item getpkgcomponent
+=head2 getpkgcomponent
 
 Returns a reference to a hash of binary package names to the component of
 the archive containing those binary packages (e.g. "main", "contrib",
@@ -110,7 +108,7 @@ sub getpkgcomponent {
     return $_pkgcomponent;
 }
 
-=item getsrcpkgs
+=head2 getsrcpkgs
 
 Returns a list of the binary packages produced by a given source package.
 
@@ -123,7 +121,7 @@ sub getsrcpkgs {
     return @{$_srcpkg->{$src}};
 }
 
-=item binarytosource
+=head2 binarytosource
 
 Returns a reference to the source package name and version pair
 corresponding to a given binary package name, version, and architecture.
@@ -196,7 +194,7 @@ sub binarytosource {
     return ();
 }
 
-=item sourcetobinary
+=head2 sourcetobinary
 
 Returns a list of references to triplets of binary package names, versions,
 and architectures corresponding to a given source package name and version.
@@ -233,7 +231,7 @@ sub sourcetobinary {
     return map [$_, $srcver], @srcpkgs;
 }
 
-=item getversions
+=head2 getversions
 
 Returns versions of the package in a distribution at a specific
 architecture
@@ -373,7 +371,7 @@ sub get_versions{
 }
 
 
-=item makesourceversions
+=head2 makesourceversions
 
      @{$cgi_var{found}} = makesourceversions($cgi_var{package},undef,@{$cgi_var{found}});
 
@@ -527,9 +525,5 @@ sub make_source_versions {
 }
 
 
-
-=back
-
-=cut
 
 1;
