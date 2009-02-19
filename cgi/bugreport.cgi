@@ -237,6 +237,7 @@ else {
 				     msg_num => $msg_num,
 				     att => $att,
 				     msg => $msg,
+				     trim_headers => $trim_headers,
 				    );
 	  exit 0;
      }
