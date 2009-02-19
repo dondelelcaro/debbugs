@@ -9,7 +9,7 @@ Build-Depends-Indep: debhelper, libparams-validate-perl,
  liburi-perl, libsoap-lite-perl, libcgi-simple-perl,
  libhttp-server-simple-perl, libtest-www-mechanize-perl,
  libmail-rfc822-address-perl, libsafe-hole-perl, libuser-perl,
- libconfig-simple-perl
+ libconfig-simple-perl, libtest-pod-perl
 
 Package: debbugs
 Architecture: all
