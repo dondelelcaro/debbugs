@@ -272,8 +272,6 @@ Email address where packages with an unknown maintainer will be sent
 
 Default: $config{maintainer_email}
 
-=back
-
 =cut
 
 set_default(\%config,'unknown_maintainer_email',$config{maintainer_email});
