@@ -424,7 +424,7 @@ if (defined $pseudodesc and defined $pkg and exists $pseudodesc->{$pkg}) {
      delete $param{dist};
 }
 
-# output infomration about the packages
+# output information about the packages
 
 for my $package (make_list($param{package}||[])) {
      print generate_package_info(binary => 1,
