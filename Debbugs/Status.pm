@@ -40,7 +40,7 @@ use Params::Validate qw(validate_with :types);
 use Debbugs::Common qw(:util :lock :quit :misc);
 use Debbugs::Config qw(:config);
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
-use Debbugs::Packages qw(makesourceversions getversions get_versions binarytosource);
+use Debbugs::Packages qw(makesourceversions make_source_versions getversions get_versions binarytosource);
 use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
 use POSIX qw(ceil);
@@ -329,7 +329,7 @@ sub lock_read_all_merged_bugs {
     my $locks = 0;
     my @data = (lockreadbug(@_));
     if (not @data or not defined $data[0]) {
-	return ($locks,undef);
+	return ($locks,());
     }
     $locks++;
     if (not length $data[0]->{mergedwith}) {
@@ -343,7 +343,7 @@ sub lock_read_all_merged_bugs {
     if (not @data or not defined $data[0]) {
 	unfilelock(); #for merge lock above
 	$locks--;
-	return ($locks,undef);
+	return ($locks,());
     }
     $locks++;
     my @bugs = split / /, $data[0]->{mergedwith};
@@ -357,7 +357,7 @@ sub lock_read_all_merged_bugs {
 		}
 		$locks = 0;
 		warn "Unable to read bug: $bug while handling merged bug: $bug_num";
-		return ($locks,undef);
+		return ($locks,());
 	    }
 	    $locks++;
 	    push @data,$newdata;
@@ -1104,10 +1104,15 @@ sub bug_presence {
 		       $allowed_distributions{$tag} = 1;
 		   }
 	       }
-	       foreach my $arch (make_list($param{arch})) {
+	       foreach my $arch (make_list(exists $param{arch}?$param{arch}:undef)) {
 		    for my $package (split /\s*,\s*/, $status{package}) {
-			 my @versions;
-			 foreach my $dist (make_list($param{dist})) {
+			 my @versions = ();
+			 my $source = 0;
+			 if ($package =~ /^src:(.+)$/) {
+			     $source = 1;
+			     $package = $1;
+			 }
+			 foreach my $dist (make_list(exists $param{dist}?$param{dist}:[])) {
 			      # if some distributions are disallowed,
 			      # and this isn't an allowed
 			      # distribution, then we ignore this
@@ -1117,13 +1122,17 @@ sub bug_presence {
 				  not exists $allowed_distributions{$dist}) {
 				   next;
 			      }
-			      push @versions, getversions($package, $dist, $arch);
+			      push @versions, get_versions(package => $package,
+							   dist    => $dist,
+							   ($source?(arch => 'source'):
+							    (defined $arch?(arch => $arch):())),
+							  );
 			 }
 			 next unless @versions;
-			 my @temp = makesourceversions($package,
-						       $arch,
-						       @versions
-						      );
+			 my @temp = make_source_versions(package => $package,
+							 arch => $arch,
+							 versions => \@versions,
+							);
 			 @sourceversions{@temp} = (1) x @temp;
 		    }
 	       }
