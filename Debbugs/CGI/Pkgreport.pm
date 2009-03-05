@@ -308,8 +308,6 @@ sub pkg_htmlizebugs {
      my $header = '';
      my $footer = "<h2 class=\"outstanding\">Summary</h2>\n";
 
-     my @dummy = ($gRemoveAge); #, @gSeverityList, @gSeverityDisplay);  #, $gHTMLExpireNote);
-
      if (@bugs == 0) {
 	  return "<HR><H2>No reports found!</H2></HR>\n";
      }
