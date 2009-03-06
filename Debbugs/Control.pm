@@ -81,6 +81,11 @@ BEGIN{
      %EXPORT_TAGS = (affects => [qw(affects)],
 		     summary => [qw(summary)],
 		     owner   => [qw(owner)],
+		     title   => [qw(set_title)],
+		     forward => [qw(set_forwarded)],
+		     found   => [qw(set_found set_fixed)],
+		     fixed   => [qw(set_found set_fixed)],
+		     package => [qw(set_package)],
 		     archive => [qw(bug_archive bug_unarchive),
 				],
 		     log     => [qw(append_action_to_log),
@@ -97,6 +102,7 @@ use Debbugs::Status qw(bug_archiveable :read :hook writebug splitpackages);
 use Debbugs::CGI qw(html_escape);
 use Debbugs::Log qw(:misc);
 use Debbugs::Recipients qw(:add);
+use Debbugs::Packages qw(:versions :mapping);
 
 use Params::Validate qw(validate_with :types);
 use File::Path qw(mkpath);
@@ -106,7 +112,11 @@ use Debbugs::Text qw(:templates);
 
 use Debbugs::Mail qw(rfc822_date);
 
+use Mail::RFC822::Address qw();
+
 use POSIX qw(strftime);
+
+use Storable qw(dclone nfreeze);
 
 use Carp;
 
@@ -129,6 +139,9 @@ my %common_options = (debug       => {type => SCALARREF|HANDLE,
 				       },
 		      limit         => {type => HASHREF,
 					default => {},
+				       },
+		      show_bug_info => {type => BOOLEAN,
+					default => 1,
 				       },
 		     );
 
@@ -160,79 +173,868 @@ my %append_action_options =
 
 # this is just a generic stub for Debbugs::Control functions.
 #
-# =head2 foo
+# =head2 set_foo
 #
 #      eval {
-# 	    foo(bug          => $ref,
-# 		transcript   => $transcript,
-# 		($dl > 0 ? (debug => $transcript):()),
-# 		requester    => $header{from},
-# 		request_addr => $controlrequestaddr,
-# 		message      => \@log,
-#               affected_packages => \%affected_packages,
-# 		recipients   => \%recipients,
-# 		summary      => undef,
-#              );
+# 	    set_foo(bug          => $ref,
+# 		    transcript   => $transcript,
+# 		    ($dl > 0 ? (debug => $transcript):()),
+# 		    requester    => $header{from},
+# 		    request_addr => $controlrequestaddr,
+# 		    message      => \@log,
+#                   affected_packages => \%affected_packages,
+# 		    recipients   => \%recipients,
+# 		    summary      => undef,
+#                  );
 # 	};
 # 	if ($@) {
 # 	    $errors++;
-# 	    print {$transcript} "Failed to foo $ref bar: $@";
+# 	    print {$transcript} "Failed to set foo $ref bar: $@";
 # 	}
 #
 # Foo frobinates
 #
 # =cut
 #
-# sub foo {
-#     my %param = validate_with(params => \@_,
-# 			      spec   => {bug => {type   => SCALAR,
-# 						 regex  => qr/^\d+$/,
-# 						},
-# 					 # specific options here
-# 					 %common_options,
-# 					 %append_action_options,
-# 					},
-# 			     );
-#     our $locks = 0;
-#     $locks = 0;
-#     local $SIG{__DIE__} = sub {
-# 	if ($locks) {
-# 	    for (1..$locks) { unfilelock(); }
-# 	    $locks = 0;
-# 	}
-#     };
-#     my ($debug,$transcript) = __handle_debug_transcript(%param);
-#     my (@data);
-#     ($locks, @data) = lock_read_all_merged_bugs($param{bug});
-#     __handle_affected_packages(data => \@data,%param);
-#     print {$transcript} __bug_info(@data);
-#     add_recipients(data => \@data,
-# 		     recipients => $param{recipients}
-#  		     debug      => $debug,
-#  		     transcript => $transcript,
-# 		    );
-#     for my $data (@data) {
-# 	 append_action_to_log(bug => $data->{bug_num},
-# 			      get_lock => 0,
-# 			      __return_append_to_log_options(
-# 							     %param,
-# 							     action => $action,
-# 							    ),
-# 			     )
-# 	       if not exists $param{append_log} or $param{append_log};
-# 	  writebug($data->{bug_num},$data);
-# 	  print {$transcript} "$action\n";
-# 	  add_recipients(data => $data,
-# 			 recipients => $param{recipients},
-#  		         debug      => $debug,
-#  		         transcript => $transcript,
-# 			);
-#      }
-#      if ($locks) {
-# 	  for (1..$locks) { unfilelock(); }
-#      }
-#
-# }
+## sub set_foo {
+##     my %param = validate_with(params => \@_,
+## 			      spec   => {bug => {type   => SCALAR,
+## 						 regex  => qr/^\d+$/,
+## 						},
+## 					 # specific options here
+## 					 %common_options,
+## 					 %append_action_options,
+## 					},
+## 			     );
+##     my %info =
+## 	__begin_control(%param,
+## 			command  => 'foo'
+## 		       );
+##     my ($new_locks,$debug,$transcript) =
+## 	@info{qw(new_locks debug transcript)};
+##     my @data = @{$info{data}};
+##     my @bugs = @{$info{bugs}};
+## 
+##     for my $data (@data) {
+## 	append_action_to_log(bug => $data->{bug_num},
+## 			     get_lock => 0,
+## 			     __return_append_to_log_options(
+## 							    %param,
+## 							    action => $action,
+## 							   ),
+## 			    )
+## 	    if not exists $param{append_log} or $param{append_log};
+## 	writebug($data->{bug_num},$data);
+## 	print {$transcript} "$action\n";
+##     }
+##     __end_control(\%info);
+## }
+
+=head2 set_submitter
+
+     eval {
+	    set_submitter(bug          => $ref,
+		          transcript   => $transcript,
+		          ($dl > 0 ? (debug => $transcript):()),
+		          requester    => $header{from},
+		          request_addr => $controlrequestaddr,
+		          message      => \@log,
+                          affected_packages => \%affected_packages,
+		          recipients   => \%recipients,
+		          submitter    => $new_submitter,
+                          notify_submitter => 1,
+                          );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to set the forwarded-to-address of $ref: $@";
+	}
+
+Sets the submitter of a bug. If notify_submitter is true (the
+default), notifies the old submitter of a bug on changes
+
+=cut
+
+sub set_submitter {
+    my %param = validate_with(params => \@_,
+			      spec   => {bug => {type   => SCALAR,
+						 regex  => qr/^\d+$/,
+						},
+					 # specific options here
+					 submitter => {type => SCALAR,
+						      },
+					 notify_submitter => {type => BOOLEAN,
+							      default => 1,
+							     },
+					 %common_options,
+					 %append_action_options,
+					},
+			     );
+    if (not Mail::RFC822::Address::valid($param{submitter})) {
+	die "New submitter address $param{submitter} is not a valid e-mail address";
+    }
+    my %info =
+	__begin_control(%param,
+			command  => 'submitter'
+		       );
+    my ($new_locks,$debug,$transcript) =
+	@info{qw(new_locks debug transcript)};
+    my @data = @{$info{data}};
+    my @bugs = @{$info{bugs}};
+    my $action = '';
+    # here we only concern ourselves with the first of the merged bugs
+    for my $data ($data[0]) {
+	my $old_data = dclone($data);
+	print {$debug} "Going to change bug submitter\n";
+	if (((not defined $param{submitter} or not length $param{submitter}) and
+	      (not defined $data->{submitter} or not length $data->{submitter})) or
+	     $param{submitter} eq $data->{submitter}) {
+	    print {$transcript} "Ignoring request to change the submitter of bug#$data->{bug_num} to the same value\n"
+		unless __internal_request();
+	    next;
+	}
+	else {
+	    if (defined $data->{submitter} and length($data->{submitter})) {
+		$action= "Changed $config{bug} submitter to '$param{submitter}' from '$data->{submitter}'";
+	    }
+	    else {
+		$action= "Set $config{bug} submitter to '$param{submitter}'.";
+	    }
+	    $data->{submitter} = $param{submitter};
+	}
+        append_action_to_log(bug => $data->{bug_num},
+			     command => 'set_submitter',
+			     new_data => $data,
+			     old_data => $old_data,
+			     get_lock => 0,
+			     __return_append_to_log_options(
+							    %param,
+							    action => $action,
+							   ),
+			    )
+	    if not exists $param{append_log} or $param{append_log};
+	writebug($data->{bug_num},$data);
+	print {$transcript} "$action\n";
+    }
+    __end_control(%info);
+}
+
+
+
+=head2 set_forwarded
+
+     eval {
+	    set_forwarded(bug          => $ref,
+		          transcript   => $transcript,
+		          ($dl > 0 ? (debug => $transcript):()),
+		          requester    => $header{from},
+		          request_addr => $controlrequestaddr,
+		          message      => \@log,
+                          affected_packages => \%affected_packages,
+		          recipients   => \%recipients,
+		          forwarded    => $forward_to,
+                          );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to set the forwarded-to-address of $ref: $@";
+	}
+
+Sets the location to which a bug is forwarded. Given an undef
+forwarded, unsets forwarded.
+
+
+=cut
+
+sub set_forwarded {
+    my %param = validate_with(params => \@_,
+			      spec   => {bug => {type   => SCALAR,
+						 regex  => qr/^\d+$/,
+						},
+					 # specific options here
+					 forwarded => {type => SCALAR|UNDEF,
+						      },
+					 %common_options,
+					 %append_action_options,
+					},
+			     );
+    if (defined $param{forwarded} and $param{forwarded} =~ /[^[:print:]]/) {
+	die "Non-printable characters are not allowed in the forwarded field";
+    }
+    my %info =
+	__begin_control(%param,
+			command  => 'forwarded'
+		       );
+    my ($new_locks,$debug,$transcript) =
+	@info{qw(new_locks debug transcript)};
+    my @data = @{$info{data}};
+    my @bugs = @{$info{bugs}};
+    my $action = '';
+    for my $data (@data) {
+	my $old_data = dclone($data);
+	print {$debug} "Going to change bug forwarded\n";
+	if (((not defined $param{forwarded} or not length $param{forwarded}) and
+	      (not defined $data->{forwarded} or not length $data->{forwarded})) or
+	     $param{forwarded} eq $data->{forwarded}) {
+	    print {$transcript} "Ignoring request to change the forwarded-to-address of bug#$data->{bug_num} to the same value\n"
+		unless __internal_request();
+	    next;
+	}
+	else {
+	    if (not defined $param{forwarded}) {
+		$action= "Unset $config{bug} forwarded-to-address";
+	    }
+	    elsif (defined $data->{forwarded} and length($data->{forwarded})) {
+		$action= "Changed $config{bug} forwarded-to-address to '$param{forwarded}' from '$data->{forwarded}'";
+	    }
+	    else {
+		$action= "Set $config{bug} forwarded-to-address to '$param{forwarded}'.";
+	    }
+	    $data->{forwarded} = $param{forwarded};
+	}
+        append_action_to_log(bug => $data->{bug_num},
+			     command => 'set_forwarded',
+			     new_data => $data,
+			     old_data => $old_data,
+			     get_lock => 0,
+			     __return_append_to_log_options(
+							    %param,
+							    action => $action,
+							   ),
+			    )
+	    if not exists $param{append_log} or $param{append_log};
+	writebug($data->{bug_num},$data);
+	print {$transcript} "$action\n";
+    }
+    __end_control(%info);
+}
+
+
+
+
+=head2 set_title
+
+     eval {
+	    set_title(bug          => $ref,
+		      transcript   => $transcript,
+		      ($dl > 0 ? (debug => $transcript):()),
+		      requester    => $header{from},
+		      request_addr => $controlrequestaddr,
+		      message      => \@log,
+                      affected_packages => \%affected_packages,
+		      recipients   => \%recipients,
+		      title        => $new_title,
+                      );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to set the title of $ref: $@";
+	}
+
+Sets the title of a specific bug
+
+
+=cut
+
+sub set_title {
+    my %param = validate_with(params => \@_,
+			      spec   => {bug => {type   => SCALAR,
+						 regex  => qr/^\d+$/,
+						},
+					 # specific options here
+					 title => {type => SCALAR,
+						  },
+					 %common_options,
+					 %append_action_options,
+					},
+			     );
+    if ($param{title} =~ /[^[:print:]]/) {
+	die "Non-printable characters are not allowed in bug titles";
+    }
+
+    my %info = __begin_control(%param,
+			       command  => 'title',
+			      );
+    my ($debug,$transcript) =
+	@info{qw(debug transcript)};
+    my @data = @{$info{data}};
+    my @bugs = @{$info{bugs}};
+    my $action = '';
+    for my $data (@data) {
+	my $old_data = dclone($data);
+	print {$debug} "Going to change bug title\n";
+	if (defined $data->{subject} and length($data->{subject}) and
+	    $data->{subject} eq $param{title}) {
+	    print {$transcript} "Ignoring request to change the title of bug#$data->{bug_num} to the same title\n"
+		unless __internal_request();
+	    next;
+	}
+	else {
+	    if (defined $data->{subject} and length($data->{subject})) {
+		$action= "Changed $config{bug} title to '$param{title}' from '$data->{subject}'";
+	    } else {
+		$action= "Set $config{bug} title to '$param{title}'.";
+	    }
+	    $data->{subject} = $param{title};
+	}
+        append_action_to_log(bug => $data->{bug_num},
+			     command => 'set_title',
+			     new_data => $data,
+			     old_data => $old_data,
+			     get_lock => 0,
+			     __return_append_to_log_options(
+							    %param,
+							    action => $action,
+							   ),
+			    )
+	    if not exists $param{append_log} or $param{append_log};
+	writebug($data->{bug_num},$data);
+	print {$transcript} "$action\n";
+    }
+    __end_control(%info);
+}
+
+
+=head2 set_package
+
+     eval {
+	    set_package(bug          => $ref,
+		        transcript   => $transcript,
+		        ($dl > 0 ? (debug => $transcript):()),
+		        requester    => $header{from},
+		        request_addr => $controlrequestaddr,
+		        message      => \@log,
+                        affected_packages => \%affected_packages,
+		        recipients   => \%recipients,
+		        package      => $new_package,
+                        is_source    => 0,
+                       );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to assign or reassign $ref to a package: $@";
+	}
+
+Indicates that a bug is in a particular package. If is_source is true,
+indicates that the package is a source package. [Internally, this
+causes src: to be prepended to the package name.]
+
+The default for is_source is 0. As a special case, if the package
+starts with 'src:', it is assumed to be a source package and is_source
+is overridden.
+
+The package option must match the package_name_re regex.
+
+=cut
+
+sub set_package {
+    my %param = validate_with(params => \@_,
+			      spec   => {bug => {type   => SCALAR,
+						 regex  => qr/^\d+$/,
+						},
+					 # specific options here
+					 package => {type => SCALAR|ARRAYREF,
+						    },
+					 is_source => {type => BOOLEAN,
+						       default => 0,
+						      },
+					 %common_options,
+					 %append_action_options,
+					},
+			     );
+    my @new_packages = map {splitpackages($_)} make_list($param{package});
+    if (grep {$_ !~ /^(?:src:|)$config{package_name_re}$/} @new_packages) {
+	croak "Invalid package name '".
+	    join(',',grep {$_ !~ /^(?:src:|)$config{package_name_re}$/} @new_packages).
+		"'";
+    }
+    my %info = __begin_control(%param,
+			       command  => 'package',
+			      );
+    my ($new_locks,$debug,$transcript) =
+	@info{qw(new_locks debug transcript)};
+    my @data = @{$info{data}};
+    my @bugs = @{$info{bugs}};
+    # clean up the new package
+    my $new_package =
+	join(',',
+	     map {my $temp = $_;
+		  ($temp =~ s/^src:// or
+		   $param{is_source}) ? 'src:'.$temp:$temp;
+	      } @new_packages);
+
+    my $action = '';
+    my $package_reassigned = 0;
+    for my $data (@data) {
+	my $old_data = dclone($data);
+	print {$debug} "Going to change assigned package\n";
+	if (defined $data->{package} and length($data->{package}) and
+	    $data->{package} eq $new_package) {
+	    print {$transcript} "Ignoring request to reassign bug #$data->{bug_num} to the same package\n"
+		unless __internal_request();
+	    next;
+	}
+	else {
+	    if (defined $data->{package} and length($data->{package})) {
+		$package_reassigned = 1;
+		$action= "$config{bug} reassigned from package '$data->{package}'".
+		    " to '$new_package'.";
+	    } else {
+		$action= "$config{bug} assigned to package '$new_package'.";
+	    }
+	    $data->{package} = $new_package;
+	}
+        append_action_to_log(bug => $data->{bug_num},
+			     command => 'set_package',
+			     new_data => $data,
+			     old_data => $old_data,
+			     get_lock => 0,
+			     __return_append_to_log_options(
+							    %param,
+							    action => $action,
+							   ),
+			    )
+	    if not exists $param{append_log} or $param{append_log};
+	writebug($data->{bug_num},$data);
+	print {$transcript} "$action\n";
+    }
+    __end_control(%info);
+    # Only clear the fixed/found versions if the package has been
+    # reassigned
+    if ($package_reassigned) {
+	my @params_for_found_fixed = 
+	    map {exists $param{$_}?($_,$param{$_}):()}
+		('bug',
+		 keys %common_options,
+		 keys %append_action_options,
+		);
+	set_found(found => [],
+		  @params_for_found_fixed,
+		 );
+	set_fixed(fixed => [],
+		  @params_for_found_fixed,
+		 );
+    }
+}
+
+=head2 set_found
+
+     eval {
+	    set_found(bug          => $ref,
+		      transcript   => $transcript,
+		      ($dl > 0 ? (debug => $transcript):()),
+		      requester    => $header{from},
+		      request_addr => $controlrequestaddr,
+		      message      => \@log,
+                      affected_packages => \%affected_packages,
+		      recipients   => \%recipients,
+		      found        => [],
+                      add          => 1,
+                     );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to set found on $ref: $@";
+	}
+
+
+Sets, adds, or removes the specified found versions of a package
+
+If the version list is empty, and the bug is currently not "done",
+causes the done field to be cleared.
+
+If any of the versions added to found are greater than any version in
+which the bug is fixed (or when the bug is found and there are no
+fixed versions) the done field is cleared.
+
+=cut
+
+sub set_found {
+    my %param = validate_with(params => \@_,
+			      spec   => {bug => {type   => SCALAR,
+						 regex  => qr/^\d+$/,
+						},
+					 # specific options here
+					 found    => {type => SCALAR|ARRAYREF,
+						      default => [],
+						     },
+					 add      => {type => BOOLEAN,
+						      default => 0,
+						     },
+					 remove   => {type => BOOLEAN,
+						      default => 0,
+						     },
+					 %common_options,
+					 %append_action_options,
+					},
+			     );
+    if ($param{add} and $param{remove}) {
+	croak "It's nonsensical to add and remove the same versions";
+    }
+
+    my %info =
+	__begin_control(%param,
+			command  => 'found'
+		       );
+    my ($new_locks,$debug,$transcript) =
+	@info{qw(new_locks debug transcript)};
+    my @data = @{$info{data}};
+    my @bugs = @{$info{bugs}};
+    my %versions;
+    for my $version (make_list($param{found})) {
+	next unless defined $version;
+	$versions{$version} =
+	    [make_source_versions(package => [splitpackages($data[0]{package})],
+				  warnings => $transcript,
+				  debug    => $debug,
+				  guess_source => 0,
+				  versions     => $version,
+				 )
+	    ];
+	# This is really ugly, but it's what we have to do
+	if (not @{$versions{$version}}) {
+	    print {$transcript} "Unable to make a source version for version '$version'\n";
+	}
+    }
+    if (not keys %versions and ($param{remove} or $param{add})) {
+	if ($param{remove}) {
+	    print {$transcript} "Requested to remove no versions; doing nothing.\n";
+	}
+	else {
+	    print {$transcript} "Requested to add no versions; doing nothing.\n";
+	}
+	__end_control(%info);
+	return;
+    }
+    # first things first, make the versions fully qualified source
+    # versions
+    for my $data (@data) {
+	# The 'done' field gets a bit weird with version tracking,
+	# because a bug may be closed by multiple people in different
+	# branches. Until we have something more flexible, we set it
+	# every time a bug is fixed, and clear it when a bug is found
+	# in a version greater than any version in which the bug is
+	# fixed or when a bug is found and there is no fixed version
+	my $action = 'Did not alter found versions';
+	my %found_added = ();
+	my %found_removed = ();
+	my %fixed_removed = ();
+	my $reopened = 0;
+	my $old_data = dclone($data);
+	if (not $param{add} and not $param{remove}) {
+	    $found_removed{$_} = 1 for @{$data->{found_versions}};
+	    $data->{found_versions} = [];
+	}
+	my %found_versions;
+	@found_versions{@{$data->{found_versions}}} = (1) x @{$data->{found_versions}};
+	my %fixed_versions;
+	@fixed_versions{@{$data->{fixed_versions}}} = (1) x @{$data->{fixed_versions}};
+	for my $version (keys %versions) {
+	    if ($param{add}) {
+		my @svers = @{$versions{$version}};
+		if (not @svers) {
+		    @svers = $version;
+		}
+		for my $sver (@svers) {
+		    if (not exists $found_versions{$sver}) {
+			$found_versions{$sver} = 1;
+			$found_added{$sver} = 1;
+		    }
+		    # if the found we are adding matches any fixed
+		    # versions, remove them
+		    my @temp = grep m{(^|/)\Q$sver\E}, keys %fixed_versions;
+		    delete $fixed_versions{$_} for @temp;
+		    $fixed_removed{$_} = 1 for @temp;
+		}
+
+		# We only care about reopening the bug if the bug is
+		# not done
+		if (defined $data->{done} and length $data->{done}) {
+		    my @svers_order = sort {Debbugs::Versions::Dpkg::vercmp($a,$b);}
+			map {m{([^/]+)$}; $1;} @svers;
+		    # determine if we need to reopen
+		    my @fixed_order = sort {Debbugs::Versions::Dpkg::vercmp($a,$b);}
+			map {m{([^/]+)$}; $1;} keys %fixed_versions;
+		    if (not @fixed_order or
+			(Debbugs::Versions::Dpkg::vercmp($svers_order[-1],$fixed_order[-1]) >= 0)) {
+			$reopened = 1;
+			$data->{done} = '';
+		    }
+		}
+	    }
+	    elsif ($param{remove}) {
+		# in the case of removal, we only concern ourself with
+		# the version passed, not the source version it maps
+		# to
+		my @temp = grep m{(^|/)\Q$version\E}, keys %found_versions;
+		delete $found_versions{$_} for @temp;
+		$found_removed{$_} = 1 for @temp;
+	    }
+	    else {
+		# set the keys to exactly these values
+		my @svers = @{$versions{$version}};
+		if (not @svers) {
+		    @svers = $version;
+		}
+		for my $sver (@svers) {
+		    if (not exists $found_versions{$sver}) {
+			$found_versions{$sver} = 1;
+			if (exists $found_removed{$sver}) {
+			    delete $found_removed{$sver};
+			}
+			else {
+			    $found_added{$sver} = 1;
+			}
+		    }
+		}
+	    }
+	}
+
+	$data->{found_versions} = [keys %found_versions];
+	$data->{fixed_versions} = [keys %fixed_versions];
+
+	my @changed;
+	push @changed, 'marked as found in versions '.english_join([keys %found_added]) if keys %found_added;
+	push @changed, 'no longer marked as found in versions '.english_join([keys %found_removed]) if keys %found_removed;
+#	push @changed, 'marked as fixed in versions '.english_join([keys %fixed_addded]) if keys %fixed_added;
+	push @changed, 'no longer marked as fixed in versions '.english_join([keys %fixed_removed]) if keys %fixed_removed;
+	$action = "$config{bug} ".ucfirst(join ('; ',@changed)) if @changed;
+	if ($reopened) {
+	    $action .= " and reopened"
+	}
+	if (not $reopened and not @changed) {
+	    print {$transcript} "Ignoring request to alter found versions of bug #$data->{bug_num} to the same values previously set\n"
+		unless __internal_request();
+	    next;
+	}
+	$action .= '.';
+	append_action_to_log(bug => $data->{bug_num},
+			     get_lock => 0,
+			     command  => 'set_found',
+			     old_data => $old_data,
+			     new_data => $data,
+			     __return_append_to_log_options(
+							    %param,
+							    action => $action,
+							   ),
+			    )
+	    if not exists $param{append_log} or $param{append_log};
+	writebug($data->{bug_num},$data);
+	print {$transcript} "$action\n";
+    }
+    __end_control(%info);
+}
+
+=head2 set_fixed
+
+     eval {
+	    set_fixed(bug          => $ref,
+		      transcript   => $transcript,
+		      ($dl > 0 ? (debug => $transcript):()),
+		      requester    => $header{from},
+		      request_addr => $controlrequestaddr,
+		      message      => \@log,
+                      affected_packages => \%affected_packages,
+		      recipients   => \%recipients,
+		      fixed        => [],
+                      add          => 1,
+                      reopen       => 0,
+                     );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to set fixed on $ref: $@";
+	}
+
+
+Sets, adds, or removes the specified found versions of a package
+
+If the version list is empty, and the bug is currently not "done",
+causes the done field to be cleared.
+
+If any of the versions added to found are greater than any version in
+which the bug is fixed (or when the bug is found and there are no
+fixed versions) the done field is cleared.
+
+=cut
+
+sub set_fixed {
+    my %param = validate_with(params => \@_,
+			      spec   => {bug => {type   => SCALAR,
+						 regex  => qr/^\d+$/,
+						},
+					 # specific options here
+					 fixed    => {type => SCALAR|ARRAYREF,
+						      default => [],
+						     },
+					 add      => {type => BOOLEAN,
+						      default => 0,
+						     },
+					 remove   => {type => BOOLEAN,
+						      default => 0,
+						     },
+					 reopen   => {type => BOOLEAN,
+						      default => 0,
+						     },
+					 %common_options,
+					 %append_action_options,
+					},
+			     );
+    if ($param{add} and $param{remove}) {
+	croak "It's nonsensical to add and remove the same versions";
+    }
+    my %info =
+	__begin_control(%param,
+			command  => 'fixed'
+		       );
+    my ($new_locks,$debug,$transcript) =
+	@info{qw(new_locks debug transcript)};
+    my @data = @{$info{data}};
+    my @bugs = @{$info{bugs}};
+    my %versions;
+    for my $version (make_list($param{fixed})) {
+	next unless defined $version;
+	$versions{$version} =
+	    [make_source_versions(package => [splitpackages($data[0]{package})],
+				  warnings => $transcript,
+				  debug    => $debug,
+				  guess_source => 0,
+				  versions     => $version,
+				 )
+	    ];
+	# This is really ugly, but it's what we have to do
+	if (not @{$versions{$version}}) {
+	    print {$transcript} "Unable to make a source version for version '$version'\n";
+	}
+    }
+    if (not keys %versions and ($param{remove} or $param{add})) {
+	if ($param{remove}) {
+	    print {$transcript} "Requested to remove no versions; doing nothing.\n";
+	}
+	else {
+	    print {$transcript} "Requested to add no versions; doing nothing.\n";
+	}
+	__end_control(%info);
+	return;
+    }
+    # first things first, make the versions fully qualified source
+    # versions
+    for my $data (@data) {
+	my $old_data = dclone($data);
+	# The 'done' field gets a bit weird with version tracking,
+	# because a bug may be closed by multiple people in different
+	# branches. Until we have something more flexible, we set it
+	# every time a bug is fixed, and clear it when a bug is found
+	# in a version greater than any version in which the bug is
+	# fixed or when a bug is found and there is no fixed version
+	my $action = 'Did not alter fixed versions';
+	my %found_added = ();
+	my %found_removed = ();
+	my %fixed_added = ();
+	my %fixed_removed = ();
+	my $reopened = 0;
+	if (not $param{add} and not $param{remove}) {
+	    $fixed_removed{$_} = 1 for @{$data->{fixed_versions}};
+	    $data->{fixed_versions} = [];
+	}
+	my %found_versions;
+	@found_versions{@{$data->{found_versions}||[]}} = (1) x @{$data->{found_versions}||[]};
+	my %fixed_versions;
+	@fixed_versions{@{$data->{fixed_versions}||[]}} = (1) x @{$data->{fixed_versions}||[]};
+	for my $version (keys %versions) {
+	    if ($param{add}) {
+		my @svers = @{$versions{$version}};
+		if (not @svers) {
+		    @svers = $version;
+		}
+		for my $sver (@svers) {
+		    if (not exists $fixed_versions{$sver}) {
+			$fixed_versions{$sver} = 1;
+			$fixed_added{$sver} = 1;
+		    }
+		}
+	    }
+	    elsif ($param{remove}) {
+		# in the case of removal, we only concern ourself with
+		# the version passed, not the source version it maps
+		# to
+		my @temp = grep m{(?:^|\/)\Q$version\E$}, keys %fixed_versions;
+		delete $fixed_versions{$_} for @temp;
+		$fixed_removed{$_} = 1 for @temp;
+	    }
+	    else {
+		# set the keys to exactly these values
+		my @svers = @{$versions{$version}};
+		if (not @svers) {
+		    @svers = $version;
+		}
+		for my $sver (@svers) {
+		    if (not exists $fixed_versions{$sver}) {
+			$fixed_versions{$sver} = 1;
+			if (exists $fixed_removed{$sver}) {
+			    delete $fixed_removed{$sver};
+			}
+			else {
+			    $fixed_added{$sver} = 1;
+			}
+		    }
+		}
+	    }
+	}
+
+	$data->{found_versions} = [keys %found_versions];
+	$data->{fixed_versions} = [keys %fixed_versions];
+
+	# If we're supposed to consider reopening, reopen if the
+	# fixed versions are empty or the greatest found version
+	# is greater than the greatest fixed version
+	if ($param{reopen} and defined $data->{done}
+	    and length $data->{done}) {
+	    my @svers_order = sort {Debbugs::Versions::Dpkg::vercmp($a,$b);}
+		map {m{([^/]+)$}; $1;} @{$data->{found_versions}};
+	    # determine if we need to reopen
+	    my @fixed_order = sort {Debbugs::Versions::Dpkg::vercmp($a,$b);}
+		    map {m{([^/]+)$}; $1;} @{$data->{fixed_versions}};
+	    if (not @fixed_order or
+		(Debbugs::Versions::Dpkg::vercmp($svers_order[-1],$fixed_order[-1]) >= 0)) {
+		$reopened = 1;
+		$data->{done} = '';
+	    }
+	}
+
+	my @changed;
+	push @changed, 'marked as found in versions '.english_join([keys %found_added]) if keys %found_added;
+	push @changed, 'no longer marked as found in versions '.english_join([keys %found_removed]) if keys %found_removed;
+	push @changed, 'marked as fixed in versions '.english_join([keys %fixed_added]) if keys %fixed_added;
+	push @changed, 'no longer marked as fixed in versions '.english_join([keys %fixed_removed]) if keys %fixed_removed;
+	$action = "$config{bug} ".ucfirst(join ('; ',@changed)) if @changed;
+	if ($reopened) {
+	    $action .= " and reopened"
+	}
+	if (not $reopened and not @changed) {
+	    print {$transcript} "Ignoring request to alter fixed versions of bug #$data->{bug_num} to the same values previously set\n"
+		unless __internal_request();
+	    next;
+	}
+	$action .= '.';
+	append_action_to_log(bug => $data->{bug_num},
+			     command  => 'set_fixed',
+			     new_data => $data,
+			     old_data => $old_data,
+			     get_lock => 0,
+			     __return_append_to_log_options(
+							    %param,
+							    action => $action,
+							   ),
+			    )
+	    if not exists $param{append_log} or $param{append_log};
+	writebug($data->{bug_num},$data);
+	print {$transcript} "$action\n";
+    }
+    __end_control(%info);
+}
+
+
 
 =head2 affects
 
@@ -287,26 +1089,17 @@ sub affects {
     if ($param{add} and $param{remove}) {
 	 croak "Asking to both add and remove affects is nonsensical";
     }
-    our $locks = 0;
-    $locks = 0;
-    local $SIG{__DIE__} = sub {
-	if ($locks) {
-	    for (1..$locks) { unfilelock(); }
-	    $locks = 0;
-	}
-    };
-    my ($debug,$transcript) = __handle_debug_transcript(%param);
-    my (@data);
-    ($locks, @data) = lock_read_all_merged_bugs($param{bug});
-    __handle_affected_packages(data => \@data,%param);
-    print {$transcript} __bug_info(@data);
-    add_recipients(data => \@data,
-		   recipients => $param{recipients},
-		   debug      => $debug,
-		   transcript => $transcript,
-		  );
-    my $action = 'Did not alter affected packages';
+    my %info =
+	__begin_control(%param,
+			command  => 'affects'
+		       );
+    my ($new_locks,$debug,$transcript) =
+	@info{qw(new_locks debug transcript)};
+    my @data = @{$info{data}};
+    my @bugs = @{$info{bugs}};
+    my $action = '';
     for my $data (@data) {
+	$action = '';
 	 print {$debug} "Going to change affects\n";
 	 my @packages = splitpackages($data->{affects});
 	 my %packages;
@@ -314,38 +1107,60 @@ sub affects {
 	 if ($param{add}) {
 	      my @added = ();
 	      for my $package (make_list($param{packages})) {
-		   if (not $packages{$package}) {
-			$packages{$package} = 1;
-			push @added,$package;
-		   }
+		  next unless defined $package and length $package;
+		  if (not $packages{$package}) {
+		      $packages{$package} = 1;
+		      push @added,$package;
+		  }
 	      }
 	      if (@added) {
 		   $action = "Added indication that $data->{bug_num} affects ".
-			english_join(', ',' and ',@added);
+			english_join(\@added);
 	      }
 	 }
 	 elsif ($param{remove}) {
 	      my @removed = ();
 	      for my $package (make_list($param{packages})) {
 		   if ($packages{$package}) {
+		       next unless defined $package and length $package;
 			delete $packages{$package};
 			push @removed,$package;
 		   }
 	      }
 	      $action = "Removed indication that $data->{bug_num} affects " .
-		   english_join(', ',' and ',@removed);
+		   english_join(\@removed);
 	 }
 	 else {
+	      my %added_packages = ();
+	      my %removed_packages = %packages;
 	      %packages = ();
 	      for my $package (make_list($param{packages})) {
+		   next unless defined $package and length $package;
 		   $packages{$package} = 1;
+		   delete $removed_packages{$package};
+		   $added_packages{$package} = 1;
 	      }
-	      $action = "Noted that $data->{bug_num} affects ".
-		   english_join(', ',' and ', keys %packages);
+	      if (keys %removed_packages) {
+		  $action = "Removed indication that $data->{bug_num} affects ".
+		      english_join([keys %removed_packages]);
+		  $action .= "\n" if keys %added_packages;
+	      }
+	      if (keys %added_packages) {
+		  $action .= "Added indication that $data->{bug_num} affects " .
+		   english_join([%added_packages]);
+	      }
 	 }
+	if (not length $action) {
+	    print {$transcript} "Ignoring request to set affects of bug $data->{bug_num} to the same value previously set\n"
+		unless __internal_request();
+	}
+	 my $old_data = dclone($data);
 	 $data->{affects} = join(',',keys %packages);
 	 append_action_to_log(bug => $data->{bug_num},
 			      get_lock => 0,
+			      command => 'affects',
+			      new_data => $data,
+			      old_data => $old_data,
 			      __return_append_to_log_options(
 							     %param,
 							     action => $action,
@@ -354,16 +1169,8 @@ sub affects {
 	       if not exists $param{append_log} or $param{append_log};
 	  writebug($data->{bug_num},$data);
 	  print {$transcript} "$action\n";
-	  add_recipients(data => $data,
-			 recipients => $param{recipients},
-			 debug      => $debug,
-			 transcript => $transcript,
-			);
      }
-     if ($locks) {
-	  for (1..$locks) { unfilelock(); }
-     }
-
+    __end_control(%info);
 }
 
 
@@ -415,32 +1222,22 @@ sub summary {
 					},
 			     );
     croak "summary must be numeric or undef" if
-	 defined $param{summary} and not $param{summary} =~ /^\d+$/;
-    our $locks = 0;
-    $locks = 0;
-    local $SIG{__DIE__} = sub {
-	if ($locks) {
-	    for (1..$locks) { unfilelock(); }
-	    $locks = 0;
-	}
-    };
-    my ($debug,$transcript) = __handle_debug_transcript(%param);
-    my (@data);
-    ($locks, @data) = lock_read_all_merged_bugs($param{bug});
-    __handle_affected_packages(data => \@data,%param);
-    print {$transcript} __bug_info(@data);
-    add_recipients(data => \@data,
-		   recipients => $param{recipients},
-		   debug      => $debug,
-		   transcript => $transcript,
-		  );
+	defined $param{summary} and not $param{summary} =~ /^\d+$/;
+    my %info =
+	__begin_control(%param,
+			command  => 'summary'
+		       );
+    my ($new_locks,$debug,$transcript) =
+	@info{qw(new_locks debug transcript)};
+    my @data = @{$info{data}};
+    my @bugs = @{$info{bugs}};
     # figure out the log that we're going to use
     my $summary = '';
     my $summary_msg = '';
     my $action = '';
     if (not defined $param{summary}) {
 	 # do nothing
-	 print {$debug} "Removing summary fields";
+	 print {$debug} "Removing summary fields\n";
 	 $action = 'Removed summary';
     }
     else {
@@ -497,15 +1294,22 @@ sub summary {
 	 }
 	 print {$debug} "Summary is going to be '$paragraph'\n";
 	 $summary = $paragraph;
-	 $summary =~ s/[\n\r]//g;
+	 $summary =~ s/[\n\r]/ /g;
 	 if (not length $summary) {
 	      die "Unable to find summary message to use";
 	 }
-	 # trim off a trailing space
-	 $summary =~ s/\ $//;
+	 # trim off a trailing spaces
+	 $summary =~ s/\ *$//;
     }
     for my $data (@data) {
-	 print {$debug} "Going to change summary";
+	 print {$debug} "Going to change summary\n";
+	 if (((not defined $summary or not length $summary) and
+	      (not defined $data->{summary} or not length $data->{summary})) or
+	     $summary eq $data->{summary}) {
+	     print {$transcript} "Ignoring request to change the summary of bug $param{bug} to the same value\n"
+		 unless __internal_request();
+	     next;
+	 }
 	 if (length $summary) {
 	      if (length $data->{summary}) {
 		   $action = "Summary replaced with message bug $param{bug} message $summary_msg";
@@ -514,8 +1318,12 @@ sub summary {
 		   $action = "Summary recorded from message bug $param{bug} message $summary_msg";
 	      }
 	 }
+	 my $old_data = dclone($data);
 	 $data->{summary} = $summary;
 	 append_action_to_log(bug => $data->{bug_num},
+			      command => 'summary',
+			      old_data => $old_data,
+			      new_data => $data,
 			      get_lock => 0,
 			      __return_append_to_log_options(
 							     %param,
@@ -525,16 +1333,8 @@ sub summary {
 	       if not exists $param{append_log} or $param{append_log};
 	  writebug($data->{bug_num},$data);
 	  print {$transcript} "$action\n";
-	  add_recipients(data => $data,
-			 recipients => $param{recipients},
-			 debug      => $debug,
-			 transcript => $transcript,
-			);
      }
-     if ($locks) {
-	  for (1..$locks) { unfilelock(); }
-     }
-
+    __end_control(%info);
 }
 
 
@@ -576,44 +1376,46 @@ sub owner {
 					  %append_action_options,
 					 },
 			      );
-     our $locks = 0;
-     $locks = 0;
-     local $SIG{__DIE__} = sub {
-	  if ($locks) {
-	       for (1..$locks) { unfilelock(); }
-	       $locks = 0;
-	  }
-     };
-     my ($debug,$transcript) = __handle_debug_transcript(%param);
-     my (@data);
-     ($locks, @data) = lock_read_all_merged_bugs($param{bug});
-     __handle_affected_packages(data => \@data,%param);
-     print {$transcript} __bug_info(@data);
-     @data and defined $data[0] or die "No bug found for $param{bug}";
-     add_recipients(data => \@data,
-		    recipients => $param{recipients},
-		    debug      => $debug,
-		    transcript => $transcript,
-		   );
+     my %info =
+	 __begin_control(%param,
+			 command  => 'owner',
+			);
+     my ($new_locks,$debug,$transcript) =
+	@info{qw(new_locks debug transcript)};
+     my @data = @{$info{data}};
+     my @bugs = @{$info{bugs}};
      my $action = '';
      for my $data (@data) {
 	  print {$debug} "Going to change owner to '".(defined $param{owner}?$param{owner}:'(going to unset it)')."'\n";
 	  print {$debug} "Owner is currently '$data->{owner}' for bug $data->{bug_num}\n";
 	  if (not defined $param{owner} or not length $param{owner}) {
-	       $param{owner} = '';
-	       $action = "Removed annotation that $config{bug} was owned by " .
-		    "$data->{owner}.";
+	      if (not defined $data->{owner} or not length $data->{owner}) {
+		  print {$transcript} "Ignoring request to unset the owner of bug #$data->{bug_num} which was not set\n"
+		      unless __internal_request();
+		  next;
+	      }
+	      $param{owner} = '';
+	      $action = "Removed annotation that $config{bug} was owned by " .
+		  "$data->{owner}.";
 	  }
 	  else {
-	       if (length $data->{owner}) {
-		    $action = "Owner changed from $data->{owner} to $param{owner}.";
-	       }
-	       else {
-		    $action = "Owner recorded as $param{owner}."
-	       }
+	      if ($data->{owner} eq $param{owner}) {
+		  print {$transcript} "Ignoring request to set the owner of bug #$data->{bug_num} to the same value\n";
+		  next;
+	      }
+	      if (length $data->{owner}) {
+		  $action = "Owner changed from $data->{owner} to $param{owner}.";
+	      }
+	      else {
+		  $action = "Owner recorded as $param{owner}."
+	      }
 	  }
+	  my $old_data = dclone($data);
 	  $data->{owner} = $param{owner};
 	  append_action_to_log(bug => $data->{bug_num},
+			       command => 'owner',
+			       new_data => $data,
+			       old_data => $old_data,
 			       get_lock => 0,
 	       __return_append_to_log_options(
 					      %param,
@@ -623,15 +1425,8 @@ sub owner {
 	       if not exists $param{append_log} or $param{append_log};
 	  writebug($data->{bug_num},$data);
 	  print {$transcript} "$action\n";
-	  add_recipients(data => $data,
-			 recipients => $param{recipients},
-			 debug      => $debug,
-			 transcript => $transcript,
-			);
      }
-     if ($locks) {
-	  for (1..$locks) { unfilelock(); }
-     }
+     __end_control(%info);
 }
 
 
@@ -693,16 +1488,13 @@ sub bug_archive {
 					  %append_action_options,
 					 },
 			      );
-     our $locks = 0;
-     $locks = 0;
-     local $SIG{__DIE__} = sub {
-	  if ($locks) {
-	       for (1..$locks) { unfilelock(); }
-	       $locks = 0;
-	  }
-     };
+     my %info = __begin_control(%param,
+				command => 'archive',
+				);
+     my ($new_locks,$debug,$transcript) = @info{qw(data debug transcript)};
+     my @data = @{$info{data}};
+     my @bugs = @{$info{bugs}};
      my $action = "$config{bug} archived.";
-     my ($debug,$transcript) = __handle_debug_transcript(%param);
      if ($param{check_archiveable} and
 	 not bug_archiveable(bug=>$param{bug},
 			     ignore_time => $param{ignore_time},
@@ -711,14 +1503,6 @@ sub bug_archive {
 	  die "Bug $param{bug} cannot be archived";
      }
      print {$debug} "$param{bug} considering\n";
-     my (@data);
-     ($locks, @data) = lock_read_all_merged_bugs($param{bug});
-     __handle_affected_packages(data => \@data,%param);
-     print {$transcript} __bug_info(@data);
-     print {$debug} "$param{bug} read $locks\n";
-     @data and defined $data[0] or die "No bug found for $param{bug}";
-     print {$debug} "$param{bug} read done\n";
-
      if (not $param{archive_unarchived} and
 	 not exists $data[0]{unarchived}
 	) {
@@ -730,7 +1514,6 @@ sub bug_archive {
 		    debug      => $debug,
 		    transcript => $transcript,
 		   );
-     my @bugs = map {$_->{bug_num}} @data;
      print {$debug} "$param{bug} bugs ".join(' ',@bugs)."\n";
      for my $bug (@bugs) {
 	 if ($param{check_archiveable}) {
@@ -748,6 +1531,12 @@ sub bug_archive {
 	  # First indicate that this bug is being archived
 	  append_action_to_log(bug => $bug,
 			       get_lock => 0,
+			       command => 'archive',
+			       # we didn't actually change the data
+			       # when we archived, so we don't pass
+			       # a real new_data or old_data
+			       new_data => {},
+			       old_data => {},
 			       __return_append_to_log_options(
 				 %param,
 				 action => $action,
@@ -758,8 +1547,12 @@ sub bug_archive {
 	  if ($config{save_old_bugs}) {
 	       mkpath("$config{spool_dir}/archive/$dir");
 	       foreach my $file (@files_to_remove) {
-		    link( "$config{spool_dir}/db-h/$dir/$file", "$config{spool_dir}/archive/$dir/$file" ) or
-			 copy( "$config{spool_dir}/db-h/$dir/$file", "$config{spool_dir}/archive/$dir/$file" );
+		   link("$config{spool_dir}/db-h/$dir/$file", "$config{spool_dir}/archive/$dir/$file") or
+		       copy("$config{spool_dir}/db-h/$dir/$file", "$config{spool_dir}/archive/$dir/$file") or
+			   # we need to bail out here if things have
+			   # gone horribly wrong to avoid removing a
+			   # bug altogether
+			   die "Unable to link or copy $config{spool_dir}/db-h/$dir/$file to $config{spool_dir}/archive/$dir/$file; $!";
 	       }
 
 	       print {$transcript} "archived $bug to archive/$dir (from $param{bug})\n";
@@ -768,14 +1561,7 @@ sub bug_archive {
 	  print {$transcript} "deleted $bug (from $param{bug})\n";
      }
      bughook_archive(@bugs);
-     if (exists $param{bugs_affected}) {
-	  @{$param{bugs_affected}}{@bugs} = (1) x @bugs;
-     }
-     print {$debug} "$param{bug} unlocking $locks\n";
-     if ($locks) {
-	  for (1..$locks) { unfilelock(); }
-     }
-     print {$debug} "$param{bug} unlocking done\n";
+     __end_control(%info);
 }
 
 =head2 bug_unarchive
@@ -806,29 +1592,15 @@ sub bug_unarchive {
 					  %append_action_options,
 					 },
 			      );
-     our $locks = 0;
-     local $SIG{__DIE__} = sub {
-	  if ($locks) {
-	       for (1..$locks) { unfilelock(); }
-	       $locks = 0;
-	  }
-     };
+
+     my %info = __begin_control(%param,
+				archived=>1,
+				command=>'unarchive');
+     my ($new_locks,$debug,$transcript) =
+	 @info{qw(new_locks debug transcript)};
+     my @data = @{$info{data}};
+     my @bugs = @{$info{bugs}};
      my $action = "$config{bug} unarchived.";
-     my ($debug,$transcript) = __handle_debug_transcript(%param);
-     print {$debug} "$param{bug} considering\n";
-     my @data = ();
-     ($locks, @data) = lock_read_all_merged_bugs($param{bug},'archive');
-     __handle_affected_packages(data => \@data,%param);
-     print {$transcript} __bug_info(@data);
-     print {$debug} "$param{bug} read $locks\n";
-     if (not @data or not defined $data[0]) {
-	 print {$transcript} "No bug found for $param{bug}\n";
-	 die "No bug found for $param{bug}";
-     }
-     print {$debug} "$param{bug} read done\n";
-     my @bugs = map {(defined $_ and exists $_->{bug_num} and defined $_->{bug_num})?$_->{bug_num}:()} @data;
-     print {$debug} "$param{bug} bugs ".join(' ',@bugs)."\n";
-     print {$debug} "$param{bug} unarchiving\n";
      my @files_to_remove;
      for my $bug (@bugs) {
 	  print {$debug} "$param{bug} removing $bug\n";
@@ -848,6 +1620,7 @@ sub bug_unarchive {
      # Indicate that this bug has been archived previously
      for my $bug (@bugs) {
 	  my $newdata = readbug($bug);
+	  my $old_data = dclone($newdata);
 	  if (not defined $newdata) {
 	       print {$transcript} "$config{bug} $bug disappeared!\n";
 	       die "Bug $bug disappeared!";
@@ -855,6 +1628,9 @@ sub bug_unarchive {
 	  $newdata->{unarchived} = time;
 	  append_action_to_log(bug => $bug,
 			       get_lock => 0,
+			       command => 'unarchive',
+			       new_data => $newdata,
+			       old_data => $old_data,
 			       __return_append_to_log_options(
 				 %param,
 				 action => $action,
@@ -862,20 +1638,8 @@ sub bug_unarchive {
 			      )
 	       if not exists $param{append_log} or $param{append_log};
 	  writebug($bug,$newdata);
-	  add_recipients(recipients => $param{recipients},
-			 data       => $newdata,
-			 debug      => $debug,
-			 transcript => $transcript,
-			);
      }
-     print {$debug} "$param{bug} unlocking $locks\n";
-     if ($locks) {
-	  for (1..$locks) { unfilelock(); };
-     }
-     if (exists $param{bugs_affected}) {
-	  @{$param{bugs_affected}}{@bugs} = (1) x @bugs;
-     }
-     print {$debug} "$param{bug} unlocking done\n";
+     __end_control(%info);
 }
 
 =head2 append_action_to_log
@@ -892,6 +1656,15 @@ sub append_action_to_log{
 			       spec   => {bug => {type   => SCALAR,
 						  regex  => qr/^\d+/,
 						 },
+					  new_data => {type => HASHREF,
+						       optional => 1,
+						      },
+					  old_data => {type => HASHREF,
+						       optional => 1,
+						      },
+					  command  => {type => SCALAR,
+						       optional => 1,
+						      },
 					  action => {type => SCALAR,
 						    },
 					  requester => {type => SCALAR,
@@ -912,7 +1685,14 @@ sub append_action_to_log{
 					  get_lock   => {type => BOOLEAN,
 							 default => 1,
 							},
-					 }
+					  # we don't use
+					  # append_action_options here
+					  # because some of these
+					  # options aren't actually
+					  # optional, even though the
+					  # original function doesn't
+					  # require them
+					 },
 			      );
      # Fix this to use $param{location}
      my $log_location = buglog($param{bug});
@@ -923,9 +1703,101 @@ sub append_action_to_log{
      }
      my $log = IO::File->new(">>$log_location") or
 	  die "Unable to open $log_location for appending: $!";
-     my $msg = "\6\n".
-	  "<!-- time:".time." -->\n".
-          "<strong>".html_escape($param{action})."</strong>\n";
+     # determine difference between old and new
+     my $data_diff = '';
+     if (exists $param{old_data} and exists $param{new_data}) {
+	 my $old_data = dclone($param{old_data});
+	 my $new_data = dclone($param{new_data});
+	 for my $key (keys %{$old_data}) {
+	     if (not exists $Debbugs::Status::fields{$key}) {
+		 delete $old_data->{$key};
+		 next;
+	     }
+	     next unless exists $new_data->{$key};
+	     next unless defined $new_data->{$key};
+	     if (not defined $old_data->{$key}) {
+		 delete $old_data->{$key};
+		 next;
+	     }
+	     if (ref($new_data->{$key}) and
+		 ref($old_data->{$key}) and
+		 ref($new_data->{$key}) eq ref($old_data->{$key})) {
+		local $Storable::canonical = 1;
+		# print STDERR Dumper($new_data,$old_data,$key);
+		if (nfreeze($new_data->{$key}) eq nfreeze($old_data->{$key})) {
+		    delete $new_data->{$key};
+		    delete $old_data->{$key};
+		}
+	     }
+	     elsif ($new_data->{$key} eq $old_data->{$key}) {
+		 delete $new_data->{$key};
+		 delete $old_data->{$key};
+	     }
+	 }
+	 for my $key (keys %{$new_data}) {
+	     if (not exists $Debbugs::Status::fields{$key}) {
+		 delete $new_data->{$key};
+		 next;
+	     }
+	     next unless exists $old_data->{$key};
+	     next unless defined $old_data->{$key};
+	     if (not defined $new_data->{$key} or
+		 not exists $Debbugs::Status::fields{$key}) {
+		 delete $new_data->{$key};
+		 next;
+	     }
+	     if (ref($new_data->{$key}) and
+		 ref($old_data->{$key}) and
+		 ref($new_data->{$key}) eq ref($old_data->{$key})) {
+		local $Storable::canonical = 1;
+		if (nfreeze($new_data->{$key}) eq nfreeze($old_data->{$key})) {
+		    delete $new_data->{$key};
+		    delete $old_data->{$key};
+		}
+	     }
+	     elsif ($new_data->{$key} eq $old_data->{$key}) {
+		 delete $new_data->{$key};
+		 delete $old_data->{$key};
+	     }
+	 }
+	 $data_diff .= "<!-- new_data:\n";
+	 my %nd;
+	 for my $key (keys %{$new_data}) {
+	     if (not exists $Debbugs::Status::fields{$key}) {
+		 warn "No such field $key";
+		 next;
+	     }
+	     $nd{$key} = $new_data->{$key};
+	     # $data_diff .= html_escape("$Debbugs::Status::fields{$key}: $new_data->{$key}")."\n";
+	 }
+	 $data_diff .= html_escape(Data::Dumper->Dump([\%nd],[qw(new_data)]));
+	 $data_diff .= "-->\n";
+	 $data_diff .= "<!-- old_data:\n";
+	 my %od;
+	 for my $key (keys %{$old_data}) {
+	     if (not exists $Debbugs::Status::fields{$key}) {
+		 warn "No such field $key";
+		 next;
+	     }
+	     $od{$key} = $old_data->{$key};
+	     # $data_diff .= html_escape("$Debbugs::Status::fields{$key}: $old_data->{$key}")."\n";
+	 }
+	 $data_diff .= html_escape(Data::Dumper->Dump([\%od],[qw(old_data)]));
+	 $data_diff .= "-->\n";
+     }
+     my $msg = join('',"\6\n",
+		    (exists $param{command} ?
+		     "<!-- command:".html_escape($param{command})." -->\n":""
+		    ),
+		    (length $param{requester} ?
+		     "<!-- requester: ".html_escape($param{requester})." -->\n":""
+		    ),
+		    (length $param{request_addr} ?
+		     "<!-- request_addr: ".html_escape($param{request_addr})." -->\n":""
+		    ),
+		    "<!-- time:".time()." -->\n",
+		    $data_diff,
+		    "<strong>".html_escape($param{action})."</strong>\n");
      if (length $param{requester}) {
           $msg .= "Request was from <code>".html_escape($param{requester})."</code>\n";
      }
@@ -975,8 +1847,9 @@ sub __handle_affected_packages{
 			      );
      for my $data (make_list($param{data})) {
 	  next unless exists $data->{package} and defined $data->{package};
-	  $param{affected_packages}{$data->{package}} = 1;
-     }
+	  my @packages = split /\s*,\s*/,$data->{package};
+	  @{$param{affected_packages}}{@packages} = (1) x @packages;
+      }
 }
 
 =head2 __handle_debug_transcript
@@ -1009,13 +1882,44 @@ Produces a small bit of bug information to kick out to the transcript
 sub __bug_info{
      my $return = '';
      for my $data (@_) {
-	  $return .= "Bug ".($data->{bug_num}||'').
-	       " [".($data->{package}||''). "] ".
-		    ($data->{subject}||'')."\n";
+	 next unless defined $data and exists $data->{bug_num};
+	  $return .= "Bug #".($data->{bug_num}||'').
+	      ((defined $data->{done} and length $data->{done})?
+		" {Done: $data->{done}}":''
+	       ).
+	       " [".($data->{package}||'(no package)'). "] ".
+		    ($data->{subject}||'(no subject)')."\n";
      }
      return $return;
 }
 
+
+=head2 __internal_request
+
+     __internal_request()
+     __internal_request($level)
+
+Returns true if the caller of the function calling __internal_request
+belongs to __PACKAGE__
+
+This allows us to be magical, and don't bother to print bug info if
+the second caller is from this package, amongst other things.
+
+An optional level is allowed, which increments the number of levels to
+check by the given value. [This is basically for use by internal
+functions like __begin_control which are always called by
+C<__PACKAGE__>.
+
+=cut
+
+sub __internal_request{
+    my ($l) = @_;
+    $l = 0 if not defined $l;
+    if (defined +(caller(2+$l))[0] and +(caller(2+$l))[0] eq __PACKAGE__) {
+	return 1;
+    }
+    return 0;
+}
 
 sub __return_append_to_log_options{
      my %param = @_;
@@ -1044,6 +1948,151 @@ sub __return_append_to_log_options{
 	     (map {exists $append_action_options{$_}?($_,$param{$_}):()}
 	      keys %param),
 	    );
+}
+
+=head2 __begin_control
+
+     my %info = __begin_control(%param,
+				archived=>1,
+				command=>'unarchive');
+     my ($new_locks,$debug,$transcript) = @info{qw(new_locksa debug transcript)};
+     my @data = @{$info{data}};
+     my @bugs = @{$info{bugs}};
+
+
+Starts the process of modifying a bug; handles all of the generic
+things that almost every control request needs
+
+Returns a hash containing
+
+=over
+
+=item new_locks -- number of new locks taken out by this call
+
+=item debug -- the debug file handle
+
+=item transcript -- the transcript file handle
+
+=item data -- an arrayref containing the data of the bugs
+corresponding to this request
+
+=item bugs -- an arrayref containing the bug numbers of the bugs
+corresponding to this request
+
+=back
+
+=cut
+
+our $locks = 0;
+
+sub __begin_control {
+    my %param = validate_with(params => \@_,
+			      spec   => {bug => {type   => SCALAR,
+						 regex  => qr/^\d+/,
+						},
+					 archived => {type => BOOLEAN,
+						      default => 0,
+						     },
+					 command  => {type => SCALAR,
+						      optional => 1,
+						     },
+					 %common_options,
+					},
+			      allow_extra => 1,
+			     );
+    my $new_locks;
+    my ($debug,$transcript) = __handle_debug_transcript(@_);
+    print {$debug} "$param{bug} considering\n";
+    my @data = ();
+    my $old_die = $SIG{__DIE__};
+    $SIG{__DIE__} = *sig_die{CODE};
+
+    ($new_locks, @data) =
+	lock_read_all_merged_bugs($param{bug},
+				  ($param{archived}?'archive':()));
+    $locks += $new_locks;
+    if (not @data) {
+	die "Unable to read any bugs successfully.";
+    }
+    ###
+    # XXX check the limit at this point, and die if it is exceeded.
+    # This is currently not done
+    ###
+    __handle_affected_packages(%param,data => \@data);
+    print {$transcript} __bug_info(@data) if $param{show_bug_info} and not __internal_request(1);
+    print {$debug} "$param{bug} read $locks locks\n";
+    if (not @data or not defined $data[0]) {
+	print {$transcript} "No bug found for $param{bug}\n";
+	die "No bug found for $param{bug}";
+    }
+
+    add_recipients(data => \@data,
+		   recipients => $param{recipients},
+		   (exists $param{command}?(actions_taken => {$param{command} => 1}):()),
+		   debug      => $debug,
+		   transcript => $transcript,
+		  );
+
+    print {$debug} "$param{bug} read done\n";
+    my @bugs = map {(defined $_ and exists $_->{bug_num} and defined $_->{bug_num})?$_->{bug_num}:()} @data;
+    print {$debug} "$param{bug} bugs ".join(' ',@bugs)."\n";
+    return (data       => \@data,
+	    bugs       => \@bugs,
+	    old_die    => $old_die,
+	    new_locks  => $new_locks,
+	    debug      => $debug,
+	    transcript => $transcript,
+	    param      => \%param,
+	   );
+}
+
+=head2 __end_control
+
+     __end_control(%info);
+
+Handles tearing down from a control request
+
+=cut
+
+sub __end_control {
+    my %info = @_;
+    if (exists $info{new_locks} and $info{new_locks} > 0) {
+	print {$info{debug}} "For bug $info{param}{bug} unlocking $locks locks\n";
+	for (1..$info{new_locks}) {
+	    unfilelock();
+	}
+    }
+    $SIG{__DIE__} = $info{old_die};
+    if (exists $info{param}{bugs_affected}) {
+	@{$info{param}{bugs_affected}}{@{$info{bugs}}} = (1) x @{$info{bugs}};
+    }
+    add_recipients(recipients => $info{param}{recipients},
+		   (exists $info{param}{command}?(actions_taken => {$info{param}{command} => 1}):()),
+		   data       => $info{data},
+		   debug      => $info{debug},
+		   transcript => $info{transcript},
+		  );
+    __handle_affected_packages(%{$info{param}},data=>$info{data});
+}
+
+
+=head2 die
+
+     sig_die "foo"
+
+We override die to specially handle unlocking files in the cases where
+we are called via eval. [If we're not called via eval, it doesn't
+matter.]
+
+=cut
+
+sub sig_die{
+    #if ($^S) { # in eval
+	if ($locks) {
+	    for (1..$locks) { unfilelock(); }
+	    $locks = 0;
+	}
+    #}
 }
 
 

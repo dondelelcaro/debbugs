@@ -33,6 +33,8 @@ use Debbugs::Control qw(:all);
 use Debbugs::Log qw(:misc);
 use Debbugs::Text qw(:templates);
 
+use Scalar::Util qw(looks_like_number);
+
 use Mail::RFC822::Address;
 
 chdir($config{spool_dir}) or
@@ -281,7 +283,7 @@ END
     } elsif (m/^usercategory\s+(\S+)(\s+\[hidden\])?\s*$/i) {
         $ok++;
 	my $catname = $1;
-	my $hidden = ($2 ne "");
+	my $hidden = (defined $2 and $2 ne "");
 
         my $prefix = "";
         my @cats;
@@ -341,8 +343,11 @@ END
 		    push @ords, "$ord DEF";
 		    $catsec--;
 		}
-		@ords = sort { my ($a1, $a2, $b1, $b2) = split / /, "$a $b";
-		               $a1 <=> $b1 || $a2 <=> $b2; } @ords;
+		@ords = sort {
+		    my ($a1, $a2, $b1, $b2) = split / /, "$a $b";
+		    ((looks_like_number($a1) and looks_like_number($a2))?$a1 <=> $b1:$a1 cmp $b1) ||
+		    ((looks_like_number($a2) and looks_like_number($b2))?$a2 <=> $b2:$a2 cmp $b2);
+		} @ords;
 		$cats[-1]->{"ord"} = [map { m/^.* (\S+)/; $1 eq "DEF" ? $catsec + 1 : $1 } @ords];
             } elsif ($o eq "*") {
 	        $catsec = 0;
@@ -441,6 +446,7 @@ END
     } elsif (m/^close\s+\#?(-?\d+)(?:\s+(\d.*))?$/i) {
 	$ok++;
 	$ref= $1;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	$bug_affected{$ref}=1;
 	my $version= $2;
 	if (&setbug) {
@@ -501,39 +507,54 @@ END
                 } while (&getnextbug);
             }
         }
-    } elsif (m/^reassign\s+\#?(-?\d+)\s+(\S+)(?:\s+(\d.*))?$/i) {
+    } elsif (m/^reassign\s+\#?(-?\d+)\s+ # bug and command
+	       (?:(?:((?:src:|source:)?$config{package_name_re}) # new package
+	       (?:\s+((?:$config{package_name_re}\/)?
+		       $config{package_version_re}))?)| # optional version
+	       ((?:src:|source:)?$config{package_name_re} # multiple package form
+	       (?:\s*\,\s*(?:src:|source:)?$config{package_name_re})+))
+	       \s*$/xi) {
         $ok++;
         $ref= $1;
-	my $newpackage= $2;
+	my @new_packages;
+	if (not defined $2) {
+	    push @new_packages, split /\s*\,\s*/,$4;
+	}
+	else {
+	    push @new_packages, $2;
+	}
+	@new_packages = map {y/A-Z/a-z/; s/^(?:src|source):/src:/; $_;} @new_packages;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	$bug_affected{$ref}=1;
         my $version= $3;
-    	$newpackage =~ y/A-Z/a-z/;
-        if (&setbug) {
-            if (length($data->{package})) {
-                $action= "$gBug reassigned from package \`$data->{package}'".
-                         " to \`$newpackage'.";
-            } else {
-                $action= "$gBug assigned to package \`$newpackage'.";
-            }
-            do {
-		$affected_packages{$data->{package}} = 1;
-                add_recipients(data => $data,
-			       recipients => \%recipients,
-			       transcript   => $transcript,
-			       ($dl > 0 ? (debug => $transcript):()),
-			      );
-                $data->{package}= $newpackage;
-                $data->{found_versions}= [];
-                $data->{fixed_versions}= [];
-                # TODO: what if $newpackage is a source package?
-                addfoundversions($data, $data->{package}, $version, 'binary');
-                add_recipients(data => $data,
-			       recipients => \%recipients,
-			       transcript   => $transcript,
-			       ($dl > 0 ? (debug => $transcript):()),
-			      );
-            } while (&getnextbug);
-        }
+    	eval {
+	    set_package(bug          => $ref,
+			transcript   => $transcript,
+			($dl > 0 ? (debug => $transcript):()),
+			requester    => $header{from},
+			request_addr => $controlrequestaddr,
+			message      => \@log,
+			recipients   => \%recipients,
+			package      => \@new_packages,
+		       );
+	    # if there is a version passed, we make an internal call
+	    # to set_found
+	    if (defined($version) && length $version) {
+		set_found(bug          => $ref,
+			  transcript   => $transcript,
+			  ($dl > 0 ? (debug => $transcript):()),
+			  requester    => $header{from},
+			  request_addr => $controlrequestaddr,
+			  message      => \@log,
+			  recipients   => \%recipients,
+			  version      => $version,
+			 );
+	    }
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to clear fixed versions and reopen on $ref: $@";
+	}
     } elsif (m/^reopen\s+\#?(-?\d+)$/i ? ($noriginator='', 1) :
              m/^reopen\s+\#?(-?\d+)\s+\=$/i ? ($noriginator='', 1) :
              m/^reopen\s+\#?(-?\d+)\s+\!$/i ? ($noriginator=$replyto, 1) :
@@ -565,131 +586,155 @@ END
                 } while (&getnextbug);
             }
         }
-    } elsif (m{^found\s+\#?(-?\d+)
+    } elsif (m{^(?:(?i)found)\s+\#?(-?\d+)
 	       (?:\s+((?:$config{package_name_re}\/)?
-		    $config{package_version_re}))?$}ix) {
+		    $config{package_version_re}
+		# allow for multiple packages
+		(?:\s*,\s*(?:$config{package_name_re}\/)?
+		    $config{package_version_re})*)
+	    )?$}x) {
         $ok++;
         $ref= $1;
-        my $version= $2;
-        if (&setbug) {
-            if (!length($data->{done}) and not defined($version)) {
-                print {$transcript} "$gBug is already open, cannot reopen.\n\n";
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	my @versions;
+        if (defined $2) {
+	    @versions = split /\s*,\s*/,$2;
+	    eval {
+		set_found(bug          => $ref,
+			  transcript   => $transcript,
+			  ($dl > 0 ? (debug => $transcript):()),
+			  requester    => $header{from},
+			  request_addr => $controlrequestaddr,
+			  message      => \@log,
+			  affected_packages => \%affected_packages,
+			  recipients   => \%recipients,
+			  found        => \@versions,
+			  add          => 1,
+			 );
+	    };
+	    if ($@) {
 		$errors++;
-                &nochangebug;
-            } else {
-                $action=
-                    defined($version) ?
-                        "$gBug marked as found in version $version." :
-                        "$gBug reopened.";
-                do {
-                    $affected_packages{$data->{package}} = 1;
-		    add_recipients(data => $data,
-				   recipients => \%recipients,
-				   transcript   => $transcript,
-				   ($dl > 0 ? (debug => $transcript):()),
-				  );
-                    # The 'done' field gets a bit weird with version
-                    # tracking, because a bug may be closed by multiple
-                    # people in different branches. Until we have something
-                    # more flexible, we set it every time a bug is fixed,
-                    # and clear it when a bug is found in a version greater
-		    # than any version in which the bug is fixed or when
-		    # a bug is found and there is no fixed version
-		    if (defined $version) {
-			my ($version_only) = $version =~ m{([^/]+)$};
-                        addfoundversions($data, $data->{package}, $version, 'binary');
-			my @fixed_order = sort {Debbugs::Versions::Dpkg::vercmp($a,$b);}
-			     map {s{.+/}{}; $_;} @{$data->{fixed_versions}};
-			if (not @fixed_order or (Debbugs::Versions::Dpkg::vercmp($version_only,$fixed_order[-1]) >= 0)) {
-			     $action = "$gBug marked as found in version $version and reopened."
-				  if length $data->{done};
-			     $data->{done} = '';
-			}
-                    } else {
-                        # Versionless found; assume old-style "not fixed at
-                        # all".
-                        $data->{fixed_versions} = [];
-                        $data->{done} = '';
-                    }
-                } while (&getnextbug);
-            }
-        }
-    } elsif (m[^notfound\s+\#?(-?\d+)\s+
-	       ((?:$config{package_name_re}\/)?
-		    \S+)\s*$]ix) {
-        $ok++;
-        $ref= $1;
-        my $version= $2;
-        if (&setbug) {
-            $action= "$gBug no longer marked as found in version $version.";
-            if (length($data->{done})) {
-                $extramessage= "(By the way, this $gBug is currently marked as done.)\n";
-            }
-            do {
-                $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data,
-			       recipients => \%recipients,
-			       transcript   => $transcript,
-			       ($dl > 0 ? (debug => $transcript):()),
-			      );
-                removefoundversions($data, $data->{package}, $version, 'binary');
-            } while (&getnextbug);
-       }
-   }
-    elsif (m[^fixed\s+\#?(-?\d+)\s+
-	     ((?:$config{package_name_re}\/)?
-		  $config{package_version_re})\s*$]ix) {
-        $ok++;
-        $ref= $1;
-        my $version= $2;
-        if (&setbug) {
-	     $action=
-		  defined($version) ?
-		       "$gBug marked as fixed in version $version." :
-			    "$gBug reopened.";
-                do {
-                    $affected_packages{$data->{package}} = 1;
-		    add_recipients(data => $data,
-				   recipients => \%recipients,
-				   transcript   => $transcript,
-				   ($dl > 0 ? (debug => $transcript):()),
-				  );
-                    addfixedversions($data, $data->{package}, $version, 'binary');
-	       } while (&getnextbug);
+		print {$transcript} "Failed to add found on $ref: $@";
+	    }
 	}
-   }
-    elsif (m[^notfixed\s+\#?(-?\d+)\s+
-	     ((?:$config{package_name_re}\/)?
-		  \S+)\s*$]ix) {
+	else {
+	    eval {
+		set_fixed(bug          => $ref,
+			  transcript   => $transcript,
+			  ($dl > 0 ? (debug => $transcript):()),
+			  requester    => $header{from},
+			  request_addr => $controlrequestaddr,
+			  message      => \@log,
+			  affected_packages => \%affected_packages,
+			  recipients   => \%recipients,
+			  fixed        => [],
+			  reopen       => 1,
+			 );
+	    };
+	    if ($@) {
+		$errors++;
+		print {$transcript} "Failed to clear fixed versions and reopen on $ref: $@";
+	    }
+	}
+    }
+    elsif (m{^(?:(?i)notfound)\s+\#?(-?\d+)
+	     \s+((?:$config{package_name_re}\/)?
+		 $config{package_version_re}
+		# allow for multiple packages
+		(?:\s*,\s*(?:$config{package_name_re}\/)?
+		    $config{package_version_re})*
+	    )$}x) {
         $ok++;
         $ref= $1;
-        my $version= $2;
-        if (&setbug) {
-	     $action=
-		  defined($version) ?
-		       "$gBug no longer marked as fixed in version $version." :
-			    "$gBug reopened.";
-                do {
-                    $affected_packages{$data->{package}} = 1;
-		    add_recipients(data => $data,
-				   recipients => \%recipients,
-				   transcript   => $transcript,
-				   ($dl > 0 ? (debug => $transcript):()),
-				  );
-                    removefixedversions($data, $data->{package}, $version, 'binary');
-	       } while (&getnextbug);
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	my @versions;
+        @versions = split /\s*,\s*/,$2;
+	eval {
+	    set_found(bug          => $ref,
+		      transcript   => $transcript,
+		      ($dl > 0 ? (debug => $transcript):()),
+		      requester    => $header{from},
+		      request_addr => $controlrequestaddr,
+		      message      => \@log,
+		      affected_packages => \%affected_packages,
+		      recipients   => \%recipients,
+		      found        => \@versions,
+		      remove       => 1,
+		     );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to remove found on $ref: $@";
 	}
-   }
-    elsif (m/^submitter\s+\#?(-?\d+)\s+\!$/i ? ($newsubmitter=$replyto, 1) :
-             m/^submitter\s+\#?(-?\d+)\s+(\S.*\S)$/i ? ($newsubmitter=$2, 1) : 0) {
+    }
+    elsif (m{^(?:(?i)fixed)\s+\#?(-?\d+)
+	     \s+((?:$config{package_name_re}\/)?
+		    $config{package_version_re}
+		# allow for multiple packages
+		(?:\s*,\s*(?:$config{package_name_re}\/)?
+		    $config{package_version_re})*)
+	    \s*$}x) {
+        $ok++;
+        $ref= $1;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	my @versions;
+        @versions = split /\s*,\s*/,$2;
+	eval {
+	    set_fixed(bug          => $ref,
+		      transcript   => $transcript,
+		      ($dl > 0 ? (debug => $transcript):()),
+		      requester    => $header{from},
+		      request_addr => $controlrequestaddr,
+		      message      => \@log,
+		      affected_packages => \%affected_packages,
+		      recipients   => \%recipients,
+		      fixed        => \@versions,
+		      add          => 1,
+		     );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to add fixed on $ref: $@";
+	}
+    }
+    elsif (m{^(?:(?i)notfixed)\s+\#?(-?\d+)
+	     \s+((?:$config{package_name_re}\/)?
+		    $config{package_version_re}
+		# allow for multiple packages
+		(?:\s*,\s*(?:$config{package_name_re}\/)?
+		    $config{package_version_re})*)
+	    \s*$}x) {
+        $ok++;
+        $ref= $1;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	my @versions;
+        @versions = split /\s*,\s*/,$2;
+	eval {
+	    set_fixed(bug          => $ref,
+		      transcript   => $transcript,
+		      ($dl > 0 ? (debug => $transcript):()),
+		      requester    => $header{from},
+		      request_addr => $controlrequestaddr,
+		      message      => \@log,
+		      affected_packages => \%affected_packages,
+		      recipients   => \%recipients,
+		      fixed        => \@versions,
+		      remove       => 1,
+		     );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to remove fixed on $ref: $@";
+	}
+    }
+    elsif (m/^submitter\s+\#?(-?\d+)\s+(\!|\S.*\S)$/i) {
         $ok++;
         $ref= $1;
 	$bug_affected{$ref}=1;
-        if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
-            $ref = $clonebugs{$ref};
-        }
-	if (not Mail::RFC822::Address::valid($newsubmitter)) {
-	     transcript("$newsubmitter is not a valid e-mail address; not changing submitter\n");
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	my $newsubmitter = $2 eq '!' ? $replyto : $2;
+        if (not Mail::RFC822::Address::valid($newsubmitter)) {
+	     print {$transcript} "$newsubmitter is not a valid e-mail address; not changing submitter\n";
 	     $errors++;
 	}
         elsif (&getbug) {
@@ -748,51 +793,47 @@ END
     } elsif (m/^forwarded\s+\#?(-?\d+)\s+(\S.*\S)$/i) {
         $ok++;
         $ref= $1;
-	my $whereto= $2;
-	$bug_affected{$ref}=1;
-        if (&setbug) {
-            if (length($data->{forwarded})) {
-    $action= "Forwarded-to-address changed from $data->{forwarded} to $whereto.";
-            } else {
-    $action= "Noted your statement that $gBug has been forwarded to $whereto.";
-            }
-            if (length($data->{done})) {
-                $extramessage= "(By the way, this $gBug is currently marked as done.)\n";
-            }
-            do {
-                $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data,
-			       recipients => \%recipients,
-			       actions_taken => {forwarded => 1},
-			       transcript   => $transcript,
-			       ($dl > 0 ? (debug => $transcript):()),
-			      );
-		$data->{forwarded}= $whereto;
-            } while (&getnextbug);
-        }
+	my $forward_to= $2;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	$bug_affected{$ref} = 1;
+	eval {
+	    set_forwarded(bug          => $ref,
+			  transcript   => $transcript,
+		          ($dl > 0 ? (debug => $transcript):()),
+		          requester    => $header{from},
+		          request_addr => $controlrequestaddr,
+		          message      => \@log,
+                          affected_packages => \%affected_packages,
+		          recipients   => \%recipients,
+		          forwarded    => $forward_to,
+                          );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to set the forwarded-to-address of $ref: $@";
+	}
     } elsif (m/^notforwarded\s+\#?(-?\d+)$/i) {
         $ok++;
         $ref= $1;
-	$bug_affected{$ref}=1;
-        if (&setbug) {
-            if (!length($data->{forwarded})) {
-                print {$transcript} "$gBug is not marked as having been forwarded.\n\n";
-                &nochangebug;
-            } else {
-    $action= "Removed annotation that $gBug had been forwarded to $data->{forwarded}.";
-                do {
-                    $affected_packages{$data->{package}} = 1;
-		    add_recipients(data => $data,
-				   recipients => \%recipients,
-				   transcript   => $transcript,
-				   ($dl > 0 ? (debug => $transcript):()),
-				  );
-                    $data->{forwarded}= '';
-                } while (&getnextbug);
-            }
-        }
-    } elsif (m/^severity\s+\#?(-?\d+)\s+([-0-9a-z]+)$/i ||
-	m/^priority\s+\#?(-?\d+)\s+([-0-9a-z]+)$/i) {
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	$bug_affected{$ref} = 1;
+	eval {
+	    set_forwarded(bug          => $ref,
+			  transcript   => $transcript,
+		          ($dl > 0 ? (debug => $transcript):()),
+		          requester    => $header{from},
+		          request_addr => $controlrequestaddr,
+		          message      => \@log,
+                          affected_packages => \%affected_packages,
+		          recipients   => \%recipients,
+		          forwarded    => undef,
+                          );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to clear the forwarded-to-address of $ref: $@";
+	}
+    } elsif (m/^(?:severity|priority)\s+\#?(-?\d+)\s+([-0-9a-z]+)$/i) {
         $ok++;
         $ref= $1;
 	$bug_affected{$ref}=1;
@@ -997,34 +1038,23 @@ END
     } elsif (m/^retitle\s+\#?(-?\d+)\s+(\S.*\S)\s*$/i) {
         $ok++;
         $ref= $1; my $newtitle= $2;
-	$bug_affected{$ref}=1;
-	if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
-	    $ref = $clonebugs{$ref};
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	$bug_affected{$ref} = 1;
+	eval {
+	     set_title(bug          => $ref,
+		       transcript   => $transcript,
+		       ($dl > 0 ? (debug => $transcript):()),
+		       requester    => $header{from},
+		       request_addr => $controlrequestaddr,
+		       message      => \@log,
+		       recipients   => \%recipients,
+		       title        => $newtitle,
+		      );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to set the title of $ref: $@";
 	}
-        if (&getbug) {
-            if (&checkpkglimit) {
-                &foundbug;
-                $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data,
-			       recipients => \%recipients,
-			       transcript   => $transcript,
-			       ($dl > 0 ? (debug => $transcript):()),
-			      );
-		my $oldtitle = $data->{subject};
-                $data->{subject}= $newtitle;
-                $action= "Changed $gBug title to `$newtitle' from `$oldtitle'.";
-                &savebug;
-                print {$transcript} "$action\n";
-                if (length($data->{done})) {
-                    print {$transcript} "(By the way, that $gBug is currently marked as done.)\n";
-                }
-                print {$transcript} "\n";
-            } else {
-                &cancelbug;
-            }
-        } else {
-            &notfoundbug;
-        }
     } elsif (m/^unmerge\s+\#?(-?\d+)$/i) {
 	$ok++;
 	$ref= $1;
@@ -1282,7 +1312,7 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to give $ref a summary: $@";
+	    print {$transcript} "Failed to mark $ref as affecting package(s): $@";
 	}
 
     } elsif (m/^summary\s+\#?(-?\d+)\s*(\d+|)\s*$/i) {
@@ -1796,6 +1826,11 @@ our $doc;
 sub sendtxthelpraw {
     my ($relpath,$description) = @_;
     $doc='';
+    if (not -e "$gDocDir/$relpath") {
+	print {$transcript} "Unfortunatly, the help text doesn't exist, so it wasn't sent.\n";
+	warn "Help text $gDocDir/$relpath not found";
+	return;
+    }
     open(D,"$gDocDir/$relpath") || die "open doc file $relpath: $!";
     while(<D>) { $doc.=$_; }
     close(D);
