@@ -167,6 +167,9 @@ sub binarytosource {
     elsif (exists $binary{$binver}) {
 	 if (defined $binarch) {
 	      my $src = $binary{$binver}{$binarch};
+	      if (not defined $src and exists $binary{$binver}{all}) {
+		  $src = $binary{$binver}{all};
+	      }
 	      return () unless defined $src; # not on this arch
 	      # Copy the data to avoid tiedness problems.
 	      return dclone($src);
@@ -219,9 +222,8 @@ sub sourcetobinary {
     # avoid autovivification
     my $source = $_sourcetobinary{$srcname};
     return () unless defined $source;
-    my %source = %{$source};
-    if (exists $source{$srcver}) {
-	 my $bin = $source{$srcver};
+    if (exists $source->{$srcver}) {
+	 my $bin = $source->{$srcver};
 	 return () unless defined $bin;
 	 return @$bin;
     }
@@ -340,8 +342,8 @@ sub get_versions{
 	       for my $arch (exists $param{arch}?
 			     make_list($param{arch}):
 			     (grep {not $param{no_source_arch} or
-					 $_ ne 'source'
-			       } keys %{$version->{$dist}})) {
+					$_ ne 'source'
+				    } keys %{$version->{$dist}})) {
 		    next unless defined $version->{$dist}{$arch};
 		    for my $ver (ref $version->{$dist}{$arch} ?
 				 keys %{$version->{$dist}{$arch}} :
@@ -444,9 +446,8 @@ sub make_source_versions {
     my ($warnings) = globify_scalar(exists $param{warnings}?$param{warnings}:undef);
     my ($debug)    = globify_scalar(exists $param{debug}   ?$param{debug}   :undef);
 
-
     my @packages = grep {defined $_ and length $_ } make_list($param{package});
-    my @archs    = grep {defined $_ } make_list ($param{archs});
+    my @archs    = grep {defined $_ } make_list ($param{arch});
     if (not @archs) {
 	push @archs, '';
     }
