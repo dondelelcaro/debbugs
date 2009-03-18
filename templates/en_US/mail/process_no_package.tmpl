@@ -1,11 +1,12 @@
-Your message didn't have a Package: line at the start (in the
-pseudo-header following the real mail header), or didn't have a
-pseudo-header at all.  Your message has been filed under junk but
-otherwise ignored.
+Your message didn't have a Package: line at the very first line of the
+mail body (part of the pseudo-header), or didn't have a Package: line
+at all. Unfortunatly, this means that your message has been ignored
+completely.
 
-This makes it much harder for us to categorise and deal with your
-problem report. Please _resubmit_ your report to {$baddress}@{$config{email_domain}}
-and tell us which package the report is on. For help, check out
+Without this information we are unable to categorise or otherwise deal
+with your problem report. Please _resubmit_ your report to
+{$baddress}@{$config{email_domain}} and tell us which package the
+report is for. For help, check out
 http://{$config{web_domain}}/Reporting{$config{html_suffix}}.
 
 Your message was dated {$date} and had
@@ -13,4 +14,9 @@ message-id {$messageid}
 and subject {$subject}.
 The complete text of it is attached to this message.
 
-If you need any assistance or explanation please contact {$config{maintainer_email}}.
+If you need any assistance or explanation please contact
+{$config{maintainer_email}} and include the the attached
+message.
+
+If you didn't send the attached message (spam was sent forging your
+from address), we apologize; please disregard this message.
