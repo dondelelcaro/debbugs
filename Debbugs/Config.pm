@@ -352,11 +352,39 @@ set_default(\%config,'bug_subscription_domain',$config{list_domain});
 
 =over
 
+=item mailer
+
+Name of the mailer to use
+
+Default: exim
+
 =cut
 
 set_default(\%config,'mailer','exim');
+
+
+=item bug
+
+Default: bug
+
+=item ubug
+
+Default: ucfirst($config{bug});
+
+=item bugs
+
+Default: bugs
+
+=item ubugs
+
+Default: ucfirst($config{ubugs});
+
+=cut
+
 set_default(\%config,'bug','bug');
+set_default(\%config,'ubug',ucfirst($config{bug}));
 set_default(\%config,'bugs','bugs');
+set_default(\%config,'ubugs',ucfirst($config{bugs}));
 
 =item remove_age
 
