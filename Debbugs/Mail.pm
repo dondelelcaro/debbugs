@@ -54,9 +54,13 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     @EXPORT_OK = qw(send_mail_message get_addresses encode_headers rfc822_date);
+     %EXPORT_TAGS = (addresses => qw(get_addresses),
+		     misc      => qw(rfc822_date),
+		     mail      => qw(send_mail_message encode_headers default_headers),
+		    );
+     @EXPORT_OK = ();
+     Exporter::export_ok_tags(keys %EXPORT_TAGS);
      $EXPORT_TAGS{all} = [@EXPORT_OK];
-
 }
 
 # We set this here so it can be overridden for testing purposes
@@ -74,6 +78,166 @@ using Mail::Address->parse and returns a list of the addresses.
 
 sub get_addresses {
      return map { $_->address() } map { Mail::Address->parse($_) } @_;
+}
+
+
+=head2 default_headers
+
+      my @head = default_headers(queue_file => 'foo',
+                                 data       => $data,
+                                 msgid      => $header{'message-id'},
+                                 msgtype    => 'error',
+                                 headers    => [...],
+                                );
+      create_mime_message(\@headers,
+                         ...
+                         );
+
+This function is generally called to generate the headers for
+create_mime_message (and anything else that needs a set of default
+headers.)
+
+In list context, returns an array of headers. In scalar context,
+returns headers for shoving in a mail message after encoding using
+encode_headers.
+
+=over
+
+=item queue_file -- the queue file which will generate this set of
+headers (refered to as $nn in lots of the code)
+
+=item data -- the data of the bug which this message involves; can be
+undefined if there is no bug involved.
+
+=item msgid -- the Message-ID: of the message which will generate this
+set of headers
+
+=item msgtype -- the type of message that this is.
+
+=item pr_msg -- the pr message field
+
+=item headers -- a set of headers which will override the default
+headers; these headers will be passed through (and may be reordered.)
+If a particular header is undef, it overrides the default, but isn't
+passed through.
+
+=back
+
+=cut
+
+sub default_headers {
+    my %param = validate_with(params => \@_,
+			      spec   => {queue_file => {type => SCALAR,
+							optional => 1,
+						       },
+					 data       => {type => HASHREF,
+							optional => 1,
+						       },
+					 msgid      => {type => SCALAR,
+							optional => 1,
+						       },
+					 msgtype    => {type => SCALAR,
+							default => 'misc',
+							optional => 1,
+						       },
+					 pr_msg     => {type => SCALAR,
+							default => 'misc',
+						       },
+					 headers    => {type => ARRAYREF,
+							default => [],
+						       },
+					},
+			     );
+    my @header_order = (qw(X-Loop From To subject),
+			qw(Message-ID In-Reply-To References));
+    my %header_order;
+    @header_order{map {lc $_} @header_order} = 0..$#header_order;
+    my %set_headers;
+    my @ordered_headers;
+    my @temp = @{$param{headers}};
+    my @other_headers;
+    while (my ($header,$value) = splice @temp,0,2) {
+	if (exists $header_order{lc($header)}) {
+	    push @{$ordered_headers[$header_order{lc($header)}]},
+		($header,$value);
+	}
+	else {
+	    push @other_headers,($header,$value);
+	}
+	$set_headers{lc($header)} = 1;
+    }
+
+    # calculate our headers
+    my $bug_num = exists $param{data} ? $param{data}{bug_num} : 'x';
+    my $nn = $param{queue_file};
+    # handle the user giving the actual queue filename instead of nn
+    $nn =~ s/^[a-zA-Z]([a-zA-Z])/$1/;
+    $nn = lc($nn);
+    my @msgids;
+    if (exists $param{msgid} and defined $param{msgid}) {
+	push @msgids, $param{msgid}
+    }
+    elsif (exists $param{data} and defined $param{data}{msgid}) {
+	push @msgids, $param{data}{msgid}
+    }
+    my %default_header;
+    $default_header{'X-Loop'} = $config{maintainer_email};
+    $default_header{From}     = "$config{maintainer_email} ($config{project} $config{ubug} Tracking System)";
+    $default_header{To}       = "Unknown recipients";
+    $default_header{Subject}  = "Unknown subject";
+    $default_header{'Message-ID'} = "<handler.${bug_num}.${nn}.$param{msgtype}\@$config{email_domain}>";
+    if (@msgids) {
+	$default_header{'In-Reply-To'} = $msgids[0];
+	$default_header{'References'} = join(' ',@msgids);
+    }
+    $default_header{Precedence} = 'bulk';
+    $default_header{"X-$config{project}-PR-Message"} = $param{pr_msg} . (exists $param{data} ? ' '.$param{data}{bug_num}:'');
+    $default_header{Date} = rfc822_date();
+    if (exists $param{data}) {
+	if (defined $param{data}{keywords}) {
+	    $default_header{"X-$config{project}-PR-Keywords"} = $param{data}{keywords};
+	}
+	if (defined $param{data}{package}) {
+	    $default_header{"X-$config{project}-PR-Package"} = $param{data}{package};
+	    if ($param{data}{package} =~ /^src:(.+)$/) {
+		$default_header{"X-$config{project}-PR-Source"} = $1;
+	    }
+	    else {
+		my $pkg_src = getpkgsrc();
+		$default_header{"X-$config{project}-PR-Source"} = $pkg_src->{$param{data}{package}};
+	    }
+	}
+    }
+    for my $header (sort keys %default_header) {
+	next if $set_headers{lc($header)};
+	if (exists $header_order{lc($header)}) {
+	    push @{$ordered_headers[$header_order{lc($header)}]},
+		($header,$default_header{$header});
+	}
+	else {
+	    push @other_headers,($header,$header_order{lc($header)});
+	}
+    }
+    my @headers;
+    for my $hdr1 (@ordered_headers) {
+	next if not defined $hdr1;
+	my @temp = @{$hdr1};
+	while (my ($header,$value) = splice @temp,0,2) {
+	    next if not defined $value;
+	    push @headers,($header,$value);
+	}
+    }
+    push @headers,@other_headers;
+    if (wantarray) {
+	return @headers;
+    }
+    else {
+	my $headers = '';
+	while (my ($header,$value) = splice @headers,0,2) {
+	    $headers .= "${header}: $value\n";
+	}
+	return $headers;
+    }
 }
 
 
