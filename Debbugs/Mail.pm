@@ -101,6 +101,8 @@ In list context, returns an array of headers. In scalar context,
 returns headers for shoving in a mail message after encoding using
 encode_headers.
 
+=head3 options
+
 =over
 
 =item queue_file -- the queue file which will generate this set of
@@ -120,6 +122,37 @@ set of headers
 headers; these headers will be passed through (and may be reordered.)
 If a particular header is undef, it overrides the default, but isn't
 passed through.
+
+=back
+
+=head3 default headers
+
+=over
+
+=item X-Loop -- set to the maintainer e-mail
+
+=item From -- set to the maintainer e-mail
+
+=item To -- set to Unknown recipients
+
+=item Subject -- set to Unknown subject
+
+=item Message-ID -- set appropriately (see code)
+
+=item Precedence -- set to bulk
+
+=item References -- set to the full set of message ids that are known
+(from data and the msgid option)
+
+=item In-Reply-To -- set to msg id or the msgid from data
+
+=item X-Project-PR-Message -- set to pr_msg with the bug number appended
+
+=item X-Project-PR-Package -- set to the package of the bug
+
+=item X-Project-PR-Keywords -- set to the keywords of the bug
+
+=item X-Project-PR-Source -- set to the source of the bug
 
 =back
 
