@@ -16,7 +16,7 @@ use Pod::Usage;
 
 =head1 NAME
 
-add_bug_to_estraier
+add_bug_to_estraier -- add a bug log to an estraier database
 
 =head1 SYNOPSIS
 
