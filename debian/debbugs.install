@@ -2,6 +2,7 @@ usr/lib/debbugs
 usr/share/man/man8
 usr/sbin
 usr/share/doc/debbugs/examples
-var/lib/debbugs
+var/lib/debbugs/spool
+var/lib/debbugs/indices
 usr/bin/add_bug_to_estraier
 usr/share/man/man1/add_bug_*

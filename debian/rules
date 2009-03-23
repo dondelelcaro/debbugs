@@ -45,7 +45,7 @@ binary-indep: build install
 	dh_installdirs
 	$(MAKE) install_mostfiles DESTDIR=$(DEST_DIR)
 	$(MAKE) -f Makefile.perl install PREFIX=$(DEST_DIR)/usr
-	dh_install --sourcedir=debian/tmp --list-missing
+	dh_install --sourcedir=debian/tmp --fail-missing
 	dh_installdocs
 	dh_installchangelogs
 	dh_strip

@@ -1,4 +1,4 @@
-debbugs (2.4.2) UNRELEASED; urgency=low
+debbugs (2.4.2~exp0) UNRELEASED; urgency=low
 
   [ Anthony Towns ]
   * Add "package" command to service (control@) to limit the bugs that
