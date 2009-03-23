@@ -82,7 +82,10 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (affects => [qw(affects)],
+     %EXPORT_TAGS = (reopen    => [qw(reopen)],
+		     submitter => [qw(set_submitter)],
+		     severity => [qw(set_severity)],
+		     affects => [qw(affects)],
 		     summary => [qw(summary)],
 		     owner   => [qw(owner)],
 		     title   => [qw(set_title)],
@@ -114,7 +117,8 @@ use IO::File;
 
 use Debbugs::Text qw(:templates);
 
-use Debbugs::Mail qw(rfc822_date);
+use Debbugs::Mail qw(rfc822_date send_mail_message default_headers);
+use Debbugs::MIME qw(create_mime_message);
 
 use Mail::RFC822::Address qw();
 
@@ -157,6 +161,9 @@ my %common_options = (debug       => {type => SCALARREF|HANDLE,
 		      request_nn       => {type => SCALAR,
 					   optional => 1,
 					  },
+		      request_replyto   => {type => SCALAR,
+					    optional => 1,
+					   },
 		     );
 
 
@@ -242,7 +249,7 @@ my %append_action_options =
 # 	writebug($data->{bug_num},$data);
 # 	print {$transcript} "$action\n";
 #     }
-#     __end_control(\%info);
+#     __end_control(%info);
 # }
 
 =head2 set_tag
@@ -498,7 +505,7 @@ sub set_severity {
 	writebug($data->{bug_num},$data);
 	print {$transcript} "$action\n";
     }
-    __end_control(\%info);
+    __end_control(%info);
 }
 
 
@@ -579,7 +586,7 @@ sub reopen {
 	    push @change_submitter,$data->{bug_num};
 	}
     }
-    __end_control(\%info);
+    __end_control(%info);
     my @params_for_subcalls = 
 	map {exists $param{$_}?($_,$param{$_}):()}
 	    (keys %common_options,
@@ -657,21 +664,22 @@ sub set_submitter {
 	my $old_data = dclone($data);
 	print {$debug} "Going to change bug submitter\n";
 	if (((not defined $param{submitter} or not length $param{submitter}) and
-	      (not defined $data->{submitter} or not length $data->{submitter})) or
-	     $param{submitter} eq $data->{submitter}) {
+	      (not defined $data->{originator} or not length $data->{originator})) or
+	     (defined $param{submitter} and defined $data->{originator} and
+	      $param{submitter} eq $data->{originator})) {
 	    print {$transcript} "Ignoring request to change the submitter of bug#$data->{bug_num} to the same value\n"
 		unless __internal_request();
 	    next;
 	}
 	else {
-	    if (defined $data->{submitter} and length($data->{submitter})) {
-		$action= "Changed $config{bug} submitter to '$param{submitter}' from '$data->{submitter}'";
+	    if (defined $data->{originator} and length($data->{originator})) {
+		$action= "Changed $config{bug} submitter to '$param{submitter}' from '$data->{originator}'";
 		$notify_old_submitter = 1;
 	    }
 	    else {
 		$action= "Set $config{bug} submitter to '$param{submitter}'.";
 	    }
-	    $data->{submitter} = $param{submitter};
+	    $data->{originator} = $param{submitter};
 	}
         append_action_to_log(bug => $data->{bug_num},
 			     command => 'submitter',
@@ -689,26 +697,23 @@ sub set_submitter {
 	# notify old submitter
 	if ($notify_old_submitter and $param{notify_submitter}) {
 	    send_mail_message(message =>
-			      create_mime_message(["X-Loop"      => $config{maintainer_email},
-						   From          => "$config{maintainer_email} ($config{project} $config{ubug} Tracking System)",
-						   To            => $old_data->{submitter},
-						   Subject       => "$config{ubug}#$data->{bug_num} submitter addressed changed ($param{request_subject})",
-						   "Message-ID"  => "<$data->{bug_num}.$param{request_nn}.ackfwdd\@$config{email_domain}>",
-						   "In-Reply-To" => $param{request_msgid},
-						   References    => join(' ',grep {defined $_} $param{request_msgid},$data->{msgid}),
-						   Precedence    => 'bulk',
-						   "X-$gProject-PR-Message"  => "submitter-changed $data->{bug_num}",
-						   "X-$gProject-PR-Package"  => $data->{package},
-						   "X-$gProject-PR-Keywords" => $data->{keywords},
-						   # Only have a X-$gProject-PR-Source when we know the source package
-						   (defined($source_package) and length($source_package))?("X-$gProject-PR-Source" => $source_package):(),
+			      create_mime_message([default_headers(queue_file => $param{request_nn},
+								   data => $data,
+								   msgid => $param{request_msgid},
+								   msgtype => 'ack',
+								   pr_msg  => 'submitter-changed',
+								   headers =>
+								   [To => $old_data->{submitter},
+								    Subject => "$config{ubug}#$data->{bug_num} submitter addressed changed ($param{request_subject})",
+								   ],
+								  )
 						  ],
-						  message_body_template('mail/submitter_changed',
-									{old_data => $old_data,
-									 data     => $data,
-									 replyto  => exists $param{header}{'reply-to'} ? $param{request_replyto} : $param{requester} || 'Unknown',
-									 config   => \%config,
-									})
+						  __message_body_template('mail/submitter_changed',
+									  {old_data => $old_data,
+									   data     => $data,
+									   replyto  => exists $param{header}{'reply-to'} ? $param{request_replyto} : $param{requester} || 'Unknown',
+									   config   => \%config,
+									  })
 						 ),
 			      recipients => $old_data->{submitter},
 			     );
@@ -2491,6 +2496,40 @@ sub sig_die{
 	    $locks = 0;
 	}
     #}
+}
+
+
+# =head2 __message_body_template
+#
+#      message_body_template('mail/ack',{ref=>'foo'});
+#
+# Creates a message body using a template
+#
+# =cut
+
+sub __message_body_template{
+     my ($template,$extra_var) = @_;
+     $extra_var ||={};
+     my $hole_var = {'&bugurl' =>
+		     sub{"$_[0]: ".
+			     'http://'.$config{cgi_domain}.'/'.
+				 Debbugs::CGI::bug_url($_[0]);
+		     }
+		    };
+
+     my $body = fill_in_template(template => $template,
+				 variables => {config => \%config,
+					       %{$extra_var},
+					      },
+				 hole_var => $hole_var,
+				);
+     return fill_in_template(template => 'mail/message_body',
+			     variables => {config => \%config,
+					   %{$extra_var},
+					   body => $body,
+					  },
+			     hole_var => $hole_var,
+			    );
 }
 
 

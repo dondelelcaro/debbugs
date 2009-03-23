@@ -124,14 +124,14 @@ my %affected_packages;
 my %recipients;
 
 my @common_control_options =
-    (($dl > 0 (debug => $transcript):()),
+    (($dl > 0 ? (debug => $transcript):()),
      transcript        => $transcript,
      requester         => $header{from},
      request_addr      => $controlrequestaddr,
      request_msgid     => $header{'message-id'},
      request_subject   => $header{subject},
      request_nn        => $nn,
-     request_replyto   => $replyto
+     request_replyto   => $replyto,
      message           => \@log,
      affected_packages => \%affected_packages,
      recipients        => \%recipients,
@@ -177,10 +177,6 @@ our $mismatch;
 our $action;
 
 
-# recipients of mail
-my %recipients;
-# affected_packages
-my %affected_packages;
 my $ok = 0;
 my $unknowns = 0;
 my $procline=0;
@@ -795,10 +791,11 @@ END
 	    }
 	}
 	my $tags = $4;
-	my @tags = /[\s,]+/, $tags;
+	my @tags = split /[\s,]+/, $tags;
+	my @badtags = ();
 	foreach my $tag (@tags) {
 	    if (not defined first {$_ eq $tag} @{$config{tags}}) {
-		push @badtags, $t;
+		push @badtags, $tag;
 	    }
 	}
 	if (@badtags) {
@@ -936,13 +933,8 @@ END
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	$bug_affected{$ref} = 1;
 	eval {
-	     set_title(bug          => $ref,
-		       transcript   => $transcript,
-		       ($dl > 0 ? (debug => $transcript):()),
-		       requester    => $header{from},
-		       request_addr => $controlrequestaddr,
-		       message      => \@log,
-		       recipients   => \%recipients,
+	     set_title(@common_control_options,
+		       bug          => $ref,
 		       title        => $newtitle,
 		      );
 	};
@@ -1194,6 +1186,7 @@ END
 	$bug_affected{$ref} = 1;
 	eval {
 	     affects(@common_control_options,
+		     bug => $ref,
 		     packages     => [splitpackages($3)],
 		     ($add_remove eq '+'?(add => 1):()),
 		     ($add_remove eq '-'?(remove => 1):()),
