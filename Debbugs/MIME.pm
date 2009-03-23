@@ -10,6 +10,24 @@
 
 package Debbugs::MIME;
 
+=head1 NAME
+
+Debbugs::MIME -- Mime handling routines for debbugs
+
+=head1 SYNOPSIS
+
+ use Debbugs::MIME qw(parse decode_rfc1522);
+
+=head1 DESCRIPTION
+
+
+=head1 BUGS
+
+None known.
+
+=cut
+
+use warnings;
 use strict;
 
 use base qw(Exporter);
