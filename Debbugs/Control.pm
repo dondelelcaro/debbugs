@@ -5,7 +5,7 @@
 #
 # [Other people have contributed to this file; their copyrights should
 # go here too.]
-# Copyright 2007 by Don Armstrong <don@donarmstrong.com>.
+# Copyright 2007,2008,2009 by Don Armstrong <don@donarmstrong.com>.
 
 package Debbugs::Control;
 
