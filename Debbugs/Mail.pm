@@ -49,6 +49,8 @@ use Debbugs::MIME qw(encode_rfc1522);
 use Debbugs::Config qw(:config);
 use Params::Validate qw(:types validate_with);
 
+use Debbugs::Packages;
+
 BEGIN{
      ($VERSION) = q$Revision: 1.1 $ =~ /^Revision:\s+([^\s+])/;
      $DEBUG = 0 unless defined $DEBUG;
@@ -236,7 +238,7 @@ sub default_headers {
 		$default_header{"X-$config{project}-PR-Source"} = $1;
 	    }
 	    else {
-		my $pkg_src = getpkgsrc();
+		my $pkg_src = Debbugs::Packages::getpkgsrc();
 		$default_header{"X-$config{project}-PR-Source"} = $pkg_src->{$param{data}{package}};
 	    }
 	}
