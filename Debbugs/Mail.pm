@@ -54,9 +54,9 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (addresses => qw(get_addresses),
-		     misc      => qw(rfc822_date),
-		     mail      => qw(send_mail_message encode_headers default_headers),
+     %EXPORT_TAGS = (addresses => [qw(get_addresses)],
+		     misc      => [qw(rfc822_date)],
+		     mail      => [qw(send_mail_message encode_headers default_headers)],
 		    );
      @EXPORT_OK = ();
      Exporter::export_ok_tags(keys %EXPORT_TAGS);
