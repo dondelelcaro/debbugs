@@ -5,7 +5,7 @@ Maintainer: Debbugs developers <debian-debbugs@lists.debian.org>
 Uploaders: Josip Rodin <joy-packages@debian.org>, Colin Watson <cjwatson@debian.org>, Don Armstrong <don@debian.org>
 Standards-Version: 3.2.1
 Build-Depends-Indep: debhelper, libparams-validate-perl,
- libmailtools-perl, libmime-perl, libio-stringy-perl, libmldbm-perl,
+ libmailtools-perl, libmime-tools-perl, libio-stringy-perl, libmldbm-perl,
  liburi-perl, libsoap-lite-perl, libcgi-simple-perl,
  libhttp-server-simple-perl, libtest-www-mechanize-perl,
  libmail-rfc822-address-perl, libsafe-hole-perl, libuser-perl,
@@ -30,7 +30,7 @@ Description: The bug tracking system based on the active Debian BTS
 
 Package: libdebbugs-perl
 Architecture: all
-Depends: ${perl:Depends}, libmailtools-perl, ed, libmime-perl,
+Depends: ${perl:Depends}, libmailtools-perl, ed, libmime-tools-perl,
  libio-stringy-perl, libmldbm-perl, liburi-perl, libsoap-lite-perl,
  libcgi-simple-perl, libparams-validate-perl, libtext-template-perl,
  libsafe-hole-perl, libmail-rfc822-address-perl
