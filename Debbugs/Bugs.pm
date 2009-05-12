@@ -572,19 +572,26 @@ sub get_bugs_flatfile{
      }
      my $unmaintained_packages = 0;
      # unmaintained packages is a special case
-     for my $maint (make_list(exists $param{maint}?$param{maint}:[])) {
+     my @maints = make_list(exists $param{maint}?$param{maint}:[]);
+     $param{maint} = [];
+     for my $maint (@maints) {
 	  if (defined $maint and $maint eq '' and not $unmaintained_packages) {
 	       $unmaintained_packages = 1;
 	       our %maintainers = %{getmaintainers()};
-	       $param{function} = [exists $param{function}?
-				   (ref $param{function}?@{$param{function}}:$param{function}):(),
+	       $param{function} = [(exists $param{function}?
+				    (ref $param{function}?@{$param{function}}:$param{function}):()),
 				   sub {my %d=@_;
-					foreach my $try (splitpackages($d{"pkg"})) {
+					foreach my $try (make_list($d{"pkg"})) {
+					     next unless length $try;
+					     ($try) = $try =~ m/^(?:src:)?(.+)/;
 					     return 1 if not exists $maintainers{$try};
 					}
 					return 0;
 				   }
 				  ];
+	  }
+	  elsif (defined $maint and $maint ne '') {
+	       push @{$param{maint}},$maint;
 	  }
      }
      # We handle src packages, maint and maintenc by mapping to the
