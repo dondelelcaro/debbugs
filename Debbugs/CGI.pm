@@ -404,7 +404,7 @@ sub package_links {
 				       %options,
 				       $type => $_,
 				      ),
-			     $_);
+			     ($type eq 'src'?'src:':'').$_);
 		       } make_list($param{$type}) if exists $param{$type};
      }
      for my $type (qw(maint owner submitter correspondent)) {

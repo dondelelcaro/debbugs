@@ -292,10 +292,20 @@ my %package;
 my @packages = splitpackages($status{package});
 
 foreach my $pkg (@packages) {
-     $package{$pkg} = {maintainer => exists($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)',
-		       exists($pkgsrc{$pkg}) ? (source => $pkgsrc{$pkg}) : (),
-		       package    => $pkg,
-		      };
+     if ($pkg =~ /^src\:/) {
+	  my ($srcpkg) = $pkg =~ /^src:(.*)/;
+	  $package{$pkg} = {maintainer => exists($maintainer{$srcpkg}) ? $maintainer{$srcpkg} : '(unknown)',
+			    source     => $srcpkg,
+			    package    => $pkg,
+			    is_source  => 1,
+			   };
+     }
+     else {
+	  $package{$pkg} = {maintainer => exists($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)',
+			    exists($pkgsrc{$pkg}) ? (source => $pkgsrc{$pkg}) : (),
+			    package    => $pkg,
+			   };
+     }
 }
 
 # fixup various bits of the status
