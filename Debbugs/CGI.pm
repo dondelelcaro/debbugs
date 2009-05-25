@@ -536,8 +536,8 @@ the split links with commas and spaces.
 sub maybelink {
     my ($links,$regex,$join) = @_;
     if (not defined $regex and not defined $join) {
-	 $links =~ s{((?:ftp|http|https)://[\S~-]+?/?)([\)\'\:\.\,]?(?:\s|\.<|$))}
-		    {q(<a href=").html_escape($1).q(">).html_escape($1).q(</a>).$2}geimo;
+	 $links =~ s{(.*?)((?:(?:ftp|http|https)://[\S~-]+?/?)?)([\)\'\:\.\,]?(?:\s|\.<|$))}
+		    {html_escape($1).(length $2?q(<a href=").html_escape($2).q(">).html_escape($2).q(</a>):'').html_escape($3)}geimo;
 	 return $links;
     }
     $join = ' ' if not defined $join;

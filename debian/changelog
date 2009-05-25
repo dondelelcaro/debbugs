@@ -248,6 +248,7 @@ debbugs (2.4.2~exp0) UNRELEASED; urgency=low
   * Don't have reply/subscribe links for archived bugs (closes: #511864)
   * Fix issue with no-maintainer bugs assigned to multiple packages
     (closes: #528249)
+  * Properly html_escape un-processed parts in maybelink (closes: #530506)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
