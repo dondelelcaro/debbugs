@@ -655,7 +655,7 @@ Split a package string from the status file into a list of package names.
 sub splitpackages {
     my $pkgs = shift;
     return unless defined $pkgs;
-    return map lc, split /[ \t?,()]+/, $pkgs;
+    return grep {length $_} map lc, split /[\s,()?]+/, $pkgs;
 }
 
 
