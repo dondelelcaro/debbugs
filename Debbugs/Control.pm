@@ -93,6 +93,7 @@ BEGIN{
 		     found   => [qw(set_found set_fixed)],
 		     fixed   => [qw(set_found set_fixed)],
 		     package => [qw(set_package)],
+		     block   => [qw(set_blocks)],
 		     archive => [qw(bug_archive bug_unarchive),
 				],
 		     log     => [qw(append_action_to_log),
@@ -252,6 +253,276 @@ my %append_action_options =
 #     __end_control(%info);
 # }
 
+
+=head2 set_blocks
+
+     eval {
+	    set_block(bug          => $ref,
+		      transcript   => $transcript,
+		      ($dl > 0 ? (debug => $transcript):()),
+		      requester    => $header{from},
+		      request_addr => $controlrequestaddr,
+		      message      => \@log,
+                      affected_packages => \%affected_packages,
+		      recipients   => \%recipients,
+		      block        => [],
+                     );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to set blockers of $ref: $@";
+	}
+
+Alters the set of bugs that block this bug from being fixed
+
+This requires altering both this bug (and those it's merged with) as
+well as the bugs that block this bug from being fixed (and those that
+it's merged with)
+
+=over
+
+=item block -- scalar or arrayref of blocking bugs to set, add or remove
+
+=item add -- if true, add blocking bugs
+
+=item remove -- if true, remove blocking bugs
+
+=back
+
+=cut
+
+sub set_blocks {
+    my %param = validate_with(params => \@_,
+			      spec   => {bug => {type   => SCALAR,
+						 regex  => qr/^\d+$/,
+						},
+					 # specific options here
+					 block => {type => SCALAR|ARRAYREF,
+						   default => [],
+						  },
+					 add    => {type => BOOLEAN,
+						    default => 0,
+						   },
+					 remove => {type => BOOLEAN,
+						    default => 0,
+						   },
+					 %common_options,
+					 %append_action_options,
+					},
+			     );
+    if ($param{add} and $param{remove}) {
+	croak "It's nonsensical to add and remove the same blocking bugs";
+    }
+    if (grep {$_ !~ /^\d+$/} make_list($param{block})) {
+	croak "Invalid blocking bug(s):".
+	    join(', ',grep {$_ !~ /^\d+$/} make_list($param{block}));
+    }
+    my $mode = 'set';
+    if (exists $param{add}) {
+	$mode = 'add';
+    }
+    elsif (exists $param{remove}) {
+	$mode = 'remove';
+    }
+
+    my %info =
+	__begin_control(%param,
+			command  => 'blocks'
+		       );
+    my ($debug,$transcript) =
+	@info{qw(debug transcript)};
+    my @data = @{$info{data}};
+    my @bugs = @{$info{bugs}};
+
+
+    # The first bit of this code is ugly, and should be cleaned up.
+    # Its purpose is to populate %removed_blockers and %add_blockers
+    # with all of the bugs that should be added or removed as blockers
+    # of all of the bugs which are merged with $param{bug}
+    my %ok_blockers;
+    my %bad_blockers;
+    for my $blocker (make_list($param{block})) {
+	next if $ok_blockers{$blocker} or $bad_blockers{$blocker};
+	my $data = read_bug(bug=>$blocker,
+			   );
+	if (defined $data and not $data->{archive}) {
+	    $ok_blockers{$blocker} = 1;
+	    my @merged_bugs;
+	    push @merged_bugs, split(' ',$data->{mergedwith}) if length $data->{mergedwith};
+	    $ok_blockers{@merged_bugs} = (1) x @merged_bugs if @merged_bugs;
+	}
+	else {
+	    $bad_blockers{$blocker} = 1;
+	}
+    }
+
+    # throw an error if we are setting the blockers and there is a bad
+    # blocker
+    if (keys %bad_blockers and $mode eq 'set') {
+	croak "Unknown blocking bug(s):".join(', ',keys %bad_blockers).
+	    keys %ok_blockers?'':" and no known blocking bug(s)";
+    }
+    # if there are no ok blockers and we are not setting the blockers,
+    # there's an error.
+    if (not keys %ok_blockers and $mode ne 'set') {
+	print {$transcript} "No valid blocking bug(s) given; not doing anything\n";
+	if (keys %bad_blockers) {
+	    croak "Unknown blocking bug(s):".join(', ',keys %bad_blockers);
+	}
+	__end_control(%info);
+	return;
+    }
+
+    my @change_blockers = keys %ok_blockers;
+
+    my %removed_blockers;
+    my %added_blockers;
+    my $action = '';
+    my @blockers = map {split ' ', $_->{blockedby}} @data;
+    my %blockers;
+    @blockers{@blockers} = (1) x @blockers;
+
+    # it is nonsensical for a bug to block itself (or a merged
+    # partner); We currently don't allow removal because we'd possibly
+    # deadlock
+
+    my %bugs;
+    @bugs{@bugs} = (1) x @bugs;
+    for my $blocker (@change_blockers) {
+	if ($bugs{$blocker}) {
+	    croak "It is nonsensical for a bug to block itself (or a merged partner): $blocker";
+	}
+    }
+    @blockers = keys %blockers;
+    if ($param{add}) {
+	%removed_blockers = ();
+	for my $blocker (@change_blockers) {
+	    next if exists $blockers{$blocker};
+	    $blockers{$blocker} = 1;
+	    $added_blockers{$blocker} = 1;
+	}
+    }
+    elsif ($param{remove}) {
+	%added_blockers = ();
+	for my $blocker (@change_blockers) {
+	    next if exists $removed_blockers{$blocker};
+	    delete $blockers{$blocker};
+	    $removed_blockers{$blocker} = 1;
+	}
+    }
+    else {
+	@removed_blockers{@blockers} = (1) x @blockers;
+	%blockers = ();
+	for my $blocker (@change_blockers) {
+	    next if exists $blockers{$blocker};
+	    $blockers{$blocker} = 1;
+	    if (exists $removed_blockers{$blocker}) {
+		delete $removed_blockers{$blocker};
+	    }
+	    else {
+		$added_blockers{$blocker} = 1;
+	    }
+	}
+    }
+    my @new_blockers = keys %blockers;
+    for my $data (@data) {
+	my $old_data = dclone($data);
+	# remove blockers and/or add new ones as appropriate
+	if ($data->{blockedby} eq '') {
+	    print {$transcript} "Was not blocked by any bugs.\n";
+	} else {
+	    print {$transcript} "Was blocked by: $data->{blockedby}\n";
+	}
+	my @changed;
+	push @changed, 'added blocking bug(s) '.english_join([keys %added_blockers]) if keys %added_blockers;
+	push @changed, 'removed blocking bug(s) '.english_join([keys %removed_blockers]) if keys %removed_blockers;
+	$action = ucfirst(join ('; ',@changed)) if @changed;
+	if (not @changed) {
+	    print {$transcript} "Ignoring request to alter tags of bug #$data->{bug_num} to the same tags previously set\n"
+		unless __internal_request();
+	    next;
+	}
+	$data->{blockedby} = join(' ',keys %blockers);
+	append_action_to_log(bug => $data->{bug_num},
+			     command  => 'block',
+			     old_data => $old_data,
+			     new_data => $data,
+			     get_lock => 0,
+			     __return_append_to_log_options(
+							    %param,
+							    action => $action,
+							   ),
+			    )
+	    if not exists $param{append_log} or $param{append_log};
+	writebug($data->{bug_num},$data);
+	print {$transcript} "$action\n";
+    }
+    # we do this bit below to avoid code duplication
+    my %mungable_blocks;
+    $mungable_blocks{remove} = \%removed_blockers if keys %removed_blockers;
+    $mungable_blocks{add} = \%added_blockers if keys %added_blockers;
+    for my $add_remove (keys %mungable_blocks) {
+	my @munge_blockers;
+	my %munge_blockers;
+	my $block_locks = 0;
+	for my $blocker (keys %{$mungable_blocks{$add_remove}}) {
+	    next if $munge_blockers{$blocker};
+	    my ($new_locks, @blocking_data) =
+		lock_read_all_merged_bugs($blocker,
+					  ($param{archived}?'archive':()));
+	    if (not @blocking_data) {
+		unfilelock() for $new_locks;
+		die "Unable to get file lock while trying to $add_remove blocker '$blocker'";
+	    }
+	    for (map {$_->{bug_num}} @blocking_data) {
+		$munge_blockers{$_} = 1;
+	    }
+	    for my $data (@blocking_data) {
+		my $old_data = dclone($data);
+		my %blocks;
+		%blocks = split ' ', $data->{blocks};
+		my @blocks;
+		for my $bug (@bugs) {
+		    if ($add_remove eq 'remove') {
+			next unless exists $blocks{$bug};
+			delete $blocks{$bug};
+		    }
+		    else {
+			next if exists $blocks{$bug};
+			$blocks{$bug} = 1;
+		    }
+		    push @blocks, $bug;
+		}
+		$data->{blocks} = join(' ',sort keys %blocks);
+		my $action = ($add_remove eq 'add'?'Added':'Removed').
+		    " indication that bug $data->{bug_num} blocks".
+		    join(',',@blocks);
+		append_action_to_log(bug => $data->{bug_num},
+				     command => 'block',
+				     old_data => $old_data,
+				     new_data => $data,
+				     get_lock => 0,
+				     __return_append_to_log_options(%param,
+								   action => $action
+								   )
+				    );
+	    }
+	    __handle_affected_packages(%param,data=>\@blocking_data);
+	    add_recipients(recipients => $param{recipients},
+			   actions_taken => {blocks => 1},
+			   data       => \@blocking_data,
+			   debug      => $debug,
+			   transcript => $transcript,
+			  );
+
+	    unfilelock() for $new_locks;
+	}
+    }
+    __end_control(%info);
+}
+
+
+
 =head2 set_tag
 
      eval {
@@ -338,12 +609,6 @@ sub set_tag {
     # first things first, make the versions fully qualified source
     # versions
     for my $data (@data) {
-	# The 'done' field gets a bit weird with version tracking,
-	# because a bug may be closed by multiple people in different
-	# branches. Until we have something more flexible, we set it
-	# every time a bug is fixed, and clear it when a bug is found
-	# in a version greater than any version in which the bug is
-	# fixed or when a bug is found and there is no fixed version
 	my $action = 'Did not alter tags';
 	my %tag_added = ();
 	my %tag_removed = ();
@@ -2470,7 +2735,7 @@ sub __end_control {
 	@{$info{param}{bugs_affected}}{@{$info{bugs}}} = (1) x @{$info{bugs}};
     }
     add_recipients(recipients => $info{param}{recipients},
-		   (exists $info{param}{command}?(actions_taken => {$info{param}{command} => 1}):()),
+		   (exists $info{param}{command}?(actions_taken => {$info{param}{command} , 1}):()),
 		   data       => $info{data},
 		   debug      => $info{debug},
 		   transcript => $info{transcript},

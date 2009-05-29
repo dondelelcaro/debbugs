@@ -818,114 +818,23 @@ END
 	    $errors++;
 	    print {$transcript} "Failed to alter tags of $config{bug} $ref: $@";
 	}
-    } elsif (m/^(un)?block\s+\#?(-?\d+)\s+(by|with)\s+(\S.*)?$/i) {
+    } elsif (m/^(un)?block\s+\#?(-?\d+)\s+(?:by|with)\s+(\S.*)?$/i) {
 	$ok++;
-	my $bugnum = $2; my $blockers = $4;
-	my $addsub = "add";
-	$addsub = "sub" if (defined $1 and $1 eq "un");
-	if ($bugnum =~ m/^-\d+$/ && defined $clonebugs{$bugnum}) {
-	     $bugnum = $clonebugs{$bugnum};
-	}
-
-	my @okayblockers;
-	my @badblockers;
-	foreach my $b (split /[\s,]+/, $blockers) {
-	    $b=~s/^\#//;
-	    if ($b=~/[0-9]+/) {
-		$ref=$b;
-		if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
-		     $ref = $clonebugs{$ref};
-		}
-		if (&getbug) {
-		    &foundbug;
-		    push @okayblockers, $ref;
-
-		    # add to the list all bugs that are merged with $b,
-		    # because all of their data must be kept in sync
-		    my @thisbugmergelist= split(/ /,$data->{mergedwith});
-		    &cancelbug;
-
-		    foreach $ref (@thisbugmergelist) {
-			if (&getbug) {
-		           push @okayblockers, $ref;
-			   &cancelbug;
-			}
-		    }
-		}
-		else {
-		    &notfoundbug;
-                    push @badblockers, $ref;
-	    	}
-	    }
-	    else {
-                push @badblockers, $b;
-	    }
-	}
-	if (@badblockers) {
-            print {$transcript} "Unknown blocking bug/s: ".join(', ', @badblockers).".\n";
+        $ref= $2;
+	my $add_remove = defined $1 && $1 eq 'un';
+	my @blockers = split /[\s,]+/, $3;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	$bug_affected{$ref} = 1;
+	eval {
+	     set_blocks(@common_control_options,
+			bug          => $ref,
+			block        => \@blockers,
+			$add_remove ? (remove => 1):(add => 1),
+		       );
+	};
+	if ($@) {
 	    $errors++;
-	}
-	
-	$ref=$bugnum;
-	if (&setbug) {
-	    if ($data->{blockedby} eq '') {
-		print {$transcript} "Was not blocked by any bugs.\n";
-	    } else {
-		print {$transcript} "Was blocked by: $data->{blockedby}\n";
-	    }
-	    if ($addsub eq "set") {
-		$action= "Blocking bugs of $bugnum set to: " . join(", ", @okayblockers);
-	    } elsif ($addsub eq "add") {
-		$action= "Blocking bugs of $bugnum added: " . join(", ", @okayblockers);
-	    } elsif ($addsub eq "sub") {
-		$action= "Blocking bugs of $bugnum removed: " . join(", ", @okayblockers);
-	    }
-	    my %removedblocks;
-	    my %addedblocks;
-	    do {
-                $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data,
-			       recipients => \%recipients,
-			       transcript   => $transcript,
-			       ($dl > 0 ? (debug => $transcript):()),
-			      );
-		my @oldblockerlist = split ' ', $data->{blockedby};
-	        $data->{blockedby} = '' if ($addsub eq "set");
-	        foreach my $b (@okayblockers) {
-			$data->{blockedby} = manipset($data->{blockedby}, $b,
-				($addsub ne "sub"));
-	        }
-
-		foreach my $b (@oldblockerlist) {
-			if (! grep { $_ eq $b } split ' ', $data->{blockedby}) {
-				push @{$removedblocks{$b}}, $ref;
-			}
-		}
-		foreach my $b (split ' ', $data->{blockedby}) {
-			if (! grep { $_ eq $b } @oldblockerlist) {
-				push @{$addedblocks{$b}}, $ref;
-			}
-		}
-            } while (&getnextbug);
-
-	    # Now that the blockedby data is updated, change blocks data
-	    # to match the changes.
-	    foreach $ref (keys %addedblocks) {
-	        if (&getbug) {
-		    foreach my $b (@{$addedblocks{$ref}}) {
-			$data->{blocks} = manipset($data->{blocks}, $b, 1);
-		    }
-		    &savebug;
-                }
-	    }
-	    foreach $ref (keys %removedblocks) {
-	        if (&getbug) {
-		    foreach my $b (@{$removedblocks{$ref}}) {
-			$data->{blocks} = manipset($data->{blocks}, $b, 0);
-		    }
-		    &savebug;
-                }
-	    }
+	    print {$transcript} "Failed to set blocking bugs of $ref: $@";
 	}
     } elsif (m/^retitle\s+\#?(-?\d+)\s+(\S.*\S)\s*$/i) {
         $ok++;
