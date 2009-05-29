@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 96;
+use Test::More tests => 102;
 
 use warnings;
 use strict;
@@ -120,7 +120,8 @@ ok($status->{severity} eq 'wishlist','bug 1 wishlisted');
 
 # now we're going to go through and methododically test all of the control commands.
 my @control_commands =
-     (severity_wishlist => {command => 'severity',
+     (
+      severity_wishlist => {command => 'severity',
 			    value   => 'wishlist',
 			    status_key => 'severity',
 			    status_value => 'wishlist',
@@ -225,6 +226,16 @@ my @control_commands =
       forcemerge   => {command => 'forcemerge',
 		       value   => '2',
 		       status_key => 'mergedwith',
+		       status_value => '2',
+		      },
+      unmerge      => {command => 'unmerge',
+		       value   => '',
+		       status_key => 'mergedwith',
+		       status_value => '',
+		      },
+      block        => {command => 'block',
+		       value   => ' with 2',
+		       status_key => 'blockedby',
 		       status_value => '2',
 		      },
       summary      => {command => 'summary',
