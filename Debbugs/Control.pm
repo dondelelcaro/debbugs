@@ -106,7 +106,7 @@ BEGIN{
 
 use Debbugs::Config qw(:config);
 use Debbugs::Common qw(:lock buglog :misc get_hashname);
-use Debbugs::Status qw(bug_archiveable :read :hook writebug splitpackages);
+use Debbugs::Status qw(bug_archiveable :read :hook writebug splitpackages split_status_fields);
 use Debbugs::CGI qw(html_escape);
 use Debbugs::Log qw(:misc);
 use Debbugs::Recipients qw(:add);
