@@ -122,6 +122,9 @@ print {$transcript} "Processing commands for $controlrequestaddr:\n\n";
 my $dl = 0;
 my %affected_packages;
 my %recipients;
+# this is the hashref which is passed to all control calls
+my %limit = ();
+
 
 my @common_control_options =
     (($dl > 0 ? (debug => $transcript):()),
@@ -135,6 +138,7 @@ my @common_control_options =
      message           => \@log,
      affected_packages => \%affected_packages,
      recipients        => \%recipients,
+     limit             => \%limit,
     );
 
 my $state= 'idle';
@@ -1080,11 +1084,37 @@ END
 	my @pkgs = split /\s+/, $1;
 	if (scalar(@pkgs) > 0) {
 		%limit_pkgs = map { ($_, 1) } @pkgs;
+		$limit{package} = [@pkgs];
 		print {$transcript} "Ignoring bugs not assigned to: " .
 			join(" ", keys(%limit_pkgs)) . "\n\n";
 	} else {
 		%limit_pkgs = ();
 		print {$transcript} "Not ignoring any bugs.\n\n";
+	}
+    } elsif (m/^limit\:?\s+(\S.*\S)\s*$/) {
+	$ok++;
+	my ($field,@options) = split /\s+/, $1;
+	$field = lc($field);
+	if ($field =~ /^(?:clear|unset|blank)$/) {
+	    %limit = ();
+	    print {$transcript} "Limit cleared.\n\n";
+	}
+	elsif (exists $Debbugs::Status::fields{$field} ) {
+	    # %limit can actually contain regexes, but because they're
+	    # not evaluated in Safe, DO NOT allow them through without
+	    # fixing this.
+	    $limit{$field} = [@options];
+	    print {$transcript} "Limiting to bugs with field '$field' containing at least one of ".join(', ',map {qq('$_')} @options)."\n";
+	    print {$transcript} "Limit currently set to ";
+	    for my $limit_field (keys %limit) {
+		print {$transcript} "  '$limit_field':".join(', ',map {qq('$_')} @options)."\n";
+	    }
+	    print {$transcript} "\n";
+	}
+	else {
+	    print {$transcript} "Limit key $field not understood. Stopping processing here.\n\n";
+	    $errors++;
+	    last;
 	}
     } elsif (m/^affects?\s+\#?(-?\d+)(?:\s+((?:[=+-])?)\s*(\S.*)?)?\s*$/i) {
 	$ok++;
