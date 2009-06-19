@@ -294,7 +294,7 @@ my %split_fields =
      tags           => sub {return &{$ditch_empty}(qr/\s*\,\s*/,@_)},
      found_versions => $ditch_empty_space,
      fixed_versions => $ditch_empty_space,
-     merged_with    => $ditch_empty_space,
+     mergedwith     => $ditch_empty_space,
     );
 
 sub split_status_fields {
@@ -352,17 +352,17 @@ sub join_status_fields {
 	 fixed_versions => ' ',
 	 found_date     => ' ',
 	 fixed_date     => ' ',
-	 merged_with    => ' ',
+	 mergedwith     => ' ',
 	);
-    my @data = dclone(\@_);
+    my @data = @{dclone(\@_)};
     for my $data (@data) {
 	next if not defined $data;
-	croak "Passed an element which is not a hashref to split_status_field" if
-	    not (defined ref($data) and ref($data) eq 'HASH');
+	croak "Passed an element which is not a hashref to split_status_field: ".
+	    ref($data)
+		if ref($data) ne 'HASH';
 	for my $field (keys %{$data}) {
 	    next unless defined $data->{$field};
-	    next unless defined(ref($data->{$field}))
-		and ref($data->{$field}) eq 'ARRAY';
+	    next unless ref($data->{$field}) eq 'ARRAY';
 	    next unless exists $join_fields{$field};
 	    $data->{$field} = join($join_fields{$field},@{$data->{$field}});
 	}
@@ -516,9 +516,6 @@ sub makestatus {
 	 }
     }
     %newdata = %{join_status_fields(\%newdata)};
-    for my $field (qw(found_versions fixed_versions found_date fixed_date)) {
-	 $newdata{$field} = join ' ', @{$newdata{$field}||[]};
-    }
 
     if ($version < 3) {
         for my $field (@rfc1522_fields) {
