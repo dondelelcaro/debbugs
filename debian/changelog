@@ -249,6 +249,7 @@ debbugs (2.4.2~exp0) UNRELEASED; urgency=low
   * Fix issue with no-maintainer bugs assigned to multiple packages
     (closes: #528249)
   * Properly html_escape un-processed parts in maybelink (closes: #530506)
+  * Add urls to the bottom of all messages we send out (closes: #9596)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
