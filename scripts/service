@@ -562,7 +562,7 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to clear fixed versions and reopen on $ref: $@";
+	    print {$transcript} "Failed to clear fixed versions and reopen on $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^reopen\s+\#?(-?\d+)(?:\s+([\=\!]|(?:\S.*\S)))?$/i) {
         $ok++;
@@ -585,7 +585,7 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to reopen $ref: $@";
+	    print {$transcript} "Failed to reopen $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m{^(?:(?i)found)\s+\#?(-?\d+)
 	       (?:\s+((?:$config{package_name_re}\/)?
@@ -609,7 +609,7 @@ END
 	    };
 	    if ($@) {
 		$errors++;
-		print {$transcript} "Failed to add found on $ref: $@";
+		print {$transcript} "Failed to add found on $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	    }
 	}
 	else {
@@ -622,7 +622,7 @@ END
 	    };
 	    if ($@) {
 		$errors++;
-		print {$transcript} "Failed to clear fixed versions and reopen on $ref: $@";
+		print {$transcript} "Failed to clear fixed versions and reopen on $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	    }
 	}
     }
@@ -647,7 +647,7 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to remove found on $ref: $@";
+	    print {$transcript} "Failed to remove found on $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     }
     elsif (m{^(?:(?i)fixed)\s+\#?(-?\d+)
@@ -671,7 +671,7 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to add fixed on $ref: $@";
+	    print {$transcript} "Failed to add fixed on $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     }
     elsif (m{^(?:(?i)notfixed)\s+\#?(-?\d+)
@@ -695,7 +695,7 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to remove fixed on $ref: $@";
+	    print {$transcript} "Failed to remove fixed on $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     }
     elsif (m/^submitter\s+\#?(-?\d+)\s+(\!|\S.*\S)$/i) {
@@ -717,7 +717,7 @@ END
 	    };
 	    if ($@) {
 		$errors++;
-		print {$transcript} "Failed to set submitter on $ref: $@";
+		print {$transcript} "Failed to set submitter on $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	    }
         }
     } elsif (m/^forwarded\s+\#?(-?\d+)\s+(\S.*\S)$/i) {
@@ -734,7 +734,7 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to set the forwarded-to-address of $ref: $@";
+	    print {$transcript} "Failed to set the forwarded-to-address of $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^notforwarded\s+\#?(-?\d+)$/i) {
         $ok++;
@@ -749,7 +749,7 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to clear the forwarded-to-address of $ref: $@";
+	    print {$transcript} "Failed to clear the forwarded-to-address of $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^(?:severity|priority)\s+\#?(-?\d+)\s+([-0-9a-z]+)$/i) {
         $ok++;
@@ -775,7 +775,7 @@ END
 	    };
 	    if ($@) {
 		$errors++;
-		print {$transcript} "Failed to set severity of $config{bug} $ref to $newseverity: $@";
+		print {$transcript} "Failed to set severity of $config{bug} $ref to $newseverity: ".cleanup_eval_fail($@,$debug)."\n";
 	    }
 	}
     } elsif (m/^tags?\s+\#?(-?\d+)\s+(([=+-])\s*)?(\S.*)?$/i) {
@@ -820,7 +820,7 @@ END
 	    # we intentionally have two errors here if there is a bad
 	    # tag and the above fails for some reason
 	    $errors++;
-	    print {$transcript} "Failed to alter tags of $config{bug} $ref: $@";
+	    print {$transcript} "Failed to alter tags of $config{bug} $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^(un)?block\s+\#?(-?\d+)\s+(?:by|with)\s+(\S.*)?$/i) {
 	$ok++;
@@ -838,7 +838,7 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to set blocking bugs of $ref: $@";
+	    print {$transcript} "Failed to set blocking bugs of $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^retitle\s+\#?(-?\d+)\s+(\S.*\S)\s*$/i) {
         $ok++;
@@ -853,7 +853,7 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to set the title of $ref: $@";
+	    print {$transcript} "Failed to set the title of $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^unmerge\s+\#?(-?\d+)$/i) {
 	$ok++;
@@ -1133,7 +1133,7 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to mark $ref as affecting package(s): $@";
+	    print {$transcript} "Failed to mark $ref as affecting package(s): ".cleanup_eval_fail($@,$debug)."\n";
 	}
 
     } elsif (m/^summary\s+\#?(-?\d+)\s*(\d+|)\s*$/i) {
@@ -1150,7 +1150,7 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to give $ref a summary: $@";
+	    print {$transcript} "Failed to give $ref a summary: ".cleanup_eval_fail($@,$debug)."\n";
 	}
 
     } elsif (m/^owner\s+\#?(-?\d+)\s+((?:\S.*\S)|\!)\s*$/i) {
@@ -1170,7 +1170,7 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to mark $ref as having an owner: $@";
+	    print {$transcript} "Failed to mark $ref as having an owner: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^noowner\s+\#?(-?\d+)\s*$/i) {
         $ok++;
@@ -1185,7 +1185,7 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to mark $ref as not having an owner: $@";
+	    print {$transcript} "Failed to mark $ref as not having an owner: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^unarchive\s+#?(\d+)$/i) {
 	 $ok++;

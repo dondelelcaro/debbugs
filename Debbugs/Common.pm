@@ -44,7 +44,9 @@ BEGIN{
 				qw(getmaintainers_reverse),
 				qw(getpseudodesc),
 			       ],
-		     misc   => [qw(make_list globify_scalar english_join checkpid)],
+		     misc   => [qw(make_list globify_scalar english_join checkpid),
+				qw(cleanup_eval_fail),
+			       ],
 		     date   => [qw(secs_to_english)],
 		     quit   => [qw(quit)],
 		     lock   => [qw(filelock unfilelock lockpid)],
@@ -613,6 +615,42 @@ sub globify_scalar {
 	  }
      }
      return IO::File->new('/dev/null','w');
+}
+
+=head2 cleanup_eval_fail()
+
+     print "Something failed with: ".cleanup_eval_fail($@);
+
+Does various bits of cleanup on the failure message from an eval (or
+any other die message)
+
+Takes at most two options; the first is the actual failure message
+(usually $@ and defaults to $@), the second is the debug level
+(defaults to $DEBUG).
+
+If debug is non-zero, the code at which the failure occured is output.
+
+=cut
+
+sub cleanup_eval_fail {
+    my ($error,$debug) = @_;
+    if (not defined $error or not @_) {
+	$error = $@ || 'unknown reason';
+    }
+    if (@_ <= 1) {
+	$debug = $DEBUG || 0;
+    }
+    $debug = 0 if not defined $debug;
+
+    if ($debug > 0) {
+	return $error;
+    }
+    # ditch the "at foo/bar/baz.pm line 5"
+    $error =~ s/\sat\s\S+\sline\s\d+//;
+    # ditch trailing multiple periods in case there was a cascade of
+    # die messages.
+    $error =~ s/\.+$/\./;
+    return $error;
 }
 
 
