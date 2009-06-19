@@ -5,7 +5,7 @@
 #
 # [Other people have contributed to this file; their copyrights should
 # go here too.]
-# Copyright 2007 by Don Armstrong <don@donarmstrong.com>.
+# Copyright 2007-9 by Don Armstrong <don@donarmstrong.com>.
 
 package Debbugs::Status;
 
@@ -45,8 +45,10 @@ use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
 use POSIX qw(ceil);
 
+use Storable qw(dclone);
 use List::Util qw(min max);
 
+use Carp qw(croak);
 
 BEGIN{
      $VERSION = 1.00;
@@ -54,7 +56,7 @@ BEGIN{
 
      @EXPORT = ();
      %EXPORT_TAGS = (status => [qw(splitpackages get_bug_status buggy bug_archiveable),
-				qw(isstrongseverity bug_presence),
+				qw(isstrongseverity bug_presence split_status_fields),
 			       ],
 		     read   => [qw(readbug read_bug lockreadbug lockreadbugmerge),
 				qw(lock_read_all_merged_bugs),
@@ -105,6 +107,7 @@ our %fields = (originator     => 'submitter',
 	      summary        => 'summary',
 	      affects        => 'affects',
              );
+
 
 # Fields which need to be RFC1522-decoded in format versions earlier than 3.
 my @rfc1522_fields = qw(originator subject done forwarded owner);
@@ -264,6 +267,110 @@ sub read_bug{
     return \%data;
 }
 
+=head2 split_status_fields
+
+     my @data = split_status_fields(@data);
+
+Splits splittable status fields (like package, tags, blocks,
+blockedby, etc.) into arrayrefs (use make_list on these). Keeps the
+passed @data intact using dclone.
+
+In scalar context, returns only the first element of @data.
+
+=cut
+
+our $ditch_empty = sub{
+    my @t = @_;
+    my $splitter = shift @t;
+    return grep {length $_} map {split $splitter} @t;
+};
+
+my $ditch_empty_space = sub {return &{$ditch_empty}(' ',@_)};
+my %split_fields =
+    (package        => \&splitpackages,
+     affects        => \&splitpackages,
+     blocks         => $ditch_empty_space,
+     blockedby      => $ditch_empty_space,
+     tags           => sub {return &{$ditch_empty}(qr/\s*\,\s*/,@_)},
+     found_versions => $ditch_empty_space,
+     fixed_versions => $ditch_empty_space,
+     merged_with    => $ditch_empty_space,
+    );
+
+sub split_status_fields {
+    my @data = @{dclone(\@_)};
+    for my $data (@data) {
+	next if not defined $data;
+	croak "Passed an element which is not a hashref to split_status_field".ref($data) if
+	    not (ref($data) and ref($data) eq 'HASH');
+	for my $field (keys %{$data}) {
+	    next unless defined $data->{$field};
+	    if (exists $split_fields{$field}) {
+		next if ref($data->{$field});
+		my @elements;
+		if (ref($split_fields{$field}) eq 'CODE') {
+		    @elements = &{$split_fields{$field}}($data->{$field});
+		}
+		elsif (not ref($split_fields{$field}) or
+		       UNIVERSAL::isa($split_fields{$field},'Regex')
+		      ) {
+		    @elements = split $split_fields{$field}, $data->{$field};
+		}
+		if (@elements != 1) {
+		    $data->{$field} = \@elements;
+		}
+		else {
+		    $data->{$field} = $elements[0];
+		}
+	    }
+	}
+    }
+    return wantarray?@data:$data[0];
+}
+
+=head2 join_status_fields
+
+     my @data = join_status_fields(@data);
+
+Handles joining the splitable status fields. (Basically, the inverse
+of split_status_fields.
+
+Primarily called from makestatus, but may be useful for other
+functions after calling split_status_fields (or for legacy functions
+if we transition to split fields by default).
+
+=cut
+
+sub join_status_fields {
+    my %join_fields =
+	(package        => ', ',
+	 affects        => ', ',
+	 blocks         => ' ',
+	 blockedby      => ' ',
+	 tags           => ', ',
+	 found_versions => ' ',
+	 fixed_versions => ' ',
+	 found_date     => ' ',
+	 fixed_date     => ' ',
+	 merged_with    => ' ',
+	);
+    my @data = dclone(\@_);
+    for my $data (@data) {
+	next if not defined $data;
+	croak "Passed an element which is not a hashref to split_status_field" if
+	    not (defined ref($data) and ref($data) eq 'HASH');
+	for my $field (keys %{$data}) {
+	    next unless defined $data->{$field};
+	    next unless defined(ref($data->{$field}))
+		and ref($data->{$field}) eq 'ARRAY';
+	    next unless exists $join_fields{$field};
+	    $data->{$field} = join($join_fields{$field},@{$data->{$field}});
+	}
+    }
+    return wantarray?@data:$data[0];
+}
+
+
 =head2 lockreadbug
 
      lockreadbug($bug_num,$location)
@@ -408,7 +515,7 @@ sub makestatus {
 		   [map {$newdata{$field}{$_}||''} keys %{$newdata{$field}}];
 	 }
     }
-
+    %newdata = %{join_status_fields(\%newdata)};
     for my $field (qw(found_versions fixed_versions found_date fixed_date)) {
 	 $newdata{$field} = join ' ', @{$newdata{$field}||[]};
     }
