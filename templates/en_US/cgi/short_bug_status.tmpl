@@ -25,16 +25,19 @@
      $output .= qq(<abbr title="fixed versions">☺</abbr>);
   }
   if (@{$status{blockedby_array}}) {
-     $output .= qq(<abbr title="blocked by">┫</abbr>);
+     $output .= qq(<abbr title="blocked by">♙</abbr>);
   }
   if (@{$status{blocks_array}}) {
-     $output .= qq(<abbr title="blocks">┣</abbr>);
+     $output .= qq(<abbr title="blocks">♔</abbr>);
   }
   if (length($status{forwarded})) {
      $output .= qq(<abbr title="forwarded">↝</abbr>);
   }
   if ($status{archived}) {
      $output .= qq(<abbr title="archived">♲</abbr>);
+  }
+  if (length $status{affects}){
+     $output .= qq(<abbr title="affects">☣</abbr>);
   }
   length($output)?$output:'&nbsp;&nbsp;';
   }</span></font>]
