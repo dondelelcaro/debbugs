@@ -2686,7 +2686,7 @@ sub __begin_control {
     if (not __check_limit(data => \@data,
 			  exists $param{limit}?(limit => $param{limit}):(),
 			 )) {
-	die "limit failed for bugs: ".join(', ',map {$_->{bugnum}} @data);
+	die "limit failed for bugs: ".join(', ',map {$_->{bug_num}} @data);
     }
 
     __handle_affected_packages(%param,data => \@data);
