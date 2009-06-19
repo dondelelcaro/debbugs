@@ -346,9 +346,10 @@ sub set_blocks {
 	my $data = read_bug(bug=>$blocker,
 			   );
 	if (defined $data and not $data->{archive}) {
+	    $data = split_status_fields($data);
 	    $ok_blockers{$blocker} = 1;
 	    my @merged_bugs;
-	    push @merged_bugs, split(' ',$data->{mergedwith}) if length $data->{mergedwith};
+	    push @merged_bugs, make_list($data->{mergedwith});
 	    $ok_blockers{@merged_bugs} = (1) x @merged_bugs if @merged_bugs;
 	}
 	else {
@@ -2682,10 +2683,12 @@ sub __begin_control {
     if (not @data) {
 	die "Unable to read any bugs successfully.";
     }
-    ###
-    # XXX check the limit at this point, and die if it is exceeded.
-    # This is currently not done
-    ###
+    if (not __check_limit(data => \@data,
+			  exists $param{limit}?(limit => $param{limit}):(),
+			 )) {
+	die "limit failed for bugs: ".join(', ',map {$_->{bugnum}} @data);
+    }
+
     __handle_affected_packages(%param,data => \@data);
     print {$transcript} __bug_info(@data) if $param{show_bug_info} and not __internal_request(1);
     print {$debug} "$param{bug} read $locks locks\n";
@@ -2741,6 +2744,69 @@ sub __end_control {
 		   transcript => $info{transcript},
 		  );
     __handle_affected_packages(%{$info{param}},data=>$info{data});
+}
+
+
+=head2 __check_limit
+
+     __check_limit(data => \@data, limit => $param{limit});
+
+
+Checks to make sure that bugs match any limits; each entry of @data
+much satisfy the limit.
+
+Returns true if there are no entries in data, or there are no keys in
+limit; returns false (0) if there are any entries which do not match.
+
+The limit hashref elements can contain an arrayref of scalars to
+match; regexes are also acccepted. At least one of the entries in each
+element needs to match the corresponding field in all data for the
+limit to succeed.
+
+=cut
+
+
+sub __check_limit{
+    my %param = validate_with(params => \@_,
+			      spec   => {data  => {type => ARRAYREF|SCALAR,
+						  },
+					 limit => {type => HASHREF|UNDEF,
+						  },
+					},
+			     );
+    my @data = make_list($param{data});
+    if (not @data or
+	not defined $param{limit} or
+	not keys %{$param{limit}}) {
+	return 1;
+    }
+    for my $data (@data) {
+	for my $field (keys %{$param{limit}}) {
+	    next unless exists $param{limit}{$field};
+	    my $match = 0;
+	    for my $limit (make_list($param{limit}{$field})) {
+		if (not ref $limit) {
+		    if ($data->{$field} eq $limit) {
+			$match = 1;
+			last;
+		    }
+		}
+		elsif (ref($limit) eq 'Regexp') {
+		    if ($data->{$field} =~ $limit) {
+			$match = 1;
+			last;
+		    }
+		}
+		else {
+		    warn "Unknown type of reference: '".ref($limit)."' in key '$field'";
+		}
+	    }
+	    if (not $match) {
+		return 0;
+	    }
+	}
+    }
+    return 1;
 }
 
 
