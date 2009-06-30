@@ -778,29 +778,48 @@ END
 		print {$transcript} "Failed to set severity of $config{bug} $ref to $newseverity: ".cleanup_eval_fail($@,$debug)."\n";
 	    }
 	}
-    } elsif (m/^tags?\s+\#?(-?\d+)\s+(([=+-])\s*)?(\S.*)?$/i) {
-	### TODO: [#505189] Consider altering this to accept tag #nnn + foo - bar - baz
+    } elsif (m/^tags?\s+\#?(-?\d+)\s+(\S.*)$/i) {
 	$ok++;
 	$ref = $1;
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	$bug_affected{$ref}=1;
-	my $addsubcode = $3;
-	my @add_remove_option = ();
-	if (defined $addsubcode) {
-	    if ($addsubcode eq '-') {
-		push @add_remove_option,(remove => 1);
-	    }
-	    elsif ($addsubcode eq '+') {
-		push @add_remove_option,(add => 1);
-	    }
-	}
-	my $tags = $4;
+	my $tags = $2;
 	my @tags = split /[\s,]+/, $tags;
-	my @badtags = ();
-	foreach my $tag (@tags) {
+	# this is an array of hashrefs which contain two elements, the
+	# first of which is the array of tags, the second is the
+	# option to pass to set_tags (we use a hashref here to make it
+	# more obvious what is happening)
+	my @tag_operations = {tags => [],
+			      option => []
+			     };
+	my $alter_type = '=';
+	my @badtags;
+	for my $tag (@tags) {
+	    if ($tag =~ /^[=+-]$/) {
+		if ($tag eq '=') {
+		    @tag_operations = {tags => [],
+				       option => [],
+				      };
+		}
+		elsif ($tag eq '-') {
+		    push @tag_operations,
+			{tags => [],
+			 option => [remove => 1],
+			};
+		}
+		elsif ($tag eq '+') {
+		    push @tag_operations,
+			{tags => [],
+			 option => [add => 1]
+			};
+		}
+		next;
+	    }
 	    if (not defined first {$_ eq $tag} @{$config{tags}}) {
 		push @badtags, $tag;
+		next;
 	    }
+	    push @{$tag_operations[-1]{tags}},$tag;
 	}
 	if (@badtags) {
             print {$transcript} "Unknown tag/s: ".join(', ', @badtags).".\n".
@@ -808,13 +827,15 @@ END
 	    $errors++;
 	}
 	eval {
-	    set_tags(@common_control_options,
-		     bug => $ref,
-		     tags => [@tags],
-		     warn_on_bad_tags => 0, # don't warn on bad tags,
-                                            # 'cause we do that above
-		     @add_remove_option,
-		    );
+	    for my $operation (@tag_operations) {
+		set_tags(@common_control_options,
+			 bug => $ref,
+			 tags => [@{$operation->{$tags}}],
+			 warn_on_bad_tags => 0, # don't warn on bad tags,
+			 # 'cause we do that above
+			 @{$operation->{option}},
+			);
+	    }
 	};
 	if ($@) {
 	    # we intentionally have two errors here if there is a bad
