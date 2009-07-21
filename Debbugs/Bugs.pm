@@ -777,7 +777,11 @@ sub __bug_matches {
     my ($hash, $status) = @_;
     foreach my $key( keys( %$hash ) ) {
         my $value = $hash->{$key};
+	next unless exists $field_match{$key};
 	my $sub = $field_match{$key};
+	if (not defined $sub) {
+	    die "No defined subroutine for key: $key";
+	}
 	return 1 if ($sub->($key, $value, $status));
     }
     return 0;
