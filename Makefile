@@ -12,7 +12,7 @@ man_dir		:= $(DESTDIR)/usr/share/man
 man8_dir	:= $(man_dir)/man8
 examples_dir	:= $(doc_dir)/examples
 
-scripts_in	:= $(foreach script, $(filter-out scripts/config scripts/errorlib scripts/text, $(wildcard scripts/*)),$(patsubst scripts/%,%,$(script)))
+scripts_in	= $(foreach script, $(filter-out scripts/config% scripts/errorlib scripts/text, $(wildcard scripts/*)),$(patsubst scripts/%,%,$(script)))
 htmls_in	:= $(wildcard html/*.html.in)
 cgis		:= $(wildcard cgi/*.cgi cgi/*.pl)
 
@@ -61,7 +61,7 @@ $(var_dir)/spool/db-h $(scripts_dir) $(examples_dir) $(man8_dir); \
 
 
 	# install the scripts
-	$(foreach script,$(scripts_in), $(exec $(install_exec) $(script) $(scripts_dir)/$(script)))
+	$(foreach script,$(scripts_in), $(install_exec) scripts/$(script) $(scripts_dir);)
 	$(install_data) scripts/errorlib $(scripts_dir)/errorlib
 
 	# install examples

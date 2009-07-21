@@ -6,3 +6,6 @@ var/lib/debbugs/spool
 var/lib/debbugs/indices
 usr/bin/add_bug_to_estraier
 usr/share/man/man1/add_bug_*
+# there currently isn't a Mail::Crossassassin manpage
+#usr/share/man/man3/Mail*
+usr/share/perl5/Mail*
