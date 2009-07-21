@@ -20,6 +20,8 @@ use Pod::Usage;
 use File::stat;
 use List::Util qw(min);
 
+use Debbugs::Common qw(make_list);
+
 =head1 NAME
 
 gen-indices - Generates index files for the cgi scripts
