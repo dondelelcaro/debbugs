@@ -484,7 +484,7 @@ sub make_source_versions {
 		    }
 		    elsif ($param{guess_source} and
 			   exists$param{source_version_cache}{$cachekey.'/guess'}) {
-			for my $v (@{$param{source_version_cache}{$cachekey}}) {
+			for my $v (@{$param{source_version_cache}{$cachekey.'/guess'}}) {
 			    $sourceversions{$v} = 1;
 			}
 			next;
