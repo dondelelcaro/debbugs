@@ -423,7 +423,7 @@ sub make_source_versions {
     my %param = validate_with(params => \@_,
 			      spec   => {package => {type => SCALAR|ARRAYREF,
 						    },
-					 arch    => {type => SCALAR|ARRAYREF,
+					 arch    => {type => SCALAR|ARRAYREF|UNDEF,
 						     default => ''
 						    },
 					 versions => {type => SCALAR|ARRAYREF,
