@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 102;
+use Test::More tests => 111;
 
 use warnings;
 use strict;
@@ -278,6 +278,21 @@ my @control_commands =
 		       value   => '',
 		       status_key => 'owner',
 		       status_value => '',
+		      },
+      tag          => {command => 'tag',
+		       value   => ' = patch',
+		       status_key => 'keywords',
+		       status_value => 'patch',
+		      },
+      untag        => {command => 'tag',
+		       value   => ' - patch',
+		       status_key => 'keywords',
+		       status_value => '',
+		      },
+      plustag      => {command => 'tag',
+		       value   => ' + patch',
+		       status_key => 'keywords',
+		       status_value => 'patch',
 		      },
      );
 
