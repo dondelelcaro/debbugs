@@ -787,11 +787,9 @@ END
 	my @tags = split /[\s,]+/, $tags;
 	# this is an array of hashrefs which contain two elements, the
 	# first of which is the array of tags, the second is the
-	# option to pass to set_tags (we use a hashref here to make it
+	# option to pass to set_tag (we use a hashref here to make it
 	# more obvious what is happening)
-	my @tag_operations = {tags => [],
-			      option => []
-			     };
+	my @tag_operations;
 	my $alter_type = '=';
 	my @badtags;
 	for my $tag (@tags) {
@@ -819,6 +817,11 @@ END
 		push @badtags, $tag;
 		next;
 	    }
+	    if (not @tag_operations) {
+		@tag_operations = {tags => [],
+				   option => []
+				  };
+	    }
 	    push @{$tag_operations[-1]{tags}},$tag;
 	}
 	if (@badtags) {
@@ -828,13 +831,13 @@ END
 	}
 	eval {
 	    for my $operation (@tag_operations) {
-		set_tags(@common_control_options,
-			 bug => $ref,
-			 tags => [@{$operation->{$tags}}],
-			 warn_on_bad_tags => 0, # don't warn on bad tags,
-			 # 'cause we do that above
-			 @{$operation->{option}},
-			);
+		set_tag(@common_control_options,
+			bug => $ref,
+			tag => [@{$operation->{tags}}],
+			warn_on_bad_tags => 0, # don't warn on bad tags,
+			# 'cause we do that above
+			@{$operation->{option}},
+		       );
 	    }
 	};
 	if ($@) {
