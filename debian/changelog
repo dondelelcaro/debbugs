@@ -1,4 +1,4 @@
-debbugs (2.4.2) UNRELEASED; urgency=low
+debbugs (2.4.2~exp0) UNRELEASED; urgency=low
 
   [ Anthony Towns ]
   * Add "package" command to service (control@) to limit the bugs that
@@ -213,13 +213,15 @@ debbugs (2.4.2) UNRELEASED; urgency=low
     (closes: #465332,#458822)
   * Deal properly with \r line endings (closes: #467190)
   * Distinguish between reports and followups (closes: #459866)
-  * Allow for the archiving of bugs in removed packages (closes: #475622, #470146)
+  * Allow for the archiving of bugs in removed packages
+    (closes: #475622, #470146)
   * Add Text::Template based templating system (closes: #36814)
   * Add new uservalue feature to Debbugs::User
   * Don't serialize things as date/time in soap (closes: #484789)
   * Link to packages in bugreport page (closes: #229067)
   * Totally revamp the pkgreport templates (closes: #434504)
   * Add correspondent option to track bug correpondents (closes: #485804)
+  * Fix addition of correspondents in gen-indices (closes: #511850)
   * Allow clicking anywhere outside the extra status box to close the
     extra status box (closes: #499990) Thanks to James Vega for the patch.
   * Return 404 when a bug number that does not exist is used
@@ -237,7 +239,20 @@ debbugs (2.4.2) UNRELEASED; urgency=low
   * Display link to full log again (closes: #507506)
   * Add Last-Modified: header support to mbox download (closes: #456786)
   * Add Date headers if missing (closes: #458757)
-  * Indiciate what machine has built webpages (closes: #507022)
+  * Indicate what machine has built webpages (closes: #507022)
+  * Indicate the update location of source (closes: #512306)
+  * Use get_addresses to parse X-Debbugs-Cc: to allow multiple Cc:'s
+    (closes: #514183)
+  * Calculate last modified using summary as well as log (closes: #515063)
+  * Ditch 'as before' (closes: #514677)
+  * Don't have reply/subscribe links for archived bugs (closes: #511864)
+  * Fix issue with no-maintainer bugs assigned to multiple packages
+    (closes: #528249)
+  * Properly html_escape un-processed parts in maybelink (closes: #530506)
+  * Add urls to the bottom of all messages we send out (closes: #9596)
+  * Allow for tag nnn = baz + foo - bar in service (closes: #505189)
+  * Allow trailinng periods after the control stop commands (closes:
+    #517834)
 
   
  -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100

@@ -37,6 +37,10 @@ BEGIN{
 }
 use Debbugs::Text qw(:templates);
 
+use Scalar::Util qw(looks_like_number);
+
+use List::Util qw(first);
+
 use Mail::RFC822::Address;
 
 chdir($config{spool_dir}) or
@@ -118,8 +122,29 @@ my $transcript = IO::Scalar->new(\$transcript_scalar) or
      die "Unable to create new IO::Scalar";
 print {$transcript} "Processing commands for $controlrequestaddr:\n\n";
 
-# debug level
+
 my $dl = 0;
+my %affected_packages;
+my %recipients;
+# this is the hashref which is passed to all control calls
+my %limit = ();
+
+
+my @common_control_options =
+    (($dl > 0 ? (debug => $transcript):()),
+     transcript        => $transcript,
+     requester         => $header{from},
+     request_addr      => $controlrequestaddr,
+     request_msgid     => $header{'message-id'},
+     request_subject   => $header{subject},
+     request_nn        => $nn,
+     request_replyto   => $replyto,
+     message           => \@log,
+     affected_packages => \%affected_packages,
+     recipients        => \%recipients,
+     limit             => \%limit,
+    );
+
 my $state= 'idle';
 my $lowstate= 'idle';
 my $mergelowstate= 'idle';
@@ -160,10 +185,6 @@ our $mismatch;
 our $action;
 
 
-# recipients of mail
-my %recipients;
-# affected_packages
-my %affected_packages;
 my $ok = 0;
 my $unknowns = 0;
 my $procline=0;
@@ -187,7 +208,7 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
     print {$transcript} "> $_\n";
     next if m/^\s*\#/;
     $action= '';
-    if (m/^stop\s*$/i || m/^quit\s*$/i || m/^--\s*$/ || m/^thank(?:s|\s*you)?\s*$/i || m/^kthxbye\s*$/i) {
+    if (m/^(?:stop|quit|--|thank(?:s|\s*you)?|kthxbye)\.*\s*$/i) {
 	print {$transcript} "Stopping processing here.\n\n";
         last;
     } elsif (m/^debug\s+(\d+)$/i && $1 >= 0 && $1 <= 1000) {
@@ -285,7 +306,7 @@ END
     } elsif (m/^usercategory\s+(\S+)(\s+\[hidden\])?\s*$/i) {
         $ok++;
 	my $catname = $1;
-	my $hidden = ($2 ne "");
+	my $hidden = (defined $2 and $2 ne "");
 
         my $prefix = "";
         my @cats;
@@ -345,8 +366,11 @@ END
 		    push @ords, "$ord DEF";
 		    $catsec--;
 		}
-		@ords = sort { my ($a1, $a2, $b1, $b2) = split / /, "$a $b";
-		               $a1 <=> $b1 || $a2 <=> $b2; } @ords;
+		@ords = sort {
+		    my ($a1, $a2, $b1, $b2) = split / /, "$a $b";
+		    ((looks_like_number($a1) and looks_like_number($a2))?$a1 <=> $b1:$a1 cmp $b1) ||
+		    ((looks_like_number($a2) and looks_like_number($b2))?$a2 <=> $b2:$a2 cmp $b2);
+		} @ords;
 		$cats[-1]->{"ord"} = [map { m/^.* (\S+)/; $1 eq "DEF" ? $catsec + 1 : $1 } @ords];
             } elsif ($o eq "*") {
 	        $catsec = 0;
@@ -445,6 +469,7 @@ END
     } elsif (m/^close\s+\#?(-?\d+)(?:\s+(\d.*))?$/i) {
 	$ok++;
 	$ref= $1;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	$bug_affected{$ref}=1;
 	my $version= $2;
 	if (&setbug) {
@@ -505,530 +530,356 @@ END
                 } while (&getnextbug);
             }
         }
-    } elsif (m/^reassign\s+\#?(-?\d+)\s+(\S+)(?:\s+(\d.*))?$/i) {
+    } elsif (m/^reassign\s+\#?(-?\d+)\s+ # bug and command
+	       (?:(?:((?:src:|source:)?$config{package_name_re}) # new package
+	       (?:\s+((?:$config{package_name_re}\/)?
+		       $config{package_version_re}))?)| # optional version
+	       ((?:src:|source:)?$config{package_name_re} # multiple package form
+	       (?:\s*\,\s*(?:src:|source:)?$config{package_name_re})+))
+	       \s*$/xi) {
         $ok++;
         $ref= $1;
-	my $newpackage= $2;
+	my @new_packages;
+	if (not defined $2) {
+	    push @new_packages, split /\s*\,\s*/,$4;
+	}
+	else {
+	    push @new_packages, $2;
+	}
+	@new_packages = map {y/A-Z/a-z/; s/^(?:src|source):/src:/; $_;} @new_packages;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	$bug_affected{$ref}=1;
         my $version= $3;
-    	$newpackage =~ y/A-Z/a-z/;
-        if (&setbug) {
-            if (length($data->{package})) {
-                $action= "$gBug reassigned from package \`$data->{package}'".
-                         " to \`$newpackage'.";
-            } else {
-                $action= "$gBug assigned to package \`$newpackage'.";
-            }
-            do {
-		$affected_packages{$data->{package}} = 1;
-                add_recipients(data => $data,
-			       recipients => \%recipients,
-			       transcript   => $transcript,
-			       ($dl > 0 ? (debug => $transcript):()),
-			      );
-                $data->{package}= $newpackage;
-                $data->{found_versions}= [];
-                $data->{fixed_versions}= [];
-                # TODO: what if $newpackage is a source package?
-                addfoundversions($data, $data->{package}, $version, 'binary');
-                add_recipients(data => $data,
-			       recipients => \%recipients,
-			       transcript   => $transcript,
-			       ($dl > 0 ? (debug => $transcript):()),
-			      );
-            } while (&getnextbug);
-        }
-    } elsif (m/^reopen\s+\#?(-?\d+)$/i ? ($noriginator='', 1) :
-             m/^reopen\s+\#?(-?\d+)\s+\=$/i ? ($noriginator='', 1) :
-             m/^reopen\s+\#?(-?\d+)\s+\!$/i ? ($noriginator=$replyto, 1) :
-             m/^reopen\s+\#?(-?\d+)\s+(\S.*\S)$/i ? ($noriginator=$2, 1) : 0) {
+    	eval {
+	    set_package(@common_control_options,
+			bug          => $ref,
+			package      => \@new_packages,
+		       );
+	    # if there is a version passed, we make an internal call
+	    # to set_found
+	    if (defined($version) && length $version) {
+		set_found(@common_control_options,
+			  bug          => $ref,
+			  version      => $version,
+			 );
+	    }
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to clear fixed versions and reopen on $ref: ".cleanup_eval_fail($@,$debug)."\n";
+	}
+    } elsif (m/^reopen\s+\#?(-?\d+)(?:\s+([\=\!]|(?:\S.*\S)))?$/i) {
         $ok++;
         $ref= $1;
-	$bug_affected{$ref}=1;
-        if (&setbug) {
-            if (@{$data->{fixed_versions}}) {
-                print {$transcript} "'reopen' may be inappropriate when a bug has been closed with a version;\nyou may need to use 'found' to remove fixed versions.\n";
-            }
-            if (!length($data->{done})) {
-                print {$transcript} "$gBug is already open, cannot reopen.\n\n";
-                &nochangebug;
-            } else {
-                $action=
-                    $noriginator eq '' ? "$gBug reopened, originator not changed." :
-                        "$gBug reopened, originator set to $noriginator.";
-                do {
-		    $affected_packages{$data->{package}} = 1;
-                    add_recipients(data => $data,
-				   recipients => \%recipients,
-				   transcript   => $transcript,
-				   ($dl > 0 ? (debug => $transcript):()),
-				  );
-                    $data->{originator}= $noriginator eq '' ?  $data->{originator} : $noriginator;
-                    $data->{fixed_versions}= [];
-                    $data->{done}= '';
-                } while (&getnextbug);
-            }
-        }
-    } elsif (m{^found\s+\#?(-?\d+)
+	$bug_affected{$ref}=1; 
+	my $new_submitter = $2;
+	if (defined $new_submitter) {
+	    if ($new_submitter eq '=') {
+		undef $new_submitter;
+	    }
+	    elsif ($new_submitter eq '!') {
+		$new_submitter = $replyto;
+	    }
+	}
+	eval {
+	    reopen(@common_control_options,
+		   bug          => $ref,
+		   submitter    => $new_submitter,
+		  );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to reopen $ref: ".cleanup_eval_fail($@,$debug)."\n";
+	}
+    } elsif (m{^(?:(?i)found)\s+\#?(-?\d+)
 	       (?:\s+((?:$config{package_name_re}\/)?
-		    $config{package_version_re}))?$}ix) {
+		    $config{package_version_re}
+		# allow for multiple packages
+		(?:\s*,\s*(?:$config{package_name_re}\/)?
+		    $config{package_version_re})*)
+	    )?$}x) {
         $ok++;
         $ref= $1;
-        my $version= $2;
-        if (&setbug) {
-            if (!length($data->{done}) and not defined($version)) {
-                print {$transcript} "$gBug is already open, cannot reopen.\n\n";
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	my @versions;
+        if (defined $2) {
+	    @versions = split /\s*,\s*/,$2;
+	    eval {
+		set_found(@common_control_options,
+			  bug          => $ref,
+			  found        => \@versions,
+			  add          => 1,
+			 );
+	    };
+	    if ($@) {
 		$errors++;
-                &nochangebug;
-            } else {
-                $action=
-                    defined($version) ?
-                        "$gBug marked as found in version $version." :
-                        "$gBug reopened.";
-                do {
-                    $affected_packages{$data->{package}} = 1;
-		    add_recipients(data => $data,
-				   recipients => \%recipients,
-				   transcript   => $transcript,
-				   ($dl > 0 ? (debug => $transcript):()),
-				  );
-                    # The 'done' field gets a bit weird with version
-                    # tracking, because a bug may be closed by multiple
-                    # people in different branches. Until we have something
-                    # more flexible, we set it every time a bug is fixed,
-                    # and clear it when a bug is found in a version greater
-		    # than any version in which the bug is fixed or when
-		    # a bug is found and there is no fixed version
-		    if (defined $version) {
-			my ($version_only) = $version =~ m{([^/]+)$};
-                        addfoundversions($data, $data->{package}, $version, 'binary');
-			my @fixed_order = sort {Debbugs::Versions::Dpkg::vercmp($a,$b);}
-			     map {s{.+/}{}; $_;} @{$data->{fixed_versions}};
-			if (not @fixed_order or (Debbugs::Versions::Dpkg::vercmp($version_only,$fixed_order[-1]) >= 0)) {
-			     $action = "$gBug marked as found in version $version and reopened."
-				  if length $data->{done};
-			     $data->{done} = '';
-			}
-                    } else {
-                        # Versionless found; assume old-style "not fixed at
-                        # all".
-                        $data->{fixed_versions} = [];
-                        $data->{done} = '';
-                    }
-                } while (&getnextbug);
-            }
-        }
-    } elsif (m[^notfound\s+\#?(-?\d+)\s+
-	       ((?:$config{package_name_re}\/)?
-		    \S+)\s*$]ix) {
-        $ok++;
-        $ref= $1;
-        my $version= $2;
-        if (&setbug) {
-            $action= "$gBug no longer marked as found in version $version.";
-            if (length($data->{done})) {
-                $extramessage= "(By the way, this $gBug is currently marked as done.)\n";
-            }
-            do {
-                $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data,
-			       recipients => \%recipients,
-			       transcript   => $transcript,
-			       ($dl > 0 ? (debug => $transcript):()),
-			      );
-                removefoundversions($data, $data->{package}, $version, 'binary');
-            } while (&getnextbug);
-       }
-   }
-    elsif (m[^fixed\s+\#?(-?\d+)\s+
-	     ((?:$config{package_name_re}\/)?
-		  $config{package_version_re})\s*$]ix) {
-        $ok++;
-        $ref= $1;
-        my $version= $2;
-        if (&setbug) {
-	     $action=
-		  defined($version) ?
-		       "$gBug marked as fixed in version $version." :
-			    "$gBug reopened.";
-                do {
-                    $affected_packages{$data->{package}} = 1;
-		    add_recipients(data => $data,
-				   recipients => \%recipients,
-				   transcript   => $transcript,
-				   ($dl > 0 ? (debug => $transcript):()),
-				  );
-                    addfixedversions($data, $data->{package}, $version, 'binary');
-	       } while (&getnextbug);
+		print {$transcript} "Failed to add found on $ref: ".cleanup_eval_fail($@,$debug)."\n";
+	    }
 	}
-   }
-    elsif (m[^notfixed\s+\#?(-?\d+)\s+
-	     ((?:$config{package_name_re}\/)?
-		  \S+)\s*$]ix) {
+	else {
+	    eval {
+		set_fixed(@common_control_options,
+			  bug          => $ref,
+			  fixed        => [],
+			  reopen       => 1,
+			 );
+	    };
+	    if ($@) {
+		$errors++;
+		print {$transcript} "Failed to clear fixed versions and reopen on $ref: ".cleanup_eval_fail($@,$debug)."\n";
+	    }
+	}
+    }
+    elsif (m{^(?:(?i)notfound)\s+\#?(-?\d+)
+	     \s+((?:$config{package_name_re}\/)?
+		 $config{package_version_re}
+		# allow for multiple packages
+		(?:\s*,\s*(?:$config{package_name_re}\/)?
+		    $config{package_version_re})*
+	    )$}x) {
         $ok++;
         $ref= $1;
-        my $version= $2;
-        if (&setbug) {
-	     $action=
-		  defined($version) ?
-		       "$gBug no longer marked as fixed in version $version." :
-			    "$gBug reopened.";
-                do {
-                    $affected_packages{$data->{package}} = 1;
-		    add_recipients(data => $data,
-				   recipients => \%recipients,
-				   transcript   => $transcript,
-				   ($dl > 0 ? (debug => $transcript):()),
-				  );
-                    removefixedversions($data, $data->{package}, $version, 'binary');
-	       } while (&getnextbug);
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	my @versions;
+        @versions = split /\s*,\s*/,$2;
+	eval {
+	    set_found(@common_control_options,
+		      bug          => $ref,
+		      found        => \@versions,
+		      remove       => 1,
+		     );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to remove found on $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
-   }
-    elsif (m/^submitter\s+\#?(-?\d+)\s+\!$/i ? ($newsubmitter=$replyto, 1) :
-             m/^submitter\s+\#?(-?\d+)\s+(\S.*\S)$/i ? ($newsubmitter=$2, 1) : 0) {
+    }
+    elsif (m{^(?:(?i)fixed)\s+\#?(-?\d+)
+	     \s+((?:$config{package_name_re}\/)?
+		    $config{package_version_re}
+		# allow for multiple packages
+		(?:\s*,\s*(?:$config{package_name_re}\/)?
+		    $config{package_version_re})*)
+	    \s*$}x) {
+        $ok++;
+        $ref= $1;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	my @versions;
+        @versions = split /\s*,\s*/,$2;
+	eval {
+	    set_fixed(@common_control_options,
+		      bug          => $ref,
+		      fixed        => \@versions,
+		      add          => 1,
+		     );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to add fixed on $ref: ".cleanup_eval_fail($@,$debug)."\n";
+	}
+    }
+    elsif (m{^(?:(?i)notfixed)\s+\#?(-?\d+)
+	     \s+((?:$config{package_name_re}\/)?
+		    $config{package_version_re}
+		# allow for multiple packages
+		(?:\s*,\s*(?:$config{package_name_re}\/)?
+		    $config{package_version_re})*)
+	    \s*$}x) {
+        $ok++;
+        $ref= $1;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	my @versions;
+        @versions = split /\s*,\s*/,$2;
+	eval {
+	    set_fixed(@common_control_options,
+		      bug          => $ref,
+		      fixed        => \@versions,
+		      remove       => 1,
+		     );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to remove fixed on $ref: ".cleanup_eval_fail($@,$debug)."\n";
+	}
+    }
+    elsif (m/^submitter\s+\#?(-?\d+)\s+(\!|\S.*\S)$/i) {
         $ok++;
         $ref= $1;
 	$bug_affected{$ref}=1;
-        if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
-            $ref = $clonebugs{$ref};
-        }
-	if (not Mail::RFC822::Address::valid($newsubmitter)) {
-	     transcript("$newsubmitter is not a valid e-mail address; not changing submitter\n");
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	my $newsubmitter = $2 eq '!' ? $replyto : $2;
+        if (not Mail::RFC822::Address::valid($newsubmitter)) {
+	     print {$transcript} "$newsubmitter is not a valid e-mail address; not changing submitter\n";
 	     $errors++;
 	}
-        elsif (&getbug) {
-            if (&checkpkglimit) {
-                &foundbug;
-                $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data,
-			       recipients => \%recipients,
-			       transcript   => $transcript,
-			       ($dl > 0 ? (debug => $transcript):()),
-			      );
-                $oldsubmitter= $data->{originator};
-                $data->{originator}= $newsubmitter;
-                $action= "Changed $gBug submitter from $oldsubmitter to $newsubmitter.";
-                &savebug;
-                print {$transcript} "$action\n";
-                if (length($data->{done})) {
-                    print {$transcript} "(By the way, that $gBug is currently marked as done.)\n";
-                }
-                print {$transcript} "\n";
-                $message= <<END;
-From: $gMaintainerEmail ($gProject $gBug Tracking System)
-To: $oldsubmitter
-Subject: $gBug#$ref submitter address changed
-         ($header{'subject'})
-References: $header{'message-id'} $data->{msgid}
-In-Reply-To: $data->{msgid}
-Message-ID: <handler.$ref.$nn.newsubmitter.$midix\@$gEmailDomain>
-Reply-To: $ref\@$gEmailDomain
-X-$gProject-PR-Message: submitter-changed $ref
-
-The submitter address recorded for your $gBug report
-#$ref: $data->{subject}
-has been changed.
-
-The old submitter address for this report was
-$oldsubmitter.
-The new submitter address is
-$newsubmitter.
-
-This change was made by
-$replyto.
-If it was incorrect, please contact them directly.
-
-$gMaintainer
-(administrator, $gProject $gBugs database)
-
-END
-                &sendmailmessage($message,$oldsubmitter);
-            } else {
-                &cancelbug;
-            }
-        } else {
-            &notfoundbug;
+	else {
+	    eval {
+		set_submitter(@common_control_options,
+			      bug       => $ref,
+			      submitter => $newsubmitter,
+			     );
+	    };
+	    if ($@) {
+		$errors++;
+		print {$transcript} "Failed to set submitter on $ref: ".cleanup_eval_fail($@,$debug)."\n";
+	    }
         }
     } elsif (m/^forwarded\s+\#?(-?\d+)\s+(\S.*\S)$/i) {
         $ok++;
         $ref= $1;
-	my $whereto= $2;
-	$bug_affected{$ref}=1;
-        if (&setbug) {
-            if (length($data->{forwarded})) {
-    $action= "Forwarded-to-address changed from $data->{forwarded} to $whereto.";
-            } else {
-    $action= "Noted your statement that $gBug has been forwarded to $whereto.";
-            }
-            if (length($data->{done})) {
-                $extramessage= "(By the way, this $gBug is currently marked as done.)\n";
-            }
-            do {
-                $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data,
-			       recipients => \%recipients,
-			       actions_taken => {forwarded => 1},
-			       transcript   => $transcript,
-			       ($dl > 0 ? (debug => $transcript):()),
-			      );
-		$data->{forwarded}= $whereto;
-            } while (&getnextbug);
-        }
+	my $forward_to= $2;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	$bug_affected{$ref} = 1;
+	eval {
+	    set_forwarded(@common_control_options,
+			  bug          => $ref,
+			  forwarded    => $forward_to,
+                          );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to set the forwarded-to-address of $ref: ".cleanup_eval_fail($@,$debug)."\n";
+	}
     } elsif (m/^notforwarded\s+\#?(-?\d+)$/i) {
         $ok++;
         $ref= $1;
-	$bug_affected{$ref}=1;
-        if (&setbug) {
-            if (!length($data->{forwarded})) {
-                print {$transcript} "$gBug is not marked as having been forwarded.\n\n";
-                &nochangebug;
-            } else {
-    $action= "Removed annotation that $gBug had been forwarded to $data->{forwarded}.";
-                do {
-                    $affected_packages{$data->{package}} = 1;
-		    add_recipients(data => $data,
-				   recipients => \%recipients,
-				   transcript   => $transcript,
-				   ($dl > 0 ? (debug => $transcript):()),
-				  );
-                    $data->{forwarded}= '';
-                } while (&getnextbug);
-            }
-        }
-    } elsif (m/^severity\s+\#?(-?\d+)\s+([-0-9a-z]+)$/i ||
-	m/^priority\s+\#?(-?\d+)\s+([-0-9a-z]+)$/i) {
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	$bug_affected{$ref} = 1;
+	eval {
+	    set_forwarded(@common_control_options,
+			  bug          => $ref,
+			  forwarded    => undef,
+                          );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to clear the forwarded-to-address of $ref: ".cleanup_eval_fail($@,$debug)."\n";
+	}
+    } elsif (m/^(?:severity|priority)\s+\#?(-?\d+)\s+([-0-9a-z]+)$/i) {
         $ok++;
         $ref= $1;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	$bug_affected{$ref}=1;
         my $newseverity= $2;
-        if (!grep($_ eq $newseverity, @gSeverityList, "$gDefaultSeverity")) {
-	     print {$transcript} "Severity level \`$newseverity' is not known.\n".
-		  "Recognized are: $gShowSeverities.\n\n";
-	    $errors++;
-        } elsif (exists $gObsoleteSeverities{$newseverity}) {
+        if (exists $gObsoleteSeverities{$newseverity}) {
             print {$transcript} "Severity level \`$newseverity' is obsolete. " .
 		 "Use $gObsoleteSeverities{$newseverity} instead.\n\n";
 	    	$errors++;
-        } elsif (&setbug) {
-            my $printseverity= $data->{severity};
-            $printseverity= "$gDefaultSeverity" if $printseverity eq '';
-	    $action= "Severity set to \`$newseverity' from \`$printseverity'";
-	    do {
-                $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data,
-			       recipients => \%recipients,
-			       transcript   => $transcript,
-			       ($dl > 0 ? (debug => $transcript):()),
-			      );
-                if (defined $gStrongList and isstrongseverity($newseverity)) {
-                    addbcc("$gStrongList\@$gListDomain");
-                }
-                $data->{severity}= $newseverity;
-            } while (&getnextbug);
-        }
-    } elsif (m/^tags?\s+\#?(-?\d+)\s+(([=+-])\s*)?(\S.*)?$/i) {
+        } elsif (not defined first {$_ eq $newseverity}
+	    (@gSeverityList, "$gDefaultSeverity")) {
+	     print {$transcript} "Severity level \`$newseverity' is not known.\n".
+		  "Recognized are: $gShowSeverities.\n\n";
+	    $errors++;
+        } else {
+	    eval {
+		set_severity(@common_control_options,
+			     bug => $ref,
+			     severity => $newseverity,
+			    );
+	    };
+	    if ($@) {
+		$errors++;
+		print {$transcript} "Failed to set severity of $config{bug} $ref to $newseverity: ".cleanup_eval_fail($@,$debug)."\n";
+	    }
+	}
+    } elsif (m/^tags?\s+\#?(-?\d+)\s+(\S.*)$/i) {
 	$ok++;
 	$ref = $1;
-	my $addsubcode = $3;
-	my $tags = $4;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	$bug_affected{$ref}=1;
-	my $addsub = "add";
-	if (defined $addsubcode) {
-	    $addsub = "sub" if ($addsubcode eq "-");
-	    $addsub = "add" if ($addsubcode eq "+");
-	    $addsub = "set" if ($addsubcode eq "=");
-	}
-	my @okaytags = ();
-	my @badtags = ();
-	foreach my $t (split /[\s,]+/, $tags) {
-	    if (!grep($_ eq $t, @gTags)) {
-		push @badtags, $t;
-	    } else {
-		push @okaytags, $t;
+	my $tags = $2;
+	my @tags = split /[\s,]+/, $tags;
+	# this is an array of hashrefs which contain two elements, the
+	# first of which is the array of tags, the second is the
+	# option to pass to set_tags (we use a hashref here to make it
+	# more obvious what is happening)
+	my @tag_operations = {tags => [],
+			      option => []
+			     };
+	my $alter_type = '=';
+	my @badtags;
+	for my $tag (@tags) {
+	    if ($tag =~ /^[=+-]$/) {
+		if ($tag eq '=') {
+		    @tag_operations = {tags => [],
+				       option => [],
+				      };
+		}
+		elsif ($tag eq '-') {
+		    push @tag_operations,
+			{tags => [],
+			 option => [remove => 1],
+			};
+		}
+		elsif ($tag eq '+') {
+		    push @tag_operations,
+			{tags => [],
+			 option => [add => 1]
+			};
+		}
+		next;
 	    }
+	    if (not defined first {$_ eq $tag} @{$config{tags}}) {
+		push @badtags, $tag;
+		next;
+	    }
+	    push @{$tag_operations[-1]{tags}},$tag;
 	}
 	if (@badtags) {
             print {$transcript} "Unknown tag/s: ".join(', ', @badtags).".\n".
 		 "Recognized are: ".join(' ', @gTags).".\n\n";
 	    $errors++;
 	}
-	if (&setbug) {
-	    if ($data->{keywords} eq '') {
-		print {$transcript} "There were no tags set.\n";
-	    } else {
-		print {$transcript} "Tags were: $data->{keywords}\n";
+	eval {
+	    for my $operation (@tag_operations) {
+		set_tags(@common_control_options,
+			 bug => $ref,
+			 tags => [@{$operation->{$tags}}],
+			 warn_on_bad_tags => 0, # don't warn on bad tags,
+			 # 'cause we do that above
+			 @{$operation->{option}},
+			);
 	    }
-	    if ($addsub eq "set") {
-		$action= "Tags set to: " . join(", ", @okaytags);
-	    } elsif ($addsub eq "add") {
-		$action= "Tags added: " . join(", ", @okaytags);
-	    } elsif ($addsub eq "sub") {
-		$action= "Tags removed: " . join(", ", @okaytags);
-	    }
-	    do {
-                $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data,
-			       recipients => \%recipients,
-			       transcript   => $transcript,
-			       ($dl > 0 ? (debug => $transcript):()),
-			      );
-	        $data->{keywords} = '' if ($addsub eq "set");
-		# Allow removing obsolete tags.
-		if ($addsub eq "sub") {
-		    foreach my $t (@badtags) {
-	                $data->{keywords} = join ' ', grep $_ ne $t, 
-		            split ' ', $data->{keywords};
-		    }
-		}
-		# Now process all other additions and subtractions.
-	        foreach my $t (@okaytags) {
-	            $data->{keywords} = join ' ', grep $_ ne $t, 
-			split ' ', $data->{keywords};
-	            $data->{keywords} = "$t $data->{keywords}" unless($addsub eq "sub");
-	        }
-		$data->{keywords} =~ s/\s*$//;
-            } while (&getnextbug);
-	}
-    } elsif (m/^(un)?block\s+\#?(-?\d+)\s+(by|with)\s+(\S.*)?$/i) {
-	$ok++;
-	my $bugnum = $2; my $blockers = $4;
-	my $addsub = "add";
-	$addsub = "sub" if (defined $1 and $1 eq "un");
-	if ($bugnum =~ m/^-\d+$/ && defined $clonebugs{$bugnum}) {
-	     $bugnum = $clonebugs{$bugnum};
-	}
-
-	my @okayblockers;
-	my @badblockers;
-	foreach my $b (split /[\s,]+/, $blockers) {
-	    $b=~s/^\#//;
-	    if ($b=~/[0-9]+/) {
-		$ref=$b;
-		if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
-		     $ref = $clonebugs{$ref};
-		}
-		if (&getbug) {
-		    &foundbug;
-		    push @okayblockers, $ref;
-
-		    # add to the list all bugs that are merged with $b,
-		    # because all of their data must be kept in sync
-		    my @thisbugmergelist= split(/ /,$data->{mergedwith});
-		    &cancelbug;
-
-		    foreach $ref (@thisbugmergelist) {
-			if (&getbug) {
-		           push @okayblockers, $ref;
-			   &cancelbug;
-			}
-		    }
-		}
-		else {
-		    &notfoundbug;
-                    push @badblockers, $ref;
-	    	}
-	    }
-	    else {
-                push @badblockers, $b;
-	    }
-	}
-	if (@badblockers) {
-            print {$transcript} "Unknown blocking bug/s: ".join(', ', @badblockers).".\n";
+	};
+	if ($@) {
+	    # we intentionally have two errors here if there is a bad
+	    # tag and the above fails for some reason
 	    $errors++;
+	    print {$transcript} "Failed to alter tags of $config{bug} $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
-	
-	$ref=$bugnum;
-	if (&setbug) {
-	    if ($data->{blockedby} eq '') {
-		print {$transcript} "Was not blocked by any bugs.\n";
-	    } else {
-		print {$transcript} "Was blocked by: $data->{blockedby}\n";
-	    }
-	    if ($addsub eq "set") {
-		$action= "Blocking bugs of $bugnum set to: " . join(", ", @okayblockers);
-	    } elsif ($addsub eq "add") {
-		$action= "Blocking bugs of $bugnum added: " . join(", ", @okayblockers);
-	    } elsif ($addsub eq "sub") {
-		$action= "Blocking bugs of $bugnum removed: " . join(", ", @okayblockers);
-	    }
-	    my %removedblocks;
-	    my %addedblocks;
-	    do {
-                $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data,
-			       recipients => \%recipients,
-			       transcript   => $transcript,
-			       ($dl > 0 ? (debug => $transcript):()),
-			      );
-		my @oldblockerlist = split ' ', $data->{blockedby};
-	        $data->{blockedby} = '' if ($addsub eq "set");
-	        foreach my $b (@okayblockers) {
-			$data->{blockedby} = manipset($data->{blockedby}, $b,
-				($addsub ne "sub"));
-	        }
-
-		foreach my $b (@oldblockerlist) {
-			if (! grep { $_ eq $b } split ' ', $data->{blockedby}) {
-				push @{$removedblocks{$b}}, $ref;
-			}
-		}
-		foreach my $b (split ' ', $data->{blockedby}) {
-			if (! grep { $_ eq $b } @oldblockerlist) {
-				push @{$addedblocks{$b}}, $ref;
-			}
-		}
-            } while (&getnextbug);
-
-	    # Now that the blockedby data is updated, change blocks data
-	    # to match the changes.
-	    foreach $ref (keys %addedblocks) {
-	        if (&getbug) {
-		    foreach my $b (@{$addedblocks{$ref}}) {
-			$data->{blocks} = manipset($data->{blocks}, $b, 1);
-		    }
-		    &savebug;
-                }
-	    }
-	    foreach $ref (keys %removedblocks) {
-	        if (&getbug) {
-		    foreach my $b (@{$removedblocks{$ref}}) {
-			$data->{blocks} = manipset($data->{blocks}, $b, 0);
-		    }
-		    &savebug;
-                }
-	    }
+    } elsif (m/^(un)?block\s+\#?(-?\d+)\s+(?:by|with)\s+(\S.*)?$/i) {
+	$ok++;
+        $ref= $2;
+	my $add_remove = defined $1 && $1 eq 'un';
+	my @blockers = split /[\s,]+/, $3;
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	$bug_affected{$ref} = 1;
+	eval {
+	     set_blocks(@common_control_options,
+			bug          => $ref,
+			block        => \@blockers,
+			$add_remove ? (remove => 1):(add => 1),
+		       );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to set blocking bugs of $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^retitle\s+\#?(-?\d+)\s+(\S.*\S)\s*$/i) {
         $ok++;
         $ref= $1; my $newtitle= $2;
-	$bug_affected{$ref}=1;
-	if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
-	    $ref = $clonebugs{$ref};
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	$bug_affected{$ref} = 1;
+	eval {
+	     set_title(@common_control_options,
+		       bug          => $ref,
+		       title        => $newtitle,
+		      );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to set the title of $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
-        if (&getbug) {
-            if (&checkpkglimit) {
-                &foundbug;
-                $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data,
-			       recipients => \%recipients,
-			       transcript   => $transcript,
-			       ($dl > 0 ? (debug => $transcript):()),
-			      );
-		my $oldtitle = $data->{subject};
-                $data->{subject}= $newtitle;
-                $action= "Changed $gBug title to `$newtitle' from `$oldtitle'.";
-                &savebug;
-                print {$transcript} "$action\n";
-                if (length($data->{done})) {
-                    print {$transcript} "(By the way, that $gBug is currently marked as done.)\n";
-                }
-                print {$transcript} "\n";
-            } else {
-                &cancelbug;
-            }
-        } else {
-            &notfoundbug;
-        }
     } elsif (m/^unmerge\s+\#?(-?\d+)$/i) {
 	$ok++;
 	$ref= $1;
@@ -1258,11 +1109,37 @@ END
 	my @pkgs = split /\s+/, $1;
 	if (scalar(@pkgs) > 0) {
 		%limit_pkgs = map { ($_, 1) } @pkgs;
+		$limit{package} = [@pkgs];
 		print {$transcript} "Ignoring bugs not assigned to: " .
 			join(" ", keys(%limit_pkgs)) . "\n\n";
 	} else {
 		%limit_pkgs = ();
 		print {$transcript} "Not ignoring any bugs.\n\n";
+	}
+    } elsif (m/^limit\:?\s+(\S.*\S)\s*$/) {
+	$ok++;
+	my ($field,@options) = split /\s+/, $1;
+	$field = lc($field);
+	if ($field =~ /^(?:clear|unset|blank)$/) {
+	    %limit = ();
+	    print {$transcript} "Limit cleared.\n\n";
+	}
+	elsif (exists $Debbugs::Status::fields{$field} ) {
+	    # %limit can actually contain regexes, but because they're
+	    # not evaluated in Safe, DO NOT allow them through without
+	    # fixing this.
+	    $limit{$field} = [@options];
+	    print {$transcript} "Limiting to bugs with field '$field' containing at least one of ".join(', ',map {qq('$_')} @options)."\n";
+	    print {$transcript} "Limit currently set to ";
+	    for my $limit_field (keys %limit) {
+		print {$transcript} "  '$limit_field':".join(', ',map {qq('$_')} @options)."\n";
+	    }
+	    print {$transcript} "\n";
+	}
+	else {
+	    print {$transcript} "Limit key $field not understood. Stopping processing here.\n\n";
+	    $errors++;
+	    last;
 	}
     } elsif (m/^affects?\s+\#?(-?\d+)(?:\s+((?:[=+-])?)\s*(\S.*)?)?\s*$/i) {
 	$ok++;
@@ -1272,13 +1149,8 @@ END
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	$bug_affected{$ref} = 1;
 	eval {
-	     affects(bug          => $ref,
-		     transcript   => $transcript,
-		     ($dl > 0 ? (debug => $transcript):()),
-		     requester    => $header{from},
-		     request_addr => $controlrequestaddr,
-		     message      => \@log,
-		     recipients   => \%recipients,
+	     affects(@common_control_options,
+		     bug => $ref,
 		     packages     => [splitpackages($3)],
 		     ($add_remove eq '+'?(add => 1):()),
 		     ($add_remove eq '-'?(remove => 1):()),
@@ -1286,7 +1158,7 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to give $ref a summary: $@";
+	    print {$transcript} "Failed to mark $ref as affecting package(s): ".cleanup_eval_fail($@,$debug)."\n";
 	}
 
     } elsif (m/^summary\s+\#?(-?\d+)\s*(\d+|)\s*$/i) {
@@ -1296,19 +1168,14 @@ END
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	$bug_affected{$ref} = 1;
 	eval {
-	    summary(bug          => $ref,
-		    transcript   => $transcript,
-		    ($dl > 0 ? (debug => $transcript):()),
-		    requester    => $header{from},
-		    request_addr => $controlrequestaddr,
-		    message      => \@log,
-		    recipients   => \%recipients,
+	    summary(@common_control_options,
+		    bug          => $ref,
 		    summary      => $summary_msg,
 		   );
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to give $ref a summary: $@";
+	    print {$transcript} "Failed to give $ref a summary: ".cleanup_eval_fail($@,$debug)."\n";
 	}
 
     } elsif (m/^owner\s+\#?(-?\d+)\s+((?:\S.*\S)|\!)\s*$/i) {
@@ -1321,19 +1188,14 @@ END
 	}
 	$bug_affected{$ref} = 1;
 	eval {
-	    owner(bug          => $ref,
-		  transcript   => $transcript,
-		  ($dl > 0 ? (debug => $transcript):()),
-		  requester    => $header{from},
-		  request_addr => $controlrequestaddr,
-		  message      => \@log,
-		  recipients   => \%recipients,
+	    owner(@common_control_options,
+		  bug          => $ref,
 		  owner        => $newowner,
 		 );
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to mark $ref as having an owner: $@";
+	    print {$transcript} "Failed to mark $ref as having an owner: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^noowner\s+\#?(-?\d+)\s*$/i) {
         $ok++;
@@ -1341,19 +1203,14 @@ END
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	$bug_affected{$ref} = 1;
 	eval {
-	    owner(bug          => $ref,
-		  transcript   => $transcript,
-		  ($dl > 0 ? (debug => $transcript):()),
-		  requester    => $header{from},
-		  request_addr => $controlrequestaddr,
-		  message      => \@log,
-		  recipients   => \%recipients,
+	    owner(@common_control_options,
+		  bug          => $ref,
 		  owner        => undef,
 		 );
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to mark $ref as not having an owner: $@";
+	    print {$transcript} "Failed to mark $ref as not having an owner: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^unarchive\s+#?(\d+)$/i) {
 	 $ok++;
@@ -1361,13 +1218,8 @@ END
 	 $ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	 $bug_affected{$ref} = 1;
 	 eval {
-	      bug_unarchive(bug        => $ref,
-			    transcript => $transcript,
-			    ($dl > 0 ? (debug => $transcript):()),
-			    affected_bugs => \%bug_affected,
-			    requester => $header{from},
-			    request_addr => $controlrequestaddr,
-			    message => \@log,
+	      bug_unarchive(@common_control_options,
+			    bug        => $ref,
 			    recipients => \%recipients,
 			   );
 	 };
@@ -1380,16 +1232,10 @@ END
 	 $ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	 $bug_affected{$ref} = 1;
 	 eval {
-	      bug_archive(bug => $ref,
-			  transcript => $transcript,
-			  ($dl > 0 ? (debug => $transcript):()),
+	      bug_archive(@common_control_options,
+			  bug => $ref,
 			  ignore_time => 1,
 			  archive_unarchived => 0,
-			  affected_bugs => \%bug_affected,
-			  requester => $header{from},
-			  request_addr => $controlrequestaddr,
-			  message => \@log,
-			  recipients => \%recipients,
 			 );
 	 };
 	 if ($@) {
@@ -1800,6 +1646,11 @@ our $doc;
 sub sendtxthelpraw {
     my ($relpath,$description) = @_;
     $doc='';
+    if (not -e "$gDocDir/$relpath") {
+	print {$transcript} "Unfortunatly, the help text doesn't exist, so it wasn't sent.\n";
+	warn "Help text $gDocDir/$relpath not found";
+	return;
+    }
     open(D,"$gDocDir/$relpath") || die "open doc file $relpath: $!";
     while(<D>) { $doc.=$_; }
     close(D);

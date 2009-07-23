@@ -233,14 +233,13 @@ if (defined $param{maintenc}) {
      delete $param{maintenc}
 }
 
-
-if (not grep {exists $param{$_}} keys %package_search_keys and exists $param{users}) {
-     $param{usertag} = [make_list($param{users})];
-}
-
 if (exists $param{pkg}) {
      $param{package} = $param{pkg};
      delete $param{pkg};
+}
+
+if (not grep {exists $param{$_}} keys %package_search_keys and exists $param{users}) {
+     $param{usertag} = [make_list($param{users})];
 }
 
 my %bugusertags;
@@ -432,7 +431,7 @@ if (defined $pseudodesc and defined $pkg and exists $pseudodesc->{$pkg}) {
      delete $param{dist};
 }
 
-# output infomration about the packages
+# output information about the packages
 
 for my $package (make_list($param{package}||[])) {
      print generate_package_info(binary => 1,

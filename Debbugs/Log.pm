@@ -340,6 +340,8 @@ sub read_log_records
 Takes a filehandle and a list of records as input, and prints the .log
 format representation of those records to that filehandle.
 
+=back
+
 =cut
 
 sub write_log_records (*@)
@@ -391,8 +393,6 @@ sub escape_log {
 	return map { s/^([\01-\07\030])/\030$1/gm; $_ } @log;
 }
 
-
-=back
 
 =head1 CAVEATS
 

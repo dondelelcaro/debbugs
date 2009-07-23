@@ -40,10 +40,13 @@ BEGIN{
      @EXPORT = ();
      %EXPORT_TAGS = (util   => [qw(getbugcomponent getbuglocation getlocationpath get_hashname),
 				qw(appendfile buglog getparsedaddrs getmaintainers),
+				qw(bug_status),
 				qw(getmaintainers_reverse),
 				qw(getpseudodesc),
 			       ],
-		     misc   => [qw(make_list globify_scalar english_join checkpid)],
+		     misc   => [qw(make_list globify_scalar english_join checkpid),
+				qw(cleanup_eval_fail),
+			       ],
 		     date   => [qw(secs_to_english)],
 		     quit   => [qw(quit)],
 		     lock   => [qw(filelock unfilelock lockpid)],
@@ -63,6 +66,8 @@ use IO::Scalar;
 use Debbugs::MIME qw(decode_rfc1522);
 use Mail::Address;
 use Cwd qw(cwd);
+
+use Params::Validate qw(validate_with :types);
 
 use Fcntl qw(:flock);
 
@@ -175,6 +180,23 @@ sub buglog {
     return undef;
 }
 
+=head2 bug_status
+
+     bug_status($bugnum)
+
+
+Returns the path to the summary file corresponding to the bug.
+
+Returns undef if the bug does not exist.
+
+=cut
+
+sub bug_status{
+    my ($bugnum) = @_;
+    my $location = getbuglocation($bugnum, 'summary');
+    return getbugcomponent($bugnum, 'summary', $location) if ($location);
+    return undef;
+}
 
 =head2 appendfile
 
@@ -507,22 +529,56 @@ sub make_list {
 
 =head2 english_join
 
-     print english_join(', ',' and ',@list);
+     print english_join(list => \@list);
+     print english_join(\@list);
 
 Joins list properly to make an english phrase.
 
+=over
 
+=item normal -- how to separate most values; defaults to ', '
+
+=item last -- how to separate the last two values; defaults to ', and '
+
+=item only_two -- how to separate only two values; defaults to ' and '
+
+=item list -- ARRAYREF values to join; if the first argument is an
+ARRAYREF, it's assumed to be the list of values to join
+
+=back
+
+In cases where C<list> is empty, returns ''; when there is only one
+element, returns that element.
 
 =cut
 
 sub english_join {
-     my ($normal,$last,@list) = @_;
-     if (@list <= 1) {
-	  return @list?$list[0]:'';
-     }
-     my $ret = $last . pop(@list);
-     $ret = join($normal,@list) . $ret;
-     return $ret;
+    if (ref $_[0] eq 'ARRAY') {
+	return english_join(list=>$_[0]);
+    }
+    my %param = validate_with(params => \@_,
+			      spec  => {normal => {type => SCALAR,
+						   default => ', ',
+						  },
+					last   => {type => SCALAR,
+						   default => ', and ',
+						  },
+					only_two => {type => SCALAR,
+						     default => ' and ',
+						    },
+					list     => {type => ARRAYREF,
+						    },
+				       },
+			     );
+    my @list = @{$param{list}};
+    if (@list <= 1) {
+	return @list?$list[0]:'';
+    }
+    elsif (@list == 2) {
+	return join($param{only_two},@list);
+    }
+    my $ret = $param{last} . pop(@list);
+    return join($param{normal},@list) . $ret;
 }
 
 
@@ -560,6 +616,42 @@ sub globify_scalar {
 	  }
      }
      return IO::File->new('/dev/null','w');
+}
+
+=head2 cleanup_eval_fail()
+
+     print "Something failed with: ".cleanup_eval_fail($@);
+
+Does various bits of cleanup on the failure message from an eval (or
+any other die message)
+
+Takes at most two options; the first is the actual failure message
+(usually $@ and defaults to $@), the second is the debug level
+(defaults to $DEBUG).
+
+If debug is non-zero, the code at which the failure occured is output.
+
+=cut
+
+sub cleanup_eval_fail {
+    my ($error,$debug) = @_;
+    if (not defined $error or not @_) {
+	$error = $@ || 'unknown reason';
+    }
+    if (@_ <= 1) {
+	$debug = $DEBUG || 0;
+    }
+    $debug = 0 if not defined $debug;
+
+    if ($debug > 0) {
+	return $error;
+    }
+    # ditch the "at foo/bar/baz.pm line 5"
+    $error =~ s/\sat\s\S+\sline\s\d+//;
+    # ditch trailing multiple periods in case there was a cascade of
+    # die messages.
+    $error =~ s/\.+$/\./;
+    return $error;
 }
 
 
