@@ -636,10 +636,10 @@ If debug is non-zero, the code at which the failure occured is output.
 sub cleanup_eval_fail {
     my ($error,$debug) = @_;
     if (not defined $error or not @_) {
-	$error = $@ || 'unknown reason';
+	$error = $@ // 'unknown reason';
     }
     if (@_ <= 1) {
-	$debug = $DEBUG || 0;
+	$debug = $DEBUG // 0;
     }
     $debug = 0 if not defined $debug;
 
