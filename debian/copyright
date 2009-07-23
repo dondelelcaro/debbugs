@@ -29,10 +29,12 @@ useful, but without any warranty; without even the implied warranty of
 merchantability or fitness for a particular purpose. See the GNU General
 Public License for more details.
 
-You should have received a copy of the GNU General Public License along
-with this program, or one should be available above; if not, write to the
-Free Software Foundation, 59 Temple Place - Suite 330, Boston, MA
-02111-1307, USA.
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 On Debian systems, the full text of the GPL can be found in
-/usr/share/common-licenses/GPL.
+/usr/share/common-licenses/GPL-2.
+
+
+Portions of the bug system copyrighted by Don Armstrong are available
+under the terms of the GPL version 2 or later, at your option.

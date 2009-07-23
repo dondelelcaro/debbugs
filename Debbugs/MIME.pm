@@ -10,6 +10,24 @@
 
 package Debbugs::MIME;
 
+=head1 NAME
+
+Debbugs::MIME -- Mime handling routines for debbugs
+
+=head1 SYNOPSIS
+
+ use Debbugs::MIME qw(parse decode_rfc1522);
+
+=head1 DESCRIPTION
+
+
+=head1 BUGS
+
+None known.
+
+=cut
+
+use warnings;
 use strict;
 
 use base qw(Exporter);
@@ -22,6 +40,7 @@ BEGIN {
 }
 
 use File::Path;
+use File::Temp qw();
 use MIME::Parser;
 
 use POSIX qw(strftime);
@@ -65,8 +84,8 @@ sub parse
     my (@headerlines, @bodylines);
 
     my $parser = MIME::Parser->new();
-    mkdir "mime.tmp.$$", 0777;
-    $parser->output_under("mime.tmp.$$");
+    my $tempdir = File::Temp::tempdir();
+    $parser->output_under($tempdir);
     my $entity = eval { $parser->parse_data($_[0]) };
 
     if ($entity and $entity->head->tags) {
@@ -94,7 +113,7 @@ sub parse
 	@bodylines = @msg[$i .. $#msg];
     }
 
-    rmtree "mime.tmp.$$", 0, 1;
+    rmtree $tempdir, 0, 1;
 
     # Remove blank lines.
     shift @bodylines while @bodylines and $bodylines[0] !~ /\S/;

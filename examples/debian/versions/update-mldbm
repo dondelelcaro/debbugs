@@ -33,7 +33,7 @@ for archive in $ARCHIVES; do
         if [ "$suite" != "oldstable" ] || [ -d /org/bugs.debian.org/etc/indices/$archive/$suite ]; then
 	case $suite in
 	    oldstable|stable|proposed-updates)
-		ARCHES='alpha arm hppa i386 ia64 m68k mips mipsel powerpc s390 sparc'
+		ARCHES='alpha amd64 arm hppa i386 ia64 m68k mips mipsel powerpc s390 sparc'
 		;;
 	    testing|testing-proposed-updates)
 		ARCHES='alpha amd64 arm hppa i386 ia64 mips mipsel powerpc s390 sparc'

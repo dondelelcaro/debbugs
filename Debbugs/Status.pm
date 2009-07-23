@@ -5,7 +5,7 @@
 #
 # [Other people have contributed to this file; their copyrights should
 # go here too.]
-# Copyright 2007 by Don Armstrong <don@donarmstrong.com>.
+# Copyright 2007-9 by Don Armstrong <don@donarmstrong.com>.
 
 package Debbugs::Status;
 
@@ -40,13 +40,15 @@ use Params::Validate qw(validate_with :types);
 use Debbugs::Common qw(:util :lock :quit :misc);
 use Debbugs::Config qw(:config);
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
-use Debbugs::Packages qw(makesourceversions getversions get_versions binarytosource);
+use Debbugs::Packages qw(makesourceversions make_source_versions getversions get_versions binarytosource);
 use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
 use POSIX qw(ceil);
 
+use Storable qw(dclone);
 use List::Util qw(min max);
 
+use Carp qw(croak);
 
 BEGIN{
      $VERSION = 1.00;
@@ -54,7 +56,7 @@ BEGIN{
 
      @EXPORT = ();
      %EXPORT_TAGS = (status => [qw(splitpackages get_bug_status buggy bug_archiveable),
-				qw(isstrongseverity bug_presence),
+				qw(isstrongseverity bug_presence split_status_fields),
 			       ],
 		     read   => [qw(readbug read_bug lockreadbug lockreadbugmerge),
 				qw(lock_read_all_merged_bugs),
@@ -64,9 +66,10 @@ BEGIN{
 				  qw(removefoundversions removefixedversions)
 				 ],
 		     hook     => [qw(bughook bughook_archive)],
+		     fields   => [qw(%fields)],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(status read write versions hook));
+     Exporter::export_ok_tags(qw(status read write versions hook fields));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -81,8 +84,9 @@ location. Valid locations are those understood by L</getbugcomponent>
 
 =cut
 
-
-my %fields = (originator     => 'submitter',
+# these probably shouldn't be imported by most people, but
+# Debbugs::Control needs them, so they're now exportable
+our %fields = (originator     => 'submitter',
               date           => 'date',
               subject        => 'subject',
               msgid          => 'message-id',
@@ -103,6 +107,7 @@ my %fields = (originator     => 'submitter',
 	      summary        => 'summary',
 	      affects        => 'affects',
              );
+
 
 # Fields which need to be RFC1522-decoded in format versions earlier than 3.
 my @rfc1522_fields = qw(originator subject done forwarded owner);
@@ -251,14 +256,120 @@ sub read_bug{
 	    $data{$field} = decode_rfc1522($data{$field});
 	}
     }
+    my $status_modified = (stat($status))[9];
     # Add log last modified time
     $data{log_modified} = (stat($log))[9];
+    $data{last_modified} = max($status_modified,$data{log_modified});
     $data{location} = $location;
     $data{archived} = (defined($location) and ($location eq 'archive'))?1:0;
     $data{bug_num} = $param{bug};
 
     return \%data;
 }
+
+=head2 split_status_fields
+
+     my @data = split_status_fields(@data);
+
+Splits splittable status fields (like package, tags, blocks,
+blockedby, etc.) into arrayrefs (use make_list on these). Keeps the
+passed @data intact using dclone.
+
+In scalar context, returns only the first element of @data.
+
+=cut
+
+our $ditch_empty = sub{
+    my @t = @_;
+    my $splitter = shift @t;
+    return grep {length $_} map {split $splitter} @t;
+};
+
+my $ditch_empty_space = sub {return &{$ditch_empty}(' ',@_)};
+my %split_fields =
+    (package        => \&splitpackages,
+     affects        => \&splitpackages,
+     blocks         => $ditch_empty_space,
+     blockedby      => $ditch_empty_space,
+     tags           => sub {return &{$ditch_empty}(qr/\s*\,\s*/,@_)},
+     found_versions => $ditch_empty_space,
+     fixed_versions => $ditch_empty_space,
+     mergedwith     => $ditch_empty_space,
+    );
+
+sub split_status_fields {
+    my @data = @{dclone(\@_)};
+    for my $data (@data) {
+	next if not defined $data;
+	croak "Passed an element which is not a hashref to split_status_field".ref($data) if
+	    not (ref($data) and ref($data) eq 'HASH');
+	for my $field (keys %{$data}) {
+	    next unless defined $data->{$field};
+	    if (exists $split_fields{$field}) {
+		next if ref($data->{$field});
+		my @elements;
+		if (ref($split_fields{$field}) eq 'CODE') {
+		    @elements = &{$split_fields{$field}}($data->{$field});
+		}
+		elsif (not ref($split_fields{$field}) or
+		       UNIVERSAL::isa($split_fields{$field},'Regex')
+		      ) {
+		    @elements = split $split_fields{$field}, $data->{$field};
+		}
+		if (@elements != 1) {
+		    $data->{$field} = \@elements;
+		}
+		else {
+		    $data->{$field} = $elements[0];
+		}
+	    }
+	}
+    }
+    return wantarray?@data:$data[0];
+}
+
+=head2 join_status_fields
+
+     my @data = join_status_fields(@data);
+
+Handles joining the splitable status fields. (Basically, the inverse
+of split_status_fields.
+
+Primarily called from makestatus, but may be useful for other
+functions after calling split_status_fields (or for legacy functions
+if we transition to split fields by default).
+
+=cut
+
+sub join_status_fields {
+    my %join_fields =
+	(package        => ', ',
+	 affects        => ', ',
+	 blocks         => ' ',
+	 blockedby      => ' ',
+	 tags           => ', ',
+	 found_versions => ' ',
+	 fixed_versions => ' ',
+	 found_date     => ' ',
+	 fixed_date     => ' ',
+	 mergedwith     => ' ',
+	);
+    my @data = @{dclone(\@_)};
+    for my $data (@data) {
+	next if not defined $data;
+	croak "Passed an element which is not a hashref to split_status_field: ".
+	    ref($data)
+		if ref($data) ne 'HASH';
+	for my $field (keys %{$data}) {
+	    next unless defined $data->{$field};
+	    next unless ref($data->{$field}) eq 'ARRAY';
+	    next unless exists $join_fields{$field};
+	    $data->{$field} = join($join_fields{$field},@{$data->{$field}});
+	}
+    }
+    return wantarray?@data:$data[0];
+}
+
 
 =head2 lockreadbug
 
@@ -325,7 +436,7 @@ sub lock_read_all_merged_bugs {
     my $locks = 0;
     my @data = (lockreadbug(@_));
     if (not @data or not defined $data[0]) {
-	return ($locks,undef);
+	return ($locks,());
     }
     $locks++;
     if (not length $data[0]->{mergedwith}) {
@@ -339,7 +450,7 @@ sub lock_read_all_merged_bugs {
     if (not @data or not defined $data[0]) {
 	unfilelock(); #for merge lock above
 	$locks--;
-	return ($locks,undef);
+	return ($locks,());
     }
     $locks++;
     my @bugs = split / /, $data[0]->{mergedwith};
@@ -353,7 +464,7 @@ sub lock_read_all_merged_bugs {
 		}
 		$locks = 0;
 		warn "Unable to read bug: $bug while handling merged bug: $bug_num";
-		return ($locks,undef);
+		return ($locks,());
 	    }
 	    $locks++;
 	    push @data,$newdata;
@@ -404,10 +515,7 @@ sub makestatus {
 		   [map {$newdata{$field}{$_}||''} keys %{$newdata{$field}}];
 	 }
     }
-
-    for my $field (qw(found_versions fixed_versions found_date fixed_date)) {
-	 $newdata{$field} = join ' ', @{$newdata{$field}||[]};
-    }
+    %newdata = %{join_status_fields(\%newdata)};
 
     if ($version < 3) {
         for my $field (@rfc1522_fields) {
@@ -651,7 +759,7 @@ Split a package string from the status file into a list of package names.
 sub splitpackages {
     my $pkgs = shift;
     return unless defined $pkgs;
-    return map lc, split /[ \t?,()]+/, $pkgs;
+    return grep {length $_} map lc, split /[\s,()?]+/, $pkgs;
 }
 
 
@@ -879,9 +987,8 @@ dist, arch, and version. [The entries in this array must be in the
 "source/version" format.] Eventually this can be used to for caching.
 
 =item indicatesource -- if true, indicate which source packages this
-bug could belong to. Defaults to false. [Note that eventually we will
-properly allow bugs that only affect a source package, and this will
-become always on.]
+bug could belong to (or does belong to in the case of bugs assigned to
+a source package). Defaults to true.
 
 =back
 
@@ -920,7 +1027,7 @@ sub get_bug_status {
 							     optional => 1,
 							    },
 					  indicatesource => {type => BOOLEAN,
-							     default => 0,
+							     default => 1,
 							    },
 					 },
 			      );
@@ -951,15 +1058,30 @@ sub get_bug_status {
      $status{tags} = $status{keywords};
      my %tags = map { $_ => 1 } split ' ', $status{tags};
 
+     $status{package} = '' if not defined $status{package};
      $status{"package"} =~ s/\s*$//;
-     if ($param{indicatesource} and $status{package} ne '') {
-	  $status{source} = join(', ',binarytosource($status{package}));
+     # if we aren't supposed to indicate the source, we'll return
+     # unknown here.
+     $status{source} = 'unknown';
+     if ($param{indicatesource}) {
+	 my @packages = split /\s*,\s*/, $status{package};
+	 my @source;
+	 for my $package (@packages) {
+	     next if $package eq '';
+	     if ($package =~ /^src\:$/) {
+		 push @source,$1;
+	     }
+	     else {
+		 push @source, binarytosource($package);
+	     }
+	 }
+	 if (@source) {
+	     $status{source} = join(', ',@source);
+	 }
      }
-     else {
-	  $status{source} = 'unknown';
-     }
+
      $status{"package"} = 'unknown' if ($status{"package"} eq '');
-     $status{"severity"} = 'normal' if ($status{"severity"} eq '');
+     $status{"severity"} = 'normal' if (not defined $status{severity} or $status{"severity"} eq '');
 
      $status{"pending"} = 'pending';
      $status{"pending"} = 'forwarded'	    if (length($status{"forwarded"}));
@@ -1086,10 +1208,15 @@ sub bug_presence {
 		       $allowed_distributions{$tag} = 1;
 		   }
 	       }
-	       foreach my $arch (make_list($param{arch})) {
+	       foreach my $arch (make_list(exists $param{arch}?$param{arch}:undef)) {
 		    for my $package (split /\s*,\s*/, $status{package}) {
-			 my @versions;
-			 foreach my $dist (make_list($param{dist})) {
+			 my @versions = ();
+			 my $source = 0;
+			 if ($package =~ /^src:(.+)$/) {
+			     $source = 1;
+			     $package = $1;
+			 }
+			 foreach my $dist (make_list(exists $param{dist}?$param{dist}:[])) {
 			      # if some distributions are disallowed,
 			      # and this isn't an allowed
 			      # distribution, then we ignore this
@@ -1099,13 +1226,17 @@ sub bug_presence {
 				  not exists $allowed_distributions{$dist}) {
 				   next;
 			      }
-			      push @versions, getversions($package, $dist, $arch);
+			      push @versions, get_versions(package => $package,
+							   dist    => $dist,
+							   ($source?(arch => 'source'):
+							    (defined $arch?(arch => $arch):())),
+							  );
 			 }
 			 next unless @versions;
-			 my @temp = makesourceversions($package,
-						       $arch,
-						       @versions
-						      );
+			 my @temp = make_source_versions(package => $package,
+							 arch => $arch,
+							 versions => \@versions,
+							);
 			 @sourceversions{@temp} = (1) x @temp;
 		    }
 	       }

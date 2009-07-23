@@ -292,6 +292,7 @@ sub handle_email_message{
 		    terse       => $param{terse},
 		    exists $param{msg}?(msg=>$param{msg}):(),
 		    exists $param{att}?(att=>$param{att}):(),
+		    exists $param{trim_headers}?(trim_headers=>$param{trim_headers}):(),
 		   );
      return $output;
 

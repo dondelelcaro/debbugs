@@ -25,10 +25,10 @@
      $output .= qq(<abbr title="fixed versions">☺</abbr>);
   }
   if (@{$status{blockedby_array}}) {
-     $output .= qq(<abbr title="blocked by">┫</abbr>);
+     $output .= qq(<abbr title="blocked by">♙</abbr>);
   }
   if (@{$status{blocks_array}}) {
-     $output .= qq(<abbr title="blocks">┣</abbr>);
+     $output .= qq(<abbr title="blocks">♔</abbr>);
   }
   if (length($status{forwarded})) {
      $output .= qq(<abbr title="forwarded">↝</abbr>);
@@ -36,9 +36,12 @@
   if ($status{archived}) {
      $output .= qq(<abbr title="archived">♲</abbr>);
   }
+  if (length $status{affects}){
+     $output .= qq(<abbr title="affects">☣</abbr>);
+  }
   length($output)?$output:'&nbsp;&nbsp;';
   }</span></font>]
-  [{package_links(package=>$status{package},options=>\%options,class=>"submitter")}]
+  [{package_links(package=>[split /,/,$status{package}],options=>\%options,class=>"submitter")}]
   <a href="{html_escape(bug_links(bug=>$status{bug_num},links_only=>1))}">{html_escape($status{subject})}</a>
   <div id="extra_status_{html_escape($status{bug_num})}" class="shortbugstatusextra">
   <span>Reported by: {package_links(submitter=>$status{originator})};</span>

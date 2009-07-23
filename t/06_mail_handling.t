@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 96;
+use Test::More tests => 102;
 
 use warnings;
 use strict;
@@ -70,10 +70,13 @@ ok(-e "$spool_dir/db-h/01/1.report",'report file created');
 # sent out. 1) ack to submitter 2) mail to maintainer
 
 # This keeps track of the previous size of the sendmail directory
-my $SD_SIZE_PREV = 0;
-my $SD_SIZE_NOW = dirsize($sendmail_dir);
-ok($SD_SIZE_NOW-$SD_SIZE_PREV >= 2,'submit messages appear to have been sent out properly');
-$SD_SIZE_PREV=$SD_SIZE_NOW;
+my $SD_SIZE = 0;
+$SD_SIZE =
+    num_messages_sent($SD_SIZE,2,
+		      $sendmail_dir,
+		      'submit messages appear to have been sent out properly',
+		     );
+
 
 # now send a message to the bug
 
@@ -89,9 +92,10 @@ Severity: normal
 This is a silly bug
 EOF
 
-$SD_SIZE_NOW = dirsize($sendmail_dir);
-ok($SD_SIZE_NOW-$SD_SIZE_PREV >= 2,'1@bugs.something messages appear to have been sent out properly');
-$SD_SIZE_PREV=$SD_SIZE_NOW;
+$SD_SIZE =
+    num_messages_sent($SD_SIZE,2,
+		      $sendmail_dir,
+		      '1@bugs.something messages appear to have been sent out properly');
 
 # just check to see that control doesn't explode
 send_message(to => 'control@bugs.something',
@@ -105,9 +109,10 @@ retitle 1 new title
 thanks
 EOF
 
-$SD_SIZE_NOW = dirsize($sendmail_dir);
-ok($SD_SIZE_NOW-$SD_SIZE_PREV >= 1,'control@bugs.something messages appear to have been sent out properly');
-$SD_SIZE_PREV=$SD_SIZE_NOW;
+$SD_SIZE =
+   num_messages_sent($SD_SIZE,1,
+		     $sendmail_dir,
+		     'control@bugs.something messages appear to have been sent out properly');
 # now we need to check to make sure the control message was processed without errors
 ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Munging a bug")) == 0,
    'control@bugs.something message was parsed without errors');
@@ -120,16 +125,17 @@ ok($status->{severity} eq 'wishlist','bug 1 wishlisted');
 
 # now we're going to go through and methododically test all of the control commands.
 my @control_commands =
-     (severity_wishlist => {command => 'severity',
+     (
+      severity_wishlist => {command => 'severity',
 			    value   => 'wishlist',
 			    status_key => 'severity',
 			    status_value => 'wishlist',
 			   },
-      reassign_bar => {command => 'reassign',
-		       value   => 'bar',
-		       status_key => 'package',
-		       status_value => 'bar',
-		      },
+      reassign_bar_baz => {command => 'reassign',
+			   value   => 'bar,baz',
+			   status_key => 'package',
+			   status_value => 'bar,baz',
+			  },
       reassign_foo => {command => 'reassign',
 		       value   => 'foo',
 		       status_key => 'package',
@@ -227,6 +233,16 @@ my @control_commands =
 		       status_key => 'mergedwith',
 		       status_value => '2',
 		      },
+      unmerge      => {command => 'unmerge',
+		       value   => '',
+		       status_key => 'mergedwith',
+		       status_value => '',
+		      },
+      block        => {command => 'block',
+		       value   => ' with 2',
+		       status_key => 'blockedby',
+		       status_value => '2',
+		      },
       summary      => {command => 'summary',
 		       value   => '5',
 		       status_key => 'summary',
@@ -284,9 +300,10 @@ $control_command->{command} 1$control_command->{value}
 thanks
 EOF
 				  ;
-     $SD_SIZE_NOW = dirsize($sendmail_dir);
-     ok($SD_SIZE_NOW-$SD_SIZE_PREV >= 1,'control@bugs.something messages appear to have been sent out properly');
-     $SD_SIZE_PREV=$SD_SIZE_NOW;
+     $SD_SIZE =
+	 num_messages_sent($SD_SIZE,1,
+			   $sendmail_dir,
+			   'control@bugs.something messages appear to have been sent out properly');
      # now we need to check to make sure the control message was processed without errors
      ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Munging a bug with $command")) == 0,
 	'control@bugs.something'. "$command message was parsed without errors");
@@ -319,9 +336,10 @@ submitter 1 bar@baz.com
 thanks
 EOF
 				  ;
-$SD_SIZE_NOW = dirsize($sendmail_dir);
-ok($SD_SIZE_NOW-$SD_SIZE_PREV >= 1,'control@bugs.something messages appear to have been sent out properly');
-$SD_SIZE_PREV=$SD_SIZE_NOW;
+$SD_SIZE =
+    num_messages_sent($SD_SIZE,1,
+		      $sendmail_dir,
+		      'control@bugs.something messages appear to have been sent out properly');
 # now we need to check to make sure the control message was processed without errors
 ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Munging a bug with unarchivearchive")) == 0,
    'control@bugs.something'. "unarchive/archive message was parsed without errors");

@@ -15,13 +15,15 @@ use Debbugs::Config qw(:globals :text);
 use Debbugs::Log qw(read_log_records);
 use Debbugs::CGI qw(:url :html :util);
 use Debbugs::CGI::Bugreport qw(:all);
-use Debbugs::Common qw(buglog getmaintainers make_list);
+use Debbugs::Common qw(buglog getmaintainers make_list bug_status);
 use Debbugs::Packages qw(getpkgsrc);
 use Debbugs::Status qw(splitpackages get_bug_status isstrongseverity);
 
 use Scalar::Util qw(looks_like_number);
 
 use Debbugs::Text qw(:templates);
+
+use List::Util qw(max);
 
 
 use CGI::Simple;
@@ -63,6 +65,34 @@ my %bugusertags;
 my %ut;
 my %seen_users;
 
+my $buglog = buglog($ref);
+my $bug_status = bug_status($ref);
+if (not defined $buglog or not defined $bug_status) {
+     print $q->header(-status => "404 No such bug",
+		      -type => "text/html",
+		      -charset => 'utf-8',
+		     );
+     print fill_in_template(template=>'cgi/no_such_bug',
+			    variables => {modify_time => strftime('%a, %e %b %Y %T UTC', gmtime),
+					  bug_num     => $ref,
+					 },
+			   );
+     exit 0;
+}
+
+# the log should almost always be newer, but just in case
+my $log_mtime = +(stat $buglog)[9] || time;
+my $status_mtime = +(stat $bug_status)[9] || time;
+my $mtime = strftime '%a, %d %b %Y %T GMT', gmtime(max($status_mtime,$log_mtime));
+
+if ($q->request_method() eq 'HEAD' and not defined($att) and not $mbox) {
+     print $q->header(-type => "text/html",
+		      -charset => 'utf-8',
+		      (length $mtime)?(-last_modified => $mtime):(),
+		     );
+     exit 0;
+}
+
 for my $user (map {split /[\s*,\s*]+/} make_list($param{users}||[])) {
     next unless length($user);
     add_user($user,\%ut,\%bugusertags,\%seen_users);
@@ -94,33 +124,6 @@ $mbox = 1 if $mbox_status_message or $mbox_maint;
 my $archive = $param{'archive'} eq 'yes';
 my $repeatmerged = $param{'repeatmerged'} eq 'yes';
 
-my $buglog = buglog($ref);
-if (not defined $buglog) {
-     print $q->header(-status => "404 No such bug",
-		      -type => "text/html",
-		      -charset => 'utf-8',
-		     );
-     print fill_in_template(template=>'cgi/no_such_bug',
-			    variables => {modify_time => strftime('%a, %e %b %Y %T UTC', gmtime),
-					  bug_num     => $ref,
-					 },
-			   );
-     exit 0;
-}
-
-my @stat = stat $buglog;
-my $mtime = '';
-if (@stat) {
-     $mtime = strftime '%a, %d %b %Y %T GMT', gmtime($stat[9]);
-}
-
-if ($q->request_method() eq 'HEAD' and not defined($att) and not $mbox) {
-     print $q->header(-type => "text/html",
-		      -charset => 'utf-8',
-		      (length $mtime)?(-last_modified => $mtime):(),
-		     );
-     exit 0;
-}
 
 
 my $buglogfh;
@@ -237,6 +240,7 @@ else {
 				     msg_num => $msg_num,
 				     att => $att,
 				     msg => $msg,
+				     trim_headers => $trim_headers,
 				    );
 	  exit 0;
      }
@@ -288,10 +292,20 @@ my %package;
 my @packages = splitpackages($status{package});
 
 foreach my $pkg (@packages) {
-     $package{$pkg} = {maintainer => exists($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)',
-		       exists($pkgsrc{$pkg}) ? (source => $pkgsrc{$pkg}) : (),
-		       package    => $pkg,
-		      };
+     if ($pkg =~ /^src\:/) {
+	  my ($srcpkg) = $pkg =~ /^src:(.*)/;
+	  $package{$pkg} = {maintainer => exists($maintainer{$srcpkg}) ? $maintainer{$srcpkg} : '(unknown)',
+			    source     => $srcpkg,
+			    package    => $pkg,
+			    is_source  => 1,
+			   };
+     }
+     else {
+	  $package{$pkg} = {maintainer => exists($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)',
+			    exists($pkgsrc{$pkg}) ? (source => $pkgsrc{$pkg}) : (),
+			    package    => $pkg,
+			   };
+     }
 }
 
 # fixup various bits of the status

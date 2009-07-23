@@ -20,6 +20,8 @@ use Pod::Usage;
 use File::stat;
 use List::Util qw(min);
 
+use Debbugs::Common qw(make_list);
+
 =head1 NAME
 
 gen-indices - Generates index files for the cgi scripts
@@ -79,7 +81,7 @@ pod2usage(-verbose=>2) if $options{man};
 
 use Debbugs::Config qw(:config);
 use Debbugs::Common qw(getparsedaddrs getbugcomponent lockpid);
-use Debbugs::Status qw(readbug);
+use Debbugs::Status qw(readbug split_status_fields);
 use Debbugs::Log;
 
 chdir($config{spool_dir}) or die "chdir $config{spool_dir} failed: $!";
@@ -106,7 +108,7 @@ if (not lockpid($config{spool_dir}.'/lock/gen-indices')) {
 }
 
 # NB: The reverse index is special; it's used to clean up during updates to bugs
-my @indexes = ('package', 'tag', 'severity','owner','submitter-email','status','correspondent','reverse');
+my @indexes = ('package', 'tag', 'severity','owner','submitter-email','status','correspondent','affects','reverse');
 my $indexes;
 my %slow_index = ();
 my %fast_index = ();
@@ -196,10 +198,11 @@ while (my $dir = shift @dirs) {
 		     next;
 		}
 		next if $stat->mtime < $time;
-		my $fdata = readbug($bug, $initialdir);
+		my $fdata = split_status_fields(readbug($bug, $initialdir));
 		$modification_made = 1;
-		addbugtoindex("package", $bug, split /[\s,]+/, $fdata->{"package"});
-		addbugtoindex("tag", $bug, split /[\s,]+/, $fdata->{"keywords"});
+		addbugtoindex("package", $bug, make_list($fdata->{package}));
+		addbugtoindex("tag", $bug, make_list($fdata->{keywords}));
+		addbugtoindex("affects", $bug, make_list($fdata->{"affects"}));
 		addbugtoindex('submitter-email', $bug,
 			      map {lc($_->address)} getparsedaddrs($fdata->{originator}));
 		addbugtoindex("severity", $bug, $fdata->{"severity"});
@@ -208,15 +211,15 @@ while (my $dir = shift @dirs) {
 		# handle log entries
 		# do this in eval to avoid exploding on jacked logs
 		eval {
-		     my $log = Debbugs::Log->new(bug_num => $bug);
-		     while (my $record = $log->read_record()) {
-			  next unless $record->{type} eq 'incoming-recv';
-			  # we use a regex here, because a full mime parse will be slow.
-			  my ($from) = $record->{text} =~ /^From:\s+(.+?)^\S/ism;
-			  addbugtoindex('correspondent',$bug,
-					map {lc($_->address)} getparsedaddrs($from)
-				       );
-		     }
+		    my $log = Debbugs::Log->new(bug_num => $bug);
+		    my @correspondents;
+		    while (my $record = $log->read_record()) {
+			next unless $record->{type} eq 'incoming-recv';
+			# we use a regex here, because a full mime parse will be slow.
+			my ($from) = $record->{text} =~ /^From:\s+(.+?)^\S/ism;
+			push @correspondents, map {lc($_->address)} getparsedaddrs($from);
+		    }
+		    addbugtoindex('correspondent',$bug,@correspondents) if @correspondents;
 		};
 		if ($@) {
 		     print STDERR "Problem dealing with log of $bug: $@";

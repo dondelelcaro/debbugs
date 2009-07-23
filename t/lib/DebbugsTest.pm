@@ -31,6 +31,7 @@ use Debbugs::MIME qw(create_mime_message);
 use File::Basename qw(dirname basename);
 use IPC::Open3;
 use IO::Handle;
+use Test::More;
 
 use Params::Validate qw(validate_with :types);
 
@@ -40,9 +41,10 @@ BEGIN{
 
      @EXPORT = ();
      %EXPORT_TAGS = (configuration => [qw(dirsize create_debbugs_configuration send_message)],
+		     mail          => [qw(num_messages_sent)],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(configuration));
+     Exporter::export_ok_tags(qw(configuration mail));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -228,6 +230,25 @@ sub send_message{
 	       print "No handler defined\n";
 	  }
      }
+}
+
+=head2 num_messages_sent
+
+     $SD_SIZE = num_messages_sent($SD_SIZE,2,$sendmail_dir,'2 messages have been sent properly');
+
+Tests to make sure that at least a certain number of messages have
+been sent since the last time this command was run. Usefull to test to
+make sure that mail has been sent.
+
+=cut
+
+sub num_messages_sent {
+    my ($prev_size,$num_messages,$sendmail_dir,$test_name) = @_;
+    my $cur_size = dirsize($sendmail_dir);
+    ## print STDERR "sendmail: $sendmail_dir, want: $num_messages,
+    ## size: $cur_size, prev_size: $prev_size\n";
+    ok($cur_size-$prev_size >= $num_messages, $test_name);
+    return $cur_size;
 }
 
 
