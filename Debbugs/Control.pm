@@ -1817,7 +1817,7 @@ sub affects {
 	      }
 	      if (keys %added_packages) {
 		  $action .= "Added indication that $data->{bug_num} affects " .
-		   english_join([%added_packages]);
+		   english_join([keys %added_packages]);
 	      }
 	 }
 	if (not length $action) {
