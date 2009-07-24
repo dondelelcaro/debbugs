@@ -360,6 +360,18 @@ my $title = $gBugs.' '.join(' and ', map {/ or /?"($_)":$_} @title);
 		 usertags => \%ut,
 		);
 
+# shove in bugs which affect this package if there is a package or a
+# source given (by default), but no affects options given
+if (not exists $param{affects} and not exists $param{noaffects} and
+    (exists $param{source} or
+     exists $param{package})) {
+    push @bugs, get_bugs((map {exists $param{$_}?($_ =~ /^(?:package|source)$/?'affects':$_,$param{$_}):()}
+			  grep {$_ ne 'newest'}
+			  keys %package_search_keys, 'archive'),
+			 usertags => \%ut,
+			);
+}
+
 if (defined $param{version}) {
      $title .= " at version $param{version}";
 }
