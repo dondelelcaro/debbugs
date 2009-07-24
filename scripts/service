@@ -790,7 +790,6 @@ END
 	# option to pass to set_tag (we use a hashref here to make it
 	# more obvious what is happening)
 	my @tag_operations;
-	my $alter_type = '=';
 	my @badtags;
 	for my $tag (@tags) {
 	    if ($tag =~ /^[=+-]$/) {
@@ -808,7 +807,7 @@ END
 		elsif ($tag eq '+') {
 		    push @tag_operations,
 			{tags => [],
-			 option => [add => 1]
+			 option => [add => 1],
 			};
 		}
 		next;
@@ -819,7 +818,7 @@ END
 	    }
 	    if (not @tag_operations) {
 		@tag_operations = {tags => [],
-				   option => []
+				   option => [add => 1],
 				  };
 	    }
 	    push @{$tag_operations[-1]{tags}},$tag;
