@@ -567,7 +567,8 @@ END
     } elsif (m/^reopen\s+\#?(-?\d+)(?:\s+([\=\!]|(?:\S.*\S)))?$/i) {
         $ok++;
         $ref= $1;
-	$bug_affected{$ref}=1; 
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	$bug_affected{$ref}=1;
 	my $new_submitter = $2;
 	if (defined $new_submitter) {
 	    if ($new_submitter eq '=') {

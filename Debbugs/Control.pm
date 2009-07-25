@@ -482,8 +482,9 @@ sub set_blocks {
 	    for my $data (@blocking_data) {
 		my $old_data = dclone($data);
 		my %blocks;
-		%blocks = split ' ', $data->{blocks};
-		my @blocks;
+		my @blocks = split ' ', $data->{blocks};
+		@blocks{@blocks} = (1) x @blocks;
+		@blocks = ();
 		for my $bug (@bugs) {
 		    if ($add_remove eq 'remove') {
 			next unless exists $blocks{$bug};
@@ -1817,7 +1818,7 @@ sub affects {
 	      }
 	      if (keys %added_packages) {
 		  $action .= "Added indication that $data->{bug_num} affects " .
-		   english_join([%added_packages]);
+		   english_join([keys %added_packages]);
 	      }
 	 }
 	if (not length $action) {
