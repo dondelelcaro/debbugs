@@ -482,8 +482,9 @@ sub set_blocks {
 	    for my $data (@blocking_data) {
 		my $old_data = dclone($data);
 		my %blocks;
-		%blocks = split ' ', $data->{blocks};
-		my @blocks;
+		my @blocks = split ' ', $data->{blocks};
+		@blocks{@blocks} = (1) x @blocks;
+		@blocks = ();
 		for my $bug (@bugs) {
 		    if ($add_remove eq 'remove') {
 			next unless exists $blocks{$bug};
