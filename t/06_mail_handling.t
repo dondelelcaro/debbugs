@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 111;
+use Test::More tests => 114;
 
 use warnings;
 use strict;
@@ -242,6 +242,11 @@ my @control_commands =
 		       value   => ' with 2',
 		       status_key => 'blockedby',
 		       status_value => '2',
+		      },
+      unblock      => {command => 'unblock',
+		       value   => ' with 2',
+		       status_key => 'blockedby',
+		       status_value => '',
 		      },
       summary      => {command => 'summary',
 		       value   => '5',
