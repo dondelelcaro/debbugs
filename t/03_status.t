@@ -13,7 +13,7 @@ use_ok('Debbugs::Status');
 my $data = {package => 'foo, bar, baz',
 	    blocks  => '1 2 3',
 	    blockedby => '',
-	    tags      => 'foo, bar  , baz',
+	    tags      => 'foo bar baz',
 	   };
 
 my @temp = Debbugs::Status::split_status_fields($data);
