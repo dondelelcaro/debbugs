@@ -253,6 +253,7 @@ debbugs (2.4.2~exp0) experimental; urgency=low
   * Allow for tag nnn = baz + foo - bar in service (closes: #505189)
   * Allow trailinng periods after the control stop commands (closes:
     #517834)
+  * Ditch extra blank lines (closes: #494843)
 
   
  -- Don Armstrong <don@debian.org>  Sun, 26 Jul 2009 05:48:16 -0700
