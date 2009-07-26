@@ -1,4 +1,4 @@
-debbugs (2.4.2~exp0) UNRELEASED; urgency=low
+debbugs (2.4.2~exp0) experimental; urgency=low
 
   [ Anthony Towns ]
   * Add "package" command to service (control@) to limit the bugs that
@@ -255,7 +255,7 @@ debbugs (2.4.2~exp0) UNRELEASED; urgency=low
     #517834)
 
   
- -- Colin Watson <cjwatson@debian.org>  Fri, 20 Jun 2003 18:57:25 +0100
+ -- Don Armstrong <don@debian.org>  Sun, 26 Jul 2009 05:48:16 -0700
 
 debbugs (2.4.1) unstable; urgency=low
 
