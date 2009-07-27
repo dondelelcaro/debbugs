@@ -555,8 +555,8 @@ END
 	    # to set_found
 	    if (defined($version) && length $version) {
 		set_found(@common_control_options,
-			  bug          => $ref,
-			  version      => $version,
+			  bug   => $ref,
+			  found => $version,
 			 );
 	    }
 	};
