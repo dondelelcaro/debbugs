@@ -319,7 +319,7 @@ sub handle_record{
 	  $output .= decode_rfc1522($record->{text});
 	  # Link to forwarded http:// urls in the midst of the report
 	  # (even though these links already exist at the top)
-	  $output =~ s,((?:ftp|http|https)://[\S~-]+?/?)([\)\'\:\.\,]?(?:\s|\.<|$)),<a href=\"$1\">$1</a>$2,go;
+	  $output =~ s,((?:ftp|http|https)://[\S~-]+?/?)((?:[\)\'\:\.\,]|\&\#39;)?(?:\s|\.<|$)),<a href=\"$1\">$1</a>$2,go;
 	  # Add links to the cloned bugs
 	  $output =~ s{(Bug )(\d+)( cloned as bugs? )(\d+)(?:\-(\d+)|)}{$1.bug_links(bug=>$2).$3.bug_links(bug=>(defined $5)?[$4..$5]:$4)}eo;
 	  # Add links to merged bugs
