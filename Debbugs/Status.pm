@@ -316,12 +316,7 @@ sub split_status_fields {
 		      ) {
 		    @elements = split $split_fields{$field}, $data->{$field};
 		}
-		if (@elements != 1) {
-		    $data->{$field} = \@elements;
-		}
-		else {
-		    $data->{$field} = $elements[0];
-		}
+		$data->{$field} = \@elements;
 	    }
 	}
     }
