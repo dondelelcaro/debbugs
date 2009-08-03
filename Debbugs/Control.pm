@@ -436,8 +436,8 @@ sub set_blocks {
 	    print {$transcript} "Was blocked by: $data->{blockedby}\n";
 	}
 	my @changed;
-	push @changed, 'added blocking bug(s) '.english_join([keys %added_blockers]) if keys %added_blockers;
-	push @changed, 'removed blocking bug(s) '.english_join([keys %removed_blockers]) if keys %removed_blockers;
+	push @changed, 'added blocking bug(s) of '.$data->{bug_num}.': '.english_join([keys %added_blockers]) if keys %added_blockers;
+	push @changed, 'removed blocking bug(s) of '$data->{bug_num}.': '.english_join([keys %removed_blockers]) if keys %removed_blockers;
 	$action = ucfirst(join ('; ',@changed)) if @changed;
 	if (not @changed) {
 	    print {$transcript} "Ignoring request to alter tags of bug #$data->{bug_num} to the same tags previously set\n"
