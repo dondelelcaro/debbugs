@@ -34,7 +34,7 @@ use IO::Scalar;
 use Params::Validate qw(validate_with :types);
 use Debbugs::MIME qw(convert_to_utf8 decode_rfc1522 create_mime_message);
 use Debbugs::CGI qw(:url :html :util);
-use Debbugs::Common qw(globify_scalar);
+use Debbugs::Common qw(globify_scalar english_join);
 use POSIX qw(strftime);
 
 BEGIN{
@@ -327,7 +327,11 @@ sub handle_record{
 	  # Add links to blocked bugs
 	  $output =~ s{(?<=Blocking bugs)(?:( of )(\d+))?( (?:added|set to|removed):\s+)([\d\s\,]+)}
 		      {(defined $2?$1.bug_links(bug=>$2):'').$3.
-			    join(' ',map {bug_links(bug=>$_)} (split /\,?\s+/, $4))}eo;
+			   english_join([map {bug_links(bug=>$_)} (split /\,?\s+/, $4)])}eo;
+	  $output =~ s{((?:[Aa]dded|[Rr]emoved)\ blocking\ bug(?:\(s\))?)(?:(\ of\ )(\d+))?(:?\s+)
+		       (\d+(?:,\s+\d+)*(?:\,?\s+and\s+\d+)?)}
+		      {$1.(defined $3?$2.bug_links(bug=>$3):'').$4.
+			   english_join([map {bug_links(bug=>$_)} (split /\,?\s+(?:and\s+)?/, $5)])}xeo;
 	  # Add links to reassigned packages
 	  $output =~ s{(Bug reassigned from package \`)([^']+?)((?:'|\&\#39;) to \`)([^']+?)((?:'|\&\#39;))}
 	  {$1.q(<a href=").html_escape(pkg_url(pkg=>$2)).qq(">$2</a>).$3.q(<a href=").html_escape(pkg_url(pkg=>$4)).qq(">$4</a>).$5}eo;
