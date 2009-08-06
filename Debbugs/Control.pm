@@ -2685,6 +2685,13 @@ sub __begin_control {
     if (not @data) {
 	die "Unable to read any bugs successfully.";
     }
+    if (not $param{archived}) {
+	for my $data (@data) {
+	    if ($data->{archived}) {
+		die "Not altering archived bugs; see unarchive.";
+	    }
+	}
+    }
     if (not __check_limit(data => \@data,
 			  exists $param{limit}?(limit => $param{limit}):(),
 			 )) {
