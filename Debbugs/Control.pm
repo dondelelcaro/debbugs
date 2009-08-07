@@ -1950,7 +1950,7 @@ sub summary {
 	      # pseudo-headers
 	      if ($line =~ m{^\s*(?:(?:Package|Source|Version)\:| #pseudo headers
 				 (?:package|(?:no|)owner|severity|tag|summary| #control
-				      reopen|close|(?:not|)(?:fixed|found)|clone|
+				      \#|reopen|close|(?:not|)(?:fixed|found)|clone|
 				      (?:force|)merge|user(?:category|tag|)
 				 )
 			    )\s+\S}x) {
