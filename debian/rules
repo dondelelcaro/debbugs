@@ -26,7 +26,7 @@ clean:
 		$(MAKE) -f Makefile.perl clean; \
 	fi;
 	#something to remove all trace and *.trace files?
-	rm -f debbugs.trace
+	rm -f debbugs.trace Makefile.perl.old
 	dh_clean
 
 install: install-stamp
