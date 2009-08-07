@@ -2586,7 +2586,7 @@ C<__PACKAGE__>.
 sub __internal_request{
     my ($l) = @_;
     $l = 0 if not defined $l;
-    if (defined +(caller(2+$l))[0] and +(caller(2+$l))[0] eq __PACKAGE__) {
+    if (defined((caller(1+$l))[0]) and (caller(1+$l))[0] eq __PACKAGE__) {
 	return 1;
     }
     return 0;
@@ -2710,7 +2710,7 @@ sub __begin_control {
 		   recipients => $param{recipients},
 		   (exists $param{command}?(actions_taken => {$param{command} => 1}):()),
 		   debug      => $debug,
-		   transcript => $transcript,
+		   (__internal_request()?(transcript => $transcript):()),
 		  );
 
     print {$debug} "$param{bug} read done\n";
