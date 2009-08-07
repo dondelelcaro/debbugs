@@ -1111,11 +1111,16 @@ END
 	if (scalar(@pkgs) > 0) {
 		%limit_pkgs = map { ($_, 1) } @pkgs;
 		$limit{package} = [@pkgs];
-		print {$transcript} "Ignoring bugs not assigned to: " .
-			join(" ", keys(%limit_pkgs)) . "\n\n";
+		print {$transcript} "Limiting to bugs with field 'package' containing at least one of ".join(', ',map {qq('$_')} @pkgs)."\n";
+		print {$transcript} "Limit currently set to ";
+		for my $limit_field (keys %limit) {
+		    print {$transcript} "  '$limit_field':".join(', ',map {qq('$_')} @{$limit{$limit_field}})."\n";
+		}
+		print {$transcript} "\n";
 	} else {
-		%limit_pkgs = ();
-		print {$transcript} "Not ignoring any bugs.\n\n";
+	    %limit_pkgs = ();
+	    $limit{package} = [];
+	    print {$transcript} "Limit cleared.\n\n";
 	}
     } elsif (m/^limit\:?\s+(\S.*\S)\s*$/) {
 	$ok++;
@@ -1133,7 +1138,7 @@ END
 	    print {$transcript} "Limiting to bugs with field '$field' containing at least one of ".join(', ',map {qq('$_')} @options)."\n";
 	    print {$transcript} "Limit currently set to ";
 	    for my $limit_field (keys %limit) {
-		print {$transcript} "  '$limit_field':".join(', ',map {qq('$_')} @options)."\n";
+		print {$transcript} "  '$limit_field':".join(', ',map {qq('$_')} @{$limit{$limit_field}})."\n";
 	    }
 	    print {$transcript} "\n";
 	}
