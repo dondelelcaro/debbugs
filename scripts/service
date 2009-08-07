@@ -127,8 +127,7 @@ my %limit = ();
 
 
 my @common_control_options =
-    (($dl > 0 ? (debug => $transcript):()),
-     transcript        => $transcript,
+    (transcript        => $transcript,
      requester         => $header{from},
      request_addr      => $controlrequestaddr,
      request_msgid     => $header{'message-id'},
@@ -209,7 +208,10 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
         last;
     } elsif (m/^debug\s+(\d+)$/i && $1 >= 0 && $1 <= 1000) {
         $dl= $1+0;
-        print {$transcript} "Debug level $dl.\n\n";
+	if ($dl > 0 and not grep /debug/,@common_control_options) {
+	    push @common_control_options,(debug => $transcript);
+	}
+	print {$transcript} "Debug level $dl.\n\n";
     } elsif (m/^(send|get)\s+\#?(\d{2,})$/i) {
         $ref= $2+0;
         &sendlynxdoc("bugreport.cgi?bug=$ref","logs for $gBug#$ref");
