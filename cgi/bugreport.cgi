@@ -298,7 +298,7 @@ unless (%status) {
 #$|=1;
 
 my %package;
-my @packages = splitpackages($status{package});
+my @packages = make_list($status{package});
 
 foreach my $pkg (@packages) {
      if ($pkg =~ /^src\:/) {

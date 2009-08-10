@@ -856,7 +856,7 @@ END
 	$ok++;
         $ref= $2;
 	my $add_remove = defined $1 && $1 eq 'un';
-	my @blockers = split /[\s,]+/, $3;
+	my @blockers = map {exists $clonebugs{$_}?$clonebugs{$_}:$_} split /[\s,]+/, $3;
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	$bug_affected{$ref} = 1;
 	eval {
