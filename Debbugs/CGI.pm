@@ -196,7 +196,7 @@ width and height are passed.
 
 sub version_url{
      my %params = validate_with(params => \@_,
-				spec   => {package => {type => SCALAR,
+				spec   => {package => {type => SCALAR|ARRAYREF,
 						      },
 					   found   => {type => ARRAYREF,
 						       default => [],
