@@ -8,7 +8,7 @@
 use warnings;
 use strict;
 
-use Getopt::Long;
+use Getopt::Long qw(:config no_ignore_case);
 use Pod::Usage;
 
 =head1 NAME
@@ -63,6 +63,17 @@ the configuration file, or 8080 if nothing is set.
 File which contains the set of bugs to get.
 Defaults to ~/.debbugs/bugs_to_get
 
+=item B<--bug-site>
+
+Hostname for a site which is running a debbugs install
+Defaults to bugs.debian.org
+
+=item B<--bug-mirror>
+
+Hostname for a site which is running an rsyncable mirror of the
+debbugs install above.
+Defaults to bugs-mirror.debian.org
+
 =item B<--debug, -d>
 
 Debug verbosity. (Default 0)
@@ -90,7 +101,13 @@ use Config::Simple;
 use File::Temp qw(tempdir);
 use Params::Validate qw(validate_with :types);
 use POSIX 'setsid';
-use Debbugs::Common qw(checkpid lockpid);
+use Debbugs::Common qw(checkpid lockpid get_hashname);
+use Debbugs::Mail qw(get_addresses);
+use SOAP::Lite;
+use IPC::Run;
+use IO::File;
+use File::Path;
+
 
 my %options = (debug           => 0,
 	       help            => 0,
@@ -98,13 +115,15 @@ my %options = (debug           => 0,
 	       verbose         => 0,
 	       quiet           => 0,
 	       detach          => 1,
-	       cgi_bin         => '/var/lib/debbugs/www/cgi-bin',
+	       cgi_bin         => '/var/lib/debbugs/www/cgi',
 	       css             => '/var/lib/debbugs/www/bugs.css',
+	       bug_site        => 'bugs.debian.org',
+	       bug_mirror      => 'bugs-mirror.debian.org',
 	       );
 
 my %option_defaults = (port => 8080,
 		       debbugs_config => User->Home.'/.debbugs/debbugs_config',
-		       mirror_location => User->Home.'/.debbugs/mirror/',
+		       mirror_location => User->Home.'/.debbugs/mirror',
 		       bugs_to_get => User->Home.'/.debbugs/bugs_to_get',
 		      );
 
@@ -113,6 +132,8 @@ GetOptions(\%options,
 	   'detach!',
 	   'css=s','cgi_bin|cgi-bin|cgi=s',
 	   'verbose|v+','quiet|q+',
+	   'bug_site|bug-site=s',
+	   'bug_mirror|bug-mirror=s',
 	   'debug|d+','help|h|?','man|m');
 
 pod2usage() if $options{help};
@@ -132,6 +153,8 @@ pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
 # munge in local configuration
 
 local_config(\%options);
+
+mkpath($options{mirror_location});
 
 if ($options{daemon}) {
      # daemonize, do stuff
@@ -264,31 +287,21 @@ elsif ($options{stop}) {
 elsif ($options{mirror}) {
      # run the mirror jobies
      # figure out which bugs we need
-     my @bugs = select_bugs(\%options);
+     my $bugs = select_bugs(\%options);
      # get them
-     my $tempdir = tempdir(CLEANUP => 1);
-     my $mirror_log = IO::File->new($options{mirror_location}.'/mirror.log') or
+     my $tempdir = tempdir();#CLEANUP => 1);
+     my $mirror_log = IO::File->new($options{mirror_location}.'/mirror.log','>') or
 	  die "Unable to open $options{mirror_location}/mirror.log for writing: $!";
-     my $inc_fh = IO::File->new("$tempdir/include_list",'w') or
-	  die "Unable to open $tempdir/include_list for writing: $!";
-     foreach my $bug (@bugs) {
-	  print {$inc_fh} "*/${bug}.*\n" or
-	       die "Unable to write to $tempdir/include_list: $!";
-     }
-     close $inc_fh or
-	  die "Unable to close $tempdir/include_list: $!";
-     my ($wrf,$rfh);
+     write_bug_list("$tempdir/unarchived_bug_list",$bugs->{unarchived});
+     write_bug_list("$tempdir/archived_bug_list",$bugs->{archived});
+     my ($wrf,$rfh,$efh);
      my @common_rsync_options = ('-avz','--partial');
      print "Rsyncing bugs\n" if not $options{quiet};
      run_rsync(log => $mirror_log,
 	       ($options{debug}?(debug => \*STDERR):()),
 	       options => [@common_rsync_options,
 			   '--delete-after',
-			   '--include-from',"$tempdir/include_list",
-			   # skip things not specifically included
-			   '--exclude','*/*',
-			   # skip the -1,-2,-3.log files
-			   '--exclude','*.log',
+			   '--files-from',"$tempdir/unarchived_bug_list",
 			   'rsync://'.$options{bug_mirror}.'/bts-spool-db/',
 			   $options{mirror_location}.'/db-h/']
 	      );
@@ -297,11 +310,7 @@ elsif ($options{mirror}) {
 	       ($options{debug}?(debug => \*STDERR):()),
 	       options => [@common_rsync_options,
 			   '--delete-after',
-			   '--include-from',"$tempdir/include_list",
-			   # skip things not specifically included
-			   '--exclude','*/*',
-			   # skip the -1,-2,-3.log files
-			   '--exclude','*.log',
+			   '--files-from',"$tempdir/archived_bug_list",
 			   'rsync://'.$options{bug_mirror}.'/bts-spool-archive/',
 			   $options{mirror_location}.'/archive/',
 			  ],
@@ -324,7 +333,7 @@ elsif ($options{mirror}) {
 			   '--delete-after',
 			   '--exclude','*old',
 			   '--exclude','*.bak',
-			   'rsync://'.$options{bug_mirror}.'/bts-spool-versions/',
+			   'rsync://'.$options{bug_mirror}.'/bts-versions/',
 			   $options{mirror_location}.'/versions/',
 			  ],
 	      );
@@ -387,6 +396,19 @@ sub local_config{
      }
 }
 
+sub write_bug_list {
+    my ($file,$bug_list) = @_;
+    my $inc_fh = IO::File->new($file,'w') or
+	die "Unable to open $file for writing: $!";
+    foreach my $bug (keys %{$bug_list}) {
+	my $file_loc = get_hashname($bug).'/'.$bug;
+	print {$inc_fh} map {$file_loc.'.'.$_.qq(\n)} qw(log summary report status) or
+	    die "Unable to write to $file: $!";
+    }
+    close $inc_fh or
+	die "Unable to close $file: $!";
+}
+
 # actually run rsync with the passed options
 sub run_rsync{
      my %param = validate_with(params => \@_,
@@ -399,18 +421,19 @@ sub run_rsync{
 						     },
 					 }
 			      );
-     my ($output_fh,@rsync_options) = @_;
-     my ($wfh,$rfh);
-     my $pid = open3($wfh,$rfh,
-		     'rsync',
-		     @{$param{options}}
-		    ) or die "Unable to start rsync: $!";
-     close $wfh or die "Unable to close the writer filehandle $?";
-     while (<$rfh>) {
-	  print {$param{log}} $_;
-	  if (exists $param{debug}) {
-	       print {$param{debug}} $_;
-	  }
+     my ($output,$error) = ('','');
+     my $h = IPC::Run::start(['rsync',@{$param{options}}],
+			     \undef,\$output,\$error);
+     while ($h->pump) {
+	 print {$param{log}} $output,$error;
+	 #print {$param{debug}} $error if defined $param{debug};
+     }
+     $h->finish();
+     my $exit = $h->result(0);
+     # this is suboptimal, but we currently don't know whether we've
+     # selected an archive or unarchived bug, so..
+     if (defined $exit and not ($exit == 0 or $exit == 3 or $exit == 23)) {
+	 print STDERR "Rsync exited with non-zero status: $exit\n";
      }
 }
 
@@ -445,7 +468,7 @@ sub select_bugs{
 
      my $soap = SOAP::Lite
 	  -> uri('Debbugs/SOAP/V1')
-	       -> proxy("http://$options{bug_mirror}/cgi-bin/soap.cgi");
+	       -> proxy("http://$options{bug_site}/cgi-bin/soap.cgi");
      my @bugs;
      my @bug_selections = ();
      if (not -e $options{bugs_to_get}) {
@@ -456,10 +479,10 @@ sub select_bugs{
 	  # maintained by this user, submitted by this user, and rc
 	  # bugs
 	  push @bug_selections,
-	       ("correspondent:$addr archive:both",
-		"maint:$addr archive:both",
-		"submitter:$addr archive:both",
-		"severity:serious severity:grave severity:critical archive:both",
+	       ("correspondent:$addr archive:0",
+		"maint:$addr archive:0",
+		"submitter:$addr archive:0",
+		"severity:serious severity:grave severity:critical archive:0",
 	       );
      }
      else {
@@ -476,35 +499,56 @@ sub select_bugs{
 	       }
 	  }
      }
+     # Split archive:both into archive:1 and archive:0
+     @bug_selections =
+	 map {
+	     if (m/archive:both/) {
+		 my $y_archive = $_;
+		 my $n_archive = $_;
+		 $y_archive =~ s/archive:both/archive:1/;
+		 $n_archive =~ s/archive:both/archive:0/;
+		 ($y_archive,$n_archive);
+	     }
+	     else {
+		 $_;
+	     }
+	 } @bug_selections;
+     my %bugs;
      for my $selection (@bug_selections) {
-	  my @subselects = split /\s+/,$selection;
-	  my %search_parameters;
-	  my %users;
-	  for my $subselect (@subselects) {
-	       my ($key,$value) = split /:/, $subselect, 2;
-	       next unless $key;
-	       if (exists $valid_keys{$key}) {
-		    push @{$search_parameters{$valid_keys{$key}}},
-			 $value if $value;
-	       } elsif ($key =~/users?$/) {
-		    $users{$value} = 1 if $value;
-	       }
-	  }
-	  my %usertags;
-	  for my $user (keys %users) {
-	       my $ut = $soap->get_usertag($user)->result();
-	       next unless defined $ut and $ut ne "";
-	       for my $tag (keys %{$ut}) {
-		    push @{$usertags{$tag}},
-			 @{$ut->{$tag}};
-	       }
-	  }
-	  my $bugs = $soap->get_bugs(%search_parameters,
-				     (keys %usertags)?(usertags=>\%usertags):()
-				    )->result();
-	  push @bugs,@{$bugs} if defined $bugs and @{$bugs};
+	 my $archived_bugs = "unarchived";
+	 if ($selection =~ /archive:(\S+)/ and $1) {
+	     $archived_bugs = "archived";
+	 }
+	 my @subselects = split /\s+/,$selection;
+	 my %search_parameters;
+	 my %users;
+	 for my $subselect (@subselects) {
+	     my ($key,$value) = split /:/, $subselect, 2;
+	     next unless $key;
+	     if (exists $valid_keys{$key}) {
+		 push @{$search_parameters{$valid_keys{$key}}},
+		     $value if $value;
+	     } elsif ($key =~/users?$/) {
+		 $users{$value} = 1 if $value;
+	     }
+	 }
+	 my %usertags;
+	 for my $user (keys %users) {
+	     my $ut = $soap->get_usertag($user)->result();
+	     next unless defined $ut and $ut ne "";
+	     for my $tag (keys %{$ut}) {
+		 push @{$usertags{$tag}},
+		     @{$ut->{$tag}};
+	     }
+	 }
+	 my $bugs = $soap->get_bugs(%search_parameters,
+				    (keys %usertags)?(usertags=>\%usertags):()
+				   )->result();
+	 if (defined $bugs and @{$bugs}) {
+	     $bugs{$archived_bugs}{$_} = 1 for @{$bugs};
+	 }
      }
-     return @bugs;
+     return \%bugs;
 }
 
 

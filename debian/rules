@@ -22,8 +22,11 @@ clean:
 	dh_testdir
 	dh_testroot
 	rm -f *-stamp;
-	-$(MAKE) -f Makefile.perl clean;
+	if [ -e Makefile.perl ]; then  \
+		$(MAKE) -f Makefile.perl clean; \
+	fi;
 	#something to remove all trace and *.trace files?
+	rm -f debbugs.trace Makefile.perl.old
 	dh_clean
 
 install: install-stamp

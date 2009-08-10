@@ -2,9 +2,10 @@ Source: debbugs
 Section: misc
 Priority: extra
 Maintainer: Debbugs developers <debian-debbugs@lists.debian.org>
-Uploaders: Josip Rodin <joy-packages@debian.org>, Colin Watson <cjwatson@debian.org>, Don Armstrong <don@debian.org>
+Uploaders: Colin Watson <cjwatson@debian.org>, Don Armstrong <don@debian.org>
 Standards-Version: 3.8.1
-Build-Depends-Indep: debhelper, libparams-validate-perl,
+Build-Depends: debhelper (>= 5)
+Build-Depends-Indep: libparams-validate-perl,
  libmailtools-perl, libmime-tools-perl, libio-stringy-perl, libmldbm-perl,
  liburi-perl, libsoap-lite-perl, libcgi-simple-perl,
  libhttp-server-simple-perl, libtest-www-mechanize-perl,

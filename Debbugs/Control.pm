@@ -436,8 +436,8 @@ sub set_blocks {
 	    print {$transcript} "Was blocked by: $data->{blockedby}\n";
 	}
 	my @changed;
-	push @changed, 'added blocking bug(s) '.english_join([keys %added_blockers]) if keys %added_blockers;
-	push @changed, 'removed blocking bug(s) '.english_join([keys %removed_blockers]) if keys %removed_blockers;
+	push @changed, 'added blocking bug(s) of '.$data->{bug_num}.': '.english_join([keys %added_blockers]) if keys %added_blockers;
+	push @changed, 'removed blocking bug(s) of '.$data->{bug_num}.': '.english_join([keys %removed_blockers]) if keys %removed_blockers;
 	$action = ucfirst(join ('; ',@changed)) if @changed;
 	if (not @changed) {
 	    print {$transcript} "Ignoring request to alter tags of bug #$data->{bug_num} to the same tags previously set\n"
@@ -1950,7 +1950,7 @@ sub summary {
 	      # pseudo-headers
 	      if ($line =~ m{^\s*(?:(?:Package|Source|Version)\:| #pseudo headers
 				 (?:package|(?:no|)owner|severity|tag|summary| #control
-				      reopen|close|(?:not|)(?:fixed|found)|clone|
+				      \#|reopen|close|(?:not|)(?:fixed|found)|clone|
 				      (?:force|)merge|user(?:category|tag|)
 				 )
 			    )\s+\S}x) {
@@ -2586,7 +2586,7 @@ C<__PACKAGE__>.
 sub __internal_request{
     my ($l) = @_;
     $l = 0 if not defined $l;
-    if (defined +(caller(2+$l))[0] and +(caller(2+$l))[0] eq __PACKAGE__) {
+    if (defined((caller(1+$l))[0]) and (caller(1+$l))[0] eq __PACKAGE__) {
 	return 1;
     }
     return 0;
@@ -2685,6 +2685,13 @@ sub __begin_control {
     if (not @data) {
 	die "Unable to read any bugs successfully.";
     }
+    if (not $param{archived}) {
+	for my $data (@data) {
+	    if ($data->{archived}) {
+		die "Not altering archived bugs; see unarchive.";
+	    }
+	}
+    }
     if (not __check_limit(data => \@data,
 			  exists $param{limit}?(limit => $param{limit}):(),
 			 )) {
@@ -2703,7 +2710,7 @@ sub __begin_control {
 		   recipients => $param{recipients},
 		   (exists $param{command}?(actions_taken => {$param{command} => 1}):()),
 		   debug      => $debug,
-		   transcript => $transcript,
+		   (__internal_request()?(transcript => $transcript):()),
 		  );
 
     print {$debug} "$param{bug} read done\n";

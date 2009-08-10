@@ -144,6 +144,9 @@ sub binarytosource {
     # need an extra cache for speed here.
     return () unless defined $gBinarySourceMap;
 
+    if ($binname =~ m/^src:(.+)$/) {
+	return $1;
+    }
     if (not tied %_binarytosource) {
 	 tie %_binarytosource, MLDBM => $gBinarySourceMap, O_RDONLY or
 	      die "Unable to open $gBinarySourceMap for reading";
