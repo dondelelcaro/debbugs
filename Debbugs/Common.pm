@@ -379,7 +379,7 @@ sub __add_to_hash {
     if (defined $reverse and not ref($reverse) eq 'HASH') {
 	croak "if reverse is passed to __add_to_hash, it must be a hashref";
     }
-    $type //= 'address';
+    $type ||= 'address';
     my $fh = IO::File->new($fn,'r') or
 	die "Unable to open $fn for reading: $!";
     while (<$fh>) {
