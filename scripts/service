@@ -787,7 +787,7 @@ END
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	$bug_affected{$ref}=1;
 	my $tags = $2;
-	my @tags = split /[\s,]+/, $tags;
+	my @tags = map {m/^([+=-])(.+)/ ? ($1,$2):($_)} split /[\s,]+/, $tags;
 	# this is an array of hashrefs which contain two elements, the
 	# first of which is the array of tags, the second is the
 	# option to pass to set_tag (we use a hashref here to make it
