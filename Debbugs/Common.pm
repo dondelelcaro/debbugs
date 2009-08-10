@@ -43,6 +43,7 @@ BEGIN{
 				qw(bug_status),
 				qw(getmaintainers_reverse),
 				qw(getpseudodesc),
+				qw(package_maintainer),
 			       ],
 		     misc   => [qw(make_list globify_scalar english_join checkpid),
 				qw(cleanup_eval_fail),
@@ -248,29 +249,11 @@ Returns a hashref of package => maintainer pairs.
 
 =cut
 
-our $_maintainer;
-our $_maintainer_rev;
+our $_maintainer = undef;
+our $_maintainer_rev = undef;
 sub getmaintainers {
-    return $_maintainer if $_maintainer;
-    my %maintainer;
-    my %maintainer_rev;
-    for my $file (@config{qw(maintainer_file maintainer_file_override pseduo_maint_file)}) {
-	 next unless defined $file;
-	 my $maintfile = IO::File->new($file,'r') or
-	      die "Unable to open maintainer file $file: $!";
-	 while(<$maintfile>) {
-	      next unless m/^(\S+)\s+(\S.*\S)\s*$/;
-	      ($a,$b)=($1,$2);
-	      $a =~ y/A-Z/a-z/;
-	      $maintainer{$a}= $b;
-	      for my $maint (map {lc($_->address)} getparsedaddrs($b)) {
-		   push @{$maintainer_rev{$maint}},$a;
-	      }
-	 }
-	 close($maintfile);
-    }
-    $_maintainer = \%maintainer;
-    $_maintainer_rev = \%maintainer_rev;
+    return $_maintainer if defined $_maintainer;
+    package_maintainer(rehash => 1);
     return $_maintainer;
 }
 
@@ -283,10 +266,141 @@ Returns a hashref of maintainer => [qw(list of packages)] pairs.
 =cut
 
 sub getmaintainers_reverse{
-     return $_maintainer_rev if $_maintainer_rev;
-     getmaintainers();
+     return $_maintainer_rev if defined $_maintainer_rev;
+     package_maintainer(rehash => 1);
      return $_maintainer_rev;
 }
+
+=head2 package_maintainer
+
+     my @s = package_maintainer(source => [qw(foo bar baz)],
+                                binary => [qw(bleh blah)],
+                               );
+
+=over
+
+=item source -- scalar or arrayref of source package names to return
+maintainers for, defaults to the empty arrayref.
+
+=item binary -- scalar or arrayref of binary package names to return
+maintainers for; automatically returns source package maintainer if
+the package name starts with 'src:', defaults to the empty arrayref.
+
+=item reverse -- whether to return the source/binary packages a
+maintainer maintains instead
+
+=item rehash -- whether to reread the maintainer and source maintainer
+files; defaults to 0
+
+=back
+
+=cut
+
+our $_source_maintainer = undef;
+our $_source_maintainer_rev = undef;
+sub package_maintainer {
+    my %param = validate_with(params => \@_,
+			      spec   => {source => {type => SCALAR|ARRAYREF,
+						    default => [],
+						   },
+					 binary => {type => SCALAR|ARRAYREF,
+						    default => [],
+						   },
+					 rehash => {type => BOOLEAN,
+						    default => 0,
+						   },
+					 reverse => {type => BOOLEAN,
+						     default => 0,
+						    },
+					},
+			     );
+    if ($param{rehash}) {
+	$_source_maintainer = undef;
+	$_source_maintainer_rev = undef;
+	$_maintainer = undef;
+	$_maintainer_rev = undef;
+    }
+    if (not defined $_source_maintainer or
+	not defined $_source_maintainer_rev) {
+	$_source_maintainer = {};
+	$_source_maintainer_rev = {};
+	for my $fn (@config{('source_maintainer_file',
+			     'source_maintainer_file_override',
+			     'pseduo_maint_file')}) {
+	    next unless defined $fn;
+	    __add_to_hash($fn,$_source_maintainer,
+			  $_source_maintainer_rev);
+	}
+    }
+    if (not defined $_maintainer or
+	not defined $_maintainer_rev) {
+	$_maintainer = {};
+	$_maintainer_rev = {};
+	for my $fn (@config{('maintainer_file',
+			     'maintainer_file_override',
+			     'pseduo_maint_file')}) {
+	    next unless defined $fn;
+	    __add_to_hash($fn,$_maintainer,
+			      $_maintainer_rev);
+	}
+    }
+    my @return;
+    my @extra_source;
+    my $b = $param{reverse}?$_maintainer_rev:$_maintainer;
+    for my $binary (make_list($param{binary})) {
+	if (not $param{reverse} and $binary =~ /^src:/) {
+	    push @extra_source,$binary;
+	    next;
+	}
+	push @return,grep {defined $_} make_list($b->{$binary});
+    }
+    my $s = $param{reverse}?$_source_maintainer_rev:$_source_maintainer;
+    for my $source (make_list($param{source},@extra_source)) {
+	push @return,grep {defined $_} make_list($s->{$source});
+    }
+    return @return;
+}
+
+#=head2 __add_to_hash
+#
+#     __add_to_hash($file,$forward_hash,$reverse_hash,'address');
+#
+# Reads a maintainer/source maintainer/pseudo desc file and adds the
+# maintainers from it to the forward and reverse hashref; assumes that
+# the forward is unique; makes no assumptions of the reverse.
+#
+#=cut
+
+sub __add_to_hash {
+    my ($fn,$forward,$reverse,$type) = @_;
+    if (ref($forward) ne 'HASH') {
+	croak "__add_to_hash must be passed a hashref for the forward";
+    }
+    if (defined $reverse and not ref($reverse) eq 'HASH') {
+	croak "if reverse is passed to __add_to_hash, it must be a hashref";
+    }
+    $type //= 'address';
+    my $fh = IO::File->new($fn,'r') or
+	die "Unable to open $fn for reading: $!";
+    while (<$fh>) {
+	chomp;
+	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
+	my ($key,$value)=($1,$2);
+	$key = lc $key;
+	$forward->{$key}= $value;
+	if (defined $reverse) {
+	    if ($type eq 'address') {
+		for my $m (map {lc($_->address)} (getparsedaddrs($value))) {
+		    push @{$reverse->{$m}},$key;
+		}
+	    }
+	    else {
+		push @{$reverse->{$value}}, $key;
+	    }
+	}
+    }
+}
+
 
 =head2 getpseudodesc
 
@@ -301,23 +415,12 @@ pseudopackage or not.
 
 =cut
 
-our $_pseudodesc;
+our $_pseudodesc = undef;
 sub getpseudodesc {
-    return $_pseudodesc if $_pseudodesc;
-    my %pseudodesc;
-
-    if (not defined $config{pseudo_desc_file}) {
-	 $_pseudodesc = {};
-	 return $_pseudodesc;
-    }
-    my $pseudo = IO::File->new($config{pseudo_desc_file},'r')
-	 or die "Unable to open $config{pseudo_desc_file}: $!";
-    while(<$pseudo>) {
-	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
-	$pseudodesc{lc $1} = $2;
-    }
-    close($pseudo);
-    $_pseudodesc = \%pseudodesc;
+    return $_pseudodesc if defined $_pseudodesc;
+    $_pseudodesc = {};
+    __add_to_hash($config{pseudo_desc_file},$_pseudodesc) if
+	defined $config{pseudo_desc_file};
     return $_pseudodesc;
 }
 

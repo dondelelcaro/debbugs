@@ -17,7 +17,7 @@ use Debbugs::Mail qw(send_mail_message encode_headers get_addresses);
 use Debbugs::Packages qw(getpkgsrc);
 use Debbugs::User qw(read_usertags write_usertags);
 use Debbugs::Common qw(:lock get_hashname);
-use Debbugs::Status qw(writebug isstrongseverity lockreadbugmerge lockreadbug read_bug :versions);
+use Debbugs::Status qw(writebug isstrongseverity lockreadbugmerge lockreadbug read_bug splitpackages :versions);
 
 use Debbugs::CGI qw(html_escape bug_url);
 
@@ -1083,7 +1083,7 @@ sub checkmaintainers {
     }
     close(SOURCES);
     my $anymaintfound=0; my $anymaintnotfound=0;
-    for my $p (split(m/[ \t?,():]+/,$data->{package})) {
+    for my $p (splitpackages($data->{package})) {
         $p =~ y/A-Z/a-z/;
 	$p =~ /([a-z0-9.+-]+)/;
 	$p = $1;

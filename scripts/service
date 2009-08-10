@@ -131,8 +131,7 @@ my %limit = ();
 
 
 my @common_control_options =
-    (($dl > 0 ? (debug => $transcript):()),
-     transcript        => $transcript,
+    (transcript        => $transcript,
      requester         => $header{from},
      request_addr      => $controlrequestaddr,
      request_msgid     => $header{'message-id'},
@@ -213,7 +212,10 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
         last;
     } elsif (m/^debug\s+(\d+)$/i && $1 >= 0 && $1 <= 1000) {
         $dl= $1+0;
-        print {$transcript} "Debug level $dl.\n\n";
+	if ($dl > 0 and not grep /debug/,@common_control_options) {
+	    push @common_control_options,(debug => $transcript);
+	}
+	print {$transcript} "Debug level $dl.\n\n";
     } elsif (m/^(send|get)\s+\#?(\d{2,})$/i) {
         $ref= $2+0;
         &sendlynxdoc("bugreport.cgi?bug=$ref","logs for $gBug#$ref");
@@ -559,8 +561,8 @@ END
 	    # to set_found
 	    if (defined($version) && length $version) {
 		set_found(@common_control_options,
-			  bug          => $ref,
-			  version      => $version,
+			  bug   => $ref,
+			  found => $version,
 			 );
 	    }
 	};
@@ -1113,11 +1115,16 @@ END
 	if (scalar(@pkgs) > 0) {
 		%limit_pkgs = map { ($_, 1) } @pkgs;
 		$limit{package} = [@pkgs];
-		print {$transcript} "Ignoring bugs not assigned to: " .
-			join(" ", keys(%limit_pkgs)) . "\n\n";
+		print {$transcript} "Limiting to bugs with field 'package' containing at least one of ".join(', ',map {qq('$_')} @pkgs)."\n";
+		print {$transcript} "Limit currently set to ";
+		for my $limit_field (keys %limit) {
+		    print {$transcript} "  '$limit_field':".join(', ',map {qq('$_')} @{$limit{$limit_field}})."\n";
+		}
+		print {$transcript} "\n";
 	} else {
-		%limit_pkgs = ();
-		print {$transcript} "Not ignoring any bugs.\n\n";
+	    %limit_pkgs = ();
+	    $limit{package} = [];
+	    print {$transcript} "Limit cleared.\n\n";
 	}
     } elsif (m/^limit\:?\s+(\S.*\S)\s*$/) {
 	$ok++;
@@ -1135,7 +1142,7 @@ END
 	    print {$transcript} "Limiting to bugs with field '$field' containing at least one of ".join(', ',map {qq('$_')} @options)."\n";
 	    print {$transcript} "Limit currently set to ";
 	    for my $limit_field (keys %limit) {
-		print {$transcript} "  '$limit_field':".join(', ',map {qq('$_')} @options)."\n";
+		print {$transcript} "  '$limit_field':".join(', ',map {qq('$_')} @{$limit{$limit_field}})."\n";
 	    }
 	    print {$transcript} "\n";
 	}

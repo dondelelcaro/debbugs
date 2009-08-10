@@ -140,18 +140,18 @@ sub add_recipients {
 			    type  => 'bcc',
 			   );
 	  }
-	  if (defined(getmaintainers()->{$p})) {
-	       $addmaint= getmaintainers()->{$p};
-	       print {$param{debug}} "MR|$addmaint|$p|$ref|\n";
-	       _add_address(recipients => $param{recipients},
-			    address => $addmaint,
-			    reason => $p,
-			    bug_num => $param{data}{bug_num},
-			    type  => 'cc',
-			   );
-	       print {$param{debug}} "maintainer add >$p|$addmaint<\n";
+	  my @maints = package_maintainer(binary => $p);
+	  if (@maints) {
+	      print {$param{debug}} "MR|".join(',',@maints)."|$p|$ref|\n";
+	      _add_address(recipients => $param{recipients},
+			   address => \@maints,
+			   reason => $p,
+			   bug_num => $param{data}{bug_num},
+			   type  => 'cc',
+			  );
+	      print {$param{debug}} "maintainer add >$p|".join(',',@maints)."<\n";
 	  }
-	  else { 
+	  else {
 	       print {$param{debug}} "maintainer none >$p<\n";
 	       print {$param{transcript}} "Warning: Unknown package '$p'\n";
 	       print {$param{debug}} "MR|unknown-package|$p|$ref|\n";

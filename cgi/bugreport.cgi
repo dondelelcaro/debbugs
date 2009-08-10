@@ -18,7 +18,7 @@ use Debbugs::CGI qw(:url :html :util);
 use Debbugs::CGI::Bugreport qw(:all);
 use Debbugs::Common qw(buglog getmaintainers make_list bug_status);
 use Debbugs::Packages qw(getpkgsrc);
-use Debbugs::Status qw(splitpackages get_bug_status isstrongseverity);
+use Debbugs::Status qw(splitpackages split_status_fields get_bug_status isstrongseverity);
 
 use Scalar::Util qw(looks_like_number);
 
@@ -145,9 +145,10 @@ if ($buglog =~ m/\.gz$/) {
 }
 
 
-my %status = %{get_bug_status(bug=>$ref,
-			      bugusertags => \%bugusertags,
-			     )};
+my %status =
+    %{split_status_fields(get_bug_status(bug=>$ref,
+					 bugusertags => \%bugusertags,
+					))};
 
 my @records;
 eval{
@@ -317,9 +318,9 @@ foreach my $pkg (@packages) {
 }
 
 # fixup various bits of the status
-$status{tags_array} = [sort(split(/\s+/, $status{tags}))];
+$status{tags_array} = [sort(make_list($status{tags}))];
 $status{date_text} = strftime('%a, %e %b %Y %T UTC', gmtime($status{date}));
-$status{mergedwith_array} = [split(/ /,$status{mergedwith})];
+$status{mergedwith_array} = [make_list($status{mergedwith})];
 
 
 my $version_graph = '';
@@ -343,7 +344,7 @@ if (@{$status{found_versions}} or @{$status{fixed_versions}}) {
 
 
 
-my @blockedby= split(/ /, $status{blockedby});
+my @blockedby= make_list($status{blockedby});
 $status{blockedby_array} = [];
 if (@blockedby && $status{"pending"} ne 'fixed' && ! length($status{done})) {
     for my $b (@blockedby) {
@@ -353,7 +354,7 @@ if (@blockedby && $status{"pending"} ne 'fixed' && ! length($status{done})) {
    }
 }
 
-my @blocks= split(/ /, $status{blocks});
+my @blocks= make_list($status{blocks});
 $status{blocks_array} = [];
 if (@blocks && $status{"pending"} ne 'fixed' && ! length($status{done})) {
     for my $b (@blocks) {
@@ -384,6 +385,7 @@ print fill_in_template(template => 'cgi/bugreport',
 				     isstrongseverity => \&Debbugs::Status::isstrongseverity,
 				     html_escape   => \&Debbugs::CGI::html_escape,
 				     looks_like_number => \&Scalar::Util::looks_like_number,
+				     make_list        => \&Debbugs::Common::make_list,
 				    },
 		       hole_var  => {'&package_links' => \&Debbugs::CGI::package_links,
 				     '&bug_links'     => \&Debbugs::CGI::bug_links,

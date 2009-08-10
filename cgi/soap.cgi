@@ -19,6 +19,10 @@ my $soap = Debbugs::SOAP::Server
 # soapy is stupid, and is using the 1999 schema; override it.
 *SOAP::XMLSchema1999::Serializer::as_base64Binary = \&SOAP::XMLSchema2001::Serializer::as_base64Binary;
 *SOAP::Serializer::as_anyURI       = \&SOAP::XMLSchema2001::Serializer::as_string;
+# do this twice to avoid the warning if the serializer doesn't get
+# used
+*SOAP::XMLSchema1999::Serializer::as_base64Binary = \&SOAP::XMLSchema2001::Serializer::as_base64Binary;
+*SOAP::Serializer::as_anyURI       = \&SOAP::XMLSchema2001::Serializer::as_string;
 # to work around the serializer improperly using date/time stuff
 # (Nothing in Debbugs should be looked at as if it were date/time) we
 # kill off all of the date/time related bits in the serializer.
