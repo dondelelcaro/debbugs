@@ -1116,9 +1116,9 @@ END
 		%limit_pkgs = map { ($_, 1) } @pkgs;
 		$limit{package} = [@pkgs];
 		print {$transcript} "Limiting to bugs with field 'package' containing at least one of ".join(', ',map {qq('$_')} @pkgs)."\n";
-		print {$transcript} "Limit currently set to ";
+		print {$transcript} "Limit currently set to";
 		for my $limit_field (keys %limit) {
-		    print {$transcript} "  '$limit_field':".join(', ',map {qq('$_')} @{$limit{$limit_field}})."\n";
+		    print {$transcript} " '$limit_field':".join(', ',map {qq('$_')} @{$limit{$limit_field}})."\n";
 		}
 		print {$transcript} "\n";
 	} else {
@@ -1140,9 +1140,9 @@ END
 	    # fixing this.
 	    $limit{$field} = [@options];
 	    print {$transcript} "Limiting to bugs with field '$field' containing at least one of ".join(', ',map {qq('$_')} @options)."\n";
-	    print {$transcript} "Limit currently set to ";
+	    print {$transcript} "Limit currently set to";
 	    for my $limit_field (keys %limit) {
-		print {$transcript} "  '$limit_field':".join(', ',map {qq('$_')} @{$limit{$limit_field}})."\n";
+		print {$transcript} " '$limit_field':".join(', ',map {qq('$_')} @{$limit{$limit_field}})."\n";
 	    }
 	    print {$transcript} "\n";
 	}

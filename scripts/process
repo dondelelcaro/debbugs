@@ -14,9 +14,9 @@ use IO::File;
 use MIME::Parser;
 use Debbugs::MIME qw(decode_rfc1522 create_mime_message getmailbody);
 use Debbugs::Mail qw(send_mail_message encode_headers get_addresses);
-use Debbugs::Packages qw(getpkgsrc);
+use Debbugs::Packages qw(getpkgsrc binarytosource);
 use Debbugs::User qw(read_usertags write_usertags);
-use Debbugs::Common qw(:lock get_hashname);
+use Debbugs::Common qw(:lock get_hashname package_maintainer);
 use Debbugs::Status qw(writebug isstrongseverity lockreadbugmerge lockreadbug read_bug splitpackages :versions);
 
 use Debbugs::CGI qw(html_escape bug_url);
@@ -1049,39 +1049,12 @@ sub fill_template{
 }
 
 
+# this shole routine is *bad*; will be changed to use
+# Debbugs::Recipients and stuff therin in short order.
 sub checkmaintainers {
     return if $maintainerschecked++;
     return if !length($data->{package});
-    my %maintainerof;
-    open(MAINT,"$gMaintainerFile") || die die "maintainers open: $!";
-    while (<MAINT>) {
-	m/^\n$/ && next;
-	m/^\s*$/ && next;
-        m/^(\S+)\s+(\S.*\S)\s*\n$/ || die "maintainers bogus \`$_'";
-        $a= $1; $b= $2; $a =~ y/A-Z/a-z/;
-	# use the package which is normalized to lower case; we do this because we lc the pseudo headers.
-        $maintainerof{$a}= $2;
-    }
-    close(MAINT);
-    open(MAINT,"$gMaintainerFileOverride") || die die "maintainers.override open: $!";
-    while (<MAINT>) {
-	m/^\n$/ && next;
-	m/^\s*$/ && next;
-        m/^(\S+)\s+(\S.*\S)\s*\n$/ || die "maintainers.override bogus \`$_'";
-        $a= $1; $b= $2; $a =~ y/A-Z/a-z/;
-	# use the package which is normalized to lower case; we do this because we lc the pseudo headers.
-        $maintainerof{$a}= $2;
-    }
-    close(MAINT);
-    my %pkgsrc;
-    open(SOURCES,"$gPackageSource") || die "pkgsrc open: $!";
-    while (<SOURCES>) {
-        next unless m/^(\S+)\s+\S+\s+(\S.*\S)\s*$/;
-	($a,$b)=($1,$2);
-	$a =~ y/A-Z/a-z/;
-	$pkgsrc{$a} = $b;
-    }
-    close(SOURCES);
+
     my $anymaintfound=0; my $anymaintnotfound=0;
     for my $p (splitpackages($data->{package})) {
         $p =~ y/A-Z/a-z/;
@@ -1089,17 +1062,23 @@ sub checkmaintainers {
 	$p = $1;
 	next unless defined $p;
 	if (defined $gSubscriptionDomain) {
-	    if (defined($pkgsrc{$p})) {
-		push @addsrcaddrs, "$pkgsrc{$p}\@$gSubscriptionDomain";
+	    my @source = binarytosource($p);
+	    if (@source) {
+		push @addsrcaddrs,
+		    map {"$_\@$gSubscriptionDomain"} @source;
 	    } else {
 		push @addsrcaddrs, "$p\@$gSubscriptionDomain";
 	    }
 	}
-        if (defined($maintainerof{$p})) {
-	    print DEBUG "maintainer add >$p|$maintainerof{$p}<\n";
-            my $addmaint= $maintainerof{$p};
-            push(@maintaddrs,$addmaint) unless
-                $addmaint eq $replyto || grep($_ eq $addmaint, @maintaddrs);
+	# this is utter hackery until we switch to Debbugs::Recipients
+	my @maints = package_maintainer(binary => $p);
+        if (@maints) {
+	    print DEBUG "maintainer add >$p|".join(',',@maints)."<\n";
+	    my %temp;
+	    @temp{@maintaddrs} = @maintaddrs;
+            push(@maintaddrs,
+		 grep {$_ ne $replyto and
+			   not exists $temp{$_}} @maints);
             $anymaintfound++;
         } else {
 	    print DEBUG "maintainer none >$p<\n";

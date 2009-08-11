@@ -1948,12 +1948,14 @@ sub summary {
 	      }
 	      # skip a paragraph if it looks like it's control or
 	      # pseudo-headers
-	      if ($line =~ m{^\s*(?:(?:Package|Source|Version)\:| #pseudo headers
-				 (?:package|(?:no|)owner|severity|tag|summary| #control
-				      \#|reopen|close|(?:not|)(?:fixed|found)|clone|
-				      (?:force|)merge|user(?:category|tag|)
-				 )
-			    )\s+\S}x) {
+	      if ($line =~ m{^\s*(?:Package|Source|Version|User|Tag|Severity)\:\s+\S}xi or #pseudo headers
+		  $line =~ m{^(?:package:?|(?:no|)owner|severity|tags?|summary| #control
+				 \#|reopen|close|(?:not|)(?:fixed|found)|clone|
+				 debug|(?:not|)forwarded|priority|
+				 (?:un|)block|limit|(?:un|)archive|
+				 reassign|retitle|affects|wrongpackage
+				 (?:un|force|)merge|user(?:category|tags?|)
+			     )\s+\S}xis) {
 		   if (not length $paragraph) {
 			print {$debug} "Found control/pseudo-headers and skiping them\n";
 			$in_pseudoheaders = 1;
