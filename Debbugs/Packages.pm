@@ -463,19 +463,31 @@ sub make_source_versions {
     my %sourceversions;
     for my $version (make_list($param{versions})) {
         if ($version =~ m{(.+)/([^/]+)$}) {
+	    # Already a source version.
+            $sourceversions{$version} = 1;
+	    next unless exists $param{warnings};
 	    # check to see if this source version is even possible
 	    my @bin_versions = sourcetobinary($1,$2);
 	    if (not @bin_versions or
 		@{$bin_versions[0]} != 3) {
 		print {$warnings} "The source $1 and version $2 do not appear to match any binary packages\n";
 	    }
-            # Already a source version.
-            $sourceversions{$version} = 1;
         } else {
 	    if (not @packages) {
 		croak "You must provide at least one package if the versions are not fully qualified";
 	    }
 	    for my $pkg (@packages) {
+		if ($pkg =~ /^src:(.+)/) {
+		    $sourceversions{"$1/$version"} = 1;
+		    next unless exists $param{warnings};
+		    # check to see if this source version is even possible
+		    my @bin_versions = sourcetobinary($1,$version);
+		    if (not @bin_versions or
+			@{$bin_versions[0]} != 3) {
+			print {$warnings} "The source $1 and version $2 do not appear to match any binary packages\n";
+		    }
+		    next;
+		}
 		for my $arch (@archs) {
 		    my $cachearch = (defined $arch) ? $arch : '';
 		    my $cachekey = "$pkg/$cachearch/$version";
