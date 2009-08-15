@@ -616,7 +616,7 @@ sub set_tag {
 	my %tag_added = ();
 	my %tag_removed = ();
 	my %fixed_removed = ();
-	my @old_tags = split /\,\s*/, $data->{keywords};
+	my @old_tags = split /\,?\s+/, $data->{keywords};
 	my %tags;
 	@tags{@old_tags} = (1) x @old_tags;
 	my $reopened = 0;
@@ -658,7 +658,7 @@ sub set_tag {
 	    print {$transcript} "Unknown tag(s): ".join(', ',@bad_tags).".\n";
 	    print {$transcript} "These tags are recognized: ".join(', ',@{$config{tags}}).".\n";
 	}
-	$data->{keywords} = join(', ',keys %tags); # double check this
+	$data->{keywords} = join(' ',keys %tags);
 
 	my @changed;
 	push @changed, 'added tag(s) '.english_join([keys %tag_added]) if keys %tag_added;
