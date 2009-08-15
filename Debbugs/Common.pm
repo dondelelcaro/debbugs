@@ -356,6 +356,7 @@ sub package_maintainer {
     }
     my $s = $param{reverse}?$_source_maintainer_rev:$_source_maintainer;
     for my $source (make_list($param{source},@extra_source)) {
+	$source =~ s/^src://;
 	push @return,grep {defined $_} make_list($s->{$source});
     }
     return @return;
