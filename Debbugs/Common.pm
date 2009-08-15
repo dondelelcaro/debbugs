@@ -328,6 +328,10 @@ sub package_maintainer {
 			     'source_maintainer_file_override',
 			     'pseduo_maint_file')}) {
 	    next unless defined $fn;
+	    if (not -e $fn) {
+		warn "Missing source maintainer file '$fn'";
+		next;
+	    }
 	    __add_to_hash($fn,$_source_maintainer,
 			  $_source_maintainer_rev);
 	}
@@ -340,6 +344,10 @@ sub package_maintainer {
 			     'maintainer_file_override',
 			     'pseduo_maint_file')}) {
 	    next unless defined $fn;
+	    if (not -e $fn) {
+		warn "Missing maintainer file '$fn'";
+		next;
+	    }
 	    __add_to_hash($fn,$_maintainer,
 			      $_maintainer_rev);
 	}

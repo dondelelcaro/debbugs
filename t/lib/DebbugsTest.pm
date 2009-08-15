@@ -88,6 +88,7 @@ END
 			    "$spool_dir/nextnumber" => qq(1\n),
 			    "$config_dir/Maintainers" => qq(foo Blah Bleargh <foo\@baz.com>\nbar Bar Bleargh <bar\@baz.com>\n),
 			    "$config_dir/Maintainers.override" => qq(),
+			    "$config_dir/Source_maintainers" => qq(foo Blah Bleargh <foo\@baz.com>\nbar Bar Bleargh <bar\@baz.com>\n),
 			    "$config_dir/indices/sources" => <<END,
 foo main foo
 END
