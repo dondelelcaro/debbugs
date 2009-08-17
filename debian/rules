@@ -15,7 +15,7 @@ build-stamp:
 # Call the test suite
 	$(PERL) Makefile.PL INSTALLDIRS=vendor
 	$(MAKE) -f Makefile.perl
-#	$(MAKE) test
+	$(MAKE) test
 	touch $@
 
 clean:
