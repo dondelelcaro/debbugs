@@ -31,7 +31,7 @@ build:
 	$(PERL) Makefile.PL
 	$(MAKE) -f Makefile.perl
 
-test: build
+test:
 	$(PERL) -MTest::Harness -I. -e 'runtests(glob(q(t/*.t)))'
 
 clean:
