@@ -991,6 +991,10 @@ set_default(\%config,'html_expire_note',
 
 sub read_config{
      my ($conf_file) = @_;
+     if (not -e $conf_file) {
+	 print STDERR "configuration file '$conf_file' doesn't exist; skipping it";
+	 return;
+     }
      # first, figure out what type of file we're reading in.
      my $fh = new IO::File $conf_file,'r'
 	  or die "Unable to open configuration file $conf_file for reading: $!";
