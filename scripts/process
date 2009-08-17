@@ -129,6 +129,7 @@ if ($entity and $entity->head->tags) {
 
 my %header;
 
+my @common_headers;
 for my $hdr (@headerlines) {
     $hdr = decode_rfc1522($hdr);
     $_ = $hdr;
@@ -140,6 +141,9 @@ for my $hdr (@headerlines) {
     # print DEBUG ">$_<\n";
     if (s/^(\S+):\s*//) {
 	my $v = lc $1;
+	if ($v eq 'x-loop') {
+	    push @common_headers, 'X-Loop',$_;
+	}
 	print DEBUG ">$v=$_<\n";
 	$header{$v} = $_;
     } else {
@@ -147,6 +151,8 @@ for my $hdr (@headerlines) {
     }
 }
 $header{'message-id'} = '' if not defined $header{'message-id'};
+
+push @common_headers, 'X-Loop',$gMaintainerEmail;
 
 # remove blank lines
 shift @bodylines while @bodylines and $bodylines[0] !~ /\S/;
@@ -236,6 +242,7 @@ if ($tryref >= 0)
 	   References    => join(' ',grep {defined $_} $header{'message-id'},$data->{msgid}),
 	   Precedence    => 'bulk',
 	   "X-$gProject-PR-Message" => 'error',
+	   @common_headers,
 	  ],message_body_template('mail/process_unknown_bug_number',
 				  {subject => $subject,
 				   date    => $header{date},
@@ -327,6 +334,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	   References    => join(' ',grep {defined $_} $header{'message-id'},$data->{msgid}),
 	   Precedence    => 'bulk',
 	   "X-$gProject-PR-Message" => 'error',
+	   @common_headers,
 	  ],message_body_template('mail/process_no_bug_number',
 				  {subject => $subject,
 				   date    => $header{date},
@@ -397,7 +405,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
         if ($codeletter eq 'F') {
 	    &htmllog("Reply","sent",$replyto,"You have marked $gBug as forwarded.");
             &sendmessage(create_mime_message(
-	     ["X-Loop"      => "$gMaintainerEmail",
+	     [@common_headers,
 	      From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
               To            => "$replyto",
               Subject       => "$gBug#$ref: marked as forwarded ($data->{subject})",
@@ -420,7 +428,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
         } else {
 	    &htmllog("Reply","sent",$replyto,"You have taken responsibility.");
             &sendmessage(create_mime_message(
-	     ["X-Loop"      => "$gMaintainerEmail",
+	     [@common_headers,
 	      From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
               To            => $replyto,
               Subject       => "$gBug#$ref: marked as done ($data->{subject})",
@@ -444,7 +452,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
             &htmllog("Notification","sent",$data->{originator},
 		"$gBug acknowledged by developer.");
             &sendmessage(create_mime_message(
-	     ["X-Loop"      => "$gMaintainerEmail",
+	     [@common_headers,
 	      From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
               To            => "$data->{originator}",
               Subject       => "$gBug#$ref closed by $markedby ($header{'subject'})",
@@ -475,7 +483,8 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 if ($ref<0) { # new bug report
     if ($codeletter eq 'U') { # -submitter
 	&sendmessage(create_mime_message(
-          [From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
+          [@common_headers,
+	   From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
 	   To            => $replyto,
 	   Subject       => "Message with no $gBug number cannot be sent to submitter! ($subject)",
 	   'Message-ID'  => "<handler.x.$nn.nonumnosub\@$gEmailDomain>",
@@ -510,7 +519,7 @@ if ($ref<0) { # new bug report
 	my $body = message_body_template('mail/process_no_package',
 					);
         &sendmessage(create_mime_message(
-                       ["X-Loop"      => "$gMaintainerEmail",
+                       [@common_headers,
 			From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
                         To            => $replyto,
                         Subject       => "Message with no Package: tag cannot be processed! ($subject)",
@@ -710,13 +719,18 @@ if (length($resentccval)) {
     $resentcc= "Resent-CC: $resentccval\n"; 
 }
 
+my $common_headers='';
+{
+    local $a = 0;
+    $common_headers=map {$_.($a++%2?': ':"\n")} @common_headers;
+}
 if ($codeletter eq 'U') { # sent to -submitter
     &htmllog("Message", "sent on", $data->{originator}, "$gBug#$ref.");
     &sendmessage(<<END,[$data->{originator},@resentccs],[@bccs]);
 Subject: $gBug#$ref: $newsubject
 Reply-To: $replyto, $ref-quiet\@$gEmailDomain
 ${orgsender}Resent-To: $data->{originator}
-${resentcc}Resent-Date: $tdate
+${resentcc}${common_headers}Resent-Date: $tdate
 Resent-Message-ID: <handler.$ref.$nn\@$gEmailDomain>
 Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: report $ref
@@ -736,7 +750,7 @@ Subject: $gBug#$ref: $newsubject
 Reply-To: $replyto, $ref\@$gEmailDomain
 Resent-From: $header{'from'}
 ${orgsender}Resent-To: $gSubmitList\@$gListDomain
-${resentcc}Resent-Date: $tdate
+${resentcc}${common_headers}Resent-Date: $tdate
 Resent-Message-ID: <handler.$ref.$nn\@$gEmailDomain>
 Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: $report_followup $ref
@@ -770,7 +784,7 @@ ${orgsender}Resent-To: $resentccval
 Resent-Date: $tdate
 Resent-Message-ID: <handler.$ref.$nn\@$gEmailDomain>
 Resent-Sender: $gMaintainerEmail
-X-$gProject-PR-Message: $report_followup $ref
+${common_headers}X-$gProject-PR-Message: $report_followup $ref
 X-$gProject-PR-Package: $data->{package}
 X-$gProject-PR-Keywords: $data->{keywords}
 ${source_pr_header}$fwd
@@ -863,7 +877,7 @@ if (not exists $header{'x-debbugs-no-ack'} and
 				      }
 				     );
      &sendmessage(create_mime_message(
-		       ["X-Loop"      => "$gMaintainerEmail",
+		       [@common_headers,
 			From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
 			To            => $replyto,
 			Subject       => $t_h{subject},
