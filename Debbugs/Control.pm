@@ -498,7 +498,7 @@ sub set_blocks {
 		}
 		$data->{blocks} = join(' ',sort keys %blocks);
 		my $action = ($add_remove eq 'add'?'Added':'Removed').
-		    " indication that bug $data->{bug_num} blocks".
+		    " indication that bug $data->{bug_num} blocks ".
 		    join(',',@blocks);
 		append_action_to_log(bug => $data->{bug_num},
 				     command => 'block',
@@ -509,6 +509,7 @@ sub set_blocks {
 								   action => $action
 								   )
 				    );
+		writebug($data->{bug_num},$data);
 	    }
 	    __handle_affected_packages(%param,data=>\@blocking_data);
 	    add_recipients(recipients => $param{recipients},
