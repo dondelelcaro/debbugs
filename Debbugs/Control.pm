@@ -509,6 +509,7 @@ sub set_blocks {
 								   action => $action
 								   )
 				    );
+		writebug($data->{bug_num},$data);
 	    }
 	    __handle_affected_packages(%param,data=>\@blocking_data);
 	    add_recipients(recipients => $param{recipients},
