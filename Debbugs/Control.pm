@@ -440,7 +440,7 @@ sub set_blocks {
 	push @changed, 'removed blocking bug(s) of '.$data->{bug_num}.': '.english_join([keys %removed_blockers]) if keys %removed_blockers;
 	$action = ucfirst(join ('; ',@changed)) if @changed;
 	if (not @changed) {
-	    print {$transcript} "Ignoring request to alter tags of bug #$data->{bug_num} to the same tags previously set\n"
+	    print {$transcript} "Ignoring request to alter blocking bugs of bug #$data->{bug_num} to the same blocks previously set\n"
 		unless __internal_request();
 	    next;
 	}
