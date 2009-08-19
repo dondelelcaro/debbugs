@@ -1203,8 +1203,10 @@ sub bug_presence {
 		       $allowed_distributions{$tag} = 1;
 		   }
 	       }
-	       foreach my $arch (make_list(exists $param{arch}?$param{arch}:undef)) {
-		    for my $package (split /\s*,\s*/, $status{package}) {
+	       my @archs = make_list(exists $param{arch}?$param{arch}:());
+	   GET_SOURCE_VERSIONS:
+	       foreach my $arch (@archs) {
+		   for my $package (split /\s*,\s*/, $status{package}) {
 			 my @versions = ();
 			 my $source = 0;
 			 if ($package =~ /^src:(.+)$/) {
@@ -1235,6 +1237,15 @@ sub bug_presence {
 			 @sourceversions{@temp} = (1) x @temp;
 		    }
 	       }
+	       # this should really be split out into a subroutine,
+	       # but it'd touch so many things currently, that we fake
+	       # it; it's needed to properly handle bugs which are
+	       # erroneously assigned to the binary package, and we'll
+	       # probably have it go away eventually.
+ 	       if (not keys %sourceversions) {
+ 		   push @archs, undef;
+ 		   goto GET_SOURCE_VERSIONS;
+ 	       }
 	  }
 
 	  # TODO: This should probably be handled further out for efficiency and
