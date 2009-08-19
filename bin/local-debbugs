@@ -39,19 +39,19 @@ Update the local mirror of debbugs bugs
 =item B<--daemon, -D>
 
 Start up the daemon on the configured local port to serve bugs which
-have been previously retried
+have been previously retrieved.
 
 =item B<--search, -S>
 
 Cause the running daemon to show the pkgreport.cgi page corresponding
-to the search by invoking sensible-browser and an appropriate url
+to the search by invoking sensible-browser and an appropriate url.
 
 =item B<--show, -s>
 
 Cause the running daemon to show the bugreport.cgi page corresponding
-to the bug by invoking sensible-browser and an appropriate url
+to the bug by invoking sensible-browser and an appropriate url.
 
-=item B<--port,-p>
+=item B<--port, -p>
 
 The port that the daemon is running on (or will be running on.)
 
@@ -65,7 +65,7 @@ Defaults to ~/.debbugs/bugs_to_get
 
 =item B<--bug-site>
 
-Hostname for a site which is running a debbugs install
+Hostname for a site which is running a debbugs install.
 Defaults to bugs.debian.org
 
 =item B<--bug-mirror>
@@ -76,7 +76,7 @@ Defaults to bugs-mirror.debian.org
 
 =item B<--debug, -d>
 
-Debug verbosity. (Default 0)
+Debug verbosity.
 
 =item B<--help, -h>
 
@@ -90,6 +90,21 @@ Display this manual.
 
 =head1 EXAMPLES
 
+=over
+
+=item Update the local mirror
+
+ local-debbugs --mirror
+
+=item Start up the local-debbugs daemon
+
+ local-debbugs --daemon
+
+=item Search for bugs with severity serious
+
+ local-debbugs --search severity:serious
+
+=back
 
 =cut
 

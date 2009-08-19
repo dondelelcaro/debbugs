@@ -722,7 +722,7 @@ if (length($resentccval)) {
 my $common_headers='';
 {
     local $a = 0;
-    $common_headers=map {$_.($a++%2?': ':"\n")} @common_headers;
+    $common_headers = join('',map {$_.($a++%2?': ':"\n")} @common_headers);
 }
 if ($codeletter eq 'U') { # sent to -submitter
     &htmllog("Message", "sent on", $data->{originator}, "$gBug#$ref.");
