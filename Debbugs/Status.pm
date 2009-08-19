@@ -1242,8 +1242,8 @@ sub bug_presence {
 	       # it; it's needed to properly handle bugs which are
 	       # erroneously assigned to the binary package, and we'll
 	       # probably have it go away eventually.
- 	       if (not keys %sourceversions) {
- 		   push @archs, undef;
+ 	       if (not keys %sourceversions and (not @archs or defined $archs[0])) {
+ 		   @archs = (undef);
  		   goto GET_SOURCE_VERSIONS;
  	       }
 	  }
