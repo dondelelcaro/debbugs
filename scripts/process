@@ -721,8 +721,10 @@ if (length($resentccval)) {
 
 my $common_headers='';
 {
-    local $a = 0;
-    $common_headers = join('',map {$_.($a++%2?': ':"\n")} @common_headers);
+    my @tmp = @common_headers;
+    while (my ($key,$value) = splice(@tmp, 0,2)) {
+	$common_headers .= qq($key: $value\n);
+    }
 }
 if ($codeletter eq 'U') { # sent to -submitter
     &htmllog("Message", "sent on", $data->{originator}, "$gBug#$ref.");
