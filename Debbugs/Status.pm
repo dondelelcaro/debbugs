@@ -291,6 +291,10 @@ my %split_fields =
      affects        => \&splitpackages,
      blocks         => $ditch_empty_space,
      blockedby      => $ditch_empty_space,
+     # this isn't strictly correct, but we'll split both of them for
+     # the time being until we ditch all use of keywords everywhere
+     # from the code
+     keywords       => $ditch_empty_space,
      tags           => $ditch_empty_space,
      found_versions => $ditch_empty_space,
      fixed_versions => $ditch_empty_space,
