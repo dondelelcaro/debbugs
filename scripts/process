@@ -1074,7 +1074,7 @@ sub checkmaintainers {
     my $anymaintfound=0; my $anymaintnotfound=0;
     for my $p (splitpackages($data->{package})) {
         $p =~ y/A-Z/a-z/;
-	$p =~ /([a-z0-9.+-]+)/;
+	$p =~ /((?:src:)?[a-z0-9.+-]+)/;
 	$p = $1;
 	next unless defined $p;
 	if (defined $gSubscriptionDomain) {
