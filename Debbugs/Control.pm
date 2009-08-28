@@ -319,10 +319,10 @@ sub set_blocks {
 	    join(', ',grep {$_ !~ /^\d+$/} make_list($param{block}));
     }
     my $mode = 'set';
-    if (exists $param{add}) {
+    if ($param{add}) {
 	$mode = 'add';
     }
-    elsif (exists $param{remove}) {
+    elsif ($param{remove}) {
 	$mode = 'remove';
     }
 
@@ -351,7 +351,7 @@ sub set_blocks {
 	    $ok_blockers{$blocker} = 1;
 	    my @merged_bugs;
 	    push @merged_bugs, make_list($data->{mergedwith});
-	    $ok_blockers{@merged_bugs} = (1) x @merged_bugs if @merged_bugs;
+	    @ok_blockers{@merged_bugs} = (1) x @merged_bugs if @merged_bugs;
 	}
 	else {
 	    $bad_blockers{$blocker} = 1;
