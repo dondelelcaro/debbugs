@@ -291,8 +291,13 @@ sub determine_recipients {
 			 $level = 'cc';
 		    }
 	       }
-	       # strip out all non-word non-spaces
-	       $reason =~ s/[^\ \w]//g;
+	       # RFC 2822 comments cannot contain specials and
+	       # unquoted () or \; there's no reason for us to allow
+	       # insane things here, though, so we restrict this even
+	       # more to 20-7E ( -~)
+	       $reason =~ s/\\/\\\\/g;
+	       $reason =~ s/([\)\(])/\\$1/g;
+	       $reason =~ s/[^\x20-\x7E]//g;
 	       push @reasons, $reason . ' for {'.join(',',@bugs).'}';
 	  }
 	  if ($param{address_only}) {
