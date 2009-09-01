@@ -2697,6 +2697,7 @@ sub __begin_control {
     }
     if (not __check_limit(data => \@data,
 			  exists $param{limit}?(limit => $param{limit}):(),
+			  transcript => $transcript,
 			 )) {
 	die "limit failed for bugs: ".join(', ',map {$_->{bug_num}} @data);
     }
@@ -2784,6 +2785,9 @@ sub __check_limit{
 						  },
 					 limit => {type => HASHREF|UNDEF,
 						  },
+					 transcript  => {type => SCALARREF|HANDLE,
+							 optional => 1,
+							},
 					},
 			     );
     my @data = make_list($param{data});
@@ -2792,6 +2796,8 @@ sub __check_limit{
 	not keys %{$param{limit}}) {
 	return 1;
     }
+    my $transcript = globify_scalar(exists $param{transcript}?$param{transcript}:undef);
+    my $going_to_fail = 0;
     for my $data (@data) {
 	for my $field (keys %{$param{limit}}) {
 	    next unless exists $param{limit}{$field};
@@ -2814,11 +2820,13 @@ sub __check_limit{
 		}
 	    }
 	    if (not $match) {
-		return 0;
+		$going_to_fail = 1;
+		print {$transcript} "$field: '$data->{$field}' does not match at least one of ".
+		    join(', ',map {ref($_)?'(regex)':$_} make_list($param{limit}{$field}))."\n";
 	    }
 	}
     }
-    return 1;
+    return $going_to_fail?0:1;
 }
 
 
