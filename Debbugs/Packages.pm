@@ -168,7 +168,7 @@ sub binarytosource {
 	 return keys %uniq;
     }
     elsif (exists $binary{$binver}) {
-	 if (defined $binarch) {
+	 if (defined $binarch and length $binarch) {
 	      my $src = $binary{$binver}{$binarch};
 	      if (not defined $src and exists $binary{$binver}{all}) {
 		  $src = $binary{$binver}{all};
