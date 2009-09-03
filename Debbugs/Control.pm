@@ -2799,6 +2799,9 @@ sub __check_limit{
     my $transcript = globify_scalar(exists $param{transcript}?$param{transcript}:undef);
     my $going_to_fail = 0;
     for my $data (@data) {
+	$data = get_bug_status(bug => $data->{bug_num},
+			       status => dclone($data),
+			      );
 	for my $field (keys %{$param{limit}}) {
 	    next unless exists $param{limit}{$field};
 	    my $match = 0;
