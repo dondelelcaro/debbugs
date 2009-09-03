@@ -1067,7 +1067,7 @@ sub get_bug_status {
 	 my @source;
 	 for my $package (@packages) {
 	     next if $package eq '';
-	     if ($package =~ /^src\:$/) {
+	     if ($package =~ /^src\:(.+)$/) {
 		 push @source,$1;
 	     }
 	     else {
