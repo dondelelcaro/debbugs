@@ -107,7 +107,7 @@ BEGIN{
 
 use Debbugs::Config qw(:config);
 use Debbugs::Common qw(:lock buglog :misc get_hashname);
-use Debbugs::Status qw(bug_archiveable :read :hook writebug splitpackages split_status_fields);
+use Debbugs::Status qw(bug_archiveable :read :hook writebug splitpackages split_status_fields get_bug_status);
 use Debbugs::CGI qw(html_escape);
 use Debbugs::Log qw(:misc);
 use Debbugs::Recipients qw(:add);
@@ -2799,6 +2799,9 @@ sub __check_limit{
     my $transcript = globify_scalar(exists $param{transcript}?$param{transcript}:undef);
     my $going_to_fail = 0;
     for my $data (@data) {
+	$data = get_bug_status(bug => $data->{bug_num},
+			       status => dclone($data),
+			      );
 	for my $field (keys %{$param{limit}}) {
 	    next unless exists $param{limit}{$field};
 	    my $match = 0;
