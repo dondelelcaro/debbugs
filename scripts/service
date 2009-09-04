@@ -1130,7 +1130,7 @@ END
 	    %limit = ();
 	    print {$transcript} "Limit cleared.\n\n";
 	}
-	elsif (exists $Debbugs::Status::fields{$field} ) {
+	elsif (exists $Debbugs::Status::fields{$field} or $field eq 'source') {
 	    # %limit can actually contain regexes, but because they're
 	    # not evaluated in Safe, DO NOT allow them through without
 	    # fixing this.
