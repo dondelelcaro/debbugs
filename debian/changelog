@@ -3,6 +3,7 @@ debbugs (2.4.2~exp1) experimental; urgency=low
   * Allow (almost) exactly what RFC2822 allows in comments (closes:
     #497144)
   * Fix problem with non-existant /etc/debbugs/config
+  * Ditch \r and \n in status fields (closes: #545895)
 
  -- Don Armstrong <don@debian.org>  Wed, 26 Aug 2009 21:32:53 -0700
 

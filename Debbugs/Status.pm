@@ -232,7 +232,11 @@ sub read_bug{
     for my $line (@lines) {
         if ($line =~ /(\S+?): (.*)/) {
             my ($name, $value) = (lc $1, $2);
-            $data{$namemap{$name}} = $value if exists $namemap{$name};
+	    # this is a bit of a hack; we should never, ever have \r
+	    # or \n in the fields of status. Kill them off here.
+	    # [Eventually, this should be superfluous.]
+	    $value =~ s/[\r\n]//g;
+	    $data{$namemap{$name}} = $value if exists $namemap{$name};
         }
     }
     for my $field (keys %fields) {
@@ -520,6 +524,13 @@ sub makestatus {
         for my $field (@rfc1522_fields) {
             $newdata{$field} = encode_rfc1522($newdata{$field});
         }
+    }
+
+    # this is a bit of a hack; we should never, ever have \r or \n in
+    # the fields of status. Kill them off here. [Eventually, this
+    # should be superfluous.]
+    for my $field (keys %newdata) {
+	$newdata{$field} =~ s/[\r\n]//g if defined $newdata{$field};
     }
 
     if ($version == 1) {
