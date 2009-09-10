@@ -25,7 +25,7 @@ BEGIN {
      @EXPORT = ();
      %EXPORT_TAGS = (versions => [qw(getversions get_versions make_source_versions)],
 		     mapping  => [qw(getpkgsrc getpkgcomponent getsrcpkgs),
-				  qw(binarytosource sourcetobinary makesourceversions)
+				  qw(binary_to_source sourcetobinary makesourceversions)
 				 ],
 		    );
      @EXPORT_OK = ();
@@ -121,83 +121,160 @@ sub getsrcpkgs {
     return @{$_srcpkg->{$src}};
 }
 
-=head2 binarytosource
+=head2 binary_to_source
 
-Returns a reference to the source package name and version pair
-corresponding to a given binary package name, version, and architecture.
+     binary_to_source(package => 'foo',
+                      version => '1.2.3',
+                      arch    => 'i386');
 
-If undef is passed as the architecture, returns a list of references
-to all possible pairs of source package names and versions for all
-architectures, with any duplicates removed.
 
-If the binary version is not passed either, returns a list of possible
-source package names for all architectures at all versions, with any
-duplicates removed.
+Turn a binary package (at optional version in optional architecture)
+into a single (or set) of source packages (optionally) with associated
+versions.
+
+By default, in LIST context, returns a LIST of array refs of source
+package, source version pairs corresponding to the binary package(s),
+arch(s), and verion(s) passed.
+
+In SCALAR context, only the corresponding source packages are
+returned, concatenated with ', ' if necessary.
+
+=over
+
+=item binary -- binary package name(s) as a SCALAR or ARRAYREF
+
+=item version -- binary package version(s) as a SCALAR or ARRAYREF;
+optional, defaults to all versions.
+
+=item arch -- binary package architecture(s) as a SCALAR or ARRAYREF;
+optional, defaults to all architectures.
+
+=item source_only -- return only the source name (forced on if in
+SCALAR context), defaults to false.
+
+=item scalar_only -- return a scalar only (forced true if in SCALAR
+context, also causes source_only to be true), defaults to false.
+
+=item cache -- optional HASHREF to be used to cache results of
+binary_to_source.
+
+=back
 
 =cut
 
 our %_binarytosource;
-sub binarytosource {
-    my ($binname, $binver, $binarch) = @_;
+sub binary_to_source{
+    my %param = validate_with(params => \@_,
+			      spec   => {binary => {type => SCALAR|ARRAYREF,
+						    },
+					 version => {type => SCALAR|ARRAYREF,
+						     optional => 1,
+						    },
+					 arch    => {type => SCALAR|ARRAYREF,
+						     optional => 1,
+						    },
+					 source_only => {default => 0,
+							},
+					 scalar_only => {default => 0,
+							},
+					 cache => {type => HASHREF,
+						   default => {},
+						  },
+					},
+			     );
 
     # TODO: This gets hit a lot, especially from buggyversion() - probably
     # need an extra cache for speed here.
     return () unless defined $gBinarySourceMap;
 
-    if ($binname =~ m/^src:(.+)$/) {
-	return $1;
-    }
-    if (not tied %_binarytosource) {
-	 tie %_binarytosource, MLDBM => $gBinarySourceMap, O_RDONLY or
-	      die "Unable to open $gBinarySourceMap for reading";
+    if ($param{scalar_only} or not wantarray) {
+	$param{source_only} = 1;
+	$param{scalar_only} = 1;
     }
 
-    # avoid autovivification
-    my $binary = $_binarytosource{$binname};
-    return () unless defined $binary;
-    my %binary = %{$binary};
-    if (not defined $binver) {
-	 my %uniq;
-	 for my $ver (keys %binary) {
-	      for my $ar (keys %{$binary{$ver}}) {
-		   my $src = $binary{$ver}{$ar};
-		   next unless defined $src;
-		   $uniq{$src->[0]} = 1;
-	      }
-	 }
-	 return keys %uniq;
+    my @source;
+    my @packages = grep {defined $_} make_list(exists $param{package}?$param{package}:[]);
+    my @versions = grep {defined $_} make_list(exists $param{version}?$param{version}:[]);
+    my @archs = grep {defined $_} make_list(exists $param{arch}?$param{arch}:[]);
+    return () unless @packages;
+    my $cache_key = join("\1",
+			 join("\0",@packages),
+			 join("\0",@versions),
+			 join("\0",@archs),
+			 join("\0",@param{qw(source_only scalar_only)}));
+    if (exists $param{cache}{$cache_key}) {
+	return $param{scalar_only} ? $param{cache}{$cache_key}[0]:
+	    @{$param{cache}{$cache_key}};
     }
-    elsif (exists $binary{$binver}) {
-	 if (defined $binarch and length $binarch) {
-	      my $src = $binary{$binver}{$binarch};
-	      if (not defined $src and exists $binary{$binver}{all}) {
-		  $src = $binary{$binver}{all};
-	      }
-	      return () unless defined $src; # not on this arch
-	      # Copy the data to avoid tiedness problems.
-	      return dclone($src);
-	 } else {
-	      # Get (srcname, srcver) pairs for all architectures and
-	      # remove any duplicates. This involves some slightly tricky
-	      # multidimensional hashing; sorry. Fortunately there'll
-	      # usually only be one pair returned.
-	      my %uniq;
-	      for my $ar (keys %{$binary{$binver}}) {
-		   my $src = $binary{$binver}{$ar};
-		   next unless defined $src;
-		   $uniq{$src->[0]}{$src->[1]} = 1;
-	      }
-	      my @uniq;
-	      for my $sn (sort keys %uniq) {
-		   push @uniq, [$sn, $_] for sort keys %{$uniq{$sn}};
-	      }
-	      return @uniq;
-	 }
+    for my $package (make_list($param{package})) {
+	if ($package =~ m/^src:(.+)$/) {
+	    push @source,[$1,''];
+	    next;
+	}
+	if (not tied %_binarytosource) {
+	    tie %_binarytosource, MLDBM => $config{binary_source_map}, O_RDONLY or
+		die "Unable to open $config{binary_source_map} for reading";
+	}
+	# avoid autovivification
+	my $binary = $_binarytosource{$package};
+	if (not @versions) {
+	    next unless defined $binary;
+	    for my $ver (keys %{$binary}) {
+		for my $ar (keys %{$binary->{$ver}}) {
+		    my $src = $binary->{$ver}{$ar};
+		    next unless defined $src;
+		    push @source,[$src->[0],$src->[1]];
+		}
+	    }
+	}
+	else {
+	    my $found_one_version = 0;
+	    for my $version (@versions) {
+		next unless exists $binary->{$version};
+		if (exists $binary->{$version}{all}) {
+		    push @source,dclone($binary->{$version}{all});
+		    next;
+		}
+		my @t_archs;
+		if (@archs) {
+		    @t_archs = @archs;
+		}
+		else {
+		    @t_archs = keys %{$binary->{$version}};
+		}
+		for my $arch (@t_archs) {
+		    push @source,dclone($binary->{$version}{$arch}) if
+			exists $binary->{$version}{$arch};
+		}
+	    }
+	}
+    }
+    my @result;
+
+    if ($param{source_only}) {
+	my %uniq;
+	for my $s (@source) {
+	    $uniq{$s->[0]} = 1;
+	}
+	@result = sort keys %uniq;
+	if ($param{scalar_only}) {
+	    @result = join(', ',@result);
+	}
+    }
+    else {
+	my %uniq;
+	for my $s (@source) {
+	    $uniq{$s->[0]}{$s->[1]} = 1;
+	}
+	for my $sn (sort keys %uniq) {
+	    push @result, [$sn, $_] for sort keys %{$uniq{$sn}};
+	}
     }
 
     # No $gBinarySourceMap, or it didn't have an entry for this name and
     # version.
-    return ();
+    $param{cache}{$cache_key} = \@result;
+    return $param{scalar_only} ? $result[0] : @result;
 }
 
 =head2 sourcetobinary
@@ -504,7 +581,9 @@ sub make_source_versions {
 			}
 			next;
 		    }
-		    my @srcinfo = binarytosource($pkg, $version, $arch);
+		    my @srcinfo = binary_to_source(binary => $pkg,
+						   version => $version,
+						   arch    => $arch);
 		    if (not @srcinfo) {
 			# We don't have explicit information about the
 			# binary-to-source mapping for this version

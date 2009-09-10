@@ -47,7 +47,7 @@ use Storable qw(nstore retrieve);
 use Scalar::Util qw(looks_like_number);
 
 
-our $CURRENT_VERSION = 1;
+our $CURRENT_VERSION = 2;
 
 =head2 get_usertag
 
@@ -262,7 +262,12 @@ architecture. If undef is passed as the architecture, returns a list
 of references to all possible pairs of source package names and
 versions for all architectures, with any duplicates removed.
 
-(This function corresponds to L<Debbugs::Packages::binarytosource>)
+As of comaptibility version 2, this has changed to use the more
+powerful binary_to_source routine, which allows returning source only,
+concatenated scalars, and other useful features.
+
+See the documentation of L<Debbugs::Packages::binary_to_source> for
+details.
 
 =cut
 
@@ -270,7 +275,15 @@ sub binary_to_source{
      my $VERSION = __populate_version(pop);
      my ($self,@params) = @_;
 
-     return [Debbugs::Packages::binarytosource(@params)];
+     if ($VERSION <= 1) {
+	 return [Debbugs::Packages::binary_to_source(binary => $params[0],
+						     (@params > 1)?(version => $params[1]):(),
+						     (@params > 2)?(arch    => $params[2]):(),
+						    )];
+     }
+     else {
+	 return [Debbugs::Packages::binary_to_source(@params)];
+     }
 }
 
 =head2 source_to_binary

@@ -46,7 +46,7 @@ use Params::Validate qw(:types validate_with);
 use Debbugs::Common qw(:misc :util);
 use Debbugs::Status qw(splitpackages isstrongseverity);
 
-use Debbugs::Packages qw(binarytosource);
+use Debbugs::Packages qw(binary_to_source);
 
 use Debbugs::Mail qw(get_addresses);
 
@@ -114,7 +114,9 @@ sub add_recipients {
      for my $p (splitpackages($param{data}{package})) {
 	  $p = lc($p);
 	  if (defined $config{subscription_domain}) {
-	       my @source_packages = binarytosource($p);
+	       my @source_packages = binary_to_source(binary => $p,
+						      source_only => 1,
+						     );
 	       if (@source_packages) {
 		    for my $source (@source_packages) {
 			 _add_address(recipients => $param{recipients},
