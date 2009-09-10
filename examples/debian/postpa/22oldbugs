@@ -45,7 +45,9 @@ count_bugs(function => sub {
     return () if @merged and $merged[0] < $d{bug};
 
     # 3600*24*30 (30 days)
-    my $cmonths = int(($startdate - $status->{date}) / 2592000);
+    my $cmonths = int(($startdate -
+		       length($status->{date})?$status->{date}:0) /
+		      2592000);
     if ($cmonths >= 24 && !length($status->{forwarded}) &&
 	    !$excludepackage{$d{pkg}}) {
 	$oldpackage{$d{bug}} = $d{pkg};

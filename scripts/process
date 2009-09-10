@@ -14,7 +14,7 @@ use IO::File;
 use MIME::Parser;
 use Debbugs::MIME qw(decode_rfc1522 create_mime_message getmailbody);
 use Debbugs::Mail qw(send_mail_message encode_headers get_addresses);
-use Debbugs::Packages qw(getpkgsrc binarytosource);
+use Debbugs::Packages qw(getpkgsrc binary_to_source);
 use Debbugs::User qw(read_usertags write_usertags);
 use Debbugs::Common qw(:lock get_hashname package_maintainer);
 use Debbugs::Status qw(writebug isstrongseverity lockreadbugmerge lockreadbug read_bug splitpackages :versions);
@@ -1078,7 +1078,9 @@ sub checkmaintainers {
 	$p = $1;
 	next unless defined $p;
 	if (defined $gSubscriptionDomain) {
-	    my @source = binarytosource($p);
+	    my @source = binary_to_source(binary => $p,
+					  source_only => 1,
+					 );
 	    if (@source) {
 		push @addsrcaddrs,
 		    map {"$_\@$gSubscriptionDomain"} @source;
