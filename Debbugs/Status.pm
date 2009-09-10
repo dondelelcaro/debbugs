@@ -40,7 +40,7 @@ use Params::Validate qw(validate_with :types);
 use Debbugs::Common qw(:util :lock :quit :misc);
 use Debbugs::Config qw(:config);
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
-use Debbugs::Packages qw(makesourceversions make_source_versions getversions get_versions binarytosource);
+use Debbugs::Packages qw(makesourceversions make_source_versions getversions get_versions binary_to_source);
 use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
 use POSIX qw(ceil);
@@ -623,7 +623,8 @@ sub addfoundversions {
     my $source = $package;
 
     if (defined $package and $isbinary) {
-        my @srcinfo = binarytosource($package, $version, undef);
+        my @srcinfo = binary_to_source(binary => $package,
+				       version => $version);
         if (@srcinfo) {
             # We know the source package(s). Use a fully-qualified version.
             addfoundversions($data, $_->[0], $_->[1], '') foreach @srcinfo;
@@ -697,7 +698,8 @@ sub addfixedversions {
     my $source = $package;
 
     if (defined $package and $isbinary) {
-        my @srcinfo = binarytosource($package, $version, undef);
+        my @srcinfo = binary_to_source(binary => $package,
+				       version => $version);
         if (@srcinfo) {
             # We know the source package(s). Use a fully-qualified version.
             addfixedversions($data, $_->[0], $_->[1], '') foreach @srcinfo;
@@ -1059,25 +1061,10 @@ sub get_bug_status {
 
      $status{package} = '' if not defined $status{package};
      $status{"package"} =~ s/\s*$//;
-     # if we aren't supposed to indicate the source, we'll return
-     # unknown here.
-     $status{source} = 'unknown';
-     if ($param{indicatesource}) {
-	 my @packages = split /\s*,\s*/, $status{package};
-	 my @source;
-	 for my $package (@packages) {
-	     next if $package eq '';
-	     if ($package =~ /^src\:(.+)$/) {
-		 push @source,$1;
-	     }
-	     else {
-		 push @source, binarytosource($package);
-	     }
-	 }
-	 if (@source) {
-	     $status{source} = join(', ',@source);
-	 }
-     }
+
+     $status{source} = binary_to_source(binary=>[split /\s*,\s*/, $status{package}],
+					source_only => 1,
+				       );
 
      $status{"package"} = 'unknown' if ($status{"package"} eq '');
      $status{"severity"} = 'normal' if (not defined $status{severity} or $status{"severity"} eq '');
