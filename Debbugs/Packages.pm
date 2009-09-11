@@ -193,12 +193,12 @@ sub binary_to_source{
     }
 
     my @source;
-    my @packages = grep {defined $_} make_list(exists $param{package}?$param{package}:[]);
+    my @binaries = grep {defined $_} make_list(exists $param{binary}?$param{binary}:[]);
     my @versions = grep {defined $_} make_list(exists $param{version}?$param{version}:[]);
     my @archs = grep {defined $_} make_list(exists $param{arch}?$param{arch}:[]);
-    return () unless @packages;
+    return () unless @binaries;
     my $cache_key = join("\1",
-			 join("\0",@packages),
+			 join("\0",@binaries),
 			 join("\0",@versions),
 			 join("\0",@archs),
 			 join("\0",@param{qw(source_only scalar_only)}));
@@ -206,8 +206,8 @@ sub binary_to_source{
 	return $param{scalar_only} ? $param{cache}{$cache_key}[0]:
 	    @{$param{cache}{$cache_key}};
     }
-    for my $package (make_list($param{package})) {
-	if ($package =~ m/^src:(.+)$/) {
+    for my $binary (@binaries) {
+	if ($binary =~ m/^src:(.+)$/) {
 	    push @source,[$1,''];
 	    next;
 	}
@@ -216,12 +216,12 @@ sub binary_to_source{
 		die "Unable to open $config{binary_source_map} for reading";
 	}
 	# avoid autovivification
-	my $binary = $_binarytosource{$package};
+	my $bin = $_binarytosource{$binary};
 	if (not @versions) {
-	    next unless defined $binary;
-	    for my $ver (keys %{$binary}) {
-		for my $ar (keys %{$binary->{$ver}}) {
-		    my $src = $binary->{$ver}{$ar};
+	    next unless defined $bin;
+	    for my $ver (keys %{$bin}) {
+		for my $ar (keys %{$bin->{$ver}}) {
+		    my $src = $bin->{$ver}{$ar};
 		    next unless defined $src;
 		    push @source,[$src->[0],$src->[1]];
 		}
@@ -230,9 +230,9 @@ sub binary_to_source{
 	else {
 	    my $found_one_version = 0;
 	    for my $version (@versions) {
-		next unless exists $binary->{$version};
-		if (exists $binary->{$version}{all}) {
-		    push @source,dclone($binary->{$version}{all});
+		next unless exists $bin->{$version};
+		if (exists $bin->{$version}{all}) {
+		    push @source,dclone($bin->{$version}{all});
 		    next;
 		}
 		my @t_archs;
@@ -240,11 +240,11 @@ sub binary_to_source{
 		    @t_archs = @archs;
 		}
 		else {
-		    @t_archs = keys %{$binary->{$version}};
+		    @t_archs = keys %{$bin->{$version}};
 		}
 		for my $arch (@t_archs) {
-		    push @source,dclone($binary->{$version}{$arch}) if
-			exists $binary->{$version}{$arch};
+		    push @source,dclone($bin->{$version}{$arch}) if
+			exists $bin->{$version}{$arch};
 		}
 	    }
 	}
