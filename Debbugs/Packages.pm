@@ -249,6 +249,29 @@ sub binary_to_source{
 	    }
 	}
     }
+
+    if (not @source and not @versions and not @archs) {
+	# ok, we haven't found any results at all. If we weren't given
+	# a specific version and architecture, then we should try
+	# really hard to figure out the right source
+
+	# if any the packages we've been given are a valid source
+	# package name, and there's no binary of the same name (we got
+	# here, so there isn't), return it.
+
+	if (not tied %_sourcetobinary) {
+	    tie %_sourcetobinary, MLDBM => $config{source_binary_map}, O_RDONLY or
+		die "Unable top open $gSourceBinaryMap for reading";
+	}
+	for my $package (@package) {
+	    if (exists $_sourcetobinary{$package}) {
+		push @source,[$package,$_] for keys %{$_sourcetobinary{$package}};
+	    }
+	}
+	# if @source is still empty here, it's probably a non-existant
+	# source package, so don't return anything.
+    }
+
     my @result;
 
     if ($param{source_only}) {
@@ -293,8 +316,8 @@ sub sourcetobinary {
     my ($srcname, $srcver) = @_;
 
     if (not tied %_sourcetobinary) {
-	 tie %_sourcetobinary, MLDBM => $gSourceBinaryMap, O_RDONLY or
-	      die "Unable top open $gSourceBinaryMap for reading";
+	tie %_sourcetobinary, MLDBM => $config{source_binary_map}, O_RDONLY or
+	    die "Unable top open $config{source_binary_map} for reading";
     }
 
 
