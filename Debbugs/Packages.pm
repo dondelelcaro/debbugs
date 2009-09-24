@@ -162,7 +162,10 @@ binary_to_source.
 
 =cut
 
+# the two global variables below are used to tie the source maps; we
+# probably should be retying them in long lived processes.
 our %_binarytosource;
+our %_sourcetobinary;
 sub binary_to_source{
     my %param = validate_with(params => \@_,
 			      spec   => {binary => {type => SCALAR|ARRAYREF,
@@ -311,7 +314,6 @@ returned, without the architecture.
 
 =cut
 
-our %_sourcetobinary;
 sub sourcetobinary {
     my ($srcname, $srcver) = @_;
 
