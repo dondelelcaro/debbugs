@@ -139,6 +139,9 @@ arch(s), and verion(s) passed.
 In SCALAR context, only the corresponding source packages are
 returned, concatenated with ', ' if necessary.
 
+If no source can be found, returns undef in scalar context, or the
+empty list in list context.
+
 =over
 
 =item binary -- binary package name(s) as a SCALAR or ARRAYREF
@@ -162,7 +165,10 @@ binary_to_source.
 
 =cut
 
+# the two global variables below are used to tie the source maps; we
+# probably should be retying them in long lived processes.
 our %_binarytosource;
+our %_sourcetobinary;
 sub binary_to_source{
     my %param = validate_with(params => \@_,
 			      spec   => {binary => {type => SCALAR|ARRAYREF,
@@ -249,6 +255,29 @@ sub binary_to_source{
 	    }
 	}
     }
+
+    if (not @source and not @versions and not @archs) {
+	# ok, we haven't found any results at all. If we weren't given
+	# a specific version and architecture, then we should try
+	# really hard to figure out the right source
+
+	# if any the packages we've been given are a valid source
+	# package name, and there's no binary of the same name (we got
+	# here, so there isn't), return it.
+
+	if (not tied %_sourcetobinary) {
+	    tie %_sourcetobinary, MLDBM => $config{source_binary_map}, O_RDONLY or
+		die "Unable top open $gSourceBinaryMap for reading";
+	}
+	for my $maybe_sourcepkg (@binaries) {
+	    if (exists $_sourcetobinary{$maybe_sourcepkg}) {
+		push @source,[$maybe_sourcepkg,$_] for keys %{$_sourcetobinary{$maybe_sourcepkg}};
+	    }
+	}
+	# if @source is still empty here, it's probably a non-existant
+	# source package, so don't return anything.
+    }
+
     my @result;
 
     if ($param{source_only}) {
@@ -288,13 +317,12 @@ returned, without the architecture.
 
 =cut
 
-our %_sourcetobinary;
 sub sourcetobinary {
     my ($srcname, $srcver) = @_;
 
     if (not tied %_sourcetobinary) {
-	 tie %_sourcetobinary, MLDBM => $gSourceBinaryMap, O_RDONLY or
-	      die "Unable top open $gSourceBinaryMap for reading";
+	tie %_sourcetobinary, MLDBM => $config{source_binary_map}, O_RDONLY or
+	    die "Unable top open $config{source_binary_map} for reading";
     }
 
 
