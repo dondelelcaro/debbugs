@@ -269,7 +269,7 @@ sub binary_to_source{
 	    tie %_sourcetobinary, MLDBM => $config{source_binary_map}, O_RDONLY or
 		die "Unable top open $gSourceBinaryMap for reading";
 	}
-	for my $maybe_sourcepkg (@binary) {
+	for my $maybe_sourcepkg (@binaries) {
 	    if (exists $_sourcetobinary{$maybe_sourcepkg}) {
 		push @source,[$maybe_sourcepkg,$_] for keys %{$_sourcetobinary{$maybe_sourcepkg}};
 	    }
