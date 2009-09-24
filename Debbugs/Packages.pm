@@ -139,6 +139,9 @@ arch(s), and verion(s) passed.
 In SCALAR context, only the corresponding source packages are
 returned, concatenated with ', ' if necessary.
 
+If no source can be found, returns undef in scalar context, or the
+empty list in list context.
+
 =over
 
 =item binary -- binary package name(s) as a SCALAR or ARRAYREF
@@ -266,9 +269,9 @@ sub binary_to_source{
 	    tie %_sourcetobinary, MLDBM => $config{source_binary_map}, O_RDONLY or
 		die "Unable top open $gSourceBinaryMap for reading";
 	}
-	for my $package (@package) {
-	    if (exists $_sourcetobinary{$package}) {
-		push @source,[$package,$_] for keys %{$_sourcetobinary{$package}};
+	for my $maybe_sourcepkg (@binary) {
+	    if (exists $_sourcetobinary{$maybe_sourcepkg}) {
+		push @source,[$maybe_sourcepkg,$_] for keys %{$_sourcetobinary{$maybe_sourcepkg}};
 	    }
 	}
 	# if @source is still empty here, it's probably a non-existant
