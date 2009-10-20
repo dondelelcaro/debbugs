@@ -611,7 +611,7 @@ sub make_source_versions {
 		    }
 		    my @srcinfo = binary_to_source(binary => $pkg,
 						   version => $version,
-						   arch    => $arch);
+						   length($arch)?(arch    => $arch):());
 		    if (not @srcinfo) {
 			# We don't have explicit information about the
 			# binary-to-source mapping for this version
