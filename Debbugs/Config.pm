@@ -59,6 +59,7 @@ BEGIN {
 				 qw($gMaintainerFileOverride $gPseudoMaintFile $gPseudoDescFile $gPackageSource),
 				 qw($gVersionPackagesDir $gVersionIndex $gBinarySourceMap $gSourceBinaryMap),
 				 qw($gVersionTimeIndex),
+				 qw($gSimpleVersioning),
 				 qw($gSendmail $gLibPath $gSpamScan @gExcludeFromControl),
 				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
 				 qw(%gTagsSingleLetter),
@@ -760,6 +761,17 @@ set_default(\%config,'source_maintainer_file_override',undef);
 set_default(\%config,'pseudo_maint_file',$config{config_dir}.'/pseudo-packages.maint');
 set_default(\%config,'pseudo_desc_file',$config{config_dir}.'/pseudo-packages.description');
 set_default(\%config,'package_source',$config{config_dir}.'/indices/sources');
+
+
+=item simple_versioning
+
+If true this causes debbugs to ignore version information and just
+look at whether a bug is done or not done. Primarily of interest for
+debbugs installs which don't track versions. defaults to false.
+
+=cut
+
+set_default(\%config,'simple_versioning',0);
 
 
 =item version_packages_dir
