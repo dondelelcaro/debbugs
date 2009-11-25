@@ -2799,23 +2799,28 @@ sub __check_limit{
     my $transcript = globify_scalar(exists $param{transcript}?$param{transcript}:undef);
     my $going_to_fail = 0;
     for my $data (@data) {
-	$data = get_bug_status(bug => $data->{bug_num},
-			       status => dclone($data),
-			      );
+	$data = split_status_fields(get_bug_status(bug => $data->{bug_num},
+						   status => dclone($data),
+						  ));
 	for my $field (keys %{$param{limit}}) {
 	    next unless exists $param{limit}{$field};
 	    my $match = 0;
-	    for my $limit (make_list($param{limit}{$field})) {
+	    my @data_fields = make_list($data->{$field});
+LIMIT:	    for my $limit (make_list($param{limit}{$field})) {
 		if (not ref $limit) {
-		    if ($data->{$field} eq $limit) {
-			$match = 1;
-			last;
+		    for my $data_field (@data_fields) {
+			if ($data_field eq $limit) {
+			    $match = 1;
+			    last LIMIT;
+			}
 		    }
 		}
 		elsif (ref($limit) eq 'Regexp') {
-		    if ($data->{$field} =~ $limit) {
-			$match = 1;
-			last;
+		    for my $data_field (@data_fields) {
+			if ($data_field =~ $limit) {
+			    $match = 1;
+			    last LIMIT;
+			}
 		    }
 		}
 		else {
