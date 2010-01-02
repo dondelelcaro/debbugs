@@ -2829,7 +2829,8 @@ LIMIT:	    for my $limit (make_list($param{limit}{$field})) {
 	    }
 	    if (not $match) {
 		$going_to_fail = 1;
-		print {$transcript} "$field: '$data->{$field}' does not match at least one of ".
+		print {$transcript} "$field: '".join(', ',make_list($data->{$field})).
+		    "' does not match at least one of ".
 		    join(', ',map {ref($_)?'(regex)':$_} make_list($param{limit}{$field}))."\n";
 	    }
 	}
