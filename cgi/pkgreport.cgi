@@ -365,7 +365,8 @@ my $title = $gBugs.' '.join(' and ', map {/ or /?"($_)":$_} @title);
 if (not exists $param{affects} and not exists $param{noaffects} and
     (exists $param{source} or
      exists $param{package})) {
-    push @bugs, get_bugs((map {exists $param{$_}?($_ =~ /^(?:package|source)$/?'affects':$_,$param{$_}):()}
+    push @bugs, get_bugs((map {exists $param{$_}?($_ =~ /^(?:package|source)$/?'affects':$_,
+						  ($_ eq 'source'?'src:'.$param{$_}:$param{$_})):()}
 			  grep {$_ ne 'newest'}
 			  keys %package_search_keys, 'archive'),
 			 usertags => \%ut,
