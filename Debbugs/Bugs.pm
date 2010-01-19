@@ -55,7 +55,7 @@ use Params::Validate qw(validate_with :types);
 use IO::File;
 use Debbugs::Status qw(splitpackages get_bug_status);
 use Debbugs::Packages qw(getsrcpkgs getpkgsrc);
-use Debbugs::Common qw(getparsedaddrs getmaintainers getmaintainers_reverse make_list);
+use Debbugs::Common qw(getparsedaddrs package_maintainer getmaintainers make_list);
 use Fcntl qw(O_RDONLY);
 use MLDBM qw(DB_File Storable);
 use List::Util qw(first);
@@ -742,10 +742,8 @@ sub __handle_pkg_src_and_maint{
      }
      if (exists $param{maint}) {
 	  my $key_inc = 0;
-	  my $maint_rev = getmaintainers_reverse();
 	  my %_temp_p = ();
-	  for my $package (map { exists $maint_rev->{$_}?@{$maint_rev->{$_}}:()}
-			   make_list($param{maint})) {
+	  for my $package (package_maintainer(maintainer=>$param{maint})) {
 	       $packages{$package}++ unless exists $_temp_p{$package};
 	       $_temp_p{$package} = 1;
 	       $key_inc = 1;

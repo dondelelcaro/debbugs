@@ -4,6 +4,8 @@ debbugs (2.4.2~exp1) experimental; urgency=low
     #497144)
   * Fix problem with non-existant /etc/debbugs/config
   * Ditch \r and \n in status fields (closes: #545895)
+  * Properly handle source packages when searching by maintainer; use
+    package_maintainer instead of the hashes (closes: #556863)
 
  -- Don Armstrong <don@debian.org>  Wed, 26 Aug 2009 21:32:53 -0700
 
