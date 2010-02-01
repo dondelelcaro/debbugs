@@ -51,13 +51,9 @@ BEGIN{
 
      @EXPORT = ();
      %EXPORT_TAGS = (html => [qw(short_bug_status_html pkg_htmlizebugs),
-			      qw(pkg_javascript),
-			      qw(pkg_htmlselectyesno pkg_htmlselectsuite),
-			      qw(buglinklist pkg_htmlselectarch)
 			     ],
-		     misc => [qw(generate_package_info make_order_list),
-			      qw(myurl),
-			      qw(get_bug_order_index determine_ordering),
+		     misc => [qw(generate_package_info),
+			      qw(determine_ordering),
 			     ],
 		    );
      @EXPORT_OK = (qw());
@@ -233,7 +229,7 @@ sub short_bug_status_html {
      if (@blocks && $status{"pending"} ne 'fixed' && ! length($status{done})) {
 	  for my $b (@blocks) {
 	       my %s = %{get_bug_status($b)};
-	       next if $s{"pending"} eq 'fixed' || length $s{done};
+	       next if (defined $s{pending} and $s{pending} eq 'fixed') or (defined $s{done} and length $s{done});
 	       push @{$status{blocks_array}}, {bug_num => $b, subject => $s{subject}, status => \%s};
 	  }
      }
@@ -457,74 +453,6 @@ sub pkg_htmlizebugs {
      return $result;
 }
 
-sub pkg_javascript {
-     return fill_in_template(template=>'cgi/pkgreport_javascript',
-			    );
-}
-
-sub pkg_htmlselectyesno {
-     my ($name, $n, $y, $default) = @_;
-     return sprintf('<select name="%s"><option value=no%s>%s</option><option value=yes%s>%s</option></select>', $name, ($default ? "" : " selected"), $n, ($default ? " selected" : ""), $y);
-}
-
-sub pkg_htmlselectsuite {
-     my $id = sprintf "b_%d_%d_%d", $_[0], $_[1], $_[2];
-     my @suites = ("stable", "testing", "unstable", "experimental");
-     my %suiteaka = ("stable", "etch", "testing", "lenny", "unstable", "sid");
-     my $defaultsuite = "unstable";
-
-     my $result = sprintf '<select name=dist id="%s">', $id;
-     for my $s (@suites) {
-	  $result .= sprintf '<option value="%s"%s>%s%s</option>',
-	       $s, ($defaultsuite eq $s ? " selected" : ""),
-		    $s, (defined $suiteaka{$s} ? " (" . $suiteaka{$s} . ")" : "");
-     }
-     $result .= '</select>';
-     return $result;
-}
-
-sub pkg_htmlselectarch {
-     my $id = sprintf "b_%d_%d_%d", $_[0], $_[1], $_[2];
-     my @arches = qw(alpha amd64 arm hppa i386 ia64 m68k mips mipsel powerpc s390 sparc);
-
-     my $result = sprintf '<select name=arch id="%s">', $id;
-     $result .= '<option value="any">any architecture</option>';
-     for my $a (@arches) {
-	  $result .= sprintf '<option value="%s">%s</option>', $a, $a;
-     }
-     $result .= '</select>';
-     return $result;
-}
-
-sub myurl {
-     my %param = @_;
-     return html_escape(pkg_url(map {exists $param{$_}?($_,$param{$_}):()}
-				qw(archive repeatmerged mindays maxdays),
-				qw(version dist arch package src tag maint submitter)
-			       )
-		       );
-}
-
-sub make_order_list {
-     my $vfull = shift;
-     my @x = ();
-
-     if ($vfull =~ m/^([^:]+):(.*)$/) {
-	  my $v = $1;
-	  for my $vv (split /,/, $2) {
-	       push @x, "$v=$vv";
-	  }
-     }
-     else {
-	  for my $v (split /,/, $vfull) {
-	       next unless $v =~ m/.=./;
-	       push @x, $v;
-	  }
-     }
-     push @x, "";		# catch all
-     return @x;
-}
-
 sub get_bug_order_index {
      my $order = shift;
      my $status = shift;
@@ -555,13 +483,6 @@ sub get_bug_order_index {
      }
      return $pos + 1;
 }
-
-sub buglinklist {
-     my ($prefix, $infix, @els) = @_;
-     return '' if not @els;
-     return $prefix . bug_linklist($infix,'submitter',@els);
-}
-
 
 # sets: my @names; my @prior; my @title; my @order;
 
