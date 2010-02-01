@@ -74,7 +74,7 @@ sub generate_package_info{
 			       spec  => {binary => {type => BOOLEAN,
 						    default => 1,
 						   },
-					 package => {type => SCALAR|ARRAYREF,
+					 package => {type => SCALAR,#|ARRAYREF,
 						    },
 					 options => {type => HASHREF,
 						    },
@@ -142,6 +142,8 @@ sub generate_package_info{
 	  if (defined $config{subscription_domain} and
 	      length $config{subscription_domain}) {
 	       my $ptslink = $param{binary} ? $srcforpkg : $package;
+	       # the pts only wants the source, and doesn't care about src: (#566089)
+	       $ptslink =~ s/^src://;
 	       push @references, q(to the <a href="http://).html_escape("$config{subscription_domain}/$ptslink").q(">Package Tracking System</a>);
 	  }
 	  # Only output this if the source listing is non-trivial.
