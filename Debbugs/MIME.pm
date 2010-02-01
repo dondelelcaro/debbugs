@@ -58,7 +58,7 @@ sub getmailbody
     my $entity = shift;
     my $type = $entity->effective_type;
     if ($type eq 'text/plain' or
-	    ($type =~ m#text/# and $type ne 'text/html') or
+	    ($type =~ m#text/?# and $type ne 'text/html') or
 	    $type eq 'application/pgp') {
 	return $entity->bodyhandle;
     } elsif ($type eq 'multipart/alternative') {
@@ -120,7 +120,12 @@ sub parse
 
     # Strip off RFC2440-style PGP clearsigning.
     if (@bodylines and $bodylines[0] =~ /^-----BEGIN PGP SIGNED/) {
-	shift @bodylines while @bodylines and length $bodylines[0];
+	shift @bodylines while @bodylines and
+	    length $bodylines[0] and
+		# we currently don't strip \r; handle this for the
+		# time being, though eventually it should be stripped
+		# too, I think. [See #565981]
+		$bodylines[0] ne "\r";
 	shift @bodylines while @bodylines and $bodylines[0] !~ /\S/;
 	for my $findsig (0 .. $#bodylines) {
 	    if ($bodylines[$findsig] =~ /^-----BEGIN PGP SIGNATURE/) {
