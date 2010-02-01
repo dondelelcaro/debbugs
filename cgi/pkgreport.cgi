@@ -363,10 +363,11 @@ my $title = $gBugs.' '.join(' and ', map {/ or /?"($_)":$_} @title);
 # shove in bugs which affect this package if there is a package or a
 # source given (by default), but no affects options given
 if (not exists $param{affects} and not exists $param{noaffects} and
-    (exists $param{source} or
+    (exists $param{src} or
      exists $param{package})) {
-    push @bugs, get_bugs((map {exists $param{$_}?($_ =~ /^(?:package|source)$/?'affects':$_,
-						  ($_ eq 'source'?'src:'.$param{$_}:$param{$_})):()}
+    push @bugs, get_bugs((map {my $key = $_;
+			       exists $param{$key}?($key =~ /^(?:package|src)$/?'affects':$key,
+						  ($key eq 'src'?[map {"src:$_"}make_list($param{$key})]:$param{$_})):()}
 			  grep {$_ ne 'newest'}
 			  keys %package_search_keys, 'archive'),
 			 usertags => \%ut,
