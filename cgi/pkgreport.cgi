@@ -373,6 +373,9 @@ if (not exists $param{affects} and not exists $param{noaffects} and
 			);
 }
 
+# filter out included or excluded bugs
+
+
 if (defined $param{version}) {
      $title .= " at version $param{version}";
 }
@@ -467,7 +470,7 @@ if (exists $param{submitter}) {
 
 print $result;
 
-print pkg_javascript() . "\n";
+print fill_in_template(template=>'cgi/pkgreport_javascript');
 
 print qq(<h2 class="outstanding"><!--<a class="options" href="javascript:toggle(1)">-->Options<!--</a>--></h2>\n);
 
