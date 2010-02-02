@@ -623,7 +623,7 @@ sub get_bugs_flatfile{
      }
      my @bugs;
      BUG: while (<$flatfile>) {
-	  next unless m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*([^]]*)\s*\]\s+(\w+)\s+(.*)$/;
+	  next unless m/^(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+\[\s*(.*)\s*\]\s+(\w+)\s+(.*)$/;
 	  my ($pkg,$bug,$time,$status,$submitter,$severity,$tags) = ($1,$2,$3,$4,$5,$6,$7);
 	  next if $grep_bugs and not exists $bugs{$bug};
 	  if (exists $param{package}) {
