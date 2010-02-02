@@ -400,11 +400,15 @@ sub package_links {
      }
      my @links = ();
      for my $type (qw(src package)) {
-	  push @links, map {(munge_url('pkgreport.cgi?',
+	  push @links, map {my $t_type = $type;
+			    if ($_ =~ s/^src://) {
+				$t_type = 'src';
+			    }
+			    (munge_url('pkgreport.cgi?',
 				       %options,
-				       $type => $_,
+				       $t_type => $_,
 				      ),
-			     ($type eq 'src'?'src:':'').$_);
+			     ($t_type eq 'src'?'src:':'').$_);
 		       } make_list($param{$type}) if exists $param{$type};
      }
      for my $type (qw(maint owner submitter correspondent)) {

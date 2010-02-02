@@ -77,7 +77,8 @@ if (exists $param{form_options} and defined $param{form_options}) {
      }
      for my $incexc (qw(include exclude)) {
 	  next unless exists $param{$incexc};
-	  $param{$incexc} = [grep /\S\:\S/, make_list($param{$incexc})];
+	  # normalize tag to tags
+	  $param{$incexc} = [map {s/^tag:/tags:/} grep /\S\:\S/, make_list($param{$incexc})];
      }
      for my $key (keys %package_search_keys) {
 	  next unless exists $param{key};
@@ -92,6 +93,16 @@ if (exists $param{form_options} and defined $param{form_options}) {
      print $q->redirect(munge_url('pkgreport.cgi?',%param));
      exit 0;
 }
+
+# normalize innclude/exclude keys; currently this is in two locations,
+# which is suboptimal. Closes: #567407
+for my $incexc (qw(include exclude)) {
+    next unless exists $param{$incexc};
+    # normalize tag to tags
+    $param{$incexc} = [map {s/^tag:/tags:/} make_list($param{$incexc})];
+}
+
+
 
 # map from yes|no to 1|0
 for my $key (qw(repeatmerged bug-rev pend-rev sev-rev)) {

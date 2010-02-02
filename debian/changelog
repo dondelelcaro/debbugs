@@ -14,6 +14,11 @@ debbugs (2.4.2~exp1) experimental; urgency=low
     Sandro Tosi.
   * Fix affects for source packages (closes: #563470). Thanks to Charles
     Plessy.
+  * Allow tag instead of tags; silently normalize it (closes: #567407).
+    Thanks to Martin Krafft.
+  * Properly handle Forwarded: at submit@ time (closes: #568020). Thanks
+    to Martin Krafft.
+  * Fix source package src: urls
 
  -- Don Armstrong <don@debian.org>  Wed, 26 Aug 2009 21:32:53 -0700
 

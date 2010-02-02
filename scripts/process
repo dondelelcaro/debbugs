@@ -587,7 +587,7 @@ if ($ref<0) { # new bug report
         $data->{owner}= $pheader{owner};
     }
     if (defined($pheader{forwarded})) {
-	$data->{'forwarded-to'} = $pheader{forwarded};
+	$data->{forwarded} = $pheader{forwarded};
     }
     &filelock("nextnumber.lock");
     open(N,"nextnumber") || die "nextnumber: read: $!";
