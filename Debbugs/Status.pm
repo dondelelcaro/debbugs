@@ -619,7 +619,7 @@ The following functions are exported with the :versions tag
 
      addfoundversions($status,$package,$version,$isbinary);
 
-
+All use of this should be phased out in favor of Debbugs::Control::fixed/found
 
 =cut
 
@@ -632,6 +632,10 @@ sub addfoundversions {
     return unless defined $version;
     undef $package if $package =~ m[(?:\s|/)];
     my $source = $package;
+    if ($package =~ s/^src://) {
+	$isbinary = 0;
+	$source = $package;
+    }
 
     if (defined $package and $isbinary) {
         my @srcinfo = binary_to_source(binary => $package,
