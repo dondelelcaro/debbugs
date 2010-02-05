@@ -21,6 +21,7 @@ debbugs (2.4.2~exp1) experimental; urgency=low
   * Fix source package src: urls
   * Use package_maintainer to search for packages maintained by a
     maintainer (closes: #556863). Thanks to Yves-Alexis Perez.
+  * Linkify CVE reports (closes: #568464). Thanks to Martin Zobel-Helas.
 
  -- Don Armstrong <don@debian.org>  Wed, 26 Aug 2009 21:32:53 -0700
 

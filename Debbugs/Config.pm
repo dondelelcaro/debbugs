@@ -60,6 +60,7 @@ BEGIN {
 				 qw($gVersionPackagesDir $gVersionIndex $gBinarySourceMap $gSourceBinaryMap),
 				 qw($gVersionTimeIndex),
 				 qw($gSimpleVersioning),
+				 qw($gCVETracker),
 				 qw($gSendmail $gLibPath $gSpamScan @gExcludeFromControl),
 				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
 				 qw(%gTagsSingleLetter),
@@ -205,8 +206,20 @@ Domain where subscriptions to package lists happen
 
 =cut
 
-
 set_default(\%config,'subscription_domain',undef);
+
+
+=item cve_tracker $gCVETracker
+
+URI to CVE security tracker; in bugreport.cgi, CVE-2001-0002 becomes
+linked to http://$config{cve_tracker}CVE-2001-002
+
+Default: security-tracker.debian.org/tracker/
+
+=cut
+
+set_default(\%config,'cve_tracker','security-tracker.debian.org/tracker/');
+
 
 =back
 
@@ -1064,7 +1077,7 @@ sub __convert_name{
      $hash_name =~ s/^([\$\%\@])g//;
      my $glob_type = $1;
      my $glob_name = 'g'.$hash_name;
-     $hash_name =~ s/(HTML|CGI)/ucfirst(lc($1))/ge;
+     $hash_name =~ s/(HTML|CGI|CVE)/ucfirst(lc($1))/ge;
      $hash_name =~ s/^([A-Z]+)/lc($1)/e;
      $hash_name =~ s/([A-Z]+)/'_'.lc($1)/ge;
      return $hash_name unless wantarray;
