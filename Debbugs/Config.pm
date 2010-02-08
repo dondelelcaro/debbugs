@@ -771,7 +771,7 @@ set_default(\%config,'maintainer_file',$config{config_dir}.'/Maintainers');
 set_default(\%config,'maintainer_file_override',$config{config_dir}.'/Maintainers.override');
 set_default(\%config,'source_maintainer_file',$config{config_dir}.'/Source_maintainers');
 set_default(\%config,'source_maintainer_file_override',undef);
-set_default(\%config,'pseudo_maint_file',$config{config_dir}.'/pseudo-packages.maint');
+set_default(\%config,'pseudo_maint_file',$config{config_dir}.'/pseudo-packages.maintainers');
 set_default(\%config,'pseudo_desc_file',$config{config_dir}.'/pseudo-packages.description');
 set_default(\%config,'package_source',$config{config_dir}.'/indices/sources');
 
