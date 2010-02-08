@@ -84,7 +84,8 @@ if (exists $param{form_options} and defined $param{form_options}) {
      }
      for my $incexc (qw(include exclude)) {
 	  next unless exists $param{$incexc};
-	  $param{$incexc} = [grep /\S\:\S/, make_list($param{$incexc})];
+	  # normalize tag to tags
+	  $param{$incexc} = [map {s/^tag:/tags:/} grep /\S\:\S/, make_list($param{$incexc})];
      }
      for my $key (keys %package_search_keys) {
 	  next unless exists $param{key};
@@ -99,6 +100,16 @@ if (exists $param{form_options} and defined $param{form_options}) {
      print $q->redirect(munge_url('pkgreport.cgi?',%param));
      exit 0;
 }
+
+# normalize innclude/exclude keys; currently this is in two locations,
+# which is suboptimal. Closes: #567407
+for my $incexc (qw(include exclude)) {
+    next unless exists $param{$incexc};
+    # normalize tag to tags
+    $param{$incexc} = [map {s/^tag:/tags:/} make_list($param{$incexc})];
+}
+
+
 
 # map from yes|no to 1|0
 for my $key (qw(repeatmerged bug-rev pend-rev sev-rev)) {
@@ -370,15 +381,19 @@ my $title = $gBugs.' '.join(' and ', map {/ or /?"($_)":$_} @title);
 # shove in bugs which affect this package if there is a package or a
 # source given (by default), but no affects options given
 if (not exists $param{affects} and not exists $param{noaffects} and
-    (exists $param{source} or
+    (exists $param{src} or
      exists $param{package})) {
-    push @bugs, get_bugs((map {exists $param{$_}?($_ =~ /^(?:package|source)$/?'affects':$_,
-						  ($_ eq 'source'?'src:'.$param{$_}:$param{$_})):()}
+    push @bugs, get_bugs((map {my $key = $_;
+			       exists $param{$key}?($key =~ /^(?:package|src)$/?'affects':$key,
+						  ($key eq 'src'?[map {"src:$_"}make_list($param{$key})]:$param{$_})):()}
 			  grep {$_ ne 'newest'}
 			  keys %package_search_keys, 'archive'),
 			 usertags => \%ut,
 			);
 }
+
+# filter out included or excluded bugs
+
 
 if (defined $param{version}) {
      $title .= " at version $param{version}";
@@ -474,7 +489,7 @@ if (exists $param{submitter}) {
 
 print $result;
 
-print pkg_javascript() . "\n";
+print fill_in_template(template=>'cgi/pkgreport_javascript');
 
 print qq(<h2 class="outstanding"><!--<a class="options" href="javascript:toggle(1)">-->Options<!--</a>--></h2>\n);
 

@@ -444,6 +444,10 @@ sub get_versions{
      }
      my %versions;
      for my $package (make_list($param{package})) {
+	  my $source_only = 0;
+	  if ($package =~ s/^src://) {
+	       $source_only = 1;
+	  }
 	  my $version = $versions->{$package};
 	  next unless defined $version;
 	  for my $dist (make_list($param{dist})) {
@@ -451,7 +455,7 @@ sub get_versions{
 			     make_list($param{arch}):
 			     (grep {not $param{no_source_arch} or
 					$_ ne 'source'
-				    } keys %{$version->{$dist}})) {
+				    } $source_only?'source':keys %{$version->{$dist}})) {
 		    next unless defined $version->{$dist}{$arch};
 		    for my $ver (ref $version->{$dist}{$arch} ?
 				 keys %{$version->{$dist}{$arch}} :
