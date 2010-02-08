@@ -107,7 +107,8 @@ sub generate_package_info{
      }
      else {
 	  print {$output} "<p>There is no maintainer for $showpkg. ".
-	       "Please do not report new bugs against this package.</p>\n";
+	       "This means that this package no longer exists (or never existed). ".
+		   "Please do not report new bugs against this package. </p>\n";
      }
      my @pkgs = getsrcpkgs($srcforpkg);
      @pkgs = grep( !/^\Q$package\E$/, @pkgs );
@@ -130,9 +131,11 @@ sub generate_package_info{
 	       "list of other pseudo-packages</a>";
      }
      elsif (not defined $maint and not @{$param{bugs}}) {
-	  print {$output} "<p>There is no record of the " . html_escape($package) .
-	       ($param{binary} ? " package" : " source package") .
-		    ", and no bugs have been filed against it.</p>";
+	# don't bother printing out this information, because it's
+	# already present above.
+     	#  print {$output} "<p>There is no record of the " . html_escape($package) .
+     	#       ($param{binary} ? " package" : " source package") .
+     	# 	    ", and no bugs have been filed against it.</p>";
      }
      else {
 	  if ($package and defined $config{package_pages} and length $config{package_pages}) {

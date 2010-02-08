@@ -35,6 +35,7 @@ use Params::Validate qw(validate_with :types);
 use Debbugs::MIME qw(convert_to_utf8 decode_rfc1522 create_mime_message);
 use Debbugs::CGI qw(:url :html :util);
 use Debbugs::Common qw(globify_scalar english_join);
+use Debbugs::Config qw(:config);
 use POSIX qw(strftime);
 
 BEGIN{
