@@ -18,7 +18,7 @@ debbugs (2.4.2~exp1) experimental; urgency=low
     Thanks to Martin Krafft.
   * Properly handle Forwarded: at submit@ time (closes: #568020). Thanks
     to Martin Krafft.
-  * Fix source package src: urls
+  * Fix source package src: urls (closes: #567439). Thanks to Paul Wise.
   * Use package_maintainer to search for packages maintained by a
     maintainer (closes: #556863). Thanks to Yves-Alexis Perez.
   * Linkify CVE reports (closes: #568464). Thanks to Martin Zobel-Helas.
