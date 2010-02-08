@@ -306,6 +306,9 @@ sub package_maintainer {
 					 binary => {type => SCALAR|ARRAYREF,
 						    default => [],
 						   },
+					 maintainer => {type => SCALAR|ARRAYREF,
+							default => [],
+						       },
 					 rehash => {type => BOOLEAN,
 						    default => 0,
 						   },
@@ -314,6 +317,12 @@ sub package_maintainer {
 						    },
 					},
 			     );
+    my @binary = make_list($param{binary});
+    my @source = make_list($param{source});
+    my @maintainers = make_list($param{maintainer});
+    if ((@binary or @source) and @maintainers) {
+	croak "It is nonsensical to pass both maintainers and source or binary";
+    }
     if ($param{rehash}) {
 	$_source_maintainer = undef;
 	$_source_maintainer_rev = undef;
@@ -326,7 +335,7 @@ sub package_maintainer {
 	$_source_maintainer_rev = {};
 	for my $fn (@config{('source_maintainer_file',
 			     'source_maintainer_file_override',
-			     'pseduo_maint_file')}) {
+			     'pseudo_maint_file')}) {
 	    next unless defined $fn;
 	    if (not -e $fn) {
 		warn "Missing source maintainer file '$fn'";
@@ -342,7 +351,7 @@ sub package_maintainer {
 	$_maintainer_rev = {};
 	for my $fn (@config{('maintainer_file',
 			     'maintainer_file_override',
-			     'pseduo_maint_file')}) {
+			     'pseudo_maint_file')}) {
 	    next unless defined $fn;
 	    if (not -e $fn) {
 		warn "Missing maintainer file '$fn'";
@@ -353,19 +362,23 @@ sub package_maintainer {
 	}
     }
     my @return;
-    my @extra_source;
-    my $b = $param{reverse}?$_maintainer_rev:$_maintainer;
-    for my $binary (make_list($param{binary})) {
+    for my $binary (@binary) {
 	if (not $param{reverse} and $binary =~ /^src:/) {
-	    push @extra_source,$binary;
+	    push @source,$binary;
 	    next;
 	}
-	push @return,grep {defined $_} make_list($b->{$binary});
+	push @return,grep {defined $_} make_list($_maintainer->{$binary});
     }
-    my $s = $param{reverse}?$_source_maintainer_rev:$_source_maintainer;
-    for my $source (make_list($param{source},@extra_source)) {
+    for my $source (@source) {
 	$source =~ s/^src://;
-	push @return,grep {defined $_} make_list($s->{$source});
+	push @return,grep {defined $_} make_list($_source_maintainer->{$source});
+    }
+    for my $maintainer (grep {defined $_} @maintainers) {
+	push @return,grep {defined $_}
+	    make_list($_maintainer_rev->{$maintainer});
+	push @return,map {$_ !~ /^src:/?'src:'.$_:$_} 
+	    grep {defined $_}
+		make_list($_source_maintainer_rev->{$maintainer});
     }
     return @return;
 }

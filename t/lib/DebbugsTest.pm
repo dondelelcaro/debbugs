@@ -93,6 +93,7 @@ END
 foo main foo
 END
 			    "$config_dir/pseudo-packages.description" => '',
+			    "$config_dir/pseudo-packages.maint" => '',
 			   );
      while (my ($file,$contents) = each %files_to_create) {
 	  system('mkdir','-p',dirname($file));
