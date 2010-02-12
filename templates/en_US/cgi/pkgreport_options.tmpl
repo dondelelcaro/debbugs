@@ -66,6 +66,7 @@ $output;
 <input type="checkbox" name="bug-rev" {exists $param{"bug-rev"} and $param{"bug-rev"}?' checked':''}> Reverse Bugs<br>
 <input type="checkbox" name="pend-rev" {exists $param{"pend-rev"} and $param{"pend-rev"}?' checked':''}> Reverse Pending<br>
 <input type="checkbox" name="sev-rev" {exists $param{"sev-rev"} and $param{"sev-rev"}?' checked':''}> Reverse Severity<br>
+<input type="checkbox" name="noaffects" {exists $param{"noaffects"} and $param{"noaffects"}?' checked':''}> No Bugs which affect packages<br>
 <select name="dist">
 {output_select_options(['' => 'None',
                         map {($_,$_)} @{$config{distributions}},

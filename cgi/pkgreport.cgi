@@ -54,6 +54,7 @@ our %param = cgi_parameters(query => $q,
 				       qw(bug-rev pend-rev sev-rev),
 				       qw(maxdays mindays version),
 				       qw(data which dist newest),
+				       qw(noaffects),
 				      ],
 			    default => $default_params,
 			   );
