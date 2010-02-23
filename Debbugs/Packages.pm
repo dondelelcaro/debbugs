@@ -223,8 +223,8 @@ sub binary_to_source{
 	}
 	# avoid autovivification
 	my $bin = $_binarytosource{$binary};
+	next unless defined $bin;
 	if (not @versions) {
-	    next unless defined $bin;
 	    for my $ver (keys %{$bin}) {
 		for my $ar (keys %{$bin->{$ver}}) {
 		    my $src = $bin->{$ver}{$ar};
@@ -283,6 +283,9 @@ sub binary_to_source{
     if ($param{source_only}) {
 	my %uniq;
 	for my $s (@source) {
+	    # we shouldn't need to do this, but do this temporarily to
+	    # stop the warning.
+	    next unless defined $s->[0];
 	    $uniq{$s->[0]} = 1;
 	}
 	@result = sort keys %uniq;
