@@ -256,8 +256,8 @@ sub display_entity {
 	     length $config{cve_tracker}
 	    ) {
 	     # Add links to CVE vulnerabilities (closes #568464)
-	     $body =~ s{(CVE-\d{4}-\d{4,})}
-		       {<a href="http://$config{cve_tracker}$1">$1</a>}gx;
+	     $body =~ s{(^|\s)(CVE-\d{4}-\d{4,})(\s|[,.-]|$)}
+		       {$1<a href="http://$config{cve_tracker}$2">$2</a>$3}gxm;
 	 }
 	 if (not exists $param{att}) {
 	      print {$param{output}} qq(<pre class="message">$body</pre>\n);
