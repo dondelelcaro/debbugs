@@ -170,7 +170,7 @@ sub add_recipients {
      if (defined $config{bug_subscription_domain} and
 	 length $config{bug_subscription_domain}) {
 	  _add_address(recipients => $param{recipients},
-		       address    => 'bug='.$param{data}{bug_num}.'@'.
+		       address    => 'bugs='.$param{data}{bug_num}.'@'.
 		                     $config{bug_subscription_domain},
 		       reason     => "bug $param{data}{bug_num}",
 		       bug_num    => $param{data}{bug_num},
