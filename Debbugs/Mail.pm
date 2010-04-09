@@ -310,7 +310,7 @@ using warn.
 sub send_mail_message{
      my %param = validate_with(params => \@_,
 			       spec  => {sendmail_arguments => {type => ARRAYREF,
-								default => [qw(-odq -oem -oi)],
+								default => [$config{sendmail_arguments}],
 							       },
 					 parse_for_recipients => {type => BOOLEAN,
 								  default => 0,
@@ -328,7 +328,7 @@ sub send_mail_message{
 								 },
 					},
 			      );
-     my @sendmail_arguments = qw(-odq -oem -oi);
+     my @sendmail_arguments = @{$param{sendmail_arguments}};
      push @sendmail_arguments, '-f', $param{envelope_from} if exists $param{envelope_from};
 
      my @recipients;
