@@ -61,7 +61,7 @@ BEGIN {
 				 qw($gVersionTimeIndex),
 				 qw($gSimpleVersioning),
 				 qw($gCVETracker),
-				 qw($gSendmail $gLibPath $gSpamScan @gExcludeFromControl),
+				 qw($gSendmail @gSendmailArguments $gLibPath $gSpamScan @gExcludeFromControl),
 				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
 				 qw(%gTagsSingleLetter),
 				 qw(%gSearchEstraier),
@@ -848,6 +848,14 @@ Sets the sendmail binary to execute; defaults to /usr/lib/sendmail
 =cut
 
 set_default(\%config,'sendmail','/usr/lib/sendmail');
+
+=item sendmail_arguments
+
+Default arguments to pass to sendmail. Defaults to C<qw(-oem -oi)>.
+
+=cut
+
+set_default(\%config,'sendmail_arguments',[qw(-oem -oi)]);
 
 =item spam_scan
 
