@@ -310,7 +310,7 @@ using warn.
 sub send_mail_message{
      my %param = validate_with(params => \@_,
 			       spec  => {sendmail_arguments => {type => ARRAYREF,
-								default => [$config{sendmail_arguments}],
+								default => $config{sendmail_arguments},
 							       },
 					 parse_for_recipients => {type => BOOLEAN,
 								  default => 0,
