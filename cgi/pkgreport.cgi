@@ -79,7 +79,7 @@ if (exists $param{form_options} and defined $param{form_options}) {
      for my $incexc (qw(include exclude)) {
 	  next unless exists $param{$incexc};
 	  # normalize tag to tags
-	  $param{$incexc} = [map {s/^tag:/tags:/} grep /\S\:\S/, make_list($param{$incexc})];
+	  $param{$incexc} = [map {s/^tag:/tags:/; $_} grep /\S\:\S/, make_list($param{$incexc})];
      }
      for my $key (keys %package_search_keys) {
 	  next unless exists $param{key};
@@ -100,7 +100,7 @@ if (exists $param{form_options} and defined $param{form_options}) {
 for my $incexc (qw(include exclude)) {
     next unless exists $param{$incexc};
     # normalize tag to tags
-    $param{$incexc} = [map {s/^tag:/tags:/} make_list($param{$incexc})];
+    $param{$incexc} = [map {s/^tag:/tags:/; $_} make_list($param{$incexc})];
 }
 
 
