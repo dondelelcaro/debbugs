@@ -106,7 +106,7 @@ BEGIN{
 }
 
 use Debbugs::Config qw(:config);
-use Debbugs::Common qw(:lock buglog :misc get_hashname);
+use Debbugs::Common qw(:lock buglog :misc get_hashname sort_versions);
 use Debbugs::Status qw(bug_archiveable :read :hook writebug splitpackages split_status_fields get_bug_status);
 use Debbugs::CGI qw(html_escape);
 use Debbugs::Log qw(:misc);
@@ -1422,11 +1422,11 @@ sub set_found {
 		# We only care about reopening the bug if the bug is
 		# not done
 		if (defined $data->{done} and length $data->{done}) {
-		    my @svers_order = sort {Debbugs::Versions::Dpkg::vercmp($a,$b);}
-			map {m{([^/]+)$}; $1;} @svers;
+		    my @svers_order = sort_versions(map {m{([^/]+)$}; $1;}
+						    @svers);
 		    # determine if we need to reopen
-		    my @fixed_order = sort {Debbugs::Versions::Dpkg::vercmp($a,$b);}
-			map {m{([^/]+)$}; $1;} keys %fixed_versions;
+		    my @fixed_order = sort_versions(map {m{([^/]+)$}; $1;}
+						    keys %fixed_versions);
 		    if (not @fixed_order or
 			(Debbugs::Versions::Dpkg::vercmp($svers_order[-1],$fixed_order[-1]) >= 0)) {
 			$reopened = 1;

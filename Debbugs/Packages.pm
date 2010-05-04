@@ -37,7 +37,7 @@ use Fcntl qw(O_RDONLY);
 use MLDBM qw(DB_File Storable);
 use Storable qw(dclone);
 use Params::Validate qw(validate_with :types);
-use Debbugs::Common qw(make_list globify_scalar);
+use Debbugs::Common qw(make_list globify_scalar sort_versions);
 
 use List::Util qw(min max);
 
@@ -393,6 +393,11 @@ may change in the future, so if you care, please code accordingly.)
 =item return_archs -- returns a version=>[archs] hash indicating which
 architectures are at which versions.
 
+=item largest_source_version_only -- if there is more than one source
+version in a particular distribution, discards all versions but the
+largest in that distribution. Defaults to 1, as this used to be the
+way that the Debian archive worked.
+
 =back
 
 When called in scalar context, this function will return hashrefs or
@@ -426,6 +431,9 @@ sub get_versions{
 					   return_archs => {type => BOOLEAN,
 							    default => 0,
 							   },
+					   largest_source_version_only => {type => BOOLEAN,
+								       default => 1,
+									  },
 					  },
 			       );
      my $versions;
@@ -460,10 +468,16 @@ sub get_versions{
 					$_ ne 'source'
 				    } $source_only?'source':keys %{$version->{$dist}})) {
 		    next unless defined $version->{$dist}{$arch};
-		    for my $ver (ref $version->{$dist}{$arch} ?
-				 keys %{$version->{$dist}{$arch}} :
-				 $version->{$dist}{$arch}
-				) {
+		    my @vers = ref $version->{$dist}{$arch} eq 'HASH' ?
+			keys %{$version->{$dist}{$arch}} :
+			    make_list($version->{$dist}{$arch});
+		    if ($param{largest_source_version_only} and
+			$arch eq 'source' and @vers > 1) {
+			# order the versions, then pick the biggest version number
+			@vers = sort_versions(@vers);
+			@vers = $vers[-1];
+		    }
+		    for my $ver (@vers) {
 			 my $f_ver = $ver;
 			 if ($param{source}) {
 			      ($f_ver) = make_source_versions(package => $package,

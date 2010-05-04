@@ -44,6 +44,7 @@ BEGIN{
 				qw(getmaintainers_reverse),
 				qw(getpseudodesc),
 				qw(package_maintainer),
+				qw(sort_versions),
 			       ],
 		     misc   => [qw(make_list globify_scalar english_join checkpid),
 				qw(cleanup_eval_fail),
@@ -444,6 +445,33 @@ sub getpseudodesc {
     __add_to_hash($config{pseudo_desc_file},$_pseudodesc) if
 	defined $config{pseudo_desc_file};
     return $_pseudodesc;
+}
+
+=head2 sort_versions
+
+     sort_versions('1.0-2','1.1-2');
+
+Sorts versions using AptPkg::Versions::compare if it is available, or
+Debbugs::Versions::Dpkg::vercmp if it isn't.
+
+=cut
+
+our $vercmp;
+BEGIN{
+    use Debbugs::Versions::Dpkg;
+    $vercmp=\&Debbugs::Versions::Dpkg::vercmp;
+
+# eventually we'll use AptPkg:::Version or similar, but the current
+# implementation makes this *super* difficult.
+
+#     eval {
+# 	use AptPkg::Version;
+# 	$vercmp=\&AptPkg::Version::compare;
+#     };
+}
+
+sub sort_versions{
+    return sort {$vercmp->($a,$b)} @_;
 }
 
 
