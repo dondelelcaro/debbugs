@@ -1,6 +1,6 @@
 # -*- mode: cperl; -*-
 
-use Test::More tests => 4;
+use Test::More tests => 8;
 
 use warnings;
 use strict;
@@ -102,3 +102,58 @@ $SD_SIZE =
 ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Munging a bug with limit_package_foo")) == 0,
    'control@bugs.something'. "limit message succeeded with no errors");
 
+send_message(to=>'submit@bugs.something',
+	     headers => [To   => 'submit@bugs.something',
+			 From => 'foo@bugs.something',
+			 Subject => 'Submiting a bug',
+			],
+	     body => <<EOF) or fail('Unable to send message');
+Package: foo, bar
+Severity: normal
+
+This is a silly bug
+EOF
+$SD_SIZE = dirsize($sendmail_dir);
+
+
+send_message(to => 'control@bugs.something',
+	     headers => [To   => 'control@bugs.something',
+			 From => 'foo@bugs.something',
+			 Subject => "Munging a bug with limit_package_bar",
+			],
+	     body => <<EOF) or fail 'message to control@bugs.something failed';
+debug 10
+limit package baz
+severity 2 wishlist
+thanks
+EOF
+
+$SD_SIZE =
+    num_messages_sent($SD_SIZE,1,
+			   $sendmail_dir,
+		      'control@bugs.something messages appear to have been sent out properly');
+
+# make sure this fails
+ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed (with 1 errors): Munging a bug with limit_package_bar")) == 0,
+   'control@bugs.something'. "limit message failed with 1 error");
+
+send_message(to => 'control@bugs.something',
+	     headers => [To   => 'control@bugs.something',
+			 From => 'foo@bugs.something',
+			 Subject => "Munging a bug with limit_package_foo",
+			],
+	     body => <<EOF) or fail 'message to control@bugs.something failed';
+debug 10
+limit package foo
+severity 2 wishlist
+thanks
+EOF
+
+$SD_SIZE =
+    num_messages_sent($SD_SIZE,1,
+			   $sendmail_dir,
+		      'control@bugs.something messages appear to have been sent out properly');
+
+# make sure this fails
+ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Munging a bug with limit_package_foo")) == 0,
+   'control@bugs.something'. "limit message succeeded with no errors");
