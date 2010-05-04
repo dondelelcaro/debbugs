@@ -224,7 +224,7 @@ sub short_bug_status_html {
      if (@blockedby && $status{"pending"} ne 'fixed' && ! length($status{done})) {
 	  for my $b (@blockedby) {
 	       my %s = %{get_bug_status($b)};
-	       next if $s{"pending"} eq 'fixed' || length $s{done};
+	       next if (defined $s{pending} and $s{pending} eq 'fixed') or (defined $s{done} and length $s{done});
 	       push @{$status{blockedby_array}},{bug_num => $b, subject => $s{subject}, status => \%s};
 	  }
      }

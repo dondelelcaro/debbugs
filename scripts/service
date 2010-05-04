@@ -1301,12 +1301,11 @@ References: $header{'message-id'}
 Message-ID: <handler.s.$nn.transcript\@$gEmailDomain>
 Precedence: bulk
 ${packagepr}X-$gProject-PR-Message: transcript
-
-${transcript_scalar}Please contact me if you need assistance.
-
-$gMaintainer
-(administrator, $gProject $gBugs database)
 END
+
+$reply .= fill_template('mail/message_body',
+			  {body => "${transcript_scalar}Please contact me if you need assistance."},
+			);
 
 my $repliedshow= join(', ',$replyto,
 		      determine_recipients(recipients => \%recipients,
@@ -1354,12 +1353,15 @@ sub fill_template{
      my $variables = {config => \%config,
 		      defined($ref)?(ref    => $ref):(),
 		      defined($data)?(data  => $data):(),
+		      refs => [keys %bug_affected],
 		      %{$extra_var},
 		     };
      my $hole_var = {'&bugurl' =>
 		     sub{"$_[0]: ".
 			      'http://'.$config{cgi_domain}.'/'.
-				   Debbugs::CGI::bug_url($_[0]);
+				   Debbugs::CGI::bug_links(bug=>$_[0],
+							   links_only => 1,
+							  );
 		    }
 		    };
      return fill_in_template(template => $template,
