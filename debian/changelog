@@ -25,6 +25,8 @@ debbugs (2.4.2~exp1) experimental; urgency=low
   * Fix noaffects option
   * Allow the default sendmail options to be specified in the config file;
     don't use -obq by default anymore.
+  * Add urls to control@ mail footer (Closes: #578822). Thanks to Lars
+    Wirzenius
 
  -- Don Armstrong <don@debian.org>  Wed, 26 Aug 2009 21:32:53 -0700
 
