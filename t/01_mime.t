@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 01_mime.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 5;
+use Test::More tests => 6;
 
 use warnings;
 use strict;
@@ -21,6 +21,10 @@ my $test_str2 = <<'END';
  Döñ Ärḿßtrøñĝ <don@donarmstrong.com>
 END
 
+my $test_str3 =<<'END';
+foo@bar.com (J fö"ø)
+END
+
 # 1: test decode
 ok(Debbugs::MIME::decode_rfc1522(q(=?iso-8859-1?Q?D=F6n_Armstr=F3ng?= <don@donarmstrong.com>)) eq
   encode_utf8(q(Dön Armstróng <don@donarmstrong.com>)),"decode_rfc1522 decodes and converts to UTF8 properly");
@@ -31,6 +35,8 @@ ok(Debbugs::MIME::decode_rfc1522(Debbugs::MIME::encode_rfc1522($test_str)) eq $t
   "encode_rfc1522 encodes strings that decode_rfc1522 can decode");
 ok(Debbugs::MIME::decode_rfc1522(Debbugs::MIME::encode_rfc1522($test_str2)) eq $test_str2,
   "encode_rfc1522 encodes strings that decode_rfc1522 can decode");
+ok(Debbugs::MIME::decode_rfc1522(Debbugs::MIME::encode_rfc1522($test_str3)) eq $test_str3,
+  "encode_rfc1522 properly handles parentesis and \"");
 
 
 # Make sure that create_mime_message has encoded headers and doesn't enclude any 8-bit characters

@@ -288,8 +288,10 @@ sub encode_rfc1522 {
      return undef if not defined $rawstr;
      # We process words in reverse so we can preserve spacing between
      # encoded words. This regex splits on word|nonword boundaries and
-     # nonword|nonword boundaries.
-     my @words = reverse split /(?:(?<=[\s\n])|(?=[\s\n]))/m, $rawstr;
+     # nonword|nonword boundaries. We also consider parenthesis and "
+     # to be nonwords to avoid escaping them in comments in violation
+     # of RFC1522
+     my @words = reverse split /(?:(?<=[\s\n\)\(\"])|(?=[\s\n\)\(\"]))/m, $rawstr;
 
      my $previous_word_encoded = 0;
      my $string = '';
