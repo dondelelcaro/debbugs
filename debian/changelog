@@ -27,6 +27,8 @@ debbugs (2.4.2~exp1) experimental; urgency=low
     don't use -obq by default anymore.
   * Add urls to control@ mail footer (Closes: #578822). Thanks to Lars
     Wirzenius
+  * Don't RFC1522 escape ", ( and ). (Closes: #588859). Thanks to Glenn
+    Morris
 
  -- Don Armstrong <don@debian.org>  Wed, 26 Aug 2009 21:32:53 -0700
 
