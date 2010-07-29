@@ -48,6 +48,7 @@ BEGIN{
 			       ],
 		     misc   => [qw(make_list globify_scalar english_join checkpid),
 				qw(cleanup_eval_fail),
+				qw(hash_slice),
 			       ],
 		     date   => [qw(secs_to_english)],
 		     quit   => [qw(quit)],
@@ -806,6 +807,22 @@ sub cleanup_eval_fail {
     return $error;
 }
 
+=head2 hash_slice
+
+     hash_slice(%hash,qw(key1 key2 key3))
+
+For each key, returns matching values and keys of the hash if they exist
+
+=cut
+
+
+# NB: We use prototypes here SPECIFICALLY so that we can be passed a
+# hash without uselessly making a reference to first. DO NOT USE
+# PROTOTYPES USELESSLY ELSEWHERE.
+sub hash_slice(\%@) {
+    my ($hashref,@keys) = @_;
+    return map {exists $hashref->{$_}?($_,$hashref->{$_}):()} @keys;
+}
 
 1;
 
