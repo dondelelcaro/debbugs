@@ -368,7 +368,7 @@ sub write_log_records
 	 $logfh = $param{logfh}
     }
     elsif (exists $param{log_name}) {
-	 $logfh = IO::File->new($param{log_name},'w') or
+	 $logfh = IO::File->new(">>$param{log_name}") or
 	      die "Unable to open bug log $param{log_name} for writing: $!";
     }
     elsif (exists $param{bug_num}) {
@@ -381,8 +381,8 @@ sub write_log_records
 
     for my $record (@records) {
 	my $type = $record->{type};
+	croak "record type '$type' with no text field" unless defined $record->{text};
 	my ($text) = escape_log($record->{text});
-	croak "record type '$type' with no text field" unless defined $text;
 	if ($type eq 'autocheck') {
 	    print {$logfh} "\01\n$text\03\n" or
 		die "Unable to write to logfile: $!";
