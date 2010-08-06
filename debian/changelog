@@ -29,6 +29,9 @@ debbugs (2.4.2~exp1) experimental; urgency=low
     Wirzenius
   * Don't RFC1522 escape ", ( and ). (Closes: #588859). Thanks to Glenn
     Morris
+  * Various changes to make debbugs-local work better (Closes: #585796) 
+    - Add libnet-server-fork-perl to Depends for debbugs-local
+    - Sanitize env in -T code
 
  -- Don Armstrong <don@debian.org>  Wed, 26 Aug 2009 21:32:53 -0700
 
