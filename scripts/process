@@ -999,7 +999,7 @@ sub sendmessage {
 
     my $hash = get_hashname($ref);
     #save email to the log
-    my $logfh = IO::File->new("db-h/${hash}/${ref}.log",'w') or
+    my $logfh = IO::File->new(">>db-h/${hash}/${ref}.log") or
 	die "opening db-h/$hash/${ref}.log: $!";
     write_log_records(logfh => $logfh,
 		      records => {text => stripbccs($msg),
