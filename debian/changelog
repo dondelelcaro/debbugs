@@ -1,3 +1,9 @@
+debbugs (2.4.2~exp2) experimental; urgency=low
+
+  * Hack around elinks css bug (closes: #593804)
+
+ -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
+
 debbugs (2.4.2~exp1) experimental; urgency=low
 
   * Allow (almost) exactly what RFC2822 allows in comments (closes:
