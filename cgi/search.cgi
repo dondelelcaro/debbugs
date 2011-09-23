@@ -3,9 +3,9 @@
 use warnings;
 use strict;
 
-# Hack to work on merkel where suexec is in place
+# Hack to work on bugs-search.debian.org
 BEGIN{
-     if ($ENV{HTTP_HOST} eq 'glinka.debian.org') {
+     if ($ENV{HTTP_HOST} eq 'bugs-search.debian.org') {
 	  unshift @INC, qw(/srv/bugs.debian.org/source/debian/);
 	  $ENV{DEBBUGS_CONFIG_FILE}="/srv/bugs.debian.org/etc/config";
      }
