@@ -3,6 +3,15 @@
 use warnings;
 use strict;
 
+# Hack to work on merkel where suexec is in place
+BEGIN{
+     if ($ENV{HTTP_HOST} eq 'glinka.debian.org') {
+	  unshift @INC, qw(/srv/bugs.debian.org/source/debian/);
+	  $ENV{DEBBUGS_CONFIG_FILE}="/srv/bugs.debian.org/etc/config";
+     }
+}
+
+
 use CGI::Simple;
 
 # use CGI::Alert 'nobody@example.com';
