@@ -1,7 +1,7 @@
 -- 
 {
 my %ref_handled;
-for my $bug ($ref,@refs) {
+for my $bug (sort ($ref,@refs)) {
     next unless defined $bug;
     next if exists $ref_handled{$bug};
     $ref_handled{$bug} = 1;
