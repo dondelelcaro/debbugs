@@ -103,7 +103,7 @@ use Safe;
 # untaint $ENV{DEBBUGS_CONFIG_FILE} if it's owned by us
 # This enables us to test things that are -T.
 if (exists $ENV{DEBBUGS_CONFIG_FILE}) {
-     if (${[stat($ENV{DEBBUGS_CONFIG_FILE})]}[4] = $<) {
+     if (${[stat($ENV{DEBBUGS_CONFIG_FILE})]}[4] == $<) {
 	  $ENV{DEBBUGS_CONFIG_FILE} =~ /(.+)/;
 	  $ENV{DEBBUGS_CONFIG_FILE} = $1;
      }
@@ -1025,7 +1025,7 @@ set_default(\%config,'html_expire_note',
 sub read_config{
      my ($conf_file) = @_;
      if (not -e $conf_file) {
-	 print STDERR "configuration file '$conf_file' doesn't exist; skipping it";
+	 print STDERR "configuration file '$conf_file' doesn't exist; skipping it\n" if $DEBUG;
 	 return;
      }
      # first, figure out what type of file we're reading in.
