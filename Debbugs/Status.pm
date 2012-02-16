@@ -143,6 +143,10 @@ path to the summary file instead of the bug number and/or location.
 something modifying it while the bug has been read. You B<must> call
 C<unfilelock();> if something not undef is returned from read_bug.
 
+=item locks -- hashref of already obtained locks; incremented as new
+locks are needed, and decremented as locks are released on particular
+files.
+
 =back
 
 One of C<bug> or C<summary> must be passed. This function will return
@@ -171,6 +175,9 @@ sub read_bug{
 					 lock     => {type => BOOLEAN,
 						      optional => 1,
 						     },
+					 locks    => {type => HASHREF,
+						      optional => 1,
+						     },
 					},
 			     );
     die "One of bug or summary must be passed to read_bug"
@@ -197,13 +204,13 @@ sub read_bug{
 	 ($location) = $status =~ m/(db-h|db|archive)/;
     }
     if ($param{lock}) {
-	filelock("$config{spool_dir}/lock/$param{bug}");
+	filelock("$config{spool_dir}/lock/$param{bug}",exists $param{locks}?$param{locks}:());
     }
     my $status_fh = IO::File->new($status, 'r');
     if (not defined $status_fh) {
 	warn "Unable to open $status for reading: $!";
 	if ($param{lock}) {
-	    unfilelock();
+		unfilelock(exists $param{locks}?$param{locks}:());
 	}
 	return undef;
     }
@@ -223,7 +230,7 @@ sub read_bug{
     if ($version > 3) {
 	 warn "Unsupported status version '$version'";
 	 if ($param{lock}) {
-	     unfilelock();
+	     unfilelock(exists $param{locks}?$param{locks}:());
 	 }
 	 return undef;
     }
@@ -435,9 +442,24 @@ even if all of the others were read properly.
 =cut
 
 sub lock_read_all_merged_bugs {
-    my ($bug_num,$location) = @_;
+    my %param = validate_with(params => \@_,
+			      spec   => {bug => {type => SCALAR,
+						 regex => qr/^\d+$/,
+						},
+					 location => {type => SCALAR,
+						      optional => 1,
+						     },
+					 locks    => {type => HASHREF,
+						      optional => 1,
+						     },
+					},
+			     );
     my $locks = 0;
-    my @data = (lockreadbug(@_));
+    my @data = read_bug(bug => $param{bug},
+			lock => 1,
+			exists $param{location} ? (location => $param{location}):(),
+			exists $param{locks} ? (locks => $param{locks}):(),
+		       );
     if (not @data or not defined $data[0]) {
 	return ($locks,());
     }
@@ -445,41 +467,51 @@ sub lock_read_all_merged_bugs {
     if (not length $data[0]->{mergedwith}) {
 	return ($locks,@data);
     }
-    unfilelock();
+    unfilelock(exists $param{locks}?$param{locks}:());
     $locks--;
-    filelock("$config{spool_dir}/lock/merge");
+    filelock("$config{spool_dir}/lock/merge",exists $param{locks}?$param{locks}:());
     $locks++;
-    @data = (lockreadbug(@_));
+    @data = read_bug(bug => $param{bug},
+		     lock => 1,
+		     exists $param{location} ? (location => $param{location}):(),
+		     exists $param{locks} ? (locks => $param{locks}):(),
+		    );
     if (not @data or not defined $data[0]) {
-	unfilelock(); #for merge lock above
+	unfilelock(exists $param{locks}?$param{locks}:()); #for merge lock above
 	$locks--;
 	return ($locks,());
     }
     $locks++;
     my @bugs = split / /, $data[0]->{mergedwith};
+    push @bugs, $param{bug};
     for my $bug (@bugs) {
 	my $newdata = undef;
-	if ($bug ne $bug_num) {
-	    $newdata = lockreadbug($bug,$location);
+	if ($bug != $param{bug}) {
+	    $newdata =
+		read_bug(bug => $bug,
+			 lock => 1,
+			 exists $param{location} ? (location => $param{location}):(),
+			 exists $param{locks} ? (locks => $param{locks}):(),
+			);
 	    if (not defined $newdata) {
 		for (1..$locks) {
-		    unfilelock();
+		    unfilelock(exists $param{locks}?$param{locks}:());
 		}
 		$locks = 0;
-		warn "Unable to read bug: $bug while handling merged bug: $bug_num";
+		warn "Unable to read bug: $bug while handling merged bug: $param{bug}";
 		return ($locks,());
 	    }
 	    $locks++;
 	    push @data,$newdata;
-	}
-	# perform a sanity check to make sure that the merged bugs are
-	# all merged with eachother
-	my $expectmerge= join(' ',grep {$_ != $bug } sort { $a <=> $b } (@bugs,$bug_num));
-	if ($newdata->{mergedwith} ne $expectmerge) {
-	    for (1..$locks) {
-		unfilelock();
+	    # perform a sanity check to make sure that the merged bugs
+	    # are all merged with eachother
+	    my $expectmerge= join(' ',grep {$_ != $bug } sort { $a <=> $b } @bugs);
+	    if ($newdata->{mergedwith} ne $expectmerge) {
+		for (1..$locks) {
+		    unfilelock(exists $param{locks}?$param{locks}:());
+		}
+		die "Bug $param{bug} differs from bug $bug: ($newdata->{bug_num}: '$newdata->{mergedwith}') vs. ('$expectmerge') (".join(' ',@bugs).")";
 	    }
-	    die "Bug $bug_num differs from bug $bug: ($newdata->{bug_num}: $newdata->{mergedwith}) vs. ($expectmerge) (".join(' ',@bugs).")";
 	}
     }
     return ($locks,@data);
@@ -608,7 +640,7 @@ options mean.
 
 sub unlockwritebug {
     writebug(@_);
-    &unfilelock;
+    unfilelock();
 }
 
 =head1 VERSIONS
@@ -845,7 +877,7 @@ sub bug_archiveable{
      }
      # Check to make sure that the bug has none of the unremovable tags set
      if (@{$config{removal_unremovable_tags}}) {
-	  for my $tag (split ' ', ($status->{tags}||'')) {
+	  for my $tag (split ' ', ($status->{keywords}||'')) {
 	       if (grep {$tag eq $_} @{$config{removal_unremovable_tags}}) {
 		    print STDERR "Cannot archive $param{bug} because it has an unremovable tag '$tag'\n" if $DEBUG;
 		    return $cannot_archive;
@@ -890,7 +922,7 @@ sub bug_archiveable{
 	  @dist_tags{@{$config{removal_distribution_tags}}} =
 	       (1) x @{$config{removal_distribution_tags}};
 	  my %dists;
-	  for my $tag (split ' ', ($status->{tags}||'')) {
+	  for my $tag (split ' ', ($status->{keywords}||'')) {
 	       next unless exists $config{distribution_aliases}{$tag};
 	       next unless $dist_tags{$config{distribution_aliases}{$tag}};
 	       $dists{$config{distribution_aliases}{$tag}} = 1;
@@ -1198,7 +1230,7 @@ sub bug_presence {
 		    (1) x @{$config{affects_distribution_tags}};
 	       my $some_distributions_disallowed = 0;
 	       my %allowed_distributions;
-	       for my $tag (split ' ', ($status{tags}||'')) {
+	       for my $tag (split ' ', ($status{keywords}||'')) {
 		   if (exists $config{distribution_aliases}{$tag} and
 			exists $affects_distribution_tags{$config{distribution_aliases}{$tag}}) {
 		       $some_distributions_disallowed = 1;
@@ -1506,23 +1538,23 @@ sub update_realtime {
 
 sub bughook_archive {
 	my @refs = @_;
-	&filelock("$config{spool_dir}/debbugs.trace.lock");
-	&appendfile("debbugs.trace","archive ".join(',',@refs)."\n");
+	filelock("$config{spool_dir}/debbugs.trace.lock");
+	appendfile("$config{spool_dir}/debbugs.trace","archive ".join(',',@refs)."\n");
 	my %bugs = update_realtime("$config{spool_dir}/index.db.realtime",
 				   map{($_,'REMOVE')} @refs);
 	update_realtime("$config{spool_dir}/index.archive.realtime",
 			%bugs);
-	&unfilelock;
+	unfilelock();
 }
 
 sub bughook {
 	my ( $type, %bugs_temp ) = @_;
-	&filelock("$config{spool_dir}/debbugs.trace.lock");
+	filelock("$config{spool_dir}/debbugs.trace.lock");
 
 	my %bugs;
 	for my $bug (keys %bugs_temp) {
 	     my $data = $bugs_temp{$bug};
-	     &appendfile("debbugs.trace","$type $bug\n",makestatus($data, 1));
+	     appendfile("$config{spool_dir}/debbugs.trace","$type $bug\n",makestatus($data, 1));
 
 	     my $whendone = "open";
 	     my $severity = $config{default_severity};
@@ -1540,7 +1572,7 @@ sub bughook {
 	}
 	update_realtime("$config{spool_dir}/index.db.realtime", %bugs);
 
-	&unfilelock;
+	unfilelock();
 }
 
 
