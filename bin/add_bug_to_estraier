@@ -23,6 +23,13 @@ add_bug_to_estraier -- add a bug log to an estraier database
 add_bug_to_estraier [options] < list_of_bugs_to_add
 
  Options:
+  --url, -u url to estraier node
+  --user, -U user to log into the estraier node
+  --pass, -P password for the estraier node
+  --spool, -s spool location
+  --conf, -c addbug configuration file
+  --cron add all bugs to estraier
+  --timestamp bug timestamp file
   --debug, -d debugging level (Default 0)
   --help, -h display this help
   --man, -m display manual
