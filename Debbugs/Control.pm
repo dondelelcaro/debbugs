@@ -922,6 +922,15 @@ sub set_done {
 	my $requester_notified = 0;
 	my $orig_report_set = 0;
 	for my $data (@data) {
+	    if (exists $data->{done} and
+		defined $data->{done} and
+		length $data->{done}) {
+		print {$transcript} "Bug $data->{bug_num} is already marked as done; not doing anything.\n";
+		__end_control(%info);
+		return;
+	    }
+	}
+	for my $data (@data) {
 	    my $old_data = dclone($data);
 	    my $hash = get_hashname($data->{bug_num});
 	    my $report_fh = IO::File->new("db-h/$hash/$data->{bug_num}.report",'r') or
@@ -939,13 +948,6 @@ sub set_done {
 		$orig_report_set = 1;
 	    }
 
-	    if (exists $data->{done} and
-		defined $data->{done} and
-		length $data->{done}) {
-		print {$transcript} "Bug $data->{bug_num} is already marked as done; not doing anything.\n";
-		__end_control(%info);
-		return;
-	    }
 	    $action = "Marked $config{bug} as done";
 
 	    # set done to the requester
@@ -962,6 +964,7 @@ sub set_done {
 				)
 		if not exists $param{append_log} or $param{append_log};
 	    writebug($data->{bug_num},$data);
+	    print {$transcript} "$action\n";
 	    # get the original report
 	    if ($param{notify_submitter}) {
 		my $submitter_message;
