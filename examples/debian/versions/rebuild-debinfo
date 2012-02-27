@@ -1,0 +1,60 @@
+#! /usr/bin/perl -w
+use strict;
+use MLDBM qw(DB_File Storable);
+use Fcntl;
+
+$MLDBM::DumpMeth=q(portable);
+
+my (%srcbin, %binsrc);
+tie %srcbin, 'MLDBM', '/org/bugs.debian.org/versions/indices/srcbin_rebuild.idx',
+	     O_CREAT|O_RDWR, 0644
+    or die "tie srcbin_rebuild.idx: $!";
+tie %binsrc, 'MLDBM', '/org/bugs.debian.org/versions/indices/binsrc_rebuild.idx',
+	     O_CREAT|O_RDWR, 0644
+    or die "tie binsrc_rebuild.idx: $!";
+
+
+my %temp_srcbin;
+my %temp_binsrc;
+while (<>) {
+    my ($binname, $binver, $binarch, $srcname, $srcver) = split;
+    if (not defined $srcver) {
+	print STDERR "Something is wrong with file: $ARGV line $.: 0x".unpack(q(H*),$_)."\n";
+	next;
+    }
+
+    # see MLDBM(3pm)/BUGS
+    if (not exists $temp_srcbin{$srcname}) {
+	$temp_srcbin{$srcname} = $srcbin{$srcname} // {};
+    }
+    push_if_not_exists($temp_srcbin{$srcname}{$srcver},[$binname, $binver, $binarch]);
+    if (not exists $temp_binsrc{$binname}) {
+	$temp_binsrc{$binname} = $binsrc{$binname} // {};
+    }
+    $temp_binsrc{$binname}{$binver}{$binarch} = [$srcname, $srcver];
+}
+for my $key  (keys %temp_srcbin) {
+    $srcbin{$key} = $temp_srcbin{$key};
+}
+for my $key  (keys %temp_binsrc) {
+    $binsrc{$key} = $temp_binsrc{$key};
+}
+
+sub push_if_not_exists{
+    my ($array,@push_bits) = @_;
+ PUSH_CHECK: for my $push_bit (@push_bits) {
+	my $push_ok = 1;
+	my @pb = @{$push_bit};
+    ARRAY_CHECK: for my $array_bit (@{$array}) {
+	    my @ab = @{$array_bit};
+	    next ARRAY_CHECK unless $#ab == $#pb;
+	    for my $i (0..$#ab) {
+		next ARRAY_CHECK if $ab[$i] ne $pb[$i];
+	    }
+	    # if we get here, then the array has matched; skip to the
+	    # next thing to try to push
+	    next PUSH_CHECK;
+	}
+	push @{$array},$push_bit;
+    }
+}
