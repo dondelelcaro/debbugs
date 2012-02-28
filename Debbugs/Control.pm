@@ -897,6 +897,24 @@ sub set_done {
 		$warn_fixed = 0;
 	    }
 	}
+	$action = "Bug reopened";
+	for my $data (@data) {
+	    my $old_data = dclone($data);
+	    $data->{done} = '';
+	    append_action_to_log(bug => $data->{bug_num},
+				 command => 'done',
+				 new_data => $data,
+				 old_data => $old_data,
+				 get_lock => 0,
+				 __return_append_to_log_options(
+								%param,
+								action => $action,
+							       ),
+				)
+		if not exists $param{append_log} or $param{append_log};
+	    writebug($data->{bug_num},$data);
+	}
+	print {$transcript} "$action\n";
 	__end_control(%info);
 	if (exists $param{submitter}) {
 	    set_submitter(bug => $param{bug},
@@ -1013,6 +1031,7 @@ sub set_done {
 				    );
 	    }
 	}
+	__end_control(%info);
 	if (exists $param{fixed}) {
 	    set_fixed(fixed => $param{fixed},
 		      bug => $param{bug},
