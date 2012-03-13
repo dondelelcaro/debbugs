@@ -16,8 +16,8 @@ use Debbugs::MIME qw(decode_rfc1522 create_mime_message getmailbody);
 use Debbugs::Mail qw(send_mail_message encode_headers get_addresses);
 use Debbugs::Packages qw(getpkgsrc binary_to_source);
 use Debbugs::User qw(read_usertags write_usertags);
-use Debbugs::Common qw(:lock get_hashname package_maintainer);
-use Debbugs::Status qw(writebug isstrongseverity lockreadbugmerge lockreadbug read_bug splitpackages :versions);
+use Debbugs::Common qw(:lock get_hashname package_maintainer overwritefile);
+use Debbugs::Status qw(writebug isstrongseverity lockreadbugmerge lockreadbug new_bug read_bug splitpackages  :versions);
 
 use Debbugs::CGI qw(html_escape bug_url);
 
@@ -591,14 +591,8 @@ if ($ref<0) { # new bug report
     if (defined($pheader{forwarded})) {
 	$data->{forwarded} = $pheader{forwarded};
     }
-    &filelock("nextnumber.lock");
-    open(N,"nextnumber") || die "nextnumber: read: $!";
-    my $nextnumber=<N>; $nextnumber =~ s/\n$// || die "nextnumber bad format";
-    $ref= $nextnumber+0;  $nextnumber += 1;  $newref=1;
-    &overwrite('nextnumber', "$nextnumber\n");
-    &unfilelock;
+    $ref = new_bug();
     my $hash = get_hashname($ref);
-    &overwrite("db-h/$hash/$ref.log",'');
     $data->{originator} = $replyto;
     $data->{date} = $intdate;
     $data->{subject} = $subject;
@@ -632,8 +626,8 @@ if ($ref<0) { # new bug report
 					  );
 	 }
     }
-    &overwrite("db-h/$hash/$ref.report",
-               join("\n",@msg)."\n");
+    overwritefile("db-h/$hash/$ref.report",
+		  map {"$_\n"} @msg);
 }
 
 &checkmaintainers;
@@ -900,14 +894,6 @@ if (not exists $header{'x-debbugs-no-ack'} and
 
 &appendlog;
 &finish;
-
-sub overwrite {
-    my ($f,$v) = @_;
-    open(NEW,">$f.new") || die "$f.new: create: $!";
-    print(NEW "$v") || die "$f.new: write: $!";
-    close(NEW) || die "$f.new: close: $!";
-    rename("$f.new","$f") || die "rename $f.new to $f: $!";
-}
 
 sub appendlog {
     my $hash = get_hashname($ref);

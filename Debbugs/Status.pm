@@ -44,6 +44,7 @@ use Debbugs::Packages qw(makesourceversions make_source_versions getversions get
 use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
 use POSIX qw(ceil);
+use File::Copy qw(copy);
 
 use Storable qw(dclone);
 use List::Util qw(min max);
@@ -62,6 +63,7 @@ BEGIN{
 				qw(lock_read_all_merged_bugs),
 			       ],
 		     write  => [qw(writebug makestatus unlockwritebug)],
+		     new => [qw(new_bug)],
 		     versions => [qw(addfoundversions addfixedversions),
 				  qw(removefoundversions removefixedversions)
 				 ],
@@ -69,7 +71,7 @@ BEGIN{
 		     fields   => [qw(%fields)],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(status read write versions hook fields));
+     Exporter::export_ok_tags(keys %EXPORT_TAGS);
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -516,6 +518,61 @@ sub lock_read_all_merged_bugs {
     }
     return ($locks,@data);
 }
+
+=head2 new_bug
+
+	my $new_bug_num = new_bug(copy => $data->{bug_num});
+
+Creates a new bug and returns the new bug number upon success.
+
+Dies upon failures.
+
+=cut
+
+sub new_bug {
+    my %param =
+	validate_with(params => \@_,
+		      spec => {copy => {type => SCALAR,
+				        regex => qr/^\d+/,
+				        optional => 1,
+				       },
+			      },
+		     );
+    filelock("nextnumber.lock");
+    my $nn_fh = IO::File->new("nextnumber",'r') or
+	die "Unable to open nextnuber for reading: $!";
+    local $\;
+    my $nn = <$nn_fh>;
+    ($nn) = $nn =~ m/^(\d+)\n$/ or die "Bad format of nextnumber; is not exactly ".'^\d+\n$';
+    close $nn_fh;
+    overwritefile("nextnumber",
+		  ($nn+1)."\n");
+    my $nn_hash = get_hashname($nn);
+    use IO::File;
+    my $t_fh = IO::File->new("/home/don/temp.txt",'a') or die "Unable to open ~don/temp.txt for writing: $!";
+    use Data::Dumper;
+    print {$t_fh} Dumper({%param,nn => $nn, nn_hash => $nn_hash, nextnumber => qx(cat nextnumber)});
+    close $t_fh;
+    if ($param{copy}) {
+	my $c_hash = get_hashname($param{copy});
+	for my $file (qw(log status summary report)) {
+	    copy("db-h/$c_hash/$param{copy}.$file",
+		 "db-h/$nn_hash/${nn}.$file")
+	}
+    }
+    else {
+	for my $file (qw(log status summary report)) {
+	    overwritefile("db-h/$nn_hash/${nn}.$file",
+			   "");
+	}
+    }
+
+    # this probably needs to be munged to do something more elegant
+#    &bughook('new', $clone, $data);
+
+    return($nn);
+}
+
 
 
 my @v1fieldorder = qw(originator date subject msgid package

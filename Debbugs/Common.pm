@@ -39,7 +39,7 @@ BEGIN{
 
      @EXPORT = ();
      %EXPORT_TAGS = (util   => [qw(getbugcomponent getbuglocation getlocationpath get_hashname),
-				qw(appendfile buglog getparsedaddrs getmaintainers),
+				qw(appendfile overwritefile buglog getparsedaddrs getmaintainers),
 				qw(bug_status),
 				qw(getmaintainers_reverse),
 				qw(getpseudodesc),
@@ -217,6 +217,28 @@ sub appendfile {
 	print {$fh} @data or die "Unable to write to $file: $!";
 	close $fh or die "Unable to close $file: $!";
 }
+
+=head2 overwritefile
+
+     ovewritefile($file,'data','to','append');
+
+Opens file.new, writes data to it, then moves file.new to file.
+
+=cut
+
+sub overwritefile {
+	my ($file,@data) = @_;
+	my $fh = IO::File->new("${file}.new",'w') or
+	     die "Unable top open ${file}.new for writing: $!";
+	print {$fh} @data or die "Unable to write to ${file}.new: $!";
+	close $fh or die "Unable to close ${file}.new: $!";
+	rename("${file}.new",$file) or
+	    die "Unable to rename ${file}.new to $file: $!";
+}
+
+
+
+
 
 =head2 getparsedaddrs
 
