@@ -1,0 +1,15 @@
+## configuration options
+
+## database creation
+
+estcmd create -si -apn -xh3 \
+  -attr status string \
+  -attr subject string \
+  -attr date number \
+  -attr submitter string \
+  -attr package string \
+  -attr tags string \
+  -attr severity string \
+  bts
+
+# status subject date submitter package tags severity

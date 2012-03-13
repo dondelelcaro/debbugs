@@ -325,7 +325,7 @@ sub bug_filter {
 							  optional => 1,
 							 },
 					  repeat_merged => {type => BOOLEAN,
-							    optional => 1,
+							    default => 1,
 							   },
 					  include => {type => HASHREF,
 						      optional => 1,

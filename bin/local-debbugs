@@ -374,7 +374,7 @@ elsif ($options{search}) {
      my $pid = checkpid($options{mirror_location}.'/local-debbugs.pid');
      if (not defined $pid or $pid == 0) {
 	  print STDERR "Unable to open pidfile or daemon not running: $!\n";
-	  print STDERR qq(Mr. T: "I pity da fool who tries to show a bug without a running daemon"\n);
+	  print STDERR qq(Mr. T: "I pity da fool who tries to search for bugs without a running daemon"\n);
 	  print STDERR "Hint: try the --daemon option first\n";
 	  exit 1;
      }

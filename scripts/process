@@ -16,12 +16,12 @@ use Debbugs::MIME qw(decode_rfc1522 create_mime_message getmailbody);
 use Debbugs::Mail qw(send_mail_message encode_headers get_addresses);
 use Debbugs::Packages qw(getpkgsrc binary_to_source);
 use Debbugs::User qw(read_usertags write_usertags);
-use Debbugs::Common qw(:lock get_hashname package_maintainer);
-use Debbugs::Status qw(writebug isstrongseverity lockreadbugmerge lockreadbug read_bug splitpackages :versions);
+use Debbugs::Common qw(:lock get_hashname package_maintainer overwritefile);
+use Debbugs::Status qw(writebug isstrongseverity lockreadbugmerge lockreadbug new_bug read_bug splitpackages  :versions);
 
 use Debbugs::CGI qw(html_escape bug_url);
 
-use Debbugs::Log qw(:misc);
+use Debbugs::Log qw(:misc :write);
 
 use Debbugs::Text qw(:templates);
 
@@ -265,8 +265,7 @@ if (defined $pheader{source}) {
      $source_package = $pheader{source};
 }
 elsif (defined $data->{package} or defined $pheader{package}) {
-     my $pkg_src = getpkgsrc();
-     $source_package = $pkg_src->{defined $data->{package}?$data->{package}:$pheader{package}};
+     $source_package = binary_to_source(binary => $data->{package} // $pheader{package});
 }
 $source_pr_header = "X-$gProject-PR-Source: $source_package\n"
      if defined $source_package and length $source_package;
@@ -301,7 +300,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	    push @generalcc, "$gForwardList\@$gListDomain";
 	    $generalcc= "$gForwardList\@$gListDomain";
 	} else { 
-	    $generalcc=''; 
+	    $generalcc='';
         }
     } else { # Done
         if (defined $data->{done} and length($data->{done}) and
@@ -512,6 +511,9 @@ if ($ref<0) { # new bug report
         $data->{package} = 'src:'.$pheader{source};
     } elsif (defined $pheader{package}) {
         $data->{package} = $pheader{package};
+	if ($data->{package} =~ /^src:(.+)/) {
+	    $pheader{source} = $1;
+	}
     } elsif (defined $config{default_package}) {
 	$data->{package} = $config{default_package},
     }
@@ -589,14 +591,8 @@ if ($ref<0) { # new bug report
     if (defined($pheader{forwarded})) {
 	$data->{forwarded} = $pheader{forwarded};
     }
-    &filelock("nextnumber.lock");
-    open(N,"nextnumber") || die "nextnumber: read: $!";
-    my $nextnumber=<N>; $nextnumber =~ s/\n$// || die "nextnumber bad format";
-    $ref= $nextnumber+0;  $nextnumber += 1;  $newref=1;
-    &overwrite('nextnumber', "$nextnumber\n");
-    &unfilelock;
+    $ref = new_bug();
     my $hash = get_hashname($ref);
-    &overwrite("db-h/$hash/$ref.log",'');
     $data->{originator} = $replyto;
     $data->{date} = $intdate;
     $data->{subject} = $subject;
@@ -630,8 +626,8 @@ if ($ref<0) { # new bug report
 					  );
 	 }
     }
-    &overwrite("db-h/$hash/$ref.report",
-               join("\n",@msg)."\n");
+    overwritefile("db-h/$hash/$ref.report",
+		  map {"$_\n"} @msg);
 }
 
 &checkmaintainers;
@@ -899,14 +895,6 @@ if (not exists $header{'x-debbugs-no-ack'} and
 &appendlog;
 &finish;
 
-sub overwrite {
-    my ($f,$v) = @_;
-    open(NEW,">$f.new") || die "$f.new: create: $!";
-    print(NEW "$v") || die "$f.new: write: $!";
-    close(NEW) || die "$f.new: close: $!";
-    rename("$f.new","$f") || die "rename $f.new to $f: $!";
-}
-
 sub appendlog {
     my $hash = get_hashname($ref);
     if (!open(AP,">>db-h/$hash/$ref.log")) {
@@ -997,12 +985,14 @@ sub sendmessage {
 
     my $hash = get_hashname($ref);
     #save email to the log
-    open(AP,">>db-h/$hash/$ref.log") || die "opening db-h/$hash/$ref.log (lo): $!";
-    print(AP "\2\n",join("\4",@$recips),"\n\5\n",
-          escape_log(stripbccs($msg)),"\n\3\n") ||
-        die "writing db-h/$hash/$ref.log (lo): $!";
-    close(AP) || die "closing db-h/$hash/$ref.log (lo): $!";
-
+    my $logfh = IO::File->new(">>db-h/${hash}/${ref}.log") or
+	die "opening db-h/$hash/${ref}.log: $!";
+    write_log_records(logfh => $logfh,
+		      records => {text => stripbccs($msg),
+				  type => 'recips',
+				  recips => [@{$recips}],
+				 },
+		     );
     if (ref($bcc)) {
         shift @$recips if $recips->[0] eq '-t';
         push @$recips, @$bcc;

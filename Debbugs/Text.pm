@@ -165,6 +165,7 @@ sub fill_in_template{
 			     qw(rv2gv refgen srefgen ref),
 			     qw(caller require entereval),
 			     qw(gmtime time sprintf prtf),
+			     qw(sort),
 			    );
 	  $safe->share('*STDERR');
 	  $safe->share('%config');

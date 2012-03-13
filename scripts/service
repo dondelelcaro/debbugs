@@ -135,6 +135,7 @@ my @common_control_options =
      request_nn        => $nn,
      request_replyto   => $replyto,
      message           => \@log,
+     affected_bugs     => \%bug_affected,
      affected_packages => \%affected_packages,
      recipients        => \%recipients,
      limit             => \%limit,
@@ -465,69 +466,35 @@ END
         }
 #### "developer only" ones start here
     } elsif (m/^close\s+\#?(-?\d+)(?:\s+(\d.*))?$/i) {
-	$ok++;
-	$ref= $1;
+        $ok++;
+        $ref= $1;
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	$bug_affected{$ref}=1;
-	my $version= $2;
-	if (&setbug) {
-	    print {$transcript} "'close' is deprecated; see http://$gWebDomain/Developer$gHTMLSuffix#closing.\n";
-	    if (length($data->{done}) and not defined($version)) {
-		print {$transcript} "$gBug is already closed, cannot re-close.\n\n";
-                &nochangebug;
-            } else {
-                $action= "$gBug " .
-                    (defined($version) ?
-                        "marked as fixed in version $version" :
-                        "closed") .
-                    ", send any further explanations to $data->{originator}";
-                do {
-		   $affected_packages{$data->{package}} = 1;
-                   add_recipients(data => $data,
-				  recipients => \%recipients,
-				  actions_taken => {done => 1},
-				  transcript   => $transcript,
-				  ($dl > 0 ? (debug => $transcript):()),
-				 );
-		    $data->{done}= $replyto;
-                    my @keywords= split ' ', $data->{keywords};
-		    my $extramessage = '';
-                    if (grep $_ eq 'pending', @keywords) {
-                        $extramessage= "Removed pending tag.\n";
-                        $data->{keywords}= join ' ', grep $_ ne 'pending',
-                                                @keywords;
-                    }
-                    addfixedversions($data, $data->{package}, $version, 'binary');
-
-		    my $message= <<END;
-From: $gMaintainerEmail ($gProject $gBug Tracking System)
-To: $data->{originator}
-Subject: $gBug#$ref acknowledged by developer
-         ($header{'subject'})
-References: $header{'message-id'} $data->{msgid}
-In-Reply-To: $data->{msgid}
-Message-ID: <handler.$ref.$nn.notifdonectrl.$midix\@$gEmailDomain>
-Reply-To: $ref\@$gEmailDomain
-X-$gProject-PR-Message: they-closed-control $ref
-
-This is an automatic notification regarding your $gBug report
-#$ref: $data->{subject},
-which was filed against the $data->{package} package.
-
-It has been marked as closed by one of the developers, namely
-$replyto.
-
-You should be hearing from them with a substantive response shortly,
-in case you haven't already. If not, please contact them directly.
-
-$gMaintainer
-(administrator, $gProject $gBugs database)
-
-END
-                    &sendmailmessage($message,$data->{originator});
-                } while (&getnextbug);
-            }
-        }
+	if (defined $2) {
+	    eval {
+		set_fixed(@common_control_options,
+			  bug   => $ref,
+			  fixed => $2,
+			  add   => 1,
+			 );
+	    };
+	    if ($@) {
+		$errors++;
+		print {$transcript} "Failed to add fixed version '$2' to $ref: ".cleanup_eval_fail($@,$debug)."\n";
+	    }
+	}
+	eval {
+	    set_done(@common_control_options,
+		     done      => 1,
+		     bug       => $ref,
+		     reopen    => 0,
+		     notify_submitter => 1,
+		     clear_fixed => 0,
+		    );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to mark $ref as done: ".cleanup_eval_fail($@,$debug)."\n";
+	}
     } elsif (m/^reassign\s+\#?(-?\d+)\s+ # bug and command
 	       (?:(?:((?:src:|source:)?$config{package_name_re}) # new package
 	       (?:\s+((?:$config{package_name_re}\/)?
@@ -546,7 +513,6 @@ END
 	}
 	@new_packages = map {y/A-Z/a-z/; s/^(?:src|source):/src:/; $_;} @new_packages;
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	$bug_affected{$ref}=1;
         my $version= $3;
     	eval {
 	    set_package(@common_control_options,
@@ -570,7 +536,6 @@ END
         $ok++;
         $ref= $1;
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	$bug_affected{$ref}=1;
 	my $new_submitter = $2;
 	if (defined $new_submitter) {
 	    if ($new_submitter eq '=') {
@@ -581,10 +546,11 @@ END
 	    }
 	}
 	eval {
-	    reopen(@common_control_options,
-		   bug          => $ref,
-		   submitter    => $new_submitter,
-		  );
+	    set_done(@common_control_options,
+		     bug          => $ref,
+		     reopen       => 1,
+		     submitter    => $new_submitter,
+		    );
 	};
 	if ($@) {
 	    $errors++;
@@ -704,7 +670,6 @@ END
     elsif (m/^submitter\s+\#?(-?\d+)\s+(\!|\S.*\S)$/i) {
         $ok++;
         $ref= $1;
-	$bug_affected{$ref}=1;
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	my $newsubmitter = $2 eq '!' ? $replyto : $2;
         if (not Mail::RFC822::Address::valid($newsubmitter)) {
@@ -728,7 +693,6 @@ END
         $ref= $1;
 	my $forward_to= $2;
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	$bug_affected{$ref} = 1;
 	eval {
 	    set_forwarded(@common_control_options,
 			  bug          => $ref,
@@ -743,7 +707,6 @@ END
         $ok++;
         $ref= $1;
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	$bug_affected{$ref} = 1;
 	eval {
 	    set_forwarded(@common_control_options,
 			  bug          => $ref,
@@ -758,7 +721,6 @@ END
         $ok++;
         $ref= $1;
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	$bug_affected{$ref}=1;
         my $newseverity= $2;
         if (exists $gObsoleteSeverities{$newseverity}) {
             print {$transcript} "Severity level \`$newseverity' is obsolete. " .
@@ -785,7 +747,6 @@ END
 	$ok++;
 	$ref = $1;
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	$bug_affected{$ref}=1;
 	my $tags = $2;
 	my @tags = map {m/^([+=-])(.+)/ ? ($1,$2):($_)} split /[\s,]+/, $tags;
 	# this is an array of hashrefs which contain two elements, the
@@ -854,7 +815,6 @@ END
 	my $add_remove = defined $1 && $1 eq 'un';
 	my @blockers = map {exists $clonebugs{$_}?$clonebugs{$_}:$_} split /[\s,]+/, $3;
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	$bug_affected{$ref} = 1;
 	eval {
 	     set_blocks(@common_control_options,
 			bug          => $ref,
@@ -870,7 +830,6 @@ END
         $ok++;
         $ref= $1; my $newtitle= $2;
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	$bug_affected{$ref} = 1;
 	eval {
 	     set_title(@common_control_options,
 		       bug          => $ref,
@@ -884,162 +843,48 @@ END
     } elsif (m/^unmerge\s+\#?(-?\d+)$/i) {
 	$ok++;
 	$ref= $1;
-	$bug_affected{$ref} = 1;
-	if (&setbug) {
-	    if (!length($data->{mergedwith})) {
-		print {$transcript} "$gBug is not marked as being merged with any others.\n\n";
-		&nochangebug;
-	    } else {
-                $mergelowstate eq 'locked' || die "$mergelowstate ?";
-		$action= "Disconnected #$ref from all other report(s).";
-		my @newmergelist= split(/ /,$data->{mergedwith});
-                my $discref= $ref;
-		@bug_affected{@newmergelist} = 1 x @newmergelist;
-                do {
-                    $affected_packages{$data->{package}} = 1;
-		    add_recipients(data => $data,
-				   recipients => \%recipients,
-				   transcript   => $transcript,
-				   ($dl > 0 ? (debug => $transcript):()),
-				  );
-		    $data->{mergedwith}= ($ref == $discref) ? ''
-                        : join(' ',grep($_ ne $ref,@newmergelist));
-                } while (&getnextbug);
-	    }
+	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
+	eval {
+	     set_merged(@common_control_options,
+			bug          => $ref,
+		       );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to unmerge $ref: $@".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^merge\s+#?(-?\d+(\s+#?-?\d+)+)\s*$/i) {
 	$ok++;
-        my @tomerge= sort { $a <=> $b } split(/\s+#?/,$1);
-        my @newmergelist= ();
-	my %tags = ();
-	my %found = ();
-	my %fixed = ();
-        &getmerge;
-        while (defined($ref= shift(@tomerge))) {
-            print {$transcript} "D| checking merge $ref\n" if $dl;
-	    $ref+= 0;
-	    if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
-		$ref = $clonebugs{$ref};
-	    }
-	    next if grep($_ == $ref,@newmergelist);
-	    if (!&getbug) { &notfoundbug; @newmergelist=(); last }
-            if (!&checkpkglimit) { &cancelbug; @newmergelist=(); last; }
-            &foundbug;
-            print {$transcript} "D| adding $ref ($data->{mergedwith})\n" if $dl;
-	    $mismatch= '';
-	    &checkmatch('package','m_package',$data->{package},@newmergelist);
-	    &checkmatch('forwarded addr','m_forwarded',$data->{forwarded},@newmergelist);
-	    $data->{severity} = '$gDefaultSeverity' if $data->{severity} eq '';
-	    &checkmatch('severity','m_severity',$data->{severity},@newmergelist);
-	    &checkmatch('blocks','m_blocks',$data->{blocks},@newmergelist);
-	    &checkmatch('blocked-by','m_blockedby',$data->{blockedby},@newmergelist);
-	    &checkmatch('done mark','m_done',length($data->{done}) ? 'done' : 'open',@newmergelist);
-	    &checkmatch('owner','m_owner',$data->{owner},@newmergelist);
-	    &checkmatch('summary','m_summary',$data->{summary},@newmergelist);
-	    &checkmatch('affects','m_affects',$data->{affects},@newmergelist);
-	    foreach my $t (split /\s+/, $data->{keywords}) { $tags{$t} = 1; }
-	    foreach my $f (@{$data->{found_versions}}) { $found{$f} = 1; }
-	    foreach my $f (@{$data->{fixed_versions}}) { $fixed{$f} = 1; }
-	    if (length($mismatch)) {
-	        print {$transcript} "Mismatch - only $gBugs in same state can be merged:\n".
-		     $mismatch."\n";
-		$errors++;
-		&cancelbug; @newmergelist=(); last;
-	    }
-            push(@newmergelist,$ref);
-            push(@tomerge,split(/ /,$data->{mergedwith}));
-	    &cancelbug;
+	my @tomerge;
+        ($ref,@tomerge) = map {exists $clonebugs{$_}?$clonebugs{$_}:$_}
+	    split(/\s+#?/,$1);
+	eval {
+	     set_merged(@common_control_options,
+			bug          => $ref,
+			merge_with   => \@tomerge,
+		       );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to merge $ref: $@".cleanup_eval_fail($@,$debug)."\n";
 	}
-	if (@newmergelist) {
-            @newmergelist= sort { $a <=> $b } @newmergelist;
-            $action= "Merged @newmergelist.";
-	    delete @fixed{keys %found};
-	    for $ref (@newmergelist) {
-		&getbug || die "huh ?  $gBug $ref disappeared during merge";
-                $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data,
-			       recipients => \%recipients,
-			       transcript   => $transcript,
-			       ($dl > 0 ? (debug => $transcript):()),
-			      );
-		@bug_affected{@newmergelist} = 1 x @newmergelist;
-		$data->{mergedwith}= join(' ',grep($_ != $ref,@newmergelist));
-		$data->{keywords}= join(' ', keys %tags);
-		$data->{found_versions}= [sort keys %found];
-		$data->{fixed_versions}= [sort keys %fixed];
-		&savebug;
-	    }
-    	    print {$transcript} "$action\n\n";
-	}
-        &endmerge;
     } elsif (m/^forcemerge\s+\#?(-?\d+(?:\s+\#?-?\d+)+)\s*$/i) {
 	$ok++;
-	my @temp = split /\s+\#?/,$1;
-	my $master_bug = shift @temp;
-	my $master_bug_data;
-	my @tomerge = sort { $a <=> $b } @temp;
-        unshift @tomerge,$master_bug;
-	print {$transcript} "D| force merging ".join(',',@tomerge)."\n" if $dl;
-	my @newmergelist= ();
-	my %tags = ();
-	my %found = ();
-	my %fixed = ();
-	# Here we try to do the right thing.
-	# First, if the bugs are in the same package, we merge all of the found, fixed, and tags.
-	# If not, we discard the found and fixed.
-	# Everything else we set to the values of the first bug.
-        &getmerge;
-        while (defined($ref= shift(@tomerge))) {
-            print {$transcript} "D| checking merge $ref\n" if $dl;
-	    $ref+= 0;
-	    if ($ref =~ m/^-\d+$/ && defined $clonebugs{$ref}) {
-		$ref = $clonebugs{$ref};
-	    }
-	    next if grep($_ == $ref,@newmergelist);
-	    if (!&getbug) { &notfoundbug; @newmergelist=(); last }
-            if (!&checkpkglimit) { &cancelbug; @newmergelist=(); last; }
-            &foundbug;
-            print {$transcript} "D| adding $ref ($data->{mergedwith})\n" if $dl;
-	    $master_bug_data = $data if not defined $master_bug_data;
-	    if ($data->{package} ne $master_bug_data->{package}) {
-		 print {$transcript} "Mismatch - only $gBugs in the same package can be forcibly merged:\n".
-		     "$gBug $ref is not in the same package as $master_bug\n";
-		$errors++;
-		&cancelbug; @newmergelist=(); last;
-	    }
-	    for my $t (split /\s+/,$data->{keywords}) {
-		 $tags{$t} = 1;
-	    }
-	    @found{@{$data->{found_versions}}} = (1) x @{$data->{found_versions}};
-	    @fixed{@{$data->{fixed_versions}}} = (1) x @{$data->{fixed_versions}};
-	    push(@newmergelist,$ref);
-            push(@tomerge,split(/ /,$data->{mergedwith}));
-	    &cancelbug;
+	my @tomerge;
+        ($ref,@tomerge) = map {exists $clonebugs{$_}?$clonebugs{$_}:$_}
+	    split(/\s+#?/,$1);
+	eval {
+	     set_merged(@common_control_options,
+			bug          => $ref,
+			merge_with   => \@tomerge,
+			force        => 1,
+			masterbug    => 1,
+		       );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to forcibly merge $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
-	if (@newmergelist) {
-            @newmergelist= sort { $a <=> $b } @newmergelist;
-            $action= "Forcibly Merged @newmergelist.";
-	    delete @fixed{keys %found};
-	    for $ref (@newmergelist) {
-		&getbug || die "huh ?  $gBug $ref disappeared during merge";
-                $affected_packages{$data->{package}} = 1;
-		add_recipients(data => $data,
-			       recipients => \%recipients,
-			       transcript   => $transcript,
-			       ($dl > 0 ? (debug => $transcript):()),
-			      );
-		@bug_affected{@newmergelist} = 1 x @newmergelist;
-		$data->{mergedwith}= join(' ',grep($_ != $ref,@newmergelist));
-		$data->{keywords}= join(' ', keys %tags);
-		$data->{found_versions}= [sort keys %found];
-		$data->{fixed_versions}= [sort keys %fixed];
-		my @field_list = qw(forwarded package severity blocks blockedby owner done affects summary);
-		@{$data}{@field_list} = @{$master_bug_data}{@field_list};
-		&savebug;
-	    }
-    	    print {$transcript} "$action\n\n";
-	}
-        &endmerge;
     } elsif (m/^clone\s+#?(\d+)\s+((-\d+\s+)*-\d+)\s*$/i) {
 	$ok++;
 
@@ -1048,62 +893,23 @@ END
 	my $newbugsneeded = scalar(@newclonedids);
 
 	$ref = $origref;
+	if (exists $clonebugs{$ref}) {
+	    $ref = $clonebugs{$ref};
+	}
 	$bug_affected{$ref} = 1;
-	if (&setbug) {
-	    $affected_packages{$data->{package}} = 1;
-	    if (length($data->{mergedwith})) {
-		print {$transcript} "$gBug is marked as being merged with others. Use an existing clone.\n\n";
-		$errors++;
-		&nochangebug;
-	    } else {
-        	&filelock("nextnumber.lock");
-        	open(N,"nextnumber") || die "nextnumber: read: $!";
-        	my $v=<N>; $v =~ s/\n$// || die "nextnumber bad format";
-        	my $firstref= $v+0;  $v += $newbugsneeded;
-		open(NN,">nextnumber"); print NN "$v\n"; close(NN);
-        	&unfilelock;
-
-		my $lastref = $firstref + $newbugsneeded - 1;
-
-		if ($newbugsneeded == 1) {
-		    $action= "$gBug $origref cloned as bug $firstref.";
-		} else {
-		    $action= "$gBug $origref cloned as bugs $firstref-$lastref.";
-		}
-
-		my $blocks = $data->{blocks};
-		my $blockedby = $data->{blockedby};
-		
-		&getnextbug;
-		my $ohash = get_hashname($origref);
-		my $clone = $firstref;
-                @bug_affected{@newclonedids} = 1 x @newclonedids;
-		for my $newclonedid (@newclonedids) {
-		    $clonebugs{$newclonedid} = $clone;
-	    
-		    my $hash = get_hashname($clone);
-	            copy("db-h/$ohash/$origref.log", "db-h/$hash/$clone.log");
-	            copy("db-h/$ohash/$origref.status", "db-h/$hash/$clone.status");
-	            copy("db-h/$ohash/$origref.summary", "db-h/$hash/$clone.summary");
-	            copy("db-h/$ohash/$origref.report", "db-h/$hash/$clone.report");
-	            &bughook('new', $clone, $data);
-		
-		    # Update blocking info of bugs blocked by or blocking the
-		    # cloned bug.
-		    foreach $ref (split ' ', $blocks) {
-			&getbug;
-			$data->{blockedby} = manipset($data->{blockedby}, $clone, 1);
-			&savebug;
-		    }
-		    foreach $ref (split ' ', $blockedby) {
-			&getbug;
-			$data->{blocks} = manipset($data->{blocks}, $clone, 1);
-			&savebug;
-		    }
-
-		    $clone++;
-		}
-	    }
+	eval {
+	    my %new_clones;
+	    clone_bug(@common_control_options,
+		      bug => $ref,
+		      new_bugs => \@newclonedids,
+		      new_clones => \%new_clones,
+		     );
+	    %clonebugs = (%clonebugs,
+			  %new_clones);
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to clone $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^package\:?\s+(\S.*\S)?\s*$/i) {
         $ok++;
@@ -1153,11 +959,10 @@ END
 	my $add_remove = $2 || '';
 	my $packages = $3 || '';
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	$bug_affected{$ref} = 1;
 	eval {
 	     affects(@common_control_options,
 		     bug => $ref,
-		     packages     => [splitpackages($3)],
+		     package     => [splitpackages($3)],
 		     ($add_remove eq '+'?(add => 1):()),
 		     ($add_remove eq '-'?(remove => 1):()),
 		    );
@@ -1172,7 +977,6 @@ END
         $ref = $1;
 	my $summary_msg = length($2)?$2:undef;
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	$bug_affected{$ref} = 1;
 	eval {
 	    summary(@common_control_options,
 		    bug          => $ref,
@@ -1192,7 +996,6 @@ END
 	if ($newowner eq '!') {
 	    $newowner = $replyto;
 	}
-	$bug_affected{$ref} = 1;
 	eval {
 	    owner(@common_control_options,
 		  bug          => $ref,
@@ -1207,7 +1010,6 @@ END
         $ok++;
         $ref = $1;
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	$bug_affected{$ref} = 1;
 	eval {
 	    owner(@common_control_options,
 		  bug          => $ref,
@@ -1222,7 +1024,6 @@ END
 	 $ok++;
 	 $ref = $1;
 	 $ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	 $bug_affected{$ref} = 1;
 	 eval {
 	      bug_unarchive(@common_control_options,
 			    bug        => $ref,
@@ -1236,7 +1037,6 @@ END
 	 $ok++;
 	 $ref = $1;
 	 $ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	 $bug_affected{$ref} = 1;
 	 eval {
 	      bug_archive(@common_control_options,
 			  bug => $ref,
@@ -1353,7 +1153,7 @@ sub fill_template{
      my $variables = {config => \%config,
 		      defined($ref)?(ref    => $ref):(),
 		      defined($data)?(data  => $data):(),
-		      refs => [keys %bug_affected],
+		      refs => [map {exists $clonebugs{$_}?$clonebugs{$_}:$_} keys %bug_affected],
 		      %{$extra_var},
 		     };
      my $hole_var = {'&bugurl' =>

@@ -25,7 +25,9 @@ while (<>) {
     elsif (/^$/) {
 	# see MLDBM(3pm)/BUGS
 	my $tmp = $db{$p};
-	$tmp->{$dist}{$arch} = $v;
+	# we allow multiple versions in an architecture now; this
+	# should really only happen in the case of source, however.
+	push @{$tmp->{$dist}{$arch}}, $v;
 	$db{$p} = $tmp;
 	$tmp = $db2{$p};
 	$tmp->{$dist}{$arch}{$v} = $time if not exists

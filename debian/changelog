@@ -1,3 +1,9 @@
+debbugs (2.4.2~exp2) experimental; urgency=low
+
+  * Hack around elinks css bug (closes: #593804)
+
+ -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
+
 debbugs (2.4.2~exp1) experimental; urgency=low
 
   * Allow (almost) exactly what RFC2822 allows in comments (closes:
@@ -29,8 +35,11 @@ debbugs (2.4.2~exp1) experimental; urgency=low
     Wirzenius
   * Don't RFC1522 escape ", ( and ). (Closes: #588859). Thanks to Glenn
     Morris
+  * Various changes to make debbugs-local work better (Closes: #585796) 
+    - Add libnet-server-fork-perl to Depends for debbugs-local
+    - Sanitize env in -T code
 
- -- Don Armstrong <don@debian.org>  Wed, 26 Aug 2009 21:32:53 -0700
+ -- Don Armstrong <don@debian.org>  Thu, 05 Aug 2010 21:54:12 -0700
 
 debbugs (2.4.2~exp0) experimental; urgency=low
 

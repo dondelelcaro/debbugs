@@ -1,7 +1,12 @@
-#!/usr/bin/perl -wT
+#!/usr/bin/perl
 
 use warnings;
 use strict;
+
+# Sanitize environent for taint
+BEGIN{
+    delete @ENV{qw(IFS CDPATH ENV BASH_ENV)};
+}
 
 use POSIX qw(strftime);
 use MIME::Parser;

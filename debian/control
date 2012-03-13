@@ -66,7 +66,7 @@ Description: web scripts for the active Debian BTS
 Package: debbugs-local
 Architecture: all
 Depends: libdebbugs-perl, debbugs-web, libconfig-simple-perl,
- libuser-perl, rsync, libhttp-server-simple-perl
+ libuser-perl, rsync, libhttp-server-simple-perl, libnet-server-perl
 Description: run and maintains a local mirror of the Debian BTS
  Debian has a bug tracking system which files details of bugs reported
  by users and developers. Each bug is given a number, and is kept on
