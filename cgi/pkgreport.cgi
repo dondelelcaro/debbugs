@@ -13,6 +13,11 @@
 use warnings;
 use strict;
 
+# Sanitize environent for taint
+BEGIN{
+    delete @ENV{qw(IFS CDPATH ENV BASH_ENV)};
+}
+
 use POSIX qw(strftime nice);
 
 use Debbugs::Config qw(:globals :text :config);

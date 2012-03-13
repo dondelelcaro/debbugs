@@ -37,7 +37,7 @@ BEGIN {
 
 use Carp;
 
-use Debbugs::Common qw(getbuglocation getbugcomponent);
+use Debbugs::Common qw(getbuglocation getbugcomponent make_list);
 use Params::Validate qw(:types validate_with);
 
 =head1 NAME
@@ -344,36 +344,72 @@ format representation of those records to that filehandle.
 
 =cut
 
-sub write_log_records (*@)
+sub write_log_records
 {
-    my $logfh = shift;
-    my @records = @_;
+    my %param = validate_with(params => \@_,
+			      spec   => {bug_num => {type => SCALAR,
+						     optional => 1,
+						    },
+					 logfh   => {type => HANDLE,
+						     optional => 1,
+						    },
+					 log_name => {type => SCALAR,
+						      optional => 1,
+						     },
+					 records => {type => HASHREF|ARRAYREF,
+						    },
+					},
+			     );
+    if (grep({exists $param{$_} and defined $param{$_}} qw(bug_num logfh log_name)) ne 1) {
+	 croak "Exactly one of bug_num, logfh, or log_name must be passed and must be defined";
+    }
+    my $logfh;
+    if (exists $param{logfh}) {
+	 $logfh = $param{logfh}
+    }
+    elsif (exists $param{log_name}) {
+	 $logfh = IO::File->new(">>$param{log_name}") or
+	      die "Unable to open bug log $param{log_name} for writing: $!";
+    }
+    elsif (exists $param{bug_num}) {
+	 my $location = getbuglocation($param{bug_num},'log');
+	 my $bug_log = getbugcomponent($param{bug_num},'log',$location);
+	 $logfh = IO::File->new($bug_log, 'r') or
+	      die "Unable to open bug log $bug_log for reading: $!";
+    }
+    my @records = make_list($param{records});
 
     for my $record (@records) {
 	my $type = $record->{type};
+	croak "record type '$type' with no text field" unless defined $record->{text};
 	my ($text) = escape_log($record->{text});
-	die "type '$type' with no text field" unless defined $text;
 	if ($type eq 'autocheck') {
-	    print $logfh "\01\n$text\03\n";
+	    print {$logfh} "\01\n$text\03\n" or
+		die "Unable to write to logfile: $!";
 	} elsif ($type eq 'recips') {
-	    print $logfh "\02\n";
+	    print {$logfh} "\02\n";
 	    my $recips = $record->{recips};
 	    if (defined $recips) {
-		die "recips not undef or array"
+		croak "recips not undef or array"
 		    unless ref($recips) eq 'ARRAY';
-		print $logfh join("\04", @$recips) . "\n";
+		print {$logfh} join("\04", @$recips) . "\n" or
+		    die "Unable to write to logfile: $!";
 	    } else {
-		print $logfh "-t\n";
+		print {$logfh} "-t\n" or
+		    die "Unable to write to logfile: $!";
 	    }
 	    #$text =~ s/^([\01-\07\030])/\030$1/gm;
-	    print $logfh "\05\n$text\03\n";
+	    print {$logfh} "\05\n$text\03\n" or
+		die "Unable to write to logfile: $!";
 	} elsif ($type eq 'html') {
-	    print $logfh "\06\n$text\03\n";
+	    print {$logfh} "\06\n$text\03\n" or
+		die "Unable to write to logfile: $!";
 	} elsif ($type eq 'incoming-recv') {
 	    #$text =~ s/^([\01-\07\030])/\030$1/gm;
-	    print $logfh "\07\n$text\03\n";
+	    print {$logfh} "\07\n$text\03\n" or
+		die "Unable to write to logfile: $!";
 	} else {
-	    die "unknown type '$type'";
+	    croak "unknown record type type '$type'";
 	}
     }
 

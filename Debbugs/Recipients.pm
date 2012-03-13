@@ -94,6 +94,9 @@ sub add_recipients {
 					  actions_taken => {type => HASHREF,
 							    default => {},
 							   },
+					  unknown_packages => {type => HASHREF,
+							       default => {},
+							      },
 					 },
 			      );
 
@@ -103,7 +106,7 @@ sub add_recipients {
 	  for my $data (@{$param{data}}) {
 	       add_recipients(data => $data,
 			      map {exists $param{$_}?($_,$param{$_}):()}
-			      qw(recipients debug transcript actions_taken)
+			      qw(recipients debug transcript actions_taken unknown_packages)
 			     );
 	  }
 	  return;
@@ -155,7 +158,10 @@ sub add_recipients {
 	  }
 	  else {
 	       print {$param{debug}} "maintainer none >$p<\n";
-	       print {$param{transcript}} "Warning: Unknown package '$p'\n";
+	       if (not exists $param{unknown_packages}{$p}) {
+		   print {$param{transcript}} "Warning: Unknown package '$p'\n";
+		   $param{unknown_packages}{$p} = 1;
+	       }
 	       print {$param{debug}} "MR|unknown-package|$p|$ref|\n";
 	       _add_address(recipients => $param{recipients},
 			    address => $config{unknown_maintainer_email},

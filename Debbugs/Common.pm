@@ -39,7 +39,7 @@ BEGIN{
 
      @EXPORT = ();
      %EXPORT_TAGS = (util   => [qw(getbugcomponent getbuglocation getlocationpath get_hashname),
-				qw(appendfile buglog getparsedaddrs getmaintainers),
+				qw(appendfile overwritefile buglog getparsedaddrs getmaintainers),
 				qw(bug_status),
 				qw(getmaintainers_reverse),
 				qw(getpseudodesc),
@@ -48,6 +48,7 @@ BEGIN{
 			       ],
 		     misc   => [qw(make_list globify_scalar english_join checkpid),
 				qw(cleanup_eval_fail),
+				qw(hash_slice),
 			       ],
 		     date   => [qw(secs_to_english)],
 		     quit   => [qw(quit)],
@@ -61,6 +62,7 @@ BEGIN{
 #use Debbugs::Config qw(:globals);
 
 use Carp;
+$Carp::Verbose = 1;
 
 use Debbugs::Config qw(:config);
 use IO::File;
@@ -71,7 +73,7 @@ use Cwd qw(cwd);
 
 use Params::Validate qw(validate_with :types);
 
-use Fcntl qw(:flock);
+use Fcntl qw(:DEFAULT :flock);
 
 our $DEBUG_FH = \*STDERR if not defined $DEBUG_FH;
 
@@ -215,6 +217,28 @@ sub appendfile {
 	print {$fh} @data or die "Unable to write to $file: $!";
 	close $fh or die "Unable to close $file: $!";
 }
+
+=head2 overwritefile
+
+     ovewritefile($file,'data','to','append');
+
+Opens file.new, writes data to it, then moves file.new to file.
+
+=cut
+
+sub overwritefile {
+	my ($file,@data) = @_;
+	my $fh = IO::File->new("${file}.new",'w') or
+	     die "Unable top open ${file}.new for writing: $!";
+	print {$fh} @data or die "Unable to write to ${file}.new: $!";
+	close $fh or die "Unable to close ${file}.new: $!";
+	rename("${file}.new",$file) or
+	    die "Unable to rename ${file}.new to $file: $!";
+}
+
+
+
+
 
 =head2 getparsedaddrs
 
@@ -508,21 +532,44 @@ These functions are exported with the :lock tag
 
 =head2 filelock
 
-     filelock
+     filelock($lockfile);
+     filelock($lockfile,$locks);
 
 FLOCKs the passed file. Use unfilelock to unlock it.
+
+Can be passed an optional $locks hashref, which is used to track which
+files are locked (and how many times they have been locked) to allow
+for cooperative locking.
 
 =cut
 
 our @filelocks;
 
+use Carp qw(cluck);
+
 sub filelock {
     # NB - NOT COMPATIBLE WITH `with-lock'
-    my ($lockfile) = @_;
+    my ($lockfile,$locks) = @_;
     if ($lockfile !~ m{^/}) {
-  	use Cwd;
-	$lockfile = cwd().'/'.$lockfile;
-    } 
+	 $lockfile = cwd().'/'.$lockfile;
+    }
+    # This is only here to allow for relocking bugs inside of
+    # Debbugs::Control. Nothing else should be using it.
+    if (defined $locks and exists $locks->{locks}{$lockfile} and
+	$locks->{locks}{$lockfile} >= 1) {
+	if (exists $locks->{relockable} and
+	    exists $locks->{relockable}{$lockfile}) {
+	    $locks->{locks}{$lockfile}++;
+	    # indicate that the bug for this lockfile needs to be reread
+	    $locks->{relockable}{$lockfile} = 1;
+	    push @{$locks->{lockorder}},$lockfile;
+	    return;
+	}
+	else {
+	    use Data::Dumper;
+	    confess "Locking already locked file: $lockfile\n".Data::Dumper->Dump([$lockfile,$locks],[qw(lockfile locks)]);
+	}
+    }
     my ($count,$errors);
     $count= 10; $errors= '';
     for (;;) {
@@ -538,13 +585,19 @@ sub filelock {
 	}
 	if ($fh) {
 	     push @filelocks, {fh => $fh, file => $lockfile};
+	     if (defined $locks) {
+		 $locks->{locks}{$lockfile}++;
+		 push @{$locks->{lockorder}},$lockfile;
+	     }
 	     last;
 	}
         if (--$count <=0) {
             $errors =~ s/\n+$//;
-            die "failed to get lock on $lockfile -- $errors";
+	    use Data::Dumper;
+            croak "failed to get lock on $lockfile -- $errors".
+		(defined $locks?Data::Dumper->Dump([$locks],[qw(locks)]):'');
         }
-        sleep 10;
+#        sleep 10;
     }
 }
 
@@ -559,6 +612,7 @@ END {
 =head2 unfilelock
 
      unfilelock()
+     unfilelock($locks);
 
 Unlocks the file most recently locked.
 
@@ -568,9 +622,23 @@ locked with filelock.
 =cut
 
 sub unfilelock {
+    my ($locks) = @_;
     if (@filelocks == 0) {
-        warn "unfilelock called with no active filelocks!\n";
+        carp "unfilelock called with no active filelocks!\n";
         return;
+    }
+    if (defined $locks and ref($locks) ne 'HASH') {
+	croak "hash not passsed to unfilelock";
+    }
+    if (defined $locks and exists $locks->{lockorder} and
+	@{$locks->{lockorder}} and
+	exists $locks->{locks}{$locks->{lockorder}[-1]}) {
+	my $lockfile = pop @{$locks->{lockorder}};
+	$locks->{locks}{$lockfile}--;
+	if ($locks->{locks}{$lockfile} > 0) {
+	    return
+	}
+	delete $locks->{locks}{$lockfile};
     }
     my %fl = %{pop(@filelocks)};
     flock($fl{fh},LOCK_UN)
@@ -602,7 +670,7 @@ sub lockpid {
 	  unlink $pidfile or
 	       die "Unable to unlink stale pidfile $pidfile $!";
      }
-     my $pidfh = IO::File->new($pidfile,'w') or
+     my $pidfh = IO::File->new($pidfile,O_CREAT|O_EXCL|O_WRONLY) or
 	  die "Unable to open $pidfile for writing: $!";
      print {$pidfh} $$ or die "Unable to write to $pidfile $!";
      close $pidfh or die "Unable to close $pidfile $!";
@@ -807,6 +875,22 @@ sub cleanup_eval_fail {
     return $error;
 }
 
+=head2 hash_slice
+
+     hash_slice(%hash,qw(key1 key2 key3))
+
+For each key, returns matching values and keys of the hash if they exist
+
+=cut
+
+
+# NB: We use prototypes here SPECIFICALLY so that we can be passed a
+# hash without uselessly making a reference to first. DO NOT USE
+# PROTOTYPES USELESSLY ELSEWHERE.
+sub hash_slice(\%@) {
+    my ($hashref,@keys) = @_;
+    return map {exists $hashref->{$_}?($_,$hashref->{$_}):()} @keys;
+}
 
 1;
 

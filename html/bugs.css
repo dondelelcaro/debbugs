@@ -9,12 +9,16 @@ html {
 }
 
 body {
+    color: #000; 
+    background: #fefefe;
     margin: 10px;
     border: 0;
     padding: 0;
 }
 
 h1, h2, h3 {
+    color: #000; 
+    background: #fefefe;
     text-align: left; 
     font-family: sans-serif;
 }

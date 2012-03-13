@@ -43,7 +43,7 @@ use base qw(Exporter);
 
 use IPC::Open3;
 use POSIX qw(:sys_wait_h strftime);
-use Time::HiRes qw(usleep);
+use Time::HiRes qw(usleep gettimeofday);
 use Mail::Address ();
 use Debbugs::MIME qw(encode_rfc1522);
 use Debbugs::Config qw(:config);
@@ -204,7 +204,7 @@ sub default_headers {
 
     # calculate our headers
     my $bug_num = exists $param{data} ? $param{data}{bug_num} : 'x';
-    my $nn = $param{queue_file};
+    my $nn = exists $param{queue_file} ? $param{queue_file} : join('',gettimeofday());
     # handle the user giving the actual queue filename instead of nn
     $nn =~ s/^[a-zA-Z]([a-zA-Z])/$1/;
     $nn = lc($nn);
@@ -250,7 +250,7 @@ sub default_headers {
 		($header,$default_header{$header});
 	}
 	else {
-	    push @other_headers,($header,$header_order{lc($header)});
+	    push @other_headers,($header,$default_header{$header});
 	}
     }
     my @headers;
