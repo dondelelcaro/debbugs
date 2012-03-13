@@ -96,6 +96,7 @@ BEGIN{
 		     block   => [qw(set_blocks)],
 		     merge   => [qw(set_merged)],
 		     tag     => [qw(set_tag)],
+		     clone   => [qw(clone_bug)],
 		     archive => [qw(bug_archive bug_unarchive),
 				],
 		     log     => [qw(append_action_to_log),
@@ -108,7 +109,7 @@ BEGIN{
 
 use Debbugs::Config qw(:config);
 use Debbugs::Common qw(:lock buglog :misc get_hashname sort_versions);
-use Debbugs::Status qw(bug_archiveable :read :hook writebug splitpackages split_status_fields get_bug_status);
+use Debbugs::Status qw(bug_archiveable :read :hook writebug new_bug splitpackages split_status_fields get_bug_status);
 use Debbugs::CGI qw(html_escape);
 use Debbugs::Log qw(:misc :write);
 use Debbugs::Recipients qw(:add);
@@ -117,6 +118,7 @@ use Debbugs::Packages qw(:versions :mapping);
 use Data::Dumper qw();
 use Params::Validate qw(validate_with :types);
 use File::Path qw(mkpath);
+use File::Copy qw(copy);
 use IO::File;
 
 use Debbugs::Text qw(:templates);
@@ -2756,6 +2758,138 @@ sub summary {
 
 
 
+=head2 clone_bug
+
+     eval {
+	    clone_bug(bug          => $ref,
+		      transcript   => $transcript,
+		      ($dl > 0 ? (debug => $transcript):()),
+		      requester    => $header{from},
+		      request_addr => $controlrequestaddr,
+		      message      => \@log,
+                      affected_packages => \%affected_packages,
+		      recipients   => \%recipients,
+		     );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to clone bug $ref bar: $@";
+	}
+
+Clones the given bug.
+
+We currently don't support cloning merged bugs, but this could be
+handled by internally unmerging, cloning, then remerging the bugs.
+
+=cut
+
+sub clone_bug {
+    my %param = validate_with(params => \@_,
+			      spec   => {bug => {type   => SCALAR,
+						 regex  => qr/^\d+$/,
+						},
+					 new_bugs => {type => ARRAYREF,
+						     },
+					 new_clones => {type => HASHREF,
+							default => {},
+						       },
+					 %common_options,
+					 %append_action_options,
+					},
+			     );
+    my %info =
+	__begin_control(%param,
+			command  => 'clone'
+		       );
+    my ($debug,$transcript) =
+	@info{qw(debug transcript)};
+    my @data = @{$info{data}};
+    my @bugs = @{$info{bugs}};
+
+    my $action = '';
+    for my $data (@data) {
+	if (length($data->{mergedwith})) {
+	    die "Bug is marked as being merged with others. Use an existing clone.\n";
+	}
+    }
+    if (@data != 1) {
+	die "Not exactly one bug‽ This shouldn't happen.";
+    }
+    my $data = $data[0];
+    my %clones;
+    for my $newclone_id (@{$param{new_bugs}}) {
+	my $new_bug_num = new_bug(copy => $data->{bug_num});
+	$param{new_clones}{$newclone_id} = $new_bug_num;
+	$clones{$newclone_id} = $new_bug_num;
+    }
+    my @new_bugs = sort values %clones;
+    my @collapsed_ids;
+    for my $new_bug (@new_bugs) {
+	# no collapsed ids or the higher collapsed id is not one less
+	# than the next highest new bug
+	if (not @collapsed_ids or 
+	    $collapsed_ids[-1][1]+1 != $new_bug) {
+	    push @collapsed_ids,[$new_bug,$new_bug];
+	}
+	else {
+	    $collapsed_ids[-1][1] = $new_bug;
+	}
+    }
+    my @collapsed;
+    for my $ci (@collapsed_ids) {
+	if ($ci->[0] == $ci->[1]) {
+	    push @collapsed,$ci->[0];
+	}
+	else {
+	    push @collapsed,$ci->[0].'-'.$ci->[1]
+	}
+    }
+    my $collapsed_str = english_join(\@collapsed);
+    $action = "Bug $data->{bug_num} cloned as bug".(@new_bugs > 1?'s':'').' '.$collapsed_str;
+    for my $new_bug (@new_bugs) {
+	append_action_to_log(bug => $new_bug,
+			     get_lock => 1,
+			     __return_append_to_log_options(
+							    %param,
+							    action => $action,
+							   ),
+			    )
+	    if not exists $param{append_log} or $param{append_log};
+    }
+    append_action_to_log(bug => $data->{bug_num},
+			 get_lock => 0,
+			 __return_append_to_log_options(
+							%param,
+							action => $action,
+						       ),
+			)
+	if not exists $param{append_log} or $param{append_log};
+    writebug($data->{bug_num},$data);
+    print {$transcript} "$action\n";
+    __end_control(%info);
+    # bugs that this bug is blocking are also blocked by the new clone(s)
+    for my $bug (split ' ', $data->{blocks}) {
+	for my $new_bug (@new_bugs) {
+	    set_blocks(bug => $new_bug,
+		       blocks => $bug,
+		       hash_slice(%param,
+				  keys %common_options,
+				  keys %append_action_options),
+		      );
+	}
+    }
+    # bugs that this bug is blocked by are also blocking the new clone(s)
+    for my $bug (split ' ', $data->{blockedby}) {
+	for my $new_bug (@new_bugs) {
+	    set_blocks(bug => $bug,
+		       blocks => $new_bug,
+		       hash_slice(%param,
+				  keys %common_options,
+				  keys %append_action_options),
+		      );
+	}
+    }
+}
 
 
 
@@ -2977,7 +3111,7 @@ sub bug_archive {
 	       print {$transcript} "archived $bug to archive/$dir (from $param{bug})\n";
 	  }
 	  unlink(map {"$config{spool_dir}/db-h/$dir/$_"} @files_to_remove);
-	  print {$transcript} "deleted $bug (from $param{bug})\n";
+	  print {$debug} "deleted $bug (from $param{bug})\n";
      }
      bughook_archive(@bugs);
      __end_control(%info);

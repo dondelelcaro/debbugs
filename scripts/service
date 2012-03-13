@@ -883,7 +883,6 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} $@;
 	    print {$transcript} "Failed to forcibly merge $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^clone\s+#?(\d+)\s+((-\d+\s+)*-\d+)\s*$/i) {
@@ -894,62 +893,23 @@ END
 	my $newbugsneeded = scalar(@newclonedids);
 
 	$ref = $origref;
+	if (exists $clonebugs{$ref}) {
+	    $ref = $clonebugs{$ref};
+	}
 	$bug_affected{$ref} = 1;
-	if (&setbug) {
-	    $affected_packages{$data->{package}} = 1;
-	    if (length($data->{mergedwith})) {
-		print {$transcript} "$gBug is marked as being merged with others. Use an existing clone.\n\n";
-		$errors++;
-		&nochangebug;
-	    } else {
-        	&filelock("nextnumber.lock");
-        	open(N,"nextnumber") || die "nextnumber: read: $!";
-        	my $v=<N>; $v =~ s/\n$// || die "nextnumber bad format";
-        	my $firstref= $v+0;  $v += $newbugsneeded;
-		open(NN,">nextnumber"); print NN "$v\n"; close(NN);
-        	unfilelock();
-
-		my $lastref = $firstref + $newbugsneeded - 1;
-
-		if ($newbugsneeded == 1) {
-		    $action= "$gBug $origref cloned as bug $firstref.";
-		} else {
-		    $action= "$gBug $origref cloned as bugs $firstref-$lastref.";
-		}
-
-		my $blocks = $data->{blocks};
-		my $blockedby = $data->{blockedby};
-		
-		&getnextbug;
-		my $ohash = get_hashname($origref);
-		my $clone = $firstref;
-                @bug_affected{@newclonedids} = 1 x @newclonedids;
-		for my $newclonedid (@newclonedids) {
-		    $clonebugs{$newclonedid} = $clone;
-	    
-		    my $hash = get_hashname($clone);
-	            copy("db-h/$ohash/$origref.log", "db-h/$hash/$clone.log");
-	            copy("db-h/$ohash/$origref.status", "db-h/$hash/$clone.status");
-	            copy("db-h/$ohash/$origref.summary", "db-h/$hash/$clone.summary");
-	            copy("db-h/$ohash/$origref.report", "db-h/$hash/$clone.report");
-	            &bughook('new', $clone, $data);
-		
-		    # Update blocking info of bugs blocked by or blocking the
-		    # cloned bug.
-		    foreach $ref (split ' ', $blocks) {
-			&getbug;
-			$data->{blockedby} = manipset($data->{blockedby}, $clone, 1);
-			&savebug;
-		    }
-		    foreach $ref (split ' ', $blockedby) {
-			&getbug;
-			$data->{blocks} = manipset($data->{blocks}, $clone, 1);
-			&savebug;
-		    }
-
-		    $clone++;
-		}
-	    }
+	eval {
+	    my %new_clones;
+	    clone_bug(@common_control_options,
+		      bug => $ref,
+		      new_bugs => \@newclonedids,
+		      new_clones => \%new_clones,
+		     );
+	    %clonebugs = (%clonebugs,
+			  %new_clones);
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to clone $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^package\:?\s+(\S.*\S)?\s*$/i) {
         $ok++;
