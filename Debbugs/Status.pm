@@ -547,6 +547,7 @@ sub new_bug {
     close $nn_fh;
     overwritefile("nextnumber",
 		  ($nn+1)."\n");
+    unfilelock();
     my $nn_hash = get_hashname($nn);
     use IO::File;
     my $t_fh = IO::File->new("/home/don/temp.txt",'a') or die "Unable to open ~don/temp.txt for writing: $!";
