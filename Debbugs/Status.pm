@@ -549,11 +549,6 @@ sub new_bug {
 		  ($nn+1)."\n");
     unfilelock();
     my $nn_hash = get_hashname($nn);
-    use IO::File;
-    my $t_fh = IO::File->new("/home/don/temp.txt",'a') or die "Unable to open ~don/temp.txt for writing: $!";
-    use Data::Dumper;
-    print {$t_fh} Dumper({%param,nn => $nn, nn_hash => $nn_hash, nextnumber => qx(cat nextnumber)});
-    close $t_fh;
     if ($param{copy}) {
 	my $c_hash = get_hashname($param{copy});
 	for my $file (qw(log status summary report)) {
