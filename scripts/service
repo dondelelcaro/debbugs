@@ -861,7 +861,7 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to unmerge $ref: $@".cleanup_eval_fail($@,$debug)."\n";
+	    print {$transcript} "Failed to unmerge $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^merge\s+#?(-?\d+(\s+#?-?\d+)+)\s*$/i) {
 	$ok++;
@@ -876,7 +876,7 @@ END
 	};
 	if ($@) {
 	    $errors++;
-	    print {$transcript} "Failed to merge $ref: $@".cleanup_eval_fail($@,$debug)."\n";
+	    print {$transcript} "Failed to merge $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^forcemerge\s+\#?(-?\d+(?:\s+\#?-?\d+)+)\s*$/i) {
 	$ok++;

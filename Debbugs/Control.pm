@@ -2075,7 +2075,7 @@ sub set_merged {
 	    # figure out the problems
 	    print {$transcript} "Unable to merge bugs because:\n";
 	    for my $change (@{$disallowed_changes}) {
-		print {$transcript} "$change->{field} of #$change->{bug} is '$change->{orig_value}' not '$change->{value}'\n";
+		print {$transcript} "$change->{field} of #$change->{bug} is '$change->{text_orig_value}' not '$change->{text_value}'\n";
 	    }
 	    if ($attempts > 0) {
 		croak "Some bugs were altered while attempting to merge";
@@ -2410,6 +2410,8 @@ sub __calculate_merge_changes{
 		 options  => $force_functions{$field}{options},
 		 allowed  => exists $force_functions{$field}{allowed} ? 0 : $force_functions{$field}{allowed},
 		};
+	    $change->{text_value} = ref($change->{func_value}) eq 'ARRAY'?join(' ',@{$change->{func_value}}):$change->{func_value};
+	    $change->{text_orig_value} = ref($change->{orig_value}) eq 'ARRAY'?join(' ',@{$change->{orig_value}}):$change->{orig_value};
 	    if ($param->{force}) {
 		if ($field ne 'package') {
 		    push @{$changes{$data->{bug_num}}},$change;
