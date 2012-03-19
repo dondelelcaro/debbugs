@@ -48,6 +48,7 @@ use Mail::Address ();
 use Debbugs::MIME qw(encode_rfc1522);
 use Debbugs::Config qw(:config);
 use Params::Validate qw(:types validate_with);
+use Encode qw(encode is_utf8);
 
 use Debbugs::Packages;
 
@@ -346,6 +347,11 @@ sub send_mail_message{
      if ($param{encode_headers}) {
 	  $param{message} = encode_headers($param{message});
      }
+     eval {
+	 if (is_utf8($param{message})) {
+	     $param{message} = encode('utf8',$param{message});
+	 }
+     };
 
      # First, try to send the message as is.
      eval {
