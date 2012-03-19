@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 114;
+use Test::More tests => 117;
 
 use warnings;
 use strict;
@@ -22,6 +22,7 @@ use File::Basename qw(dirname basename);
 use lib qw(t/lib);
 use DebbugsTest qw(:all);
 use Data::Dumper;
+use Encode qw(decode encode);
 
 # HTTP::Server:::Simple defines a SIG{CHLD} handler that breaks system; undef it here.
 $SIG{CHLD} = sub {};
@@ -298,6 +299,11 @@ my @control_commands =
 		       value   => ' + patch',
 		       status_key => 'keywords',
 		       status_value => 'patch',
+		      },
+      utf8_retitle => {command => 'retitle',
+		       value   => 'Thïs is a ütﬀ8 title [♥♡☙☎]',
+		       status_key => 'subject',
+		       status_value => decode("utf8",'Thïs is a ütﬀ8 title [♥♡☙☎]'),
 		      },
      );
 

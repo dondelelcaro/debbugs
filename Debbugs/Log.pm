@@ -39,6 +39,7 @@ use Carp;
 
 use Debbugs::Common qw(getbuglocation getbugcomponent make_list);
 use Params::Validate qw(:types validate_with);
+use Encode qw(encode);
 
 =head1 NAME
 
@@ -426,7 +427,7 @@ Applies the log escape regex to the passed logfile.
 
 sub escape_log {
 	my @log = @_;
-	return map { s/^([\01-\07\030])/\030$1/gm; $_ } @log;
+	return map { eval {$_ = encode("utf8",$_,Encode::FB_CROAK)}; s/^([\01-\07\030])/\030$1/gm; $_ } @log;
 }
 
 
