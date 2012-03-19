@@ -18,8 +18,9 @@ use Params::Validate qw(:types validate_with);
 use Debbugs::Common qw(:util :quit :misc :lock);
 
 use Debbugs::Status qw(:read :status :write :versions :hook);
+use Debbugs::Packages qw(binary_to_source);
 
-use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
+use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522 create_mime_message);
 use Debbugs::Mail qw(send_mail_message);
 use Debbugs::User;
 use Debbugs::Recipients qw(:all);
@@ -38,6 +39,7 @@ use Scalar::Util qw(looks_like_number);
 use List::Util qw(first);
 
 use Mail::RFC822::Address;
+use Encode qw(decode encode);
 
 chdir($config{spool_dir}) or
      die "Unable to chdir to spool_dir '$config{spool_dir}': $!";
@@ -114,8 +116,8 @@ if ( defined($header{'reply-to'}) && $header{'reply-to'} ne "" ) {
 my $errors = 0;
 my $controlrequestaddr= ($control ? 'control' : 'request').'@'.$config{email_domain};
 my $transcript_scalar = '';
-my $transcript = IO::Scalar->new(\$transcript_scalar) or
-     die "Unable to create new IO::Scalar";
+open my $transcript, ">:scalar:utf8", \$transcript_scalar or
+     die "Unable to create transcript scalar: $!";
 print {$transcript} "Processing commands for $controlrequestaddr:\n\n";
 
 
@@ -201,6 +203,10 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
     # Fixes #488554
     s/\xef\xbb\xbf//g;
     next unless m/\S/;
+    eval {
+	my $temp = decode("utf8",$_,Encode::FB_CROAK);
+	$_ = $temp;
+    };
     print {$transcript} "> $_\n";
     next if m/^\s*\#/;
     $action= '';
@@ -549,7 +555,7 @@ END
 	    set_done(@common_control_options,
 		     bug          => $ref,
 		     reopen       => 1,
-		     submitter    => $new_submitter,
+		     defined $new_submitter? (submitter    => $new_submitter):(),
 		    );
 	};
 	if ($@) {
@@ -1090,22 +1096,31 @@ if (!defined $header{'subject'} || $header{'subject'} eq "") {
 # Error text here advertises how many errors there were
 my $error_text = $errors > 0 ? " (with $errors errors)":'';
 
-my $reply= <<END;
-From: $gMaintainerEmail ($gProject $gBug Tracking System)
-To: $replyto
-${maintccs}Subject: Processed${error_text}: $header{'subject'}
-In-Reply-To: $header{'message-id'}
-END
-$reply .= <<END;
-References: $header{'message-id'}
-Message-ID: <handler.s.$nn.transcript\@$gEmailDomain>
-Precedence: bulk
-${packagepr}X-$gProject-PR-Message: transcript
-END
+my @common_headers;
+push @common_headers, 'X-Loop',$gMaintainerEmail;
 
-$reply .= fill_template('mail/message_body',
-			  {body => "${transcript_scalar}Please contact me if you need assistance."},
-			);
+my $temp_transcript = ${transcript_scalar};
+eval{
+    $temp_transcript = decode("utf8",$temp_transcript,Encode::FB_CROAK);
+};
+my $reply =
+    create_mime_message([From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
+			 To            => $replyto,
+			 @maintccs ? (Cc => join(', ',@maintccs)):(),
+			 Subject       => "Processed${error_text}: $header{subject}",
+			 'Message-ID'  => "<handler.s.$nn.transcript\@$gEmailDomain>",
+			 'In-Reply-To' => $header{'message-id'},
+			 References    => join(' ',grep {defined $_} $header{'message-id'},$data->{msgid}),
+			 Precedence    => 'bulk',
+			 keys %affected_packages ?("X-${gProject}-PR-Package" => join(' ',keys %affected_packages)):(),
+			 keys %affected_packages ?("X-${gProject}-PR-Source" =>
+						   join(' ',grep {defined $_} map {binary_to_source(binary => $_)} keys %affected_packages)):(),
+			 "X-$gProject-PR-Message" => 'transcript',
+			 @common_headers,
+			],
+			fill_template('mail/message_body',
+				      {body => "${temp_transcript}Please contact me if you need assistance."},
+				     ));
 
 my $repliedshow= join(', ',$replyto,
 		      determine_recipients(recipients => \%recipients,
@@ -1113,6 +1128,7 @@ my $repliedshow= join(', ',$replyto,
 					   address_only => 1,
 					  )
 		     );
+
 # -1 is the service.in log
 &filelock("lock/-1");
 open(AP,">>db-h/-1.log") || die "open db-h/-1.log: $!";
