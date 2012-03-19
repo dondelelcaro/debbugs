@@ -45,6 +45,7 @@ use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
 use POSIX qw(ceil);
 use File::Copy qw(copy);
+use Encode qw(decode encode);
 
 use Storable qw(dclone);
 use List::Util qw(min max);
@@ -239,6 +240,9 @@ sub read_bug{
 
     my %namemap = reverse %fields;
     for my $line (@lines) {
+	eval {
+	    $line = decode("utf8",$line,Encode::FB_CROAK);
+	};
         if ($line =~ /(\S+?): (.*)/) {
             my ($name, $value) = (lc $1, $2);
 	    # this is a bit of a hack; we should never, ever have \r
@@ -636,11 +640,14 @@ sub makestatus {
                 # Output field names in proper case, e.g. 'Merged-With'.
                 my $properfield = $fields{$field};
                 $properfield =~ s/(?:^|(?<=-))([a-z])/\u$1/g;
-                $contents .= "$properfield: $newdata{$field}\n";
+		my $data = $newdata{$field};
+                $contents .= "$properfield: $data\n";
             }
         }
     }
-
+    eval {
+	$contents = encode("utf8",$contents,Encode::FB_CROAK);
+    };
     return $contents;
 }
 

@@ -2402,7 +2402,7 @@ sub __calculate_merge_changes{
 		 (exists $force_functions{$field}{modify_value} ?
 		  $force_functions{$field}{modify_value}->($merge_status->{$field}):
 		  $merge_status->{$field}),
-		 value    => $merge_status->{$field},
+		 value    => ref($merge_status->{$field}) eq 'HASH'?[sort keys %{$merge_status->{$field}}]:$merge_status->{$field},
 		 function => $force_functions{$field}{func},
 		 key      => $force_functions{$field}{key},
 		 options  => $force_functions{$field}{options},
