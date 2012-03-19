@@ -1,6 +1,6 @@
 # -*- mode: cperl;-*-
 
-use Test::More tests => 29;
+use Test::More tests => 32;
 
 use warnings;
 use strict;
@@ -165,6 +165,8 @@ affects 2 bleargh
 forwarded 2 http://example.com/2
 close 2
 tag -3 wontfix
+fixed -4 1.2-3
+found -4 1.2-1
 thanks
 EOF
 	;
@@ -188,6 +190,11 @@ test_control_commands(forcemerge   => {command => 'forcemerge',
 				       value   => '2 5',
 				       status_key => 'mergedwith',
 				       status_value => '2 5',
+				      },
+		      forcemerge   => {command => 'forcemerge',
+				       value   => '2 6',
+				       status_key => 'mergedwith',
+				       status_value => '2 5 6',
 				      },
 		     );
 
