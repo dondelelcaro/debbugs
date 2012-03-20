@@ -2139,8 +2139,8 @@ sub set_merged {
 	$locks += $n_locks;
 	%data = %{$data};
 	@data = values %data;
-	($merge_status,$bugs_to_merge) =
-	    __calculate_merge_status(\@data,\%data,$param{bug});
+ 	($merge_status,$bugs_to_merge) =
+ 	    __calculate_merge_status(\@data,\%data,$param{bug},$merge_status);
 	($disallowed_changes,$changes) = 
 	    __calculate_merge_changes(\@data,$merge_status,\%param);
 	$attempts = max(values %bug_changed);
@@ -2191,8 +2191,9 @@ sub set_merged {
 sub __allow_relocking{
     my ($locks,$bugs) = @_;
 
-    for my $bug (@{$bugs}) {
-	my @lockfiles = grep {m{/\Q$bug\E$}} keys %{$locks->{locks}};
+    my @locks = (@{$bugs},'merge');
+    for my $lock (@locks) {
+	my @lockfiles = grep {m{/\Q$lock\E$}} keys %{$locks->{locks}};
 	next unless @lockfiles;
 	$locks->{relockable}{$lockfiles[0]} = 0;
     }
@@ -2273,8 +2274,8 @@ sub __lock_and_load_merged_bugs{
 
 
 sub __calculate_merge_status{
-    my ($data_a,$data_h,$master_bug,$merge) = @_;
-    my %merge_status;
+    my ($data_a,$data_h,$master_bug,$merge_status) = @_;
+    my %merge_status = %{$merge_status // {}};
     my %merged_bugs;
     my $bugs_to_merge = 0;
     for my $data (@{$data_a}) {
@@ -2292,9 +2293,9 @@ sub __calculate_merge_status{
 		$merge_status{$_} = $data->{$_}
 	    }
 	}
-	if (not $merge) {
-	    next unless $data->{bug_num} == $master_bug;
-	}
+ 	if (defined $merge_status) {
+ 	    next unless $data->{bug_num} == $master_bug;
+ 	}
 	$merge_status{tag} = {} if not exists $merge_status{tag};
 	for my $tag (split /\s+/, $data->{keywords}) {
 	    $merge_status{tag}{$tag} = 1;
