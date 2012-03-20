@@ -1114,7 +1114,10 @@ my $reply =
 			 Precedence    => 'bulk',
 			 keys %affected_packages ?("X-${gProject}-PR-Package" => join(' ',keys %affected_packages)):(),
 			 keys %affected_packages ?("X-${gProject}-PR-Source" =>
-						   join(' ',grep {defined $_} map {binary_to_source(binary => $_)} keys %affected_packages)):(),
+						   join(' ',
+							map {defined $_ ?(ref($_)?@{$_}:$_):()}
+							binary_to_source(binary => [keys %affected_packages],
+									 source_only => 1))):(),
 			 "X-$gProject-PR-Message" => 'transcript',
 			 @common_headers,
 			],
