@@ -1,6 +1,6 @@
 # -*- mode: cperl;-*-
 
-use Test::More tests => 32;
+use Test::More tests => 35;
 
 use warnings;
 use strict;
@@ -126,7 +126,7 @@ ok($status->{severity} eq 'wishlist','bug 1 wishlisted');
 my @control_commands =
      (
       clone        => {command => 'clone',
-		       value   => '-1',
+		       value   => '1 -1',
 		       status_key => 'package',
 		       status_value => 'foo',
 		       bug          => '2',
@@ -137,7 +137,7 @@ my @control_commands =
 		       status_value => '2',
 		      },
       unmerge      => {command => 'unmerge',
-		       value   => '',
+		       value   => '1',
 		       status_key => 'mergedwith',
 		       status_value => '',
 		      },
@@ -152,7 +152,7 @@ send_message(to => 'control@bugs.something',
 			],
 	     body => <<'EOF') or fail 'message to control@bugs.something failed';
 debug 10
-clone 2 -1 -2 -3 -4
+clone 2 -1 -2 -3 -4 -5 -6
 retitle 2 foo
 owner 2 bar@baz.com
 submitter 2 fleb@bleh.com
@@ -167,6 +167,8 @@ close 2
 tag -3 wontfix
 fixed -4 1.2-3
 found -4 1.2-1
+found -5 1.2-5
+fixed -5 1.2-6
 thanks
 EOF
 	;
@@ -177,24 +179,30 @@ EOF
 
 
 test_control_commands(forcemerge   => {command => 'forcemerge',
-				       value   => '2',
+				       value   => '1 2',
 				       status_key => 'mergedwith',
 				       status_value => '2',
 				      },
 		      unmerge      => {command => 'unmerge',
-				       value   => '',
+				       value   => '1',
 				       status_key => 'mergedwith',
 				       status_value => '',
 				      },
 		      forcemerge   => {command => 'forcemerge',
-				       value   => '2 5',
+				       value   => '1 2 5',
 				       status_key => 'mergedwith',
 				       status_value => '2 5',
 				      },
 		      forcemerge   => {command => 'forcemerge',
-				       value   => '2 6',
+				       value   => '1 2 6',
 				       status_key => 'mergedwith',
 				       status_value => '2 5 6',
+				      },
+		      merge        => {command => 'merge',
+				       value   => '7 8',
+				       status_key => 'mergedwith',
+				       status_value => '8',
+				       bug => '7',
 				      },
 		     );
 
@@ -213,7 +221,7 @@ sub test_control_commands{
 				],
 		     body => <<EOF) or fail 'message to control@bugs.something failed';
 debug 10
-$control_command->{command} 1$control_command->{value}
+$control_command->{command} $control_command->{value}
 thanks
 EOF
 	;
