@@ -2412,8 +2412,8 @@ sub __calculate_merge_changes{
 		};
 	    $change->{text_value} = ref($change->{func_value}) eq 'ARRAY'?join(' ',@{$change->{func_value}}):$change->{func_value};
 	    $change->{text_orig_value} = ref($change->{orig_value}) eq 'ARRAY'?join(' ',@{$change->{orig_value}}):$change->{orig_value};
-	    if ($param->{force}) {
-		if ($field ne 'package') {
+	    if ($param->{force} or $change->{allowed}) {
+		if ($field ne 'package' or $change->{allowed}) {
 		    push @{$changes{$data->{bug_num}}},$change;
 		    next;
 		}
