@@ -2408,7 +2408,7 @@ sub __calculate_merge_changes{
 		 function => $force_functions{$field}{func},
 		 key      => $force_functions{$field}{key},
 		 options  => $force_functions{$field}{options},
-		 allowed  => exists $force_functions{$field}{allowed} ? 0 : $force_functions{$field}{allowed},
+		 allowed  => exists $force_functions{$field}{allowed} ? $force_functions{$field}{allowed} : 0,
 		};
 	    $change->{text_value} = ref($change->{func_value}) eq 'ARRAY'?join(' ',@{$change->{func_value}}):$change->{func_value};
 	    $change->{text_orig_value} = ref($change->{orig_value}) eq 'ARRAY'?join(' ',@{$change->{orig_value}}):$change->{orig_value};
