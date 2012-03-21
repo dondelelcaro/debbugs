@@ -3060,7 +3060,6 @@ sub bug_archive {
 	  print {$transcript} "Bug $param{bug} cannot be archived\n";
 	  die "Bug $param{bug} cannot be archived";
      }
-     print {$debug} "$param{bug} considering\n";
      if (not $param{archive_unarchived} and
 	 not exists $data[0]{unarchived}
 	) {
@@ -3574,7 +3573,8 @@ sub __begin_control {
 			     );
     my $new_locks;
     my ($debug,$transcript) = __handle_debug_transcript(@_);
-    print {$debug} "$param{bug} considering\n";
+    print {$debug} "considering bug $param{bug} for ".(exists $param{command}?$param{command}:scalar caller())."\n";
+    print {$debug} Data::Dumper->Dump([caller(1),\%param],[qw(caller param)])."\n";
     $lockhash = $param{locks} if exists $param{locks};
     my @data = ();
     my $old_die = $SIG{__DIE__};
