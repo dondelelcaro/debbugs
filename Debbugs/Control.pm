@@ -3574,7 +3574,7 @@ sub __begin_control {
     my $new_locks;
     my ($debug,$transcript) = __handle_debug_transcript(@_);
     print {$debug} "considering bug $param{bug} for ".(exists $param{command}?$param{command}:scalar caller())."\n";
-    print {$debug} Dumper((caller => [caller(1)],param => \%param))."\n";
+    print {$debug} Data::Dumper->Dump([caller(1),\%param],[qw(caller param)])."\n";
     $lockhash = $param{locks} if exists $param{locks};
     my @data = ();
     my $old_die = $SIG{__DIE__};
