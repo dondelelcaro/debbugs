@@ -2156,12 +2156,16 @@ sub set_merged {
 	}
     }
     if (keys %{$changes} or @{$disallowed_changes}) {
-	print {$transcript} "Unable to modify bugs so that they could be merged\n";
+	print {$transcript} "After four attempts, the following changes were unable to be made:\n";
 	for (1..$new_locks) {
 	    unfilelock($param{locks});
 	    $locks--;
 	}
 	__end_control(%info);
+	for my $change (values %{$changes}, @{$disallowed_changes}) {
+	    print {$transcript} "$change->{field} of #$change->{bug} is '$change->{text_orig_value}' not '$change->{text_value}'\n";
+	}
+	die "Unable to modify bugs so they could be merged";
 	return;
     }
 
@@ -2397,6 +2401,19 @@ sub __calculate_merge_changes{
 	    elsif ($field =~ /^(?:fixed|found)_versions$/) {
 		next if join(' ', sort @{$data->{$field}}) eq
 		    join(' ',sort keys %{$merge_status->{$field}});
+	    }
+	    elsif ($field eq 'done') {
+		# for done, we only care if the bug is done or not
+		# done, not the value it's set to.
+		if (defined $merge_status->{$field} and length $merge_status->{$field} and
+		    defined $data->{$field}         and length $data->{$field}) {
+		    next;
+		}
+		elsif ((not defined $merge_status->{$field} or not length $merge_status->{$field}) and
+		       (not defined $data->{$field}         or not length $data->{$field})
+		      ) {
+		    next;
+		}
 	    }
 	    elsif ($merge_status->{$field} eq $data->{$field}) {
 		next;
