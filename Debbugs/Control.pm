@@ -459,8 +459,7 @@ sub set_blocks {
 	push @changed, 'removed blocking bug(s) of '.$data->{bug_num}.': '.english_join([keys %removed_blockers]) if keys %removed_blockers;
 	$action = ucfirst(join ('; ',@changed)) if @changed;
 	if (not @changed) {
-	    print {$transcript} "Ignoring request to alter blocking bugs of bug #$data->{bug_num} to the same blocks previously set\n"
-		unless __internal_request();
+	    print {$transcript} "Ignoring request to alter blocking bugs of bug #$data->{bug_num} to the same blocks previously set\n";
 	    next;
 	}
 	$data->{blockedby} = join(' ',keys %blockers);
@@ -696,8 +695,7 @@ sub set_tag {
 	push @changed, 'removed tag(s) '.english_join([keys %tag_removed]) if keys %tag_removed;
 	$action = ucfirst(join ('; ',@changed)) if @changed;
 	if (not @changed) {
-	    print {$transcript} "Ignoring request to alter tags of bug #$data->{bug_num} to the same tags previously set\n"
-		unless __internal_request();
+	    print {$transcript} "Ignoring request to alter tags of bug #$data->{bug_num} to the same tags previously set\n";
 	    next;
 	}
 	$action .= '.';
@@ -1109,8 +1107,7 @@ sub set_submitter {
 	      (not defined $data->{originator} or not length $data->{originator})) or
 	     (defined $param{submitter} and defined $data->{originator} and
 	      $param{submitter} eq $data->{originator})) {
-	    print {$transcript} "Ignoring request to change the submitter of bug#$data->{bug_num} to the same value\n"
-		unless __internal_request();
+	    print {$transcript} "Ignoring request to change the submitter of bug#$data->{bug_num} to the same value\n";
 	    next;
 	}
 	else {
@@ -1222,8 +1219,7 @@ sub set_forwarded {
 	if (__all_undef_or_equal($param{forwarded},$data->{forwarded}) or
 	    (not defined $param{forwarded} and
 	     defined $data->{forwarded} and not length $data->{forwarded})) {
-	    print {$transcript} "Ignoring request to change the forwarded-to-address of bug#$data->{bug_num} to the same value\n"
-		unless __internal_request();
+	    print {$transcript} "Ignoring request to change the forwarded-to-address of bug#$data->{bug_num} to the same value\n";
 	    next;
 	}
 	else {
@@ -1311,8 +1307,7 @@ sub set_title {
 	print {$debug} "Going to change bug title\n";
 	if (defined $data->{subject} and length($data->{subject}) and
 	    $data->{subject} eq $param{title}) {
-	    print {$transcript} "Ignoring request to change the title of bug#$data->{bug_num} to the same title\n"
-		unless __internal_request();
+	    print {$transcript} "Ignoring request to change the title of bug#$data->{bug_num} to the same title\n";
 	    next;
 	}
 	else {
@@ -1416,8 +1411,7 @@ sub set_package {
 	print {$debug} "Going to change assigned package\n";
 	if (defined $data->{package} and length($data->{package}) and
 	    $data->{package} eq $new_package) {
-	    print {$transcript} "Ignoring request to reassign bug #$data->{bug_num} to the same package\n"
-		unless __internal_request();
+	    print {$transcript} "Ignoring request to reassign bug #$data->{bug_num} to the same package\n";
 	    next;
 	}
 	else {
@@ -1581,6 +1575,12 @@ sub set_found {
 		if (not @svers) {
 		    @svers = $version;
 		}
+		else {
+		    if (exists $found_versions{$version}) {
+			delete $found_versions{$version};
+			$found_removed{$version} = 1;
+		    }
+		}
 		for my $sver (@svers) {
 		    if (not exists $found_versions{$sver}) {
 			$found_versions{$sver} = 1;
@@ -1649,8 +1649,7 @@ sub set_found {
 	    $action .= " and reopened"
 	}
 	if (not $reopened and not @changed) {
-	    print {$transcript} "Ignoring request to alter found versions of bug #$data->{bug_num} to the same values previously set\n"
-		unless __internal_request();
+	    print {$transcript} "Ignoring request to alter found versions of bug #$data->{bug_num} to the same values previously set\n";
 	    next;
 	}
 	$action .= '.';
@@ -1793,6 +1792,12 @@ sub set_fixed {
 		if (not @svers) {
 		    @svers = $version;
 		}
+		else {
+		    if (exists $fixed_versions{$version}) {
+			$fixed_removed{$version} = 1;
+			delete $fixed_versions{$version};
+		    }
+		}
 		for my $sver (@svers) {
 		    if (not exists $fixed_versions{$sver}) {
 			$fixed_versions{$sver} = 1;
@@ -1858,8 +1863,7 @@ sub set_fixed {
 	    $action .= " and reopened"
 	}
 	if (not $reopened and not @changed) {
-	    print {$transcript} "Ignoring request to alter fixed versions of bug #$data->{bug_num} to the same values previously set\n"
-		unless __internal_request();
+	    print {$transcript} "Ignoring request to alter fixed versions of bug #$data->{bug_num} to the same values previously set\n";
 	    next;
 	}
 	$action .= '.';
@@ -2568,8 +2572,7 @@ sub affects {
 	      }
 	 }
 	if (not length $action) {
-	    print {$transcript} "Ignoring request to set affects of bug $data->{bug_num} to the same value previously set\n"
-		unless __internal_request();
+	    print {$transcript} "Ignoring request to set affects of bug $data->{bug_num} to the same value previously set\n";
 	    next;
 	}
 	 my $old_data = dclone($data);
@@ -2730,8 +2733,7 @@ sub summary {
 	 if (((not defined $summary or not length $summary) and
 	      (not defined $data->{summary} or not length $data->{summary})) or
 	     $summary eq $data->{summary}) {
-	     print {$transcript} "Ignoring request to change the summary of bug $param{bug} to the same value\n"
-		 unless __internal_request();
+	     print {$transcript} "Ignoring request to change the summary of bug $param{bug} to the same value\n";
 	     next;
 	 }
 	 if (length $summary) {
@@ -2948,8 +2950,7 @@ sub owner {
 	  print {$debug} "Owner is currently '$data->{owner}' for bug $data->{bug_num}\n";
 	  if (not defined $param{owner} or not length $param{owner}) {
 	      if (not defined $data->{owner} or not length $data->{owner}) {
-		  print {$transcript} "Ignoring request to unset the owner of bug #$data->{bug_num} which was not set\n"
-		      unless __internal_request();
+		  print {$transcript} "Ignoring request to unset the owner of bug #$data->{bug_num} which was not set\n";
 		  next;
 	      }
 	      $param{owner} = '';
@@ -3574,7 +3575,7 @@ sub __begin_control {
     my $new_locks;
     my ($debug,$transcript) = __handle_debug_transcript(@_);
     print {$debug} "considering bug $param{bug} for ".(exists $param{command}?$param{command}:scalar caller())."\n";
-    print {$debug} Data::Dumper->Dump([caller(1),\%param],[qw(caller param)])."\n";
+#    print {$debug} Data::Dumper->Dump([[caller(1)],\%param],[qw(caller param)])."\n";
     $lockhash = $param{locks} if exists $param{locks};
     my @data = ();
     my $old_die = $SIG{__DIE__};
