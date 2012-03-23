@@ -2088,66 +2088,69 @@ sub set_merged {
 		croak "Did not alter merged bugs";
 	    }
 	}
-	my ($change_bug) = keys %{$changes};
-	$bug_changed{$change_bug}++;
-	print {$transcript} __bug_info($data{$change_bug}) if
-	    $param{show_bug_info} and not __internal_request(1);
-	$bug_info_shown{$change_bug} = 1;
-	__allow_relocking($param{locks},[keys %data]);
-	for my $change (@{$changes->{$change_bug}}) {
-	    if ($change->{field} eq 'blockedby' or $change->{field} eq 'blocks') {
-		my %target_blockedby;
-		@target_blockedby{@{$change->{func_value}}} = (1) x @{$change->{func_value}};
-		my %unhandled_targets = %target_blockedby;
-		my @blocks_to_remove;
-		for my $key (split / /,$change->{orig_value}) {
-		    delete $unhandled_targets{$key};
-		    next if exists $target_blockedby{$key};
-		    set_blocks(bug    => $change->{field} eq 'blocks' ? $key : $change->{bug},
-			       block  => $change->{field} eq 'blocks' ? $change->{bug} : $key,
-			       remove => 1,
-			       hash_slice(%param,
-					  keys %common_options,
-					  keys %append_action_options),
-			      );
+	my @bugs_to_change = keys %{$changes};
+	for my $change_bug (@bugs_to_change) {
+	    next unless exists $changes->{$change_bug};
+	    $bug_changed{$change_bug}++;
+	    print {$transcript} __bug_info($data{$change_bug}) if
+		$param{show_bug_info} and not __internal_request(1);
+	    $bug_info_shown{$change_bug} = 1;
+	    __allow_relocking($param{locks},[keys %data]);
+	    for my $change (@{$changes->{$change_bug}}) {
+		if ($change->{field} eq 'blockedby' or $change->{field} eq 'blocks') {
+		    my %target_blockedby;
+		    @target_blockedby{@{$change->{func_value}}} = (1) x @{$change->{func_value}};
+		    my %unhandled_targets = %target_blockedby;
+		    my @blocks_to_remove;
+		    for my $key (split / /,$change->{orig_value}) {
+			delete $unhandled_targets{$key};
+			next if exists $target_blockedby{$key};
+			set_blocks(bug    => $change->{field} eq 'blocks' ? $key : $change->{bug},
+				   block  => $change->{field} eq 'blocks' ? $change->{bug} : $key,
+				   remove => 1,
+				   hash_slice(%param,
+					      keys %common_options,
+					      keys %append_action_options),
+				  );
+		    }
+		    for my $key (keys %unhandled_targets) {
+			set_blocks(bug    => $change->{field} eq 'blocks' ? $key : $change->{bug},
+				   block  => $change->{field} eq 'blocks' ? $change->{bug} : $key,
+				   add   => 1,
+				   hash_slice(%param,
+					      keys %common_options,
+					      keys %append_action_options),
+				  );
+		    }
 		}
-		for my $key (keys %unhandled_targets) {
-		    set_blocks(bug    => $change->{field} eq 'blocks' ? $key : $change->{bug},
-			       block  => $change->{field} eq 'blocks' ? $change->{bug} : $key,
-			       add   => 1,
-			       hash_slice(%param,
-					  keys %common_options,
-					  keys %append_action_options),
-			      );
+		else {
+		    $change->{function}->(bug => $change->{bug},
+					  $change->{key}, $change->{func_value},
+					  exists $change->{options}?@{$change->{options}}:(),
+					  hash_slice(%param,
+						     keys %common_options,
+						     keys %append_action_options),
+					 );
 		}
 	    }
-	    else {
-		$change->{function}->(bug => $change->{bug},
-				      $change->{key}, $change->{func_value},
-				      exists $change->{options}?@{$change->{options}}:(),
-				      hash_slice(%param,
-						 keys %common_options,
-						 keys %append_action_options),
-				     );
-	    }
+	    __disallow_relocking($param{locks});
+	    my ($data,$n_locks) =
+		__lock_and_load_merged_bugs(bugs_to_load => [keys %merging],
+					    data => \@data,
+					    locks => $param{locks},
+					    debug => $debug,
+					    reload_all => 1,
+					   );
+	    $new_locks += $n_locks;
+	    $locks += $n_locks;
+	    %data = %{$data};
+	    @data = values %data;
+	    ($merge_status,$bugs_to_merge) =
+		__calculate_merge_status(\@data,\%data,$param{bug},$merge_status);
+	    ($disallowed_changes,$changes) = 
+		__calculate_merge_changes(\@data,$merge_status,\%param);
+	    $attempts = max(values %bug_changed);
 	}
-	__disallow_relocking($param{locks});
-	my ($data,$n_locks) =
-	    __lock_and_load_merged_bugs(bugs_to_load => [keys %merging],
-					data => \@data,
-					locks => $param{locks},
-					debug => $debug,
-					reload_all => 1,
-				       );
-	$new_locks += $n_locks;
-	$locks += $n_locks;
-	%data = %{$data};
-	@data = values %data;
- 	($merge_status,$bugs_to_merge) =
- 	    __calculate_merge_status(\@data,\%data,$param{bug},$merge_status);
-	($disallowed_changes,$changes) = 
-	    __calculate_merge_changes(\@data,$merge_status,\%param);
-	$attempts = max(values %bug_changed);
     }
     if ($param{show_bug_info} and not __internal_request(1)) {
      	for my $data (sort {$a->{bug_num} <=> $b->{bug_num}} @data) {
@@ -2156,12 +2159,16 @@ sub set_merged {
 	}
     }
     if (keys %{$changes} or @{$disallowed_changes}) {
-	print {$transcript} "Unable to modify bugs so that they could be merged\n";
+	print {$transcript} "After four attempts, the following changes were unable to be made:\n";
 	for (1..$new_locks) {
 	    unfilelock($param{locks});
 	    $locks--;
 	}
 	__end_control(%info);
+	for my $change (values %{$changes}, @{$disallowed_changes}) {
+	    print {$transcript} "$change->{field} of #$change->{bug} is '$change->{text_orig_value}' not '$change->{text_value}'\n";
+	}
+	die "Unable to modify bugs so they could be merged";
 	return;
     }
 
@@ -2397,6 +2404,19 @@ sub __calculate_merge_changes{
 	    elsif ($field =~ /^(?:fixed|found)_versions$/) {
 		next if join(' ', sort @{$data->{$field}}) eq
 		    join(' ',sort keys %{$merge_status->{$field}});
+	    }
+	    elsif ($field eq 'done') {
+		# for done, we only care if the bug is done or not
+		# done, not the value it's set to.
+		if (defined $merge_status->{$field} and length $merge_status->{$field} and
+		    defined $data->{$field}         and length $data->{$field}) {
+		    next;
+		}
+		elsif ((not defined $merge_status->{$field} or not length $merge_status->{$field}) and
+		       (not defined $data->{$field}         or not length $data->{$field})
+		      ) {
+		    next;
+		}
 	    }
 	    elsif ($merge_status->{$field} eq $data->{$field}) {
 		next;
