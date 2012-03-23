@@ -16,35 +16,67 @@ function toggle_infmessages()
 </script>
 </head>
 <body>
-<h1>{html_escape($config{project})} {html_escape($config{bug})} report logs - 
-<a href="mailto:{$bug_num}@{html_escape($config{email_domain})}">#{$bug_num}</a><br/>
-{html_escape($status{subject})}</h1>
+<div id="header">
+  <div id="upperheader">
+    <div id="logo">
+     <a href="./" title="Debian Home"><img src="http://www.debian.org/Pics/openlogo-50.png" alt="" width="50" height="61"></a>
+    </div> <!-- end logo -->
+    <p class="section"><a href="/">Bugs</a></p>
+    <div id="searchbox">
+      <form name="p" method="get" action="http://search.debian.org/cgi-bin/omega">
+        <p>
+          <input name="P" value="" size="27">
+          <input type="submit" value="Search">
+        </p>
+      </form>
+    </div>
+    <!--<p id="bugnumber">Bug #569503</p>-->
+    <div id="navbar">
+      <ul>
+        <li><a href="http://{$config{subscription_domain}/$ptslinkk">Package Tracking System</a></li>
+        <!-- <li><a href="http://qa.debian.org/developer.php?login=dapal%40debian.org">Maintainer page</a></li> -->
+        {if (not $status{archived}) {
+            $output .=  qq(<li><a href="mailto:$bug_num\@$config{email_domain}">Reply</a></li> ).
+	      qq(<li> <a href="mailto:$bug_num-subscribe\@$config{email_domain}">Subscribe</a> );
+        }}
+      </ul>
+    </div>
+  </div>
+
+  <div id="breadcrumbs">
+    <a href="/" title="Bugs">bugs</a>&nbsp;/&nbsp;<a href="pkgreport.cgi?src=gthumb">src:gthumb</a>&nbsp;/&ensp;<a href="pkgreport.cgi?package=gthumb">gthumb</a>&nbsp;/&ensp;#{$bug_num}
+  </div> <!-- end navbar -->
+</div>
+<div id="content">
+	<div class="index_include">
+
 <div class="versiongraph">{$version_graph}</div>
-{include(q(cgi/bugreport_pkginfo))}
-{include(q(cgi/bugreport_buginfo))}
+<h1>
+{html_escape($status{subject})}</h1>
+<div class="infobox">
 { my $output = '';
   if (looks_like_number($msg)) {
      $output .= sprintf qq(<p><a href="%s">Full log</a></p>),html_escape(bug_links(bug=>$bug_num,links_only=>1));
   }
   else {
-     if (not $status{archived}) {
-     	$output .=  qq(<p><a href="mailto:$bug_num\@$config{email_domain}">Reply</a> ).
-	   qq(or <a href="mailto:$bug_num-subscribe\@$config{email_domain}">subscribe</a> ).
-	       qq(to this bug.</p>\n);
-     }
-     $output .=  qq(<p><a href="javascript:toggle_infmessages();">Toggle useless messages</a></p>);
-     $output .= sprintf qq(<div class="msgreceived"><p>View this report as an <a href="%s">mbox folder</a>, ).
-	  qq(<a href="%s">status mbox</a>, <a href="%s">maintainer mbox</a></p></div>\n),
+     $output .=  qq(<p id="toggleuseless"><a href="javascript:toggle_infmessages();">Toggle useless messages</a> </p>);
+     $output .= sprintf qq(<div class="msgreceived"><p>View this report as:</p><ul><li> <a href="%s">mbox folder</a></li> ).
+	  qq(<li><a href="%s">status mbox</a></li><li><a href="%s">maintainer mbox</a></li></ul></div>\n),
 	       html_escape(bug_links(bug=>$bug_num, links_only=>1,options=>{mbox=>'yes'})),
 		    html_escape(bug_links(bug=>$bug_num, links_only=>1,options=>{mbox=>'yes',mboxstatus=>'yes'})),
 			 html_escape(bug_links(bug=>$bug_num, links_only=>1,options=>{mbox=>'yes',mboxmaint=>'yes'}));
   }
   $output;
 }
+</div>
+{include(q(cgi/bugreport_pkginfo))}
+{include(q(cgi/bugreport_buginfo))}
 {$log}
 <hr>
 <p class="msgreceived">Send a report that <a href="http://{$config{cgi_domain}}/bugspam.cgi">this bug log contains spam</a>.</p>
 <hr>
 {include(q(html/html_tail))}
+</div>
+</div>
 </body>
 </html>

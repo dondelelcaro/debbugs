@@ -1,19 +1,17 @@
 <div class="pkginfo">
-  <p>{if (keys %package > 1) { q(Packages)} else {q(Package)}}:
-     {join(q(, ),package_links(package => [map {$_->{package}} grep {!$_->{is_source}} values %package],
-                               source  => [map {$_->{source} } grep { $_->{is_source}} values %package],
-                               class => q(submitter),
-                              )
-          )};
+  <p>
 {my $output ='';
+ if (keys %package > 1) {
  for my $package (values %package) {
-     $output .= q(Maintainer for ).package_links($package->{is_source}?(source=>$package->{source}):(package=>$package->{package})).qq( is ).
-                package_links(maintainer => $package->{maintainer}).qq(; );
-     if (exists $package->{source} and not $package->{is_source}) {
-     	$output .= q(Source for ).package_links(package=>$package->{package}).qq( is ).
-        	    package_links(source => $package->{source}).qq(. );
-     }
+     $output .= q(<b>Maintainer for ). $package->{package}. q(:</b> ).
+                package_links(maintainer => $package->{maintainer});
+ $output .= q(<br>);
  }
+ } else {
+ for my $package (values %package) {
+     $output .= q(<b>Maintainer:</b> ).
+                package_links(maintainer => $package->{maintainer});
+ }}
  $output;
 }</p>
 </div>
