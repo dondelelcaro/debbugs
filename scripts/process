@@ -592,6 +592,7 @@ if ($ref<0) { # new bug report
 	$data->{forwarded} = $pheader{forwarded};
     }
     $ref = new_bug();
+    $new_ref = $ref;
     my $hash = get_hashname($ref);
     $data->{originator} = $replyto;
     $data->{date} = $intdate;
