@@ -43,6 +43,8 @@ use IO::File;
 use Debbugs::Status qw(get_bug_status);
 use Debbugs::Common qw(make_list getbuglocation getbugcomponent);
 use Debbugs::Packages;
+use Data::Walk;
+use Encode qw(encode_utf8);
 use Storable qw(nstore retrieve);
 use Scalar::Util qw(looks_like_number);
 
@@ -75,7 +77,7 @@ sub get_usertag {
 	       delete $ut{$tag} unless exists $tags{$tag};
 	  }
      }
-     return \%ut;
+     return encode_utf8_structure(\%ut);
 }
 
 
@@ -142,7 +144,7 @@ sub get_status {
 	  }
      }
 #     __prepare_response($self);
-     return \%status;
+     return encode_utf8_structure(\%status);
 }
 
 =head2 get_bugs
@@ -172,7 +174,7 @@ sub get_bugs{
      my %params = __collapse_params(@params);
      my @bugs;
      @bugs = Debbugs::Bugs::get_bugs(%params);
-     return \@bugs;
+     return encode_utf8_structure(\@bugs);
 }
 
 =head2 newest_bugs
@@ -188,7 +190,7 @@ sub newest_bugs{
      my $VERSION = __populate_version(pop);
      my ($self,$num) = @_;
      my $newest_bug = Debbugs::Bugs::newest_bug();
-     return [($newest_bug - $num + 1) .. $newest_bug];
+     return encode_utf8_structure([($newest_bug - $num + 1) .. $newest_bug]);
 
 }
 
@@ -249,7 +251,7 @@ sub get_bug_log{
 			  msg_num => $current_msg,
 			 };
      }
-     return \@messages;
+     return encode_utf8_structure(\@messages);
 }
 
 =head2 binary_to_source
@@ -276,13 +278,13 @@ sub binary_to_source{
      my ($self,@params) = @_;
 
      if ($VERSION <= 1) {
-	 return [Debbugs::Packages::binary_to_source(binary => $params[0],
+	 return encode_utf8_structure([Debbugs::Packages::binary_to_source(binary => $params[0],
 						     (@params > 1)?(version => $params[1]):(),
 						     (@params > 2)?(arch    => $params[2]):(),
-						    )];
+						    )]);
      }
      else {
-	 return [Debbugs::Packages::binary_to_source(@params)];
+	 return encode_utf8_structure([Debbugs::Packages::binary_to_source(@params)]);
      }
 }
 
@@ -304,7 +306,7 @@ sub source_to_binary {
      my $VERSION = __populate_version(pop);
      my ($self,@params) = @_;
 
-     return [Debbugs::Packages::sourcetobinary(@params)];
+     return encode_utf8_structure([Debbugs::Packages::sourcetobinary(@params)]);
 }
 
 =head2 get_versions
@@ -349,7 +351,7 @@ sub get_versions{
      my $VERSION = __populate_version(pop);
      my ($self,@params) = @_;
 
-     return scalar Debbugs::Packages::get_versions(@params);
+     return encode_utf8_structure(scalar Debbugs::Packages::get_versions(@params));
 }
 
 =head1 VERSION COMPATIBILITY
@@ -385,6 +387,14 @@ sub __collapse_params{
 	  }
      }
      return %params;
+}
+
+sub encode_utf8_structure {
+    return walk \&__encode_utf8, @_;
+}
+
+sub __encode_utf8 {
+    $_ = encode_utf8($_) unless ref $_ or not is_utf8($_);
 }
 
 
