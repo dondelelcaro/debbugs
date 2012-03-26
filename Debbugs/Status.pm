@@ -240,9 +240,20 @@ sub read_bug{
 
     my %namemap = reverse %fields;
     for my $line (@lines) {
-	eval {
-	    $line = decode("utf8",$line,Encode::FB_CROAK);
-	};
+	my @encodings_to_try = qw(utf8 iso8859-1);
+	if ($version >= 3) {
+	    @encodings_to_try = qw(utf8);
+	}
+	for (@encodings_to_try) {
+	    my $temp;
+	    eval {
+		$temp = decode("$_",$line,Encode::FB_CROAK);
+	    };
+	    if (not $@) { # only update the line if there are no errors.
+		$line = $temp;
+		last;
+	    }
+	}
         if ($line =~ /(\S+?): (.*)/) {
             my ($name, $value) = (lc $1, $2);
 	    # this is a bit of a hack; we should never, ever have \r
@@ -255,7 +266,11 @@ sub read_bug{
     for my $field (keys %fields) {
         $data{$field} = '' unless exists $data{$field};
     }
-
+    if ($version < 3) {
+	for my $field (@rfc1522_fields) {
+	    $data{$field} = decode_rfc1522($data{$field});
+	}
+    }
     $data{severity} = $config{default_severity} if $data{severity} eq '';
     for my $field (qw(found_versions fixed_versions found_date fixed_date)) {
 	 $data{$field} = [split ' ', $data{$field}];
@@ -268,11 +283,6 @@ sub read_bug{
 	       @{$data{"${field}_date"}});
     }
 
-    if ($version < 3) {
-	for my $field (@rfc1522_fields) {
-	    $data{$field} = decode_rfc1522($data{$field});
-	}
-    }
     my $status_modified = (stat($status))[9];
     # Add log last modified time
     $data{log_modified} = (stat($log))[9];
@@ -596,7 +606,7 @@ version.
 
 sub makestatus {
     my ($data,$version) = @_;
-    $version = 2 unless defined $version;
+    $version = 3 unless defined $version;
 
     my $contents = '';
 
@@ -645,9 +655,11 @@ sub makestatus {
             }
         }
     }
-    eval {
-	$contents = encode("utf8",$contents,Encode::FB_CROAK);
-    };
+    if ($version >= 3) {
+	eval {
+	    $contents = encode_utf8($contents,Encode::FB_CROAK);
+	};
+    }
     return $contents;
 }
 
@@ -667,15 +679,23 @@ sub writebug {
     my ($ref, $data, $location, $minversion, $disablebughook) = @_;
     my $change;
 
-    my %outputs = (1 => 'status', 2 => 'summary');
+    my %outputs = (1 => 'status', 3 => 'summary');
     for my $version (keys %outputs) {
         next if defined $minversion and $version < $minversion;
         my $status = getbugcomponent($ref, $outputs{$version}, $location);
         die "can't find location for $ref" unless defined $status;
-        open(S,"> $status.new") || die "opening $status.new: $!";
-        print(S makestatus($data, $version)) ||
+	my $sfh;
+	if ($version >= 3) {
+	    open $sfh,">:utf8","$status.new"  or
+		die "opening $status.new: $!";
+	}
+	else {
+	    open $sfh,">","$status.new"  or
+		die "opening $status.new: $!";
+	}
+        print {$sfh} makestatus($data, $version) or
             die "writing $status.new: $!";
-        close(S) || die "closing $status.new: $!";
+        close($sfh) or die "closing $status.new: $!";
         if (-e $status) {
             $change = 'change';
         } else {
