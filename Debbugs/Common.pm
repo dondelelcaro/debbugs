@@ -823,7 +823,8 @@ sub globify_scalar {
 	  if (defined ref($scalar)) {
 	       if (ref($scalar) eq 'SCALAR' and
 		   not UNIVERSAL::isa($scalar,'GLOB')) {
-		    return IO::Scalar->new($scalar);
+		    open $handle, '>:scalar:utf8', $scalar;
+		    return $handle;
 	       }
 	       else {
 		    return $scalar;
@@ -836,7 +837,7 @@ sub globify_scalar {
 	       carp "Given a non-scalar reference, non-glob to globify_scalar; returning /dev/null handle";
 	  }
      }
-     return IO::File->new('/dev/null','w');
+     return IO::File->new('/dev/null','>:utf8');
 }
 
 =head2 cleanup_eval_fail()
