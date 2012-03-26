@@ -163,20 +163,19 @@ passed through.
 
 sub default_headers {
     my %param = validate_with(params => \@_,
-			      spec   => {queue_file => {type => SCALAR,
+			      spec   => {queue_file => {type => SCALAR|UNDEF,
 							optional => 1,
 						       },
 					 data       => {type => HASHREF,
 							optional => 1,
 						       },
-					 msgid      => {type => SCALAR,
+					 msgid      => {type => SCALAR|UNDEF,
 							optional => 1,
 						       },
-					 msgtype    => {type => SCALAR,
+					 msgtype    => {type => SCALAR|UNDEF,
 							default => 'misc',
-							optional => 1,
 						       },
-					 pr_msg     => {type => SCALAR,
+					 pr_msg     => {type => SCALAR|UNDEF,
 							default => 'misc',
 						       },
 					 headers    => {type => ARRAYREF,
@@ -186,6 +185,17 @@ sub default_headers {
 			     );
     my @header_order = (qw(X-Loop From To subject),
 			qw(Message-ID In-Reply-To References));
+    # handle various things being undefined
+    if (not exists $param{queue_file} or
+	not defined $param{queue_file}) {
+	$param{queue_file} = join('',gettimeofday())
+    }
+    for (qw(msgtype pr_msg)) {
+	if (not exists $param{$_} or
+	    not defined $param{$_}) {
+	    $param{$_} = 'misc';
+	}
+    }
     my %header_order;
     @header_order{map {lc $_} @header_order} = 0..$#header_order;
     my %set_headers;
@@ -205,7 +215,7 @@ sub default_headers {
 
     # calculate our headers
     my $bug_num = exists $param{data} ? $param{data}{bug_num} : 'x';
-    my $nn = exists $param{queue_file} ? $param{queue_file} : join('',gettimeofday());
+    my $nn = $param{queue_file};
     # handle the user giving the actual queue filename instead of nn
     $nn =~ s/^[a-zA-Z]([a-zA-Z])/$1/;
     $nn = lc($nn);
