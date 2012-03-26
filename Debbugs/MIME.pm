@@ -286,6 +286,9 @@ sub encode_rfc1522 {
 
      # handle being passed undef properly
      return undef if not defined $rawstr;
+     if (is_utf8($rawstr)) {
+	 $rawstr= encode_utf8($rawstr);
+     }
      # We process words in reverse so we can preserve spacing between
      # encoded words. This regex splits on word|nonword boundaries and
      # nonword|nonword boundaries. We also consider parenthesis and "
