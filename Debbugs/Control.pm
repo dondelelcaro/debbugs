@@ -951,8 +951,8 @@ sub set_done {
 	for my $data (@data) {
 	    my $old_data = dclone($data);
 	    my $hash = get_hashname($data->{bug_num});
-	    my $report_fh = IO::File->new("db-h/$hash/$data->{bug_num}.report",'r') or
-		die "Unable to open original report db-h/$hash/$data->{bug_num}.report for reading: $!";
+	    my $report_fh = IO::File->new("$config{spool_dir}/db-h/$hash/$data->{bug_num}.report",'r') or
+		die "Unable to open original report $config{spool_dir}/db-h/$hash/$data->{bug_num}.report for reading: $!";
 	    my $orig_report;
 	    {
 		local $/;
