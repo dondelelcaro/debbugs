@@ -962,8 +962,19 @@ END
     } elsif (m/^affects?\s+\#?(-?\d+)(?:\s+((?:[=+-])?)\s*(\S.*)?)?\s*$/i) {
 	$ok++;
         $ref = $1;
-	my $add_remove = $2 || '';
-	my $packages = $3 || '';
+	my $add_remove = $2;
+	my $packages = $3;
+	# if there isn't a package given, assume that we should unset
+	# affects; otherwise default to adding
+	if (not defined $packages or
+	    not length $packages) {
+	    $packages = '';
+	    $add_remove ||= '=';
+	}
+	elsif (not defined $add_remove or
+	       not length $add_remove) {
+	    $add_remove = '+';
+	}
 	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
 	eval {
 	     affects(@common_control_options,
