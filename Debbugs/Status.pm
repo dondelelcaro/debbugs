@@ -37,7 +37,7 @@ use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 
 use Params::Validate qw(validate_with :types);
-use Debbugs::Common qw(:util :lock :quit :misc);
+use Debbugs::Common qw(:util :lock :quit :misc :utf8);
 use Debbugs::Config qw(:config);
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
 use Debbugs::Packages qw(makesourceversions make_source_versions getversions get_versions binary_to_source);
@@ -45,7 +45,7 @@ use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
 use POSIX qw(ceil);
 use File::Copy qw(copy);
-use Encode qw(decode encode);
+use Encode qw(decode encode is_utf8);
 
 use Storable qw(dclone);
 use List::Util qw(min max);
@@ -239,12 +239,21 @@ sub read_bug{
     }
 
     my %namemap = reverse %fields;
+    for my $field (keys %fields) {
+        $data{$field} = '' unless exists $data{$field};
+    }
+    if ($version < 3) {
+	for my $field (@rfc1522_fields) {
+	    $data{$field} = decode_rfc1522($data{$field});
+	}
+    }
     for my $line (@lines) {
 	my @encodings_to_try = qw(utf8 iso8859-1);
 	if ($version >= 3) {
 	    @encodings_to_try = qw(utf8);
 	}
 	for (@encodings_to_try) {
+	    last if is_utf8($line);
 	    my $temp;
 	    eval {
 		$temp = decode("$_",$line,Encode::FB_CROAK);
@@ -262,14 +271,6 @@ sub read_bug{
 	    $value =~ s/[\r\n]//g;
 	    $data{$namemap{$name}} = $value if exists $namemap{$name};
         }
-    }
-    for my $field (keys %fields) {
-        $data{$field} = '' unless exists $data{$field};
-    }
-    if ($version < 3) {
-	for my $field (@rfc1522_fields) {
-	    $data{$field} = decode_rfc1522($data{$field});
-	}
     }
     $data{severity} = $config{default_severity} if $data{severity} eq '';
     for my $field (qw(found_versions fixed_versions found_date fixed_date)) {
@@ -619,6 +620,8 @@ sub makestatus {
     }
     %newdata = %{join_status_fields(\%newdata)};
 
+    %newdata = encode_utf8_structure(%newdata);
+
     if ($version < 3) {
         for my $field (@rfc1522_fields) {
             $newdata{$field} = encode_rfc1522($newdata{$field});
@@ -655,11 +658,6 @@ sub makestatus {
             }
         }
     }
-    if ($version >= 3) {
-	eval {
-	    $contents = encode_utf8($contents,Encode::FB_CROAK);
-	};
-    }
     return $contents;
 }
 
@@ -686,7 +684,7 @@ sub writebug {
         die "can't find location for $ref" unless defined $status;
 	my $sfh;
 	if ($version >= 3) {
-	    open $sfh,">:utf8","$status.new"  or
+	    open $sfh,">","$status.new"  or
 		die "opening $status.new: $!";
 	}
 	else {
