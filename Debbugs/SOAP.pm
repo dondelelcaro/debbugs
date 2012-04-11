@@ -24,6 +24,7 @@ None known.
 use warnings;
 use strict;
 use vars qw($DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
+use Debbugs::SOAP::Server;
 use base qw(Exporter SOAP::Server::Parameters);
 
 BEGIN{
@@ -38,14 +39,12 @@ BEGIN{
 
 }
 
-
 use IO::File;
 use Debbugs::Status qw(get_bug_status);
-use Debbugs::Common qw(make_list getbuglocation getbugcomponent);
+use Debbugs::Common qw(make_list getbuglocation getbugcomponent :utf8);
 use Debbugs::Packages;
-use Data::Walk;
-use Encode qw(encode_utf8);
-use Storable qw(nstore retrieve);
+
+use Storable qw(nstore retrieve dclone);
 use Scalar::Util qw(looks_like_number);
 
 
@@ -387,14 +386,6 @@ sub __collapse_params{
 	  }
      }
      return %params;
-}
-
-sub encode_utf8_structure {
-    return walk \&__encode_utf8, @_;
-}
-
-sub __encode_utf8 {
-    $_ = encode_utf8($_) unless ref $_ or not is_utf8($_);
 }
 
 
