@@ -103,13 +103,15 @@ use Safe;
 # untaint $ENV{DEBBUGS_CONFIG_FILE} if it's owned by us
 # This enables us to test things that are -T.
 if (exists $ENV{DEBBUGS_CONFIG_FILE}) {
-     if (${[stat($ENV{DEBBUGS_CONFIG_FILE})]}[4] == $<) {
+# This causes all sorts of problems for mirrors of debbugs; disable
+# it.
+#     if (${[stat($ENV{DEBBUGS_CONFIG_FILE})]}[4] == $<) {
 	  $ENV{DEBBUGS_CONFIG_FILE} =~ /(.+)/;
 	  $ENV{DEBBUGS_CONFIG_FILE} = $1;
-     }
-     else {
-	  die "Environmental variable DEBBUGS_CONFIG_FILE set, and $ENV{DEBBUGS_CONFIG_FILE} is not owned by the user running this script.";
-     }
+#      }
+#      else {
+# 	  die "Environmental variable DEBBUGS_CONFIG_FILE set, and $ENV{DEBBUGS_CONFIG_FILE} is not owned by the user running this script.";
+#      }
 }
 read_config(exists $ENV{DEBBUGS_CONFIG_FILE}?$ENV{DEBBUGS_CONFIG_FILE}:'/etc/debbugs/config');
 
