@@ -31,11 +31,11 @@ ok(Debbugs::MIME::decode_rfc1522(q(=?iso-8859-1?Q?D=F6n_Armstr=F3ng?= <don@donar
 
 
 # 2: test encode
-ok(Debbugs::MIME::decode_rfc1522(Debbugs::MIME::encode_rfc1522($test_str)) eq $test_str,
+ok(Debbugs::MIME::decode_rfc1522(Debbugs::MIME::encode_rfc1522($test_str)) eq encode_utf8($test_str),
   "encode_rfc1522 encodes strings that decode_rfc1522 can decode");
-ok(Debbugs::MIME::decode_rfc1522(Debbugs::MIME::encode_rfc1522($test_str2)) eq $test_str2,
+ok(Debbugs::MIME::decode_rfc1522(Debbugs::MIME::encode_rfc1522($test_str2)) eq encode_utf8($test_str2),
   "encode_rfc1522 encodes strings that decode_rfc1522 can decode");
-ok(Debbugs::MIME::decode_rfc1522(Debbugs::MIME::encode_rfc1522($test_str3)) eq $test_str3,
+ok(Debbugs::MIME::decode_rfc1522(Debbugs::MIME::encode_rfc1522($test_str3)) eq encode_utf8($test_str3),
   "encode_rfc1522 properly handles parentesis and \"");
 
 
