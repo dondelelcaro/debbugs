@@ -8,6 +8,9 @@ BEGIN{
     delete @ENV{qw(IFS CDPATH ENV BASH_ENV)};
 }
 
+# STDOUT should be using the utf8 io layer
+binmode(STDOUT,':utf8');
+
 use POSIX qw(strftime);
 use MIME::Parser;
 use MIME::Decoder;
