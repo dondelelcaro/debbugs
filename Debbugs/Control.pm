@@ -996,7 +996,7 @@ sub set_done {
 							     headers =>
 							     [To => $data->{submitter},
 							      Subject => "$config{ubug}#$data->{bug_num} ".
-							      "closed by $param{requester} ($param{request_subject})",
+							      "closed by $param{requester} ".(defined $param{request_subject}?"($param{request_subject})":""),
 							     ],
 							    )
 					    ],
