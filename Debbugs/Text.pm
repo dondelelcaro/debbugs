@@ -216,7 +216,8 @@ sub fill_in_template{
      my $ret = $tt->fill_in(#SAFE => $safe,
 			    PACKAGE => 'DTT',
 			    HASH => {%{$param{variables}//{}},
-				     %{$param{hole_var}//{}},
+				     (map {my $t = $_; $t =~ s/^\&//; ($t => $param{hole_var}{$_})}
+				      keys %{$param{hole_var}//{}}),
 				     include => \&Debbugs::Text::include,
 				     config  => \%config,
 				    },
