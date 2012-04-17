@@ -2898,7 +2898,7 @@ sub clone_bug {
     for my $bug (split ' ', $data->{blocks}) {
 	for my $new_bug (@new_bugs) {
 	    set_blocks(bug => $new_bug,
-		       blocks => $bug,
+		       block => $bug,
 		       hash_slice(%param,
 				  keys %common_options,
 				  keys %append_action_options),
@@ -2909,7 +2909,7 @@ sub clone_bug {
     for my $bug (split ' ', $data->{blockedby}) {
 	for my $new_bug (@new_bugs) {
 	    set_blocks(bug => $bug,
-		       blocks => $new_bug,
+		       block => $new_bug,
 		       hash_slice(%param,
 				  keys %common_options,
 				  keys %append_action_options),
