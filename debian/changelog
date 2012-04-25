@@ -3,6 +3,7 @@ debbugs (2.4.2~exp2) experimental; urgency=low
   * Hack around elinks css bug (closes: #593804)
   * affects now appends packages by default (closes: #656371). Thanks to
     Andreas Beckmann and Julien Cristau.
+  * Fix spacing in owner block (closes: #670411)
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
