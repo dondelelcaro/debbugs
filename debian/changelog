@@ -5,7 +5,7 @@ debbugs (2.4.2~exp2) experimental; urgency=low
     Andreas Beckmann and Julien Cristau.
   * Fix spacing in owner block (closes: #670411)
 
-  [Thanks to Arnout Englen: ]
+  [Thanks to Arnout Engelen: ]
   * Add Homepage (closes: #670555).
   * Fix VCS in control (closes: #670556).
   * Link to blocked bugs (closes: #670568).
