@@ -4,6 +4,8 @@ debbugs (2.4.2~exp2) experimental; urgency=low
   * affects now appends packages by default (closes: #656371). Thanks to
     Andreas Beckmann and Julien Cristau.
   * Fix spacing in owner block (closes: #670411)
+  * Add Homepage (closes: #670555). Thanks to Arnout Engelen.
+  * Fix VCS in control (closes: #670556). Thanks to Arnout Engelen.
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
