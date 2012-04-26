@@ -1,6 +1,6 @@
 # -*- mode: cperl;-*-
 
-use Test::More tests => 14;
+use Test::More tests => 20;
 
 use warnings;
 use strict;
@@ -21,6 +21,7 @@ use File::Basename qw(dirname basename);
 use lib qw(t/lib);
 use DebbugsTest qw(:all);
 use Data::Dumper;
+use Test::WWW::Mechanize;
 
 # HTTP::Server:::Simple defines a SIG{CHLD} handler that breaks system; undef it here.
 $SIG{CHLD} = sub {};
@@ -159,3 +160,36 @@ ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: P
 
 $status = read_bug(bug=>3);
 ok($status->{blockedby} eq '5','bug 3 is blocked by exactly 5');
+
+# Check how this blocked bug is presented on the web interface
+
+# start up an HTTP::Server::Simple
+my $bugreport_cgi_handler = sub {
+     # I do not understand why this is necessary.
+     $ENV{DEBBUGS_CONFIG_FILE} = "$config{config_dir}/debbugs_config";
+     my $content = qx(perl -I. -T cgi/bugreport.cgi);
+     $content =~ s/^\s*Content-Type:[^\n]+\n*//si;
+     print $content;
+};
+
+my $port = 11342;
+
+ok(DebbugsTest::HTTPServer::fork_and_create_webserver($bugreport_cgi_handler,$port),
+   'forked HTTP::Server::Simple successfully');
+
+my $mech = Test::WWW::Mechanize->new();
+
+$mech->get_ok('http://localhost:'.$port.'/?bug=10',
+	      'Page received ok');
+
+ok($mech->content() =~ qr//i,
+   'Title of bug is \'Submitting a bug\'');
+
+ok($mech->content() =~ qr/Added blocking bug\(s\) of <a[^>]+10[^>]+>10<\/a>: <a[^>]+2[^>]+>2<\/a>/i,
+   '\'Added blocking bug(s) of x: y\' received markup');
+
+$mech->get_ok('http://localhost:'.$port.'/?bug=2',
+	      'Page received ok');
+
+ok($mech->content() =~ qr/Added indication that bug <a[^>]+2[^>]+>2<\/a> blocks <a[^>]+10[^>]+>10<\/a>/i,
+   '\'indication that bug x blocks y\' received markup');
