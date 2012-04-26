@@ -4,8 +4,7 @@ Priority: extra
 Maintainer: Debbugs developers <debian-debbugs@lists.debian.org>
 Uploaders: Colin Watson <cjwatson@debian.org>, Don Armstrong <don@debian.org>
 Standards-Version: 3.8.2
-Vcs-Bzr: http://bugs.debian.org/debbugs-source/mainline
-Vcs-Browser: http://bugs.debian.org/debbugs-source/mainline
+Vcs-Git: http://bugs.debian.org/debbugs-source/debbugs.git
 Build-Depends: debhelper (>= 5)
 Build-Depends-Indep: libparams-validate-perl,
  libmailtools-perl, libmime-tools-perl, libio-stringy-perl, libmldbm-perl,
