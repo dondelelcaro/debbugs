@@ -344,7 +344,7 @@ sub handle_record{
 			   english_join([map {bug_links(bug=>$_)} (split /\,?\s+(?:and\s+)?/, $5)])}eo;
 	  # Add links to reassigned packages
 	  $output =~ s{(Bug reassigned from package \`)([^']+?)((?:'|\&\#39;) to \`)([^']+?)((?:'|\&\#39;))}
-	  {$1.q(<a href=").html_escape(pkg_url(pkg=>$2)).qq(">$2</a>).$3.q(<a href=").html_escape(pkg_url(pkg=>$4)).qq(">$4</a>).$5}eo;
+	  {$1.q(<a href=").html_escape(package_links(package=>$2)).qq(">$2</a>).$3.q(<a href=").html_escape(package_links(package=>$4)).qq(">$4</a>).$5}eo;
 	  if (defined $time) {
 	       $output .= ' ('.strftime('%a, %d %b %Y %T GMT',gmtime($time)).') ';
 	  }
