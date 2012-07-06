@@ -49,16 +49,24 @@ if (!rename("incoming/G$nn","incoming/P$nn"))
     die "renaming to lock: $!";
 }
 
-my $baddress= 'submit' if $codeletter eq 'B';
-$baddress= 'maintonly' if $codeletter eq 'M';
-$baddress= 'quiet' if $codeletter eq 'Q';
-$baddress= 'forwarded' if $codeletter eq 'F';
-$baddress= 'done' if $codeletter eq 'D';
-$baddress= 'submitter' if $codeletter eq 'U';
-bug_list_forward($nn) if $codeletter eq 'L';
-$baddress || die "bad codeletter $codeletter";
+my %baddress = (B => 'submit',
+	        M => 'maintonly',
+	        Q => 'quiet',
+		F => 'forwarded',
+		D => 'done',
+		S => 'submitter',
+		L => 'list',
+	       );
+if (not exists $baddress{$codeletter}) {
+    die "bad codeletter $codeletter";
+}
+my $baddress = $baddress{$codeletter};
+if ($baddress eq 'list') {
+    bug_list_forward($nn) if $codeletter eq 'L';
+}
+
 my $baddressroot= $baddress;
-$baddress= "$tryref-$baddress" if $tryref>=0;
+$baddress= "$tryref-$baddress" if $tryref >= 0;
 
 open(M,"incoming/P$nn");
 my @log=<M>;
@@ -94,7 +102,7 @@ our $newref = 0;
 
 our $brokenness = '';
 
-my $parser = new MIME::Parser;
+my $parser = MIME::Parser->new();
 mkdir "$gSpoolDir/mime.tmp", 0777;
 $parser->output_under("$gSpoolDir/mime.tmp");
 my $entity = eval { $parser->parse_data(join('',@log)) };
