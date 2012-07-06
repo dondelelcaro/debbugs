@@ -48,7 +48,7 @@
   <span>Date: {$status{date_text}};</span>
 { my $output = ''; 
   if (defined $status{owner} and length $status{owner}) {
-     $output = q(<span>Owned by: ).package_links(owner=>$status{owner}).q(;</span>);
+     $output = q(<span>Owned by: ).package_links(owner=>$status{owner}).qq(;</span>\n);
   }
   $output;
 }<span>Severity: {my $output = $status{severity};

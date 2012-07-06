@@ -34,6 +34,9 @@ build:
 test:
 	$(PERL) -MTest::Harness -I. -e 'runtests(glob(q(t/*.t)))'
 
+testcover:
+	PERLLIB=t/cover_lib/ cover -test
+
 clean:
 	if [ -e Makefile.perl ]; then \
 		$(MAKE) -f Makefile.perl clean; \
