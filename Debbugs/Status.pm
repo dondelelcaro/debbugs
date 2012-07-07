@@ -217,6 +217,7 @@ sub read_bug{
 	}
 	return undef;
     }
+    binmode($status_fh,':encoding(UTF-8)');
 
     my %data;
     my @lines;
@@ -239,30 +240,7 @@ sub read_bug{
     }
 
     my %namemap = reverse %fields;
-    for my $field (keys %fields) {
-        $data{$field} = '' unless exists $data{$field};
-    }
-    if ($version < 3) {
-	for my $field (@rfc1522_fields) {
-	    $data{$field} = decode_rfc1522($data{$field});
-	}
-    }
     for my $line (@lines) {
-	my @encodings_to_try = qw(utf8 iso8859-1);
-	if ($version >= 3) {
-	    @encodings_to_try = qw(utf8);
-	}
-	for (@encodings_to_try) {
-	    last if is_utf8($line);
-	    my $temp;
-	    eval {
-		$temp = decode("$_",$line,Encode::FB_CROAK);
-	    };
-	    if (not $@) { # only update the line if there are no errors.
-		$line = $temp;
-		last;
-	    }
-	}
         if ($line =~ /(\S+?): (.*)/) {
             my ($name, $value) = (lc $1, $2);
 	    # this is a bit of a hack; we should never, ever have \r
@@ -271,6 +249,14 @@ sub read_bug{
 	    $value =~ s/[\r\n]//g;
 	    $data{$namemap{$name}} = $value if exists $namemap{$name};
         }
+    }
+    for my $field (keys %fields) {
+	$data{$field} = '' unless exists $data{$field};
+    }
+    if ($version < 3) {
+	for my $field (@rfc1522_fields) {
+	    $data{$field} = decode_rfc1522($data{$field});
+	}
     }
     $data{severity} = $config{default_severity} if $data{severity} eq '';
     for my $field (qw(found_versions fixed_versions found_date fixed_date)) {
