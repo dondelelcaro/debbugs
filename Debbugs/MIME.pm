@@ -229,9 +229,7 @@ sub convert_to_utf8 {
      return $data if $charset eq 'raw' or is_utf8($data,1);
      my $result;
      eval {
-	  # this encode/decode madness is to make sure that the data
-	  # really is valid utf8 and that the is_utf8 flag is off.
-	  $result = encode("utf8",decode($charset,$data))
+	 $result = decode($charset,$data);
      };
      if ($@) {
 	  warn "Unable to decode charset; '$charset' and '$data': $@";
