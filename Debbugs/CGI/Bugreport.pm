@@ -37,6 +37,7 @@ use Debbugs::CGI qw(:url :html :util);
 use Debbugs::Common qw(globify_scalar english_join);
 use Debbugs::Config qw(:config);
 use POSIX qw(strftime);
+use Encode qw(decode_utf8);
 
 BEGIN{
      ($VERSION) = q$Revision: 494 $ =~ /^Revision:\s+([^\s+])/;
@@ -156,10 +157,14 @@ sub display_entity {
 	    my $head = $entity->head;
 	    chomp(my $type = $entity->effective_type);
 	    my $body = $entity->stringify_body;
+	    # this attachment has its own content type, so we must not
+	    # try to convert it to UTF-8 or do anything funky.
+	    my @layers = PerlIO::get_layers($param{output});
+	    binmode($param{output},':raw');
 	    print {$param{output}} "Content-Type: $type";
 	    my ($charset) = $head->get('Content-Type:') =~ m/charset\s*=\s*\"?([\w-]+)\"?/i;
 	    print {$param{output}} qq(; charset="$charset") if defined $charset;
-	    print {$param{output}}"\n";
+	    print {$param{output}} "\n";
 	    if ($filename ne '') {
 		my $qf = $filename;
 		$qf =~ s/"/\\"/g;
@@ -169,6 +174,9 @@ sub display_entity {
 	    print {$param{output}} "\n";
 	    my $decoder = MIME::Decoder->new($head->mime_encoding);
 	    $decoder->decode(IO::Scalar->new(\$body), $param{output});
+	    if (grep {/utf8/} @layers) {
+		binmode($param{output},':utf8');
+	    }
 	    return;
 	}
 	elsif (not exists $param{att}) {
@@ -232,7 +240,7 @@ sub display_entity {
 	 my $content_type = $entity->head->get('Content-Type:') || "text/html";
 	 my ($charset) = $content_type =~ m/charset\s*=\s*\"?([\w-]+)\"?/i;
 	 my $body = $entity->bodyhandle->as_string;
-	 $body = convert_to_utf8($body,$charset) if defined $charset;
+	 $body = convert_to_utf8($body,$charset//'utf8');
 	 $body = html_escape($body);
 	 # Attempt to deal with format=flowed
 	 if ($content_type =~ m/format\s*=\s*\"?flowed\"?/i) {
@@ -282,7 +290,9 @@ appropriate.
 sub handle_email_message{
      my ($email,%param) = @_;
 
-     my $output = '';
+     # output needs to have the is_utf8 flag on to avoid double
+     # encoding
+     my $output = decode_utf8('');
      my $parser = MIME::Parser->new();
      # Because we are using memory, not tempfiles, there's no need to
      # clean up here like in Debbugs::MIME
@@ -318,7 +328,9 @@ should be output to the browser.
 sub handle_record{
      my ($record,$bug_number,$msg_number,$seen_msg_ids) = @_;
 
-     my $output = '';
+     # output needs to have the is_utf8 flag on to avoid double
+     # encoding
+     my $output = decode_utf8('');
      local $_ = $record->{type};
      if (/html/) {
 	  my ($time) = $record->{text} =~ /<!--\s+time:(\d+)\s+-->/;
