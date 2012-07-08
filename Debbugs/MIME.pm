@@ -313,7 +313,7 @@ sub encode_rfc1522 {
 	       if (length $encoded > 75) {
 		    # Turn utf8 into the internal perl representation
 		    # so . is a character, not a byte.
-		    my $tempstr = decode_utf8($word,Encode::FB_DEFAULT);
+		    my $tempstr = is_utf8($word)?$word:decode_utf8($word,Encode::FB_DEFAULT);
 		    my @encoded;
 		    # Strip it into 10 character long segments, and encode
 		    # the segments
