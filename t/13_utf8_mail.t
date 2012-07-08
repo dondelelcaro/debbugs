@@ -22,7 +22,7 @@ use File::Basename qw(dirname basename);
 use lib qw(t/lib);
 use DebbugsTest qw(:all);
 use Data::Dumper;
-use Encode qw(decode encode);
+use Encode qw(decode encode decode_utf8);
 
 # HTTP::Server:::Simple defines a SIG{CHLD} handler that breaks system; undef it here.
 $SIG{CHLD} = sub {};
@@ -127,8 +127,8 @@ ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: P
 # This is an eval because $ENV{DEBBUGS_CONFIG_FILE} isn't set at BEGIN{} time
 eval "use Debbugs::Status qw(read_bug writebug);";
 my $status = read_bug(bug=>1);
-ok($status->{subject} eq 'ütﬀ8 title encoding test','bug 1 retitled');
+ok($status->{subject} eq decode_utf8('ütﬀ8 title encoding test'),'bug 1 retitled');
 ok($status->{severity} eq 'wishlist','bug 1 wishlisted');
-ok(system('sh','-c','[ $(grep "encoding test" '.$spool_dir.'/db-h/01/1.log|grep -v "ütﬀ8"|wc -l) -eq 0 ]') == 0,
+ok(system('sh','-c','[ $(egrep "retitle.*encoding test" '.$spool_dir.'/db-h/01/1.log|grep -v "=C3=BCt=EF=AC=808"|wc -l) -eq 0 ]') == 0,
    'Control messages escaped properly');
 
