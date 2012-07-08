@@ -384,6 +384,9 @@ sub write_log_records
     for my $record (@records) {
 	my $type = $record->{type};
 	croak "record type '$type' with no text field" unless defined $record->{text};
+	# I am not sure if we really want to croak here; but this is
+	# almost certainly a bug if is_utf8 is on.
+	# croak "probably wrong encoding" if is_utf8($record->{text});
 	my ($text) = escape_log($record->{text});
 	if ($type eq 'autocheck') {
 	    print {$logfh} "\01\n$text\03\n" or
@@ -428,7 +431,7 @@ Applies the log escape regex to the passed logfile.
 
 sub escape_log {
 	my @log = @_;
-	return map { eval {$_ = is_utf8($_)?encode("utf8",$_,Encode::FB_CROAK):$_;}; s/^([\01-\07\030])/\030$1/gm; $_ } @log;
+	return map {s/^([\01-\07\030])/\030$1/gm; $_ } @log;
 }
 
 
