@@ -201,6 +201,7 @@ sub new
 	      die "Unable to open bug log $bug_log for reading: $!";
     }
 
+    binmode($self->{logfh},':utf8');
     $self->{state} = 'kill-init';
     $self->{linenum} = 0;
     return $self;

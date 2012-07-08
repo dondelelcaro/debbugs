@@ -27,7 +27,7 @@ END
 
 # 1: test decode
 ok(Debbugs::MIME::decode_rfc1522(q(=?iso-8859-1?Q?D=F6n_Armstr=F3ng?= <don@donarmstrong.com>)) eq
-  encode_utf8(q(Dön Armstróng <don@donarmstrong.com>)),"decode_rfc1522 decodes and converts to UTF8 properly");
+  q(Dön Armstróng <don@donarmstrong.com>),"decode_rfc1522 decodes and converts to UTF8 properly");
 
 
 # 2: test encode

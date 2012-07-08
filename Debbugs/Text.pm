@@ -141,6 +141,7 @@ sub fill_in_template{
 	 ref(\$param{template}) eq 'GLOB') {
 	  $tt_type = 'FILE_HANDLE';
 	  $tt_source = $param{template};
+	  binmode($tt_source,":encoding(UTF-8)");
      }
      elsif (ref($param{template}) eq 'SCALAR') {
 	  $tt_type = 'STRING';
@@ -193,17 +194,23 @@ sub fill_in_template{
      my $tt;
      if ($tt_type eq 'FILE' and
 	 defined $tt_templates{$tt_source} and
+	 ($tt_templates{$tt_source}{mtime} + 60) < time and
 	 (stat $tt_source)[9] <= $tt_templates{$tt_source}{mtime}
 	) {
 	  $tt = $tt_templates{$tt_source}{template};
      }
      else {
+	 my $passed_source = $tt_source;
+	 my $passed_type = $tt_type;
 	  if ($tt_type eq 'FILE') {
 	       $tt_templates{$tt_source}{mtime} =
 		    (stat $tt_source)[9];
+	       $passed_source = IO::File->new($tt_source,'r');
+	       binmode($passed_source,":encoding(UTF-8)");
+	       $passed_type = 'FILEHANDLE';
 	  }
-	  $tt = Text::Template->new(TYPE => $tt_type,
-				    SOURCE => $tt_source,
+	  $tt = Text::Template->new(TYPE => $passed_type,
+				    SOURCE => $passed_source,
 				    UNTAINT => 1,
 				   );
 	  if ($tt_type eq 'FILE') {
