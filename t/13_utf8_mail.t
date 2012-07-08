@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 11;
+use Test::More tests => 12;
 
 use warnings;
 use strict;
@@ -112,7 +112,7 @@ send_message(to => 'control@bugs.something',
 			],
 	     body => <<EOF) or fail 'message to control@bugs.something failed';
 severity 1 wishlist
-retitle 1 new title
+retitle 1 ütﬀ8 title encoding test
 thanks
 EOF
 
@@ -127,5 +127,8 @@ ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: P
 # This is an eval because $ENV{DEBBUGS_CONFIG_FILE} isn't set at BEGIN{} time
 eval "use Debbugs::Status qw(read_bug writebug);";
 my $status = read_bug(bug=>1);
-ok($status->{subject} eq 'new title','bug 1 retitled');
+ok($status->{subject} eq 'ütﬀ8 title encoding test','bug 1 retitled');
 ok($status->{severity} eq 'wishlist','bug 1 wishlisted');
+ok(system('sh','-c','[ $(grep "encoding test" '.$spool_dir.'/db-h/01/1.log|grep -v "ütﬀ8"|wc -l) -eq 0 ]') == 0,
+   'Control messages escaped properly');
+
