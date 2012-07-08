@@ -51,6 +51,11 @@ The Debbugs::Log module provides a convenient way for scripts to read and
 write the .log files used by debbugs to store the complete textual records
 of all bug transactions.
 
+Debbugs::Log does not decode utf8 into perl's internal encoding or
+encode into utf8 from perl's internal encoding. For html records and
+all recips, this should probably be done. For other records, this should
+not be needed.
+
 =head2 The .log File Format
 
 .log files consist of a sequence of records, of one of the following four
@@ -201,7 +206,6 @@ sub new
 	      die "Unable to open bug log $bug_log for reading: $!";
     }
 
-    binmode($self->{logfh},':utf8');
     $self->{state} = 'kill-init';
     $self->{linenum} = 0;
     return $self;

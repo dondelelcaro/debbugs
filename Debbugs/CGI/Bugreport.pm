@@ -333,9 +333,11 @@ sub handle_record{
      my $output = decode_utf8('');
      local $_ = $record->{type};
      if (/html/) {
-	  my ($time) = $record->{text} =~ /<!--\s+time:(\d+)\s+-->/;
-	  my $class = $record->{text} =~ /^<strong>(?:Acknowledgement|Reply|Information|Report|Notification)/m ? 'infmessage':'msgreceived';
-	  $output .= decode_rfc1522($record->{text});
+	 # $record->{text} is not in perl's internal encoding; convert it
+	 my $text = decode_utf8($record->{text});
+	  my ($time) = $text =~ /<!--\s+time:(\d+)\s+-->/;
+	  my $class = $text =~ /^<strong>(?:Acknowledgement|Reply|Information|Report|Notification)/m ? 'infmessage':'msgreceived';
+	  $output .= decode_rfc1522($text);
 	  # Link to forwarded http:// urls in the midst of the report
 	  # (even though these links already exist at the top)
 	  $output =~ s,((?:ftp|http|https)://[\S~-]+?/?)((?:[\)\'\:\.\,]|\&\#39;)?(?:\s|\.<|$)),<a href=\"$1\">$1</a>$2,go;
