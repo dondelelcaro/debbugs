@@ -145,6 +145,9 @@ sub send_message{
 						     },
 					  body    => {type => SCALAR,
 						     },
+					  attachments => {type => ARRAYREF,
+							  default => [],
+							 },
 					  run_processall =>{type => BOOLEAN,
 							    default => 1,
 							   },
@@ -158,7 +161,9 @@ sub send_message{
      my $pid = open3($wfd,$rfd,$rfd,'scripts/receive')
 	  or die "Unable to start receive: $!";
      print {$wfd} create_mime_message($param{headers},
-					 $param{body}) or die "Unable to to print to receive";
+				      $param{body},
+				      $param{attachments}) or
+					  die "Unable to to print to receive";
      close($wfd) or die "Unable to close receive";
      my $err = $? >> 8;
      my $childpid = waitpid($pid,0);

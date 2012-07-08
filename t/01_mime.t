@@ -6,28 +6,27 @@ use Test::More tests => 6;
 use warnings;
 use strict;
 
-use utf8;
 use Encode;
 
 use_ok('Debbugs::MIME');
 
 # encode_headers testing
 
-my $test_str = <<'END';
+my $test_str = decode_utf8(<<'END');
 Döñ Ärḿßtrøñĝ <don@donarmstrong.com>
 END
 
-my $test_str2 = <<'END';
+my $test_str2 = decode_utf8(<<'END');
  Döñ Ärḿßtrøñĝ <don@donarmstrong.com>
 END
 
-my $test_str3 =<<'END';
+my $test_str3 =decode_utf8(<<'END');
 foo@bar.com (J fö"ø)
 END
 
 # 1: test decode
 ok(Debbugs::MIME::decode_rfc1522(q(=?iso-8859-1?Q?D=F6n_Armstr=F3ng?= <don@donarmstrong.com>)) eq
-  encode_utf8(q(Dön Armstróng <don@donarmstrong.com>)),"decode_rfc1522 decodes and converts to UTF8 properly");
+  decode_utf8(q(Dön Armstróng <don@donarmstrong.com>)),"decode_rfc1522 decodes and converts to UTF8 properly");
 
 
 # 2: test encode

@@ -11,6 +11,7 @@ use utf8;
 use UNIVERSAL;
 
 use Debbugs::MIME qw(decode_rfc1522);
+use Encode qw(encode_utf8);
 
 use_ok('Debbugs::Mail');
 
@@ -24,7 +25,7 @@ blah blah blah
 END
 
 # 1: test decode
-ok(decode_rfc1522(Debbugs::Mail::encode_headers($test_str)) eq $test_str);
+ok(decode_rfc1522(Debbugs::Mail::encode_headers($test_str)) eq encode_utf8($test_str));
 
 # XXX Figure out a good way to test the send message bit of
 # Debbugs::Mail

@@ -50,12 +50,13 @@ BEGIN{
 				qw(cleanup_eval_fail),
 				qw(hash_slice),
 			       ],
+		     utf8   => [qw(encode_utf8_structure)],
 		     date   => [qw(secs_to_english)],
 		     quit   => [qw(quit)],
 		     lock   => [qw(filelock unfilelock lockpid)],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(lock quit date util misc));
+     Exporter::export_ok_tags(keys %EXPORT_TAGS);
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -70,6 +71,8 @@ use IO::Scalar;
 use Debbugs::MIME qw(decode_rfc1522);
 use Mail::Address;
 use Cwd qw(cwd);
+use Encode qw(encode_utf8 is_utf8);
+use Storable qw(dclone);
 
 use Params::Validate qw(validate_with :types);
 
@@ -429,6 +432,7 @@ sub __add_to_hash {
     $type ||= 'address';
     my $fh = IO::File->new($fn,'r') or
 	die "Unable to open $fn for reading: $!";
+    binmode($fh,':encoding(UTF-8)');
     while (<$fh>) {
 	chomp;
 	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
@@ -823,7 +827,8 @@ sub globify_scalar {
 	  if (defined ref($scalar)) {
 	       if (ref($scalar) eq 'SCALAR' and
 		   not UNIVERSAL::isa($scalar,'GLOB')) {
-		    return IO::Scalar->new($scalar);
+		    open $handle, '>:scalar:utf8', $scalar;
+		    return $handle;
 	       }
 	       else {
 		    return $scalar;
@@ -836,7 +841,7 @@ sub globify_scalar {
 	       carp "Given a non-scalar reference, non-glob to globify_scalar; returning /dev/null handle";
 	  }
      }
-     return IO::File->new('/dev/null','w');
+     return IO::File->new('/dev/null','>:utf8');
 }
 
 =head2 cleanup_eval_fail()
@@ -893,6 +898,56 @@ sub hash_slice(\%@) {
     my ($hashref,@keys) = @_;
     return map {exists $hashref->{$_}?($_,$hashref->{$_}):()} @keys;
 }
+
+
+=head1 UTF-8
+
+These functions are exported with the :utf8 tag
+
+=head2 encode_utf8_structure
+
+     %newdata = encode_utf8_structure(%newdata);
+
+Takes a complex data structure and encodes any strings with is_utf8
+set into their constituent octets.
+
+=cut
+
+our $depth = 0;
+sub encode_utf8_structure {
+    ++$depth;
+    my @ret;
+    for my $_ (@_) {
+	if (ref($_) eq 'HASH') {
+	    push @ret, {encode_utf8_structure(%{$depth == 1 ? dclone($_):$_})};
+	}
+	elsif (ref($_) eq 'ARRAY') {
+	    push @ret, [encode_utf8_structure(@{$depth == 1 ? dclone($_):$_})];
+	}
+	elsif (ref($_)) {
+	    # we don't know how to handle non hash or non arrays
+	    push @ret,$_;
+	}
+	else {
+	    push @ret,__encode_utf8($_);
+	}
+    }
+    --$depth;
+    return @ret;
+}
+
+sub __encode_utf8 {
+    my @ret;
+    for my $r (@_) {
+	if (not ref($r) and is_utf8($r)) {
+	    $r = encode_utf8($r);
+	}
+	push @ret,$r;
+    }
+    return @ret;
+}
+
+
 
 1;
 
