@@ -108,7 +108,7 @@ BEGIN{
 }
 
 use Debbugs::Config qw(:config);
-use Debbugs::Common qw(:lock buglog :misc get_hashname sort_versions);
+use Debbugs::Common qw(:lock buglog :misc get_hashname sort_versions :utf8);
 use Debbugs::Status qw(bug_archiveable :read :hook writebug new_bug splitpackages split_status_fields get_bug_status);
 use Debbugs::CGI qw(html_escape);
 use Debbugs::Log qw(:misc :write);
@@ -132,6 +132,7 @@ use POSIX qw(strftime);
 
 use Storable qw(dclone nfreeze);
 use List::Util qw(first max);
+use Encode qw(encode_utf8);
 
 use Carp;
 
@@ -3355,7 +3356,7 @@ sub append_action_to_log{
 	     $nd{$key} = $new_data->{$key};
 	     # $data_diff .= html_escape("$Debbugs::Status::fields{$key}: $new_data->{$key}")."\n";
 	 }
-	 $data_diff .= html_escape(Data::Dumper->Dump([\%nd],[qw(new_data)]));
+	 $data_diff .= html_escape(Data::Dumper->Dump([encode_utf8_structure(\%nd)],[qw(new_data)]));
 	 $data_diff .= "-->\n";
 	 $data_diff .= "<!-- old_data:\n";
 	 my %od;
@@ -3367,30 +3368,30 @@ sub append_action_to_log{
 	     $od{$key} = $old_data->{$key};
 	     # $data_diff .= html_escape("$Debbugs::Status::fields{$key}: $old_data->{$key}")."\n";
 	 }
-	 $data_diff .= html_escape(Data::Dumper->Dump([\%od],[qw(old_data)]));
+	 $data_diff .= html_escape(Data::Dumper->Dump([encode_utf8_structure(\%od)],[qw(old_data)]));
 	 $data_diff .= "-->\n";
      }
      my $msg = join('',
 		    (exists $param{command} ?
-		     "<!-- command:".html_escape($param{command})." -->\n":""
+		     "<!-- command:".html_escape(encode_utf8($param{command}))." -->\n":""
 		    ),
 		    (length $param{requester} ?
-		     "<!-- requester: ".html_escape($param{requester})." -->\n":""
+		     "<!-- requester: ".html_escape(encode_utf8($param{requester}))." -->\n":""
 		    ),
 		    (length $param{request_addr} ?
-		     "<!-- request_addr: ".html_escape($param{request_addr})." -->\n":""
+		     "<!-- request_addr: ".html_escape(encode_utf8($param{request_addr}))." -->\n":""
 		    ),
 		    "<!-- time:".time()." -->\n",
 		    $data_diff,
-		    "<strong>".html_escape($param{action})."</strong>\n");
+		    "<strong>".html_escape(encode_utf8($param{action}))."</strong>\n");
      if (length $param{requester}) {
-          $msg .= "Request was from <code>".html_escape($param{requester})."</code>\n";
+          $msg .= "Request was from <code>".html_escape(encode_utf8($param{requester}))."</code>\n";
      }
      if (length $param{request_addr}) {
-          $msg .= "to <code>".html_escape($param{request_addr})."</code>";
+          $msg .= "to <code>".html_escape(encode_utf8($param{request_addr}))."</code>";
      }
      if (length $param{desc}) {
-	  $msg .= ":<br>\n$param{desc}\n";
+	  $msg .= ":<br>\n".encode_utf8($param{desc})."\n";
      }
      else {
 	  $msg .= ".\n";
