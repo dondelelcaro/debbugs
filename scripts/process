@@ -28,6 +28,7 @@ use Debbugs::Text qw(:templates);
 use Debbugs::Config qw(:globals :config);
 
 use Debbugs::Control qw(append_action_to_log);
+use Encode qw(encode_utf8);
 
 chdir( "$gSpoolDir" ) || die "chdir spool: $!\n";
 
@@ -725,7 +726,7 @@ my $common_headers='';
 }
 if ($codeletter eq 'U') { # sent to -submitter
     &htmllog("Message", "sent on", $data->{originator}, "$gBug#$ref.");
-    &sendmessage(<<END,[$data->{originator},@resentccs],[@bccs]);
+    my $enc_msg=<<END;
 Subject: $gBug#$ref: $newsubject
 Reply-To: $replyto, $ref-quiet\@$gEmailDomain
 ${orgsender}Resent-To: $data->{originator}
@@ -735,8 +736,11 @@ Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: report $ref
 X-$gProject-PR-Package: $data->{package}
 X-$gProject-PR-Keywords: $data->{keywords}
-${source_pr_header}$fwd
+${source_pr_header}
 END
+    chomp $enc_msg;
+    $enc_msg = encode_utf8($enc_msg).$fwd."\n";
+    &sendmessage($enc_msg,[$data->{originator},@resentccs],[@bccs]);
 } elsif ($codeletter eq 'B') { # Sent to submit
     my $report_followup = $newref ? 'report' : 'followup';
     &htmllog($newref ? "Report" : "Information", "forwarded",
@@ -744,7 +748,7 @@ END
              "<code>$gBug#$ref</code>".
              (length($data->{package})? "; Package <code>".html_escape($data->{package})."</code>" : '').
              ".");
-    &sendmessage(<<END,["$gSubmitList\@$gListDomain",@resentccs],[@bccs]);
+    my $enc_msg=<<END;
 Subject: $gBug#$ref: $newsubject
 Reply-To: $replyto, $ref\@$gEmailDomain
 Resent-From: $header{'from'}
@@ -755,8 +759,11 @@ Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: $report_followup $ref
 X-$gProject-PR-Package: $data->{package}
 X-$gProject-PR-Keywords: $data->{keywords}
-${source_pr_header}$fwd
+${source_pr_header}
 END
+    chomp $enc_msg;
+    $enc_msg = encode_utf8($enc_msg).$fwd."\n";
+    &sendmessage($enc_msg,["$gSubmitList\@$gListDomain",@resentccs],[@bccs]);
 } elsif (@resentccs or @bccs) { # Quiet or Maintainer
     # D and F done far earlier; B just done - so this must be M or Q
     # We preserve whichever it was in the Reply-To (possibly adding
@@ -775,7 +782,7 @@ END
                  (length($data->{package}) ? "; Package <code>".html_escape($data->{package})."</code>" : '').
                  ".");
     }
-    &sendmessage(<<END,[@resentccs],[@bccs]);
+    my $enc_msg=<<END;
 Subject: $gBug#$ref: $newsubject
 Reply-To: $replyto, $ref-$baddressroot\@$gEmailDomain
 Resent-From: $header{'from'}
@@ -786,8 +793,11 @@ Resent-Sender: $gMaintainerEmail
 ${common_headers}X-$gProject-PR-Message: $report_followup $ref
 X-$gProject-PR-Package: $data->{package}
 X-$gProject-PR-Keywords: $data->{keywords}
-${source_pr_header}$fwd
+${source_pr_header}
 END
+    chomp $enc_msg;
+    $enc_msg = encode_utf8($enc_msg).$fwd."\n";
+    &sendmessage($enc_msg,[@resentccs],[@bccs]);
 }
 
 my $htmlbreak= length($brokenness) ? "<p>\n".html_escape($brokenness)."\n<p>\n" : '';
