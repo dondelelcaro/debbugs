@@ -4,6 +4,8 @@ debbugs (2.4.2~exp2) experimental; urgency=low
   * affects now appends packages by default (closes: #656371). Thanks to
     Andreas Beckmann and Julien Cristau.
   * Fix spacing in owner block (closes: #670411)
+  * Fix double encoding issues (closes: #672432)
+  * Fix encoding in cgi
 
   [Thanks to Arnout Engelen: ]
   * Add Homepage (closes: #670555).
