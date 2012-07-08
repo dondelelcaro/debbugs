@@ -357,11 +357,6 @@ sub send_mail_message{
      if ($param{encode_headers}) {
 	  $param{message} = encode_headers($param{message});
      }
-     eval {
-	 if (is_utf8($param{message})) {
-	     $param{message} = encode('utf8',$param{message});
-	 }
-     };
 
      # First, try to send the message as is.
      eval {

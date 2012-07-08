@@ -37,7 +37,7 @@ use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 
 use Params::Validate qw(validate_with :types);
-use Debbugs::Common qw(:util :lock :quit :misc);
+use Debbugs::Common qw(:util :lock :quit :misc :utf8);
 use Debbugs::Config qw(:config);
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
 use Debbugs::Packages qw(makesourceversions make_source_versions getversions get_versions binary_to_source);
@@ -45,7 +45,7 @@ use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
 use POSIX qw(ceil);
 use File::Copy qw(copy);
-use Encode qw(decode encode);
+use Encode qw(decode encode is_utf8);
 
 use Storable qw(dclone);
 use List::Util qw(min max);
@@ -217,6 +217,7 @@ sub read_bug{
 	}
 	return undef;
     }
+    binmode($status_fh,':encoding(UTF-8)');
 
     my %data;
     my @lines;
@@ -240,9 +241,6 @@ sub read_bug{
 
     my %namemap = reverse %fields;
     for my $line (@lines) {
-	eval {
-	    $line = decode("utf8",$line,Encode::FB_CROAK);
-	};
         if ($line =~ /(\S+?): (.*)/) {
             my ($name, $value) = (lc $1, $2);
 	    # this is a bit of a hack; we should never, ever have \r
@@ -253,9 +251,13 @@ sub read_bug{
         }
     }
     for my $field (keys %fields) {
-        $data{$field} = '' unless exists $data{$field};
+	$data{$field} = '' unless exists $data{$field};
     }
-
+    if ($version < 3) {
+	for my $field (@rfc1522_fields) {
+	    $data{$field} = decode_rfc1522($data{$field});
+	}
+    }
     $data{severity} = $config{default_severity} if $data{severity} eq '';
     for my $field (qw(found_versions fixed_versions found_date fixed_date)) {
 	 $data{$field} = [split ' ', $data{$field}];
@@ -268,11 +270,6 @@ sub read_bug{
 	       @{$data{"${field}_date"}});
     }
 
-    if ($version < 3) {
-	for my $field (@rfc1522_fields) {
-	    $data{$field} = decode_rfc1522($data{$field});
-	}
-    }
     my $status_modified = (stat($status))[9];
     # Add log last modified time
     $data{log_modified} = (stat($log))[9];
@@ -596,7 +593,7 @@ version.
 
 sub makestatus {
     my ($data,$version) = @_;
-    $version = 2 unless defined $version;
+    $version = 3 unless defined $version;
 
     my $contents = '';
 
@@ -608,6 +605,8 @@ sub makestatus {
 	 }
     }
     %newdata = %{join_status_fields(\%newdata)};
+
+    %newdata = encode_utf8_structure(%newdata);
 
     if ($version < 3) {
         for my $field (@rfc1522_fields) {
@@ -645,9 +644,6 @@ sub makestatus {
             }
         }
     }
-    eval {
-	$contents = encode("utf8",$contents,Encode::FB_CROAK);
-    };
     return $contents;
 }
 
@@ -667,15 +663,23 @@ sub writebug {
     my ($ref, $data, $location, $minversion, $disablebughook) = @_;
     my $change;
 
-    my %outputs = (1 => 'status', 2 => 'summary');
+    my %outputs = (1 => 'status', 3 => 'summary');
     for my $version (keys %outputs) {
         next if defined $minversion and $version < $minversion;
         my $status = getbugcomponent($ref, $outputs{$version}, $location);
         die "can't find location for $ref" unless defined $status;
-        open(S,"> $status.new") || die "opening $status.new: $!";
-        print(S makestatus($data, $version)) ||
+	my $sfh;
+	if ($version >= 3) {
+	    open $sfh,">","$status.new"  or
+		die "opening $status.new: $!";
+	}
+	else {
+	    open $sfh,">","$status.new"  or
+		die "opening $status.new: $!";
+	}
+        print {$sfh} makestatus($data, $version) or
             die "writing $status.new: $!";
-        close(S) || die "closing $status.new: $!";
+        close($sfh) or die "closing $status.new: $!";
         if (-e $status) {
             $change = 'change';
         } else {

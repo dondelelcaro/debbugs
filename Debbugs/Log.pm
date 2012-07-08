@@ -39,7 +39,7 @@ use Carp;
 
 use Debbugs::Common qw(getbuglocation getbugcomponent make_list);
 use Params::Validate qw(:types validate_with);
-use Encode qw(encode);
+use Encode qw(encode is_utf8);
 
 =head1 NAME
 
@@ -50,6 +50,11 @@ Debbugs::Log - an interface to debbugs .log files
 The Debbugs::Log module provides a convenient way for scripts to read and
 write the .log files used by debbugs to store the complete textual records
 of all bug transactions.
+
+Debbugs::Log does not decode utf8 into perl's internal encoding or
+encode into utf8 from perl's internal encoding. For html records and
+all recips, this should probably be done. For other records, this should
+not be needed.
 
 =head2 The .log File Format
 
@@ -383,6 +388,9 @@ sub write_log_records
     for my $record (@records) {
 	my $type = $record->{type};
 	croak "record type '$type' with no text field" unless defined $record->{text};
+	# I am not sure if we really want to croak here; but this is
+	# almost certainly a bug if is_utf8 is on.
+	# croak "probably wrong encoding" if is_utf8($record->{text});
 	my ($text) = escape_log($record->{text});
 	if ($type eq 'autocheck') {
 	    print {$logfh} "\01\n$text\03\n" or
@@ -427,7 +435,7 @@ Applies the log escape regex to the passed logfile.
 
 sub escape_log {
 	my @log = @_;
-	return map { eval {$_ = encode("utf8",$_,Encode::FB_CROAK)}; s/^([\01-\07\030])/\030$1/gm; $_ } @log;
+	return map {s/^([\01-\07\030])/\030$1/gm; $_ } @log;
 }
 
 

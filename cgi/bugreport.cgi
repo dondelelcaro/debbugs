@@ -8,6 +8,9 @@ BEGIN{
     delete @ENV{qw(IFS CDPATH ENV BASH_ENV)};
 }
 
+# STDOUT should be using the utf8 io layer
+binmode(STDOUT,':utf8');
+
 use POSIX qw(strftime);
 use MIME::Parser;
 use MIME::Decoder;
@@ -168,6 +171,7 @@ if (defined($msg) and ($msg-1) <= $#records) {
 }
 my @log;
 if ( $mbox ) {
+     binmode(STDOUT,":raw");
      my $date = strftime "%a %b %d %T %Y", localtime;
      if (@records > 1) {
 	 print $q->header(-type => "text/plain",
@@ -242,6 +246,7 @@ END
 
 else {
      if (defined $att and defined $msg and @records) {
+	 binmode(STDOUT,":raw");
 	  $msg_num++;
 	  print handle_email_message($records[0]->{text},
 				     ref => $ref,
