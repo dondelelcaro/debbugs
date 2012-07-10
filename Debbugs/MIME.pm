@@ -31,7 +31,7 @@ use warnings;
 use strict;
 
 use base qw(Exporter);
-use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS @EXPORT);
+use vars qw($DEBUG $VERSION @EXPORT_OK %EXPORT_TAGS @EXPORT);
 
 BEGIN {
     $VERSION = 1.00;
@@ -39,9 +39,9 @@ BEGIN {
 
     @EXPORT = ();
 
-    %EXPORT_TAGS = (mime => qw(parse create_mime_message getmailbody),
-		    rfc1522 => qw(decode_rfc1522 encode_rfc522),
-		    utf8 => qw(convert_to_utf8),
+    %EXPORT_TAGS = (mime => [qw(parse create_mime_message getmailbody)],
+		    rfc1522 => [qw(decode_rfc1522 encode_rfc1522)],
+		    utf8 => [qw(convert_to_utf8)],
 		   );
     @EXPORT_OK=();
     Exporter::export_ok_tags(keys %EXPORT_TAGS);
