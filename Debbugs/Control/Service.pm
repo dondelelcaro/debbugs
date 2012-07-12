@@ -82,7 +82,7 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (control => [qw(control_line)],
+     %EXPORT_TAGS = (control => [qw(control_line valid_control)],
 		    );
      @EXPORT_OK = ();
      Exporter::export_ok_tags(keys %EXPORT_TAGS);
@@ -90,7 +90,11 @@ BEGIN{
 }
 
 use Debbugs::Config qw(:config);
+use Debbugs::Common qw(cleanup_eval_fail);
 use Debbugs::Control qw(:all);
+use Debbugs::Status qw(splitpackages);
+use Params::Validate qw(:types validate_with);
+use List::Util qw(first);
 
 my %control_grammar =
     (close => qr/(?i)^close\s+\#?(-?\d+)(?:\s+(\d.*))?$/,
@@ -130,7 +134,7 @@ my %control_grammar =
 		(?:\s*,\s*(?:$config{package_name_re}\/)?
 		    $config{package_version_re})*)
 	    \s*$}x,
-     submitter => qr/(?i)^submitter\s+\#?(-?\d+)\s+(\!|\S.*\S)$/.
+     submitter => qr/(?i)^submitter\s+\#?(-?\d+)\s+(\!|\S.*\S)$/,
      forwarded => qr/(?i)^forwarded\s+\#?(-?\d+)\s+(\S.*\S)$/,
      notforwarded => qr/(?i)^notforwarded\s+\#?(-?\d+)$/,
      severity => qr/(?i)^(?:severity|priority)\s+\#?(-?\d+)\s+([-0-9a-z]+)$/,
@@ -175,39 +179,49 @@ sub control_line {
 							 },
 			       errors => {type => SCALARREF,
 					 },
-			       transcript => {type => FILEHANDLE,
+			       transcript => {type => HANDLE,
 					     },
+			       debug => {type => SCALAR,
+					 default => 0,
+					},
 			       ok => {type => SCALARREF,
 				     },
+			       limit => {type => HASHREF,
+					},
 			      },
 		     );
     my $line = $param{line};
     my @matches;
     my $ctl = valid_control($line,\@matches);
     my $transcript = $param{transcript};
+    my $debug = $param{debug};
     if (not defined $ctl) {
 	${$param{errors}}++;
 	print {$param{transcript}} "Unknown command or invalid options to control\n";
 	return;
     }
-    my $ref = $matches[1];
-    $ref = $param{clonebugs}{$ref} if exists $param{clonebugs}{$ref};
+    # in almost all cases, the first match is the bug; the exception
+    # to this is block.
+    my $ref = $matches[0];
+    if (defined $ref) {
+	$ref = $param{clonebugs}{$ref} if exists $param{clonebugs}{$ref};
+    }
     ${$param{ok}}++;
     my $errors = 0;
     my $terminate_control = 0;
 
     if ($ctl eq 'close') {
-	if (defined $matches[2]) {
+	if (defined $matches[1]) {
 	    eval {
 		set_fixed(@{$param{common_control_options}},
 			  bug   => $ref,
-			  fixed => $matches[2],
+			  fixed => $matches[1],
 			  add   => 1,
 			 );
 	    };
 	    if ($@) {
 		$errors++;
-		print {$transcript} "Failed to add fixed version '$matches[2]' to $ref: ".cleanup_eval_fail($@,$debug)."\n";
+		print {$transcript} "Failed to add fixed version '$matches[1]' to $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	    }
 	}
 	eval {
@@ -225,14 +239,14 @@ sub control_line {
 	}
     } elsif ($ctl eq 'reassign') {
 	my @new_packages;
-	if (not defined $matches[2]) {
-	    push @new_packages, split /\s*\,\s*/,$matches[4];
+	if (not defined $matches[1]) {
+	    push @new_packages, split /\s*\,\s*/,$matches[3];
 	}
 	else {
-	    push @new_packages, $matches[2];
+	    push @new_packages, $matches[1];
 	}
 	@new_packages = map {y/A-Z/a-z/; s/^(?:src|source):/src:/; $_;} @new_packages;
-        my $version= $matches[3];
+        my $version= $matches[2];
     	eval {
 	    set_package(@{$param{common_control_options}},
 			bug          => $ref,
@@ -252,13 +266,13 @@ sub control_line {
 	    print {$transcript} "Failed to clear fixed versions and reopen on $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif ($ctl eq 'reopen') {
-	my $new_submitter = $matches[2];
+	my $new_submitter = $matches[1];
 	if (defined $new_submitter) {
 	    if ($new_submitter eq '=') {
 		undef $new_submitter;
 	    }
 	    elsif ($new_submitter eq '!') {
-		$new_submitter = $replyto;
+		$new_submitter = $param{replyto};
 	    }
 	}
 	eval {
@@ -274,8 +288,8 @@ sub control_line {
 	}
     } elsif ($ctl eq 'found') {
 	my @versions;
-        if (defined $matches[2]) {
-	    @versions = split /\s*,\s*/,$matches[2];
+        if (defined $matches[1]) {
+	    @versions = split /\s*,\s*/,$matches[1];
 	    eval {
 		set_found(@{$param{common_control_options}},
 			  bug          => $ref,
@@ -304,7 +318,7 @@ sub control_line {
     }
     elsif ($ctl eq 'notfound') {
 	my @versions;
-        @versions = split /\s*,\s*/,$matches[2];
+        @versions = split /\s*,\s*/,$matches[1];
 	eval {
 	    set_found(@{$param{common_control_options}},
 		      bug          => $ref,
@@ -319,7 +333,7 @@ sub control_line {
     }
     elsif ($ctl eq 'fixed') {
 	my @versions;
-        @versions = split /\s*,\s*/,$matches[2];
+        @versions = split /\s*,\s*/,$matches[1];
 	eval {
 	    set_fixed(@{$param{common_control_options}},
 		      bug          => $ref,
@@ -334,7 +348,7 @@ sub control_line {
     }
     elsif ($ctl eq 'notfixed') {
 	my @versions;
-        @versions = split /\s*,\s*/,$matches[2];
+        @versions = split /\s*,\s*/,$matches[1];
 	eval {
 	    set_fixed(@{$param{common_control_options}},
 		      bug          => $ref,
@@ -348,7 +362,7 @@ sub control_line {
 	}
     }
     elsif ($ctl eq 'submitter') {
-	my $newsubmitter = $matches[2] eq '!' ? $replyto : $matches[2];
+	my $newsubmitter = $matches[1] eq '!' ? $param{replyto} : $matches[1];
         if (not Mail::RFC822::Address::valid($newsubmitter)) {
 	     print {$transcript} "$newsubmitter is not a valid e-mail address; not changing submitter\n";
 	     $errors++;
@@ -366,7 +380,7 @@ sub control_line {
 	    }
         }
     } elsif ($ctl eq 'forwarded') {
-	my $forward_to= $matches[2];
+	my $forward_to= $matches[1];
 	eval {
 	    set_forwarded(@{$param{common_control_options}},
 			  bug          => $ref,
@@ -389,15 +403,15 @@ sub control_line {
 	    print {$transcript} "Failed to clear the forwarded-to-address of $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif ($ctl eq 'severity') {
-        my $newseverity= $matches[2];
-        if (exists $gObsoleteSeverities{$newseverity}) {
+	my $newseverity= $matches[1];
+        if (exists $config{obsolete_severities}{$newseverity}) {
             print {$transcript} "Severity level \`$newseverity' is obsolete. " .
-		 "Use $gObsoleteSeverities{$newseverity} instead.\n\n";
+		 "Use $config{obsolete_severities}{$newseverity} instead.\n\n";
 	    	$errors++;
         } elsif (not defined first {$_ eq $newseverity}
-	    (@gSeverityList, "$gDefaultSeverity")) {
+	    (@{$config{severity_list}}, $config{default_severity})) {
 	     print {$transcript} "Severity level \`$newseverity' is not known.\n".
-		  "Recognized are: $gShowSeverities.\n\n";
+		  "Recognized are: $config{show_severities}.\n\n";
 	    $errors++;
         } else {
 	    eval {
@@ -412,7 +426,7 @@ sub control_line {
 	    }
 	}
     } elsif ($ctl eq 'tag') {
-	my $tags = $matches[2];
+	my $tags = $matches[1];
 	my @tags = map {m/^([+=-])(.+)/ ? ($1,$2):($_)} split /[\s,]+/, $tags;
 	# this is an array of hashrefs which contain two elements, the
 	# first of which is the array of tags, the second is the
@@ -454,7 +468,7 @@ sub control_line {
 	}
 	if (@badtags) {
             print {$transcript} "Unknown tag/s: ".join(', ', @badtags).".\n".
-		 "Recognized are: ".join(' ', @gTags).".\n\n";
+		 "Recognized are: ".join(' ', @{$config{tags}}).".\n\n";
 	    $errors++;
 	}
 	eval {
@@ -475,10 +489,10 @@ sub control_line {
 	    print {$transcript} "Failed to alter tags of $config{bug} $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif (m/^(un)?block\s+\#?(-?\d+)\s+(?:by|with)\s+(\S.*)?$/i) {
-	my $add_remove = defined $matches[1] && $matches[1] eq 'un';
-	$ref = $matches[2];
-	$ref = exists $param{clonebugs}{$ref} ? $param{clonebugs}{$ref};
-	my @blockers = map {exists $param{clonebugs}{$_}?$param{clonebugs}{$_}:$_} split /[\s,]+/, $matches[3];
+	my $add_remove = defined $matches[0] && $matches[0] eq 'un';
+	$ref = $matches[1];
+	$ref = exists $param{clonebugs}{$ref} ? $param{clonebugs}{$ref} : $ref;
+	my @blockers = map {exists $param{clonebugs}{$_}?$param{clonebugs}{$_}:$_} split /[\s,]+/, $matches[2];
 	eval {
 	     set_blocks(@{$param{common_control_options}},
 			bug          => $ref,
@@ -491,7 +505,7 @@ sub control_line {
 	    print {$transcript} "Failed to set blocking bugs of $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif ($ctl eq 'retitle') {
-        my $newtitle= $matches[2];
+        my $newtitle= $matches[1];
 	eval {
 	     set_title(@{$param{common_control_options}},
 		       bug          => $ref,
@@ -515,7 +529,7 @@ sub control_line {
     } elsif ($ctl eq 'merge') {
 	my @tomerge;
         ($ref,@tomerge) = map {exists $param{clonebugs}{$_}?$param{clonebugs}{$_}:$_}
-	    split(/\s+#?/,$matches[1]);
+	    split(/\s+#?/,$matches[0]);
 	eval {
 	     set_merged(@{$param{common_control_options}},
 			bug          => $ref,
@@ -529,7 +543,7 @@ sub control_line {
     } elsif ($ctl eq 'forcemerge') {
 	my @tomerge;
         ($ref,@tomerge) = map {exists $param{clonebugs}{$_}?$param{clonebugs}{$_}:$_}
-	    split(/\s+#?/,$matches[1]);
+	    split(/\s+#?/,$matches[0]);
 	eval {
 	     set_merged(@{$param{common_control_options}},
 			bug          => $ref,
@@ -543,11 +557,10 @@ sub control_line {
 	    print {$transcript} "Failed to forcibly merge $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif ($ctl eq 'clone') {
-	my $origref = $matches[1];
-	my @newclonedids = split /\s+/, $matches[2];
+	my $origref = $matches[0];
+	my @newclonedids = split /\s+/, $matches[1];
 	my $newbugsneeded = scalar(@newclonedids);
 
-	$bug_affected{$ref} = 1;
 	eval {
 	    my %new_clones;
 	    clone_bug(@{$param{common_control_options}},
@@ -563,37 +576,35 @@ sub control_line {
 	    print {$transcript} "Failed to clone $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif ($ctl eq 'package') {
-	my @pkgs = split /\s+/, $matches[1];
+	my @pkgs = split /\s+/, $matches[0];
 	if (scalar(@pkgs) > 0) {
-		%limit_pkgs = map { ($_, 1) } @pkgs;
-		$limit{package} = [@pkgs];
+		$param{limit}{package} = [@pkgs];
 		print {$transcript} "Limiting to bugs with field 'package' containing at least one of ".join(', ',map {qq('$_')} @pkgs)."\n";
 		print {$transcript} "Limit currently set to";
-		for my $limit_field (keys %limit) {
-		    print {$transcript} " '$limit_field':".join(', ',map {qq('$_')} @{$limit{$limit_field}})."\n";
+		for my $limit_field (keys %{$param{limit}}) {
+		    print {$transcript} " '$limit_field':".join(', ',map {qq('$_')} @{$param{limit}{$limit_field}})."\n";
 		}
 		print {$transcript} "\n";
 	} else {
-	    %limit_pkgs = ();
-	    $limit{package} = [];
+	    $param{limit}{package} = [];
 	    print {$transcript} "Limit cleared.\n\n";
 	}
     } elsif ($ctl eq 'limit') {
-	my ($field,@options) = split /\s+/, $matches[1];
+	my ($field,@options) = split /\s+/, $matches[0];
 	$field = lc($field);
 	if ($field =~ /^(?:clear|unset|blank)$/) {
-	    %limit = ();
+	    %{$param{limit}} = ();
 	    print {$transcript} "Limit cleared.\n\n";
 	}
 	elsif (exists $Debbugs::Status::fields{$field} or $field eq 'source') {
-	    # %limit can actually contain regexes, but because they're
+	    # %{$param{limit}} can actually contain regexes, but because they're
 	    # not evaluated in Safe, DO NOT allow them through without
 	    # fixing this.
-	    $limit{$field} = [@options];
+	    $param{limit}{$field} = [@options];
 	    print {$transcript} "Limiting to bugs with field '$field' containing at least one of ".join(', ',map {qq('$_')} @options)."\n";
 	    print {$transcript} "Limit currently set to";
-	    for my $limit_field (keys %limit) {
-		print {$transcript} " '$limit_field':".join(', ',map {qq('$_')} @{$limit{$limit_field}})."\n";
+	    for my $limit_field (keys %{$param{limit}}) {
+		print {$transcript} " '$limit_field':".join(', ',map {qq('$_')} @{$param{limit}{$limit_field}})."\n";
 	    }
 	    print {$transcript} "\n";
 	}
@@ -605,8 +616,8 @@ sub control_line {
 	    last;
 	}
     } elsif ($ctl eq 'affects') {
-	my $add_remove = $matches[2];
-	my $packages = $matches[3];
+	my $add_remove = $matches[1];
+	my $packages = $matches[2];
 	# if there isn't a package given, assume that we should unset
 	# affects; otherwise default to adding
 	if (not defined $packages or
@@ -621,7 +632,7 @@ sub control_line {
 	eval {
 	     affects(@{$param{common_control_options}},
 		     bug => $ref,
-		     package     => [splitpackages($matches[3])],
+		     package     => [splitpackages($packages)],
 		     ($add_remove eq '+'?(add => 1):()),
 		     ($add_remove eq '-'?(remove => 1):()),
 		    );
@@ -632,7 +643,7 @@ sub control_line {
 	}
 
     } elsif ($ctl eq 'summary') {
-	my $summary_msg = length($matches[2])?$matches[2]:undef;
+	my $summary_msg = length($matches[1])?$matches[1]:undef;
 	eval {
 	    summary(@{$param{common_control_options}},
 		    bug          => $ref,
@@ -645,9 +656,9 @@ sub control_line {
 	}
 
     } elsif ($ctl eq 'owner') {
-	my $newowner = $matches[2];
+	my $newowner = $matches[1];
 	if ($newowner eq '!') {
-	    $newowner = $replyto;
+	    $newowner = $param{replyto};
 	}
 	eval {
 	    owner(@{$param{common_control_options}},
@@ -674,7 +685,6 @@ sub control_line {
 	 eval {
 	      bug_unarchive(@{$param{common_control_options}},
 			    bug        => $ref,
-			    recipients => \%recipients,
 			   );
 	 };
 	 if ($@) {
