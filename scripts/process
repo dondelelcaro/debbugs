@@ -440,8 +440,12 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	writebug($ref, $data);
 
 	my $hash = get_hashname($ref);
-        open(O,"db-h/$hash/$ref.report") || die "read original report: $!";
-        my $orig_report= join('',<O>); close(O);
+	my $orig_report_fh = IO::File->new("db-h/$hash/$ref.report") or
+	    die "Unable to read original report: $!";
+	my $orig_report;
+	{ local $/; $orig_report = <$orig_report_fh>;}
+	close($orig_report_fh) or
+	    die "Unable to close original report filehandle: $!";
         if ($codeletter eq 'F') {
 	    &htmllog("Reply","sent",$replyto,"You have marked $gBug as forwarded.");
             &sendmessage(create_mime_message(
