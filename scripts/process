@@ -210,6 +210,7 @@ if (@bodylines and $bodylines[0] =~ /^-----BEGIN PGP SIGNED/) {
 
 #psuedoheaders
 my %pheader;
+my @control_bits;
 # extract pseudo-headers
 for my $phline (@bodylines)
 {
@@ -221,9 +222,13 @@ for my $phline (@bodylines)
     $fv =~ s/\s*$//;
     print {$debugfh} ">$fn|$fv|\n";
     $fn = lc $fn;
-    # Don't lc owner or forwarded
-    $fv = lc $fv unless $fn =~ /^(?:owner|forwarded|usertags|version|source-version)$/;
-    $pheader{$fn} = $fv;
+    if ($fn =~ /^control$/) {
+	push @control_bits,$fv;
+    } else {
+	# Don't lc owner or forwarded
+	$fv = lc $fv unless $fn =~ /^(?:owner|forwarded|usertags|version|source-version)$/;
+	$pheader{$fn} = $fv;
+    }
     print {$debugfh} ">$fn~$fv<\n";
 }
 
