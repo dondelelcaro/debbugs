@@ -18,7 +18,7 @@ use Debbugs::MIME qw(decode_rfc1522 create_mime_message getmailbody);
 use Debbugs::Mail qw(send_mail_message encode_headers get_addresses);
 use Debbugs::Packages qw(getpkgsrc binary_to_source);
 use Debbugs::User qw(read_usertags write_usertags);
-use Debbugs::Common qw(:lock get_hashname package_maintainer overwritefile);
+use Debbugs::Common qw(:lock get_hashname buglog package_maintainer overwritefile);
 use Debbugs::Status qw(writebug isstrongseverity lockreadbugmerge lockreadbug new_bug read_bug splitpackages  :versions);
 
 use Debbugs::CGI qw(html_escape bug_url);
@@ -172,7 +172,7 @@ for my $hdr (@headerlines) {
     $hdr = decode_rfc1522($hdr);
     $_ = $hdr;
     s/\n\s/ /g;
-    &finish if m/^x-loop: (\S+)$/i && $1 eq "$gMaintainerEmail";
+    finish() if m/^x-loop: (\S+)$/i && $1 eq "$gMaintainerEmail";
     my $ins = !m/^subject:/i && !m/^reply-to:/i && !m/^return-path:/i
            && !m/^From / && !m/^X-Debbugs-/i;
     $fwd .= $hdr."\n" if $ins;
@@ -292,8 +292,8 @@ if (defined $tryref) {
 				   messageid => $header{'message-id'},
 				  },
 				 )),'');
-        &appendlog;
-        &finish;
+        appendlog($ref,$msg);
+        finish();
     }
 } else { 
     &filelock('lock/-1'); 
@@ -329,7 +329,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
     my $generalcc;
     my $set_done;
     if ($codeletter eq 'F') { # Forwarded
-        (&appendlog,&finish) if defined $data->{forwarded} and length($data->{forwarded});
+        (appendlog($ref,$msg),finish()) if defined $data->{forwarded} and length($data->{forwarded});
         $receivedat= "forwarded\@$gEmailDomain";
         $markaswhat= 'forwarded';
         $set_forwarded= $header{'to'};
@@ -347,8 +347,8 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
         if (defined $data->{done} and length($data->{done}) and
                 not defined $pheader{'source-version'} and
                 not defined $pheader{'version'}) {
-            &appendlog;
-            &finish;
+            appendlog($ref,$msg);
+            finish();
         }
         $receivedat= "done\@$gEmailDomain";
         $markaswhat= 'done';
@@ -383,8 +383,8 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 				   messageid => $header{'message-id'},
 				  },
 				 )),'');
-	&appendlog;
-	&finish;
+	appendlog($ref,$msg);
+	finish();
     }
 
     &checkmaintainers;
@@ -515,9 +515,9 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 				    ),
 	     [join("\n",@msg),$orig_report]),'',undef,1);
         }
-	&appendlog;
+	appendlog($ref,$msg);
     }
-    &finish;
+    finish();
 }
 
 if ($ref<0) { # new bug report
@@ -540,8 +540,8 @@ if ($ref<0) { # new bug report
 				   messageid => $header{'message-id'},
 				  },
 				 )),'');
-	&appendlog;
-	&finish;
+	appendlog($ref,$msg);
+	finish();
     }
 
     $data->{found_versions} = [];
@@ -579,8 +579,8 @@ if ($ref<0) { # new bug report
 				  baddress => $baddress,
 				 },
 				),[join("\n", @msg)]), '',undef,1);
-	&appendlog;
-	&finish;
+	appendlog($ref,$msg);
+	finish();
     }
 
     if (defined $config{default_package}) {
@@ -943,18 +943,21 @@ if (not exists $header{'x-debbugs-no-ack'} and
 		       ],$body,[]), '',undef,1);
 }
 
-&appendlog;
-&finish;
+appendlog($ref,$msg);
+finish();
 
 sub appendlog {
-    my $hash = get_hashname($ref);
-    if (!open(AP,">>db-h/$hash/$ref.log")) {
-        print {$debugfh} "failed open log<\n";
-        print {$debugfh} "failed open log err $!<\n";
-        die "opening db-h/$hash/$ref.log (li): $!";
-    }
-    print(AP "\7\n",escape_log($msg),"\n\3\n") || die "writing db-h/$hash/$ref.log (li): $!";
-    close(AP) || die "closing db-h/$hash/$ref.log (li): $!";
+    my ($ref,$msg) = @_;
+    my $log_location = buglog($ref);
+    die "Unable to find .log for $ref"
+	if not defined $log_location;
+    my $logfh = IO::File->new(">>$log_location") or
+	die "Unable to open $log_location for appending: $!";
+    write_log_records(logfh => $logfh,
+		      records => [{type => 'incoming-recv',
+				   text => $msg,
+				  }]);
+    close ($logfh) or die "Unable to close $log_location: $!";
 }
 
 sub finish {
