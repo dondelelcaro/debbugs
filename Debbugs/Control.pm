@@ -99,6 +99,7 @@ BEGIN{
 		     clone   => [qw(clone_bug)],
 		     archive => [qw(bug_archive bug_unarchive),
 				],
+		     limit   => [qw(check_limit)],
 		     log     => [qw(append_action_to_log),
 				],
 		    );
@@ -2020,7 +2021,7 @@ sub set_merged {
     $new_locks += $n_locks;
     %data = %{$data};
     @data = values %data;
-    if (not __check_limit(data => [@data],
+    if (not check_limit(data => [@data],
 			  exists $param{limit}?(limit => $param{limit}):(),
 			  transcript => $transcript,
 			 )) {
@@ -3618,7 +3619,7 @@ sub __begin_control {
 	    }
 	}
     }
-    if (not __check_limit(data => \@data,
+    if (not check_limit(data => \@data,
 			  exists $param{limit}?(limit => $param{limit}):(),
 			  transcript => $transcript,
 			 )) {
@@ -3685,9 +3686,9 @@ sub __end_control {
 }
 
 
-=head2 __check_limit
+=head2 check_limit
 
-     __check_limit(data => \@data, limit => $param{limit});
+     check_limit(data => \@data, limit => $param{limit});
 
 
 Checks to make sure that bugs match any limits; each entry of @data
@@ -3704,7 +3705,7 @@ limit to succeed.
 =cut
 
 
-sub __check_limit{
+sub check_limit{
     my %param = validate_with(params => \@_,
 			      spec   => {data  => {type => ARRAYREF|SCALAR,
 						  },
