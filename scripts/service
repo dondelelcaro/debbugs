@@ -170,11 +170,6 @@ my %clonebugs = ();
 my %bcc = ();
 
 
-my @bcc;
-sub addbcc {
-    push @bcc, $_[0] unless grep { $_ eq $_[0] } @bcc;
-}
-
 our $data;
 our $message;
 our $extramessage;
