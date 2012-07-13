@@ -509,7 +509,7 @@ my $error_text = $errors > 0 ? " (with $errors errors)":'';
 my @common_headers;
 push @common_headers, 'X-Loop',$gMaintainerEmail;
 
-my $temp_transcript = ${transcript_scalar};
+my $temp_transcript = $transcript_scalar;
 eval{
     $temp_transcript = decode("utf8",$temp_transcript,Encode::FB_CROAK);
 };
@@ -542,19 +542,6 @@ my $repliedshow= join(', ',$replyto,
 					  )
 		     );
 
-# -1 is the service.in log
-&filelock("lock/-1");
-open(AP,">>db-h/-1.log") || die "open db-h/-1.log: $!";
-print(AP
-      "\2\n$repliedshow\n\5\n$reply\n\3\n".
-      "\6\n".
-      "<strong>Request received</strong> from <code>".
-      html_escape($header{'from'})."</code>\n".
-      "to <code>".html_escape($controlrequestaddr)."</code>\n".
-      "\3\n".
-      "\7\n",escape_log(@log),"\n\3\n") || die "writing db-h/-1.log: $!";
-close(AP) || die "open db-h/-1.log: $!";
-&unfilelock;
 utime(time,time,"db-h");
 
 &sendmailmessage($reply,
