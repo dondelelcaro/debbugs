@@ -499,19 +499,6 @@ my @maintccs = determine_recipients(recipients => \%recipients,
 				    address_only => 1,
 				    cc => 1,
 				   );
-my $maintccs = 'Cc: '.join(",\n    ",
-		    determine_recipients(recipients => \%recipients,
-					 cc => 1,
-					)
-		   )."\n";
-
-my $packagepr = '';
-$packagepr = "X-${gProject}-PR-Package: " . join(keys %affected_packages) . "\n" if keys %affected_packages;
-
-# Add Bcc's to subscribed bugs
-# now handled by Debbugs::Recipients
-#push @bcc, map {"bugs=$_\@$gListDomain"} keys %bug_affected;
-
 if (!defined $header{'subject'} || $header{'subject'} eq "") {
   $header{'subject'} = "your mail";
 }
