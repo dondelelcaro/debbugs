@@ -31,12 +31,21 @@ use warnings;
 use strict;
 
 use base qw(Exporter);
-use vars qw($VERSION @EXPORT_OK);
+use vars qw($DEBUG $VERSION @EXPORT_OK %EXPORT_TAGS @EXPORT);
 
 BEGIN {
     $VERSION = 1.00;
+    $DEBUG = 0 unless defined $DEBUG;
 
-    @EXPORT_OK = qw(parse decode_rfc1522 encode_rfc1522 convert_to_utf8 create_mime_message getmailbody);
+    @EXPORT = ();
+
+    %EXPORT_TAGS = (mime => [qw(parse create_mime_message getmailbody)],
+		    rfc1522 => [qw(decode_rfc1522 encode_rfc1522)],
+		    utf8 => [qw(convert_to_utf8)],
+		   );
+    @EXPORT_OK=();
+    Exporter::export_ok_tags(keys %EXPORT_TAGS);
+    $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
 use File::Path;
