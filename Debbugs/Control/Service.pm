@@ -488,7 +488,7 @@ sub control_line {
 	    $errors++;
 	    print {$transcript} "Failed to alter tags of $config{bug} $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
-    } elsif (m/^(un)?block\s+\#?(-?\d+)\s+(?:by|with)\s+(\S.*)?$/i) {
+    } elsif ($ctl eq 'block') {
 	my $add_remove = defined $matches[0] && $matches[0] eq 'un';
 	$ref = $matches[1];
 	$ref = exists $param{clonebugs}{$ref} ? $param{clonebugs}{$ref} : $ref;
