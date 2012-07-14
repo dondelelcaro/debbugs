@@ -18,10 +18,10 @@ use Debbugs::MIME qw(decode_rfc1522 create_mime_message getmailbody);
 use Debbugs::Mail qw(send_mail_message encode_headers get_addresses);
 use Debbugs::Packages qw(getpkgsrc binary_to_source);
 use Debbugs::User qw(read_usertags write_usertags);
-use Debbugs::Common qw(:lock get_hashname buglog package_maintainer overwritefile);
+use Debbugs::Common qw(:lock get_hashname buglog package_maintainer overwritefile make_list);
 use Debbugs::Status qw(writebug isstrongseverity lockreadbugmerge lockreadbug new_bug read_bug splitpackages  :versions);
 
-use Debbugs::CGI qw(html_escape bug_url);
+use Debbugs::CGI qw(html_escape bug_links);
 
 use Debbugs::Log qw(:misc :write);
 
@@ -30,7 +30,9 @@ use Debbugs::Text qw(:templates);
 use Debbugs::Config qw(:globals :config);
 
 use Debbugs::Control qw(append_action_to_log);
-use Encode qw(encode_utf8);
+use Debbugs::Control::Service qw(valid_control control_line);
+use Debbugs::Recipients qw(determine_recipients);
+use Encode qw(encode_utf8 decode);
 
 =head1 NAME
 
@@ -120,6 +122,7 @@ my $baddress = $baddress{$codeletter};
 if ($baddress eq 'list') {
     bug_list_forward($nn) if $codeletter eq 'L';
 }
+
 
 my $baddressroot= $baddress;
 $baddress= "$tryref-$baddress" if defined $tryref;
@@ -953,6 +956,122 @@ if (not exists $header{'x-debbugs-no-ack'} and
 }
 
 appendlog($ref,$msg);
+
+## handle control messages at this point, immediately before finishing
+my %clonebugs = (-1 => $ref);
+my %bug_affected;
+if (@control_bits) {
+    my $transcript_scalar = '';
+    open my $transcript, ">:scalar:utf8", \$transcript_scalar or
+	die "Unable to create transcript scalar: $!";
+    print {$transcript} "Processing control commands:\n\n";
+    my %affected_packages;
+    my %recipients;
+    # this is the hashref which is passed to all control calls
+    my %limit = ();
+    my $errors = 0;
+    my $unknowns = 0;
+
+    my @common_control_options =
+	(transcript        => $transcript,
+	 requester         => $header{from},
+	 request_addr      => $baddress.'@'.$config{email_domain},
+	 request_msgid     => $header{'message-id'},
+	 request_subject   => $header{subject},
+	 request_nn        => $nn,
+	 request_replyto   => $replyto,
+	 message           => $msg,
+	 affected_bugs     => \%bug_affected,
+	 affected_packages => \%affected_packages,
+	 recipients        => \%recipients,
+	 limit             => \%limit,
+	);
+    if (@gExcludeFromControl and grep {$replyto =~ m/\Q$_\E/} @gExcludeFromControl) {
+	print {$transcript} fill_template('mail/excluded_from_control');
+	print {$transcript} "Stopping processing here.\n\n";
+    } else {
+	my %clonebugs = ();
+	for my $control_bit (@control_bits) {
+	    $control_bit =~ s/\xef\xbb\xbf//g;
+	    next unless $control_bit =~ m/\S/;
+	    eval {
+		my $temp = decode("utf8",$control_bit,Encode::FB_CROAK);
+		$control_bit = $temp;
+	    };
+	    print {$transcript} "> $control_bit\n";
+	    next if $control_bit =~ /^\s*\#/;
+	    my $action = '';
+	    my $ok;
+	    if (defined valid_control($control_bit)) {
+		my ($new_errors,$terminate_control) =
+		    control_line(line => $control_bit,
+				 clonebugs => \%clonebugs,
+				 limit => \%limit,
+				 common_control_options => \@common_control_options,
+				 errors => \$errors,
+				 transcript => $transcript,
+				 debug => 0,
+				 ok => \$ok,
+				);
+		if ($terminate_control) {
+		    last;
+		}
+	    }
+	    else {
+		$errors++;
+		if (++$unknowns >= 5) {
+		    print {$transcript} "Too many unknown commands, stopping here.\n\n";
+		    last;
+		}
+	    }
+	}
+    }
+    my $temp_transcript = $transcript_scalar;
+    eval{
+	$temp_transcript = decode("utf8",$temp_transcript,Encode::FB_CROAK);
+    };
+    my @maintccs = determine_recipients(recipients => \%recipients,
+					address_only => 1,
+					cc => 1,
+				       );
+    my $error_text = $errors > 0 ? " (with $errors errors)":'';
+    my $reply =
+	create_mime_message(['X-Loop'      => $gMaintainerEmail,
+			     From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
+			     To            => $replyto,
+			     @maintccs ? (Cc => join(', ',@maintccs)):(),
+			     Subject       => "Processed${error_text}: $header{subject}",
+			     'Message-ID'  => "<handler.s.$nn.transcript\@$gEmailDomain>",
+			     'In-Reply-To' => $header{'message-id'},
+			     References    => join(' ',grep {defined $_} $header{'message-id'},$data->{msgid}),
+			     Precedence    => 'bulk',
+			     keys %affected_packages ?("X-${gProject}-PR-Package" => join(' ',keys %affected_packages)):(),
+			     keys %affected_packages ?("X-${gProject}-PR-Source" =>
+						       join(' ',
+							    map {defined $_ ?(ref($_)?@{$_}:$_):()}
+							    binary_to_source(binary => [keys %affected_packages],
+									     source_only => 1))):(),
+			     "X-$gProject-PR-Message" => 'transcript',
+			     @common_headers,
+			    ],
+			    fill_template('mail/message_body',
+					  {body => $temp_transcript},
+					 ));
+
+    utime(time,time,"db-h");
+
+    send_mail_message(message => $reply,
+		      recipients => [exists $header{'x-debbugs-no-ack'}?():$replyto,
+				     make_list(values %{{determine_recipients(recipients => \%recipients,
+									      address_only => 1,
+									     )}}
+					      ),
+				    ]
+		     );
+
+}
+
+
 finish();
 
 sub appendlog {
@@ -1101,6 +1220,7 @@ sub fill_template{
      my $variables = {config => \%config,
 		      defined($ref)?(ref    => $ref):(),
 		      defined($data)?(data  => $data):(),
+		      refs => [map {exists $clonebugs{$_}?$clonebugs{$_}:$_} keys %bug_affected],
 		      %{$extra_var},
 		     };
      my $hole_var = {'&bugurl' =>
