@@ -3707,7 +3707,7 @@ limit to succeed.
 
 sub check_limit{
     my %param = validate_with(params => \@_,
-			      spec   => {data  => {type => ARRAYREF|SCALAR,
+			      spec   => {data  => {type => ARRAYREF|HASHREF,
 						  },
 					 limit => {type => HASHREF|UNDEF,
 						  },
