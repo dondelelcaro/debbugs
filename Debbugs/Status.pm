@@ -108,6 +108,7 @@ our %fields = (originator     => 'submitter',
               blockedby      => 'blocked-by',
 	      unarchived     => 'unarchived',
 	      summary        => 'summary',
+	      outlook        => 'outlook',
 	      affects        => 'affects',
              );
 
