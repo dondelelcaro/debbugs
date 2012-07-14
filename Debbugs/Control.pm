@@ -3799,7 +3799,9 @@ sub __message_body_template{
      my $hole_var = {'&bugurl' =>
 		     sub{"$_[0]: ".
 			     'http://'.$config{cgi_domain}.'/'.
-				 Debbugs::CGI::bug_url($_[0]);
+				 Debbugs::CGI::bug_links(bug => $_[0],
+							 links_only => 1,
+							);
 		     }
 		    };
 
