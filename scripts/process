@@ -84,7 +84,7 @@ my %baddress = (B => 'submit',
 	        Q => 'quiet',
 		F => 'forwarded',
 		D => 'done',
-		S => 'submitter',
+		U => 'submitter',
 		L => 'list',
 	       );
 my $valid_codeletters = join('',keys %baddress);
