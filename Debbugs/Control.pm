@@ -87,6 +87,7 @@ BEGIN{
 		     severity => [qw(set_severity)],
 		     affects => [qw(affects)],
 		     summary => [qw(summary)],
+		     outlook => [qw(outlook)],
 		     owner   => [qw(owner)],
 		     title   => [qw(set_title)],
 		     forward => [qw(set_forwarded)],
@@ -2302,7 +2303,7 @@ sub __calculate_merge_status{
 	# look like. However, if merge is set, tags, fixed and found
 	# are merged.
 	if ($data->{bug_num} == $master_bug) {
-	    for (qw(package forwarded severity blocks blockedby done owner summary affects)) {
+	    for (qw(package forwarded severity blocks blockedby done owner summary outlook affects)) {
 		$merge_status{$_} = $data->{$_}
 	    }
 	}
@@ -2372,6 +2373,10 @@ sub __calculate_merge_changes{
 			   key  => 'summary',
 			   options => [],
 			  },
+	     outlook   => {func => \&outlook,
+			   key  => 'outlook',
+			   options => [],
+			  },
 	     affects   => {func => \&affects,
 			   key  => 'package',
 			   options => [],
@@ -2396,7 +2401,7 @@ sub __calculate_merge_changes{
 				allowed => 1,
 			       },
 	    );
-	for my $field (qw(forwarded severity blocks blockedby done owner summary affects package fixed_versions found_versions keywords)) {
+	for my $field (qw(forwarded severity blocks blockedby done owner summary outlook affects package fixed_versions found_versions keywords)) {
 	    # if the ideal bug already has the field set properly, we
 	    # continue on.
 	    if ($field eq 'keywords'){
@@ -2653,23 +2658,66 @@ Otherwise, sets summary to the value passed.
 
 
 sub summary {
-    my %param = validate_with(params => \@_,
+    # outlook and summary are exactly the same, basically
+    return _summary('summary',@_);
+}
+
+=head1 OUTLOOK FUNCTIONS
+
+=head2 outlook
+
+     eval {
+	    outlook(bug          => $ref,
+		    transcript   => $transcript,
+		    ($dl > 0 ? (debug => $transcript):()),
+		    requester    => $header{from},
+		    request_addr => $controlrequestaddr,
+		    message      => \@log,
+                    affected_packages => \%affected_packages,
+		    recipients   => \%recipients,
+		    outlook      => undef,
+                   );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to mark $ref with outlook foo: $@";
+	}
+
+Handles all setting of outlook fields
+
+If outlook is undef, unsets the outlook
+
+If outlook is 0, sets the outlook to the first paragraph contained in
+the message passed.
+
+If outlook is a positive integer, sets the outlook to the message specified.
+
+Otherwise, sets outlook to the value passed.
+
+=cut
+
+
+sub outlook {
+    return _summary('outlook',@_);
+}
+
+sub _summary {
+    my ($cmd,@params) = @_;
+    my %param = validate_with(params => \@params,
 			      spec   => {bug => {type   => SCALAR,
 						 regex  => qr/^\d+$/,
 						},
 					 # specific options here
-					 summary => {type => SCALAR|UNDEF,
-						     default => 0,
-						    },
+					 $cmd , {type => SCALAR|UNDEF,
+						 default => 0,
+						},
 					 %common_options,
 					 %append_action_options,
 					},
 			     );
-# croak "summary must be numeric or undef" if
-# 	defined $param{summary} and not $param{summary} =~ /^\d+/;
     my %info =
 	__begin_control(%param,
-			command  => 'summary'
+			command  => $cmd,
 		       );
     my ($debug,$transcript) =
 	@info{qw(debug transcript)};
@@ -2679,27 +2727,27 @@ sub summary {
     my $summary = '';
     my $summary_msg = '';
     my $action = '';
-    if (not defined $param{summary}) {
+    if (not defined $param{$cmd}) {
 	 # do nothing
-	 print {$debug} "Removing summary fields\n";
-	 $action = 'Removed summary';
+	 print {$debug} "Removing $cmd fields\n";
+	 $action = "Removed $cmd";
     }
-    elsif ($param{summary} =~ /^\d+$/) {
+    elsif ($param{$cmd} =~ /^\d+$/) {
 	 my $log = [];
 	 my @records = Debbugs::Log::read_log_records(bug_num => $param{bug});
-	 if ($param{summary} == 0) {
+	 if ($param{$cmd} == 0) {
 	      $log = $param{message};
 	      $summary_msg = @records + 1;
 	 }
 	 else {
-	      if (($param{summary} - 1 ) > $#records) {
-		   die "Message number '$param{summary}' exceeds the maximum message '$#records'";
+	      if (($param{$cmd} - 1 ) > $#records) {
+		   die "Message number '$param{$cmd}' exceeds the maximum message '$#records'";
 	      }
-	      my $record = $records[($param{summary} - 1 )];
+	      my $record = $records[($param{$cmd} - 1 )];
 	      if ($record->{type} !~ /incoming-recv|recips/) {
-		   die "Message number '$param{summary}' is a invalid message type '$record->{type}'";
+		   die "Message number '$param{$cmd}' is a invalid message type '$record->{type}'";
 	      }
-	      $summary_msg = $param{summary};
+	      $summary_msg = $param{$cmd};
 	      $log = [$record->{text}];
 	 }
 	 my $p_o = Debbugs::MIME::parse(join('',@{$log}));
@@ -2738,38 +2786,38 @@ sub summary {
 	      next if $in_pseudoheaders;
 	      $paragraph .= $line ." \n";
 	 }
-	 print {$debug} "Summary is going to be '$paragraph'\n";
+	 print {$debug} ucfirst($cmd)." is going to be '$paragraph'\n";
 	 $summary = $paragraph;
 	 $summary =~ s/[\n\r]/ /g;
 	 if (not length $summary) {
-	      die "Unable to find summary message to use";
+	      die "Unable to find $cmd message to use";
 	 }
 	 # trim off a trailing spaces
 	 $summary =~ s/\ *$//;
     }
     else {
-	$summary = $param{summary};
+	$summary = $param{$cmd};
     }
     for my $data (@data) {
-	 print {$debug} "Going to change summary\n";
+	 print {$debug} "Going to change $cmd\n";
 	 if (((not defined $summary or not length $summary) and
-	      (not defined $data->{summary} or not length $data->{summary})) or
-	     $summary eq $data->{summary}) {
-	     print {$transcript} "Ignoring request to change the summary of bug $param{bug} to the same value\n";
+	      (not defined $data->{$cmd} or not length $data->{$cmd})) or
+	     $summary eq $data->{$cmd}) {
+	     print {$transcript} "Ignoring request to change the $cmd of bug $param{bug} to the same value\n";
 	     next;
 	 }
 	 if (length $summary) {
-	      if (length $data->{summary}) {
-		   $action = "Summary replaced with message bug $param{bug} message $summary_msg";
+	      if (length $data->{$cmd}) {
+		   $action = ucfirst($cmd)." replaced with message bug $param{bug} message $summary_msg";
 	      }
 	      else {
-		   $action = "Summary recorded from message bug $param{bug} message $summary_msg";
+		   $action = ucfirst($cmd)." recorded from message bug $param{bug} message $summary_msg";
 	      }
 	 }
 	 my $old_data = dclone($data);
-	 $data->{summary} = $summary;
+	 $data->{$cmd} = $summary;
 	 append_action_to_log(bug => $data->{bug_num},
-			      command => 'summary',
+			      command => $cmd,
 			      old_data => $old_data,
 			      new_data => $data,
 			      get_lock => 0,

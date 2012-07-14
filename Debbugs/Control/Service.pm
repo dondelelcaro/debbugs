@@ -149,6 +149,7 @@ my %control_grammar =
      limit => qr/(?i)^limit\:?\s+(\S.*\S)\s*$/,
      affects => qr/(?i)^affects?\s+\#?(-?\d+)(?:\s+((?:[=+-])?)\s*(\S.*)?)?\s*$/,
      summary => qr/(?i)^summary\s+\#?(-?\d+)\s*(\d+|)\s*$/,
+     outlook => qr/(?i)^outlook\s+\#?(-?\d+)\s*(\d+|)\s*$/,
      owner => qr/(?i)^owner\s+\#?(-?\d+)\s+((?:\S.*\S)|\!)\s*$/,
      noowner => qr/(?i)^noowner\s+\#?(-?\d+)\s*$/,
      unarchive => qr/(?i)^unarchive\s+#?(\d+)$/,
@@ -653,6 +654,19 @@ sub control_line {
 	if ($@) {
 	    $errors++;
 	    print {$transcript} "Failed to give $ref a summary: ".cleanup_eval_fail($@,$debug)."\n";
+	}
+
+    } elsif ($ctl eq 'outlook') {
+	my $outlook_msg = length($matches[1])?$matches[1]:undef;
+	eval {
+	    outlook(@{$param{common_control_options}},
+		    bug          => $ref,
+		    outlook      => $outlook_msg,
+		   );
+	};
+	if ($@) {
+	    $errors++;
+	    print {$transcript} "Failed to give $ref a outlook: ".cleanup_eval_fail($@,$debug)."\n";
 	}
 
     } elsif ($ctl eq 'owner') {
