@@ -11,15 +11,17 @@ use POSIX qw(strftime);
 
 use IO::File;
 
+use Getopt::Long;
+use Pod::Usage;
 use MIME::Parser;
 use Debbugs::MIME qw(decode_rfc1522 create_mime_message getmailbody);
 use Debbugs::Mail qw(send_mail_message encode_headers get_addresses);
 use Debbugs::Packages qw(getpkgsrc binary_to_source);
 use Debbugs::User qw(read_usertags write_usertags);
-use Debbugs::Common qw(:lock get_hashname package_maintainer overwritefile);
+use Debbugs::Common qw(:lock get_hashname buglog package_maintainer overwritefile make_list);
 use Debbugs::Status qw(writebug isstrongseverity lockreadbugmerge lockreadbug new_bug read_bug splitpackages  :versions);
 
-use Debbugs::CGI qw(html_escape bug_url);
+use Debbugs::CGI qw(html_escape bug_links);
 
 use Debbugs::Log qw(:misc :write);
 
@@ -28,53 +30,119 @@ use Debbugs::Text qw(:templates);
 use Debbugs::Config qw(:globals :config);
 
 use Debbugs::Control qw(append_action_to_log);
-use Encode qw(encode_utf8);
+use Debbugs::Control::Service qw(valid_control control_line);
+use Debbugs::Recipients qw(determine_recipients);
+use Encode qw(encode_utf8 decode);
 
-chdir( "$gSpoolDir" ) || die "chdir spool: $!\n";
+=head1 NAME
 
-#open(DEBUG,"> /tmp/debbugs.debug");
+process - Handle e-mails emails sent to bugs
+
+=head1 SYNOPSIS
+
+process nn
+
+ Options:
+  --debug, -d debugging level (Default 0)
+
+=head1 OPTIONS
+
+=over
+
+=item <--debug,-d>
+
+Debugging level (default 0)
+
+=back
+
+=cut
+
+use vars qw($DEBUG);
+
+my %options = (debug           => 0,
+	       help            => 0,
+	       man             => 0,
+	      );
+
+GetOptions(\%options,
+	   'debug|d+','help|h|?','man|m');
+
+pod2usage() if $options{help};
+pod2usage({verbose=>2}) if $options{man};
+
+
+$DEBUG=$options{debug};
+my $debugfh = IO::File->new('/dev/null','w') or
+    die "Unable to open /dev/null for writing; $!";
+if ($DEBUG > 0) {
+    $debugfh = \*STDERR;
+}
+
+# these are the valid bug addresses
+my %baddress = (B => 'submit',
+	        M => 'maintonly',
+	        Q => 'quiet',
+		F => 'forwarded',
+		D => 'done',
+		S => 'submitter',
+		L => 'list',
+	       );
+my $valid_codeletters = join('',keys %baddress);
+
+
+chdir($config{spool_dir}) or die "Unable to chdir to spool ($config{spool_dir}): $!";
+
 umask(002);
-open DEBUG, ">/dev/null";
 
 my $intdate = time or die "failed to get time: $!";
 
-$_=shift;
-m/^([BMQFDUL])(\d*)\.\d+$/ or die "bad argument: $_";
-my $codeletter= $1;
-my $tryref= length($2) ? $2 : -1;
-my $nn= $_;
+my ($nn) = @ARGV;
+my ($codeletter,$tryref) =
+    $nn =~ m/^([$valid_codeletters])(\d*)\.\d+$/
+    or die "bad argument: $_";
+$tryref = undef unless length ($tryref) and
+    $tryref > 0;
 
-if (!rename("incoming/G$nn","incoming/P$nn")) 
-{
-    $_=$!.'';  m/no such file or directory/i && exit 0;
-    die "renaming to lock: $!";
+if (!rename("incoming/G$nn","incoming/P$nn"))  {
+    my $error = $!;
+    $error = '' if not defined $error;
+    # this is very fragile, but we should probably die here anyway
+    if ($error =~ m/no such file or directory/i) {
+	exit 0;
+    }
+    die "Unable to rename incoming/G$nn to lock: $error";
 }
 
-my $baddress= 'submit' if $codeletter eq 'B';
-$baddress= 'maintonly' if $codeletter eq 'M';
-$baddress= 'quiet' if $codeletter eq 'Q';
-$baddress= 'forwarded' if $codeletter eq 'F';
-$baddress= 'done' if $codeletter eq 'D';
-$baddress= 'submitter' if $codeletter eq 'U';
-bug_list_forward($nn) if $codeletter eq 'L';
-$baddress || die "bad codeletter $codeletter";
+# die here to avoid continuously processing this mail
+if (not exists $baddress{$codeletter}) {
+    die "bad codeletter $codeletter";
+}
+
+my $baddress = $baddress{$codeletter};
+if ($baddress eq 'list') {
+    bug_list_forward($nn) if $codeletter eq 'L';
+}
+
+
 my $baddressroot= $baddress;
-$baddress= "$tryref-$baddress" if $tryref>=0;
+$baddress= "$tryref-$baddress" if defined $tryref;
 
-open(M,"incoming/P$nn");
-my @log=<M>;
-close(M);
+my $msg;
+my @msg;
 
-my @msg = @log;
-chomp @msg;
+{
+    my $log = IO::File->new("incoming/P$nn",'r') or
+	die "Unable to open 'incoming/P$nn' for reading; $!";
+    local $/;
+    $msg=<$log>;
+    @msg = split /\n/, $msg;
+    close($log);
+}
 
-print DEBUG "###\n",join("##\n",@msg),"\n###\n";
 
 my $tdate = strftime "%a, %d %h %Y %T +0000", gmtime;
-my $fwd= <<END;
-Received: via spool by $baddress\@$gEmailDomain id=$nn
-          (code $codeletter ref $tryref); $tdate
-END
+my $fwd= "Received: via spool by $baddress\@$gEmailDomain id=$nn\n".
+    "          (code $codeletter".(defined($tryref)?" ref $tryref":'')."); $tdate\n";
 
 # header and decoded body respectively
 my (@headerlines, @bodylines);
@@ -95,38 +163,10 @@ our $newref = 0;
 
 our $brokenness = '';
 
-my $parser = new MIME::Parser;
-mkdir "$gSpoolDir/mime.tmp", 0777;
-$parser->output_under("$gSpoolDir/mime.tmp");
-my $entity = eval { $parser->parse_data(join('',@log)) };
+my $parser_output = Debbugs::MIME::parse($msg);
 
-my $i;
-if ($entity and $entity->head->tags) {
-    @headerlines = @{$entity->head->header};
-    chomp @headerlines;
-
-    my $entity_body = getmailbody($entity);
-    @bodylines = map {s/\r?\n$//; $_;}
-	 $entity_body ? $entity_body->as_lines() : ();
-
-    # set $i to beginning of encoded body data, so we can dump it out
-    # verbatim later
-    $i = 0;
-    ++$i while $msg[$i] =~ /./;
-} else {
-    # Legacy pre-MIME code, kept around in case MIME::Parser fails.
-    for ($i = 0; $i <= $#msg; $i++) {
-	$_ = $msg[$i];
-	last unless length($_);
-	while ($msg[$i+1] =~ m/^\s/) {
-	    $i++;
-	    $_ .= "\n".$msg[$i];
-	}
-	push @headerlines, $_;
-    }
-
-    @bodylines = @msg[$i..$#msg];
-}
+@headerlines = @{$parser_output->{header}};
+@bodylines = @{$parser_output->{body}};
 
 my %header;
 
@@ -135,20 +175,20 @@ for my $hdr (@headerlines) {
     $hdr = decode_rfc1522($hdr);
     $_ = $hdr;
     s/\n\s/ /g;
-    &finish if m/^x-loop: (\S+)$/i && $1 eq "$gMaintainerEmail";
+    finish() if m/^x-loop: (\S+)$/i && $1 eq "$gMaintainerEmail";
     my $ins = !m/^subject:/i && !m/^reply-to:/i && !m/^return-path:/i
            && !m/^From / && !m/^X-Debbugs-/i;
     $fwd .= $hdr."\n" if $ins;
-    # print DEBUG ">$_<\n";
+    # print {$debugfh} ">$_<\n";
     if (s/^(\S+):\s*//) {
 	my $v = lc $1;
 	if ($v eq 'x-loop') {
 	    push @common_headers, 'X-Loop',$_;
 	}
-	print DEBUG ">$v=$_<\n";
+	print {$debugfh} ">$v=$_<\n";
 	$header{$v} = $_;
     } else {
-	print DEBUG "!>$_<\n";
+	print {$debugfh} "!>$_<\n";
     }
 }
 $header{'message-id'} = '' if not defined $header{'message-id'};
@@ -173,6 +213,7 @@ if (@bodylines and $bodylines[0] =~ /^-----BEGIN PGP SIGNED/) {
 
 #psuedoheaders
 my %pheader;
+my @control_bits;
 # extract pseudo-headers
 for my $phline (@bodylines)
 {
@@ -182,12 +223,16 @@ for my $phline (@bodylines)
     last if $phline !~ m/^([\w-]+):\s*(\S.*)/;
     my ($fn, $fv) = ($1, $2);
     $fv =~ s/\s*$//;
-    print DEBUG ">$fn|$fv|\n";
+    print {$debugfh} ">$fn|$fv|\n";
     $fn = lc $fn;
-    # Don't lc owner or forwarded
-    $fv = lc $fv unless $fn =~ /^(?:owner|forwarded|usertags|version|source-version)$/;
-    $pheader{$fn} = $fv;
-    print DEBUG ">$fn~$fv<\n";
+    if ($fn =~ /^control$/) {
+	push @control_bits,$fv;
+    } else {
+	# Don't lc owner or forwarded
+	$fv = lc $fv unless $fn =~ /^(?:owner|forwarded|usertags|version|source-version)$/;
+	$pheader{$fn} = $fv;
+    }
+    print {$debugfh} ">$fn~$fv<\n";
 }
 
 # Allow pseudo headers to set x-debbugs- stuff [#179340]
@@ -195,9 +240,13 @@ for my $key (grep /X-Debbugs-.*/i, keys %pheader) {
      $header{$key} = $pheader{$key} if not exists $header{$key};
 }
 
+# set $i to beginning of encoded body data, so we can dump it out
+# verbatim later
+my $i = 0;
+++$i while $msg[$i] =~ /./;
 $fwd .= join("\n",@msg[$i..$#msg]);
 
-print DEBUG "***\n$fwd\n***\n";
+print {$debugfh} "***\n$fwd\n***\n";
 
 if (defined $header{'resent-from'} && !defined $header{'from'}) {
     $header{'from'} = $header{'resent-from'};
@@ -223,12 +272,11 @@ if (!defined($header{'subject'}))
 
 my $ref=-1;
 $subject =~ s/^Re:\s*//i; $_= $subject."\n";
-if ($tryref < 0 && m/^Bug ?\#(\d+)\D/i) {
-    $tryref= $1+0; 
+if (not defined $tryref and m/^Bug ?\#(\d+)\D/i) {
+    $tryref = $1 if $1 > 0;
 }
 my $data;
-if ($tryref >= 0) 
-{
+if (defined $tryref) {
      my $bfound;
     ($bfound, $data)= &lockreadbugmerge($tryref);
     if ($bfound and not $data->{archived}) {
@@ -252,8 +300,8 @@ if ($tryref >= 0)
 				   messageid => $header{'message-id'},
 				  },
 				 )),'');
-        &appendlog;
-        &finish;
+        appendlog($ref,$msg);
+        finish();
     }
 } else { 
     &filelock('lock/-1'); 
@@ -289,7 +337,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
     my $generalcc;
     my $set_done;
     if ($codeletter eq 'F') { # Forwarded
-        (&appendlog,&finish) if defined $data->{forwarded} and length($data->{forwarded});
+        (appendlog($ref,$msg),finish()) if defined $data->{forwarded} and length($data->{forwarded});
         $receivedat= "forwarded\@$gEmailDomain";
         $markaswhat= 'forwarded';
         $set_forwarded= $header{'to'};
@@ -307,8 +355,8 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
         if (defined $data->{done} and length($data->{done}) and
                 not defined $pheader{'source-version'} and
                 not defined $pheader{'version'}) {
-            &appendlog;
-            &finish;
+            appendlog($ref,$msg);
+            finish();
         }
         $receivedat= "done\@$gEmailDomain";
         $markaswhat= 'done';
@@ -343,8 +391,8 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 				   messageid => $header{'message-id'},
 				  },
 				 )),'');
-	&appendlog;
-	&finish;
+	appendlog($ref,$msg);
+	finish();
     }
 
     &checkmaintainers;
@@ -400,8 +448,12 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	writebug($ref, $data);
 
 	my $hash = get_hashname($ref);
-        open(O,"db-h/$hash/$ref.report") || die "read original report: $!";
-        my $orig_report= join('',<O>); close(O);
+	my $orig_report_fh = IO::File->new("db-h/$hash/$ref.report") or
+	    die "Unable to read original report: $!";
+	my $orig_report;
+	{ local $/; $orig_report = <$orig_report_fh>;}
+	close($orig_report_fh) or
+	    die "Unable to close original report filehandle: $!";
         if ($codeletter eq 'F') {
 	    &htmllog("Reply","sent",$replyto,"You have marked $gBug as forwarded.");
             &sendmessage(create_mime_message(
@@ -475,9 +527,9 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 				    ),
 	     [join("\n",@msg),$orig_report]),'',undef,1);
         }
-	&appendlog;
+	appendlog($ref,$msg);
     }
-    &finish;
+    finish();
 }
 
 if ($ref<0) { # new bug report
@@ -500,8 +552,8 @@ if ($ref<0) { # new bug report
 				   messageid => $header{'message-id'},
 				  },
 				 )),'');
-	&appendlog;
-	&finish;
+	appendlog($ref,$msg);
+	finish();
     }
 
     $data->{found_versions} = [];
@@ -539,8 +591,8 @@ if ($ref<0) { # new bug report
 				  baddress => $baddress,
 				 },
 				),[join("\n", @msg)]), '',undef,1);
-	&appendlog;
-	&finish;
+	appendlog($ref,$msg);
+	finish();
     }
 
     if (defined $config{default_package}) {
@@ -634,7 +686,7 @@ if ($ref<0) { # new bug report
 
 &checkmaintainers;
 
-print DEBUG "maintainers >".join(' ',@maintaddrs)."<\n";
+print {$debugfh} "maintainers >".join(' ',@maintaddrs)."<\n";
 
 my $orgsender= defined($header{'sender'}) ? "Original-Sender: $header{'sender'}\n" : '';
 my $newsubject= $subject;  $newsubject =~ s/^$gBug#$ref:*\s*//;
@@ -903,18 +955,137 @@ if (not exists $header{'x-debbugs-no-ack'} and
 		       ],$body,[]), '',undef,1);
 }
 
-&appendlog;
-&finish;
+appendlog($ref,$msg);
+
+## handle control messages at this point, immediately before finishing
+my %clonebugs = (-1 => $ref);
+my %bug_affected;
+if (@control_bits) {
+    my $transcript_scalar = '';
+    open my $transcript, ">:scalar:utf8", \$transcript_scalar or
+	die "Unable to create transcript scalar: $!";
+    print {$transcript} "Processing control commands:\n\n";
+    my %affected_packages;
+    my %recipients;
+    # this is the hashref which is passed to all control calls
+    my %limit = ();
+    my $errors = 0;
+    my $unknowns = 0;
+
+    my @common_control_options =
+	(transcript        => $transcript,
+	 requester         => $header{from},
+	 request_addr      => $baddress.'@'.$config{email_domain},
+	 request_msgid     => $header{'message-id'},
+	 request_subject   => $header{subject},
+	 request_nn        => $nn,
+	 request_replyto   => $replyto,
+	 message           => $msg,
+	 affected_bugs     => \%bug_affected,
+	 affected_packages => \%affected_packages,
+	 recipients        => \%recipients,
+	 limit             => \%limit,
+	);
+    if (@gExcludeFromControl and grep {$replyto =~ m/\Q$_\E/} @gExcludeFromControl) {
+	print {$transcript} fill_template('mail/excluded_from_control');
+	print {$transcript} "Stopping processing here.\n\n";
+    } else {
+	my %clonebugs = ();
+	for my $control_bit (@control_bits) {
+	    $control_bit =~ s/\xef\xbb\xbf//g;
+	    next unless $control_bit =~ m/\S/;
+	    eval {
+		my $temp = decode("utf8",$control_bit,Encode::FB_CROAK);
+		$control_bit = $temp;
+	    };
+	    print {$transcript} "> $control_bit\n";
+	    next if $control_bit =~ /^\s*\#/;
+	    my $action = '';
+	    my $ok;
+	    if (defined valid_control($control_bit)) {
+		my ($new_errors,$terminate_control) =
+		    control_line(line => $control_bit,
+				 clonebugs => \%clonebugs,
+				 limit => \%limit,
+				 common_control_options => \@common_control_options,
+				 errors => \$errors,
+				 transcript => $transcript,
+				 debug => 0,
+				 ok => \$ok,
+				);
+		if ($terminate_control) {
+		    last;
+		}
+	    }
+	    else {
+		$errors++;
+		if (++$unknowns >= 5) {
+		    print {$transcript} "Too many unknown commands, stopping here.\n\n";
+		    last;
+		}
+	    }
+	}
+    }
+    my $temp_transcript = $transcript_scalar;
+    eval{
+	$temp_transcript = decode("utf8",$temp_transcript,Encode::FB_CROAK);
+    };
+    my @maintccs = determine_recipients(recipients => \%recipients,
+					address_only => 1,
+					cc => 1,
+				       );
+    my $error_text = $errors > 0 ? " (with $errors errors)":'';
+    my $reply =
+	create_mime_message(['X-Loop'      => $gMaintainerEmail,
+			     From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
+			     To            => $replyto,
+			     @maintccs ? (Cc => join(', ',@maintccs)):(),
+			     Subject       => "Processed${error_text}: $header{subject}",
+			     'Message-ID'  => "<handler.s.$nn.transcript\@$gEmailDomain>",
+			     'In-Reply-To' => $header{'message-id'},
+			     References    => join(' ',grep {defined $_} $header{'message-id'},$data->{msgid}),
+			     Precedence    => 'bulk',
+			     keys %affected_packages ?("X-${gProject}-PR-Package" => join(' ',keys %affected_packages)):(),
+			     keys %affected_packages ?("X-${gProject}-PR-Source" =>
+						       join(' ',
+							    map {defined $_ ?(ref($_)?@{$_}:$_):()}
+							    binary_to_source(binary => [keys %affected_packages],
+									     source_only => 1))):(),
+			     "X-$gProject-PR-Message" => 'transcript',
+			     @common_headers,
+			    ],
+			    fill_template('mail/message_body',
+					  {body => $temp_transcript},
+					 ));
+
+    utime(time,time,"db-h");
+
+    send_mail_message(message => $reply,
+		      recipients => [exists $header{'x-debbugs-no-ack'}?():$replyto,
+				     make_list(values %{{determine_recipients(recipients => \%recipients,
+									      address_only => 1,
+									     )}}
+					      ),
+				    ]
+		     );
+
+}
+
+
+finish();
 
 sub appendlog {
-    my $hash = get_hashname($ref);
-    if (!open(AP,">>db-h/$hash/$ref.log")) {
-        print DEBUG "failed open log<\n";
-        print DEBUG "failed open log err $!<\n";
-        die "opening db-h/$hash/$ref.log (li): $!";
-    }
-    print(AP "\7\n",escape_log(@log),"\n\3\n") || die "writing db-h/$hash/$ref.log (li): $!";
-    close(AP) || die "closing db-h/$hash/$ref.log (li): $!";
+    my ($ref,$msg) = @_;
+    my $log_location = buglog($ref);
+    die "Unable to find .log for $ref"
+	if not defined $log_location;
+    my $logfh = IO::File->new(">>$log_location") or
+	die "Unable to open $log_location for appending: $!";
+    write_log_records(logfh => $logfh,
+		      records => [{type => 'incoming-recv',
+				   text => $msg,
+				  }]);
+    close ($logfh) or die "Unable to close $log_location: $!";
 }
 
 sub finish {
@@ -1049,6 +1220,7 @@ sub fill_template{
      my $variables = {config => \%config,
 		      defined($ref)?(ref    => $ref):(),
 		      defined($data)?(data  => $data):(),
+		      refs => [map {exists $clonebugs{$_}?$clonebugs{$_}:$_} keys %bug_affected],
 		      %{$extra_var},
 		     };
      my $hole_var = {'&bugurl' =>
@@ -1092,7 +1264,7 @@ sub checkmaintainers {
 	# this is utter hackery until we switch to Debbugs::Recipients
 	my @maints = package_maintainer(binary => $p);
         if (@maints) {
-	    print DEBUG "maintainer add >$p|".join(',',@maints)."<\n";
+	    print {$debugfh} "maintainer add >$p|".join(',',@maints)."<\n";
 	    my %temp;
 	    @temp{@maintaddrs} = @maintaddrs;
             push(@maintaddrs,
@@ -1100,7 +1272,7 @@ sub checkmaintainers {
 			   not exists $temp{$_}} @maints);
             $anymaintfound++;
         } else {
-	    print DEBUG "maintainer none >$p<\n";
+	    print {$debugfh} "maintainer none >$p<\n";
 	    push(@maintaddrs,$gUnknownMaintainerEmail) unless $anymaintnotfound;
             $anymaintnotfound++;
             last;
@@ -1108,7 +1280,7 @@ sub checkmaintainers {
     }
 
     if (defined $data->{owner} and length $data->{owner}) {
-        print DEBUG "owner add >$data->{package}|$data->{owner}<\n";
+        print {$debugfh} "owner add >$data->{package}|$data->{owner}<\n";
         my $addmaint = $data->{owner};
         push(@maintaddrs, $addmaint) unless
             $addmaint eq $replyto or grep($_ eq $addmaint, @maintaddrs);
@@ -1161,12 +1333,12 @@ sub bug_list_forward{
 	       if defined $data;
      print STDERR "Tried to loop me with $envelope_from\n"
 	  and exit 1 if $envelope_from =~ /\Q$gListDomain\E|\Q$gEmailDomain\E/;
-     print DEBUG $envelope_from,qq(\n);
+     print {$debugfh} $envelope_from,qq(\n);
      # If we don't have a bug address, something has gone horribly wrong.
      print STDERR "Doesn't match: $bug_address\n" and exit 1 unless defined $bug_address;
      $bug_address =~ s/\@.+//;
-     print DEBUG "Sending message to bugs=$bug_address\@$config{bug_subscription_domain}\n";
-     print DEBUG $header.qq(\n\n).$body;
+     print {$debugfh} "Sending message to bugs=$bug_address\@$config{bug_subscription_domain}\n";
+     print {$debugfh} $header.qq(\n\n).$body;
      send_mail_message(message        => $header.qq(\n\n).$body,
 		       recipients     => ["bugs=$bug_address\@$config{bug_subscription_domain}"],
 		       envelope_from  => $envelope_from,

@@ -31,6 +31,7 @@ use Debbugs::Status qw(splitpackages);
 
 use Debbugs::CGI qw(html_escape);
 use Debbugs::Control qw(:all);
+use Debbugs::Control::Service qw(:all);
 use Debbugs::Log qw(:misc);
 BEGIN{
 # temporary hack until libmail-rfc822-address-perl is installed
@@ -172,11 +173,6 @@ my %limit_pkgs = ();
 my %clonebugs = ();
 my %bcc = ();
 
-
-my @bcc;
-sub addbcc {
-    push @bcc, $_[0] unless grep { $_ eq $_[0] } @bcc;
-}
 
 our $data;
 our $message;
@@ -418,12 +414,13 @@ END
 	    print {$transcript} "No valid user selected\n";
 	    $errors++;
 	    $indicated_user = 1;
-        } elsif (&setbug) {
+        } elsif (check_limit(data => read_bug(bug => $ref),
+			     limit => \%limit,
+			     transcript => $transcript)) {
 	    if (not $indicated_user and defined $user) {
 		 print {$transcript} "User is $user\n";
 		 $indicated_user = 1;
 	    }
-	    &nochangebug;
 	    my %ut;
 	    Debbugs::User::read_usertags(\%ut, $user);
             my @oldtags = (); my @newtags = (); my @badtags = ();
@@ -469,607 +466,22 @@ Unknown command or malformed arguments to command.
 (Use control\@$gEmailDomain to manipulate reports.)
 
 END
-	$errors++;
-        if (++$unknowns >= 3) {
-            print {$transcript} "Too many unknown commands, stopping here.\n\n";
-            last;
-        }
-#### "developer only" ones start here
-    } elsif (m/^close\s+\#?(-?\d+)(?:\s+(\d.*))?$/i) {
-        $ok++;
-        $ref= $1;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	if (defined $2) {
-	    eval {
-		set_fixed(@common_control_options,
-			  bug   => $ref,
-			  fixed => $2,
-			  add   => 1,
-			 );
-	    };
-	    if ($@) {
-		$errors++;
-		print {$transcript} "Failed to add fixed version '$2' to $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	    }
-	}
-	eval {
-	    set_done(@common_control_options,
-		     done      => 1,
-		     bug       => $ref,
-		     reopen    => 0,
-		     notify_submitter => 1,
-		     clear_fixed => 0,
-		    );
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to mark $ref as done: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-    } elsif (m/^reassign\s+\#?(-?\d+)\s+ # bug and command
-	       (?:(?:((?:src:|source:)?$config{package_name_re}) # new package
-	       (?:\s+((?:$config{package_name_re}\/)?
-		       $config{package_version_re}))?)| # optional version
-	       ((?:src:|source:)?$config{package_name_re} # multiple package form
-	       (?:\s*\,\s*(?:src:|source:)?$config{package_name_re})+))
-	       \s*$/xi) {
-        $ok++;
-        $ref= $1;
-	my @new_packages;
-	if (not defined $2) {
-	    push @new_packages, split /\s*\,\s*/,$4;
-	}
-	else {
-	    push @new_packages, $2;
-	}
-	@new_packages = map {y/A-Z/a-z/; s/^(?:src|source):/src:/; $_;} @new_packages;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-        my $version= $3;
-    	eval {
-	    set_package(@common_control_options,
-			bug          => $ref,
-			package      => \@new_packages,
-		       );
-	    # if there is a version passed, we make an internal call
-	    # to set_found
-	    if (defined($version) && length $version) {
-		set_found(@common_control_options,
-			  bug   => $ref,
-			  found => $version,
-			 );
-	    }
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to clear fixed versions and reopen on $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-    } elsif (m/^reopen\s+\#?(-?\d+)(?:\s+([\=\!]|(?:\S.*\S)))?$/i) {
-        $ok++;
-        $ref= $1;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	my $new_submitter = $2;
-	if (defined $new_submitter) {
-	    if ($new_submitter eq '=') {
-		undef $new_submitter;
-	    }
-	    elsif ($new_submitter eq '!') {
-		$new_submitter = $replyto;
-	    }
-	}
-	eval {
-	    set_done(@common_control_options,
-		     bug          => $ref,
-		     reopen       => 1,
-		     defined $new_submitter? (submitter    => $new_submitter):(),
-		    );
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to reopen $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-    } elsif (m{^(?:(?i)found)\s+\#?(-?\d+)
-	       (?:\s+((?:$config{package_name_re}\/)?
-		    $config{package_version_re}
-		# allow for multiple packages
-		(?:\s*,\s*(?:$config{package_name_re}\/)?
-		    $config{package_version_re})*)
-	    )?$}x) {
-        $ok++;
-        $ref= $1;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	my @versions;
-        if (defined $2) {
-	    @versions = split /\s*,\s*/,$2;
-	    eval {
-		set_found(@common_control_options,
-			  bug          => $ref,
-			  found        => \@versions,
-			  add          => 1,
-			 );
-	    };
-	    if ($@) {
-		$errors++;
-		print {$transcript} "Failed to add found on $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	    }
-	}
-	else {
-	    eval {
-		set_fixed(@common_control_options,
-			  bug          => $ref,
-			  fixed        => [],
-			  reopen       => 1,
-			 );
-	    };
-	    if ($@) {
-		$errors++;
-		print {$transcript} "Failed to clear fixed versions and reopen on $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	    }
-	}
-    }
-    elsif (m{^(?:(?i)notfound)\s+\#?(-?\d+)
-	     \s+((?:$config{package_name_re}\/)?
-		 $config{package_version_re}
-		# allow for multiple packages
-		(?:\s*,\s*(?:$config{package_name_re}\/)?
-		    $config{package_version_re})*
-	    )$}x) {
-        $ok++;
-        $ref= $1;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	my @versions;
-        @versions = split /\s*,\s*/,$2;
-	eval {
-	    set_found(@common_control_options,
-		      bug          => $ref,
-		      found        => \@versions,
-		      remove       => 1,
-		     );
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to remove found on $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-    }
-    elsif (m{^(?:(?i)fixed)\s+\#?(-?\d+)
-	     \s+((?:$config{package_name_re}\/)?
-		    $config{package_version_re}
-		# allow for multiple packages
-		(?:\s*,\s*(?:$config{package_name_re}\/)?
-		    $config{package_version_re})*)
-	    \s*$}x) {
-        $ok++;
-        $ref= $1;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	my @versions;
-        @versions = split /\s*,\s*/,$2;
-	eval {
-	    set_fixed(@common_control_options,
-		      bug          => $ref,
-		      fixed        => \@versions,
-		      add          => 1,
-		     );
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to add fixed on $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-    }
-    elsif (m{^(?:(?i)notfixed)\s+\#?(-?\d+)
-	     \s+((?:$config{package_name_re}\/)?
-		    $config{package_version_re}
-		# allow for multiple packages
-		(?:\s*,\s*(?:$config{package_name_re}\/)?
-		    $config{package_version_re})*)
-	    \s*$}x) {
-        $ok++;
-        $ref= $1;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	my @versions;
-        @versions = split /\s*,\s*/,$2;
-	eval {
-	    set_fixed(@common_control_options,
-		      bug          => $ref,
-		      fixed        => \@versions,
-		      remove       => 1,
-		     );
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to remove fixed on $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-    }
-    elsif (m/^submitter\s+\#?(-?\d+)\s+(\!|\S.*\S)$/i) {
-        $ok++;
-        $ref= $1;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	my $newsubmitter = $2 eq '!' ? $replyto : $2;
-        if (not Mail::RFC822::Address::valid($newsubmitter)) {
-	     print {$transcript} "$newsubmitter is not a valid e-mail address; not changing submitter\n";
-	     $errors++;
-	}
-	else {
-	    eval {
-		set_submitter(@common_control_options,
-			      bug       => $ref,
-			      submitter => $newsubmitter,
-			     );
-	    };
-	    if ($@) {
-		$errors++;
-		print {$transcript} "Failed to set submitter on $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	    }
-        }
-    } elsif (m/^forwarded\s+\#?(-?\d+)\s+(\S.*\S)$/i) {
-        $ok++;
-        $ref= $1;
-	my $forward_to= $2;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	eval {
-	    set_forwarded(@common_control_options,
-			  bug          => $ref,
-			  forwarded    => $forward_to,
-                          );
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to set the forwarded-to-address of $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-    } elsif (m/^notforwarded\s+\#?(-?\d+)$/i) {
-        $ok++;
-        $ref= $1;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	eval {
-	    set_forwarded(@common_control_options,
-			  bug          => $ref,
-			  forwarded    => undef,
-                          );
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to clear the forwarded-to-address of $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-    } elsif (m/^(?:severity|priority)\s+\#?(-?\d+)\s+([-0-9a-z]+)$/i) {
-        $ok++;
-        $ref= $1;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-        my $newseverity= $2;
-        if (exists $gObsoleteSeverities{$newseverity}) {
-            print {$transcript} "Severity level \`$newseverity' is obsolete. " .
-		 "Use $gObsoleteSeverities{$newseverity} instead.\n\n";
-	    	$errors++;
-        } elsif (not defined first {$_ eq $newseverity}
-	    (@gSeverityList, "$gDefaultSeverity")) {
-	     print {$transcript} "Severity level \`$newseverity' is not known.\n".
-		  "Recognized are: $gShowSeverities.\n\n";
-	    $errors++;
-        } else {
-	    eval {
-		set_severity(@common_control_options,
-			     bug => $ref,
-			     severity => $newseverity,
-			    );
-	    };
-	    if ($@) {
-		$errors++;
-		print {$transcript} "Failed to set severity of $config{bug} $ref to $newseverity: ".cleanup_eval_fail($@,$debug)."\n";
-	    }
-	}
-    } elsif (m/^tags?\s+\#?(-?\d+)\s+(\S.*)$/i) {
-	$ok++;
-	$ref = $1;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	my $tags = $2;
-	my @tags = map {m/^([+=-])(.+)/ ? ($1,$2):($_)} split /[\s,]+/, $tags;
-	# this is an array of hashrefs which contain two elements, the
-	# first of which is the array of tags, the second is the
-	# option to pass to set_tag (we use a hashref here to make it
-	# more obvious what is happening)
-	my @tag_operations;
-	my @badtags;
-	for my $tag (@tags) {
-	    if ($tag =~ /^[=+-]$/) {
-		if ($tag eq '=') {
-		    @tag_operations = {tags => [],
-				       option => [],
-				      };
-		}
-		elsif ($tag eq '-') {
-		    push @tag_operations,
-			{tags => [],
-			 option => [remove => 1],
-			};
-		}
-		elsif ($tag eq '+') {
-		    push @tag_operations,
-			{tags => [],
-			 option => [add => 1],
-			};
-		}
-		next;
-	    }
-	    if (not defined first {$_ eq $tag} @{$config{tags}}) {
-		push @badtags, $tag;
-		next;
-	    }
-	    if (not @tag_operations) {
-		@tag_operations = {tags => [],
-				   option => [add => 1],
-				  };
-	    }
-	    push @{$tag_operations[-1]{tags}},$tag;
-	}
-	if (@badtags) {
-            print {$transcript} "Unknown tag/s: ".join(', ', @badtags).".\n".
-		 "Recognized are: ".join(' ', @gTags).".\n\n";
-	    $errors++;
-	}
-	eval {
-	    for my $operation (@tag_operations) {
-		set_tag(@common_control_options,
-			bug => $ref,
-			tag => [@{$operation->{tags}}],
-			warn_on_bad_tags => 0, # don't warn on bad tags,
-			# 'cause we do that above
-			@{$operation->{option}},
-		       );
-	    }
-	};
-	if ($@) {
-	    # we intentionally have two errors here if there is a bad
-	    # tag and the above fails for some reason
-	    $errors++;
-	    print {$transcript} "Failed to alter tags of $config{bug} $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-    } elsif (m/^(un)?block\s+\#?(-?\d+)\s+(?:by|with)\s+(\S.*)?$/i) {
-	$ok++;
-        $ref= $2;
-	my $add_remove = defined $1 && $1 eq 'un';
-	my @blockers = map {exists $clonebugs{$_}?$clonebugs{$_}:$_} split /[\s,]+/, $3;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	eval {
-	     set_blocks(@common_control_options,
-			bug          => $ref,
-			block        => \@blockers,
-			$add_remove ? (remove => 1):(add => 1),
-		       );
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to set blocking bugs of $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-    } elsif (m/^retitle\s+\#?(-?\d+)\s+(\S.*\S)\s*$/i) {
-        $ok++;
-        $ref= $1; my $newtitle= $2;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	eval {
-	     set_title(@common_control_options,
-		       bug          => $ref,
-		       title        => $newtitle,
-		      );
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to set the title of $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-    } elsif (m/^unmerge\s+\#?(-?\d+)$/i) {
-	$ok++;
-	$ref= $1;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	eval {
-	     set_merged(@common_control_options,
-			bug          => $ref,
-		       );
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to unmerge $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-    } elsif (m/^merge\s+#?(-?\d+(\s+#?-?\d+)+)\s*$/i) {
-	$ok++;
-	my @tomerge;
-        ($ref,@tomerge) = map {exists $clonebugs{$_}?$clonebugs{$_}:$_}
-	    split(/\s+#?/,$1);
-	eval {
-	     set_merged(@common_control_options,
-			bug          => $ref,
-			merge_with   => \@tomerge,
-		       );
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to merge $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-    } elsif (m/^forcemerge\s+\#?(-?\d+(?:\s+\#?-?\d+)+)\s*$/i) {
-	$ok++;
-	my @tomerge;
-        ($ref,@tomerge) = map {exists $clonebugs{$_}?$clonebugs{$_}:$_}
-	    split(/\s+#?/,$1);
-	eval {
-	     set_merged(@common_control_options,
-			bug          => $ref,
-			merge_with   => \@tomerge,
-			force        => 1,
-			masterbug    => 1,
-		       );
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to forcibly merge $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-    } elsif (m/^clone\s+#?(\d+)\s+((-\d+\s+)*-\d+)\s*$/i) {
-	$ok++;
-
-	my $origref = $1;
-	my @newclonedids = split /\s+/, $2;
-	my $newbugsneeded = scalar(@newclonedids);
-
-	$ref = $origref;
-	if (exists $clonebugs{$ref}) {
-	    $ref = $clonebugs{$ref};
-	}
-	$bug_affected{$ref} = 1;
-	eval {
-	    my %new_clones;
-	    clone_bug(@common_control_options,
-		      bug => $ref,
-		      new_bugs => \@newclonedids,
-		      new_clones => \%new_clones,
-		     );
-	    %clonebugs = (%clonebugs,
-			  %new_clones);
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to clone $ref: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-    } elsif (m/^package\:?\s+(\S.*\S)?\s*$/i) {
-        $ok++;
-	my @pkgs = split /\s+/, $1;
-	if (scalar(@pkgs) > 0) {
-		%limit_pkgs = map { ($_, 1) } @pkgs;
-		$limit{package} = [@pkgs];
-		print {$transcript} "Limiting to bugs with field 'package' containing at least one of ".join(', ',map {qq('$_')} @pkgs)."\n";
-		print {$transcript} "Limit currently set to";
-		for my $limit_field (keys %limit) {
-		    print {$transcript} " '$limit_field':".join(', ',map {qq('$_')} @{$limit{$limit_field}})."\n";
-		}
-		print {$transcript} "\n";
-	} else {
-	    %limit_pkgs = ();
-	    $limit{package} = [];
-	    print {$transcript} "Limit cleared.\n\n";
-	}
-    } elsif (m/^limit\:?\s+(\S.*\S)\s*$/) {
-	$ok++;
-	my ($field,@options) = split /\s+/, $1;
-	$field = lc($field);
-	if ($field =~ /^(?:clear|unset|blank)$/) {
-	    %limit = ();
-	    print {$transcript} "Limit cleared.\n\n";
-	}
-	elsif (exists $Debbugs::Status::fields{$field} or $field eq 'source') {
-	    # %limit can actually contain regexes, but because they're
-	    # not evaluated in Safe, DO NOT allow them through without
-	    # fixing this.
-	    $limit{$field} = [@options];
-	    print {$transcript} "Limiting to bugs with field '$field' containing at least one of ".join(', ',map {qq('$_')} @options)."\n";
-	    print {$transcript} "Limit currently set to";
-	    for my $limit_field (keys %limit) {
-		print {$transcript} " '$limit_field':".join(', ',map {qq('$_')} @{$limit{$limit_field}})."\n";
-	    }
-	    print {$transcript} "\n";
-	}
-	else {
-	    print {$transcript} "Limit key $field not understood. Stopping processing here.\n\n";
-	    $errors++;
+	#### "developer only" ones start here
+    } elsif (defined valid_control($_)) {
+	my ($new_errors,$terminate_control) =
+	    control_line(line => $_,
+			 clonebugs => \%clonebugs,
+			 limit => \%limit,
+			 common_control_options => \@common_control_options,
+			 errors => \$errors,
+			 transcript => $transcript,
+			 debug => $debug,
+			 ok => \$ok,
+			);
+	if ($terminate_control) {
 	    last;
 	}
-    } elsif (m/^affects?\s+\#?(-?\d+)(?:\s+((?:[=+-])?)\s*(\S.*)?)?\s*$/i) {
-	$ok++;
-        $ref = $1;
-	my $add_remove = $2;
-	my $packages = $3;
-	# if there isn't a package given, assume that we should unset
-	# affects; otherwise default to adding
-	if (not defined $packages or
-	    not length $packages) {
-	    $packages = '';
-	    $add_remove ||= '=';
-	}
-	elsif (not defined $add_remove or
-	       not length $add_remove) {
-	    $add_remove = '+';
-	}
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	eval {
-	     affects(@common_control_options,
-		     bug => $ref,
-		     package     => [splitpackages($3)],
-		     ($add_remove eq '+'?(add => 1):()),
-		     ($add_remove eq '-'?(remove => 1):()),
-		    );
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to mark $ref as affecting package(s): ".cleanup_eval_fail($@,$debug)."\n";
-	}
-
-    } elsif (m/^summary\s+\#?(-?\d+)\s*(\d+|)\s*$/i) {
-	$ok++;
-        $ref = $1;
-	my $summary_msg = length($2)?$2:undef;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	eval {
-	    summary(@common_control_options,
-		    bug          => $ref,
-		    summary      => $summary_msg,
-		   );
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to give $ref a summary: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-
-    } elsif (m/^owner\s+\#?(-?\d+)\s+((?:\S.*\S)|\!)\s*$/i) {
-	$ok++;
-        $ref = $1;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	my $newowner = $2;
-	if ($newowner eq '!') {
-	    $newowner = $replyto;
-	}
-	eval {
-	    owner(@common_control_options,
-		  bug          => $ref,
-		  owner        => $newowner,
-		 );
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to mark $ref as having an owner: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-    } elsif (m/^noowner\s+\#?(-?\d+)\s*$/i) {
-        $ok++;
-        $ref = $1;
-	$ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	eval {
-	    owner(@common_control_options,
-		  bug          => $ref,
-		  owner        => undef,
-		 );
-	};
-	if ($@) {
-	    $errors++;
-	    print {$transcript} "Failed to mark $ref as not having an owner: ".cleanup_eval_fail($@,$debug)."\n";
-	}
-    } elsif (m/^unarchive\s+#?(\d+)$/i) {
-	 $ok++;
-	 $ref = $1;
-	 $ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	 eval {
-	      bug_unarchive(@common_control_options,
-			    bug        => $ref,
-			    recipients => \%recipients,
-			   );
-	 };
-	 if ($@) {
-	      $errors++;
-	 }
-    } elsif (m/^archive\s+#?(\d+)$/i) {
-	 $ok++;
-	 $ref = $1;
-	 $ref = $clonebugs{$ref} if exists $clonebugs{$ref};
-	 eval {
-	      bug_archive(@common_control_options,
-			  bug => $ref,
-			  ignore_time => 1,
-			  archive_unarchived => 0,
-			 );
-	 };
-	 if ($@) {
-	      $errors++;
-	 }
     } else {
-        print {$transcript} "Unknown command or malformed arguments to command.\n\n";
 	$errors++;
         if (++$unknowns >= 5) {
             print {$transcript} "Too many unknown commands, stopping here.\n\n";
@@ -1091,19 +503,6 @@ my @maintccs = determine_recipients(recipients => \%recipients,
 				    address_only => 1,
 				    cc => 1,
 				   );
-my $maintccs = 'Cc: '.join(",\n    ",
-		    determine_recipients(recipients => \%recipients,
-					 cc => 1,
-					)
-		   )."\n";
-
-my $packagepr = '';
-$packagepr = "X-${gProject}-PR-Package: " . join(keys %affected_packages) . "\n" if keys %affected_packages;
-
-# Add Bcc's to subscribed bugs
-# now handled by Debbugs::Recipients
-#push @bcc, map {"bugs=$_\@$gListDomain"} keys %bug_affected;
-
 if (!defined $header{'subject'} || $header{'subject'} eq "") {
   $header{'subject'} = "your mail";
 }
@@ -1114,7 +513,7 @@ my $error_text = $errors > 0 ? " (with $errors errors)":'';
 my @common_headers;
 push @common_headers, 'X-Loop',$gMaintainerEmail;
 
-my $temp_transcript = ${transcript_scalar};
+my $temp_transcript = $transcript_scalar;
 eval{
     $temp_transcript = decode("utf8",$temp_transcript,Encode::FB_CROAK);
 };
@@ -1147,19 +546,6 @@ my $repliedshow= join(', ',$replyto,
 					  )
 		     );
 
-# -1 is the service.in log
-&filelock("lock/-1");
-open(AP,">>db-h/-1.log") || die "open db-h/-1.log: $!";
-print(AP
-      "\2\n$repliedshow\n\5\n$reply\n\3\n".
-      "\6\n".
-      "<strong>Request received</strong> from <code>".
-      html_escape($header{'from'})."</code>\n".
-      "to <code>".html_escape($controlrequestaddr)."</code>\n".
-      "\3\n".
-      "\7\n",escape_log(@log),"\n\3\n") || die "writing db-h/-1.log: $!";
-close(AP) || die "open db-h/-1.log: $!";
-&unfilelock;
 utime(time,time,"db-h");
 
 &sendmailmessage($reply,
