@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 118;
+use Test::More tests => 120;
 
 use warnings;
 use strict;
@@ -124,6 +124,24 @@ my $status = read_bug(bug=>1);
 ok($status->{subject} eq 'new title','bug 1 retitled');
 ok($status->{severity} eq 'wishlist','bug 1 wishlisted');
 
+send_message(to => 'submit@bugs.something',
+	     headers => [To   => 'submit@bugs.something',
+			 From => 'foo@bugs.something',
+			 Subject => 'Testing submit at control',
+			],
+	     body => <<EOF) or fail 'message to submit@bugs.something failed';
+Package: foo
+Control: retitle -1 this is a new title
+EOF
+
+ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Testing submit at control")) == 0,
+   'submit@bugs.something message was parsed without errors');
+
+$status = read_bug(bug=>2);
+ok($status->{subject} eq 'this is a new title','bug 2 retitled at submit@ time');
+
+
+
 # now we're going to go through and methododically test all of the control commands.
 my @control_commands =
      (
@@ -131,7 +149,7 @@ my @control_commands =
  		       value   => '-2',
  		       status_key => 'package',
  		       status_value => 'foo',
- 		       bug          => '3',
+ 		       bug          => '4',
  		      },
        severity_wishlist => {command => 'severity',
  			    value   => 'wishlist',
@@ -225,9 +243,9 @@ my @control_commands =
  		       status_value => '',
  		      },
        merge        => {command => 'merge',
- 		       value   => '1 3',
+ 		       value   => '1 4',
  		       status_key => 'mergedwith',
- 		       status_value => '3',
+ 		       status_value => '4',
  		      },
        unmerge      => {command => 'unmerge',
  		       value   => '',
@@ -235,9 +253,9 @@ my @control_commands =
  		       status_value => '',
  		      },
        forcemerge   => {command => 'forcemerge',
- 		       value   => '3',
+ 		       value   => '4',
  		       status_key => 'mergedwith',
- 		       status_value => '3',
+ 		       status_value => '4',
  		      },
        unmerge      => {command => 'unmerge',
  		       value   => '',

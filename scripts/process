@@ -990,7 +990,6 @@ if (@control_bits) {
 	print {$transcript} fill_template('mail/excluded_from_control');
 	print {$transcript} "Stopping processing here.\n\n";
     } else {
-	my %clonebugs = ();
 	for my $control_bit (@control_bits) {
 	    $control_bit =~ s/\xef\xbb\xbf//g;
 	    next unless $control_bit =~ m/\S/;
