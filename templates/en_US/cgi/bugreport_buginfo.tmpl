@@ -72,5 +72,8 @@
   if (exists $status{summary} and defined $status{summary} and length $status{summary}) {
      $output .= q(<p>Summary: ).html_escape($status{summary}).q(</p>);
   }
+  if (exists $status{outlook} and defined $status{outlook} and length $status{outlook}) {
+     $output .= q(<p>Outlook: ).html_escape($status{outlook}).q(</p>);
+  }
   $output;
 }</div>
