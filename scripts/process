@@ -275,12 +275,14 @@ $subject =~ s/^Re:\s*//i; $_= $subject."\n";
 if (not defined $tryref and m/^Bug ?\#(\d+)\D/i) {
     $tryref = $1 if $1 > 0;
 }
+my $locks = 0;
 my $data;
 if (defined $tryref) {
-     my $bfound;
-    ($bfound, $data)= &lockreadbugmerge($tryref);
-    if ($bfound and not $data->{archived}) {
-        $ref= $tryref; 
+     my $locks_recv;
+     ($locks_recv, $data)= &lockreadbugmerge($tryref);
+     $locks += $locks_recv;
+    if ($locks_recv and not $data->{archived}) {
+        $ref= $tryref;
     } else {
         &sendmessage(create_mime_message(
           [From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
@@ -408,8 +410,10 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
     for $ref (@process) {
  	if ($ref != $orgref) {
 	    &unfilelock;
+	    $locks--;
 	    $data = &lockreadbug($ref)
 		|| die "huh ? $ref from $orgref out of ".join(' ',@process);
+	    $locks++;
 	}
         $data->{done}= $set_done if defined($set_done);
         $data->{forwarded}= $set_forwarded if defined($set_forwarded);
@@ -956,6 +960,8 @@ if (not exists $header{'x-debbugs-no-ack'} and
 }
 
 appendlog($ref,$msg);
+# unlock the locks we have received
+while ($locks--) {unfilelock();}
 
 ## handle control messages at this point, immediately before finishing
 my %clonebugs = (-1 => $ref);
