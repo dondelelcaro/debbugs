@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 120;
+use Test::More tests => 122;
 
 use warnings;
 use strict;
@@ -139,6 +139,21 @@ ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: P
 
 $status = read_bug(bug=>2);
 ok($status->{subject} eq 'this is a new title','bug 2 retitled at submit@ time');
+
+send_message(to => '1@bugs.something',
+	     headers => [To   => '1@bugs.something',
+			 From => 'foo@bugs.something',
+			 Subject => 'Testing control at 1@bugs.something',
+			],
+	     body => <<EOF) or fail 'message to 1@bugs.something failed';
+Control: retitle -1 this is now the title of bug 1
+EOF
+
+ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Testing control at 1@bugs.something")) == 0,
+   '1@bugs.something message was parsed without errors');
+
+$status = read_bug(bug=>1);
+ok($status->{subject} eq 'this is now the title of bug 1','bug 1 retitled at 1@ time');
 
 
 
