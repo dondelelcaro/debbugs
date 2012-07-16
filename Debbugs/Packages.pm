@@ -610,7 +610,7 @@ sub make_source_versions {
 		    my @bin_versions = sourcetobinary($1,$version);
 		    if (not @bin_versions or
 			@{$bin_versions[0]} != 3) {
-			print {$warnings} "The source $1 and version $2 do not appear to match any binary packages\n";
+			print {$warnings} "The source '$1' and version '$version' do not appear to match any binary packages\n";
 		    }
 		    next;
 		}
