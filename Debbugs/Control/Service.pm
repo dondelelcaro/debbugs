@@ -189,6 +189,8 @@ sub control_line {
 				     },
 			       limit => {type => HASHREF,
 					},
+			       replyto => {type => SCALAR,
+					  },
 			      },
 		     );
     my $line = $param{line};

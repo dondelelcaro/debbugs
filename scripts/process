@@ -1017,6 +1017,7 @@ if (@control_bits) {
 				 transcript => $transcript,
 				 debug => 0,
 				 ok => \$ok,
+				 replyto => $replyto,
 				);
 		if ($terminate_control) {
 		    last;

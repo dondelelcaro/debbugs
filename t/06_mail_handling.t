@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 123;
+use Test::More tests => 126;
 
 use warnings;
 use strict;
@@ -207,6 +207,11 @@ my @control_commands =
 			     value   => 'foo@bar.com',
 			     status_key => 'owner',
 			     status_value => 'foo@bar.com',
+			    },
+      owner_replyto      => {command => 'owner',
+			     value   => '!',
+			     status_key => 'owner',
+			     status_value => 'foo@bugs.something',
 			    },
       noowner      => {command => 'noowner',
 		       value   => '',

@@ -477,6 +477,7 @@ END
 			 transcript => $transcript,
 			 debug => $debug,
 			 ok => \$ok,
+			 replyto => $replyto,
 			);
 	if ($terminate_control) {
 	    last;
