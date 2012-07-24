@@ -14,7 +14,7 @@
 use warnings;
 use strict;
 
-use lib qw(/usr/lib/debbugs);
+use lib qw(/srv/bugs.debian.org/scripts);
 
 use threads;
 use threads::shared;
@@ -112,7 +112,7 @@ sub sa {
     return if $spamscan_stop;
     my ($sain, $saout);
 
-    my $pid = open2($saout, $sain, "/usr/lib/debbugs/spamscan-sa");
+    my $pid = open2($saout, $sain, "/srv/bugs.debian.org/scripts/spamscan-sa");
 	lprint "{$mytid} forked $pid\n";
 	my $messages_handled=0;
 pp:	until ($spamscan_stop) {
