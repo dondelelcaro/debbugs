@@ -261,10 +261,11 @@ for (;;) {
 	    last;
 	}
         my @i;
-	opendir DIR, 'incoming' or die "opendir incoming: $!";
-	while (defined($_ = readdir DIR)) {
+	opendir my $dir, 'incoming' or die "opendir incoming: $!";
+	while (defined($_ = readdir $dir)) {
 	    push @i, $1 if /^S(.*)/;
 	}
+	close $dir;
 	unless (@i) {
 	    lprint "No more spam to process\n";
 	    last;
