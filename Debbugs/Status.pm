@@ -1108,6 +1108,63 @@ a source package). Defaults to true.
 Note: Currently the version information is cached; this needs to be
 changed before using this function in long lived programs.
 
+=head3 Returns
+
+Currently returns a hashref of status with the following keys.
+
+=over
+
+=item id -- bug number
+
+=item bug_num -- duplicate of id
+
+=item keywords -- tags set on the bug, including usertags if bugusertags passed.
+
+=item tags -- duplicate of keywords
+
+=item package -- name of package that the bug is assigned to
+
+=item severity -- severity of the bug
+
+=item pending -- pending state of the bug; one of following possible
+values; values listed later have precedence if multiple conditions are
+satisifed:
+
+=over
+
+=item pending -- default state
+
+=item forwarded -- bug has been forwarded
+
+=item pending-fixed -- bug is tagged pending
+
+=item fixed -- bug is tagged fixed
+
+=item absent -- bug does not apply to this distribution/architecture
+
+=item done -- bug is resolved in this distribution/architecture
+
+=back
+
+=item location -- db-h or archive; the location in the filesystem
+
+=item subject -- title of the bug
+
+=item last_modified -- epoch that the bug was last modified
+
+=item date -- epoch that the bug was filed
+
+=item originator -- bug reporter
+
+=item log_modified -- epoch that the log file was last modified
+
+=item msgid -- Message id of the original bug report
+
+=back
+
+
+Other key/value pairs are returned but are not currently documented here.
+
 =cut
 
 sub get_bug_status {
