@@ -58,6 +58,7 @@ use List::MoreUtils qw(apply);
 # for decode_rfc1522
 use MIME::WordDecoder qw();
 use Encode qw(decode encode encode_utf8 decode_utf8 is_utf8);
+use Text::Iconv;
 
 # for encode_rfc1522
 use MIME::Words qw();
@@ -235,10 +236,14 @@ sub convert_to_utf8 {
      my ($data, $charset) = @_;
      # raw data just gets returned (that's the charset WordDecorder
      # uses when it doesn't know what to do)
+     return $data if not defined $data;
      return $data if $charset eq 'raw' or is_utf8($data,1);
      my $result;
      eval {
-	 $result = decode($charset,$data);
+	 my $converter = Text::Iconv->new($charset,"utf-8") or
+	     die "Unable to create converter for charset '$charset'";
+	 $result = decode_utf8($converter->convert($data));
+	 die "Error while converting" if not defined $converter->retval() or not defined $result;
      };
      if ($@) {
 	  warn "Unable to decode charset; '$charset' and '$data': $@";
