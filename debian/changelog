@@ -1,4 +1,4 @@
-debbugs (2.4.2~exp2) experimental; urgency=low
+debbugs (2.4.2~exp2) UNRELEASED; urgency=low
 
   * Hack around elinks css bug (closes: #593804)
   * affects now appends packages by default (closes: #656371). Thanks to
