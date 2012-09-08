@@ -20,6 +20,8 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   * Assure in apache.conf example that documentation html pages get loaded.
   * Rewrite rule example: http://<webhost>/<nnn> -> show bug report for
     bug <nnn>.
+  * Fix sani function in scripts/errorlib. Generate html entities correctly
+    (prepend ampersand, append semicolon).
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
