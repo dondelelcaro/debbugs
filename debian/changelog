@@ -17,6 +17,7 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
 
   [ Mike Gabriel ]
   * Load bugs.css file in documentation html pages.
+  * Assure in apache.conf example that documentation html pages get loaded.
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
