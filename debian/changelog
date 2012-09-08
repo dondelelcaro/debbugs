@@ -1,5 +1,6 @@
 debbugs (2.4.2~exp2) UNRELEASED; urgency=low
 
+  [ Don Armstrong ]
   * Hack around elinks css bug (closes: #593804)
   * affects now appends packages by default (closes: #656371). Thanks to
     Andreas Beckmann and Julien Cristau.
@@ -13,7 +14,10 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   * Add Homepage (closes: #670555).
   * Fix VCS in control (closes: #670556).
   * Link to blocked bugs (closes: #670568).
-  
+
+  [ Mike Gabriel ]
+  * Load bugs.css file in documentation html pages.
+
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
 debbugs (2.4.2~exp1) experimental; urgency=low

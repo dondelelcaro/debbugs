@@ -4,6 +4,7 @@ $gControlHtml = <<HTML_END
 <head>
   <title>$gProject $gBug system - control mail server commands</title>
   <link rev="made" href="mailto:$gMaintainerEmail">
+  <link rel="stylesheet" href="$gWebHostBugDir/css/bugs.css" type="text/css">
 </head>
 <body>
 

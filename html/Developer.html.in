@@ -4,6 +4,7 @@ $gDeveloperHtml = <<HTML_END
 <head>
   <title>$gProject - Developers' information</title>
   <link rev="made" href="mailto:$gMaintainerEmail">
+  <link rel="stylesheet" href="$gWebHostBugDir/css/bugs.css" type="text/css">
 </head>
 <body>
 
