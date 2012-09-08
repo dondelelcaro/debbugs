@@ -4,6 +4,7 @@ $gIndexHtml = <<HTML_END
 <head>
   <title>$gProject $gBug tracking system</title>
   <link rev="made" href="mailto:$gMaintainerEmail">
+  <link rel="stylesheet" href="$gWebHostBugDir/css/bugs.css" type="text/css">
 </head>
 <body>
 
