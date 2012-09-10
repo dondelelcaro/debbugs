@@ -16,6 +16,8 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   * Link to blocked bugs (closes: #670568).
 
   [ Mike Gabriel ]
+  * /debian/control:
+    + Add ${misc:Depends} to Depends.
   * Load bugs.css file in documentation html pages.
   * Assure in apache.conf example that documentation html pages get loaded.
   * Rewrite rule example: http://<webhost>/<nnn> -> show bug report for
