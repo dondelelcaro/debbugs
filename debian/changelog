@@ -30,6 +30,9 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
     replace usage of src_url and pkg_url by package_links, use
     html_tail from templates, use count_bugs everywhere, load bugs.css,
     fix global variable usage in html header.
+  * Extend examples/apache.conf, add directory rules. Esp. allow Indexes to be
+    overridden in /var/lib/debbugs/www/db to allow mod_expires apache
+    configuration options in .htaccess.
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
