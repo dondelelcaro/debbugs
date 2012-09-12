@@ -15,7 +15,8 @@ $gCGIDomain = "$gWebDomain/cgi";			# e.g. cgi.debian.org
 $gMirrors = "";						# comma separated list
 $gPackagePages = "packages.debian.org";                 # e.g. packages.debian.org
 $gSubscriptionDomain = "packages.something";		# e.g. packages.qa.debian.org
-
+$gBugSubscriptionDomain = "";                           # e.g. lists.debian.org (requires one list per bug
+                                                        #      of the name bugs=<bugno>@<gBugSubscriptionDomain>
 # Project identification
 $gProject = "Something";				# e.g. Debian
 $gProjectTitle = "Something DebBugs Test";		# e.g. Debian GNU/Linux
