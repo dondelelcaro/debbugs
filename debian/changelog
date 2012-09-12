@@ -34,6 +34,7 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
     replace usage of src_url and pkg_url by package_links, use
     html_tail from templates, use count_bugs everywhere, load bugs.css,
     fix global variable usage in html header.
+  * Add empty $gBugSubscriptionDomain variable to config file template.
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
