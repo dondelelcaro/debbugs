@@ -4,12 +4,14 @@ use warnings;
 use strict;
 use POSIX qw(strftime nice);
 
-use Debbugs::Config;
+use Debbugs::Config qw(:globals :text :config);
 use CGI::Simple;
 use Debbugs::CGI qw(:util :url :html);
-use Debbugs::Common qw(getmaintainers);
+use Debbugs::Common qw(getmaintainers getparsedaddrs);
 use Debbugs::Bugs qw(count_bugs);
 use Debbugs::Status qw(:status);
+use Debbugs::Packages qw(getpkgsrc);
+use Debbugs::Text qw(:templates);
 
 nice(5);
 
@@ -57,9 +59,6 @@ my %maintainers = %{&getmaintainers()};
 my %strings = ();
 
 my $dtime = strftime "%a, %e %b %Y %T UTC", gmtime;
-my $tail_html = '';#$gHTMLTail;
-$tail_html = '';#$gHTMLTail;
-$tail_html =~ s/SUBSTITUTE_DTIME/$dtime/;
 
 my %count;
 my $tag;
@@ -84,6 +83,7 @@ if ($indexon eq "pkg") {
   foreach my $pkg (keys %count) {
     $sortkey{$pkg} = lc $pkg;
     $htmldescrip{$pkg} = sprintf('<a href="%s">%s</a> (%s)',
+                           package_links(package => $pkg, links_only=>1),
                            pkg_url(pkg => $pkg),
                            html_escape($pkg),
                            htmlize_maintlinks(sub { $_[0] == 1 ? 'maintainer: '
@@ -103,7 +103,7 @@ if ($indexon eq "pkg") {
 	    } 
        } keys %count;
   }
-  %count = countbugs(function => sub {my %d=@_;
+  %count = count_bugs(function => sub {my %d=@_;
                           return map {
                             $pkgsrc->{$_} || $_
                           } splitpackages($d{"pkg"});
@@ -112,7 +112,7 @@ if ($indexon eq "pkg") {
   foreach my $src (keys %count) {
     $sortkey{$src} = lc $src;
     $htmldescrip{$src} = sprintf('<a href="%s">%s</a> (%s)',
-                           srcurl($src),
+                           package_links(src => $src, links_only=>1),
                            html_escape($src),
                            htmlize_maintlinks(sub { $_[0] == 1 ? 'maintainer: '
                                                            : 'maintainers: ' },
@@ -223,11 +223,12 @@ print "Content-Type: text/html\n\n";
 
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
 print "<HTML><HEAD>\n" . 
-    "<TITLE>$debbugs::gProject$Archived $debbugs::gBug reports by $tag</TITLE>\n" .
+    "<TITLE>$gProject$Archived $gBug reports by $tag</TITLE>\n" .
+    qq(<LINK REL="stylesheet" HREF="$gWebHostBugDir/css/bugs.css" TYPE="text/css">) .
     "</HEAD>\n" .
     '<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#800080">' .
     "\n";
-print "<H1>" . "$debbugs::gProject$Archived $debbugs::gBug report logs by $tag" .
+print "<H1>" . "$gProject$Archived $gBug report logs by $tag" .
       "</H1>\n";
 
 print $note;
@@ -256,6 +257,8 @@ else {
 print $result;
 
 print "<hr>\n";
-print "<p>$tail_html";
-
+print fill_in_template(template=>'html/html_tail',
+                       hole_var => {'&strftime' => \&POSIX::strftime,
+                                   },
+                      );
 print "</body></html>\n";
