@@ -271,7 +271,11 @@ if (!defined($header{'subject'}))
 }
 
 my $ref=-1;
-$subject =~ s/^Re:\s*//i; $_= $subject."\n";
+# remove Re: from the subject line
+$subject =~ s/^Re:\s*//i;
+# remove remaining mailing list name markers from the subject line
+$subject =~ s/\^[.*\]\s*//i;
+$_= $subject."\n";
 if (not defined $tryref and m/^Bug ?\#(\d+)\D/i) {
     $tryref = $1 if $1 > 0;
 }
