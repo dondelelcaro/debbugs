@@ -18,21 +18,22 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   [ Mike Gabriel ]
   * /debian/control:
     + Add ${misc:Depends} to Depends.
+  * /examples/apache.conf:
+    - Assure in apache.conf example that documentation html pages get loaded.
+    - Rewrite rule example: http://<webhost>/<nnn> -> show bug report for
+      bug <nnn>.
+    - Be more generic, comment out rewrite rule that directly redirects
+      http://<debbugs-webhost>/ to http://www.debian.org/Bugs.
+    - Extend examples/apache.conf, add directory rules. Esp. allow Indexes to be
+      overridden in /var/lib/debbugs/www/db to allow mod_expires apache
+      configuration options in .htaccess.
   * Load bugs.css file in documentation html pages.
-  * Assure in apache.conf example that documentation html pages get loaded.
-  * Rewrite rule example: http://<webhost>/<nnn> -> show bug report for
-    bug <nnn>.
   * Fix sani function in scripts/errorlib. Generate html entities correctly
     (prepend ampersand, append semicolon).
-  * Be more generic, comment out rewrite rule that directly redirects
-    http://<debbugs-webhost>/ to http://www.debian.org/Bugs.
   * Fix pkgindex.cgi concerning several issues: load proper Perl modules,
     replace usage of src_url and pkg_url by package_links, use
     html_tail from templates, use count_bugs everywhere, load bugs.css,
     fix global variable usage in html header.
-  * Extend examples/apache.conf, add directory rules. Esp. allow Indexes to be
-    overridden in /var/lib/debbugs/www/db to allow mod_expires apache
-    configuration options in .htaccess.
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
