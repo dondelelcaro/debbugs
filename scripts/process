@@ -717,7 +717,7 @@ if (defined $gStrongList and isstrongseverity($data->{severity})) {
 }
 
 # Send mail to the per bug list subscription too
-push @bccs, "bugs=$ref\@$gListDomain";
+#push @bccs, "bugs=$ref\@$gListDomain";
 
 if (defined $pheader{source}) {
     # Prefix source versions with the name of the source package. They
