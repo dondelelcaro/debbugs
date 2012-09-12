@@ -35,6 +35,9 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
     html_tail from templates, use count_bugs everywhere, load bugs.css,
     fix global variable usage in html header.
   * Add empty $gBugSubscriptionDomain variable to config file template.
+  * Remove mailing list markers of the form [<list-name>] from the subject
+    line to avoid duplication (and more) of the bug number when replying to
+    bug postings.
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
