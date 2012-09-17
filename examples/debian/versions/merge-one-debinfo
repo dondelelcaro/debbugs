@@ -31,7 +31,7 @@ for my $file (@files) {
 	# the file, so we'll fudge it from the filename.
 	if (not defined $srcver) {
 	    ($srcname,$srcver) = ($binarch,$srcname);
-	    ($binarch) = $file =~ /_([^\.])\.debinfo/;
+	    ($binarch) = $file =~ /_([^\.]+)\.debinfo/;
 	}
 	print STDERR "$binname/$binver/$binarch => $srcname/$srcver\n";
 	# see MLDBM(3pm)/BUGS
