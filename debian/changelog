@@ -6,6 +6,8 @@ debbugs (2.4.2~exp2) experimental; urgency=low
   * Fix spacing in owner block (closes: #670411)
   * Fix double encoding issues (closes: #672432)
   * Fix encoding in cgi
+  * Fix installation of templates (closes: #686928). Thanks to Mike
+    Gabriel.
 
   [Thanks to Arnout Engelen: ]
   * Add Homepage (closes: #670555).
