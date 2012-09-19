@@ -38,6 +38,7 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   * Remove mailing list markers of the form [<list-name>] from the subject
     line to avoid duplication (and more) of the bug number when replying to
     bug postings.
+  * Update postfix section in Readme.mail. Closes: #688109.
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
