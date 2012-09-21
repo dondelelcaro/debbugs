@@ -447,8 +447,16 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 
 	# Add bug mailing list to $generalbcc as appropriate
  	# This array is used to specify bcc in the cases where we're using create_mime_message.
- 	my @generalbcc = (@generalcc,@addsrcaddrs,"bugs=$ref\@$gListDomain");
-	my $generalbcc = join(', ', $generalcc, @addsrcaddrs,"bugs=$ref\@$gListDomain");
+	my @generalbcc = @generalcc;
+	my $generalbcc = $generalcc;
+	if (defined $config{subscription_domain} and length $config{subscription_domain}) {
+	    my @generalbcc = (@generalbcc, @addsrcaddrs);
+	    my $generalbcc = join(', ', $generalbcc, @addsrcaddrs);
+	}
+	if (defined $config{bug_subscription_domain} and length $config{bug_subscription_domain}) {
+	    my @generalbcc = (@generalbcc, "bugs=$ref\@$config{bug_subscription_domain}");
+	    my $generalbcc = join(', ', $generalbcc, "bugs=$ref\@$config{bug_subscription_domain}");
+	}
 	$generalbcc =~ s/\s+\n\s+/ /g;
 	$generalbcc =~ s/^\s+/ /; $generalbcc =~ s/\s+$//;
 	if (length $generalbcc) {$generalbcc = "Bcc: $generalbcc\n"};
@@ -721,7 +729,9 @@ if (defined $gStrongList and isstrongseverity($data->{severity})) {
 }
 
 # Send mail to the per bug list subscription too
-push @bccs, "bugs=$ref\@$gListDomain";
+if (defined $config{bug_subscription_domain} and length $config{bug_subscription_domain}) {
+    push @bccs, "bugs=$ref\@$config{bug_subscription_domain}";
+}
 
 if (defined $pheader{source}) {
     # Prefix source versions with the name of the source package. They
@@ -1260,15 +1270,15 @@ sub checkmaintainers {
 	$p =~ /((?:src:)?[a-z0-9.+-]+)/;
 	$p = $1;
 	next unless defined $p;
-	if (defined $gSubscriptionDomain) {
+        if (defined $config{subscription_domain} and length $config{subscription_domain}) {
 	    my @source = binary_to_source(binary => $p,
 					  source_only => 1,
 					 );
 	    if (@source) {
 		push @addsrcaddrs,
-		    map {"$_\@$gSubscriptionDomain"} @source;
+		    map {"$_\@$config{subscription_domain}"} @source;
 	    } else {
-		push @addsrcaddrs, "$p\@$gSubscriptionDomain";
+		push @addsrcaddrs, "$p\@$config{subscription_domain}";
 	    }
 	}
 	# this is utter hackery until we switch to Debbugs::Recipients
