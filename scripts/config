@@ -36,6 +36,7 @@ $gForwardList = "bug-forward-list";		# e.g. debian-bugs-forwarded
 $gDoneList = "bug-done-list";			# e.g. debian-bugs-closed
 $gRequestList = "bug-request-list";		# e.g. debian-bugs-dist
 $gSubmitterList = "bug-submitter-list";		# e.g. debian-bugs-dist
+$gStrongList = "bug-strong-list";		# e.g. debian-bugs-dist
 $gControlList = "bug-control-list";		# e.g. debian-bugs-dist
 $gSummaryList = "bug-summary-list";		# e.g. debian-bugs-reports
 $gMirrorList = "bug-mirrors-list";		# sends to all mirrors

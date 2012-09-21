@@ -39,6 +39,8 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
     line to avoid duplication (and more) of the bug number when replying to
     bug postings.
   * Update postfix section in Readme.mail. Closes: #688109.
+  * Provide gStrongList configuration option in config file to make
+    a site admin aware of its existence.
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
