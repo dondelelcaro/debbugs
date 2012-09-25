@@ -83,7 +83,7 @@ if ($indexon eq "pkg") {
   foreach my $pkg (keys %count) {
     $sortkey{$pkg} = lc $pkg;
     $htmldescrip{$pkg} = sprintf('<a href="%s">%s</a> (%s)',
-                           package_links(package => $pkg),
+                           package_links(package => $pkg, links_only=>1),
                            html_escape($pkg),
                            htmlize_maintlinks(sub { $_[0] == 1 ? 'maintainer: '
                                                            : 'maintainers: ' },
