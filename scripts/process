@@ -7,6 +7,8 @@
 use warnings;
 use strict;
 
+$ENV{LC_TIME}='C';
+
 use POSIX qw(strftime);
 
 use IO::File;
