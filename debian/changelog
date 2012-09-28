@@ -1,5 +1,6 @@
-debbugs (2.4.2~exp2) experimental; urgency=low
+debbugs (2.4.2~exp2) UNRELEASED; urgency=low
 
+  [ Don Armstrong ]
   * Hack around elinks css bug (closes: #593804)
   * affects now appends packages by default (closes: #656371). Thanks to
     Andreas Beckmann and Julien Cristau.
@@ -13,7 +14,40 @@ debbugs (2.4.2~exp2) experimental; urgency=low
   * Add Homepage (closes: #670555).
   * Fix VCS in control (closes: #670556).
   * Link to blocked bugs (closes: #670568).
-  
+
+  [ Mike Gabriel ]
+  * /debian/control:
+    + Add ${misc:Depends} to Depends.
+  * /examples/apache.conf:
+    - Assure in apache.conf example that documentation html pages get loaded
+      (closes: #686943).
+    - Rewrite rule example: http://<webhost>/<nnn> -> show bug report for
+      bug <nnn>.
+    - Be more generic, comment out rewrite rule that directly redirects
+      http://<debbugs-webhost>/ to http://www.debian.org/Bugs.
+    - Extend examples/apache.conf, add directory rules. Esp. allow Indexes to be
+      overridden in /var/lib/debbugs/www/db to allow mod_expires apache
+      configuration options in .htaccess.
+  * Load bugs.css file in documentation html pages.
+  * Fix sani function in scripts/errorlib. Generate html entities correctly
+    (prepend ampersand, append semicolon).
+  * Fix pkgindex.cgi concerning several issues: load proper Perl modules,
+    replace usage of src_url and pkg_url by package_links, use
+    html_tail from templates, use count_bugs everywhere, load bugs.css,
+    fix global variable usage in html header (closes: #686940).
+  * Add empty $gBugSubscriptionDomain variable to config file template.
+  * Remove mailing list markers of the form [<list-name>] from the subject
+    line to avoid duplication (and more) of the bug number when replying to
+    bug postings.
+  * Update postfix section in Readme.mail (closes: #688109).
+  * Provide gStrongList configuration option in config file to make
+    a site admin aware of its existence (closes: #688345).
+  * Make sure that mails to gSubscriptionDomain and gBugSubscriptionDomain
+    are only sent out if the variables in config are defined and
+    have a lenght < 0 (closes: #688344).
+  * Use locale independent date format for mail processing and service mail
+    generation (closes: #688745).
+
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
 debbugs (2.4.2~exp1) experimental; urgency=low
