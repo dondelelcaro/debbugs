@@ -7,9 +7,9 @@
 use warnings;
 use strict;
 
-$ENV{LC_TIME}='C';
-
-use POSIX qw(strftime);
+use locale;
+use POSIX qw(strftime locale_h);
+setlocale(LC_TIME, "C");
 
 use IO::File;
 

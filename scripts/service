@@ -7,6 +7,9 @@
 use warnings;
 use strict;
 
+use locale;
+use POSIX qw(strftime locale_h);
+setlocale(LC_TIME, "C");
 
 use Debbugs::Config qw(:globals :config);
 

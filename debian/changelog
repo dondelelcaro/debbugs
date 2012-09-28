@@ -45,6 +45,7 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
     are only sent out if the variables in config are defined and
     have a lenght < 0.
   * Use locale independent date format for mail processing.
+  * Use locale independent date format for the service script.
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
