@@ -450,15 +450,13 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	# Add bug mailing list to $generalbcc as appropriate
  	# This array is used to specify bcc in the cases where we're using create_mime_message.
 	my @generalbcc = @generalcc;
-	my $generalbcc = $generalcc;
 	if (defined $config{subscription_domain} and length $config{subscription_domain}) {
-	    my @generalbcc = (@generalbcc, @addsrcaddrs);
-	    my $generalbcc = join(', ', $generalbcc, @addsrcaddrs);
+	    @generalbcc = (@generalbcc, @addsrcaddrs);
 	}
 	if (defined $config{bug_subscription_domain} and length $config{bug_subscription_domain}) {
-	    my @generalbcc = (@generalbcc, "bugs=$ref\@$config{bug_subscription_domain}");
-	    my $generalbcc = join(', ', $generalbcc, "bugs=$ref\@$config{bug_subscription_domain}");
+	    @generalbcc = (@generalbcc, "bugs=$ref\@$config{bug_subscription_domain}");
 	}
+	my $generalbcc = join(', ', @generalbcc);
 	$generalbcc =~ s/\s+\n\s+/ /g;
 	$generalbcc =~ s/^\s+/ /; $generalbcc =~ s/\s+$//;
 	if (length $generalbcc) {$generalbcc = "Bcc: $generalbcc\n"};
