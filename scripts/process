@@ -275,8 +275,18 @@ if (!defined($header{'subject'}))
 my $ref=-1;
 # remove Re: from the subject line
 $subject =~ s/^Re:\s*//i;
-# remove remaining mailing list name markers from the subject line
-$subject =~ s/^\[.*\]\s*//i;
+# remove remaining mailing list name markers from the subject line if
+# this appears to be a message that has traversed a mailing list
+if (exists $header{'list-id'} or exists $header{'list-subscribe'} or
+    (exists $header{'precedence'} and defined $header{'precedence'} and
+     $header{'precedence'} eq 'bulk') or
+    exists $header{'mailing-list'} or exists $header{'list-processor-version'}
+   ){
+    # if a mailing list didn't match any of the above, it's probably
+    # so horribly configured that we wouldn't be able to figure it out
+    # anyway.
+    $subject =~ s/^\[.*\]\s*//i;
+}
 $_= $subject."\n";
 if (not defined $tryref and m/^Bug ?\#(\d+)\D/i) {
     $tryref = $1 if $1 > 0;

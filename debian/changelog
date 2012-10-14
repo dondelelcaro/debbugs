@@ -9,6 +9,8 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   * Fix encoding in cgi
   * Fix installation of templates (closes: #686928). Thanks to Mike
     Gabriel.
+  * Only remove list headers if the message appears to have traversed a
+    mailing list to get to us. (closes: #690408)
 
   [Thanks to Arnout Engelen: ]
   * Add Homepage (closes: #670555).
