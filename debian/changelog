@@ -11,6 +11,7 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
     Gabriel.
   * Only remove list headers if the message appears to have traversed a
     mailing list to get to us. (closes: #690408)
+  * Fix lack of archive support in pkgindex.cgi.
 
   [Thanks to Arnout Engelen: ]
   * Add Homepage (closes: #670555).
