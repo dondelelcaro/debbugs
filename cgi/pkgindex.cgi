@@ -67,7 +67,9 @@ my %htmldescrip = ();
 my %sortkey = ();
 if ($indexon eq "pkg") {
   $tag = "package";
-  %count = count_bugs(function => sub {my %d=@_; return splitpackages($d{"pkg"})});
+  %count = count_bugs(function => sub {my %d=@_; return splitpackages($d{"pkg"})},
+		     archive => $archive,
+		     );
   if (defined $param{first}) {
        %count = map {
 	    if (/^\Q$param{first}\E/) {
@@ -106,7 +108,9 @@ if ($indexon eq "pkg") {
                           return map {
                             $pkgsrc->{$_} || $_
                           } splitpackages($d{"pkg"});
-                         });
+                         },
+		     archive => $archive,
+		     );
   $note = "";
   foreach my $src (keys %count) {
     $sortkey{$src} = lc $src;
@@ -129,7 +133,9 @@ if ($indexon eq "pkg") {
                             }
                             map { $_->address } @me;
                           } splitpackages($d{"pkg"});
-                         });
+                         },
+		     archive => $archive,
+		     );
   if (defined $param{first}) {
        %count = map {
 	    if (/^\Q$param{first}\E/) {
@@ -157,7 +163,9 @@ if ($indexon eq "pkg") {
                               unless exists $fullname{$addr->address};
                           }
                           map { $_->address } @se;
-                         });
+                         },
+		     archive => $archive,
+		     );
   if (defined $param{first}) {
        %count = map {
 	    if (/^\Q$param{first}\E/) {
@@ -179,7 +187,9 @@ if ($indexon eq "pkg") {
   $note .= "different addresses.</p>\n";
 } elsif ($indexon eq "tag") {
   $tag = "tag";
-  %count = count_bugs(function => sub {my %d=@_; return split ' ', $d{tags}; });
+  %count = count_bugs(function => sub {my %d=@_; return split ' ', $d{tags}; },
+		      archive => $archive,
+		     );
   if (defined $param{first}) {
        %count = map {
 	    if (/^\Q$param{first}\E/) {
