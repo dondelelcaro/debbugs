@@ -482,6 +482,7 @@ END
 	    last;
 	}
     } else {
+	print {$transcript} "Unknown command or malformed arguments to command.\n";
 	$errors++;
         if (++$unknowns >= 5) {
             print {$transcript} "Too many unknown commands, stopping here.\n\n";
