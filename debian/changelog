@@ -12,6 +12,8 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   * Only remove list headers if the message appears to have traversed a
     mailing list to get to us. (closes: #690408)
   * Fix lack of archive support in pkgindex.cgi.
+  * Output notice to transcript when there is a malformed command.
+    (closes: #691573). Thanks to Jonathan Nieder.
 
   [Thanks to Arnout Engelen: ]
   * Add Homepage (closes: #670555).
