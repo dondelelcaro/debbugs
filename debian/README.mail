@@ -6,6 +6,7 @@ Config
 Be sure to set the $gMailer variable correctly in /etc/debbugs/config.
 The options are (all lower case) exim, qmail and sendmail.
 
+
 Exim 4
 ------
 The exim 4 setup supports virtual domains. This doesn't hurt on a
@@ -122,6 +123,7 @@ debbugs_transport:
     mail for those zones ("debbugs_router") and "send" the mail using a pipe
     ("debbugs_transport").
 
+
 Qmail
 -----
 From Tommi Virtanen (tv@debian.org), amended by Daniel Ruoso
@@ -211,36 +213,60 @@ Now the final step: run sendmailconfig to regenerate sendmail.cf and
 restart sendmail with the new configuration. Your system should now
 be up and running. Congratulations!
 
+
 Postfix
 -------
-It seems Bdale isn't around currently, so I'll just mail this
-here directly. This is a short description of how to get debbugs
-working with postfix. If someone can verify this and give me some
-feedback if would be appreciated.
-
-Lets assume that you are going to install bugs.domain.net, and you
+Let's assume that you are going to install bugs.domain.net, and you
 are going to run it on the machine master.domain.net.
 
 DNS setup: point the MX to the machine running debbugs:
 
 	bugs.domain.net		MX	50	master.domain.net.
 
-In /etc/postfix/main.cf enable the transport maps by inserting the
-following line:
+For postfix we have to do three things now:
 
-	transport_maps = hash:/etc/postfix/transport
+ 1. Open postfix for any recipient address on the domain
+    bugs.domain.net
+ 2. Create a transport map to the debbugs script called
+    ,,receive''.
+ 3. Make sure that mails are handed individually into the
+    debbugs pipe. The receive script can only process mails
+    with _one_ recipient.
 
-Now create /etc/postfix/transport and insert:
+So, create /etc/postfix/transport and insert:
 
 	bugs.domain.net        debbugs:
 
 This tells postfix to use the debbugs transport agent to deliver any
 mail send to bugs.domain.net. Now we need to make a database from that
+map, so that postfix can use:
+
+	$ postmap hash:/etc/postfix/transport
+
+So, create /etc/postfix/debbugs-recipients and put:
+
+	@bugs.domain.net          ACCEPT
+
+into it.
+
+Here, we also need to make a database from that map, so
 that postfix can use:
 
-	# postmap hash:transport
+	# postmap hash:/etc/postfix/debbugs-recipients
 
-Now we need to teach postfix what the debbugs transport agent is. Edit
+In /etc/postfix/main.cf we enable the transport and local recipient
+map by inserting the following lines:
+
+	transport_maps = hash:/etc/postfix/transport
+	# debbugs transport
+	local_recipient_maps = hash:/etc/postfix/non-unix-users
+	transport_maps = hash:/etc/postfix/transport
+	debbugs_destination_recipient_limit = 1
+
+The last line in the block above assures that mails pour into
+the debbugs receive scripts on a one by one recipient basis.
+
+At last we need to teach postfix what the debbugs transport agent is. Edit
 /etc/postfix/master.cf and add:
 
 	debbugs   unix  -       n       n       -       -       pipe
@@ -256,7 +282,9 @@ Finally add bugs.domain.net to mydestination in main.cf:
 
 Now that all this is done, restart postfix and it should be working..
 
-Wichert.
+Wichert
+Updated+modified by Mike (20120919)
+
 
 Procmail and SpamAssassin
 -------------------------

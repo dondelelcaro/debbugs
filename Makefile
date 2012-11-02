@@ -102,8 +102,8 @@ $(var_dir)/spool/db-h $(scripts_dir) $(examples_dir) $(man8_dir); \
 	$(install_data) misc/updateseqs $(var_dir)/spool
 
 	# install the templates
-	$(foreach dir, $(wildcard templates/*/*), $(exec -d $(install_exec) $(template_dir)/$(patsubst templates/%,%,$(dir))))
-	$(foreach tmpl, $(wildcard templates/*/*/*.tmpl), $(exec $(install_data) $(tmpl) $(template_dir)/$(patsubst templates/%,%,$(tmpl))))
+	$(foreach dir, $(wildcard templates/*/*), $(install_exec) -d $(templates_dir)/$(patsubst templates/%,%,$(dir));)
+	$(foreach tmpl, $(wildcard templates/*/*/*.tmpl), $(install_data) $(tmpl) $(templates_dir)/$(patsubst templates/%,%,$(tmpl));)
 
 
 .PHONY: test build

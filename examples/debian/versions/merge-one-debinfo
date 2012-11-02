@@ -1,4 +1,6 @@
-#! /usr/bin/perl -w
+#! /usr/bin/perl
+
+use warnings;
 use strict;
 use MLDBM qw(DB_File Storable);
 use Fcntl;
@@ -13,16 +15,32 @@ tie %binsrc, 'MLDBM', '/org/bugs.debian.org/versions/indices/binsrc.idx',
 	     O_CREAT|O_RDWR, 0644
     or die "tie binsrc.idx: $!";
 
-while (<>) {
-    my ($binname, $binver, $binarch, $srcname, $srcver) = split;
-    print STDERR "$binname/$binver/$binarch => $srcname/$srcver\n";
+my @files  = @ARGV;
 
-    # see MLDBM(3pm)/BUGS
-    my $tmp = $srcbin{$srcname};
-    push @{$tmp->{$srcver}}, [$binname, $binver, $binarch];
-    $srcbin{$srcname} = $tmp;
 
-    $tmp = $binsrc{$binname};
-    $tmp->{$binver}{$binarch} = [$srcname, $srcver];
-    $binsrc{$binname} = $tmp;
+for my $file (@files) {
+    my $fh = IO::File->new($file,'r') or
+	die "Unable to open $file for reading: $!";
+    while (<$fh>) {
+	chomp;
+	next unless length $_;
+	my ($binname, $binver, $binarch, $srcname, $srcver) = split;
+	# if $srcver is not defined, this is probably a broken
+	# .debinfo file [they were causing #686106, see commit
+	# 49c85ab8 in dak.] Basically, $binarch didn't get put into
+	# the file, so we'll fudge it from the filename.
+	if (not defined $srcver) {
+	    ($srcname,$srcver) = ($binarch,$srcname);
+	    ($binarch) = $file =~ /_([^\.]+)\.debinfo/;
+	}
+	print STDERR "$binname/$binver/$binarch => $srcname/$srcver\n";
+	# see MLDBM(3pm)/BUGS
+	my $tmp = $srcbin{$srcname};
+	push @{$tmp->{$srcver}}, [$binname, $binver, $binarch];
+	$srcbin{$srcname} = $tmp;
+
+	$tmp = $binsrc{$binname};
+	$tmp->{$binver}{$binarch} = [$srcname, $srcver];
+	$binsrc{$binname} = $tmp;
+    }
 }

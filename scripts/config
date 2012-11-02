@@ -15,7 +15,8 @@ $gCGIDomain = "$gWebDomain/cgi";			# e.g. cgi.debian.org
 $gMirrors = "";						# comma separated list
 $gPackagePages = "packages.debian.org";                 # e.g. packages.debian.org
 $gSubscriptionDomain = "packages.something";		# e.g. packages.qa.debian.org
-
+$gBugSubscriptionDomain = "";                           # e.g. lists.debian.org (requires one list per bug
+                                                        #      of the name bugs=<bugno>@<gBugSubscriptionDomain>
 # Project identification
 $gProject = "Something";				# e.g. Debian
 $gProjectTitle = "Something DebBugs Test";		# e.g. Debian GNU/Linux
@@ -35,6 +36,7 @@ $gForwardList = "bug-forward-list";		# e.g. debian-bugs-forwarded
 $gDoneList = "bug-done-list";			# e.g. debian-bugs-closed
 $gRequestList = "bug-request-list";		# e.g. debian-bugs-dist
 $gSubmitterList = "bug-submitter-list";		# e.g. debian-bugs-dist
+$gStrongList = "bug-strong-list";		# e.g. debian-bugs-dist
 $gControlList = "bug-control-list";		# e.g. debian-bugs-dist
 $gSummaryList = "bug-summary-list";		# e.g. debian-bugs-reports
 $gMirrorList = "bug-mirrors-list";		# sends to all mirrors

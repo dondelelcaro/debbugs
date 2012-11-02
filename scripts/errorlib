@@ -18,7 +18,7 @@ sub unlockreadbugmerge {
 sub sani {
     my ($in) = @_;
     carp "You should be using HTML::Entities instead.";
-    $in =~ s/([<>&"])/$saniarray{$1}/g;
+    $in =~ s/([<>&"])/\&$saniarray{$1};/g;
     return $in;
 }
 

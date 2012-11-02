@@ -199,6 +199,7 @@ $gHTMLExpireNote = "(Closed $gBugs are archived $gRemoveAge days after the last 
 $gHTMLStamp = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
 	<HTML><HEAD><TITLE>$gProject $gBugs - timestamp page</TITLE>
 	<LINK REV=\"made\" HREF=\"mailto:$gMaintainerEmail\">
+	<LINK REL=\"stylesheet\" HREF=\"$gWebHostBugDir/css/bugs.css\" TYPE=\"text/css\">
 	</HEAD>$gHTMLStart<H1>Is this $gBug log or mirror up to date?</H1>
 
 	Unlike all the other $gBug pages, this small timestamp page is updated every
@@ -227,6 +228,7 @@ $gHTMLStamp = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
 $gFullIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
 	<HTML><HEAD><TITLE>$gProject $gBugs - full index</TITLE>
 	<LINK REV=\"make\" HREF=\"mailto:$gMaintainerEmail\">
+	<LINK REL=\"stylesheet\" HREF=\"$gWebHostBugDir/css/bugs.css\" TYPE=\"text/css\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug report logs - index</H1>
 
 	This index gives access to $gBugs sent to <CODE>submit\@$gEmailDomain</CODE>
@@ -244,6 +246,7 @@ $gFullIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
 $gJunkIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
 	<HTML><HEAD><TITLE>$gProject $gBug reports - Junk</TITLE>
 	<LINK REV=\"made\" HREF=\"$gMaintainerEmail\">
+	<LINK REL=\"stylesheet\" HREF=\"$gWebHostBugDir/css/bugs.css\" TYPE=\"text/css\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug reports - Junk</H1>
 
 	This is the index page for logs of messages not associated with a specific
@@ -259,6 +262,7 @@ $gJunkIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
 $gMaintIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
 	<HTML><HEAD><TITLE>$gProject $gBug reports by maintainer</TITLE>
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
+	<LINK REL=\"stylesheet\" HREF=\"$gWebHostBugDir/css/bugs.css\" TYPE=\"text/css\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug reports by maintainer</H1>
 
 	This page lists the package maintainers against whose packages there are
@@ -278,6 +282,7 @@ $gMaintIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"
 $gPackageIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
 	<HTML><HEAD><TITLE>$gProject $gBug reports by package</TITLE>
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
+	<LINK REL=\"stylesheet\" HREF=\"$gWebHostBugDir/css/bugs.css\" TYPE=\"text/css\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug reports by package</H1>
 
 	This page lists the package against which there are outstanding, forwarded or
@@ -294,6 +299,7 @@ $gPackageIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN
 $gSummaryIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
 	<HTML><HEAD><TITLE>$gProject $gBug report logs - summary index</TITLE>
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
+	<LINK REL=\"stylesheet\" HREF=\"$gWebHostBugDir/css/bugs.css\" TYPE=\"text/css\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug report logs - summary index</H1>
 
 	This summary index briefly lists $gBugs sent to <CODE>submit\@$gEmailDomain
@@ -312,6 +318,7 @@ $gSummaryIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN
 $gPackageLog = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
 	<HTML><HEAD><TITLE>$gProject $gBug report logs - index by package</TITLE>
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
+	<LINK REL=\"stylesheet\" HREF=\"$gWebHostBugDir/css/bugs.css\" TYPE=\"text/css\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug report logs - index by package</H1>
 
 	This summary index briefly lists $gBugs sent to <CODE>submit\@$gEmailDomain
@@ -327,6 +334,7 @@ $gPackageLog = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"
 $gPseudoIndex = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
 	<HTML><HEAD><TITLE>$gProject $gBug report pseudo-packages</TITLE>
 	<LINK REF=\"made\" HREF=\"mailto:$gMaintainerEmail\">
+	<LINK REL=\"stylesheet\" HREF=\"$gWebHostBugDir/css/bugs.css\" TYPE=\"text/css\">
 	</HEAD>$gHTMLStart<H1>$gProject $gBug report pseudo-packages</H1>
 
 	This page lists the pseudo-packages available for use in the

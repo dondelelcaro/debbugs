@@ -4,6 +4,7 @@ $gReportingHtml = <<HTML_END
 <head>
   <title>$gProject $gBugs - how to report a $gBug</title>
   <link rev="made" href="mailto:$gMaintainerEmail">
+  <link rel="stylesheet" href="$gWebHostBugDir/css/bugs.css" type="text/css">
 </head>
 <body>
 

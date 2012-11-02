@@ -18,8 +18,11 @@ Homepage: http://wiki.debian.org/Teams/Debbugs
 
 Package: debbugs
 Architecture: all
-Depends: ${perl:Depends}, exim4 | mail-transport-agent,
- libdebbugs-perl
+Depends:
+ ${perl:Depends},
+ ${misc:Depends},
+ exim4 | mail-transport-agent,
+ libdebbugs-perl,
 Recommends: debbugs-web
 Suggests: spamassassin (>= 3.0), libcgi-alert-perl
 Description: The bug tracking system based on the active Debian BTS
@@ -35,7 +38,9 @@ Description: The bug tracking system based on the active Debian BTS
 
 Package: libdebbugs-perl
 Architecture: all
-Depends: ${perl:Depends}, libmailtools-perl, ed, libmime-tools-perl,
+Depends:
+ ${misc:Depends},
+ ${perl:Depends}, libmailtools-perl, ed, libmime-tools-perl,
  libio-stringy-perl, libmldbm-perl, liburi-perl, libsoap-lite-perl,
  libcgi-simple-perl, libparams-validate-perl, libtext-template-perl,
  libsafe-hole-perl, libmail-rfc822-address-perl, liblist-moreutils-perl,
@@ -53,7 +58,9 @@ Description: modules used by the active Debian BTS
 
 Package: debbugs-web
 Architecture: all
-Depends: libdebbugs-perl, apache | httpd
+Depends:
+ ${misc:Depends},
+ libdebbugs-perl, apache | httpd
 Suggests: libcgi-alert-perl
 Description: web scripts for the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
@@ -66,7 +73,9 @@ Description: web scripts for the active Debian BTS
 
 Package: debbugs-local
 Architecture: all
-Depends: libdebbugs-perl, debbugs-web, libconfig-simple-perl,
+Depends:
+ ${misc:Depends},
+ libdebbugs-perl, debbugs-web, libconfig-simple-perl,
  libuser-perl, rsync, libhttp-server-simple-perl, libnet-server-perl
 Description: run and maintains a local mirror of the Debian BTS
  Debian has a bug tracking system which files details of bugs reported

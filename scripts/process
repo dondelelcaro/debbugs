@@ -7,7 +7,9 @@
 use warnings;
 use strict;
 
-use POSIX qw(strftime);
+use locale;
+use POSIX qw(strftime locale_h);
+setlocale(LC_TIME, "C");
 
 use IO::File;
 
@@ -271,7 +273,21 @@ if (!defined($header{'subject'}))
 }
 
 my $ref=-1;
-$subject =~ s/^Re:\s*//i; $_= $subject."\n";
+# remove Re: from the subject line
+$subject =~ s/^Re:\s*//i;
+# remove remaining mailing list name markers from the subject line if
+# this appears to be a message that has traversed a mailing list
+if (exists $header{'list-id'} or exists $header{'list-subscribe'} or
+    (exists $header{'precedence'} and defined $header{'precedence'} and
+     $header{'precedence'} eq 'bulk') or
+    exists $header{'mailing-list'} or exists $header{'list-processor-version'}
+   ){
+    # if a mailing list didn't match any of the above, it's probably
+    # so horribly configured that we wouldn't be able to figure it out
+    # anyway.
+    $subject =~ s/^\[.*\]\s*//i;
+}
+$_= $subject."\n";
 if (not defined $tryref and m/^Bug ?\#(\d+)\D/i) {
     $tryref = $1 if $1 > 0;
 }
@@ -443,8 +459,14 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 
 	# Add bug mailing list to $generalbcc as appropriate
  	# This array is used to specify bcc in the cases where we're using create_mime_message.
- 	my @generalbcc = (@generalcc,@addsrcaddrs,"bugs=$ref\@$gListDomain");
-	my $generalbcc = join(', ', $generalcc, @addsrcaddrs,"bugs=$ref\@$gListDomain");
+	my @generalbcc = @generalcc;
+	if (defined $config{subscription_domain} and length $config{subscription_domain}) {
+	    @generalbcc = (@generalbcc, @addsrcaddrs);
+	}
+	if (defined $config{bug_subscription_domain} and length $config{bug_subscription_domain}) {
+	    @generalbcc = (@generalbcc, "bugs=$ref\@$config{bug_subscription_domain}");
+	}
+	my $generalbcc = join(', ', @generalbcc);
 	$generalbcc =~ s/\s+\n\s+/ /g;
 	$generalbcc =~ s/^\s+/ /; $generalbcc =~ s/\s+$//;
 	if (length $generalbcc) {$generalbcc = "Bcc: $generalbcc\n"};
@@ -717,7 +739,9 @@ if (defined $gStrongList and isstrongseverity($data->{severity})) {
 }
 
 # Send mail to the per bug list subscription too
-push @bccs, "bugs=$ref\@$gListDomain";
+if (defined $config{bug_subscription_domain} and length $config{bug_subscription_domain}) {
+    push @bccs, "bugs=$ref\@$config{bug_subscription_domain}";
+}
 
 if (defined $pheader{source}) {
     # Prefix source versions with the name of the source package. They
@@ -1256,15 +1280,15 @@ sub checkmaintainers {
 	$p =~ /((?:src:)?[a-z0-9.+-]+)/;
 	$p = $1;
 	next unless defined $p;
-	if (defined $gSubscriptionDomain) {
+        if (defined $config{subscription_domain} and length $config{subscription_domain}) {
 	    my @source = binary_to_source(binary => $p,
 					  source_only => 1,
 					 );
 	    if (@source) {
 		push @addsrcaddrs,
-		    map {"$_\@$gSubscriptionDomain"} @source;
+		    map {"$_\@$config{subscription_domain}"} @source;
 	    } else {
-		push @addsrcaddrs, "$p\@$gSubscriptionDomain";
+		push @addsrcaddrs, "$p\@$config{subscription_domain}";
 	    }
 	}
 	# this is utter hackery until we switch to Debbugs::Recipients

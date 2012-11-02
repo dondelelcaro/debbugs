@@ -7,6 +7,9 @@
 use warnings;
 use strict;
 
+use locale;
+use POSIX qw(strftime locale_h);
+setlocale(LC_TIME, "C");
 
 use Debbugs::Config qw(:globals :config);
 
@@ -479,6 +482,7 @@ END
 	    last;
 	}
     } else {
+	print {$transcript} "Unknown command or malformed arguments to command.\n";
 	$errors++;
         if (++$unknowns >= 5) {
             print {$transcript} "Too many unknown commands, stopping here.\n\n";
