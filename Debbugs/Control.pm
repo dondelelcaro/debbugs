@@ -2168,7 +2168,7 @@ sub set_merged {
 	    $locks--;
 	}
 	__end_control(%info);
-	for my $change (values %{$changes}, @{$disallowed_changes}) {
+	for my $change ((map {@{$_}} values %{$changes}), @{$disallowed_changes}) {
 	    print {$transcript} "$change->{field} of #$change->{bug} is '$change->{text_orig_value}' not '$change->{text_value}'\n";
 	}
 	die "Unable to modify bugs so they could be merged";
