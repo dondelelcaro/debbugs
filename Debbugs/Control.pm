@@ -2168,7 +2168,7 @@ sub set_merged {
 	    $locks--;
 	}
 	__end_control(%info);
-	for my $change (values %{$changes}, @{$disallowed_changes}) {
+	for my $change ((map {@{$_}} values %{$changes}), @{$disallowed_changes}) {
 	    print {$transcript} "$change->{field} of #$change->{bug} is '$change->{text_orig_value}' not '$change->{text_value}'\n";
 	}
 	die "Unable to modify bugs so they could be merged";
@@ -2317,6 +2317,17 @@ sub __calculate_merge_status{
 	$merge_status{keywords} = join(' ',sort keys %{$merge_status{tag}});
 	for (qw(fixed found)) {
 	    @{$merge_status{"${_}_versions"}}{@{$data->{"${_}_versions"}}} = (1) x @{$data->{"${_}_versions"}};
+	}
+    }
+    # if there is a non-source qualified version with a corresponding
+    # source qualified version, we only want to merge the source
+    # qualified version(s)
+    for (qw(fixed found)) {
+	my @unqualified_versions = grep {m{/}?0:1} keys %{$merge_status{"${_}_versions"}};
+	for my $unqualified_version (@unqualified_versions) {
+	    if (grep {m{/\Q$unqualified_version\E}} keys %{$merge_status{"${_}_versions"}}) {
+		delete $merge_status{"${_}_versions"}{$unqualified_version};
+	    }
 	}
     }
     return (\%merge_status,$bugs_to_merge);
