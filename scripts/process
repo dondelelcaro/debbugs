@@ -1048,6 +1048,7 @@ if (@control_bits) {
 		}
 	    }
 	    else {
+		print {$transcript} "Unknown command or malformed arguments to command.\n\n";
 		$errors++;
 		if (++$unknowns >= 5) {
 		    print {$transcript} "Too many unknown commands, stopping here.\n\n";
