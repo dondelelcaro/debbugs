@@ -96,64 +96,65 @@ use Debbugs::Status qw(splitpackages);
 use Params::Validate qw(:types validate_with);
 use List::Util qw(first);
 
+my $bug_num_re = '-?\d+';
 my %control_grammar =
-    (close => qr/(?i)^close\s+\#?(-?\d+)(?:\s+(\d.*))?$/,
-     reassign => qr/(?i)^reassign\s+\#?(-?\d+)\s+ # bug and command
+    (close => qr/(?i)^close\s+\#?($bug_num_re)(?:\s+(\d.*))?$/,
+     reassign => qr/(?i)^reassign\s+\#?($bug_num_re)\s+ # bug and command
 		    (?:(?:((?:src:|source:)?$config{package_name_re}) # new package
 			    (?:\s+((?:$config{package_name_re}\/)?
 				    $config{package_version_re}))?)| # optional version
 			((?:src:|source:)?$config{package_name_re} # multiple package form
 			    (?:\s*\,\s*(?:src:|source:)?$config{package_name_re})+))
 		    \s*$/x,
-     reopen => qr/(?i)^reopen\s+\#?(-?\d+)(?:\s+([\=\!]|(?:\S.*\S)))?$/,
-     found => qr{^(?:(?i)found)\s+\#?(-?\d+)
+     reopen => qr/(?i)^reopen\s+\#?($bug_num_re)(?:\s+([\=\!]|(?:\S.*\S)))?$/,
+     found => qr{^(?:(?i)found)\s+\#?($bug_num_re)
 		 (?:\s+((?:$config{package_name_re}\/)?
 			 $config{package_version_re}
 			 # allow for multiple packages
 			 (?:\s*,\s*(?:$config{package_name_re}\/)?
 			     $config{package_version_re})*)
 		 )?$}x,
-     notfound => qr{^(?:(?i)notfound)\s+\#?(-?\d+)
+     notfound => qr{^(?:(?i)notfound)\s+\#?($bug_num_re)
 		    \s+((?:$config{package_name_re}\/)?
 			$config{package_version_re}
 			# allow for multiple packages
 			(?:\s*,\s*(?:$config{package_name_re}\/)?
 			    $config{package_version_re})*
 		    )$}x,
-     fixed => qr{^(?:(?i)fixed)\s+\#?(-?\d+)
+     fixed => qr{^(?:(?i)fixed)\s+\#?($bug_num_re)
 	     \s+((?:$config{package_name_re}\/)?
 		    $config{package_version_re}
 		# allow for multiple packages
 		(?:\s*,\s*(?:$config{package_name_re}\/)?
 		    $config{package_version_re})*)
 	    \s*$}x,
-     notfixed => qr{^(?:(?i)notfixed)\s+\#?(-?\d+)
+     notfixed => qr{^(?:(?i)notfixed)\s+\#?($bug_num_re)
 	     \s+((?:$config{package_name_re}\/)?
 		    $config{package_version_re}
 		# allow for multiple packages
 		(?:\s*,\s*(?:$config{package_name_re}\/)?
 		    $config{package_version_re})*)
 	    \s*$}x,
-     submitter => qr/(?i)^submitter\s+\#?(-?\d+)\s+(\!|\S.*\S)$/,
-     forwarded => qr/(?i)^forwarded\s+\#?(-?\d+)\s+(\S.*\S)$/,
-     notforwarded => qr/(?i)^notforwarded\s+\#?(-?\d+)$/,
-     severity => qr/(?i)^(?:severity|priority)\s+\#?(-?\d+)\s+([-0-9a-z]+)$/,
-     tag => qr/(?i)^tags?\s+\#?(-?\d+)\s+(\S.*)$/,
-     block => qr/(?i)^(un)?block\s+\#?(-?\d+)\s+(?:by|with)\s+(\S.*)?$/,
-     retitle => qr/(?i)^retitle\s+\#?(-?\d+)\s+(\S.*\S)\s*$/,
-     unmerge => qr/(?i)^unmerge\s+\#?(-?\d+)$/,
-     merge   => qr/(?i)^merge\s+#?(-?\d+(\s+#?-?\d+)+)\s*$/,
-     forcemerge => qr/(?i)^forcemerge\s+\#?(-?\d+(?:\s+\#?-?\d+)+)\s*$/,
-     clone => qr/(?i)^clone\s+#?(\d+)\s+((-\d+\s+)*-\d+)\s*$/,
+     submitter => qr/(?i)^submitter\s+\#?($bug_num_re)\s+(\!|\S.*\S)$/,
+     forwarded => qr/(?i)^forwarded\s+\#?($bug_num_re)\s+(\S.*\S)$/,
+     notforwarded => qr/(?i)^notforwarded\s+\#?($bug_num_re)$/,
+     severity => qr/(?i)^(?:severity|priority)\s+\#?($bug_num_re)\s+([-0-9a-z]+)$/,
+     tag => qr/(?i)^tags?\s+\#?($bug_num_re)\s+(\S.*)$/,
+     block => qr/(?i)^(un)?block\s+\#?($bug_num_re)\s+(?:by|with)\s+(\S.*)?$/,
+     retitle => qr/(?i)^retitle\s+\#?($bug_num_re)\s+(\S.*\S)\s*$/,
+     unmerge => qr/(?i)^unmerge\s+\#?($bug_num_re)$/,
+     merge   => qr/(?i)^merge\s+#?($bug_num_re(\s+#?$bug_num_re)+)\s*$/,
+     forcemerge => qr/(?i)^forcemerge\s+\#?($bug_num_re(?:\s+\#?$bug_num_re)+)\s*$/,
+     clone => qr/(?i)^clone\s+#?($bug_num_re)\s+((?:$bug_num_re\s+)*$bug_num_re)\s*$/,
      package => qr/(?i)^package\:?\s+(\S.*\S)?\s*$/,
      limit => qr/(?i)^limit\:?\s+(\S.*\S)\s*$/,
-     affects => qr/(?i)^affects?\s+\#?(-?\d+)(?:\s+((?:[=+-])?)\s*(\S.*)?)?\s*$/,
-     summary => qr/(?i)^summary\s+\#?(-?\d+)\s*(.*)\s*$/,
-     outlook => qr/(?i)^outlook\s+\#?(-?\d+)\s*(.*)\s*$/,
-     owner => qr/(?i)^owner\s+\#?(-?\d+)\s+((?:\S.*\S)|\!)\s*$/,
-     noowner => qr/(?i)^noowner\s+\#?(-?\d+)\s*$/,
-     unarchive => qr/(?i)^unarchive\s+#?(\d+)$/,
-     archive => qr/(?i)^archive\s+#?(\d+)$/,
+     affects => qr/(?i)^affects?\s+\#?($bug_num_re)(?:\s+((?:[=+-])?)\s*(\S.*)?)?\s*$/,
+     summary => qr/(?i)^summary\s+\#?($bug_num_re)\s*(.*)\s*$/,
+     outlook => qr/(?i)^outlook\s+\#?($bug_num_re)\s*(.*)\s*$/,
+     owner => qr/(?i)^owner\s+\#?($bug_num_re)\s+((?:\S.*\S)|\!)\s*$/,
+     noowner => qr/(?i)^noowner\s+\#?($bug_num_re)\s*$/,
+     unarchive => qr/(?i)^unarchive\s+#?($bug_num_re)$/,
+     archive => qr/(?i)^archive\s+#?($bug_num_re)$/,
     );
 
 sub valid_control {
