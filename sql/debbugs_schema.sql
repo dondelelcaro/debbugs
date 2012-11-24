@@ -67,7 +67,7 @@ CREATE TABLE src_ver (
        id SERIAL PRIMARY KEY,
        src_pkg_id INT NOT NULL REFERENCES src_pkg
             ON UPDATE CASCADE ON DELETE CASCADE,
-       ver TEXT NOT NULL,
+       ver public.debversion NOT NULL,
        upload_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
        based_on INT REFERENCES src_ver
             ON UPDATE CASCADE ON DELETE CASCADE
