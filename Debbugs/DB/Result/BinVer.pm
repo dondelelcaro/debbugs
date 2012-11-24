@@ -1,0 +1,157 @@
+use utf8;
+package Debbugs::DB::Result::BinVer;
+
+# Created by DBIx::Class::Schema::Loader
+# DO NOT MODIFY THE FIRST PART OF THIS FILE
+
+=head1 NAME
+
+Debbugs::DB::Result::BinVer
+
+=cut
+
+use strict;
+use warnings;
+
+use base 'DBIx::Class::Core';
+
+=head1 COMPONENTS LOADED
+
+=over 4
+
+=item * L<DBIx::Class::InflateColumn::DateTime>
+
+=back
+
+=cut
+
+__PACKAGE__->load_components("InflateColumn::DateTime");
+
+=head1 TABLE: C<bin_ver>
+
+=cut
+
+__PACKAGE__->table("bin_ver");
+
+=head1 ACCESSORS
+
+=head2 bin_pkg_id
+
+  data_type: 'integer'
+  is_foreign_key: 1
+  is_nullable: 0
+
+=head2 src_ver_id
+
+  data_type: 'integer'
+  is_foreign_key: 1
+  is_nullable: 0
+
+=head2 arch_id
+
+  data_type: 'integer'
+  is_foreign_key: 1
+  is_nullable: 0
+
+=head2 ver
+
+  data_type: 'text'
+  is_nullable: 0
+
+=cut
+
+__PACKAGE__->add_columns(
+  "bin_pkg_id",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  "src_ver_id",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  "arch_id",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  "ver",
+  { data_type => "text", is_nullable => 0 },
+);
+
+=head1 UNIQUE CONSTRAINTS
+
+=head2 C<bin_ver_bin_pkg_id_arch_idx>
+
+=over 4
+
+=item * L</bin_pkg_id>
+
+=item * L</arch_id>
+
+=back
+
+=cut
+
+__PACKAGE__->add_unique_constraint("bin_ver_bin_pkg_id_arch_idx", ["bin_pkg_id", "arch_id"]);
+
+=head2 C<bin_ver_src_ver_id_arch_idx>
+
+=over 4
+
+=item * L</src_ver_id>
+
+=item * L</arch_id>
+
+=back
+
+=cut
+
+__PACKAGE__->add_unique_constraint("bin_ver_src_ver_id_arch_idx", ["src_ver_id", "arch_id"]);
+
+=head1 RELATIONS
+
+=head2 arch
+
+Type: belongs_to
+
+Related object: L<Debbugs::DB::Result::Arch>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "arch",
+  "Debbugs::DB::Result::Arch",
+  { id => "arch_id" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+);
+
+=head2 bin_pkg
+
+Type: belongs_to
+
+Related object: L<Debbugs::DB::Result::BinPkg>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "bin_pkg",
+  "Debbugs::DB::Result::BinPkg",
+  { id => "bin_pkg_id" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+);
+
+=head2 src_ver
+
+Type: belongs_to
+
+Related object: L<Debbugs::DB::Result::SrcVer>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "src_ver",
+  "Debbugs::DB::Result::SrcVer",
+  { id => "src_ver_id" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+);
+
+
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-07-17 10:25:29
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:0AnavpmoUrdrgChtyIBRBg
+
+
+# You can replace this text with custom code or comments, and it will be preserved on regeneration
+1;

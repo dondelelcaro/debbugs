@@ -1,0 +1,278 @@
+#! /usr/bin/perl
+# debbugs-loadsql is part of debbugs, and is released
+# under the terms of the GPL version 2, or any later version, at your
+# option. See the file README and COPYING for more information.
+# Copyright 2012 by Don Armstrong <don@donarmstrong.com>.
+
+
+use warnings;
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case);
+use Pod::Usage;
+
+=head1 NAME
+
+debbugs-loadsql -- load debbugs sql database
+
+=head1 SYNOPSIS
+
+debbugs-loadsql [options]
+
+ Options:
+  --quick, -q only load changed bugs
+  --service, -s service name
+  --sysconfdir, -c postgresql service config dir
+  --debug, -d debugging level (Default 0)
+  --help, -h display this help
+  --man, -m display manual
+
+=head1 OPTIONS
+
+=over
+
+=item B<--quick, -q>
+
+Only load changed bugs
+
+=item B<--service,-s>
+
+Postgreql service to use; defaults to debbugs
+
+=item B<--sysconfdir,-c>
+
+System configuration directory to use; if not set, defaults to the
+postgresql default. [Operates by setting PGSYSCONFDIR]
+
+=item B<--debug, -d
+
+Debug verbosity.
+
+=item B<--help, -h>
+
+Display brief useage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+
+=cut
+
+
+use vars qw($DEBUG);
+
+use Debbugs::Common qw(checkpid lockpid get_hashname getparsedaddrs getbugcomponent make_list);
+use Debbugs::Config qw(:config);
+use Debbugs::Status qw(read_bug split_status_fields);
+use Debbugs::Log;
+use Debbugs::DB;
+use DateTime;
+use File::stat;
+
+
+my %options = (debug           => 0,
+	       help            => 0,
+	       man             => 0,
+	       verbose         => 0,
+	       quiet           => 0,
+	       quick           => 0,
+	       service         => 'debbugs',
+	      );
+
+
+GetOptions(\%options,
+	   'quick|q',
+	   'service|s',
+	   'sysconfdir|c',
+	   'spool_dir|spool-dir=s',
+	   'debug|d+','help|h|?','man|m');
+
+pod2usage() if $options{help};
+pod2usage({verbose=>2}) if $options{man};
+
+$DEBUG = $options{debug};
+
+my @USAGE_ERRORS;
+$options{verbose} = $options{verbose} - $options{quiet};
+
+pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
+
+if (exists $options{sysconfdir}) {
+    if (not defined $options{sysconfdir} or not length $options{sysconfdir}) {
+	delete $ENV{PGSYSCONFDIR};
+    } else {
+	$ENV{PGSYSCONFDIR} = $options{sysconfdir};
+    }
+}
+
+if (exists $options{spool_dir} and defined $options{spool_dir}) {
+    $config{spool_dir} = $options{spool_dir};
+}
+chdir($config{spool_dir}) or die "chdir $config{spool_dir} failed: $!";
+
+my $verbose = $options{debug};
+
+my $initialdir = "db-h";
+
+if (defined $ARGV[0] and $ARGV[0] eq "archive") {
+    $initialdir = "archive";
+}
+
+if (not lockpid($config{spool_dir}.'/lock/debbugs-loadsql')) {
+     if ($options{quick}) {
+	  # If this is a quick run, just exit
+	  print STDERR "Another debbugs-loadsql is running; stopping\n" if $verbose;
+	  exit 0;
+     }
+     print STDERR "Another debbugs-loadsql is running; stopping\n";
+     exit 1;
+}
+
+# connect to the database; figure out how to handle errors properly
+# here.
+my $schema = Debbugs::DB->connect('dbi:Pg:service='.$options{service}) or
+    die "Unable to connect to database: ";
+
+my $time = 0;
+my $start_time = time;
+
+
+my @dirs = ($initialdir);
+my $cnt = 0;
+my %tags;
+my %queue;
+while (my $dir = shift @dirs) {
+    printf "Doing dir %s ...\n", $dir if $verbose;
+
+    opendir(DIR, "$dir/.") or die "opendir $dir: $!";
+    my @subdirs = readdir(DIR);
+    closedir(DIR);
+
+    my @list = map { m/^(\d+)\.summary$/?($1):() } @subdirs;
+    push @dirs, map { m/^(\d+)$/ && -d "$dir/$1"?("$dir/$1"):() } @subdirs;
+
+    for my $bug (@list) {
+	print "Up to $cnt bugs...\n" if (++$cnt % 100 == 0 && $verbose);
+	my $stat = stat(getbugcomponent($bug,'summary',$initialdir));
+	if (not defined $stat) {
+	    print STDERR "Unable to stat $bug $!\n";
+	    next;
+	}
+	next if $stat->mtime < $time;
+	my $data = read_bug(bug => $bug,
+			    location => $initialdir);
+	load_bug($schema,split_status_fields($data),\%tags,\%queue);
+    }
+}
+hanlde_queue($schema,\%queue);
+
+sub load_bug {
+    my ($s,$data,$tags,$queue) = @_;
+    my $s_data = split_status_fields($data);
+    my @tags;
+    for my $tag (make_list($s_data->{keywords})) {
+	next unless defined $tag and length $tag;
+	# this allows for invalid tags. But we'll use this to try to
+	# find those bugs and clean them up
+	if (not exists $tags->{$tag}) {
+	    $tags->{$tag} = $s->resultset('Tag')->find_or_create({tag => $tag});
+	}
+	push @tags, $tags->{$tag};
+    }
+    my $bug = {id => $data->{bug_num},
+	       creation => DateTime->from_epoch(epoch => $data->{date}),
+	       log_modified => DateTime->from_epoch(epoch => $data->{log_modified}),
+	       last_modified => DateTime->from_epoch(epoch => $data->{last_modified}),
+	       archived => $data->{archived},
+	       (defined $data->{unarchived} and length($data->{unarchived}))?(unarchived => DateTime->from_epoch(epoch => $data->{unarchived})):(),
+	       forwarded => $data->{forwarded} // '',
+	       summary => $data->{summary} // '',
+	       outlook => $data->{outlook} // '',
+	       subject => $data->{subject} // '',
+	       done => $data->{done} // '',
+	       owner => $data->{owner} // '',
+	       severity => length($data->{severity}) ? $data->{severity} : $config{default_severity},
+	      };
+    $s->resultset('Bug')->update_or_create($bug);
+    $s->txn_do(sub {
+		   for my $ff (qw(found fixed)) {
+		       my @elements = $s->resultset('BugVer')->search({bug_id => $data->{bug_num},
+								       found  => $ff eq 'found'?1:0,
+								      });
+		       my %elements_to_delete = map {($elements[$_]->ver_string(),$_)} 0..$#elements;
+		       my @elements_to_add;
+		       for my $version (@{$data->{"${ff}_versions"}}) {
+			   if (exists $elements_to_delete{$version}) {
+			       delete $elements_to_delete{$version};
+			   } else {
+			       push @elements_to_add,$version;
+			   }
+		       }
+		       for my $element (keys %elements_to_delete) {
+			   $elements_to_delete{$element}->delete();
+		       }
+		       for my $element (@elements_to_add) {
+			   # find source package and source version id
+			   my $ne = $s->resultset('BugVer')->new_result({bug_id => $data->{bug_num},
+									 ver_string => $element,
+									 found => $ff eq 'found'?1:0,
+									}
+								       );
+			   if (my ($src_pkg,$src_ver) = $element =~ m{^([^\/]+)/(.+)$}) {
+			       my $src_pkg_e = $s->resultset('SrcPkg')->single({pkg => $src_pkg});
+			       if (defined $src_pkg_e) {
+				   $ne->src_pkg_id($src_pkg_e->id());
+				   my $src_ver_e = $s->resultset('SrcVer')->single({src_pkg_id => $src_pkg_e->id(),
+										    ver => $src_ver
+										   });
+				   $ne->src_ver_id($src_ver_e->id()) if defined $src_ver_e;
+			       }
+			   }
+			   $ne->insert();
+		       }
+		   }
+	       });
+    $s->txn_do(sub {
+		   $s->resultset('BugTag')->search({bug_id => $data->{bug_num}})->delete();
+		   $s->populate(BugTag => [[qw(bug_id tag_id)], map {[$data->{bug_num}, $_->id()]} @tags]);
+	       });
+    # because these bugs reference other bugs which might not exist
+    # yet, we can't handle them until we've loaded all bugs. queue
+    # them up.
+    $queue->{merged}{$data->{bug_num}} = [@{$data->{mergedwith}}];
+    $queue->{blocks}{$data->{bug_num}} = [@{$data->{blocks}}];
+
+    print STDERR "Handled $data->{bug_num}\n";
+    # still need to handle merges, versions, etc.
+}
+
+sub handle_queue{
+    my ($s,$queue) = @_;
+    my %queue_types =
+	(merged => {set => 'BugMerged',
+		    columns => [qw(bug_id merged)],
+		    bug_id => 'bug_id',
+		   },
+	 blocks => {set => 'BugBlock',
+		    columns => [qw(bug_id blocks)],
+		    bug_id => 'bug_id',
+		   },
+	);
+    for my $queue_type (keys %queue_types) {
+	for my $bug (%{$queue->{$queue_type}}) {
+	    my $qt = $queue_types{$queue_type};
+	    $s->txn_do(sub {
+			   $s->resultset($qt->{set})->search({$qt->{bug_id},$bug})->delete();
+			   $s->populate($qt->{set},[[@{$qt->{columns}}],map {[$bug,$_]} @{$queue->{$queue_type}{$bug}}]) if
+			       @{$queue->{$queue_type}{$bug}};
+		       }
+		      );
+	}
+    }
+}
+
+
+__END__
