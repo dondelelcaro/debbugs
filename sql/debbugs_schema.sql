@@ -15,9 +15,22 @@ DROP TABLE bug_merged CASCADE;
 DROP VIEW bug_package CASCADE;
 DROP TABLE bug_srcpackage CASCADE;
 DROP TABLE bug_binpackage CASCADE;
+DROP VIEW  bug_package CASCADE;
+DROP VIEW binary_versions CASCADE;
+DROP TABLE suite CASCADE;
+DROP TABLE bin_associations CASCADE;
+DROP TABLE src_associations CASCADE;
+DROP TABLE maintainer CASCADE;
 -- severities
 CREATE TYPE bug_severity AS ENUM ('wishlist','minor','normal',
        'important','serious','grave','critical');
+
+CREATE TABLE maintainer (
+       id SERIAL PRIMARY KEY,
+       name TEXT NOT NULL UNIQUE,
+       created TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+       modified TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
 
 -- bugs table
 CREATE TABLE bug (
@@ -68,6 +81,8 @@ CREATE TABLE src_ver (
        src_pkg_id INT NOT NULL REFERENCES src_pkg
             ON UPDATE CASCADE ON DELETE CASCADE,
        ver public.debversion NOT NULL,
+       maintainer_id INT REFERENCES maintainer
+            ON UPDATE CASCADE ON DELETE SET NULL,
        upload_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
        based_on INT REFERENCES src_ver
             ON UPDATE CASCADE ON DELETE CASCADE
@@ -102,16 +117,17 @@ CREATE TABLE bin_pkg (
 );
 
 CREATE TABLE bin_ver(
+       id SERIAL PRIMARY KEY,
        bin_pkg_id INT NOT NULL REFERENCES bin_pkg
             ON UPDATE CASCADE ON DELETE CASCADE,
        src_ver_id INT NOT NULL REFERENCES src_ver
             ON UPDATE CASCADE ON DELETE CASCADE,
        arch_id INT NOT NULL REFERENCES arch
        	    ON UPDATE CASCADE ON DELETE CASCADE,
-       ver TEXT NOT NULL
+       ver public.debversion NOT NULL
 );
 CREATE INDEX bin_ver_ver_idx ON bin_ver(ver);
-CREATE UNIQUE INDEX bin_ver_bin_pkg_id_arch_idx ON bin_ver(bin_pkg_id,arch_id);
+CREATE UNIQUE INDEX bin_ver_bin_pkg_id_arch_idx ON bin_ver(bin_pkg_id,arch_id,ver);
 CREATE UNIQUE INDEX bin_ver_src_ver_id_arch_idx ON bin_ver(src_ver_id,arch_id);
 CREATE INDEX bin_ver_bin_pkg_id_idx ON bin_ver(bin_pkg_id);
 CREATE INDEX bin_ver_src_ver_id_idx ON bin_ver(src_ver_id);
@@ -146,3 +162,36 @@ CREATE UNIQUE INDEX bug_srcpackage_id_pkg_id ON bug_srcpackage(bug_id,src_pkg_id
 CREATE VIEW bug_package (bug_id,pkg_id,pkg_type,package) AS
        SELECT b.bug_id,b.bin_pkg_id,'binary',bp.pkg FROM bug_binpackage b JOIN bin_pkg bp ON bp.id=b.bin_pkg_id UNION
               SELECT s.bug_id,s.src_pkg_id,'source',sp.pkg FROM bug_srcpackage s JOIN src_pkg sp ON sp.id=s.src_pkg_id;
+
+CREATE VIEW binary_versions (src_pkg, src_ver, bin_pkg, arch, bin_ver) AS
+       SELECT sp.pkg AS src_pkg, sv.ver AS src_ver, bp.pkg AS bin_pkg, a.arch AS arch, b.ver AS bin_ver
+       FROM bin_ver b JOIN arch a ON b.arch_id = a.id
+       	              JOIN bin_pkg bp ON b.bin_pkg_id  = bp.id
+                      JOIN src_ver sv ON b.src_ver_id  = sv.id
+                      JOIN src_pkg sp ON sv.src_pkg_id = sp.id;
+
+CREATE TABLE suite (
+       id SERIAL PRIMARY KEY,
+       suite_name TEXT NOT NULL UNIQUE,
+       version TEXT,
+       codename TEXT,
+       active BOOLEAN DEFAULT TRUE);
+CREATE INDEX ON suite(codename);
+CREATE INDEX ON suite(version);
+
+CREATE TABLE bin_associations (
+       id SERIAL PRIMARY KEY,
+       suite INT NOT NULL REFERENCES suite ON DELETE CASCADE ON UPDATE CASCADE,
+       bin INT NOT NULL REFERENCES bin_ver ON DELETE CASCADE ON UPDATE CASCADE,
+       created TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+       modified TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE src_associations (
+       id SERIAL PRIMARY KEY,
+       suite INT NOT NULL REFERENCES suite ON DELETE CASCADE ON UPDATE CASCADE,
+       source INT NOT NULL REFERENCES src_ver ON DELETE CASCADE ON UPDATE CASCADE,
+       created TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+       modified TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
