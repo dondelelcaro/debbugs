@@ -50,8 +50,14 @@ __PACKAGE__->table("src_ver");
 
 =head2 ver
 
-  data_type: 'text'
+  data_type: 'debversion'
   is_nullable: 0
+
+=head2 maintainer_id
+
+  data_type: 'integer'
+  is_foreign_key: 1
+  is_nullable: 1
 
 =head2 upload_date
 
@@ -79,7 +85,9 @@ __PACKAGE__->add_columns(
   "src_pkg_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "ver",
-  { data_type => "text", is_nullable => 0 },
+  { data_type => "debversion", is_nullable => 0 },
+  "maintainer_id",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
   "upload_date",
   {
     data_type     => "timestamp with time zone",
@@ -171,6 +179,41 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 maintainer
+
+Type: belongs_to
+
+Related object: L<Debbugs::DB::Result::Maintainer>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "maintainer",
+  "Debbugs::DB::Result::Maintainer",
+  { id => "maintainer_id" },
+  {
+    is_deferrable => 1,
+    join_type     => "LEFT",
+    on_delete     => "CASCADE",
+    on_update     => "CASCADE",
+  },
+);
+
+=head2 src_associations
+
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::SrcAssociation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "src_associations",
+  "Debbugs::DB::Result::SrcAssociation",
+  { "foreign.source" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 src_pkg
 
 Type: belongs_to
@@ -202,8 +245,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-07-17 17:10:22
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:sYRJ4htIIKwvuvbUemk90A
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-25 00:09:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:1YjejvJjXTE1Q6OjD5x9zg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

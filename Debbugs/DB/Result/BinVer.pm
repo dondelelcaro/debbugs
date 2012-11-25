@@ -35,6 +35,13 @@ __PACKAGE__->table("bin_ver");
 
 =head1 ACCESSORS
 
+=head2 id
+
+  data_type: 'integer'
+  is_auto_increment: 1
+  is_nullable: 0
+  sequence: 'bin_ver_id_seq'
+
 =head2 bin_pkg_id
 
   data_type: 'integer'
@@ -55,12 +62,19 @@ __PACKAGE__->table("bin_ver");
 
 =head2 ver
 
-  data_type: 'text'
+  data_type: 'debversion'
   is_nullable: 0
 
 =cut
 
 __PACKAGE__->add_columns(
+  "id",
+  {
+    data_type         => "integer",
+    is_auto_increment => 1,
+    is_nullable       => 0,
+    sequence          => "bin_ver_id_seq",
+  },
   "bin_pkg_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "src_ver_id",
@@ -68,8 +82,20 @@ __PACKAGE__->add_columns(
   "arch_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "ver",
-  { data_type => "text", is_nullable => 0 },
+  { data_type => "debversion", is_nullable => 0 },
 );
+
+=head1 PRIMARY KEY
+
+=over 4
+
+=item * L</id>
+
+=back
+
+=cut
+
+__PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
 
@@ -81,11 +107,16 @@ __PACKAGE__->add_columns(
 
 =item * L</arch_id>
 
+=item * L</ver>
+
 =back
 
 =cut
 
-__PACKAGE__->add_unique_constraint("bin_ver_bin_pkg_id_arch_idx", ["bin_pkg_id", "arch_id"]);
+__PACKAGE__->add_unique_constraint(
+  "bin_ver_bin_pkg_id_arch_idx",
+  ["bin_pkg_id", "arch_id", "ver"],
+);
 
 =head2 C<bin_ver_src_ver_id_arch_idx>
 
@@ -116,6 +147,21 @@ __PACKAGE__->belongs_to(
   "Debbugs::DB::Result::Arch",
   { id => "arch_id" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+);
+
+=head2 bin_associations
+
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::BinAssociation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "bin_associations",
+  "Debbugs::DB::Result::BinAssociation",
+  { "foreign.bin" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
 );
 
 =head2 bin_pkg
@@ -149,8 +195,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-07-17 10:25:29
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:0AnavpmoUrdrgChtyIBRBg
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-25 00:09:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ID7wx8HJaYZgpdhHqCq8GQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
