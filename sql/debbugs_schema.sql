@@ -21,6 +21,12 @@ DROP TABLE suite CASCADE;
 DROP TABLE bin_associations CASCADE;
 DROP TABLE src_associations CASCADE;
 DROP TABLE maintainer CASCADE;
+DROP TABLE bug_message CASCADE;
+DROP TABLE message_corespondent CASCADE;
+DROP TABLE corespondent CASCADE;
+DROP TABLE message_refs CASCADE;
+DROP TABLE message CASCADE;
+DROP TYPE message_corespondent_type CASCADE;
 -- severities
 CREATE TYPE bug_severity AS ENUM ('wishlist','minor','normal',
        'important','serious','grave','critical');
@@ -193,5 +199,48 @@ CREATE TABLE src_associations (
        source INT NOT NULL REFERENCES src_ver ON DELETE CASCADE ON UPDATE CASCADE,
        created TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
        modified TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE message (
+       id SERIAL PRIMARY KEY,
+       msgid TEXT,
+       from_complete TEXT,
+       from_addr TEXT,
+       to_complete TEXT,
+       to_addr TEXT,
+       subject TEXT NOT NULL DEFAULT '',
+       sent_date TIMESTAMP WITH TIME ZONE,
+       refs TEXT NOT NULL DEFAULT '',
+       spam_score FLOAT,
+       is_spam BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE message_refs (
+       message INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
+       refs INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
+       CONSTRAINT message_doesnt_reference_itself CHECK (message <> refs)
+);
+
+CREATE TABLE corespondent (
+       id SERIAL PRIMARY KEY,
+       addr TEXT NOT NULL UNIQUE
+);
+
+CREATE TYPE message_corespondent_type AS ENUM ('to','from','envfrom','cc');
+
+CREATE TABLE message_corespondent (
+       message INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
+       corespondent INT NOT NULL REFERENCES corespondent ON DELETE CASCADE ON UPDATE CASCADE,
+       corespondent_type message_corespondent_type NOT NULL DEFAULT 'to'
+);
+
+CREATE UNIQUE INDEX ON message_corespondent(message,corespondent,corespondent_type);
+CREATE INDEX ON message_corespondent(corespondent);
+
+CREATE TABLE bug_message (
+       bug INT NOT NULL REFERENCES bug ON DELETE CASCADE ON UPDATE CASCADE,
+       message INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
+       message_number INT NOT NULL,
+       bug_log_offset INT
 );
 
