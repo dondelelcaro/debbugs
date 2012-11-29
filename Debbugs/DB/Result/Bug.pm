@@ -258,6 +258,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 bug_messages
+
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::BugMessage>
+
+=cut
+
+__PACKAGE__->has_many(
+  "bug_messages",
+  "Debbugs::DB::Result::BugMessage",
+  { "foreign.bug" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 bug_srcpackages
 
 Type: has_many
@@ -319,8 +334,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-07-17 21:09:18
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:k+98VF0kOIp6OReqNNVXDg
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-29 15:37:55
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:yAz+VGSyK89KOcvUzGnleA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
