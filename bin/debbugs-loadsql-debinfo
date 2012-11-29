@@ -1,0 +1,149 @@
+#! /usr/bin/perl
+# debbugs-loadsql-debinfo is part of debbugs, and is released
+# under the terms of the GPL version 2, or any later version, at your
+# option. See the file README and COPYING for more information.
+# Copyright 2012 by Don Armstrong <don@donarmstrong.com>.
+
+
+use warnings;
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case);
+use Pod::Usage;
+
+=head1 NAME
+
+debbugs-loadsql-debinfo -- load debbugs sql versions database
+
+=head1 SYNOPSIS
+
+debbugs-loadsql-debinfo [options]
+
+ Options:
+  --service, -s service name
+  --sysconfdir, -c postgresql service config dir
+  --debug, -d debugging level (Default 0)
+  --help, -h display this help
+  --man, -m display manual
+
+=head1 OPTIONS
+
+=over
+
+=item B<--quick, -q>
+
+Only load changed bugs
+
+=item B<--service,-s>
+
+Postgreql service to use; defaults to debbugs
+
+=item B<--sysconfdir,-c>
+
+System configuration directory to use; if not set, defaults to the
+postgresql default. [Operates by setting PGSYSCONFDIR]
+
+=item B<--debug, -d
+
+Debug verbosity.
+
+=item B<--help, -h>
+
+Display brief useage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+
+=cut
+
+
+use vars qw($DEBUG);
+
+use Debbugs::Common qw(checkpid lockpid get_hashname getparsedaddrs getbugcomponent make_list);
+use Debbugs::Config qw(:config);
+use Debbugs::Status qw(read_bug split_status_fields);
+use Debbugs::Log;
+use Debbugs::DB;
+use DateTime;
+use File::stat;
+
+
+my %options = (debug           => 0,
+	       help            => 0,
+	       man             => 0,
+	       verbose         => 0,
+	       quiet           => 0,
+	       quick           => 0,
+	       service         => 'debbugs',
+	      );
+
+
+GetOptions(\%options,
+	   'quick|q',
+	   'service|s',
+	   'sysconfdir|c',
+	   'debug|d+','help|h|?','man|m');
+
+pod2usage() if $options{help};
+pod2usage({verbose=>2}) if $options{man};
+
+$DEBUG = $options{debug};
+
+my @USAGE_ERRORS;
+$options{verbose} = $options{verbose} - $options{quiet};
+
+pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
+
+if (exists $options{sysconfdir}) {
+    if (not defined $options{sysconfdir} or not length $options{sysconfdir}) {
+	delete $ENV{PGSYSCONFDIR};
+    } else {
+	$ENV{PGSYSCONFDIR} = $options{sysconfdir};
+    }
+}
+
+my $verbose = $options{debug};
+
+my $initialdir = "db-h";
+
+# connect to the database; figure out how to handle errors properly
+# here.
+my $s = Debbugs::DB->connect('dbi:Pg:service='.$options{service}) or
+    die "Unable to connect to database: ";
+
+my @files = @ARGV;
+
+for my $file (@files) {
+    my $fh = IO::File->new($file,'r') or
+	die "Unable to open $file for reading: $!";
+    while (<$fh>) {
+	chomp;
+	next unless length $_;
+	my ($binname, $binver, $binarch, $srcname, $srcver) = split;
+	# if $srcver is not defined, this is probably a broken
+	# .debinfo file [they were causing #686106, see commit
+	# 49c85ab8 in dak.] Basically, $binarch didn't get put into
+	# the file, so we'll fudge it from the filename.
+	if (not defined $srcver) {
+	    ($srcname,$srcver) = ($binarch,$srcname);
+	    ($binarch) = $file =~ /_([^\.]+)\.debinfo/;
+	}
+	my $sp = $s->resultset('SrcPkg')->find_or_create({pkg => $srcname});
+	my $sv = $s->resultset('SrcVer')->find_or_create({src_pkg_id=>$sp->id(),
+							  ver => $srcver});
+	my $arch = $s->resultset('Arch')->find_or_create({arch => $binarch});
+	my $bp = $s->resultset('BinPkg')->find_or_create({pkg => $binname});
+	$s->resultset('BinVer')->find_or_create({bin_pkg_id => $bp->id(),
+						 src_ver_id => $sv->id(),
+						 arch_id    => $arch->id(),
+						 ver        => $binver,
+						});
+    }
+}
+
+
+__END__
