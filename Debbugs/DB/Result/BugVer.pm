@@ -6,7 +6,7 @@ package Debbugs::DB::Result::BugVer;
 
 =head1 NAME
 
-Debbugs::DB::Result::BugVer
+Debbugs::DB::Result::BugVer - Bug versions
 
 =cut
 
@@ -186,8 +186,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-23 17:41:43
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:JMDsn7GGxoQ001KYUOyyTw
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-12-03 15:57:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:YRlFlDUKGtk69o3KPHM1zQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

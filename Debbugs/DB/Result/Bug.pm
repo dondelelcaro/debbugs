@@ -6,7 +6,7 @@ package Debbugs::DB::Result::Bug;
 
 =head1 NAME
 
-Debbugs::DB::Result::Bug
+Debbugs::DB::Result::Bug - Bugs
 
 =cut
 
@@ -40,12 +40,16 @@ __PACKAGE__->table("bug");
   data_type: 'integer'
   is_nullable: 0
 
+Bug number
+
 =head2 creation
 
   data_type: 'timestamp with time zone'
   default_value: current_timestamp
   is_nullable: 0
   original: {default_value => \"now()"}
+
+Time bug created
 
 =head2 log_modified
 
@@ -54,6 +58,8 @@ __PACKAGE__->table("bug");
   is_nullable: 0
   original: {default_value => \"now()"}
 
+Time bug log was last modified
+
 =head2 last_modified
 
   data_type: 'timestamp with time zone'
@@ -61,16 +67,22 @@ __PACKAGE__->table("bug");
   is_nullable: 0
   original: {default_value => \"now()"}
 
+Time bug status was last modified
+
 =head2 archived
 
   data_type: 'boolean'
   default_value: false
   is_nullable: 0
 
+True if bug has been archived
+
 =head2 unarchived
 
   data_type: 'timestamp with time zone'
   is_nullable: 1
+
+Time bug was last unarchived; null if bug has never been unarchived
 
 =head2 forwarded
 
@@ -78,11 +90,15 @@ __PACKAGE__->table("bug");
   default_value: (empty string)
   is_nullable: 0
 
+Where bug has been forwarded to; empty if it has not been forwarded
+
 =head2 summary
 
   data_type: 'text'
   default_value: (empty string)
   is_nullable: 0
+
+Summary of the bug; empty if it has no summary
 
 =head2 outlook
 
@@ -90,10 +106,14 @@ __PACKAGE__->table("bug");
   default_value: (empty string)
   is_nullable: 0
 
+Outlook of the bug; empty if it has no outlook
+
 =head2 subject
 
   data_type: 'text'
   is_nullable: 0
+
+Subject of the bug
 
 =head2 done
 
@@ -101,11 +121,15 @@ __PACKAGE__->table("bug");
   default_value: (empty string)
   is_nullable: 0
 
+Individual who did the -done; empty if it has never been -done
+
 =head2 owner
 
   data_type: 'text'
   default_value: (empty string)
   is_nullable: 0
+
+Individual who did the -done; empty if it has never been -done
 
 =head2 unknown_packages
 
@@ -113,12 +137,16 @@ __PACKAGE__->table("bug");
   default_value: (empty string)
   is_nullable: 0
 
+Package name if the package is not known
+
 =head2 severity
 
   data_type: 'enum'
   default_value: 'normal'
   extra: {custom_type_name => "bug_severity",list => ["wishlist","minor","normal","important","serious","grave","critical"]}
   is_nullable: 1
+
+Bug severity
 
 =cut
 
@@ -334,8 +362,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-29 15:37:55
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:yAz+VGSyK89KOcvUzGnleA
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-29 18:11:35
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:eW7Cg2dL1CbA9Rn+nzZqOg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

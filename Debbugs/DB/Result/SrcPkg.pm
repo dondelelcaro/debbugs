@@ -6,7 +6,7 @@ package Debbugs::DB::Result::SrcPkg;
 
 =head1 NAME
 
-Debbugs::DB::Result::SrcPkg
+Debbugs::DB::Result::SrcPkg - Source packages
 
 =cut
 
@@ -42,10 +42,14 @@ __PACKAGE__->table("src_pkg");
   is_nullable: 0
   sequence: 'src_pkg_id_seq'
 
+Source package id
+
 =head2 pkg
 
   data_type: 'text'
   is_nullable: 0
+
+Source package name
 
 =head2 pseduopkg
 
@@ -58,6 +62,8 @@ __PACKAGE__->table("src_pkg");
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 1
+
+Source package id which this source package is an alias of
 
 =cut
 
@@ -186,8 +192,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-23 17:41:43
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:s3tqzD1crqO0a57NzVkWDg
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-12-03 15:57:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:zKfk7AmIYswUAYKBbBGQaQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
