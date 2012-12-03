@@ -6,7 +6,7 @@ package Debbugs::DB::Result::SrcVer;
 
 =head1 NAME
 
-Debbugs::DB::Result::SrcVer
+Debbugs::DB::Result::SrcVer - Source Package versions
 
 =cut
 
@@ -42,22 +42,30 @@ __PACKAGE__->table("src_ver");
   is_nullable: 0
   sequence: 'src_ver_id_seq'
 
+Source package version id
+
 =head2 src_pkg_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
 
+Source package id (matches src_pkg table)
+
 =head2 ver
 
   data_type: 'debversion'
   is_nullable: 0
+
+Version of the source package
 
 =head2 maintainer_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 1
+
+Maintainer id (matches maintainer table)
 
 =head2 upload_date
 
@@ -66,11 +74,15 @@ __PACKAGE__->table("src_ver");
   is_nullable: 0
   original: {default_value => \"now()"}
 
+Date this version of the source package was uploaded
+
 =head2 based_on
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 1
+
+Source package version this version is based on
 
 =cut
 
@@ -245,8 +257,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-25 00:09:07
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:1YjejvJjXTE1Q6OjD5x9zg
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-12-03 15:57:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:YB4WADgoa3KiJq2OdeSmmQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

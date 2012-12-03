@@ -27,6 +27,22 @@ DROP TABLE corespondent CASCADE;
 DROP TABLE message_refs CASCADE;
 DROP TABLE message CASCADE;
 DROP TYPE message_corespondent_type CASCADE;
+DROP TABLE table_comments CASCADE;
+DROP TABLE column_comments CASCADE;
+
+-- the following two tables are used to provide documentation about
+-- the tables and columns for DBIx::Class::Schema::Loader
+CREATE TABLE table_comments (
+       table_name TEXT UNIQUE NOT NULL,
+       comment_text TEXT NOT NULL
+);
+CREATE TABLE column_comments (
+       table_name TEXT  NOT NULL,
+       column_name TEXT  NOT NULL,
+       comment_text TEXT NOT NULL
+);
+CREATE UNIQUE INDEX ON column_comments(table_name,column_name);
+
 -- severities
 CREATE TYPE bug_severity AS ENUM ('wishlist','minor','normal',
        'important','serious','grave','critical');
@@ -37,6 +53,11 @@ CREATE TABLE maintainer (
        created TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
        modified TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
+INSERT INTO table_comments  VALUES ('maintainer','Package maintainer names');
+INSERT INTO column_comments VALUES ('maintainer','id','Package maintainer id');
+INSERT INTO column_comments VALUES ('maintainer','name','Name of package maintainer');
+INSERT INTO column_comments VALUES ('maintainer','created','Time maintainer record created');
+INSERT INTO column_comments VALUES ('maintainer','modified','Time maintainer record modified');
 
 -- bugs table
 CREATE TABLE bug (
@@ -55,6 +76,23 @@ CREATE TABLE bug (
        unknown_packages TEXT NOT NULL DEfAULT '',
        severity bug_severity DEFAULT 'normal'::bug_severity
 );
+INSERT INTO table_comments VALUES ('bug','Bugs');
+INSERT INTO column_comments VALUES ('bug','id','Bug number');
+INSERT INTO column_comments VALUES ('bug','creation','Time bug created');
+INSERT INTO column_comments VALUES ('bug','log_modified','Time bug log was last modified');
+INSERT INTO column_comments VALUES ('bug','last_modified','Time bug status was last modified');
+INSERT INTO column_comments VALUES ('bug','archived','True if bug has been archived');
+INSERT INTO column_comments VALUES ('bug','unarchived','Time bug was last unarchived; null if bug has never been unarchived');
+INSERT INTO column_comments VALUES ('bug','forwarded','Where bug has been forwarded to; empty if it has not been forwarded');
+INSERT INTO column_comments VALUES ('bug','summary','Summary of the bug; empty if it has no summary');
+INSERT INTO column_comments VALUES ('bug','outlook','Outlook of the bug; empty if it has no outlook');
+INSERT INTO column_comments VALUES ('bug','subject','Subject of the bug');
+INSERT INTO column_comments VALUES ('bug','done','Individual who did the -done; empty if it has never been -done');
+INSERT INTO column_comments VALUES ('bug','owner','Individual who did the -done; empty if it has never been -done');
+INSERT INTO column_comments VALUES ('bug','unknown_packages','Package name if the package is not known');
+INSERT INTO column_comments VALUES ('bug','severity','Bug severity');
+
+
 
 CREATE TABLE bug_blocks (
        bug_id INT NOT NULL REFERENCES bug,
@@ -64,6 +102,10 @@ CREATE TABLE bug_blocks (
 CREATE UNIQUE INDEX bug_blocks_bug_id_blocks_idx ON bug_blocks(bug_id,blocks);
 CREATE INDEX bug_blocks_bug_id_idx ON bug_blocks(bug_id);
 CREATE INDEX bug_blocks_blocks_idx ON bug_blocks(blocks);
+INSERT INTO table_comments VALUES ('bug_blocks','Bugs which block other bugs');
+INSERT INTO column_comments VALUES ('bug_blocks','bug_id','Bug number');
+INSERT INTO column_comments VALUES ('bug_blocks','blocks','Bug number which is blocked by bug_id');
+
 
 CREATE TABLE bug_merged (
        bug_id INT NOT NULL REFERENCES bug,
@@ -73,6 +115,9 @@ CREATE TABLE bug_merged (
 CREATE UNIQUE INDEX bug_merged_bug_id_merged_idx ON bug_merged(bug_id,merged);
 CREATE INDEX bug_merged_bug_id_idx ON bug_merged(bug_id);
 CREATE INDEX bug_merged_merged_idx ON bug_merged(merged);
+INSERT INTO table_comments  VALUES ('bug_merged','Bugs which are merged with other bugs');
+INSERT INTO column_comments VALUES ('bug_merged','bug_id','Bug number');
+INSERT INTO column_comments VALUES ('bug_merged','merged','Bug number which is merged with bug_id');
 
 CREATE TABLE src_pkg (
        id SERIAL PRIMARY KEY,
@@ -81,6 +126,13 @@ CREATE TABLE src_pkg (
        alias_of INT REFERENCES src_pkg ON UPDATE CASCADE ON DELETE CASCADE
        CONSTRAINT src_pkg_doesnt_alias_itself CHECK (id <> alias_of)
 );
+INSERT INTO table_comments VALUES ('src_pkg','Source packages');
+INSERT INTO column_comments VALUES ('src_pkg','id','Source package id');
+INSERT INTO column_comments VALUES ('src_pkg','pkg','Source package name');
+INSERT INTO column_comments VALUES ('src_pkg','pseudopkg','True if this is a pseudo package');
+INSERT INTO column_comments VALUES ('src_pkg','alias_of','Source package id which this source package is an alias of');
+
+
 
 CREATE TABLE src_ver (
        id SERIAL PRIMARY KEY,
@@ -94,6 +146,15 @@ CREATE TABLE src_ver (
             ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE UNIQUE INDEX src_ver_src_pkg_id_ver ON src_ver(src_pkg_id,ver);
+INSERT INTO table_comments VALUES ('src_ver','Source Package versions');
+INSERT INTO column_comments VALUES ('src_ver','id','Source package version id');
+INSERT INTO column_comments VALUES ('src_ver','src_pkg_id','Source package id (matches src_pkg table)');
+INSERT INTO column_comments VALUES ('src_ver','ver','Version of the source package');
+INSERT INTO column_comments VALUES ('src_ver','maintainer_id','Maintainer id (matches maintainer table)');
+INSERT INTO column_comments VALUES ('src_ver','upload_date','Date this version of the source package was uploaded');
+INSERT INTO column_comments VALUES ('src_ver','based_on','Source package version this version is based on');
+
+
 
 CREATE TABLE bug_ver (
        bug_id INT NOT NULL REFERENCES bug
@@ -111,6 +172,7 @@ CREATE INDEX bug_ver_src_pkg_id_idx ON bug_ver(src_pkg_id);
 CREATE INDEX bug_ver_src_pkg_id_src_ver_id_idx ON bug_ver(src_pkg_id,src_ver_id);
 CREATE INDEX bug_ver_src_ver_id_idx ON bug_ver(src_ver_id);
 CREATE UNIQUE INDEX ON bug_ver(bug_id,ver_string,found);
+INSERT INTO table_comments VALUES ('bug_ver','Bug versions');
 
 CREATE TABLE arch (
        id SERIAL PRIMARY KEY,

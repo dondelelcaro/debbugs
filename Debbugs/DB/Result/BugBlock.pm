@@ -6,7 +6,7 @@ package Debbugs::DB::Result::BugBlock;
 
 =head1 NAME
 
-Debbugs::DB::Result::BugBlock
+Debbugs::DB::Result::BugBlock - Bugs which block other bugs
 
 =cut
 
@@ -41,11 +41,15 @@ __PACKAGE__->table("bug_blocks");
   is_foreign_key: 1
   is_nullable: 0
 
+Bug number
+
 =head2 blocks
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
+
+Bug number which is blocked by bug_id
 
 =cut
 
@@ -105,8 +109,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-07-17 10:25:29
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:adv4v35ZqedSG4L0CFNPMg
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-29 18:11:35
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:WLr8TlnQMEVUj2maG0WFCw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
