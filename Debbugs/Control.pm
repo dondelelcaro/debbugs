@@ -1591,7 +1591,7 @@ sub set_found {
 		    }
 		    # if the found we are adding matches any fixed
 		    # versions, remove them
-		    my @temp = grep m{(^|/)\Q$sver\E}, keys %fixed_versions;
+		    my @temp = grep m{(^|/)\Q$sver\E$}, keys %fixed_versions;
 		    delete $fixed_versions{$_} for @temp;
 		    $fixed_removed{$_} = 1 for @temp;
 		}
@@ -1615,7 +1615,7 @@ sub set_found {
 		# in the case of removal, we only concern ourself with
 		# the version passed, not the source version it maps
 		# to
-		my @temp = grep m{(^|/)\Q$version\E}, keys %found_versions;
+		my @temp = grep m{(?:^|/)\Q$version\E$}, keys %found_versions;
 		delete $found_versions{$_} for @temp;
 		$found_removed{$_} = 1 for @temp;
 	    }
