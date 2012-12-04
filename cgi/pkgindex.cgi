@@ -87,7 +87,7 @@ if ($indexon eq "pkg") {
     $htmldescrip{$pkg} = sprintf('<a href="%s">%s</a> (%s)',
                            package_links(package => $pkg, links_only=>1),
                            html_escape($pkg),
-				 package_links(maint=>$maintainers{$pkg}));
+				 package_links(maint=>$maintainers{$pkg}//[]));
   }
 } elsif ($indexon eq "src") {
   $tag = "source package";
@@ -115,7 +115,7 @@ if ($indexon eq "pkg") {
     $htmldescrip{$src} = sprintf('<a href="%s">%s</a> (%s)',
                            package_links(src => $src, links_only=>1),
                            html_escape($src),
-				 package_links(maint => $maintainers{$src}));
+				 package_links(maint => $maintainers{$src}//[]));
   }
 } elsif ($indexon eq "maint") {
   $tag = "maintainer";
