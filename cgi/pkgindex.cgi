@@ -147,7 +147,7 @@ if ($indexon eq "pkg") {
   $note .= "different addresses.</p>\n";
   foreach my $maint (keys %count) {
     $sortkey{$maint} = lc $email2maint{$maint} || "(unknown)";
-    $htmldescrip{$maint} = htmlize_maintlinks('', $email2maint{$maint});
+    $htmldescrip{$maint} = package_links(maint => $email2maint{$maint}//[]);
   }
 } elsif ($indexon eq "submitter") {
   $tag = "submitter";
