@@ -22,11 +22,11 @@ DROP TABLE bin_associations CASCADE;
 DROP TABLE src_associations CASCADE;
 DROP TABLE maintainer CASCADE;
 DROP TABLE bug_message CASCADE;
-DROP TABLE message_corespondent CASCADE;
-DROP TABLE corespondent CASCADE;
+DROP TABLE message_correspondent CASCADE;
+DROP TABLE correspondent CASCADE;
 DROP TABLE message_refs CASCADE;
 DROP TABLE message CASCADE;
-DROP TYPE message_corespondent_type CASCADE;
+DROP TYPE message_correspondent_type CASCADE;
 DROP TABLE table_comments CASCADE;
 DROP TABLE column_comments CASCADE;
 
@@ -370,7 +370,7 @@ INSERT INTO table_comments VALUES ('correspondent','Individual who has correspon
 INSERT INTO column_comments VALUES ('correspondent','id','Correspondent ID');
 INSERT INTO column_comments VALUES ('correspondent','addr','Correspondent address');
 
-CREATE TYPE message_corespondent_type AS ENUM ('to','from','envfrom','cc');
+CREATE TYPE message_correspondent_type AS ENUM ('to','from','envfrom','cc');
 
 CREATE TABLE message_correspondent (
        message INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
@@ -391,7 +391,7 @@ CREATE TABLE bug_message (
        message INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
        message_number INT NOT NULL,
        bug_log_offset INT,
-       offset_valid TIMESTAMP WITH TIMEZONE
+       offset_valid TIMESTAMP WITH TIME ZONE
 );
 INSERT INTO table_comments VALUES ('bug_mesage','Mapping between a bug and a message');
 INSERT INTO column_comments VALUES ('bug_message','bug','Bug id (matches bug)');
