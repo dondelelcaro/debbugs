@@ -6,7 +6,7 @@ package Debbugs::DB::Result::Tag;
 
 =head1 NAME
 
-Debbugs::DB::Result::Tag
+Debbugs::DB::Result::Tag - Bug tags
 
 =cut
 
@@ -42,16 +42,22 @@ __PACKAGE__->table("tag");
   is_nullable: 0
   sequence: 'tag_id_seq'
 
+Tag id
+
 =head2 tag
 
   data_type: 'text'
   is_nullable: 0
+
+Tag name
 
 =head2 obsolete
 
   data_type: 'boolean'
   default_value: false
   is_nullable: 1
+
+Whether a tag is obsolete (should not be set on new bugs)
 
 =cut
 
@@ -113,8 +119,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-07-17 21:09:18
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:4ea1AINoa4KQxMnX4oZwmA
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:JNPrdP77YEkirbzdASjcKw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

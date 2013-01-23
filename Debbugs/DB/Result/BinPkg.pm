@@ -6,7 +6,7 @@ package Debbugs::DB::Result::BinPkg;
 
 =head1 NAME
 
-Debbugs::DB::Result::BinPkg
+Debbugs::DB::Result::BinPkg - Binary packages
 
 =cut
 
@@ -42,10 +42,14 @@ __PACKAGE__->table("bin_pkg");
   is_nullable: 0
   sequence: 'bin_pkg_id_seq'
 
+Binary package id
+
 =head2 pkg
 
   data_type: 'text'
   is_nullable: 0
+
+Binary package name
 
 =cut
 
@@ -120,8 +124,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-07-17 21:09:18
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:yA4czi38S+fA2P6aKn+UAw
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:MZd5wB+mftx5babS8sAOFQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

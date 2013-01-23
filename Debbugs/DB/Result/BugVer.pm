@@ -41,10 +41,14 @@ __PACKAGE__->table("bug_ver");
   is_foreign_key: 1
   is_nullable: 0
 
+Bug number
+
 =head2 ver_string
 
   data_type: 'text'
   is_nullable: 1
+
+Version string
 
 =head2 src_pkg_id
 
@@ -52,17 +56,23 @@ __PACKAGE__->table("bug_ver");
   is_foreign_key: 1
   is_nullable: 1
 
+Source package id (matches src_pkg table)
+
 =head2 src_ver_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 1
 
+Source package version id (matches src_ver table)
+
 =head2 found
 
   data_type: 'boolean'
   default_value: true
   is_nullable: 0
+
+True if this is a found version; false if this is a fixed version
 
 =head2 creation
 
@@ -71,12 +81,16 @@ __PACKAGE__->table("bug_ver");
   is_nullable: 0
   original: {default_value => \"now()"}
 
+Time that this entry was created
+
 =head2 last_modified
 
   data_type: 'timestamp with time zone'
   default_value: current_timestamp
   is_nullable: 0
   original: {default_value => \"now()"}
+
+Time that this entry was modified
 
 =cut
 
@@ -186,8 +200,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-12-03 15:57:07
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:YRlFlDUKGtk69o3KPHM1zQ
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:d+zLb/svrH4BgZjZXT+hdg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

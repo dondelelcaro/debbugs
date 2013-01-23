@@ -41,21 +41,36 @@ __PACKAGE__->table("bug_message");
   is_foreign_key: 1
   is_nullable: 0
 
+Bug id (matches bug)
+
 =head2 message
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
 
+Message id (matches message)
+
 =head2 message_number
 
   data_type: 'integer'
   is_nullable: 0
 
+Message number in the bug log
+
 =head2 bug_log_offset
 
   data_type: 'integer'
   is_nullable: 1
+
+Byte offset in the bug log
+
+=head2 offset_valid
+
+  data_type: 'timestamp with time zone'
+  is_nullable: 1
+
+Time offset was valid
 
 =cut
 
@@ -68,6 +83,8 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_nullable => 0 },
   "bug_log_offset",
   { data_type => "integer", is_nullable => 1 },
+  "offset_valid",
+  { data_type => "timestamp with time zone", is_nullable => 1 },
 );
 
 =head1 RELATIONS
@@ -103,8 +120,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-29 15:37:55
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:7CxTYa/jUyoOVan9Sj9MZQ
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:WkrYUE1iE8o3fFkzQSkzeQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

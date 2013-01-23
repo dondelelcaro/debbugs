@@ -6,7 +6,7 @@ package Debbugs::DB::Result::BinAssociation;
 
 =head1 NAME
 
-Debbugs::DB::Result::BinAssociation
+Debbugs::DB::Result::BinAssociation - Binary <-> suite associations
 
 =cut
 
@@ -42,17 +42,23 @@ __PACKAGE__->table("bin_associations");
   is_nullable: 0
   sequence: 'bin_associations_id_seq'
 
+Binary <-> suite association id
+
 =head2 suite
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
 
+Suite id (matches suite)
+
 =head2 bin
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
+
+Binary version id (matches bin_ver)
 
 =head2 created
 
@@ -61,12 +67,16 @@ __PACKAGE__->table("bin_associations");
   is_nullable: 0
   original: {default_value => \"now()"}
 
+Time this binary package entered this suite
+
 =head2 modified
 
   data_type: 'timestamp with time zone'
   default_value: current_timestamp
   is_nullable: 0
   original: {default_value => \"now()"}
+
+Time this entry was modified
 
 =cut
 
@@ -143,8 +153,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-25 00:09:07
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:/cCrHn40eoiD6aOPmXU8dw
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:6mrwiUeFTasNbK3nr0qT5g
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
