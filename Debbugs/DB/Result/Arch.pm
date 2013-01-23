@@ -6,7 +6,7 @@ package Debbugs::DB::Result::Arch;
 
 =head1 NAME
 
-Debbugs::DB::Result::Arch
+Debbugs::DB::Result::Arch - Architectures
 
 =cut
 
@@ -42,10 +42,14 @@ __PACKAGE__->table("arch");
   is_nullable: 0
   sequence: 'arch_id_seq'
 
+Architecture id
+
 =head2 arch
 
   data_type: 'text'
   is_nullable: 0
+
+Architecture name
 
 =cut
 
@@ -105,8 +109,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-23 17:41:43
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:kL57i2SauNRCt/bK6ACRKg
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:uGFK5fZtpICxsMMtGzTgww
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

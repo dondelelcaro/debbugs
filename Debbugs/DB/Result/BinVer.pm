@@ -6,7 +6,7 @@ package Debbugs::DB::Result::BinVer;
 
 =head1 NAME
 
-Debbugs::DB::Result::BinVer
+Debbugs::DB::Result::BinVer - Binary versions
 
 =cut
 
@@ -42,11 +42,15 @@ __PACKAGE__->table("bin_ver");
   is_nullable: 0
   sequence: 'bin_ver_id_seq'
 
+Binary version id
+
 =head2 bin_pkg_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
+
+Binary package id (matches bin_pkg)
 
 =head2 src_ver_id
 
@@ -54,16 +58,22 @@ __PACKAGE__->table("bin_ver");
   is_foreign_key: 1
   is_nullable: 0
 
+Source version (matchines src_ver)
+
 =head2 arch_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
 
+Architecture id (matches arch)
+
 =head2 ver
 
   data_type: 'debversion'
   is_nullable: 0
+
+Binary version
 
 =cut
 
@@ -195,8 +205,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-25 00:09:07
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ID7wx8HJaYZgpdhHqCq8GQ
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9iEDj8DfMh5jdc03zs4UmQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

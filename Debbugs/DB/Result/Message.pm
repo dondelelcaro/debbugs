@@ -6,7 +6,7 @@ package Debbugs::DB::Result::Message;
 
 =head1 NAME
 
-Debbugs::DB::Result::Message
+Debbugs::DB::Result::Message - Messages sent to bugs
 
 =cut
 
@@ -42,30 +42,42 @@ __PACKAGE__->table("message");
   is_nullable: 0
   sequence: 'message_id_seq'
 
+Message id
+
 =head2 msgid
 
   data_type: 'text'
   is_nullable: 1
+
+Message id header
 
 =head2 from_complete
 
   data_type: 'text'
   is_nullable: 1
 
+Complete from header of message
+
 =head2 from_addr
 
   data_type: 'text'
   is_nullable: 1
+
+Address(es) of From: headers
 
 =head2 to_complete
 
   data_type: 'text'
   is_nullable: 1
 
+Complete to header of message
+
 =head2 to_addr
 
   data_type: 'text'
   is_nullable: 1
+
+Address(es) of To: header
 
 =head2 subject
 
@@ -73,10 +85,14 @@ __PACKAGE__->table("message");
   default_value: (empty string)
   is_nullable: 0
 
+Subject of the message
+
 =head2 sent_date
 
   data_type: 'timestamp with time zone'
   is_nullable: 1
+
+Time/date message was sent (from Date header)
 
 =head2 refs
 
@@ -84,16 +100,22 @@ __PACKAGE__->table("message");
   default_value: (empty string)
   is_nullable: 0
 
+Contents of References: header
+
 =head2 spam_score
 
   data_type: 'double precision'
   is_nullable: 1
+
+Spam score from spamassassin
 
 =head2 is_spam
 
   data_type: 'boolean'
   default_value: false
   is_nullable: 1
+
+True if this message was spam and should not be shown
 
 =cut
 
@@ -156,17 +178,17 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 message_corespondents
+=head2 message_correspondents
 
 Type: has_many
 
-Related object: L<Debbugs::DB::Result::MessageCorespondent>
+Related object: L<Debbugs::DB::Result::MessageCorrespondent>
 
 =cut
 
 __PACKAGE__->has_many(
-  "message_corespondents",
-  "Debbugs::DB::Result::MessageCorespondent",
+  "message_correspondents",
+  "Debbugs::DB::Result::MessageCorrespondent",
   { "foreign.message" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -202,8 +224,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-29 15:37:55
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:VkveOmRidQ9gNRBCjKyPEQ
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:M6k3YCfOyYLnQJ+qBcoJlQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

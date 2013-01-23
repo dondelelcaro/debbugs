@@ -6,7 +6,7 @@ package Debbugs::DB::Result::BugBinpackage;
 
 =head1 NAME
 
-Debbugs::DB::Result::BugBinpackage
+Debbugs::DB::Result::BugBinpackage - Bug <-> binary package mapping
 
 =cut
 
@@ -41,11 +41,15 @@ __PACKAGE__->table("bug_binpackage");
   is_foreign_key: 1
   is_nullable: 0
 
+Bug id (matches bug)
+
 =head2 bin_pkg_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
+
+Binary package id (matches bin_pkg)
 
 =cut
 
@@ -105,8 +109,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-07-17 21:09:18
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Nu0491VeKbUCBLaDIFAWwA
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:2QtRdBjEVaUYmfqY7rWA6g
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

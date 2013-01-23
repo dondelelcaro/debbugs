@@ -6,7 +6,7 @@ package Debbugs::DB::Result::Suite;
 
 =head1 NAME
 
-Debbugs::DB::Result::Suite
+Debbugs::DB::Result::Suite - Debian Release Suite (stable, testing, etc.)
 
 =cut
 
@@ -42,26 +42,36 @@ __PACKAGE__->table("suite");
   is_nullable: 0
   sequence: 'suite_id_seq'
 
+Suite id
+
 =head2 suite_name
 
   data_type: 'text'
   is_nullable: 0
+
+Suite name
 
 =head2 version
 
   data_type: 'text'
   is_nullable: 1
 
+Suite version; NULL if there is no appropriate version
+
 =head2 codename
 
   data_type: 'text'
   is_nullable: 1
+
+Suite codename
 
 =head2 active
 
   data_type: 'boolean'
   default_value: true
   is_nullable: 1
+
+TRUE if the suite is still accepting uploads
 
 =cut
 
@@ -142,8 +152,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-25 00:09:07
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:XTRTAvkuZCBlDB6tSQXDDQ
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:1NiRLPvDC3xRPr7+fbzp/w
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

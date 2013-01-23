@@ -6,7 +6,7 @@ package Debbugs::DB::Result::MessageRef;
 
 =head1 NAME
 
-Debbugs::DB::Result::MessageRef
+Debbugs::DB::Result::MessageRef - Message references
 
 =cut
 
@@ -41,11 +41,31 @@ __PACKAGE__->table("message_refs");
   is_foreign_key: 1
   is_nullable: 0
 
+Message id (matches message)
+
 =head2 refs
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
+
+Reference id (matches message)
+
+=head2 inferred
+
+  data_type: 'boolean'
+  default_value: false
+  is_nullable: 1
+
+TRUE if this message reference was reconstructed; primarily of use for messages which lack In-Reply-To: or References: headers
+
+=head2 primary_ref
+
+  data_type: 'boolean'
+  default_value: false
+  is_nullable: 1
+
+TRUE if this message->ref came from In-Reply-To: or similar.
 
 =cut
 
@@ -54,7 +74,27 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "refs",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  "inferred",
+  { data_type => "boolean", default_value => \"false", is_nullable => 1 },
+  "primary_ref",
+  { data_type => "boolean", default_value => \"false", is_nullable => 1 },
 );
+
+=head1 UNIQUE CONSTRAINTS
+
+=head2 C<message_refs_message_refs_idx>
+
+=over 4
+
+=item * L</message>
+
+=item * L</refs>
+
+=back
+
+=cut
+
+__PACKAGE__->add_unique_constraint("message_refs_message_refs_idx", ["message", "refs"]);
 
 =head1 RELATIONS
 
@@ -89,8 +129,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-29 15:37:55
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:uCScDuC5TprnuyEjg25eXg
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:qPL3EsH3iVrcwJKRNVzTEQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
