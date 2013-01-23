@@ -173,16 +173,32 @@ CREATE INDEX bug_ver_src_pkg_id_src_ver_id_idx ON bug_ver(src_pkg_id,src_ver_id)
 CREATE INDEX bug_ver_src_ver_id_idx ON bug_ver(src_ver_id);
 CREATE UNIQUE INDEX ON bug_ver(bug_id,ver_string,found);
 INSERT INTO table_comments VALUES ('bug_ver','Bug versions');
+INSERT INTO column_comments VALUES ('bug_ver','bug_id','Bug number');
+INSERT INTO column_comments VALUES ('bug_ver','ver_string','Version string');
+INSERT INTO column_comments VALUES ('bug_ver','src_pkg_id','Source package id (matches src_pkg table)');
+INSERT INTO column_comments VALUES ('bug_ver','src_ver_id','Source package version id (matches src_ver table)');
+INSERT INTO column_comments VALUES ('bug_ver','found','True if this is a found version; false if this is a fixed version');
+INSERT INTO column_comments VALUES ('bug_ver','creation','Time that this entry was created');
+INSERT INTO column_comments VALUES ('bug_ver','last_modified','Time that this entry was modified');
+
 
 CREATE TABLE arch (
        id SERIAL PRIMARY KEY,
        arch TEXT NOT NULL UNIQUE
 );
+INSERT INTO table_comments VALUES ('arch','Architectures');
+INSERT INTO column_comments VALUES ('arch','id','Architecture id');
+INSERT INTO column_comments VALUES ('arch','arch','Architecture name');
+
 
 CREATE TABLE bin_pkg (
        id SERIAL PRIMARY KEY,
        pkg TEXT NOT NULL UNIQUE
 );
+INSERT INTO table_comments VALUES ('bin_pkg','Binary packages');
+INSERT INTO column_comments VALUES ('bin_pkg','id','Binary package id');
+INSERT INTO column_comments VALUES ('bin_pkg','pkg','Binary package name');
+
 
 CREATE TABLE bin_ver(
        id SERIAL PRIMARY KEY,
@@ -199,17 +215,31 @@ CREATE UNIQUE INDEX bin_ver_bin_pkg_id_arch_idx ON bin_ver(bin_pkg_id,arch_id,ve
 CREATE UNIQUE INDEX bin_ver_src_ver_id_arch_idx ON bin_ver(src_ver_id,arch_id);
 CREATE INDEX bin_ver_bin_pkg_id_idx ON bin_ver(bin_pkg_id);
 CREATE INDEX bin_ver_src_ver_id_idx ON bin_ver(src_ver_id);
+INSERT INTO table_comments VALUES ('bin_ver','Binary versions');
+INSERT INTO column_comments VALUES ('bin_ver','id','Binary version id');
+INSERT INTO column_comments VALUES ('bin_ver','bin_pkg_id','Binary package id (matches bin_pkg)');
+INSERT INTO column_comments VALUES ('bin_ver','src_ver_id','Source version (matchines src_ver)');
+INSERT INTO column_comments VALUES ('bin_ver','arch_id','Architecture id (matches arch)');
+INSERT INTO column_comments VALUES ('bin_ver','ver','Binary version');
 
 CREATE TABLE tag (
        id SERIAL PRIMARY KEY,
        tag TEXT NOT NULL UNIQUE,
        obsolete BOOLEAN DEFAULT FALSE
 );
+INSERT INTO table_comments VALUES ('tag','Bug tags');
+INSERT INTO column_comments VALUES ('tag','id','Tag id');
+INSERT INTO column_comments VALUES ('tag','tag','Tag name');
+INSERT INTO column_comments VALUES ('tag','obsolete','Whether a tag is obsolete (should not be set on new bugs)');
+
 
 CREATE TABLE bug_tag (
        bug_id INT NOT NULL REFERENCES bug,
        tag_id INT NOT NULL REFERENCES tag
 );
+INSERT INTO table_comments VALUES ('bug_tag','Bug <-> tag mapping');
+INSERT INTO column_comments VALUES ('bug_tag','bug_id','Bug id (matches bug)');
+INSERT INTO column_comments VALUES ('bug_tag','tag_id','Tag id (matches tag)');
 
 CREATE UNIQUE INDEX bug_tag_bug_tag_id ON bug_tag (bug_id,tag_id);
 CREATE INDEX bug_tag_tag_id ON bug_tag (tag_id);
@@ -220,12 +250,18 @@ CREATE TABLE bug_binpackage (
        bin_pkg_id INT NOT NULL REFERENCES bin_pkg
 );
 CREATE UNIQUE INDEX bug_binpackage_id_pkg_id ON bug_binpackage(bug_id,bin_pkg_id);
+INSERT INTO table_comments VALUES ('bug_binpackage','Bug <-> binary package mapping');
+INSERT INTO column_comments VALUES ('bug_binpackage','bug_id','Bug id (matches bug)');
+INSERT INTO column_comments VALUES ('bug_binpackage','bin_pkg_id','Binary package id (matches bin_pkg)');
 
 CREATE TABLE bug_srcpackage (
        bug_id INT NOT NULL REFERENCES bug,
        src_pkg_id INT NOT NULL REFERENCES src_pkg ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE UNIQUE INDEX bug_srcpackage_id_pkg_id ON bug_srcpackage(bug_id,src_pkg_id);
+INSERT INTO table_comments VALUES ('bug_srcpackage','Bug <-> source package mapping');
+INSERT INTO column_comments VALUES ('bug_srcpackage','bug_id','Bug id (matches bug)');
+INSERT INTO column_comments VALUES ('bug_srcpackage','src_pkg_id','Source package id (matches src_pkg)');
 
 CREATE VIEW bug_package (bug_id,pkg_id,pkg_type,package) AS
        SELECT b.bug_id,b.bin_pkg_id,'binary',bp.pkg FROM bug_binpackage b JOIN bin_pkg bp ON bp.id=b.bin_pkg_id UNION
@@ -246,6 +282,12 @@ CREATE TABLE suite (
        active BOOLEAN DEFAULT TRUE);
 CREATE INDEX ON suite(codename);
 CREATE INDEX ON suite(version);
+INSERT INTO table_comments VALUES ('suite','Debian Release Suite (stable, testing, etc.)');
+INSERT INTO column_comments VALUES ('suite','id','Suite id');
+INSERT INTO column_comments VALUES ('suite','suite_name','Suite name');
+INSERT INTO column_comments VALUES ('suite','version','Suite version; NULL if there is no appropriate version');
+INSERT INTO column_comments VALUES ('suite','codename','Suite codename');
+INSERT INTO column_comments VALUES ('suite','active','TRUE if the suite is still accepting uploads');
 
 CREATE TABLE bin_associations (
        id SERIAL PRIMARY KEY,
@@ -254,6 +296,12 @@ CREATE TABLE bin_associations (
        created TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
        modified TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
+INSERT INTO table_comments VALUES ('bin_associations','Binary <-> suite associations');
+INSERT INTO column_comments VALUES ('bin_associations','id','Binary <-> suite association id');
+INSERT INTO column_comments VALUES ('bin_associations','suite','Suite id (matches suite)');
+INSERT INTO column_comments VALUES ('bin_associations','bin','Binary version id (matches bin_ver)');
+INSERT INTO column_comments VALUES ('bin_associations','created','Time this binary package entered this suite');
+INSERT INTO column_comments VALUES ('bin_associations','modified','Time this entry was modified');
 
 CREATE TABLE src_associations (
        id SERIAL PRIMARY KEY,
@@ -262,6 +310,12 @@ CREATE TABLE src_associations (
        created TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
        modified TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
+INSERT INTO table_comments VALUES ('src_associations','Source <-> suite associations');
+INSERT INTO column_comments VALUES ('src_associations','id','Source <-> suite association id');
+INSERT INTO column_comments VALUES ('src_associations','suite','Suite id (matches suite)');
+INSERT INTO column_comments VALUES ('src_associations','source','Source version id (matches src_ver)');
+INSERT INTO column_comments VALUES ('src_associations','created','Time this source package entered this suite');
+INSERT INTO column_comments VALUES ('src_associations','modified','Time this entry was modified');
 
 CREATE TABLE message (
        id SERIAL PRIMARY KEY,
@@ -276,33 +330,73 @@ CREATE TABLE message (
        spam_score FLOAT,
        is_spam BOOLEAN DEFAULT FALSE
 );
+INSERT INTO table_comments VALUES ('message','Messages sent to bugs');
+INSERT INTO column_comments VALUES ('message','id','Message id');
+INSERT INTO column_comments VALUES ('message','msgid','Message id header');
+INSERT INTO column_comments VALUES ('message','from_complete','Complete from header of message');
+INSERT INTO column_comments VALUES ('message','from_addr','Address(es) of From: headers');
+INSERT INTO column_comments VALUES ('message','to_complete','Complete to header of message');
+INSERT INTO column_comments VALUES ('message','to_addr','Address(es) of To: header');
+INSERT INTO column_comments VALUES ('message','subject','Subject of the message');
+INSERT INTO column_comments VALUES ('message','sent_date','Time/date message was sent (from Date header)');
+INSERT INTO column_comments VALUES ('message','refs','Contents of References: header');
+INSERT INTO column_comments VALUES ('message','spam_score','Spam score from spamassassin');
+INSERT INTO column_comments VALUES ('message','is_spam','True if this message was spam and should not be shown');
+
+CREATE INDEX ON message(msgid);
 
 CREATE TABLE message_refs (
        message INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
        refs INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
+       inferred BOOLEAN DEFAULT FALSE,
+       primary_ref BOOLEAN DEFAULT FALSE,
        CONSTRAINT message_doesnt_reference_itself CHECK (message <> refs)
 );
+CREATE UNIQUE INDEX ON message_refs(message,refs);
+CREATE INDEX ON message_refs(refs);
+CREATE INDEX ON message_refs(message);
+INSERT INTO table_comments VALUES ('message_refs','Message references');
+INSERT INTO column_comments VALUES ('message_refs','message','Message id (matches message)');
+INSERT INTO column_comments VALUES ('message_refs','refs','Reference id (matches message)');
+INSERT INTO column_comments VALUES ('message_refs','inferred','TRUE if this message reference was reconstructed; primarily of use for messages which lack In-Reply-To: or References: headers');
+INSERT INTO column_comments VALUES ('message_refs','primary_ref','TRUE if this message->ref came from In-Reply-To: or similar.');
 
-CREATE TABLE corespondent (
+
+CREATE TABLE correspondent (
        id SERIAL PRIMARY KEY,
        addr TEXT NOT NULL UNIQUE
 );
+INSERT INTO table_comments VALUES ('correspondent','Individual who has corresponded with the BTS');
+INSERT INTO column_comments VALUES ('correspondent','id','Correspondent ID');
+INSERT INTO column_comments VALUES ('correspondent','addr','Correspondent address');
 
 CREATE TYPE message_corespondent_type AS ENUM ('to','from','envfrom','cc');
 
-CREATE TABLE message_corespondent (
+CREATE TABLE message_correspondent (
        message INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
-       corespondent INT NOT NULL REFERENCES corespondent ON DELETE CASCADE ON UPDATE CASCADE,
-       corespondent_type message_corespondent_type NOT NULL DEFAULT 'to'
+       correspondent INT NOT NULL REFERENCES correspondent ON DELETE CASCADE ON UPDATE CASCADE,
+       correspondent_type message_correspondent_type NOT NULL DEFAULT 'to'
 );
+INSERT INTO table_comments VALUES ('message_correspondent','Linkage between correspondent and message');
+INSERT INTO column_comments VALUES ('message_correspondent','message','Message id (matches message)');
+INSERT INTO column_comments VALUES ('message_correspondent','correspondent','Correspondent (matches correspondent)');
+INSERT INTO column_comments VALUES ('message_correspondent','correspondent_type','Type of correspondent (to, from, envfrom, cc, etc.)');
 
-CREATE UNIQUE INDEX ON message_corespondent(message,corespondent,corespondent_type);
-CREATE INDEX ON message_corespondent(corespondent);
+CREATE UNIQUE INDEX ON message_correspondent(message,correspondent,correspondent_type);
+CREATE INDEX ON message_correspondent(correspondent);
+CREATE INDEX ON message_correspondent(message);
 
 CREATE TABLE bug_message (
        bug INT NOT NULL REFERENCES bug ON DELETE CASCADE ON UPDATE CASCADE,
        message INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
        message_number INT NOT NULL,
-       bug_log_offset INT
+       bug_log_offset INT,
+       offset_valid TIMESTAMP WITH TIMEZONE
 );
+INSERT INTO table_comments VALUES ('bug_mesage','Mapping between a bug and a message');
+INSERT INTO column_comments VALUES ('bug_message','bug','Bug id (matches bug)');
+INSERT INTO column_comments VALUES ('bug_message','message','Message id (matches message)');
+INSERT INTO column_comments VALUES ('bug_message','message_number','Message number in the bug log');
+INSERT INTO column_comments VALUES ('bug_message','bug_log_offset','Byte offset in the bug log');
+INSERT INTO column_comments VALUES ('bug_message','offset_valid','Time offset was valid');
 
