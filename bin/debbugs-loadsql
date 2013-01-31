@@ -173,7 +173,7 @@ while (my $dir = shift @dirs) {
 	load_bug($schema,split_status_fields($data),\%tags,\%queue);
     }
 }
-hanlde_queue($schema,\%queue);
+handle_queue($schema,\%queue);
 
 sub load_bug {
     my ($s,$data,$tags,$queue) = @_;
