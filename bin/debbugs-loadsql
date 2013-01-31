@@ -23,6 +23,7 @@ debbugs-loadsql [options]
   --quick, -q only load changed bugs
   --service, -s service name
   --sysconfdir, -c postgresql service config dir
+  --spool-dir debbugs spool directory
   --debug, -d debugging level (Default 0)
   --help, -h display this help
   --man, -m display manual
@@ -43,6 +44,11 @@ Postgreql service to use; defaults to debbugs
 
 System configuration directory to use; if not set, defaults to the
 postgresql default. [Operates by setting PGSYSCONFDIR]
+
+=item B<--spool-dir>
+
+Debbugs spool directory; defaults to the value configured in the
+debbugs configuration file.
 
 =item B<--debug, -d
 
