@@ -39,7 +39,7 @@ use Carp;
 
 use Debbugs::Common qw(getbuglocation getbugcomponent make_list);
 use Params::Validate qw(:types validate_with);
-use Encode qw(encode is_utf8);
+use Encode qw(encode encode_utf8 is_utf8);
 
 =head1 NAME
 
