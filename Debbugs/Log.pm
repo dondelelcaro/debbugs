@@ -390,8 +390,12 @@ sub write_log_records
 	croak "record type '$type' with no text field" unless defined $record->{text};
 	# I am not sure if we really want to croak here; but this is
 	# almost certainly a bug if is_utf8 is on.
-	# croak "probably wrong encoding" if is_utf8($record->{text});
-	my ($text) = escape_log($record->{text});
+        my $text = $record->{text};
+        if (is_utf8($text)) {
+            carp('Record text was in the wrong encoding (perl internal instead of utf8 octets)');
+            $text = encode_utf8($text)
+        }
+	($text) = escape_log($text);
 	if ($type eq 'autocheck') {
 	    print {$logfh} "\01\n$text\03\n" or
 		die "Unable to write to logfile: $!";
