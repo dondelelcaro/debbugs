@@ -1578,7 +1578,11 @@ sub set_found {
 		if (not @svers) {
 		    @svers = $version;
 		}
-		else {
+		elsif (not grep {$version eq $_} @svers) {
+                    # The $version was not equal to one of the source
+                    # versions, so it's probably unqualified (or just
+                    # wrong). Delete it, and use the source versions
+                    # instead.
 		    if (exists $found_versions{$version}) {
 			delete $found_versions{$version};
 			$found_removed{$version} = 1;
