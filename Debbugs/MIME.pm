@@ -41,7 +41,6 @@ BEGIN {
 
     %EXPORT_TAGS = (mime => [qw(parse create_mime_message getmailbody)],
 		    rfc1522 => [qw(decode_rfc1522 encode_rfc1522)],
-		    utf8 => [qw(convert_to_utf8)],
 		   );
     @EXPORT_OK=();
     Exporter::export_ok_tags(keys %EXPORT_TAGS);
@@ -54,6 +53,9 @@ use MIME::Parser;
 
 use POSIX qw(strftime);
 use List::MoreUtils qw(apply);
+
+# for convert_to_utf8
+use Debbugs::Common qw(convert_to_utf8);
 
 # for decode_rfc1522
 use MIME::WordDecoder qw();
@@ -69,7 +71,7 @@ sub getmailbody
     if ($type eq 'text/plain' or
 	    ($type =~ m#text/?# and $type ne 'text/html') or
 	    $type eq 'application/pgp') {
-	return $entity->bodyhandle;
+	return $entity;
     } elsif ($type eq 'multipart/alternative') {
 	# RFC 2046 says we should use the last part we recognize.
 	for my $part (reverse $entity->parts) {
@@ -101,8 +103,15 @@ sub parse
 	@headerlines = @{$entity->head->header};
 	chomp @headerlines;
 
-	my $entity_body = getmailbody($entity);
-	@bodylines = $entity_body ? $entity_body->as_lines() : ();
+        my $entity_body = getmailbody($entity);
+	my $entity_body_handle;
+        my $charset;
+        if (defined $entity_body) {
+            $entity_body_handle = $entity_body->bodyhandle();
+            $charset = $entity_body->head()->mime_attr('content-type.charset');
+        }
+	@bodylines = $entity_body_handle ? $entity_body_handle->as_lines() : ();
+        @bodylines = map {convert_to_utf8($_,$charset)} @bodylines;
 	chomp @bodylines;
     } else {
 	# Legacy pre-MIME code, kept around in case MIME::Parser fails.
@@ -194,7 +203,7 @@ sub create_mime_message{
      my $msg = MIME::Entity->build('Content-Type' => 'text/plain; charset=utf-8',
 				   'Encoding'     => 'quoted-printable',
 				   (map{encode_rfc1522($_)} @{$headers}),
-				   Data    => $body
+				   Data    => is_utf8($body)?encode_utf8($body):$body,
 				  );
 
      # Attach the attachments
@@ -229,23 +238,6 @@ sub create_mime_message{
 }
 
 
-# Bug #61342 et al.
-
-sub convert_to_utf8 {
-     my ($data, $charset) = @_;
-     # raw data just gets returned (that's the charset WordDecorder
-     # uses when it doesn't know what to do)
-     return $data if $charset eq 'raw' or is_utf8($data,1);
-     my $result;
-     eval {
-	 $result = decode($charset,$data);
-     };
-     if ($@) {
-	  warn "Unable to decode charset; '$charset' and '$data': $@";
-	  return $data;
-     }
-     return $result;
-}
 
 
 =head2 decode_rfc1522
