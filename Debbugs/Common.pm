@@ -50,7 +50,8 @@ BEGIN{
 				qw(cleanup_eval_fail),
 				qw(hash_slice),
 			       ],
-		     utf8   => [qw(encode_utf8_structure encode_utf8_safely)],
+		     utf8   => [qw(encode_utf8_structure encode_utf8_safely),
+                                qw(convert_to_utf8)],
 		     date   => [qw(secs_to_english)],
 		     quit   => [qw(quit)],
 		     lock   => [qw(filelock unfilelock lockpid)],
@@ -71,7 +72,8 @@ use IO::Scalar;
 use Debbugs::MIME qw(decode_rfc1522);
 use Mail::Address;
 use Cwd qw(cwd);
-use Encode qw(encode_utf8 is_utf8);
+use Encode qw(encode_utf8 is_utf8 decode);
+use Text::Iconv;
 use Storable qw(dclone);
 
 use Params::Validate qw(validate_with :types);
@@ -960,6 +962,84 @@ sub encode_utf8_safely{
     return wantarray ? @ret : (length @_ > 1 ? @ret : $_[0]);
 }
 
+=head2 convert_to_utf8
+
+    $utf8 = convert_to_utf8("text","charset");
+
+=cut
+
+our %iconv_converters;
+
+sub convert_to_utf8 {
+    my ($data,$charset) = @_;
+    if (is_utf8($data)) {
+        return encode_utf8($data);
+    }
+    $charset = uc($charset);
+    if (not defined $iconv_converters{$charset}) {
+        eval {
+            $iconv_converters{$charset} = Text::Iconv->new($charset,"UTF-8") or
+                die "Unable to create converter for '$charset'";
+        };
+        if ($@) {
+            warn $@;
+            # We weren't able to create the converter, so use Encode
+            # instead
+            return __fallback_convert_to_utf8($data,$charset);
+        }
+        # It shouldn't be necessary when converting to UTF8, but lets
+        # allow for transliteration and silent discarding of broken
+        # sequences
+        eval {
+            $iconv_converters{$charset}->set_attr("transliterate");
+            $iconv_converters{$charset}->set_attr("discard_ilseq");
+        };
+        # This shouldn't fail on Debian systems; we're warning here
+        # just in case we've made a mistake above. This warning should
+        # probably be disabled on non-GNU libc systems.
+        warn $@ if $@;
+    }
+    if (not defined $iconv_converters{$charset}) {
+        warn "The converter for $charset wasn't created properly somehow!";
+        return __fallback_convert_to_utf8($data,$charset);
+    }
+    my $converted_data = $iconv_converters{$charset}->convert($data);
+    # if the conversion failed, retval will be undefined or perhaps
+    # -1.
+    if (not defined $iconv_converters{$charset}->retval() or
+        $iconv_converters{$charset}->retval() < 0
+       ) {
+        # Fallback to encode, which will probably also fail.
+        return __fallback_convert_to_utf8($data,$charset);
+    }
+    return $converted_data;
+}
+
+# Bug #61342 et al.
+# we're switching this to return UTF8 octets instead of perl's internal
+# encoding
+sub __Fallback_convert_to_utf8 {
+     my ($data, $charset) = @_;
+     # raw data just gets returned (that's the charset WordDecorder
+     # uses when it doesn't know what to do)
+     return $data if $charset eq 'raw';
+     if (not defined $charset and not is_utf8($data)) {
+         warn ("Undefined charset, and string '$data' is not in perl's internal encoding");
+         return $data;
+     }
+     # lets assume everything that doesn't have a charset is utf8
+     $charset //= 'utf8';
+     my $result;
+     eval {
+	 $result = decode($charset,$data) unless is_utf8($data);
+         $result = encode_utf8($result);
+     };
+     if ($@) {
+	  warn "Unable to decode charset; '$charset' and '$data': $@";
+	  return $data;
+     }
+     return $result;
+}
 
 
 
