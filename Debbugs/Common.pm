@@ -50,7 +50,7 @@ BEGIN{
 				qw(cleanup_eval_fail),
 				qw(hash_slice),
 			       ],
-		     utf8   => [qw(encode_utf8_structure)],
+		     utf8   => [qw(encode_utf8_structure encode_utf8_safely)],
 		     date   => [qw(secs_to_english)],
 		     quit   => [qw(quit)],
 		     lock   => [qw(filelock unfilelock lockpid)],
@@ -929,23 +929,37 @@ sub encode_utf8_structure {
 	    push @ret,$_;
 	}
 	else {
-	    push @ret,__encode_utf8($_);
+	    push @ret,encode_utf8_safely($_);
 	}
     }
     --$depth;
     return @ret;
 }
 
-sub __encode_utf8 {
+=head2 encode_utf8_safely
+
+     $octets = encode_utf8_safely($string);
+
+Given a $string, returns the octet equivalent of $string if $string is
+in perl's internal encoding; otherwise returns $string.
+
+Silently returns REFs without encoding them. [If you want to deeply
+encode REFs, see encode_utf8_structure.]
+
+=cut
+
+
+sub encode_utf8_safely{
     my @ret;
     for my $r (@_) {
-	if (not ref($r) and is_utf8($r)) {
+        if (not ref($r) and is_utf8($r)) {
 	    $r = encode_utf8($r);
 	}
 	push @ret,$r;
     }
-    return @ret;
+    return wantarray ? @ret : (length @_ > 1 ? @ret : $_[0]);
 }
+
 
 
 
