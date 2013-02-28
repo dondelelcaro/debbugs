@@ -3433,25 +3433,25 @@ sub append_action_to_log{
      }
      my $msg = join('',
 		    (exists $param{command} ?
-		     "<!-- command:".html_escape(encode_utf8($param{command}))." -->\n":""
+		     "<!-- command:".html_escape(encode_utf8_safely($param{command}))." -->\n":""
 		    ),
 		    (length $param{requester} ?
-		     "<!-- requester: ".html_escape(encode_utf8($param{requester}))." -->\n":""
+		     "<!-- requester: ".html_escape(encode_utf8_safely($param{requester}))." -->\n":""
 		    ),
 		    (length $param{request_addr} ?
-		     "<!-- request_addr: ".html_escape(encode_utf8($param{request_addr}))." -->\n":""
+		     "<!-- request_addr: ".html_escape(encode_utf8_safely($param{request_addr}))." -->\n":""
 		    ),
 		    "<!-- time:".time()." -->\n",
 		    $data_diff,
-		    "<strong>".html_escape(encode_utf8($param{action}))."</strong>\n");
+		    "<strong>".html_escape(encode_utf8_safely($param{action}))."</strong>\n");
      if (length $param{requester}) {
-          $msg .= "Request was from <code>".html_escape(encode_utf8($param{requester}))."</code>\n";
+          $msg .= "Request was from <code>".html_escape(encode_utf8_safely($param{requester}))."</code>\n";
      }
      if (length $param{request_addr}) {
-          $msg .= "to <code>".html_escape(encode_utf8($param{request_addr}))."</code>";
+          $msg .= "to <code>".html_escape(encode_utf8_safely($param{request_addr}))."</code>";
      }
      if (length $param{desc}) {
-	  $msg .= ":<br>\n".encode_utf8($param{desc})."\n";
+	  $msg .= ":<br>\n".encode_utf8_safely($param{desc})."\n";
      }
      else {
 	  $msg .= ".\n";
