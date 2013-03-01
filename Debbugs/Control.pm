@@ -110,7 +110,8 @@ BEGIN{
 }
 
 use Debbugs::Config qw(:config);
-use Debbugs::Common qw(:lock buglog :misc get_hashname sort_versions :utf8);
+use Debbugs::Common qw(:lock buglog :misc get_hashname sort_versions);
+use Debbugs::UTF8;
 use Debbugs::Status qw(bug_archiveable :read :hook writebug new_bug splitpackages split_status_fields get_bug_status);
 use Debbugs::CGI qw(html_escape);
 use Debbugs::Log qw(:misc :write);

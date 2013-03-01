@@ -49,6 +49,7 @@ use Debbugs::MIME qw(encode_rfc1522);
 use Debbugs::Config qw(:config);
 use Params::Validate qw(:types validate_with);
 use Encode qw(encode is_utf8);
+use Debbugs::UTF8 qw(encode_utf8_safely);
 
 use Debbugs::Packages;
 
@@ -398,7 +399,7 @@ sub encode_headers{
 
      my ($header,$body) = split /\n\n/, $message, 2;
      $header = encode_rfc1522($header);
-     return $header . qq(\n\n). $body;
+     return $header . qq(\n\n). encode_utf8_safely($body);
 }
 
 =head2 rfc822_date

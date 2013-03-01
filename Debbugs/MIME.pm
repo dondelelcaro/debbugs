@@ -55,7 +55,7 @@ use POSIX qw(strftime);
 use List::MoreUtils qw(apply);
 
 # for convert_to_utf8
-use Debbugs::Common qw(convert_to_utf8);
+use Debbugs::UTF8 qw(convert_to_utf8);
 
 # for decode_rfc1522
 use MIME::WordDecoder qw();
