@@ -55,7 +55,7 @@ use POSIX qw(strftime);
 use List::MoreUtils qw(apply);
 
 # for convert_to_utf8
-use Debbugs::UTF8 qw(convert_to_utf8);
+use Debbugs::UTF8 qw(convert_to_utf8 encode_utf8_safely);
 
 # for decode_rfc1522
 use MIME::WordDecoder qw();
@@ -202,8 +202,8 @@ sub create_mime_message{
      # MIME::Entity is stupid, and doesn't rfc1522 encode its headers, so we do it for it.
      my $msg = MIME::Entity->build('Content-Type' => 'text/plain; charset=utf-8',
 				   'Encoding'     => 'quoted-printable',
-				   (map{encode_rfc1522($_)} @{$headers}),
-				   Data    => is_utf8($body)?encode_utf8($body):$body,
+				   (map{encode_rfc1522(encode_utf8_safely($_))} @{$headers}),
+				   Data    => encode_utf8_safely($body),
 				  );
 
      # Attach the attachments
@@ -285,9 +285,8 @@ sub encode_rfc1522 {
 
      # handle being passed undef properly
      return undef if not defined $rawstr;
-     if (is_utf8($rawstr)) {
-	 $rawstr= encode_utf8($rawstr);
-     }
+     # convert to octets if is_utf8 is set
+     $rawstr= encode_utf8_safely($rawstr);
      # We process words in reverse so we can preserve spacing between
      # encoded words. This regex splits on word|nonword boundaries and
      # nonword|nonword boundaries. We also consider parenthesis and "
