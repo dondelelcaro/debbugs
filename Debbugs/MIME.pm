@@ -115,6 +115,9 @@ sub parse
 	my @msg = split /\n/, $_[0];
 	my $i;
 
+        # assume us-ascii unless charset is set; probably bad, but we
+        # really shouldn't get to this point anyway
+        my $charset = 'us-ascii';
 	for ($i = 0; $i <= $#msg; ++$i) {
 	    $_ = $msg[$i];
 	    last unless length;
@@ -122,10 +125,12 @@ sub parse
 		++$i;
 		$_ .= "\n" . $msg[$i];
 	    }
+            if (/charset=\"([^\"]+)\"/) {
+                $charset = $1;
+            }
 	    push @headerlines, $_;
 	}
-
-	@bodylines = @msg[$i .. $#msg];
+	@bodylines = map {convert_to_utf8($_,$charset)} @msg[$i .. $#msg];
     }
 
     rmtree $tempdir, 0, 1;
