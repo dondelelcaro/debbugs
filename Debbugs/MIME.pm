@@ -55,13 +55,10 @@ use POSIX qw(strftime);
 use List::MoreUtils qw(apply);
 
 # for convert_to_utf8
-use Debbugs::UTF8 qw(convert_to_utf8 encode_utf8_safely);
+use Debbugs::UTF8 qw(convert_to_utf8);
 
-# for decode_rfc1522
-use MIME::WordDecoder qw();
+# for decode_rfc1522 and encode_rfc1522
 use Encode qw(decode encode encode_utf8 decode_utf8 is_utf8);
-
-# for encode_rfc1522
 use MIME::Words qw();
 
 sub getmailbody
@@ -202,8 +199,8 @@ sub create_mime_message{
      # MIME::Entity is stupid, and doesn't rfc1522 encode its headers, so we do it for it.
      my $msg = MIME::Entity->build('Content-Type' => 'text/plain; charset=utf-8',
 				   'Encoding'     => 'quoted-printable',
-				   (map{encode_rfc1522(encode_utf8_safely($_))} @{$headers}),
-				   Data    => encode_utf8_safely($body),
+				   (map{encode_rfc1522(encode_utf8($_))} @{$headers}),
+				   Data    => encode_utf8($body),
 				  );
 
      # Attach the attachments
@@ -248,24 +245,27 @@ Turn RFC-1522 names into the UTF-8 equivalent.
 
 =cut
 
-BEGIN {
-    # Set up the default RFC1522 decoder, which turns all charsets that
-    # are supported into the appropriate UTF-8 charset.
-    MIME::WordDecoder->default(new MIME::WordDecoder(
-	['*' => \&convert_to_utf8,
-	]));
-}
-
 sub decode_rfc1522 {
     my ($string) = @_;
 
     # this is craptacular, but leading space is hacked off by unmime.
     # Save it.
     my $leading_space = '';
-    $leading_space = $1 if $string =~ s/^(\s+)//;
-    # unmime calls the default MIME::WordDecoder handler set up at
-    # initialization time.
-    return $leading_space . MIME::WordDecoder::unmime($string);
+    $leading_space = $1 if $string =~ s/^(\ +)//;
+    # we must do this to switch off the utf8 flag before calling decode_mimewords
+    $string = encode_utf8($string);
+    my @mime_words = MIME::Words::decode_mimewords($string);
+    my $tmp = $leading_space .
+        join('',
+             (map {
+                 if (@{$_} > 1) {
+                     convert_to_utf8(${$_}[0],${$_}[1]);
+                 } else {
+                     decode_utf8(${$_}[0]);
+                 }
+             } @mime_words)
+            );
+    return $tmp;
 }
 
 =head2 encode_rfc1522
@@ -285,8 +285,10 @@ sub encode_rfc1522 {
 
      # handle being passed undef properly
      return undef if not defined $rawstr;
-     # convert to octets if is_utf8 is set
-     $rawstr= encode_utf8_safely($rawstr);
+
+     # convert to octets if we are given a string in perl's internal
+     # encoding
+     $rawstr= encode_utf8($rawstr) if is_utf8($rawstr);
      # We process words in reverse so we can preserve spacing between
      # encoded words. This regex splits on word|nonword boundaries and
      # nonword|nonword boundaries. We also consider parenthesis and "
