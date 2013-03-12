@@ -35,7 +35,7 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      %EXPORT_TAGS = (utf8   => [qw(encode_utf8_structure encode_utf8_safely),
-                                qw(convert_to_utf8)],
+                                qw(convert_to_utf8 decode_utf8_safely)],
                     );
      @EXPORT = (@{$EXPORT_TAGS{utf8}});
      @EXPORT_OK = ();
@@ -46,7 +46,7 @@ BEGIN{
 use Carp;
 $Carp::Verbose = 1;
 
-use Encode qw(encode_utf8 is_utf8 decode);
+use Encode qw(encode_utf8 is_utf8 decode decode_utf8);
 use Text::Iconv;
 use Storable qw(dclone);
 
@@ -108,8 +108,34 @@ sub encode_utf8_safely{
 	}
 	push @ret,$r;
     }
-    return wantarray ? @ret : (length @_ > 1 ? @ret : $_[0]);
+    return wantarray ? @ret : (@_ > 1 ? @ret : $ret[0]);
 }
+
+=head2 decode_utf8_safely
+
+     $string = decode_utf8_safely($octets);
+
+Given $octets in UTF8, returns the perl-internal equivalent of $octets
+if $octets does not have is_utf8 set; otherwise returns $octets.
+
+Silently returns REFs without encoding them.
+
+=cut
+
+
+sub decode_utf8_safely{
+    my @ret;
+    for my $r (@_) {
+        if (not ref($r) and not is_utf8($r)) {
+	    $r = decode_utf8($r);
+	}
+	push @ret, $r;
+    }
+    return wantarray ? @ret : (@_ > 1 ? @ret : $ret[0]);
+}
+
+
+
 
 =head2 convert_to_utf8
 
@@ -122,11 +148,12 @@ our %iconv_converters;
 sub convert_to_utf8 {
     my ($data,$charset) = @_;
     if (is_utf8($data)) {
-        return encode_utf8($data);
+        cluck("utf8 flag is set when calling convert_to_utf8");
+        return $data;
     }
     $charset = uc($charset);
     if ($charset eq 'RAW') {
-        return $data;
+        croak("Charset must not be raw when calling convert_to_utf8");
     }
     if (not defined $iconv_converters{$charset}) {
         eval {
@@ -145,22 +172,20 @@ sub convert_to_utf8 {
         return __fallback_convert_to_utf8($data,$charset);
     }
     my $converted_data = $iconv_converters{$charset}->convert($data);
-    $converted_data = "$converted_data";
     # if the conversion failed, retval will be undefined or perhaps
     # -1.
     my $retval = $iconv_converters{$charset}->retval();
     if (not defined $retval or
         $retval < 0
        ) {
+        warn "failed to convert to utf8";
         # Fallback to encode, which will probably also fail.
         return __fallback_convert_to_utf8($data,$charset);
     }
-    return $converted_data;
+    return decode("UTF-8",$converted_data);
 }
 
-# Bug #61342 et al.
-# we're switching this to return UTF8 octets instead of perl's internal
-# encoding
+# this returns data in perl's internal encoding
 sub __fallback_convert_to_utf8 {
      my ($data, $charset) = @_;
      # raw data just gets returned (that's the charset WordDecorder
@@ -174,8 +199,7 @@ sub __fallback_convert_to_utf8 {
      $charset //= 'utf8';
      my $result;
      eval {
-	 $result = decode($charset,$data) unless is_utf8($data);
-         $result = encode_utf8($result);
+	 $result = decode($charset,$data);
      };
      if ($@) {
 	  warn "Unable to decode charset; '$charset' and '$data': $@";
