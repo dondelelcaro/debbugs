@@ -8,8 +8,6 @@ BEGIN{
     delete @ENV{qw(IFS CDPATH ENV BASH_ENV)};
 }
 
-# STDOUT should be using the utf8 io layer
-binmode(STDOUT,':utf8');
 
 use POSIX qw(strftime);
 use MIME::Parser;
@@ -38,6 +36,8 @@ use List::Util qw(max);
 
 use CGI::Simple;
 my $q = new CGI::Simple;
+# STDOUT should be using the utf8 io layer
+binmode(STDOUT,':raw:encoding(UTF-8)');
 
 my %param = cgi_parameters(query => $q,
 			   single => [qw(bug msg att boring terse),

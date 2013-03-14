@@ -32,9 +32,10 @@ use base qw(Exporter);
 
 use IO::Scalar;
 use Params::Validate qw(validate_with :types);
-use Debbugs::MIME qw(convert_to_utf8 decode_rfc1522 create_mime_message);
+use Debbugs::MIME qw(decode_rfc1522 create_mime_message);
 use Debbugs::CGI qw(:url :html :util);
 use Debbugs::Common qw(globify_scalar english_join);
+use Debbugs::UTF8;
 use Debbugs::Config qw(:config);
 use POSIX qw(strftime);
 use Encode qw(decode_utf8);
@@ -334,7 +335,7 @@ sub handle_record{
      local $_ = $record->{type};
      if (/html/) {
 	 # $record->{text} is not in perl's internal encoding; convert it
-	 my $text = decode_utf8(decode_rfc1522($record->{text}));
+	 my $text = decode_rfc1522(decode_utf8($record->{text}));
 	  my ($time) = $text =~ /<!--\s+time:(\d+)\s+-->/;
 	  my $class = $text =~ /^<strong>(?:Acknowledgement|Reply|Information|Report|Notification)/m ? 'infmessage':'msgreceived';
 	  $output .= $text;
