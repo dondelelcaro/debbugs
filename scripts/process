@@ -1207,7 +1207,7 @@ sub sendmessage {
     write_log_records(logfh => $logfh,
 		      records => {text => stripbccs($msg),
 				  type => 'recips',
-				  recips => [@{$recips}],
+				  recips => [map {encode_utf8($_)} @{$recips}],
 				 },
 		     );
     if (ref($bcc)) {

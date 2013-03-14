@@ -53,7 +53,7 @@ END{
 
 send_message(to=>'submit@bugs.something',
 	     headers => [To   => 'submit@bugs.something',
-			 From => 'foo@bugs.something',
+			 From => 'foöﬀ@bugs.something',
 			 Subject => 'Submiting a bug',
 			],
 	     body => <<EOF,attachments => [{Type=>"text/plain",Charset=>"utf-8",Data=><<EOF2}]) or fail('Unable to send message');
