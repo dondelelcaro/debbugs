@@ -16,6 +16,7 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
     (closes: #691573). Thanks to Jonathan Nieder.
   * Fix failure to forcibly merge/merge when found/fixed is not qualified
     (closes: #670456). Thanks to Jonathan Nieder and Bernhard Schmidt.
+  * Add libravatar support.
 
   [Thanks to Arnout Engelen: ]
   * Add Homepage (closes: #670555).
