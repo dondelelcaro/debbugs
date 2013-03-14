@@ -34,6 +34,9 @@ build:
 test:
 	$(PERL) -MTest::Harness -I. -e 'runtests(glob(q(t/*.t)))'
 
+test_%: t/%.t
+	$(PERL) -MTest::Harness -I. -e 'runtests(q($<))'
+
 testcover:
 	PERLLIB=t/cover_lib/ cover -test
 
