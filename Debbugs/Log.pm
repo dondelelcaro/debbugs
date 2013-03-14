@@ -405,6 +405,15 @@ sub write_log_records
 	    if (defined $recips) {
 		croak "recips not undef or array"
 		    unless ref($recips) eq 'ARRAY';
+                my $wrong_encoding = 0;
+                my @recips =
+                    map { if (is_utf8($_)) {
+                        $wrong_encoding=1;
+                        encode_utf8($_);
+                    } else {
+                        $_;
+                    }} @$recips;
+                carp('Recipients was in the wrong encoding (perl internal instead of utf8 octets') if $wrong_encoding;
 		print {$logfh} join("\04", @$recips) . "\n" or
 		    die "Unable to write to logfile: $!";
 	    } else {
