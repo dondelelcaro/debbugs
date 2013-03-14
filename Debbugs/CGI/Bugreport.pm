@@ -32,6 +32,8 @@ use base qw(Exporter);
 
 use IO::Scalar;
 use Params::Validate qw(validate_with :types);
+use Digest::MD5 qw(md5_hex);
+use Debbugs::Mail qw(get_addresses);
 use Debbugs::MIME qw(decode_rfc1522 create_mime_message);
 use Debbugs::CGI qw(:url :html :util);
 use Debbugs::Common qw(globify_scalar english_join);
@@ -133,19 +135,25 @@ sub display_entity {
 	not $param{terse} and
 	not exists $param{att}) {
 	 my $header = $entity->head;
-	 print {$param{output}} "<pre class=\"headers\">\n";
+	 print {$param{output}} "<div class=\"headers\">\n";
 	 if ($param{trim_headers}) {
 	      my @headers;
 	      foreach (qw(From To Cc Subject Date)) {
 		   my $head_field = $head->get($_);
 		   next unless defined $head_field and $head_field ne '';
-		   push @headers, qq(<b>$_:</b> ) . html_escape(decode_rfc1522($head_field));
+                   if ($_ eq 'From') {
+                       my $libravatar_url = __libravatar_url(decode_rfc1522($head_field));
+                       if (defined $libravatar_url and length $libravatar_url) {
+                           push @headers,q(<img src=").$libravatar_url.q(">);
+                       }
+                   }
+		   push @headers, qq(<p><span class="header">$_:</span> ) . html_escape(decode_rfc1522($head_field))."</p>";
 	      }
 	      print {$param{output}} join(qq(), @headers);
 	 } else {
-	      print {$param{output}} html_escape(decode_rfc1522($entity->head->stringify));
+	      print {$param{output}} "<pre>".html_escape(decode_rfc1522($entity->head->stringify))."</pre>\n";
 	 }
-	 print {$param{output}} "</pre>\n";
+	 print {$param{output}} "</div>\n";
     }
 
     if (not (($param{outer} and $type =~ m{^text(?:/plain)?(?:;|$)})
@@ -425,6 +433,15 @@ sub handle_record{
      return $output;
 }
 
+
+sub __libravatar_url {
+    my ($email) = @_;
+    if (not defined $config{libravatar_uri} or not length $config{libravatar_uri}) {
+        return undef;
+    }
+    ($email) = get_addresses($email);
+    return $config{libravatar_uri}.md5_hex(lc($email)).($config{libravatar_uri_options}//'');
+}
 
 
 1;
