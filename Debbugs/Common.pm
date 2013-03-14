@@ -825,7 +825,7 @@ sub globify_scalar {
 	  if (defined ref($scalar)) {
 	       if (ref($scalar) eq 'SCALAR' and
 		   not UNIVERSAL::isa($scalar,'GLOB')) {
-		    open $handle, '>:scalar:encoding(UTF-8)', $scalar;
+		    open $handle, '>:scalar:utf8', $scalar;
 		    return $handle;
 	       }
 	       else {
