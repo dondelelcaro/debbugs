@@ -8,8 +8,6 @@ BEGIN{
     delete @ENV{qw(IFS CDPATH ENV BASH_ENV)};
 }
 
-# STDOUT should be using the utf8 io layer
-binmode(STDOUT,':utf8');
 
 use POSIX qw(strftime);
 use MIME::Parser;
@@ -39,6 +37,8 @@ use List::Util qw(max);
 
 use CGI::Simple;
 my $q = new CGI::Simple;
+# STDOUT should be using the utf8 io layer
+binmode(STDOUT,':raw:encoding(UTF-8)');
 
 if (defined $ENV{REMOTE_ADDR} and $ENV{REMOTE_ADDR} =~ /(?:218\.175\.56\.14|64\.126\.93\.93|72\.17\.168\.57|208\.138\.29\.104|66\.63\.250\.28|71\.70\.91\.207|219\.129\.83\.13)/) {
     print "Content-Type: text/html\n\nGo away.";

@@ -79,6 +79,7 @@ my $debugfh = IO::File->new('/dev/null','w') or
 if ($DEBUG > 0) {
     $debugfh = \*STDERR;
 }
+binmode($debugfh,':raw:encoding(UTF-8)');
 
 # these are the valid bug addresses
 my %baddress = (B => 'submit',
@@ -174,13 +175,14 @@ my %header;
 
 my @common_headers;
 for my $hdr (@headerlines) {
+    my $orig_hdr = $hdr;
     $hdr = decode_rfc1522($hdr);
     $_ = $hdr;
     s/\n\s/ /g;
     finish() if m/^x-loop: (\S+)$/i && $1 eq "$gMaintainerEmail";
     my $ins = !m/^subject:/i && !m/^reply-to:/i && !m/^return-path:/i
            && !m/^From / && !m/^X-Debbugs-/i;
-    $fwd .= $hdr."\n" if $ins;
+    $fwd .= encode_utf8($hdr)."\n" if $ins;
     # print {$debugfh} ">$_<\n";
     if (s/^(\S+):\s*//) {
 	my $v = lc $1;
@@ -248,7 +250,9 @@ my $i = 0;
 ++$i while $msg[$i] =~ /./;
 $fwd .= join("\n",@msg[$i..$#msg]);
 
+binmode($debugfh,':raw');
 print {$debugfh} "***\n$fwd\n***\n";
+binmode($debugfh,':raw:encoding(UTF-8)');
 
 if (defined $header{'resent-from'} && !defined $header{'from'}) {
     $header{'from'} = $header{'resent-from'};

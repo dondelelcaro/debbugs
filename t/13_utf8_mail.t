@@ -6,6 +6,8 @@ use Test::More tests => 12;
 use warnings;
 use strict;
 
+use utf8;
+
 # Here, we're going to shoot messages through a set of things that can
 # happen.
 
@@ -89,7 +91,7 @@ $SD_SIZE =
 
 send_message(to => '1@bugs.something',
 	     headers => [To   => '1@bugs.something',
-			 From => 'foo@bugs.something',
+			 From => 'föoﬀ@bugs.something',
 			 Subject => 'Sending a message to a bug',
 			],
 	     body => <<EOF) or fail('sending message to 1@bugs.someting failed');
@@ -107,7 +109,7 @@ $SD_SIZE =
 # just check to see that control doesn't explode
 send_message(to => 'control@bugs.something',
 	     headers => [To   => 'control@bugs.something',
-			 From => 'foo@bugs.something',
+			 From => 'föoﬀ@bugs.something',
 			 Subject => 'Munging a bug',
 			],
 	     body => <<EOF) or fail 'message to control@bugs.something failed';
@@ -127,7 +129,7 @@ ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: P
 # This is an eval because $ENV{DEBBUGS_CONFIG_FILE} isn't set at BEGIN{} time
 eval "use Debbugs::Status qw(read_bug writebug);";
 my $status = read_bug(bug=>1);
-ok($status->{subject} eq decode_utf8('ütﬀ8 title encoding test'),'bug 1 retitled');
+ok($status->{subject} eq 'ütﬀ8 title encoding test','bug 1 retitled');
 ok($status->{severity} eq 'wishlist','bug 1 wishlisted');
 ok(system('sh','-c','[ $(egrep "retitle.*encoding test" '.$spool_dir.'/db-h/01/1.log|grep -v "=C3=BCt=EF=AC=808"|wc -l) -eq 0 ]') == 0,
    'Control messages escaped properly');

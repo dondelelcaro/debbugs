@@ -110,7 +110,8 @@ BEGIN{
 }
 
 use Debbugs::Config qw(:config);
-use Debbugs::Common qw(:lock buglog :misc get_hashname sort_versions :utf8);
+use Debbugs::Common qw(:lock buglog :misc get_hashname sort_versions);
+use Debbugs::UTF8;
 use Debbugs::Status qw(bug_archiveable :read :hook writebug new_bug splitpackages split_status_fields get_bug_status);
 use Debbugs::CGI qw(html_escape);
 use Debbugs::Log qw(:misc :write);
@@ -125,7 +126,7 @@ use IO::File;
 
 use Debbugs::Text qw(:templates);
 
-use Debbugs::Mail qw(rfc822_date send_mail_message default_headers);
+use Debbugs::Mail qw(rfc822_date send_mail_message default_headers encode_headers);
 use Debbugs::MIME qw(create_mime_message);
 
 use Mail::RFC822::Address qw();
@@ -1578,7 +1579,11 @@ sub set_found {
 		if (not @svers) {
 		    @svers = $version;
 		}
-		else {
+		elsif (not grep {$version eq $_} @svers) {
+                    # The $version was not equal to one of the source
+                    # versions, so it's probably unqualified (or just
+                    # wrong). Delete it, and use the source versions
+                    # instead.
 		    if (exists $found_versions{$version}) {
 			delete $found_versions{$version};
 			$found_removed{$version} = 1;
@@ -3433,25 +3438,25 @@ sub append_action_to_log{
      }
      my $msg = join('',
 		    (exists $param{command} ?
-		     "<!-- command:".html_escape(encode_utf8($param{command}))." -->\n":""
+		     "<!-- command:".html_escape(encode_utf8_safely($param{command}))." -->\n":""
 		    ),
 		    (length $param{requester} ?
-		     "<!-- requester: ".html_escape(encode_utf8($param{requester}))." -->\n":""
+		     "<!-- requester: ".html_escape(encode_utf8_safely($param{requester}))." -->\n":""
 		    ),
 		    (length $param{request_addr} ?
-		     "<!-- request_addr: ".html_escape(encode_utf8($param{request_addr}))." -->\n":""
+		     "<!-- request_addr: ".html_escape(encode_utf8_safely($param{request_addr}))." -->\n":""
 		    ),
 		    "<!-- time:".time()." -->\n",
 		    $data_diff,
-		    "<strong>".html_escape(encode_utf8($param{action}))."</strong>\n");
+		    "<strong>".html_escape(encode_utf8_safely($param{action}))."</strong>\n");
      if (length $param{requester}) {
-          $msg .= "Request was from <code>".html_escape(encode_utf8($param{requester}))."</code>\n";
+          $msg .= "Request was from <code>".html_escape(encode_utf8_safely($param{requester}))."</code>\n";
      }
      if (length $param{request_addr}) {
-          $msg .= "to <code>".html_escape(encode_utf8($param{request_addr}))."</code>";
+          $msg .= "to <code>".html_escape(encode_utf8_safely($param{request_addr}))."</code>";
      }
      if (length $param{desc}) {
-	  $msg .= ":<br>\n".encode_utf8($param{desc})."\n";
+	  $msg .= ":<br>\n".encode_utf8_safely($param{desc})."\n";
      }
      else {
 	  $msg .= ".\n";
@@ -3586,13 +3591,14 @@ sub __return_append_to_log_options{
      }
      if (not exists $param{message}) {
 	  my $date = rfc822_date();
-	  $param{message} = fill_in_template(template  => 'mail/fake_control_message',
-					     variables => {request_addr => $param{request_addr},
-							   requester    => $param{requester},
-							   date         => $date,
-							   action       => $action
-							  },
-					    );
+	  $param{message} =
+              encode_headers(fill_in_template(template  => 'mail/fake_control_message',
+                                              variables => {request_addr => $param{request_addr},
+                                                            requester    => $param{requester},
+                                                            date         => $date,
+                                                            action       => $action
+                                                           },
+                                             ));
      }
      if (not defined $action) {
 	  carp "Undefined action!";

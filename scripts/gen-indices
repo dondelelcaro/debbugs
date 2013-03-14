@@ -41,7 +41,7 @@ gen-indices - Generates index files for the cgi scripts
 
 =over
 
-=itme B<--quick>
+=item B<--quick>
 
 Only update changed bugs
 
