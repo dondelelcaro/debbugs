@@ -126,6 +126,29 @@ pre.headers {
     line-height: 120%
 }
 
+div.headers { 
+    border: #a7a7a7 1px solid;
+    background-color: #f0f0f0;
+    padding: 2px;
+ }
+
+div.headers p {
+    font-family: sans-serif;
+    font-size: 95%;
+    color: #3c3c3c;
+    padding: 0px;
+    line-height: 120%;
+    margin: 0px;
+}
+
+div.headers img {  
+    float: right;
+}
+
+span.header { 
+  font-weight: bold
+ };
+
 pre.mime {
     font-family: monospace;
     font-size: 95%;
