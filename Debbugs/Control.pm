@@ -126,7 +126,7 @@ use IO::File;
 
 use Debbugs::Text qw(:templates);
 
-use Debbugs::Mail qw(rfc822_date send_mail_message default_headers);
+use Debbugs::Mail qw(rfc822_date send_mail_message default_headers encode_headers);
 use Debbugs::MIME qw(create_mime_message);
 
 use Mail::RFC822::Address qw();
@@ -3591,13 +3591,14 @@ sub __return_append_to_log_options{
      }
      if (not exists $param{message}) {
 	  my $date = rfc822_date();
-	  $param{message} = fill_in_template(template  => 'mail/fake_control_message',
-					     variables => {request_addr => $param{request_addr},
-							   requester    => $param{requester},
-							   date         => $date,
-							   action       => $action
-							  },
-					    );
+	  $param{message} =
+              encode_headers(fill_in_template(template  => 'mail/fake_control_message',
+                                              variables => {request_addr => $param{request_addr},
+                                                            requester    => $param{requester},
+                                                            date         => $date,
+                                                            action       => $action
+                                                           },
+                                             ));
      }
      if (not defined $action) {
 	  carp "Undefined action!";

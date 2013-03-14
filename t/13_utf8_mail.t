@@ -91,7 +91,7 @@ $SD_SIZE =
 
 send_message(to => '1@bugs.something',
 	     headers => [To   => '1@bugs.something',
-			 From => 'foo@bugs.something',
+			 From => 'föoﬀ@bugs.something',
 			 Subject => 'Sending a message to a bug',
 			],
 	     body => <<EOF) or fail('sending message to 1@bugs.someting failed');
@@ -109,7 +109,7 @@ $SD_SIZE =
 # just check to see that control doesn't explode
 send_message(to => 'control@bugs.something',
 	     headers => [To   => 'control@bugs.something',
-			 From => 'foo@bugs.something',
+			 From => 'föoﬀ@bugs.something',
 			 Subject => 'Munging a bug',
 			],
 	     body => <<EOF) or fail 'message to control@bugs.something failed';
