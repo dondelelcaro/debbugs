@@ -141,7 +141,10 @@ sub display_entity {
 		   my $head_field = $head->get($_);
 		   next unless defined $head_field and $head_field ne '';
                    if ($_ eq 'From') {
-                       push @headers,q(<img src=").__libravatar_url(decode_rfc1522($head_field)).q(">);
+                       my $libravatar_url = __libravatar_url(decode_rfc1522($head_field));
+                       if (defined $libravatar_url and length $libravatar_url) {
+                           push @headers,q(<img src=").$libravatar_url.q(">);
+                       }
                    }
 		   push @headers, qq(<p><span class="header">$_:</span> ) . html_escape(decode_rfc1522($head_field))."</p>";
 	      }
@@ -432,8 +435,11 @@ sub handle_record{
 
 sub __libravatar_url {
     my ($email) = @_;
+    if (not defined $config{libravatar_uri} or not length $config{libravatar_uri}) {
+        return undef;
+    }
     ($email) = get_addresses($email);
-    return "http://cdn.libravatar.org/avatar/".md5_hex(lc($email))."?d=retro";
+    return $config{libravatar_uri}.md5_hex(lc($email)).($config{libravatar_uri_options}//'');
 }
 
 

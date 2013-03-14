@@ -364,6 +364,38 @@ Default: list_domain
 set_default(\%config,'bug_subscription_domain',$config{list_domain});
 
 
+=head2 CGI Options
+
+=over
+
+=item libravatar_uri
+
+URI to a libravatar configuration. If empty or undefined, libravatar
+support will be disabled. Defaults to
+http://cdn.libravatar.org/avatar/ which uses a federated Avatar system
+and falls back to gravatar if necessary.
+
+=cut
+
+set_default(\%config,'libravatar_uri',"http://cdn.libravatar.org/avatar/");
+
+=item libravatar_uri_options
+
+Options to append to the md5_hex of the e-mail. This sets the default
+avatar used when an avatar isn't available. Currently defaults to
+'?d=retro', which causes a bitmap-looking avatar to be displayed for
+unknown e-mails.
+
+Other options which make sense include ?d=404, ?d=wavatar, etc. See
+the API of libravatar for details.
+
+=cut
+
+set_default(\%config,'libravatar_uri_options','?d=retro');
+
+
+=back
+
 =head2 Misc Options
 
 =over
