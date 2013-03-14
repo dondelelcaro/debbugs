@@ -83,6 +83,7 @@ use Debbugs::Config qw(:config);
 use Debbugs::Common qw(getparsedaddrs getbugcomponent lockpid);
 use Debbugs::Status qw(readbug split_status_fields);
 use Debbugs::Log;
+use Debbugs::UTF8 qw(encode_utf8_structure);
 
 chdir($config{spool_dir}) or die "chdir $config{spool_dir} failed: $!";
 
@@ -198,7 +199,7 @@ while (my $dir = shift @dirs) {
 		     next;
 		}
 		next if $stat->mtime < $time;
-		my $fdata = split_status_fields(readbug($bug, $initialdir));
+		my ($fdata) = encode_utf8_structure(split_status_fields(readbug($bug, $initialdir)));
 		$modification_made = 1;
 		addbugtoindex("package", $bug, make_list($fdata->{package}));
 		addbugtoindex("tag", $bug, make_list($fdata->{keywords}));

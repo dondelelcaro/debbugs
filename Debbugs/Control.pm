@@ -3467,7 +3467,7 @@ sub append_action_to_log{
      $msg = '';
      if ((ref($param{message}) and @{$param{message}}) or length($param{message})) {
 	 push @records, {type => exists $param{recips}?'recips':'incoming-recv',
-			 exists $param{recips}?(recips => [make_list($param{recips})]):(),
+			 exists $param{recips}?(recips => [map {encode_utf8_safely($_)} make_list($param{recips})]):(),
 			 text => join('',make_list($param{message})),
 			};
      }
