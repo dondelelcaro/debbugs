@@ -151,7 +151,7 @@ sub convert_to_utf8 {
         cluck("utf8 flag is set when calling convert_to_utf8");
         return $data;
     }
-    $charset = uc($charset);
+    $charset = uc($charset//'UTF-8');
     if ($charset eq 'RAW') {
         croak("Charset must not be raw when calling convert_to_utf8");
     }
