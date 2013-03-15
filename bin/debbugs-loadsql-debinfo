@@ -117,6 +117,7 @@ my $s = Debbugs::DB->connect('dbi:Pg:service='.$options{service}) or
 
 my @files = @ARGV;
 
+my %arch;
 for my $file (@files) {
     my $fh = IO::File->new($file,'r') or
 	die "Unable to open $file for reading: $!";
@@ -135,7 +136,13 @@ for my $file (@files) {
 	my $sp = $s->resultset('SrcPkg')->find_or_create({pkg => $srcname});
 	my $sv = $s->resultset('SrcVer')->find_or_create({src_pkg_id=>$sp->id(),
 							  ver => $srcver});
-	my $arch = $s->resultset('Arch')->find_or_create({arch => $binarch});
+        my $arch;
+        if (defined $arch{$binarch}) {
+            $arch = $arch{$binarch};
+        } else {
+            $arch = $s->resultset('Arch')->find_or_create({arch => $binarch});
+            $arch{$binarch} = $arch;
+        }
 	my $bp = $s->resultset('BinPkg')->find_or_create({pkg => $binname});
 	$s->resultset('BinVer')->find_or_create({bin_pkg_id => $bp->id(),
 						 src_ver_id => $sv->id(),
