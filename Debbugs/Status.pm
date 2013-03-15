@@ -1615,6 +1615,7 @@ sub update_realtime {
 	my $idx_new = IO::File->new($file.'.new','w')
 	     or die "Couldn't open ${file}.new: $!";
 
+        binmode($idx_old,':raw:utf8');
         binmode($idx_new,':raw:encoding(UTF-8)');
 	my $min_bug = min(keys %bugs);
 	my $line;
