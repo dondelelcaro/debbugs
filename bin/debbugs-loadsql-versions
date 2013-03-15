@@ -119,6 +119,7 @@ for my $file (@files) {
     my $fh = IO::File->new($file,'r') or
 	die "Unable to open $file for reading: $!";
     my @versions;
+    my %src_pkgs;
     while (<$fh>) {
 	chomp;
 	next unless length $_;
@@ -128,14 +129,20 @@ for my $file (@files) {
     }
     close($fh);
     my $ancestor_sv;
-    for my $i (reverse 0..($#versions-1)) {
-	my $sp = $s->resultset('SrcPkg')->find({pkg => $versions[$i][0]});
+    for my $i (reverse 0..($#versions)) {
+        my $sp;
+        if (not defined $src_pkgs{$versions[$i][0]}) {
+            $src_pkgs{$versions[$i][0]} =
+                $s->resultset('SrcPkg')->find({pkg => $versions[$i][0]});
+        }
+        $sp = $src_pkgs{$versions[$i][0]};
+        # There's probably something wrong if the source package
+        # doesn't exist, but we'll skip it for now
 	next unless defined $sp;
 	my $sv = $s->resultset('SrcVer')->find({src_pkg_id=>$sp->id(),
 						ver => $versions[$i][1],
 					       });
 	if (defined $ancestor_sv and defined $sv and not defined $sv->based_on()) {
-	    print "checking out for $versions[$i][1]\n";
 	    $sv->update({based_on => $ancestor_sv->id()})
 	}
 	$ancestor_sv = $sv;
