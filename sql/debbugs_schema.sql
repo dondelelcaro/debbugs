@@ -268,11 +268,14 @@ CREATE VIEW bug_package (bug_id,pkg_id,pkg_type,package) AS
               SELECT s.bug_id,s.src_pkg_id,'source',sp.pkg FROM bug_srcpackage s JOIN src_pkg sp ON sp.id=s.src_pkg_id;
 
 CREATE VIEW binary_versions (src_pkg, src_ver, bin_pkg, arch, bin_ver) AS
-       SELECT sp.pkg AS src_pkg, sv.ver AS src_ver, bp.pkg AS bin_pkg, a.arch AS arch, b.ver AS bin_ver
+       SELECT sp.pkg AS src_pkg, sv.ver AS src_ver, bp.pkg AS bin_pkg, a.arch AS arch, b.ver AS bin_ver,
+       svb.ver AS src_ver_based_on, spb.pkg AS src_pkg_based_on
        FROM bin_ver b JOIN arch a ON b.arch_id = a.id
        	              JOIN bin_pkg bp ON b.bin_pkg_id  = bp.id
                       JOIN src_ver sv ON b.src_ver_id  = sv.id
-                      JOIN src_pkg sp ON sv.src_pkg_id = sp.id;
+                      JOIN src_pkg sp ON sv.src_pkg_id = sp.id
+                      LEFT OUTER JOIN src_ver svb ON sv.based_on = svb.id
+                      LEFT OUTER JOIN src_pkg spb ON spb.id = svb.src_pkg_id;
 
 CREATE TABLE suite (
        id SERIAL PRIMARY KEY,
