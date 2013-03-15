@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 12;
+use Test::More tests => 13;
 
 use warnings;
 use strict;
@@ -24,7 +24,7 @@ use File::Basename qw(dirname basename);
 use lib qw(t/lib);
 use DebbugsTest qw(:all);
 use Data::Dumper;
-use Encode qw(decode encode decode_utf8);
+use Encode qw(decode encode decode_utf8 encode_utf8);
 
 # HTTP::Server:::Simple defines a SIG{CHLD} handler that breaks system; undef it here.
 $SIG{CHLD} = sub {};
@@ -53,7 +53,7 @@ END{
 
 send_message(to=>'submit@bugs.something',
 	     headers => [To   => 'submit@bugs.something',
-			 From => 'foöﬀ@bugs.something',
+			 From => 'föoﬀ@bugs.something',
 			 Subject => 'Submiting a bug',
 			],
 	     body => <<EOF,attachments => [{Type=>"text/plain",Charset=>"utf-8",Data=><<EOF2}]) or fail('Unable to send message');
@@ -133,4 +133,5 @@ ok($status->{subject} eq 'ütﬀ8 title encoding test','bug 1 retitled');
 ok($status->{severity} eq 'wishlist','bug 1 wishlisted');
 ok(system('sh','-c','[ $(egrep "retitle.*encoding test" '.$spool_dir.'/db-h/01/1.log|grep -v "=C3=BCt=EF=AC=808"|wc -l) -eq 0 ]') == 0,
    'Control messages escaped properly');
-
+ok(system('sh','-c',encode_utf8('grep -q "föoﬀ@bugs.something" '.$spool_dir.'/index.db'))==0,
+   'index.db not double escaped');
