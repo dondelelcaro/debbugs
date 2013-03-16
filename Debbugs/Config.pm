@@ -1089,7 +1089,7 @@ sub read_config{
 	  die "Error in configuration file: $@" if $@;
 	  # Now what we do is check out the contents of %EXPORT_TAGS to see exactly which variables
 	  # we want to glob in from the configuration file
-	  for my $variable (@{$EXPORT_TAGS{globals}}) {
+	  for my $variable (map {$_ =~ /^(?:config|all)$/ ? () : @{$EXPORT_TAGS{$_}}} keys %EXPORT_TAGS) {
 	       my ($hash_name,$glob_name,$glob_type) = __convert_name($variable);
 	       my $var_glob = $cpt->varglob($glob_name);
 	       my $value; #= $cpt->reval("return $variable");
