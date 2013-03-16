@@ -78,10 +78,11 @@ BEGIN {
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
+                     cgi => [qw($gLibravatarUri $gLibravatarUriOptions)],
 		     config   => [qw(%config)],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(globals text config));
+     Exporter::export_ok_tags(keys %EXPORT_TAGS);
      $EXPORT_TAGS{all} = [@EXPORT_OK];
      $ENV{HOME} = '' if not defined $ENV{HOME};
 }
@@ -368,7 +369,7 @@ set_default(\%config,'bug_subscription_domain',$config{list_domain});
 
 =over
 
-=item libravatar_uri
+=item libravatar_uri $gLibravatarUri
 
 URI to a libravatar configuration. If empty or undefined, libravatar
 support will be disabled. Defaults to
@@ -379,7 +380,7 @@ and falls back to gravatar if necessary.
 
 set_default(\%config,'libravatar_uri',"http://cdn.libravatar.org/avatar/");
 
-=item libravatar_uri_options
+=item libravatar_uri_options $gLibravatarUriOptions
 
 Options to append to the md5_hex of the e-mail. This sets the default
 avatar used when an avatar isn't available. Currently defaults to

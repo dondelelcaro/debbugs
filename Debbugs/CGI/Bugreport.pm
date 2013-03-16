@@ -113,6 +113,9 @@ sub display_entity {
 					 trim_headers => {type => BOOLEAN,
 							  default => 1,
 							 },
+                                         avatars => {type => BOOLEAN,
+                                                     default => 1,
+                                                    },
 					}
 			     );
 
@@ -142,7 +145,7 @@ sub display_entity {
 		   my $head_field = $head->get($_);
 		   next unless defined $head_field and $head_field ne '';
                    chomp $head_field;
-                   if ($_ eq 'From') {
+                   if ($_ eq 'From' and $param{avatars}) {
                        my $libravatar_url = __libravatar_url(decode_rfc1522($head_field));
                        if (defined $libravatar_url and length $libravatar_url) {
                            push @headers,q(<img src=").$libravatar_url.qq(">\n);
@@ -221,6 +224,7 @@ sub display_entity {
 			   terse => $param{terse},
 			   exists $param{msg}?(msg=>$param{msg}):(),
 			   exists $param{att}?(att=>$param{att}):(),
+                           exists $param{avatars}?(avatars=>$param{avatars}):(),
 			  );
 	    # print {$output} "\n";
 	}
@@ -240,6 +244,7 @@ sub display_entity {
 			   terse => $param{terse},
 			   exists $param{msg}?(msg=>$param{msg}):(),
 			   exists $param{att}?(att=>$param{att}):(),
+                           exists $param{avatars}?(avatars=>$param{avatars}):(),
 			  );
 	    # print {$output} "\n";
 	}
@@ -319,6 +324,7 @@ sub handle_email_message{
 		    exists $param{msg}?(msg=>$param{msg}):(),
 		    exists $param{att}?(att=>$param{att}):(),
 		    exists $param{trim_headers}?(trim_headers=>$param{trim_headers}):(),
+		    exists $param{avatars}?(avatars=>$param{avatars}):(),
 		   );
      return decode_utf8($output);
 }
@@ -334,7 +340,7 @@ should be output to the browser.
 =cut
 
 sub handle_record{
-     my ($record,$bug_number,$msg_number,$seen_msg_ids) = @_;
+     my ($record,$bug_number,$msg_number,$seen_msg_ids,%param) = @_;
 
      # output needs to have the is_utf8 flag on to avoid double
      # encoding
@@ -397,6 +403,7 @@ sub handle_record{
 	  $output .= handle_email_message($record->{text},
 					  ref     => $bug_number,
 					  msg_num => $msg_number,
+                                          %param,
 					 );
      }
      elsif (/autocheck/) {
@@ -424,6 +431,7 @@ sub handle_record{
 	  $output .= handle_email_message($record->{text},
 					  ref     => $bug_number,
 					  msg_num => $msg_number,
+                                          %param,
 					 );
      }
      else {
