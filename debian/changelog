@@ -78,6 +78,7 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
     + usr/share/man/man3/Debbugs::Recipients.3pm.gz
     + usr/share/man/man3/Debbugs::SOAP.3pm.gz
     + usr/share/man/man3/Debbugs::Status.3pm.gz
+  * Raise Standards to 3.9.4 (after fixing several lintian issues).
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
