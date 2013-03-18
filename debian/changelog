@@ -71,6 +71,9 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   * Switch to debian/source/format: 3.0 (native).
   * Fix lintian issue: debbugs source: duplicate-in-relation-field in
     libdebbugs-perl depends: libtext-template-perl, libtext-template-perl.
+  * Fix lintian issues: debbugs source:
+    debian-rules-makemaker-prefix-is-deprecated line 44,
+    debian-rules-makemaker-prefix-is-deprecated line 56.
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
