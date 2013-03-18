@@ -25,7 +25,7 @@ Depends:
  libdebbugs-perl,
 Recommends: debbugs-web
 Suggests: spamassassin (>= 3.0), libcgi-alert-perl
-Description: The bug tracking system based on the active Debian BTS
+Description: Bug tracking system based on the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
  users and developers. Each bug is given a number, and is kept on file until
  it is marked as having been dealt with. The system is mainly controlled by
@@ -46,7 +46,7 @@ Depends:
  libsafe-hole-perl, libmail-rfc822-address-perl, liblist-moreutils-perl,
  libtext-template-perl
 Section: perl
-Description: modules used by the active Debian BTS
+Description: Modules used by the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
  users and developers. Each bug is given a number, and is kept on file until
  it is marked as having been dealt with. The system is mainly controlled by
@@ -62,7 +62,7 @@ Depends:
  ${misc:Depends},
  libdebbugs-perl, apache | httpd
 Suggests: libcgi-alert-perl
-Description: web scripts for the active Debian BTS
+Description: Web scripts for the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
  users and developers. Each bug is given a number, and is kept on file until
  it is marked as having been dealt with. The system is mainly controlled by
@@ -77,7 +77,7 @@ Depends:
  ${misc:Depends},
  libdebbugs-perl, debbugs-web, libconfig-simple-perl,
  libuser-perl, rsync, libhttp-server-simple-perl, libnet-server-perl
-Description: run and maintains a local mirror of the Debian BTS
+Description: Run and maintains a local mirror of the Debian BTS
  Debian has a bug tracking system which files details of bugs reported
  by users and developers. Each bug is given a number, and is kept on
  file until it is marked as having been dealt with. The system is
