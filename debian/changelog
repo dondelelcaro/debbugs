@@ -68,6 +68,7 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
     capitalize first letter in all description synopsis lines.
   * Fix lintian issues: debian-rules-missing-recommended-target build-arch,
     debian-rules-missing-recommended-target build-indep.
+  * Switch to debian/source/format: 3.0 (native).
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
