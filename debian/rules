@@ -10,7 +10,13 @@ DEST_DIR := $(CURDIR)/debian/tmp
 PERL ?= /usr/bin/perl
 
 
-build: build-stamp
+build: build-arch build-indep
+
+build-arch:
+# nothing to do, as there aren't any architecture-dependent packages
+
+build-indep: build-stamp
+
 build-stamp:
 # Call the test suite
 	$(PERL) Makefile.PL INSTALLDIRS=vendor

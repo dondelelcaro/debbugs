@@ -59,6 +59,8 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   * Fix spelling error in /debian/changelog.
   * Fix lintian issue: description-synopsis-starts-with-article, also:
     capitalize first letter in all description synopsis lines.
+  * Fix lintian issues: debian-rules-missing-recommended-target build-arch,
+    debian-rules-missing-recommended-target build-indep.
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
