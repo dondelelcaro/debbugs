@@ -17,6 +17,7 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   * Fix failure to forcibly merge/merge when found/fixed is not qualified
     (closes: #670456). Thanks to Jonathan Nieder and Bernhard Schmidt.
   * Add libravatar support.
+  * Fix double encoding of attachments (closes: #703300)
 
   [Thanks to Arnout Engelen: ]
   * Add Homepage (closes: #670555).
