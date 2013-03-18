@@ -8,8 +8,6 @@ BEGIN{
     delete @ENV{qw(IFS CDPATH ENV BASH_ENV)};
 }
 
-# STDOUT should be using the utf8 io layer
-binmode(STDOUT,':utf8');
 
 use POSIX qw(strftime);
 use MIME::Parser;
@@ -38,12 +36,14 @@ use List::Util qw(max);
 
 use CGI::Simple;
 my $q = new CGI::Simple;
+# STDOUT should be using the utf8 io layer
+binmode(STDOUT,':raw:encoding(UTF-8)');
 
 my %param = cgi_parameters(query => $q,
 			   single => [qw(bug msg att boring terse),
 				      qw(reverse mbox mime trim),
 				      qw(mboxstat mboxmaint archive),
-				      qw(repeatmerged)
+				      qw(repeatmerged avatars),
 				     ],
 			   default => {# msg       => '',
 				       boring    => 'no',
@@ -55,6 +55,7 @@ my %param = cgi_parameters(query => $q,
 				       mboxmaint => 'no',
 				       archive   => 'no',
 				       repeatmerged => 'yes',
+                                       avatars   => 'yes',
 				      },
 			  );
 # This is craptacular.
@@ -70,6 +71,7 @@ my $terse = $param{'terse'} eq 'yes';
 my $reverse = $param{'reverse'} eq 'yes';
 my $mbox = $param{'mbox'} eq 'yes';
 my $mime = $param{'mime'} eq 'yes';
+my $avatars = $param{avatars} eq 'yes';
 
 my %bugusertags;
 my %ut;
@@ -224,11 +226,11 @@ END
 	  # we want to include control messages anyway
 	  my $record_wanted_anyway = 0;
 	  my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
-	  next if exists $seen_message_ids{$msg_id};
-	  next if $msg_id =~/handler\..+\.ack(?:info|done)?\@/;
+	  next if defined $msg_id and exists $seen_message_ids{$msg_id};
+	  next if defined $msg_id and $msg_id =~/handler\..+\.ack(?:info|done)?\@/;
 	  $record_wanted_anyway = 1 if $record->{text} =~ /^Received: \(at control\)/;
 	  next if not $boring and not $record->{type} eq $wanted_type and not $record_wanted_anyway and @records > 1;
-	  $seen_message_ids{$msg_id} = 1;
+	  $seen_message_ids{$msg_id} = 1 if defined $msg_id;
 	  my @lines = split( "\n", $record->{text}, -1 );
 	  if ( $lines[ 1 ] =~ m/^From / ) {
 	       my $tmp = $lines[ 0 ];
@@ -265,7 +267,11 @@ else {
 	       next;
 	  }
 	  $skip_next = 1 if $record->{type} eq 'html' and not $boring;
-	  push @log, handle_record($record,$ref,$msg_num,\%seen_msg_ids);
+	  push @log, handle_record($record,$ref,$msg_num,
+                                   \%seen_msg_ids,
+                                   trim_headers => $trim_headers,
+                                   avatars => $avatars,
+                                  );
      }
 }
 

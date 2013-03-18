@@ -9,6 +9,14 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   * Fix encoding in cgi
   * Fix installation of templates (closes: #686928). Thanks to Mike
     Gabriel.
+  * Only remove list headers if the message appears to have traversed a
+    mailing list to get to us. (closes: #690408)
+  * Fix lack of archive support in pkgindex.cgi.
+  * Output notice to transcript when there is a malformed command.
+    (closes: #691573). Thanks to Jonathan Nieder.
+  * Fix failure to forcibly merge/merge when found/fixed is not qualified
+    (closes: #670456). Thanks to Jonathan Nieder and Bernhard Schmidt.
+  * Add libravatar support.
 
   [Thanks to Arnout Engelen: ]
   * Add Homepage (closes: #670555).
@@ -19,7 +27,8 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   * /debian/control:
     + Add ${misc:Depends} to Depends.
   * /examples/apache.conf:
-    - Assure in apache.conf example that documentation html pages get loaded.
+    - Assure in apache.conf example that documentation html pages get loaded
+      (closes: #686943).
     - Rewrite rule example: http://<webhost>/<nnn> -> show bug report for
       bug <nnn>.
     - Be more generic, comment out rewrite rule that directly redirects
@@ -33,7 +42,7 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   * Fix pkgindex.cgi concerning several issues: load proper Perl modules,
     replace usage of src_url and pkg_url by package_links, use
     html_tail from templates, use count_bugs everywhere, load bugs.css,
-    fix global variable usage in html header.
+    fix global variable usage in html header (closes: #686940).
   * Add empty $gBugSubscriptionDomain variable to config file template.
   * Remove mailing list markers of the form [<list-name>] from the subject
     line to avoid duplication (and more) of the bug number when replying to
@@ -46,6 +55,14 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
     have a lenght < 0.
   * Use locale independent date format for mail processing.
   * Use locale independent date format for the service script.
+  * Update postfix section in Readme.mail (closes: #688109).
+  * Provide gStrongList configuration option in config file to make
+    a site admin aware of its existence (closes: #688345).
+  * Make sure that mails to gSubscriptionDomain and gBugSubscriptionDomain
+    are only sent out if the variables in config are defined and
+    have a lenght < 0 (closes: #688344).
+  * Use locale independent date format for mail processing and service mail
+    generation (closes: #688745).
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 

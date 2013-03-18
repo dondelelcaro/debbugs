@@ -24,7 +24,8 @@ sub header_or_empty ($$) {
     my $value = $mail->get_header($hdr);
     if (defined $value) {
 	chomp $value;
-	$value =~ tr/\n/\\n/;
+        # replace newlines with '\n'
+	$value =~ s/\n/\\n/g;
 	return $value;
     }
     return '';

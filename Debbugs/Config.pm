@@ -78,10 +78,11 @@ BEGIN {
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
+                     cgi => [qw($gLibravatarUri $gLibravatarUriOptions)],
 		     config   => [qw(%config)],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(globals text config));
+     Exporter::export_ok_tags(keys %EXPORT_TAGS);
      $EXPORT_TAGS{all} = [@EXPORT_OK];
      $ENV{HOME} = '' if not defined $ENV{HOME};
 }
@@ -363,6 +364,38 @@ Default: list_domain
 
 set_default(\%config,'bug_subscription_domain',$config{list_domain});
 
+
+=head2 CGI Options
+
+=over
+
+=item libravatar_uri $gLibravatarUri
+
+URI to a libravatar configuration. If empty or undefined, libravatar
+support will be disabled. Defaults to
+http://cdn.libravatar.org/avatar/ which uses a federated Avatar system
+and falls back to gravatar if necessary.
+
+=cut
+
+set_default(\%config,'libravatar_uri',"http://cdn.libravatar.org/avatar/");
+
+=item libravatar_uri_options $gLibravatarUriOptions
+
+Options to append to the md5_hex of the e-mail. This sets the default
+avatar used when an avatar isn't available. Currently defaults to
+'?d=retro', which causes a bitmap-looking avatar to be displayed for
+unknown e-mails.
+
+Other options which make sense include ?d=404, ?d=wavatar, etc. See
+the API of libravatar for details.
+
+=cut
+
+set_default(\%config,'libravatar_uri_options','?d=retro');
+
+
+=back
 
 =head2 Misc Options
 
@@ -1056,7 +1089,7 @@ sub read_config{
 	  die "Error in configuration file: $@" if $@;
 	  # Now what we do is check out the contents of %EXPORT_TAGS to see exactly which variables
 	  # we want to glob in from the configuration file
-	  for my $variable (@{$EXPORT_TAGS{globals}}) {
+	  for my $variable (map {$_ =~ /^(?:config|all)$/ ? () : @{$EXPORT_TAGS{$_}}} keys %EXPORT_TAGS) {
 	       my ($hash_name,$glob_name,$glob_type) = __convert_name($variable);
 	       my $var_glob = $cpt->varglob($glob_name);
 	       my $value; #= $cpt->reval("return $variable");

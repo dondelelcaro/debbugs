@@ -18,9 +18,7 @@ BEGIN{
     delete @ENV{qw(IFS CDPATH ENV BASH_ENV)};
 }
 
-# STDOUT should be in utf8 mode
-binmode(STDOUT,':utf8');
-
+binmode(STDOUT,':encoding(UTF-8)');
 use POSIX qw(strftime nice);
 
 use Debbugs::Config qw(:globals :text :config);

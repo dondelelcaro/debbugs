@@ -110,7 +110,8 @@ BEGIN{
 }
 
 use Debbugs::Config qw(:config);
-use Debbugs::Common qw(:lock buglog :misc get_hashname sort_versions :utf8);
+use Debbugs::Common qw(:lock buglog :misc get_hashname sort_versions);
+use Debbugs::UTF8;
 use Debbugs::Status qw(bug_archiveable :read :hook writebug new_bug splitpackages split_status_fields get_bug_status);
 use Debbugs::CGI qw(html_escape);
 use Debbugs::Log qw(:misc :write);
@@ -125,7 +126,7 @@ use IO::File;
 
 use Debbugs::Text qw(:templates);
 
-use Debbugs::Mail qw(rfc822_date send_mail_message default_headers);
+use Debbugs::Mail qw(rfc822_date send_mail_message default_headers encode_headers);
 use Debbugs::MIME qw(create_mime_message);
 
 use Mail::RFC822::Address qw();
@@ -1578,7 +1579,11 @@ sub set_found {
 		if (not @svers) {
 		    @svers = $version;
 		}
-		else {
+		elsif (not grep {$version eq $_} @svers) {
+                    # The $version was not equal to one of the source
+                    # versions, so it's probably unqualified (or just
+                    # wrong). Delete it, and use the source versions
+                    # instead.
 		    if (exists $found_versions{$version}) {
 			delete $found_versions{$version};
 			$found_removed{$version} = 1;
@@ -1591,7 +1596,7 @@ sub set_found {
 		    }
 		    # if the found we are adding matches any fixed
 		    # versions, remove them
-		    my @temp = grep m{(^|/)\Q$sver\E}, keys %fixed_versions;
+		    my @temp = grep m{(^|/)\Q$sver\E$}, keys %fixed_versions;
 		    delete $fixed_versions{$_} for @temp;
 		    $fixed_removed{$_} = 1 for @temp;
 		}
@@ -1615,7 +1620,7 @@ sub set_found {
 		# in the case of removal, we only concern ourself with
 		# the version passed, not the source version it maps
 		# to
-		my @temp = grep m{(^|/)\Q$version\E}, keys %found_versions;
+		my @temp = grep m{(?:^|/)\Q$version\E$}, keys %found_versions;
 		delete $found_versions{$_} for @temp;
 		$found_removed{$_} = 1 for @temp;
 	    }
@@ -2168,7 +2173,7 @@ sub set_merged {
 	    $locks--;
 	}
 	__end_control(%info);
-	for my $change (values %{$changes}, @{$disallowed_changes}) {
+	for my $change ((map {@{$_}} values %{$changes}), @{$disallowed_changes}) {
 	    print {$transcript} "$change->{field} of #$change->{bug} is '$change->{text_orig_value}' not '$change->{text_value}'\n";
 	}
 	die "Unable to modify bugs so they could be merged";
@@ -2317,6 +2322,17 @@ sub __calculate_merge_status{
 	$merge_status{keywords} = join(' ',sort keys %{$merge_status{tag}});
 	for (qw(fixed found)) {
 	    @{$merge_status{"${_}_versions"}}{@{$data->{"${_}_versions"}}} = (1) x @{$data->{"${_}_versions"}};
+	}
+    }
+    # if there is a non-source qualified version with a corresponding
+    # source qualified version, we only want to merge the source
+    # qualified version(s)
+    for (qw(fixed found)) {
+	my @unqualified_versions = grep {m{/}?0:1} keys %{$merge_status{"${_}_versions"}};
+	for my $unqualified_version (@unqualified_versions) {
+	    if (grep {m{/\Q$unqualified_version\E}} keys %{$merge_status{"${_}_versions"}}) {
+		delete $merge_status{"${_}_versions"}{$unqualified_version};
+	    }
 	}
     }
     return (\%merge_status,$bugs_to_merge);
@@ -3422,25 +3438,25 @@ sub append_action_to_log{
      }
      my $msg = join('',
 		    (exists $param{command} ?
-		     "<!-- command:".html_escape(encode_utf8($param{command}))." -->\n":""
+		     "<!-- command:".html_escape(encode_utf8_safely($param{command}))." -->\n":""
 		    ),
 		    (length $param{requester} ?
-		     "<!-- requester: ".html_escape(encode_utf8($param{requester}))." -->\n":""
+		     "<!-- requester: ".html_escape(encode_utf8_safely($param{requester}))." -->\n":""
 		    ),
 		    (length $param{request_addr} ?
-		     "<!-- request_addr: ".html_escape(encode_utf8($param{request_addr}))." -->\n":""
+		     "<!-- request_addr: ".html_escape(encode_utf8_safely($param{request_addr}))." -->\n":""
 		    ),
 		    "<!-- time:".time()." -->\n",
 		    $data_diff,
-		    "<strong>".html_escape(encode_utf8($param{action}))."</strong>\n");
+		    "<strong>".html_escape(encode_utf8_safely($param{action}))."</strong>\n");
      if (length $param{requester}) {
-          $msg .= "Request was from <code>".html_escape(encode_utf8($param{requester}))."</code>\n";
+          $msg .= "Request was from <code>".html_escape(encode_utf8_safely($param{requester}))."</code>\n";
      }
      if (length $param{request_addr}) {
-          $msg .= "to <code>".html_escape(encode_utf8($param{request_addr}))."</code>";
+          $msg .= "to <code>".html_escape(encode_utf8_safely($param{request_addr}))."</code>";
      }
      if (length $param{desc}) {
-	  $msg .= ":<br>\n".encode_utf8($param{desc})."\n";
+	  $msg .= ":<br>\n".encode_utf8_safely($param{desc})."\n";
      }
      else {
 	  $msg .= ".\n";
@@ -3451,7 +3467,7 @@ sub append_action_to_log{
      $msg = '';
      if ((ref($param{message}) and @{$param{message}}) or length($param{message})) {
 	 push @records, {type => exists $param{recips}?'recips':'incoming-recv',
-			 exists $param{recips}?(recips => [make_list($param{recips})]):(),
+			 exists $param{recips}?(recips => [map {encode_utf8_safely($_)} make_list($param{recips})]):(),
 			 text => join('',make_list($param{message})),
 			};
      }
@@ -3575,13 +3591,14 @@ sub __return_append_to_log_options{
      }
      if (not exists $param{message}) {
 	  my $date = rfc822_date();
-	  $param{message} = fill_in_template(template  => 'mail/fake_control_message',
-					     variables => {request_addr => $param{request_addr},
-							   requester    => $param{requester},
-							   date         => $date,
-							   action       => $action
-							  },
-					    );
+	  $param{message} =
+              encode_headers(fill_in_template(template  => 'mail/fake_control_message',
+                                              variables => {request_addr => $param{request_addr},
+                                                            requester    => $param{requester},
+                                                            date         => $date,
+                                                            action       => $action
+                                                           },
+                                             ));
      }
      if (not defined $action) {
 	  carp "Undefined action!";

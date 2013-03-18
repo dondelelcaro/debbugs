@@ -41,7 +41,8 @@ BEGIN{
 
 use IO::File;
 use Debbugs::Status qw(get_bug_status);
-use Debbugs::Common qw(make_list getbuglocation getbugcomponent :utf8);
+use Debbugs::Common qw(make_list getbuglocation getbugcomponent);
+use Debbugs::UTF8;
 use Debbugs::Packages;
 
 use Storable qw(nstore retrieve dclone);

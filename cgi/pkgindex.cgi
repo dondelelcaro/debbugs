@@ -67,7 +67,9 @@ my %htmldescrip = ();
 my %sortkey = ();
 if ($indexon eq "pkg") {
   $tag = "package";
-  %count = count_bugs(function => sub {my %d=@_; return splitpackages($d{"pkg"})});
+  %count = count_bugs(function => sub {my %d=@_; return splitpackages($d{"pkg"})},
+		     archive => $archive,
+		     );
   if (defined $param{first}) {
        %count = map {
 	    if (/^\Q$param{first}\E/) {
@@ -83,11 +85,9 @@ if ($indexon eq "pkg") {
   foreach my $pkg (keys %count) {
     $sortkey{$pkg} = lc $pkg;
     $htmldescrip{$pkg} = sprintf('<a href="%s">%s</a> (%s)',
-                           package_links(package => $pkg, links_only=>1),
-                           html_escape($pkg),
-                           htmlize_maintlinks(sub { $_[0] == 1 ? 'maintainer: '
-                                                           : 'maintainers: ' },
-                                          $maintainers{$pkg}));
+				 package_links(package => $pkg, links_only=>1),
+				 html_escape($pkg),
+				 package_links(maint=>$maintainers{$pkg}//['']));
   }
 } elsif ($indexon eq "src") {
   $tag = "source package";
@@ -106,16 +106,16 @@ if ($indexon eq "pkg") {
                           return map {
                             $pkgsrc->{$_} || $_
                           } splitpackages($d{"pkg"});
-                         });
+                         },
+		     archive => $archive,
+		     );
   $note = "";
   foreach my $src (keys %count) {
     $sortkey{$src} = lc $src;
     $htmldescrip{$src} = sprintf('<a href="%s">%s</a> (%s)',
                            package_links(src => $src, links_only=>1),
                            html_escape($src),
-                           htmlize_maintlinks(sub { $_[0] == 1 ? 'maintainer: '
-                                                           : 'maintainers: ' },
-                                          $maintainers{$src}));
+				 package_links(maint => $maintainers{$src}//['']));
   }
 } elsif ($indexon eq "maint") {
   $tag = "maintainer";
@@ -129,7 +129,9 @@ if ($indexon eq "pkg") {
                             }
                             map { $_->address } @me;
                           } splitpackages($d{"pkg"});
-                         });
+                         },
+		     archive => $archive,
+		     );
   if (defined $param{first}) {
        %count = map {
 	    if (/^\Q$param{first}\E/) {
@@ -145,7 +147,7 @@ if ($indexon eq "pkg") {
   $note .= "different addresses.</p>\n";
   foreach my $maint (keys %count) {
     $sortkey{$maint} = lc $email2maint{$maint} || "(unknown)";
-    $htmldescrip{$maint} = htmlize_maintlinks('', $email2maint{$maint});
+    $htmldescrip{$maint} = package_links(maint => $email2maint{$maint}//['']);
   }
 } elsif ($indexon eq "submitter") {
   $tag = "submitter";
@@ -157,7 +159,9 @@ if ($indexon eq "pkg") {
                               unless exists $fullname{$addr->address};
                           }
                           map { $_->address } @se;
-                         });
+                         },
+		     archive => $archive,
+		     );
   if (defined $param{first}) {
        %count = map {
 	    if (/^\Q$param{first}\E/) {
@@ -179,7 +183,9 @@ if ($indexon eq "pkg") {
   $note .= "different addresses.</p>\n";
 } elsif ($indexon eq "tag") {
   $tag = "tag";
-  %count = count_bugs(function => sub {my %d=@_; return split ' ', $d{tags}; });
+  %count = count_bugs(function => sub {my %d=@_; return split ' ', $d{tags}; },
+		      archive => $archive,
+		     );
   if (defined $param{first}) {
        %count = map {
 	    if (/^\Q$param{first}\E/) {
@@ -220,44 +226,16 @@ $result .= "</ul>\n";
 
 print "Content-Type: text/html\n\n";
 
-print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
-print "<HTML><HEAD>\n" . 
-    "<TITLE>$gProject$Archived $gBug reports by $tag</TITLE>\n" .
-    qq(<LINK REL="stylesheet" HREF="$gWebHostBugDir/css/bugs.css" TYPE="text/css">) .
-    "</HEAD>\n" .
-    '<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#800080">' .
-    "\n";
-print "<H1>" . "$gProject$Archived $gBug report logs by $tag" .
-      "</H1>\n";
-
-print $note;
-print <<END;
-<form>
-<input type="hidden" name="skip" value="$param{skip}">
-<input type="hidden" name="max_results" value="$param{max_results}">
-<input type="hidden" name="indexon" value="$param{indexon}">
-<input type="hidden" name="repeatmerged" value="$param{repeatmerged}">
-<input type="hidden" name="archive" value="$param{archive}">
-<input type="hidden" name="sortby" value="$param{sortby}">
-END
-if (defined $param{first}) {
-     print qq(<input type="hidden" name="first" value="$param{first}">\n);
-}
-else {
-     print q(<p>);
-     if ($param{skip} > 0) {
-	  print q(<input type="submit" name="prev" value="Prev">);
-     }
-     if (keys %count > ($param{skip} + $param{max_results})) {
-	  print q(<input type="submit" name="next" value="Next">);
-     }
-     print qq(</p>\n);
-}
-print $result;
-
-print "<hr>\n";
-print fill_in_template(template=>'html/html_tail',
+print fill_in_template(template=>'cgi/pkgindex.tmpl',
+		       variables => {count => \%count,
+				     param => \%param,
+				     result => $result,
+				     html_escape => \&Debbugs::CGI::html_escape,
+				     archived => $Archived,
+				     note => $note,
+				     tag => $tag,
+				    },
                        hole_var => {'&strftime' => \&POSIX::strftime,
                                    },
                       );
-print "</body></html>\n";
+

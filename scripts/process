@@ -79,6 +79,7 @@ my $debugfh = IO::File->new('/dev/null','w') or
 if ($DEBUG > 0) {
     $debugfh = \*STDERR;
 }
+binmode($debugfh,':raw:encoding(UTF-8)');
 
 # these are the valid bug addresses
 my %baddress = (B => 'submit',
@@ -174,13 +175,14 @@ my %header;
 
 my @common_headers;
 for my $hdr (@headerlines) {
+    my $orig_hdr = $hdr;
     $hdr = decode_rfc1522($hdr);
     $_ = $hdr;
     s/\n\s/ /g;
     finish() if m/^x-loop: (\S+)$/i && $1 eq "$gMaintainerEmail";
     my $ins = !m/^subject:/i && !m/^reply-to:/i && !m/^return-path:/i
            && !m/^From / && !m/^X-Debbugs-/i;
-    $fwd .= $hdr."\n" if $ins;
+    $fwd .= encode_utf8($hdr)."\n" if $ins;
     # print {$debugfh} ">$_<\n";
     if (s/^(\S+):\s*//) {
 	my $v = lc $1;
@@ -248,7 +250,9 @@ my $i = 0;
 ++$i while $msg[$i] =~ /./;
 $fwd .= join("\n",@msg[$i..$#msg]);
 
+binmode($debugfh,':raw');
 print {$debugfh} "***\n$fwd\n***\n";
+binmode($debugfh,':raw:encoding(UTF-8)');
 
 if (defined $header{'resent-from'} && !defined $header{'from'}) {
     $header{'from'} = $header{'resent-from'};
@@ -275,8 +279,18 @@ if (!defined($header{'subject'}))
 my $ref=-1;
 # remove Re: from the subject line
 $subject =~ s/^Re:\s*//i;
-# remove remaining mailing list name markers from the subject line
-$subject =~ s/^\[.*\]\s*//i;
+# remove remaining mailing list name markers from the subject line if
+# this appears to be a message that has traversed a mailing list
+if (exists $header{'list-id'} or exists $header{'list-subscribe'} or
+    (exists $header{'precedence'} and defined $header{'precedence'} and
+     $header{'precedence'} eq 'bulk') or
+    exists $header{'mailing-list'} or exists $header{'list-processor-version'}
+   ){
+    # if a mailing list didn't match any of the above, it's probably
+    # so horribly configured that we wouldn't be able to figure it out
+    # anyway.
+    $subject =~ s/^\[.*\]\s*//i;
+}
 $_= $subject."\n";
 if (not defined $tryref and m/^Bug ?\#(\d+)\D/i) {
     $tryref = $1 if $1 > 0;
@@ -450,15 +464,13 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	# Add bug mailing list to $generalbcc as appropriate
  	# This array is used to specify bcc in the cases where we're using create_mime_message.
 	my @generalbcc = @generalcc;
-	my $generalbcc = $generalcc;
 	if (defined $config{subscription_domain} and length $config{subscription_domain}) {
-	    my @generalbcc = (@generalbcc, @addsrcaddrs);
-	    my $generalbcc = join(', ', $generalbcc, @addsrcaddrs);
+	    @generalbcc = (@generalbcc, @addsrcaddrs);
 	}
 	if (defined $config{bug_subscription_domain} and length $config{bug_subscription_domain}) {
-	    my @generalbcc = (@generalbcc, "bugs=$ref\@$config{bug_subscription_domain}");
-	    my $generalbcc = join(', ', $generalbcc, "bugs=$ref\@$config{bug_subscription_domain}");
+	    @generalbcc = (@generalbcc, "bugs=$ref\@$config{bug_subscription_domain}");
 	}
+	my $generalbcc = join(', ', @generalbcc);
 	$generalbcc =~ s/\s+\n\s+/ /g;
 	$generalbcc =~ s/^\s+/ /; $generalbcc =~ s/\s+$//;
 	if (length $generalbcc) {$generalbcc = "Bcc: $generalbcc\n"};
@@ -1040,6 +1052,7 @@ if (@control_bits) {
 		}
 	    }
 	    else {
+		print {$transcript} "Unknown command or malformed arguments to command.\n\n";
 		$errors++;
 		if (++$unknowns >= 5) {
 		    print {$transcript} "Too many unknown commands, stopping here.\n\n";
@@ -1194,7 +1207,7 @@ sub sendmessage {
     write_log_records(logfh => $logfh,
 		      records => {text => stripbccs($msg),
 				  type => 'recips',
-				  recips => [@{$recips}],
+				  recips => [map {encode_utf8($_)} @{$recips}],
 				 },
 		     );
     if (ref($bcc)) {

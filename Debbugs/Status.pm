@@ -37,7 +37,8 @@ use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 
 use Params::Validate qw(validate_with :types);
-use Debbugs::Common qw(:util :lock :quit :misc :utf8);
+use Debbugs::Common qw(:util :lock :quit :misc);
+use Debbugs::UTF8;
 use Debbugs::Config qw(:config);
 use Debbugs::MIME qw(decode_rfc1522 encode_rfc1522);
 use Debbugs::Packages qw(makesourceversions make_source_versions getversions get_versions binary_to_source);
@@ -1614,6 +1615,8 @@ sub update_realtime {
 	my $idx_new = IO::File->new($file.'.new','w')
 	     or die "Couldn't open ${file}.new: $!";
 
+        binmode($idx_old,':raw:utf8');
+        binmode($idx_new,':raw:encoding(UTF-8)');
 	my $min_bug = min(keys %bugs);
 	my $line;
 	my @line;
