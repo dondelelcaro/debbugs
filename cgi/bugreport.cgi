@@ -52,7 +52,7 @@ my %param = cgi_parameters(query => $q,
 			   single => [qw(bug msg att boring terse),
 				      qw(reverse mbox mime trim),
 				      qw(mboxstat mboxmaint archive),
-				      qw(repeatmerged)
+				      qw(repeatmerged avatars),
 				     ],
 			   default => {# msg       => '',
 				       boring    => 'no',
@@ -64,6 +64,7 @@ my %param = cgi_parameters(query => $q,
 				       mboxmaint => 'no',
 				       archive   => 'no',
 				       repeatmerged => 'yes',
+                                       avatars   => 'yes',
 				      },
 			  );
 # This is craptacular.
@@ -78,6 +79,7 @@ my $terse = $param{'terse'} eq 'yes';
 my $reverse = $param{'reverse'} eq 'yes';
 my $mbox = $param{'mbox'} eq 'yes';
 my $mime = $param{'mime'} eq 'yes';
+my $avatars = $param{avatars} eq 'yes';
 
 my %bugusertags;
 my %ut;
@@ -273,7 +275,11 @@ else {
 	       next;
 	  }
 	  $skip_next = 1 if $record->{type} eq 'html' and not $boring;
-	  push @log, handle_record($record,$ref,$msg_num,\%seen_msg_ids);
+	  push @log, handle_record($record,$ref,$msg_num,
+                                   \%seen_msg_ids,
+                                   trim_headers => $trim_headers,
+                                   avatars => $avatars,
+                                  );
      }
 }
 
