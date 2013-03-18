@@ -655,7 +655,7 @@ sub makestatus {
 
 Writes the bug status and summary files out.
 
-Skips writting out a status file if minversion is 2
+Skips writing out a status file if minversion is 2
 
 Does not call bughook if disablebughook is true.
 
@@ -773,7 +773,7 @@ exactly are removed. Otherwise, all versions matching the version
 number are removed.
 
 Currently $package and $isbinary are entirely ignored, but accepted
-for backwards compatibilty.
+for backwards compatibility.
 
 =cut
 
