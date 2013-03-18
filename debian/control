@@ -44,7 +44,6 @@ Depends:
  libio-stringy-perl, libmldbm-perl, liburi-perl, libsoap-lite-perl,
  libcgi-simple-perl, libparams-validate-perl, libtext-template-perl,
  libsafe-hole-perl, libmail-rfc822-address-perl, liblist-moreutils-perl,
- libtext-template-perl
 Section: perl
 Description: Modules used by the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
