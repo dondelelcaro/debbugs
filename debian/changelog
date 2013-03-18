@@ -60,9 +60,10 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
     a site admin aware of its existence (closes: #688345).
   * Make sure that mails to gSubscriptionDomain and gBugSubscriptionDomain
     are only sent out if the variables in config are defined and
-    have a lenght < 0 (closes: #688344).
+    have a length < 0 (closes: #688344).
   * Use locale independent date format for mail processing and service mail
     generation (closes: #688745).
+  * Fix spelling error in /debian/changelog.
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 
