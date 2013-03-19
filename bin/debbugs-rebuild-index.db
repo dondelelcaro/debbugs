@@ -1,0 +1,155 @@
+#! /usr/bin/perl
+# debbugs-rebuild-index.db is part of debbugs, and is released
+# under the terms of the GPL version 2, or any later version, at your
+# option. See the file README and COPYING for more information.
+# Copyright 2012 by Don Armstrong <don@donarmstrong.com>.
+
+
+use warnings;
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case);
+use Pod::Usage;
+
+=head1 NAME
+
+debbugs-rebuild-index.db -- rebuild Debbug's index.db
+
+=head1 SYNOPSIS
+
+debbugs-rebuild-index.db [options]
+
+ Options:
+  --spool-dir debbugs spool directory
+  --debug, -d debugging level (Default 0)
+  --help, -h display this help
+  --man, -m display manual
+
+=head1 OPTIONS
+
+=over
+
+=item B<--spool-dir>
+
+Debbugs spool directory; defaults to the value configured in the
+debbugs configuration file.
+
+=item B<--debug, -d
+
+Debug verbosity.
+
+=item B<--help, -h>
+
+Display brief useage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+=head1 EXAMPLES
+
+Rebuild the index.db for db-h.
+
+ debbugs-rebuild-index.db;
+
+Rebuild the index.db for archive
+
+ debbugs-rebuild-index.db archive;
+
+
+=cut
+
+
+use vars qw($DEBUG);
+
+use Debbugs::Common qw(checkpid lockpid get_hashname getparsedaddrs getbugcomponent make_list);
+use Debbugs::Config qw(:config);
+use Debbugs::Status qw(read_bug split_status_fields);
+use Debbugs::Log;
+use Debbugs::DB;
+use Debbugs::DB::Load qw(load_bug handle_load_bug_queue);
+use DateTime;
+use File::stat;
+
+
+my %options = (debug           => 0,
+	       help            => 0,
+	       man             => 0,
+	       verbose         => 0,
+	       quiet           => 0,
+	       quick           => 0,
+	       service         => 'debbugs',
+	      );
+
+
+GetOptions(\%options,
+	   'quick|q',
+	   'service|s',
+	   'sysconfdir|c',
+	   'spool_dir|spool-dir=s',
+	   'debug|d+','help|h|?','man|m');
+
+pod2usage() if $options{help};
+pod2usage({verbose=>2}) if $options{man};
+
+$DEBUG = $options{debug};
+
+my @USAGE_ERRORS;
+$options{verbose} = $options{verbose} - $options{quiet};
+
+pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
+
+if (exists $options{spool_dir} and defined $options{spool_dir}) {
+    $config{spool_dir} = $options{spool_dir};
+}
+chdir($config{spool_dir}) or die "chdir $config{spool_dir} failed: $!";
+
+my $verbose = $options{debug};
+
+my $initialdir = "db-h";
+
+if (defined $ARGV[0] and $ARGV[0] eq "archive") {
+    $initialdir = "archive";
+}
+
+if (not lockpid($config{spool_dir}.'/lock/debbugs-rebuild-index.db')) {
+     print STDERR "Another debbugs-rebuild-index.db is running; stopping\n";
+     exit 1;
+}
+
+my $time = 0;
+my $start_time = time;
+
+
+my @dirs = ($initialdir);
+my $cnt = 0;
+my %tags;
+my %queue;
+while (my $dir = shift @dirs) {
+    printf "Doing dir %s ...\n", $dir if $verbose;
+
+    opendir(DIR, "$dir/.") or die "opendir $dir: $!";
+    my @subdirs = readdir(DIR);
+    closedir(DIR);
+
+    my @list = map { m/^(\d+)\.summary$/?($1):() } @subdirs;
+    push @dirs, map { m/^(\d+)$/ && -d "$dir/$1"?("$dir/$1"):() } @subdirs;
+
+    for my $bug (@list) {
+	print "Up to $cnt bugs...\n" if (++$cnt % 100 == 0 && $verbose);
+	my $stat = stat(getbugcomponent($bug,'summary',$initialdir));
+	if (not defined $stat) {
+	    print STDERR "Unable to stat $bug $!\n";
+	    next;
+	}
+	my $data = read_bug(bug => $bug,
+			    location => $initialdir);
+        # generate_index.db_line hasn't been written yet at all.
+        my $line = generate_index.db_line($data);
+        print {$index_db} $line;
+    }
+}
+
+__END__
