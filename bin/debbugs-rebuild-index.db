@@ -66,13 +66,7 @@ use vars qw($DEBUG);
 
 use Debbugs::Common qw(checkpid lockpid get_hashname getparsedaddrs getbugcomponent make_list);
 use Debbugs::Config qw(:config);
-use Debbugs::Status qw(read_bug split_status_fields);
-use Debbugs::Log;
-use Debbugs::DB;
-use Debbugs::DB::Load qw(load_bug handle_load_bug_queue);
-use DateTime;
-use File::stat;
-
+use Debbugs::Status qw(read_bug split_status_fields generate_index_db_line);
 
 my %options = (debug           => 0,
 	       help            => 0,
@@ -119,14 +113,14 @@ if (not lockpid($config{spool_dir}.'/lock/debbugs-rebuild-index.db')) {
      exit 1;
 }
 
-my $time = 0;
-my $start_time = time;
+my $file = "index.${initialdir}.realtime";
+my $idx_rebuild = IO::File->new($file.'.rebuild','w')
+    or die "Couldn't open ${file}.rebuild: $!";
 
 
 my @dirs = ($initialdir);
 my $cnt = 0;
-my %tags;
-my %queue;
+my %bugs;
 while (my $dir = shift @dirs) {
     printf "Doing dir %s ...\n", $dir if $verbose;
 
@@ -146,10 +140,14 @@ while (my $dir = shift @dirs) {
 	}
 	my $data = read_bug(bug => $bug,
 			    location => $initialdir);
-        # generate_index.db_line hasn't been written yet at all.
-        my $line = generate_index.db_line($data);
-        print {$index_db} $line;
+        my $line = generate_index_db_line($data);
+        $bugs{$bug} = $line;
     }
 }
+binmode($idx_rebuild,':raw:encoding(UTF-8)');
+print {$idx_rebuild} $bugs{$_} foreach sort keys %bugs;
+close($idx_rebuild);
+rename("$file.rebuild", $file);
+
 
 __END__
