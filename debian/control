@@ -3,7 +3,7 @@ Section: misc
 Priority: extra
 Maintainer: Debbugs developers <debian-debbugs@lists.debian.org>
 Uploaders: Colin Watson <cjwatson@debian.org>, Don Armstrong <don@debian.org>
-Standards-Version: 3.8.2
+Standards-Version: 3.9.4
 Vcs-Browser: http://bugs.debian.org/debbugs-source/mainline
 Vcs-Git: http://bugs.debian.org/debbugs-source/debbugs.git
 Build-Depends: debhelper (>= 5)
@@ -25,7 +25,7 @@ Depends:
  libdebbugs-perl,
 Recommends: debbugs-web
 Suggests: spamassassin (>= 3.0), libcgi-alert-perl
-Description: The bug tracking system based on the active Debian BTS
+Description: bug tracking system based on the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
  users and developers. Each bug is given a number, and is kept on file until
  it is marked as having been dealt with. The system is mainly controlled by
@@ -44,7 +44,6 @@ Depends:
  libio-stringy-perl, libmldbm-perl, liburi-perl, libsoap-lite-perl,
  libcgi-simple-perl, libparams-validate-perl, libtext-template-perl,
  libsafe-hole-perl, libmail-rfc822-address-perl, liblist-moreutils-perl,
- libtext-template-perl
 Section: perl
 Description: modules used by the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
@@ -77,7 +76,7 @@ Depends:
  ${misc:Depends},
  libdebbugs-perl, debbugs-web, libconfig-simple-perl,
  libuser-perl, rsync, libhttp-server-simple-perl, libnet-server-perl
-Description: run and maintains a local mirror of the Debian BTS
+Description: Run and maintains a local mirror of the Debian BTS
  Debian has a bug tracking system which files details of bugs reported
  by users and developers. Each bug is given a number, and is kept on
  file until it is marked as having been dealt with. The system is

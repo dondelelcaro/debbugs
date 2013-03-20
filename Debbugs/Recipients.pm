@@ -245,7 +245,7 @@ Using the recipient hashref, determines the set of recipients.
 If you specify one of C<bcc>, C<cc>, or C<to>, you will receive only a
 LIST of recipients which the main should be Bcc'ed, Cc'ed, or To'ed
 respectively. By default, a LIST with keys bcc, cc, and to is returned
-with ARRAYREF values correponding to the users to whom a message
+with ARRAYREF values corresponding to the users to whom a message
 should be sent.
 
 =over
