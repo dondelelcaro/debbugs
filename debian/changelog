@@ -57,8 +57,7 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   * Use locale independent date format for mail processing and service mail
     generation (closes: #688745).
   * Fix spelling error in /debian/changelog.
-  * Fix lintian issue: description-synopsis-starts-with-article, also:
-    capitalize first letter in all description synopsis lines.
+  * Fix lintian issue: description-synopsis-starts-with-article.
   * Fix lintian issues: debian-rules-missing-recommended-target build-arch,
     debian-rules-missing-recommended-target build-indep.
   * Switch to debian/source/format: 3.0 (native).
