@@ -34,7 +34,7 @@ debbugs-rebuild-index.db [options]
 Debbugs spool directory; defaults to the value configured in the
 debbugs configuration file.
 
-=item B<--debug, -d
+=item B<--debug, -d>
 
 Debug verbosity.
 
@@ -113,7 +113,11 @@ if (not lockpid($config{spool_dir}.'/lock/debbugs-rebuild-index.db')) {
      exit 1;
 }
 
-my $file = "index.${initialdir}.realtime";
+my $fh_type = $initialdir;
+# if initaldir is db-h, the file is db.
+$fh_type = 'db' if $initialdir eq 'db-h';
+
+my $file = "index.${fh_type}.realtime";
 my $idx_rebuild = IO::File->new($file.'.rebuild','w')
     or die "Couldn't open ${file}.rebuild: $!";
 
@@ -145,7 +149,7 @@ while (my $dir = shift @dirs) {
     }
 }
 binmode($idx_rebuild,':raw:encoding(UTF-8)');
-print {$idx_rebuild} $bugs{$_} foreach sort keys %bugs;
+print {$idx_rebuild} $bugs{$_} foreach sort {$a <=> $b} keys %bugs;
 close($idx_rebuild);
 rename("$file.rebuild", $file);
 
