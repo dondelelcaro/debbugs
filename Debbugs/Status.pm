@@ -208,6 +208,7 @@ sub read_bug{
 	 $log = $status;
 	 $log =~ s/\.summary$/.log/;
 	 ($location) = $status =~ m/(db-h|db|archive)/;
+         ($param{bug}) = $status =~ m/(\d+)\.summary$/;
     }
     if ($param{lock}) {
 	filelock("$config{spool_dir}/lock/$param{bug}",exists $param{locks}?$param{locks}:());
@@ -1614,7 +1615,7 @@ Returns a line for a bug suitable to be written out to index.db.
 =cut
 
 sub generate_index_db_line {
-    my ($data) = @_;
+    my ($data,$bug) = @_;
 
     # just in case someone has given us a split out data
     $data = join_status_fields($data);
@@ -1627,9 +1628,8 @@ sub generate_index_db_line {
     $whendone = "forwarded" if defined $data->{forwarded} and length $data->{forwarded};
     $whendone = "done" if defined $data->{done} and length $data->{done};
     $severity = $data->{severity} if length $data->{severity};
-
     return sprintf "%s %d %d %s [%s] %s %s\n",
-        $pkglist, $data->{bug_num}, $data->{date}, $whendone,
+        $pkglist, $data->{bug_num}//$bug, $data->{date}, $whendone,
             $data->{originator}, $severity, $data->{keywords};
 }
 
@@ -1716,7 +1716,7 @@ sub bughook {
 	     my $data = $bugs_temp{$bug};
 	     appendfile("$config{spool_dir}/debbugs.trace","$type $bug\n",makestatus($data, 1));
 
-	     $bugs{$bug} = generate_index_db_line($data);
+	     $bugs{$bug} = generate_index_db_line($data,$bug);
 	}
 	update_realtime("$config{spool_dir}/index.db.realtime", %bugs);
 
