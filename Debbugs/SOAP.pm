@@ -343,7 +343,7 @@ architectures are at which versions.
 
 =back
 
-This function correponds to L<Debbugs::Packages::get_versions>
+This function corresponds to L<Debbugs::Packages::get_versions>
 
 =cut
 

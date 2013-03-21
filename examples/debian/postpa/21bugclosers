@@ -39,6 +39,7 @@ my %bugclosers = count_bugs(function => sub {
 
 open BUGCLOSERS, '> /org/bugs.debian.org/www/stats/bugclosers.txt.new'
     or die "can't open bugclosers.txt.new: $!";
+binmode(BUGCLOSERS,':raw:encoding(UTF-8)');
 for my $closer (sort { $bugclosers{$a} <=> $bugclosers{$b} } keys %bugclosers) {
     printf BUGCLOSERS "%4d %s\n", $bugclosers{$closer}, $closer
 	or die "can't write to bugclosers.txt.new: $!";

@@ -178,7 +178,7 @@ sub convert_to_utf8 {
     if (not defined $retval or
         $retval < 0
        ) {
-        warn "failed to convert to utf8";
+        warn "failed to convert to utf8 (charset: $charset, data: $data)";
         # Fallback to encode, which will probably also fail.
         return __fallback_convert_to_utf8($data,$charset);
     }
