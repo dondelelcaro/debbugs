@@ -146,7 +146,8 @@ sub decode_utf8_safely{
 our %iconv_converters;
 
 sub convert_to_utf8 {
-    my ($data,$charset) = @_;
+    my ($data,$charset,$internal_call) = @_;
+    $internal_call //= 0;
     if (is_utf8($data)) {
         cluck("utf8 flag is set when calling convert_to_utf8");
         return $data;
@@ -161,6 +162,7 @@ sub convert_to_utf8 {
                 die "Unable to create converter for '$charset'";
         };
         if ($@) {
+            return undef if $internal_call;
             warn $@;
             # We weren't able to create the converter, so use Encode
             # instead
@@ -168,6 +170,7 @@ sub convert_to_utf8 {
         }
     }
     if (not defined $iconv_converters{$charset}) {
+        return undef if $internal_call;
         warn "The converter for $charset wasn't created properly somehow!";
         return __fallback_convert_to_utf8($data,$charset);
     }
@@ -178,6 +181,16 @@ sub convert_to_utf8 {
     if (not defined $retval or
         $retval < 0
        ) {
+        # try iso8559-1 first
+        if (not $internal_call) {
+            my $call_back_data = convert_to_utf8($data,'ISO8859-1',1);
+            # if there's an Ã (0xC3), it's probably something
+            # horrible, and we shouldn't try to convert it.
+            if (defined $call_back_data and $call_back_data !~ /\x{C3}/) {
+                warn "failed to convert to utf8 (charset: $charset, data: $data), but succeeded with ISO8859-1: ".encode_utf8($call_back_data);
+                return $call_back_data;
+            }
+        }
         warn "failed to convert to utf8 (charset: $charset, data: $data)";
         # Fallback to encode, which will probably also fail.
         return __fallback_convert_to_utf8($data,$charset);
@@ -199,7 +212,7 @@ sub __fallback_convert_to_utf8 {
      $charset //= 'utf8';
      my $result;
      eval {
-	 $result = decode($charset,$data);
+	 $result = decode($charset,$data,0);
      };
      if ($@) {
 	  warn "Unable to decode charset; '$charset' and '$data': $@";
