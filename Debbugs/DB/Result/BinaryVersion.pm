@@ -60,6 +60,16 @@ __PACKAGE__->table("binary_versions");
   data_type: 'debversion'
   is_nullable: 1
 
+=head2 src_ver_based_on
+
+  data_type: 'debversion'
+  is_nullable: 1
+
+=head2 src_pkg_based_on
+
+  data_type: 'text'
+  is_nullable: 1
+
 =cut
 
 __PACKAGE__->add_columns(
@@ -73,11 +83,15 @@ __PACKAGE__->add_columns(
   { data_type => "text", is_nullable => 1 },
   "bin_ver",
   { data_type => "debversion", is_nullable => 1 },
+  "src_ver_based_on",
+  { data_type => "debversion", is_nullable => 1 },
+  "src_pkg_based_on",
+  { data_type => "text", is_nullable => 1 },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-23 23:44:18
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:04R2st85wn634BqbBU2/qQ
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-22 16:20:31
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:77yN9sUsXItcsQ1qJETQaw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
