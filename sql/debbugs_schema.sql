@@ -73,6 +73,7 @@ CREATE TABLE bug (
        subject TEXT NOT NULL,
        done TEXT NOT NULL DEFAULT '',
        owner TEXT NOT NULL DEFAULT '',
+       submitter TEXT NOT NULL DEFAULT '',
        unknown_packages TEXT NOT NULL DEfAULT '',
        severity bug_severity DEFAULT 'normal'::bug_severity
 );
@@ -88,7 +89,8 @@ INSERT INTO column_comments VALUES ('bug','summary','Summary of the bug; empty i
 INSERT INTO column_comments VALUES ('bug','outlook','Outlook of the bug; empty if it has no outlook');
 INSERT INTO column_comments VALUES ('bug','subject','Subject of the bug');
 INSERT INTO column_comments VALUES ('bug','done','Individual who did the -done; empty if it has never been -done');
-INSERT INTO column_comments VALUES ('bug','owner','Individual who did the -done; empty if it has never been -done');
+INSERT INTO column_comments VALUES ('bug','owner','Individual who owns this bug; empty if no one owns it');
+INSERT INTO column_comments VALUES ('bug','submitter','Individual who submitted this bug; empty if there is no submitter');
 INSERT INTO column_comments VALUES ('bug','unknown_packages','Package name if the package is not known');
 INSERT INTO column_comments VALUES ('bug','severity','Bug severity');
 

@@ -118,6 +118,7 @@ sub load_bug {
 	       subject => $data->{subject} // '',
 	       done => $data->{done} // '',
 	       owner => $data->{owner} // '',
+               submitter => $data->{submitter} // '',
 	       severity => length($data->{severity}) ? $data->{severity} : $config{default_severity},
 	      };
     $s->resultset('Bug')->update_or_create($bug);

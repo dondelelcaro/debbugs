@@ -129,7 +129,15 @@ Individual who did the -done; empty if it has never been -done
   default_value: (empty string)
   is_nullable: 0
 
-Individual who did the -done; empty if it has never been -done
+Individual who owns this bug; empty if no one owns it
+
+=head2 submitter
+
+  data_type: 'text'
+  default_value: (empty string)
+  is_nullable: 0
+
+Individual who submitted this bug; empty if there is no submitter
 
 =head2 unknown_packages
 
@@ -189,6 +197,8 @@ __PACKAGE__->add_columns(
   "done",
   { data_type => "text", default_value => "", is_nullable => 0 },
   "owner",
+  { data_type => "text", default_value => "", is_nullable => 0 },
+  "submitter",
   { data_type => "text", default_value => "", is_nullable => 0 },
   "unknown_packages",
   { data_type => "text", default_value => "", is_nullable => 0 },
@@ -362,8 +372,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-29 18:11:35
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:eW7Cg2dL1CbA9Rn+nzZqOg
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-22 16:20:31
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Cvwpg/d7shs9bxFOQZhNVg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
