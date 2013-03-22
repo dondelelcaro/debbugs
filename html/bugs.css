@@ -99,7 +99,7 @@ a.submitter:hover, a.submitter:visited:hover {
 
 pre.message {
     font-family: monospace;
-    padding-top: 0;
+    padding-top: 8px;
     margin-top: 0;
     border-top: 0;
 }
@@ -133,6 +133,15 @@ div.headers {
     overflow: auto;
  }
 
+div.header {
+    font-family: sans-serif;
+    font-size: 95%;
+    color: #3c3c3c;
+    padding: 0px;
+    line-height: 120%;
+    margin: 0px;
+}
+
 div.headers p {
     font-family: sans-serif;
     font-size: 95%;
@@ -146,7 +155,7 @@ div.headers img {
     float: right;
 }
 
-span.header { 
+span.headerfield { 
   font-weight: bold
  };
 

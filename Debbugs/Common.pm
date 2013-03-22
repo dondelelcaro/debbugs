@@ -75,6 +75,7 @@ use Storable qw(dclone);
 use Params::Validate qw(validate_with :types);
 
 use Fcntl qw(:DEFAULT :flock);
+use Encode qw(is_utf8 decode_utf8);
 
 our $DEBUG_FH = \*STDERR if not defined $DEBUG_FH;
 
@@ -816,6 +817,10 @@ Will carp if given a scalar which isn't a scalarref or a glob (or
 globref), and return /dev/null. May return undef if IO::Scalar or
 IO::File fails. (Check $!)
 
+The scalar will fill with octets, not perl's internal encoding, so you
+must use decode_utf8() after on the scalar, and encode_utf8() on it
+before. This appears to be a bug in the underlying modules.
+
 =cut
 
 sub globify_scalar {
@@ -825,7 +830,11 @@ sub globify_scalar {
 	  if (defined ref($scalar)) {
 	       if (ref($scalar) eq 'SCALAR' and
 		   not UNIVERSAL::isa($scalar,'GLOB')) {
-		    open $handle, '>:scalar', $scalar;
+                   if (is_utf8(${$scalar})) {
+                       ${$scalar} = decode_utf8(${$scalar});
+                       carp(q(\$scalar must not be in perl's internal encoding));
+                   }
+		    open $handle, '>:scalar:utf8', $scalar;
 		    return $handle;
 	       }
 	       else {

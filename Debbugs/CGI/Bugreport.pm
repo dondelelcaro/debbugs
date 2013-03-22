@@ -40,7 +40,7 @@ use Debbugs::Common qw(globify_scalar english_join);
 use Debbugs::UTF8;
 use Debbugs::Config qw(:config);
 use POSIX qw(strftime);
-use Encode qw(decode_utf8);
+use Encode qw(decode_utf8 encode_utf8);
 
 BEGIN{
      ($VERSION) = q$Revision: 494 $ =~ /^Revision:\s+([^\s+])/;
@@ -113,10 +113,13 @@ sub display_entity {
 					 trim_headers => {type => BOOLEAN,
 							  default => 1,
 							 },
+                                         avatars => {type => BOOLEAN,
+                                                     default => 1,
+                                                    },
 					}
 			     );
 
-    $param{output} = globify_scalar($param{output});
+    my $output = globify_scalar($param{output});
     my $entity = $param{entity};
     my $ref = $param{bug_num};
     my $top = $param{outer};
@@ -135,25 +138,26 @@ sub display_entity {
 	not $param{terse} and
 	not exists $param{att}) {
 	 my $header = $entity->head;
-	 print {$param{output}} "<div class=\"headers\">\n";
+	 print {$output} "<div class=\"headers\">\n";
 	 if ($param{trim_headers}) {
 	      my @headers;
 	      foreach (qw(From To Cc Subject Date)) {
 		   my $head_field = $head->get($_);
 		   next unless defined $head_field and $head_field ne '';
-                   if ($_ eq 'From') {
+                   chomp $head_field;
+                   if ($_ eq 'From' and $param{avatars}) {
                        my $libravatar_url = __libravatar_url(decode_rfc1522($head_field));
                        if (defined $libravatar_url and length $libravatar_url) {
-                           push @headers,q(<img src=").$libravatar_url.q(">);
+                           push @headers,q(<img src=").$libravatar_url.qq(" alt="">\n);
                        }
                    }
-		   push @headers, qq(<p><span class="header">$_:</span> ) . html_escape(decode_rfc1522($head_field))."</p>";
+		   push @headers, qq(<div class="header"><span class="headerfield">$_:</span> ) . html_escape(decode_rfc1522($head_field))."</div>\n";
 	      }
-	      print {$param{output}} join(qq(), @headers);
+	      print {$output} join(qq(), @headers);
 	 } else {
-	      print {$param{output}} "<pre>".html_escape(decode_rfc1522($entity->head->stringify))."</pre>\n";
+	      print {$output} "<pre>".html_escape(decode_rfc1522($entity->head->stringify))."</pre>\n";
 	 }
-	 print {$param{output}} "</div>\n";
+	 print {$output} "</div>\n";
     }
 
     if (not (($param{outer} and $type =~ m{^text(?:/plain)?(?:;|$)})
@@ -168,32 +172,31 @@ sub display_entity {
 	    my $body = $entity->stringify_body;
 	    # this attachment has its own content type, so we must not
 	    # try to convert it to UTF-8 or do anything funky.
-	    my @layers = PerlIO::get_layers($param{output});
-	    binmode($param{output},':raw');
-	    print {$param{output}} "Content-Type: $type";
+	    binmode($output,':raw');
+	    print {$output} "Content-Type: $type";
 	    my ($charset) = $head->get('Content-Type:') =~ m/charset\s*=\s*\"?([\w-]+)\"?/i;
-	    print {$param{output}} qq(; charset="$charset") if defined $charset;
-	    print {$param{output}} "\n";
+	    print {$output} qq(; charset="$charset") if defined $charset;
+	    print {$output} "\n";
 	    if ($filename ne '') {
 		my $qf = $filename;
 		$qf =~ s/"/\\"/g;
 		$qf =~ s[.*/][];
-		print {$param{output}} qq{Content-Disposition: inline; filename="$qf"\n};
+		print {$output} qq{Content-Disposition: inline; filename="$qf"\n};
 	    }
-	    print {$param{output}} "\n";
+	    print {$output} "\n";
 	    my $decoder = MIME::Decoder->new($head->mime_encoding);
-	    $decoder->decode(IO::Scalar->new(\$body), $param{output});
-	    if (grep {/utf8/} @layers) {
-		binmode($param{output},':utf8');
-	    }
-	    return;
+	    $decoder->decode(IO::Scalar->new(\$body), $output);
+            # we don't reset the layers here, because it makes no
+            # sense to add anything to the output handle after this
+            # point.
+	    return(1);
 	}
 	elsif (not exists $param{att}) {
 	     my @dlargs = (msg=>$xmessage, att=>$#$attachments);
 	     push @dlargs, (filename=>$filename) if $filename ne '';
 	     my $printname = $filename;
 	     $printname = 'Message part ' . ($#$attachments + 1) if $filename eq '';
-	     print {$param{output}} '<pre class="mime">[<a href="' .
+	     print {$output} '<pre class="mime">[<a href="' .
 		  html_escape(bug_links(bug => $ref,
 					links_only => 1,
 					options => {@dlargs})
@@ -202,31 +205,36 @@ sub display_entity {
 	}
     }
 
-    return if not $param{outer} and $disposition eq 'attachment' and not exists $param{att};
-    return unless ($type =~ m[^text/?] and
-		   $type !~ m[^text/(?:html|enriched)(?:;|$)]) or
-		  $type =~ m[^application/pgp(?:;|$)] or
-		  $entity->parts;
+    return 0 if not $param{outer} and $disposition eq 'attachment' and not exists $param{att};
+    return 0 unless (($type =~ m[^text/?] and
+                      $type !~ m[^text/(?:html|enriched)(?:;|$)]) or
+                     $type =~ m[^application/pgp(?:;|$)] or
+                     $entity->parts);
 
     if ($entity->is_multipart) {
 	my @parts = $entity->parts;
 	foreach my $part (@parts) {
-	    display_entity(entity => $part,
-			   bug_num => $ref,
-			   outer => 0,
-			   msg_num => $xmessage,
-			   output => $param{output},
-			   attachments => $attachments,
-			   terse => $param{terse},
-			   exists $param{msg}?(msg=>$param{msg}):(),
-			   exists $param{att}?(att=>$param{att}):(),
-			  );
-	    # print {$param{output}} "\n";
+	    my $raw_output =
+                display_entity(entity => $part,
+                               bug_num => $ref,
+                               outer => 0,
+                               msg_num => $xmessage,
+                               output => $output,
+                               attachments => $attachments,
+                               terse => $param{terse},
+                               exists $param{msg}?(msg=>$param{msg}):(),
+                               exists $param{att}?(att=>$param{att}):(),
+                               exists $param{avatars}?(avatars=>$param{avatars}):(),
+                              );
+            if ($raw_output) {
+                return $raw_output;
+            }
+	    # print {$output} "\n";
 	}
     } elsif ($entity->parts) {
 	# We must be dealing with a nested message.
 	 if (not exists $param{att}) {
-	      print {$param{output}} "<blockquote>\n";
+	      print {$output} "<blockquote>\n";
 	 }
 	my @parts = $entity->parts;
 	foreach my $part (@parts) {
@@ -234,16 +242,17 @@ sub display_entity {
 			   bug_num => $ref,
 			   outer => 1,
 			   msg_num => $xmessage,
-			   output => $param{output},
+			   output => $output,
 			   attachments => $attachments,
 			   terse => $param{terse},
 			   exists $param{msg}?(msg=>$param{msg}):(),
 			   exists $param{att}?(att=>$param{att}):(),
+                           exists $param{avatars}?(avatars=>$param{avatars}):(),
 			  );
-	    # print {$param{output}} "\n";
+	    # print {$output} "\n";
 	}
 	 if (not exists $param{att}) {
-	      print {$param{output}} "</blockquote>\n";
+	      print {$output} "</blockquote>\n";
 	 }
     } elsif (not $param{terse}) {
 	 my $content_type = $entity->head->get('Content-Type:') || "text/html";
@@ -277,9 +286,10 @@ sub display_entity {
 		       {$1<a href="http://$config{cve_tracker}$2">$2</a>$3}gxm;
 	 }
 	 if (not exists $param{att}) {
-	      print {$param{output}} qq(<pre class="message">$body</pre>\n);
+	      print {$output} qq(<pre class="message">$body</pre>\n);
 	 }
     }
+    return 0;
 }
 
 
@@ -299,9 +309,8 @@ appropriate.
 sub handle_email_message{
      my ($email,%param) = @_;
 
-     # output needs to have the is_utf8 flag on to avoid double
-     # encoding
-     my $output = decode_utf8('');
+     my $output;
+     my $output_fh = globify_scalar(\$output);
      my $parser = MIME::Parser->new();
      # Because we are using memory, not tempfiles, there's no need to
      # clean up here like in Debbugs::MIME
@@ -309,19 +318,20 @@ sub handle_email_message{
      $parser->output_to_core(1);
      my $entity = $parser->parse_data( $email);
      my @attachments = ();
-     display_entity(entity  => $entity,
-		    bug_num => $param{ref},
-		    outer   => 1,
-		    msg_num => $param{msg_num},
-		    output => \$output,
-		    attachments => \@attachments,
-		    terse       => $param{terse},
-		    exists $param{msg}?(msg=>$param{msg}):(),
-		    exists $param{att}?(att=>$param{att}):(),
-		    exists $param{trim_headers}?(trim_headers=>$param{trim_headers}):(),
-		   );
-     return $output;
-
+     my $raw_output =
+         display_entity(entity  => $entity,
+                        bug_num => $param{ref},
+                        outer   => 1,
+                        msg_num => $param{msg_num},
+                        output => $output_fh,
+                        attachments => \@attachments,
+                        terse       => $param{terse},
+                        exists $param{msg}?(msg=>$param{msg}):(),
+                        exists $param{att}?(att=>$param{att}):(),
+                        exists $param{trim_headers}?(trim_headers=>$param{trim_headers}):(),
+                        exists $param{avatars}?(avatars=>$param{avatars}):(),
+                       );
+     return $raw_output?$output:decode_utf8($output);
 }
 
 =head2 handle_record
@@ -335,7 +345,7 @@ should be output to the browser.
 =cut
 
 sub handle_record{
-     my ($record,$bug_number,$msg_number,$seen_msg_ids) = @_;
+     my ($record,$bug_number,$msg_number,$seen_msg_ids,%param) = @_;
 
      # output needs to have the is_utf8 flag on to avoid double
      # encoding
@@ -398,6 +408,7 @@ sub handle_record{
 	  $output .= handle_email_message($record->{text},
 					  ref     => $bug_number,
 					  msg_num => $msg_number,
+                                          %param,
 					 );
      }
      elsif (/autocheck/) {
@@ -425,6 +436,7 @@ sub handle_record{
 	  $output .= handle_email_message($record->{text},
 					  ref     => $bug_number,
 					  msg_num => $msg_number,
+                                          %param,
 					 );
      }
      else {

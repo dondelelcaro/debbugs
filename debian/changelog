@@ -17,6 +17,7 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   * Fix failure to forcibly merge/merge when found/fixed is not qualified
     (closes: #670456). Thanks to Jonathan Nieder and Bernhard Schmidt.
   * Add libravatar support.
+  * Fix double encoding of attachments (closes: #703300)
 
   [Thanks to Arnout Engelen: ]
   * Add Homepage (closes: #670555).
@@ -52,9 +53,25 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
     a site admin aware of its existence (closes: #688345).
   * Make sure that mails to gSubscriptionDomain and gBugSubscriptionDomain
     are only sent out if the variables in config are defined and
-    have a lenght < 0 (closes: #688344).
+    have a length < 0 (closes: #688344).
   * Use locale independent date format for mail processing and service mail
     generation (closes: #688745).
+  * Fix spelling error in /debian/changelog.
+  * Fix lintian issue: description-synopsis-starts-with-article.
+  * Fix lintian issues: debian-rules-missing-recommended-target build-arch,
+    debian-rules-missing-recommended-target build-indep.
+  * Switch to debian/source/format: 3.0 (native).
+  * Fix lintian issue: debbugs source: duplicate-in-relation-field in
+    libdebbugs-perl depends: libtext-template-perl, libtext-template-perl.
+  * Fix lintian issues: debbugs source:
+    debian-rules-makemaker-prefix-is-deprecated line 44,
+    debian-rules-makemaker-prefix-is-deprecated line 56.
+  * Fix lintian issues: libdebbugs-perl: spelling-error-in-manpage for:
+    + usr/share/man/man3/Debbugs::Recipients.3pm.gz
+    + usr/share/man/man3/Debbugs::SOAP.3pm.gz
+    + usr/share/man/man3/Debbugs::Status.3pm.gz
+  * Raise Standards to 3.9.4 (after fixing several lintian issues).
+  * Pass param bug=<NNN> to bugreport.html call in bugreport.cgi.
 
  -- Don Armstrong <don@debian.org>  Wed, 25 Aug 2010 01:57:38 -0700
 

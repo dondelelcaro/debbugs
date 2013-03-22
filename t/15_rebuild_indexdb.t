@@ -1,7 +1,6 @@
 # -*- mode: cperl;-*-
-# $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 13;
+use Test::More tests => 9;
 
 use warnings;
 use strict;
@@ -123,15 +122,7 @@ $SD_SIZE =
 		     $sendmail_dir,
 		     'control@bugs.something messages appear to have been sent out properly');
 # now we need to check to make sure the control message was processed without errors
-ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Munging a bug")) == 0,
-   'control@bugs.something message was parsed without errors');
 # now we need to check to make sure that the control message actually did anything
 # This is an eval because $ENV{DEBBUGS_CONFIG_FILE} isn't set at BEGIN{} time
 eval "use Debbugs::Status qw(read_bug writebug);";
-my $status = read_bug(bug=>1);
-ok($status->{subject} eq 'ütﬀ8 title encoding test','bug 1 retitled');
-ok($status->{severity} eq 'wishlist','bug 1 wishlisted');
-ok(system('sh','-c','[ $(egrep "retitle.*encoding test" '.$spool_dir.'/db-h/01/1.log|grep -v "=C3=BCt=EF=AC=808"|wc -l) -eq 0 ]') == 0,
-   'Control messages escaped properly');
-ok(system('sh','-c',encode_utf8('grep -q "föoﬀ@bugs.something" '.$spool_dir.'/index.db'))==0,
-   'index.db not double escaped');
+ok(system('bin/debbugs-rebuild-index.db')==0,'debbugs-rebuild-index seems to work');
