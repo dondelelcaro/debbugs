@@ -35,7 +35,7 @@ __PACKAGE__->table("bug_package");
 
 =head1 ACCESSORS
 
-=head2 bug_id
+=head2 bug
 
   data_type: 'integer'
   is_nullable: 1
@@ -58,7 +58,7 @@ __PACKAGE__->table("bug_package");
 =cut
 
 __PACKAGE__->add_columns(
-  "bug_id",
+  "bug",
   { data_type => "integer", is_nullable => 1 },
   "pkg_id",
   { data_type => "integer", is_nullable => 1 },
@@ -69,8 +69,8 @@ __PACKAGE__->add_columns(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-07-17 21:09:18
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:4ELLjuEEq63Ca0PeqFEfsg
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-25 18:43:53
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:z0ytKzfSK0huQAZwrklLUA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

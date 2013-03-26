@@ -147,15 +147,6 @@ Individual who submitted this bug; empty if there is no submitter
 
 Package name if the package is not known
 
-=head2 severity
-
-  data_type: 'enum'
-  default_value: 'normal'
-  extra: {custom_type_name => "bug_severity",list => ["wishlist","minor","normal","important","serious","grave","critical"]}
-  is_nullable: 1
-
-Bug severity
-
 =cut
 
 __PACKAGE__->add_columns(
@@ -202,24 +193,6 @@ __PACKAGE__->add_columns(
   { data_type => "text", default_value => "", is_nullable => 0 },
   "unknown_packages",
   { data_type => "text", default_value => "", is_nullable => 0 },
-  "severity",
-  {
-    data_type => "enum",
-    default_value => "normal",
-    extra => {
-      custom_type_name => "bug_severity",
-      list => [
-        "wishlist",
-        "minor",
-        "normal",
-        "important",
-        "serious",
-        "grave",
-        "critical",
-      ],
-    },
-    is_nullable => 1,
-  },
 );
 
 =head1 PRIMARY KEY
@@ -247,7 +220,7 @@ Related object: L<Debbugs::DB::Result::BugBinpackage>
 __PACKAGE__->has_many(
   "bug_binpackages",
   "Debbugs::DB::Result::BugBinpackage",
-  { "foreign.bug_id" => "self.id" },
+  { "foreign.bug" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -277,7 +250,7 @@ Related object: L<Debbugs::DB::Result::BugBlock>
 __PACKAGE__->has_many(
   "bug_blocks_bugs",
   "Debbugs::DB::Result::BugBlock",
-  { "foreign.bug_id" => "self.id" },
+  { "foreign.bug" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -292,7 +265,7 @@ Related object: L<Debbugs::DB::Result::BugMerged>
 __PACKAGE__->has_many(
   "bug_merged_bugs",
   "Debbugs::DB::Result::BugMerged",
-  { "foreign.bug_id" => "self.id" },
+  { "foreign.bug" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -311,6 +284,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 bug_severity
+
+Type: might_have
+
+Related object: L<Debbugs::DB::Result::BugSeverity>
+
+=cut
+
+__PACKAGE__->might_have(
+  "bug_severity",
+  "Debbugs::DB::Result::BugSeverity",
+  { "foreign.bug" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 bug_srcpackages
 
 Type: has_many
@@ -322,7 +310,22 @@ Related object: L<Debbugs::DB::Result::BugSrcpackage>
 __PACKAGE__->has_many(
   "bug_srcpackages",
   "Debbugs::DB::Result::BugSrcpackage",
-  { "foreign.bug_id" => "self.id" },
+  { "foreign.bug" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 bug_submitters
+
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::BugSubmitter>
+
+=cut
+
+__PACKAGE__->has_many(
+  "bug_submitters",
+  "Debbugs::DB::Result::BugSubmitter",
+  { "foreign.bug" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -337,7 +340,7 @@ Related object: L<Debbugs::DB::Result::BugTag>
 __PACKAGE__->has_many(
   "bug_tags",
   "Debbugs::DB::Result::BugTag",
-  { "foreign.bug_id" => "self.id" },
+  { "foreign.bug" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -352,7 +355,22 @@ Related object: L<Debbugs::DB::Result::BugVer>
 __PACKAGE__->has_many(
   "bug_vers",
   "Debbugs::DB::Result::BugVer",
-  { "foreign.bug_id" => "self.id" },
+  { "foreign.bug" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 bugs_done_by
+
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::BugDoneBy>
+
+=cut
+
+__PACKAGE__->has_many(
+  "bugs_done_by",
+  "Debbugs::DB::Result::BugDoneBy",
+  { "foreign.bug" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -372,8 +390,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-22 16:20:31
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Cvwpg/d7shs9bxFOQZhNVg
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-25 18:43:53
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:cPIz8V6KUWZip+5Dvi7+4Q
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

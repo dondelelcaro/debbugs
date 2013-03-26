@@ -142,7 +142,7 @@ Related object: L<Debbugs::DB::Result::BugSrcpackage>
 __PACKAGE__->has_many(
   "bug_srcpackages",
   "Debbugs::DB::Result::BugSrcpackage",
-  { "foreign.src_pkg_id" => "self.id" },
+  { "foreign.src_pkg" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -157,7 +157,7 @@ Related object: L<Debbugs::DB::Result::BugVer>
 __PACKAGE__->has_many(
   "bug_vers",
   "Debbugs::DB::Result::BugVer",
-  { "foreign.src_pkg_id" => "self.id" },
+  { "foreign.src_pkg" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -187,13 +187,13 @@ Related object: L<Debbugs::DB::Result::SrcVer>
 __PACKAGE__->has_many(
   "src_vers",
   "Debbugs::DB::Result::SrcVer",
-  { "foreign.src_pkg_id" => "self.id" },
+  { "foreign.src_pkg" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-12-03 15:57:07
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:zKfk7AmIYswUAYKBbBGQaQ
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-25 18:43:53
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:25A54CF+CL9tRJ6AUDu+FA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

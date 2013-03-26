@@ -35,7 +35,14 @@ __PACKAGE__->table("bug_blocks");
 
 =head1 ACCESSORS
 
-=head2 bug_id
+=head2 id
+
+  data_type: 'integer'
+  is_auto_increment: 1
+  is_nullable: 0
+  sequence: 'bug_blocks_id_seq'
+
+=head2 bug
 
   data_type: 'integer'
   is_foreign_key: 1
@@ -49,16 +56,35 @@ Bug number
   is_foreign_key: 1
   is_nullable: 0
 
-Bug number which is blocked by bug_id
+Bug number which is blocked by bug
 
 =cut
 
 __PACKAGE__->add_columns(
-  "bug_id",
+  "id",
+  {
+    data_type         => "integer",
+    is_auto_increment => 1,
+    is_nullable       => 0,
+    sequence          => "bug_blocks_id_seq",
+  },
+  "bug",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "blocks",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
 );
+
+=head1 PRIMARY KEY
+
+=over 4
+
+=item * L</id>
+
+=back
+
+=cut
+
+__PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
 
@@ -66,7 +92,7 @@ __PACKAGE__->add_columns(
 
 =over 4
 
-=item * L</bug_id>
+=item * L</bug>
 
 =item * L</blocks>
 
@@ -74,7 +100,7 @@ __PACKAGE__->add_columns(
 
 =cut
 
-__PACKAGE__->add_unique_constraint("bug_blocks_bug_id_blocks_idx", ["bug_id", "blocks"]);
+__PACKAGE__->add_unique_constraint("bug_blocks_bug_id_blocks_idx", ["bug", "blocks"]);
 
 =head1 RELATIONS
 
@@ -104,13 +130,13 @@ Related object: L<Debbugs::DB::Result::Bug>
 __PACKAGE__->belongs_to(
   "bug",
   "Debbugs::DB::Result::Bug",
-  { id => "bug_id" },
+  { id => "bug" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2012-11-29 18:11:35
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:WLr8TlnQMEVUj2maG0WFCw
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-25 18:43:53
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:KMeb2Z3p/g1ihuTwbl2R7w
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

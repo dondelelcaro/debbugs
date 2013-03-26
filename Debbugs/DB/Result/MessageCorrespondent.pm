@@ -35,6 +35,13 @@ __PACKAGE__->table("message_correspondent");
 
 =head1 ACCESSORS
 
+=head2 id
+
+  data_type: 'integer'
+  is_auto_increment: 1
+  is_nullable: 0
+  sequence: 'message_correspondent_id_seq'
+
 =head2 message
 
   data_type: 'integer'
@@ -63,6 +70,13 @@ Type of correspondent (to, from, envfrom, cc, etc.)
 =cut
 
 __PACKAGE__->add_columns(
+  "id",
+  {
+    data_type         => "integer",
+    is_auto_increment => 1,
+    is_nullable       => 0,
+    sequence          => "message_correspondent_id_seq",
+  },
   "message",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "correspondent",
@@ -78,6 +92,18 @@ __PACKAGE__->add_columns(
     is_nullable => 0,
   },
 );
+
+=head1 PRIMARY KEY
+
+=over 4
+
+=item * L</id>
+
+=back
+
+=cut
+
+__PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
 
@@ -133,8 +159,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:wo2PGK4VpJ1hB8YBJ9QNUg
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-22 21:34:19
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Fyy71zaVBm59n1blNwJ23w
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

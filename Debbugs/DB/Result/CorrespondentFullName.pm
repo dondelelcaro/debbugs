@@ -1,12 +1,12 @@
 use utf8;
-package Debbugs::DB::Result::BugBinpackage;
+package Debbugs::DB::Result::CorrespondentFullName;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 =head1 NAME
 
-Debbugs::DB::Result::BugBinpackage - Bug <-> binary package mapping
+Debbugs::DB::Result::CorrespondentFullName - Full names of BTS correspondents
 
 =cut
 
@@ -27,11 +27,11 @@ use base 'DBIx::Class::Core';
 
 __PACKAGE__->load_components("InflateColumn::DateTime");
 
-=head1 TABLE: C<bug_binpackage>
+=head1 TABLE: C<correspondent_full_name>
 
 =cut
 
-__PACKAGE__->table("bug_binpackage");
+__PACKAGE__->table("correspondent_full_name");
 
 =head1 ACCESSORS
 
@@ -40,23 +40,22 @@ __PACKAGE__->table("bug_binpackage");
   data_type: 'integer'
   is_auto_increment: 1
   is_nullable: 0
-  sequence: 'bug_binpackage_id_seq'
+  sequence: 'correspondent_full_name_id_seq'
 
-=head2 bug
+Correspondent full name id
 
-  data_type: 'integer'
-  is_foreign_key: 1
-  is_nullable: 0
-
-Bug id (matches bug)
-
-=head2 bin_pkg
+=head2 correspondent
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
 
-Binary package id (matches bin_pkg)
+=head2 full_name
+
+  data_type: 'text'
+  is_nullable: 0
+
+Correspondent full name (includes e-mail address)
 
 =cut
 
@@ -66,12 +65,12 @@ __PACKAGE__->add_columns(
     data_type         => "integer",
     is_auto_increment => 1,
     is_nullable       => 0,
-    sequence          => "bug_binpackage_id_seq",
+    sequence          => "correspondent_full_name_id_seq",
   },
-  "bug",
+  "correspondent",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "bin_pkg",
-  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  "full_name",
+  { data_type => "text", is_nullable => 0 },
 );
 
 =head1 PRIMARY KEY
@@ -88,55 +87,38 @@ __PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
 
-=head2 C<bug_binpackage_id_pkg_id>
+=head2 C<correspondent_full_name_full_name_key>
 
 =over 4
 
-=item * L</bug>
-
-=item * L</bin_pkg>
+=item * L</full_name>
 
 =back
 
 =cut
 
-__PACKAGE__->add_unique_constraint("bug_binpackage_id_pkg_id", ["bug", "bin_pkg"]);
+__PACKAGE__->add_unique_constraint("correspondent_full_name_full_name_key", ["full_name"]);
 
 =head1 RELATIONS
 
-=head2 bin_pkg
+=head2 correspondent
 
 Type: belongs_to
 
-Related object: L<Debbugs::DB::Result::BinPkg>
+Related object: L<Debbugs::DB::Result::Correspondent>
 
 =cut
 
 __PACKAGE__->belongs_to(
-  "bin_pkg",
-  "Debbugs::DB::Result::BinPkg",
-  { id => "bin_pkg" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
-);
-
-=head2 bug
-
-Type: belongs_to
-
-Related object: L<Debbugs::DB::Result::Bug>
-
-=cut
-
-__PACKAGE__->belongs_to(
-  "bug",
-  "Debbugs::DB::Result::Bug",
-  { id => "bug" },
+  "correspondent",
+  "Debbugs::DB::Result::Correspondent",
+  { id => "correspondent" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 
 # Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-25 18:43:53
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:kfOppT635GeL9tvBVm6VNA
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:U7mn1zcYHvgfaD4arcYAeA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

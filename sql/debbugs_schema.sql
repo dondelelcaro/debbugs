@@ -1,8 +1,9 @@
 
+DROP TABLE bug_severity CASCADE;
 DROP TABLE bug_tag CASCADE;
 DROP TABLE tag CASCADE;
+DROP TABLE severity CASCADE;
 DROP TABLE bug CASCADE;
-DROP TYPE bug_severity CASCADE;
 DROP TABLE src_pkg CASCADE;
 DROP TABLE bug_ver CASCADE;
 DROP TABLE src_pkg_alias CASCADE;
@@ -23,6 +24,9 @@ DROP TABLE src_associations CASCADE;
 DROP TABLE maintainer CASCADE;
 DROP TABLE bug_message CASCADE;
 DROP TABLE message_correspondent CASCADE;
+DROP TABLE bug_submitter CASCADE;
+DROP TABLE bug_done_by CASCADE;
+DROP TABLE correspondent_full_name CASCADE;
 DROP TABLE correspondent CASCADE;
 DROP TABLE message_refs CASCADE;
 DROP TABLE message CASCADE;
@@ -42,10 +46,6 @@ CREATE TABLE column_comments (
        comment_text TEXT NOT NULL
 );
 CREATE UNIQUE INDEX ON column_comments(table_name,column_name);
-
--- severities
-CREATE TYPE bug_severity AS ENUM ('wishlist','minor','normal',
-       'important','serious','grave','critical');
 
 CREATE TABLE maintainer (
        id SERIAL PRIMARY KEY,
@@ -74,8 +74,7 @@ CREATE TABLE bug (
        done TEXT NOT NULL DEFAULT '',
        owner TEXT NOT NULL DEFAULT '',
        submitter TEXT NOT NULL DEFAULT '',
-       unknown_packages TEXT NOT NULL DEfAULT '',
-       severity bug_severity DEFAULT 'normal'::bug_severity
+       unknown_packages TEXT NOT NULL DEfAULT ''
 );
 INSERT INTO table_comments VALUES ('bug','Bugs');
 INSERT INTO column_comments VALUES ('bug','id','Bug number');
@@ -92,34 +91,35 @@ INSERT INTO column_comments VALUES ('bug','done','Individual who did the -done; 
 INSERT INTO column_comments VALUES ('bug','owner','Individual who owns this bug; empty if no one owns it');
 INSERT INTO column_comments VALUES ('bug','submitter','Individual who submitted this bug; empty if there is no submitter');
 INSERT INTO column_comments VALUES ('bug','unknown_packages','Package name if the package is not known');
-INSERT INTO column_comments VALUES ('bug','severity','Bug severity');
 
 
 
 CREATE TABLE bug_blocks (
-       bug_id INT NOT NULL REFERENCES bug,
+       id SERIAL PRIMARY KEY,
+       bug INT NOT NULL REFERENCES bug,
        blocks INT NOT NULL REFERENCES bug,
-       CONSTRAINT bug_doesnt_block_itself CHECK (bug_id <> blocks)
+       CONSTRAINT bug_doesnt_block_itself CHECK (bug <> blocks)
 );
-CREATE UNIQUE INDEX bug_blocks_bug_id_blocks_idx ON bug_blocks(bug_id,blocks);
-CREATE INDEX bug_blocks_bug_id_idx ON bug_blocks(bug_id);
+CREATE UNIQUE INDEX bug_blocks_bug_id_blocks_idx ON bug_blocks(bug,blocks);
+CREATE INDEX bug_blocks_bug_id_idx ON bug_blocks(bug);
 CREATE INDEX bug_blocks_blocks_idx ON bug_blocks(blocks);
 INSERT INTO table_comments VALUES ('bug_blocks','Bugs which block other bugs');
-INSERT INTO column_comments VALUES ('bug_blocks','bug_id','Bug number');
-INSERT INTO column_comments VALUES ('bug_blocks','blocks','Bug number which is blocked by bug_id');
+INSERT INTO column_comments VALUES ('bug_blocks','bug','Bug number');
+INSERT INTO column_comments VALUES ('bug_blocks','blocks','Bug number which is blocked by bug');
 
 
 CREATE TABLE bug_merged (
-       bug_id INT NOT NULL REFERENCES bug,
+       id SERIAL PRIMARY KEY,
+       bug INT NOT NULL REFERENCES bug,
        merged INT NOT NULL REFERENCES bug,
-       CONSTRAINT bug_doesnt_merged_itself CHECK (bug_id <> merged)
+       CONSTRAINT bug_doesnt_merged_itself CHECK (bug <> merged)
 );
-CREATE UNIQUE INDEX bug_merged_bug_id_merged_idx ON bug_merged(bug_id,merged);
-CREATE INDEX bug_merged_bug_id_idx ON bug_merged(bug_id);
+CREATE UNIQUE INDEX bug_merged_bug_id_merged_idx ON bug_merged(bug,merged);
+CREATE INDEX bug_merged_bug_id_idx ON bug_merged(bug);
 CREATE INDEX bug_merged_merged_idx ON bug_merged(merged);
 INSERT INTO table_comments  VALUES ('bug_merged','Bugs which are merged with other bugs');
-INSERT INTO column_comments VALUES ('bug_merged','bug_id','Bug number');
-INSERT INTO column_comments VALUES ('bug_merged','merged','Bug number which is merged with bug_id');
+INSERT INTO column_comments VALUES ('bug_merged','bug','Bug number');
+INSERT INTO column_comments VALUES ('bug_merged','merged','Bug number which is merged with bug');
 
 CREATE TABLE src_pkg (
        id SERIAL PRIMARY KEY,
@@ -138,7 +138,7 @@ INSERT INTO column_comments VALUES ('src_pkg','alias_of','Source package id whic
 
 CREATE TABLE src_ver (
        id SERIAL PRIMARY KEY,
-       src_pkg_id INT NOT NULL REFERENCES src_pkg
+       src_pkg INT NOT NULL REFERENCES src_pkg
             ON UPDATE CASCADE ON DELETE CASCADE,
        ver public.debversion NOT NULL,
        maintainer_id INT REFERENCES maintainer
@@ -147,10 +147,10 @@ CREATE TABLE src_ver (
        based_on INT REFERENCES src_ver
             ON UPDATE CASCADE ON DELETE CASCADE
 );
-CREATE UNIQUE INDEX src_ver_src_pkg_id_ver ON src_ver(src_pkg_id,ver);
+CREATE UNIQUE INDEX src_ver_src_pkg_id_ver ON src_ver(src_pkg,ver);
 INSERT INTO table_comments VALUES ('src_ver','Source Package versions');
 INSERT INTO column_comments VALUES ('src_ver','id','Source package version id');
-INSERT INTO column_comments VALUES ('src_ver','src_pkg_id','Source package id (matches src_pkg table)');
+INSERT INTO column_comments VALUES ('src_ver','src_pkg','Source package id (matches src_pkg table)');
 INSERT INTO column_comments VALUES ('src_ver','ver','Version of the source package');
 INSERT INTO column_comments VALUES ('src_ver','maintainer_id','Maintainer id (matches maintainer table)');
 INSERT INTO column_comments VALUES ('src_ver','upload_date','Date this version of the source package was uploaded');
@@ -159,10 +159,10 @@ INSERT INTO column_comments VALUES ('src_ver','based_on','Source package version
 
 
 CREATE TABLE bug_ver (
-       bug_id INT NOT NULL REFERENCES bug
+       bug INT NOT NULL REFERENCES bug
          ON UPDATE CASCADE ON DELETE RESTRICT,
        ver_string TEXT,
-       src_pkg_id INT REFERENCES src_pkg
+       src_pkg INT REFERENCES src_pkg
             ON UPDATE CASCADE ON DELETE SET NULL,
        src_ver_id INT REFERENCES src_ver
             ON UPDATE CASCADE ON DELETE SET NULL,
@@ -170,14 +170,14 @@ CREATE TABLE bug_ver (
        creation TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
        last_modified TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
-CREATE INDEX bug_ver_src_pkg_id_idx ON bug_ver(src_pkg_id);
-CREATE INDEX bug_ver_src_pkg_id_src_ver_id_idx ON bug_ver(src_pkg_id,src_ver_id);
+CREATE INDEX bug_ver_src_pkg_id_idx ON bug_ver(src_pkg);
+CREATE INDEX bug_ver_src_pkg_id_src_ver_id_idx ON bug_ver(src_pkg,src_ver_id);
 CREATE INDEX bug_ver_src_ver_id_idx ON bug_ver(src_ver_id);
-CREATE UNIQUE INDEX ON bug_ver(bug_id,ver_string,found);
+CREATE UNIQUE INDEX ON bug_ver(bug,ver_string,found);
 INSERT INTO table_comments VALUES ('bug_ver','Bug versions');
-INSERT INTO column_comments VALUES ('bug_ver','bug_id','Bug number');
+INSERT INTO column_comments VALUES ('bug_ver','bug','Bug number');
 INSERT INTO column_comments VALUES ('bug_ver','ver_string','Version string');
-INSERT INTO column_comments VALUES ('bug_ver','src_pkg_id','Source package id (matches src_pkg table)');
+INSERT INTO column_comments VALUES ('bug_ver','src_pkg','Source package id (matches src_pkg table)');
 INSERT INTO column_comments VALUES ('bug_ver','src_ver_id','Source package version id (matches src_ver table)');
 INSERT INTO column_comments VALUES ('bug_ver','found','True if this is a found version; false if this is a fixed version');
 INSERT INTO column_comments VALUES ('bug_ver','creation','Time that this entry was created');
@@ -204,7 +204,7 @@ INSERT INTO column_comments VALUES ('bin_pkg','pkg','Binary package name');
 
 CREATE TABLE bin_ver(
        id SERIAL PRIMARY KEY,
-       bin_pkg_id INT NOT NULL REFERENCES bin_pkg
+       bin_pkg INT NOT NULL REFERENCES bin_pkg
             ON UPDATE CASCADE ON DELETE CASCADE,
        src_ver_id INT NOT NULL REFERENCES src_ver
             ON UPDATE CASCADE ON DELETE CASCADE,
@@ -213,13 +213,13 @@ CREATE TABLE bin_ver(
        ver public.debversion NOT NULL
 );
 CREATE INDEX bin_ver_ver_idx ON bin_ver(ver);
-CREATE UNIQUE INDEX bin_ver_bin_pkg_id_arch_idx ON bin_ver(bin_pkg_id,arch_id,ver);
+CREATE UNIQUE INDEX bin_ver_bin_pkg_id_arch_idx ON bin_ver(bin_pkg,arch_id,ver);
 CREATE UNIQUE INDEX bin_ver_src_ver_id_arch_idx ON bin_ver(src_ver_id,arch_id);
-CREATE INDEX bin_ver_bin_pkg_id_idx ON bin_ver(bin_pkg_id);
+CREATE INDEX bin_ver_bin_pkg_id_idx ON bin_ver(bin_pkg);
 CREATE INDEX bin_ver_src_ver_id_idx ON bin_ver(src_ver_id);
 INSERT INTO table_comments VALUES ('bin_ver','Binary versions');
 INSERT INTO column_comments VALUES ('bin_ver','id','Binary version id');
-INSERT INTO column_comments VALUES ('bin_ver','bin_pkg_id','Binary package id (matches bin_pkg)');
+INSERT INTO column_comments VALUES ('bin_ver','bin_pkg','Binary package id (matches bin_pkg)');
 INSERT INTO column_comments VALUES ('bin_ver','src_ver_id','Source version (matchines src_ver)');
 INSERT INTO column_comments VALUES ('bin_ver','arch_id','Architecture id (matches arch)');
 INSERT INTO column_comments VALUES ('bin_ver','ver','Binary version');
@@ -234,50 +234,75 @@ INSERT INTO column_comments VALUES ('tag','id','Tag id');
 INSERT INTO column_comments VALUES ('tag','tag','Tag name');
 INSERT INTO column_comments VALUES ('tag','obsolete','Whether a tag is obsolete (should not be set on new bugs)');
 
-
 CREATE TABLE bug_tag (
-       bug_id INT NOT NULL REFERENCES bug,
+       id SERIAL PRIMARY KEY,
+       bug INT NOT NULL REFERENCES bug,
        tag_id INT NOT NULL REFERENCES tag
 );
 INSERT INTO table_comments VALUES ('bug_tag','Bug <-> tag mapping');
-INSERT INTO column_comments VALUES ('bug_tag','bug_id','Bug id (matches bug)');
+INSERT INTO column_comments VALUES ('bug_tag','bug','Bug id (matches bug)');
 INSERT INTO column_comments VALUES ('bug_tag','tag_id','Tag id (matches tag)');
 
-CREATE UNIQUE INDEX bug_tag_bug_tag_id ON bug_tag (bug_id,tag_id);
+CREATE UNIQUE INDEX bug_tag_bug_tag_id ON bug_tag (bug,tag_id);
 CREATE INDEX bug_tag_tag_id ON bug_tag (tag_id);
-CREATE INDEX bug_tag_bug_id ON bug_tag (bug_id);
+CREATE INDEX bug_tag_bug_id ON bug_tag (bug);
+
+
+CREATE TABLE severity (
+       id SERIAL PRIMARY KEY,
+       severity TEXT NOT NULL UNIQUE,
+       ordering INT NOT NULL DEFAULT 5,
+       strong BOOLEAN DEFAULT FALSE,
+       obsolete BOOLEAN DEFAULT FALSE
+);
+INSERT INTO table_comments VALUES ('severity','Bug severity');
+INSERT INTO column_comments VALUES ('severity','id','Severity id');
+INSERT INTO column_comments VALUES ('severity','severity','Severity name');
+INSERT INTO column_comments VALUES ('severity','ordering','Severity ordering (more severe severities have higher numbers)');
+INSERT INTO column_comments VALUES ('severity','strong','True if severity is a strong severity');
+INSERT INTO column_comments VALUES ('severity','obsolete','Whether a severity level is obsolete (should not be set on new bugs)');
+
+CREATE TABLE bug_severity(
+       bug INT PRIMARY KEY REFERENCES bug,
+       severity_id INT NOT NULL REFERENCES severity
+);
+INSERT INTO table_comments VALUES ('bug_severity','Bug <-> tag mapping');
+INSERT INTO column_comments VALUES ('bug_severity','bug','Bug id (matches bug)');
+INSERT INTO column_comments VALUES ('bug_severity','severity_id','Severity id (matches severity)');
 
 CREATE TABLE bug_binpackage (
-       bug_id INT NOT NULL REFERENCES bug,
-       bin_pkg_id INT NOT NULL REFERENCES bin_pkg
+       id SERIAL PRIMARY KEY,
+       bug INT NOT NULL REFERENCES bug,
+       bin_pkg INT NOT NULL REFERENCES bin_pkg
 );
-CREATE UNIQUE INDEX bug_binpackage_id_pkg_id ON bug_binpackage(bug_id,bin_pkg_id);
+CREATE UNIQUE INDEX bug_binpackage_id_pkg_id ON bug_binpackage(bug,bin_pkg);
 INSERT INTO table_comments VALUES ('bug_binpackage','Bug <-> binary package mapping');
-INSERT INTO column_comments VALUES ('bug_binpackage','bug_id','Bug id (matches bug)');
-INSERT INTO column_comments VALUES ('bug_binpackage','bin_pkg_id','Binary package id (matches bin_pkg)');
+INSERT INTO column_comments VALUES ('bug_binpackage','bug','Bug id (matches bug)');
+INSERT INTO column_comments VALUES ('bug_binpackage','bin_pkg','Binary package id (matches bin_pkg)');
 
 CREATE TABLE bug_srcpackage (
-       bug_id INT NOT NULL REFERENCES bug,
-       src_pkg_id INT NOT NULL REFERENCES src_pkg ON UPDATE CASCADE ON DELETE CASCADE
+       id SERIAL PRIMARY KEY,
+       bug INT NOT NULL REFERENCES bug,
+       src_pkg INT NOT NULL REFERENCES src_pkg ON UPDATE CASCADE ON DELETE CASCADE
 );
-CREATE UNIQUE INDEX bug_srcpackage_id_pkg_id ON bug_srcpackage(bug_id,src_pkg_id);
+CREATE UNIQUE INDEX bug_srcpackage_id_pkg_id ON bug_srcpackage(bug,src_pkg);
 INSERT INTO table_comments VALUES ('bug_srcpackage','Bug <-> source package mapping');
-INSERT INTO column_comments VALUES ('bug_srcpackage','bug_id','Bug id (matches bug)');
-INSERT INTO column_comments VALUES ('bug_srcpackage','src_pkg_id','Source package id (matches src_pkg)');
+INSERT INTO column_comments VALUES ('bug_srcpackage','bug','Bug id (matches bug)');
+INSERT INTO column_comments VALUES ('bug_srcpackage','src_pkg','Source package id (matches src_pkg)');
 
-CREATE VIEW bug_package (bug_id,pkg_id,pkg_type,package) AS
-       SELECT b.bug_id,b.bin_pkg_id,'binary',bp.pkg FROM bug_binpackage b JOIN bin_pkg bp ON bp.id=b.bin_pkg_id UNION
-              SELECT s.bug_id,s.src_pkg_id,'source',sp.pkg FROM bug_srcpackage s JOIN src_pkg sp ON sp.id=s.src_pkg_id;
+CREATE VIEW bug_package (bug,pkg_id,pkg_type,package) AS
+       SELECT b.bug,b.bin_pkg,'binary',bp.pkg FROM bug_binpackage b JOIN bin_pkg bp ON bp.id=b.bin_pkg UNION
+              SELECT s.bug,s.src_pkg,'source',sp.pkg FROM bug_srcpackage s JOIN src_pkg sp ON sp.id=s.src_pkg;
 
 CREATE VIEW binary_versions (src_pkg, src_ver, bin_pkg, arch, bin_ver) AS
        SELECT sp.pkg AS src_pkg, sv.ver AS src_ver, bp.pkg AS bin_pkg, a.arch AS arch, b.ver AS bin_ver,
        svb.ver AS src_ver_based_on, spb.pkg AS src_pkg_based_on
        FROM bin_ver b JOIN arch a ON b.arch_id = a.id
-       	              JOIN bin_pkg bp ON b.bin_pkg_id  = bp.id
+       	              JOIN bin_pkg bp ON b.bin_pkg  = bp.id
                       JOIN src_ver sv ON b.src_ver_id  = sv.id
-                      JOIN src_pkg sp ON sv.src_pkg_id = sp.id
+                      JOIN src_pkg sp ON sv.src_pkg = sp.id
                       LEFT OUTER JOIN src_ver svb ON sv.based_on = svb.id
-                      LEFT OUTER JOIN src_pkg spb ON spb.id = svb.src_pkg_id;
+                      LEFT OUTER JOIN src_pkg spb ON spb.id = svb.src_pkg;
 
 CREATE TABLE suite (
        id SERIAL PRIMARY KEY,
@@ -351,6 +376,7 @@ INSERT INTO column_comments VALUES ('message','is_spam','True if this message wa
 CREATE INDEX ON message(msgid);
 
 CREATE TABLE message_refs (
+       id SERIAL PRIMARY KEY,
        message INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
        refs INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
        inferred BOOLEAN DEFAULT FALSE,
@@ -375,9 +401,47 @@ INSERT INTO table_comments VALUES ('correspondent','Individual who has correspon
 INSERT INTO column_comments VALUES ('correspondent','id','Correspondent ID');
 INSERT INTO column_comments VALUES ('correspondent','addr','Correspondent address');
 
+CREATE TABLE correspondent_full_name(
+       id SERIAL PRIMARY KEY,
+       correspondent INT NOT NULL REFERENCES correspondent ON DELETE CASCADE ON UPDATE CASCADE,
+       full_name TEXT NOT NULL UNIQUE
+);
+
+INSERT INTO table_comments VALUES ('correspondent_full_name','Full names of BTS correspondents');
+INSERT INTO column_comments VALUES ('correspondent_full_name','id','Correspondent full name id');
+INSERT INTO column_comments VALUES ('correspondent_full_name','correpsondent','Correspondent ID (matches correspondent)');
+INSERT INTO column_comments VALUES ('correspondent_full_name','full_name','Correspondent full name (includes e-mail address)');
+
+CREATE TABLE bug_submitter (
+       id SERIAL PRIMARY KEY,
+       bug INT NOT NULL REFERENCES bug ON DELETE CASCADE ON UPDATE CASCADE,
+       submitter INT NOT NULL REFERENCES correspondent ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE INDEX on bug_submitter(submitter);
+CREATE UNIQUE INDEX on bug_submitter(bug,submitter);
+
+INSERT INTO table_comments  VALUES ('bug_submitter','Submitter of a bug (connects to correspondent)');
+INSERT INTO column_comments VALUES ('bug_submitter','id','Bug Submitter ID');
+INSERT INTO column_comments VALUES ('bug_submitter','bug','Bug which was submitted by this submitter');
+INSERT INTO column_comments VALUES ('bug_submitter','submitter','Bug submitter (connects to correspondent)');
+
+CREATE TABLE bug_done_by (
+       id SERIAL PRIMARY KEY,
+       bug INT NOT NULL REFERENCES bug ON DELETE CASCADE ON UPDATE CASCADE,
+       done_by INT NOT NULL REFERENCES correspondent ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE INDEX on bug_done_by(done_by);
+CREATE UNIQUE INDEX on bug_done_by(bug,done_by);
+
+INSERT INTO table_comments  VALUES ('bug_done_by','Correspondent who finished this bug (emailed -done)');
+INSERT INTO column_comments VALUES ('bug_done_by','id','Bug Done By ID');
+INSERT INTO column_comments VALUES ('bug_done_by','bug','Bug number which was done');
+INSERT INTO column_comments VALUES ('bug_done_by','done_by','Bug finisher (connects to correspondent)');
+
 CREATE TYPE message_correspondent_type AS ENUM ('to','from','envfrom','cc');
 
 CREATE TABLE message_correspondent (
+       id SERIAL PRIMARY KEY,
        message INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
        correspondent INT NOT NULL REFERENCES correspondent ON DELETE CASCADE ON UPDATE CASCADE,
        correspondent_type message_correspondent_type NOT NULL DEFAULT 'to'
@@ -392,6 +456,7 @@ CREATE INDEX ON message_correspondent(correspondent);
 CREATE INDEX ON message_correspondent(message);
 
 CREATE TABLE bug_message (
+       id SERIAL PRIMARY KEY,
        bug INT NOT NULL REFERENCES bug ON DELETE CASCADE ON UPDATE CASCADE,
        message INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
        message_number INT NOT NULL,

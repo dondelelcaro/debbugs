@@ -35,6 +35,13 @@ __PACKAGE__->table("message_refs");
 
 =head1 ACCESSORS
 
+=head2 id
+
+  data_type: 'integer'
+  is_auto_increment: 1
+  is_nullable: 0
+  sequence: 'message_refs_id_seq'
+
 =head2 message
 
   data_type: 'integer'
@@ -70,6 +77,13 @@ TRUE if this message->ref came from In-Reply-To: or similar.
 =cut
 
 __PACKAGE__->add_columns(
+  "id",
+  {
+    data_type         => "integer",
+    is_auto_increment => 1,
+    is_nullable       => 0,
+    sequence          => "message_refs_id_seq",
+  },
   "message",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "refs",
@@ -79,6 +93,18 @@ __PACKAGE__->add_columns(
   "primary_ref",
   { data_type => "boolean", default_value => \"false", is_nullable => 1 },
 );
+
+=head1 PRIMARY KEY
+
+=over 4
+
+=item * L</id>
+
+=back
+
+=cut
+
+__PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
 
@@ -129,8 +155,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:qPL3EsH3iVrcwJKRNVzTEQ
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-22 21:34:19
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:sV72FKvhPxYd6eWvCE4i9Q
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

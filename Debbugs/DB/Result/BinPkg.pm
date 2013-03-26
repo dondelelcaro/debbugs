@@ -104,7 +104,7 @@ Related object: L<Debbugs::DB::Result::BinVer>
 __PACKAGE__->has_many(
   "bin_vers",
   "Debbugs::DB::Result::BinVer",
-  { "foreign.bin_pkg_id" => "self.id" },
+  { "foreign.bin_pkg" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -119,13 +119,13 @@ Related object: L<Debbugs::DB::Result::BugBinpackage>
 __PACKAGE__->has_many(
   "bug_binpackages",
   "Debbugs::DB::Result::BugBinpackage",
-  { "foreign.bin_pkg_id" => "self.id" },
+  { "foreign.bin_pkg" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:MZd5wB+mftx5babS8sAOFQ
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-25 18:43:53
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:1oGi5SVSzjSxaUmwZBtogw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
