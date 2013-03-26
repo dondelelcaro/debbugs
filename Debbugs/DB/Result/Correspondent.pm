@@ -93,6 +93,51 @@ __PACKAGE__->add_unique_constraint("correspondent_addr_key", ["addr"]);
 
 =head1 RELATIONS
 
+=head2 bug_submitters
+
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::BugSubmitter>
+
+=cut
+
+__PACKAGE__->has_many(
+  "bug_submitters",
+  "Debbugs::DB::Result::BugSubmitter",
+  { "foreign.submitter" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 bugs_done_by
+
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::BugDoneBy>
+
+=cut
+
+__PACKAGE__->has_many(
+  "bugs_done_by",
+  "Debbugs::DB::Result::BugDoneBy",
+  { "foreign.done_by" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 correspondent_full_names
+
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::CorrespondentFullName>
+
+=cut
+
+__PACKAGE__->has_many(
+  "correspondent_full_names",
+  "Debbugs::DB::Result::CorrespondentFullName",
+  { "foreign.correspondent" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 message_correspondents
 
 Type: has_many
@@ -109,8 +154,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:1oERdaKncROw6eUENGs9aw
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-25 18:43:53
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ev/tN0AsOcs7AfC3Iz84dQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

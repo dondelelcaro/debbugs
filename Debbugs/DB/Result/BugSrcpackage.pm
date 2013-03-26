@@ -35,7 +35,14 @@ __PACKAGE__->table("bug_srcpackage");
 
 =head1 ACCESSORS
 
-=head2 bug_id
+=head2 id
+
+  data_type: 'integer'
+  is_auto_increment: 1
+  is_nullable: 0
+  sequence: 'bug_srcpackage_id_seq'
+
+=head2 bug
 
   data_type: 'integer'
   is_foreign_key: 1
@@ -43,7 +50,7 @@ __PACKAGE__->table("bug_srcpackage");
 
 Bug id (matches bug)
 
-=head2 src_pkg_id
+=head2 src_pkg
 
   data_type: 'integer'
   is_foreign_key: 1
@@ -54,11 +61,30 @@ Source package id (matches src_pkg)
 =cut
 
 __PACKAGE__->add_columns(
-  "bug_id",
+  "id",
+  {
+    data_type         => "integer",
+    is_auto_increment => 1,
+    is_nullable       => 0,
+    sequence          => "bug_srcpackage_id_seq",
+  },
+  "bug",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "src_pkg_id",
+  "src_pkg",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
 );
+
+=head1 PRIMARY KEY
+
+=over 4
+
+=item * L</id>
+
+=back
+
+=cut
+
+__PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
 
@@ -66,15 +92,15 @@ __PACKAGE__->add_columns(
 
 =over 4
 
-=item * L</bug_id>
+=item * L</bug>
 
-=item * L</src_pkg_id>
+=item * L</src_pkg>
 
 =back
 
 =cut
 
-__PACKAGE__->add_unique_constraint("bug_srcpackage_id_pkg_id", ["bug_id", "src_pkg_id"]);
+__PACKAGE__->add_unique_constraint("bug_srcpackage_id_pkg_id", ["bug", "src_pkg"]);
 
 =head1 RELATIONS
 
@@ -89,7 +115,7 @@ Related object: L<Debbugs::DB::Result::Bug>
 __PACKAGE__->belongs_to(
   "bug",
   "Debbugs::DB::Result::Bug",
-  { id => "bug_id" },
+  { id => "bug" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
@@ -104,13 +130,13 @@ Related object: L<Debbugs::DB::Result::SrcPkg>
 __PACKAGE__->belongs_to(
   "src_pkg",
   "Debbugs::DB::Result::SrcPkg",
-  { id => "src_pkg_id" },
+  { id => "src_pkg" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:k8ZDk5IbnGWbhwRJ17dNXA
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-25 18:43:53
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:afOJNl3BAD0xSo41IyTJZA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -44,7 +44,7 @@ __PACKAGE__->table("bin_ver");
 
 Binary version id
 
-=head2 bin_pkg_id
+=head2 bin_pkg
 
   data_type: 'integer'
   is_foreign_key: 1
@@ -85,7 +85,7 @@ __PACKAGE__->add_columns(
     is_nullable       => 0,
     sequence          => "bin_ver_id_seq",
   },
-  "bin_pkg_id",
+  "bin_pkg",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "src_ver_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
@@ -113,7 +113,7 @@ __PACKAGE__->set_primary_key("id");
 
 =over 4
 
-=item * L</bin_pkg_id>
+=item * L</bin_pkg>
 
 =item * L</arch_id>
 
@@ -123,10 +123,7 @@ __PACKAGE__->set_primary_key("id");
 
 =cut
 
-__PACKAGE__->add_unique_constraint(
-  "bin_ver_bin_pkg_id_arch_idx",
-  ["bin_pkg_id", "arch_id", "ver"],
-);
+__PACKAGE__->add_unique_constraint("bin_ver_bin_pkg_id_arch_idx", ["bin_pkg", "arch_id", "ver"]);
 
 =head2 C<bin_ver_src_ver_id_arch_idx>
 
@@ -185,7 +182,7 @@ Related object: L<Debbugs::DB::Result::BinPkg>
 __PACKAGE__->belongs_to(
   "bin_pkg",
   "Debbugs::DB::Result::BinPkg",
-  { id => "bin_pkg_id" },
+  { id => "bin_pkg" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
@@ -205,8 +202,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9iEDj8DfMh5jdc03zs4UmQ
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-25 18:43:53
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:7Ff81rK1vte+lYz15XofpA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
