@@ -394,6 +394,27 @@ the API of libravatar for details.
 
 set_default(\%config,'libravatar_uri_options','?d=retro');
 
+=item libravatar_default_image
+
+Default image to serve for libravatar if there is no avatar for an
+e-mail address. By default, this is a 1x1 png. [This will also be the
+image served if someone specifies avatar=no.]
+
+Default: $config{web_dir}/1x1.png
+
+=cut
+
+set_default(\%config,'libravatar_default_image',$config{web_dir}.'/1x1.png');
+
+=item libravatar_cache_dir
+
+Directory where cached libravatar images are stored
+
+Default: $config{web_dir}/libravatar/
+
+=cut
+
+set_default(\%config,'libravatar_cache_dir',$config{web_dir}.'/libravatar/');
 
 =back
 
@@ -788,6 +809,16 @@ Default: $config{spool_dir}/user
 
 set_default(\%config,'usertag_dir',$config{spool_dir}.'/user');
 set_default(\%config,'incoming_dir','incoming');
+
+=item web_dir $gWebDir
+
+Directory where base html files are kept. Should normally be the same
+as the web server's document root.
+
+Default: /var/lib/debbugs/www
+
+=cut
+
 set_default(\%config,'web_dir','/var/lib/debbugs/www');
 set_default(\%config,'doc_dir','/var/lib/debbugs/www/txt');
 set_default(\%config,'lib_path','/usr/lib/debbugs');
