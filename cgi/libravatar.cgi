@@ -114,7 +114,8 @@ sub retreive_libravatar{
         print {$temp_fh} $r->content() or
             die "Unable to print to temp file";
         close ($temp_fh);
-        system('convert','-geometry','80x80',
+        system('convert','-resize','80x80',
+               '-strip',
                $temp_fn,
                $cache_location.'.'.$dest_type) == 0 or
                    die "convert file failed";
