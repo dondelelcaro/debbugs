@@ -123,24 +123,24 @@ __PACKAGE__->add_unique_constraint("severity_severity_key", ["severity"]);
 
 =head1 RELATIONS
 
-=head2 bug_severities
+=head2 bugs
 
 Type: has_many
 
-Related object: L<Debbugs::DB::Result::BugSeverity>
+Related object: L<Debbugs::DB::Result::Bug>
 
 =cut
 
 __PACKAGE__->has_many(
-  "bug_severities",
-  "Debbugs::DB::Result::BugSeverity",
-  { "foreign.severity_id" => "self.id" },
+  "bugs",
+  "Debbugs::DB::Result::Bug",
+  { "foreign.severity" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-22 23:19:35
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Ofel01VRzkuSKCGAU6hmMg
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-27 19:35:10
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:SVJ20W+hu/tjDthRG38xtA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
