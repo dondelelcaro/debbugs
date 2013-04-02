@@ -93,33 +93,48 @@ __PACKAGE__->add_unique_constraint("correspondent_addr_key", ["addr"]);
 
 =head1 RELATIONS
 
+=head2 bug_owners
+
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::Bug>
+
+=cut
+
+__PACKAGE__->has_many(
+  "bug_owners",
+  "Debbugs::DB::Result::Bug",
+  { "foreign.owner" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 bug_submitters
 
 Type: has_many
 
-Related object: L<Debbugs::DB::Result::BugSubmitter>
+Related object: L<Debbugs::DB::Result::Bug>
 
 =cut
 
 __PACKAGE__->has_many(
   "bug_submitters",
-  "Debbugs::DB::Result::BugSubmitter",
+  "Debbugs::DB::Result::Bug",
   { "foreign.submitter" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 bugs_done_by
+=head2 bugs_done
 
 Type: has_many
 
-Related object: L<Debbugs::DB::Result::BugDoneBy>
+Related object: L<Debbugs::DB::Result::Bug>
 
 =cut
 
 __PACKAGE__->has_many(
-  "bugs_done_by",
-  "Debbugs::DB::Result::BugDoneBy",
-  { "foreign.done_by" => "self.id" },
+  "bugs_done",
+  "Debbugs::DB::Result::Bug",
+  { "foreign.done" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -154,8 +169,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-25 18:43:53
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ev/tN0AsOcs7AfC3Iz84dQ
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-27 18:54:20
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:PnVRI1FMGlY8Go0XOM3wwA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -87,9 +87,11 @@ __PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
 
-=head2 C<correspondent_full_name_full_name_key>
+=head2 C<correspondent_full_name_correspondent_full_name_idx>
 
 =over 4
+
+=item * L</correspondent>
 
 =item * L</full_name>
 
@@ -97,7 +99,10 @@ __PACKAGE__->set_primary_key("id");
 
 =cut
 
-__PACKAGE__->add_unique_constraint("correspondent_full_name_full_name_key", ["full_name"]);
+__PACKAGE__->add_unique_constraint(
+  "correspondent_full_name_correspondent_full_name_idx",
+  ["correspondent", "full_name"],
+);
 
 =head1 RELATIONS
 
@@ -117,8 +122,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-25 18:43:53
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:U7mn1zcYHvgfaD4arcYAeA
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-04-01 17:05:37
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:xGcJNDjhN+ehcFQYzaBxBw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

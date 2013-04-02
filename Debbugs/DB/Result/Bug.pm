@@ -115,29 +115,53 @@ Outlook of the bug; empty if it has no outlook
 
 Subject of the bug
 
+=head2 severity
+
+  data_type: 'integer'
+  is_foreign_key: 1
+  is_nullable: 0
+
 =head2 done
 
-  data_type: 'text'
-  default_value: (empty string)
-  is_nullable: 0
+  data_type: 'integer'
+  is_foreign_key: 1
+  is_nullable: 1
 
 Individual who did the -done; empty if it has never been -done
 
-=head2 owner
+=head2 done_full
 
   data_type: 'text'
   default_value: (empty string)
   is_nullable: 0
+
+=head2 owner
+
+  data_type: 'integer'
+  is_foreign_key: 1
+  is_nullable: 1
 
 Individual who owns this bug; empty if no one owns it
 
-=head2 submitter
+=head2 owner_full
 
   data_type: 'text'
   default_value: (empty string)
   is_nullable: 0
 
+=head2 submitter
+
+  data_type: 'integer'
+  is_foreign_key: 1
+  is_nullable: 1
+
 Individual who submitted this bug; empty if there is no submitter
+
+=head2 submitter_full
+
+  data_type: 'text'
+  default_value: (empty string)
+  is_nullable: 0
 
 =head2 unknown_packages
 
@@ -185,11 +209,19 @@ __PACKAGE__->add_columns(
   { data_type => "text", default_value => "", is_nullable => 0 },
   "subject",
   { data_type => "text", is_nullable => 0 },
+  "severity",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "done",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
+  "done_full",
   { data_type => "text", default_value => "", is_nullable => 0 },
   "owner",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
+  "owner_full",
   { data_type => "text", default_value => "", is_nullable => 0 },
   "submitter",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
+  "submitter_full",
   { data_type => "text", default_value => "", is_nullable => 0 },
   "unknown_packages",
   { data_type => "text", default_value => "", is_nullable => 0 },
@@ -284,21 +316,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 bug_severity
-
-Type: might_have
-
-Related object: L<Debbugs::DB::Result::BugSeverity>
-
-=cut
-
-__PACKAGE__->might_have(
-  "bug_severity",
-  "Debbugs::DB::Result::BugSeverity",
-  { "foreign.bug" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 bug_srcpackages
 
 Type: has_many
@@ -314,17 +331,17 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 bug_submitters
+=head2 bug_status_caches
 
 Type: has_many
 
-Related object: L<Debbugs::DB::Result::BugSubmitter>
+Related object: L<Debbugs::DB::Result::BugStatusCache>
 
 =cut
 
 __PACKAGE__->has_many(
-  "bug_submitters",
-  "Debbugs::DB::Result::BugSubmitter",
+  "bug_status_caches",
+  "Debbugs::DB::Result::BugStatusCache",
   { "foreign.bug" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -359,21 +376,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 bugs_done_by
-
-Type: has_many
-
-Related object: L<Debbugs::DB::Result::BugDoneBy>
-
-=cut
-
-__PACKAGE__->has_many(
-  "bugs_done_by",
-  "Debbugs::DB::Result::BugDoneBy",
-  { "foreign.bug" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 bugs_merged_merged
 
 Type: has_many
@@ -389,10 +391,84 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 done
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-25 18:43:53
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:cPIz8V6KUWZip+5Dvi7+4Q
+Type: belongs_to
 
+Related object: L<Debbugs::DB::Result::Correspondent>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "done",
+  "Debbugs::DB::Result::Correspondent",
+  { id => "done" },
+  {
+    is_deferrable => 1,
+    join_type     => "LEFT",
+    on_delete     => "CASCADE",
+    on_update     => "CASCADE",
+  },
+);
+
+=head2 owner
+
+Type: belongs_to
+
+Related object: L<Debbugs::DB::Result::Correspondent>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "owner",
+  "Debbugs::DB::Result::Correspondent",
+  { id => "owner" },
+  {
+    is_deferrable => 1,
+    join_type     => "LEFT",
+    on_delete     => "CASCADE",
+    on_update     => "CASCADE",
+  },
+);
+
+=head2 severity
+
+Type: belongs_to
+
+Related object: L<Debbugs::DB::Result::Severity>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "severity",
+  "Debbugs::DB::Result::Severity",
+  { id => "severity" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+);
+
+=head2 submitter
+
+Type: belongs_to
+
+Related object: L<Debbugs::DB::Result::Correspondent>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "submitter",
+  "Debbugs::DB::Result::Correspondent",
+  { id => "submitter" },
+  {
+    is_deferrable => 1,
+    join_type     => "LEFT",
+    on_delete     => "CASCADE",
+    on_update     => "CASCADE",
+  },
+);
+
+
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-04-01 15:59:31
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:hRsCzIGJB1krEYpMKmSVYw
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 1;

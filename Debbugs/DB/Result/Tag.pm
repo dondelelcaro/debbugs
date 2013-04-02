@@ -114,13 +114,13 @@ Related object: L<Debbugs::DB::Result::BugTag>
 __PACKAGE__->has_many(
   "bug_tags",
   "Debbugs::DB::Result::BugTag",
-  { "foreign.tag_id" => "self.id" },
+  { "foreign.tag" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-01-22 21:35:43
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:JNPrdP77YEkirbzdASjcKw
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-04-01 15:46:42
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:O+iuATuRz+/8rETu8oYO9Q
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

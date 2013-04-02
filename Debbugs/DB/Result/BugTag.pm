@@ -50,7 +50,7 @@ __PACKAGE__->table("bug_tag");
 
 Bug id (matches bug)
 
-=head2 tag_id
+=head2 tag
 
   data_type: 'integer'
   is_foreign_key: 1
@@ -70,7 +70,7 @@ __PACKAGE__->add_columns(
   },
   "bug",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "tag_id",
+  "tag",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
 );
 
@@ -94,13 +94,13 @@ __PACKAGE__->set_primary_key("id");
 
 =item * L</bug>
 
-=item * L</tag_id>
+=item * L</tag>
 
 =back
 
 =cut
 
-__PACKAGE__->add_unique_constraint("bug_tag_bug_tag_id", ["bug", "tag_id"]);
+__PACKAGE__->add_unique_constraint("bug_tag_bug_tag_id", ["bug", "tag"]);
 
 =head1 RELATIONS
 
@@ -130,13 +130,13 @@ Related object: L<Debbugs::DB::Result::Tag>
 __PACKAGE__->belongs_to(
   "tag",
   "Debbugs::DB::Result::Tag",
-  { id => "tag_id" },
+  { id => "tag" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-25 18:43:53
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:fGlaYDuI8YCGvA1gY7DNaQ
+# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-04-01 15:46:42
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:7cqkTgwzMw4wP3LtAKaBDg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
