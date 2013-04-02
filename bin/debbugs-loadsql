@@ -21,6 +21,7 @@ debbugs-loadsql [options]
 
  Options:
   --quick, -q only load changed bugs
+  --progress Show progress bar
   --service, -s service name
   --sysconfdir, -c postgresql service config dir
   --spool-dir debbugs spool directory
@@ -36,6 +37,10 @@ debbugs-loadsql [options]
 
 Only load changed bugs
 
+=item B<--progress>
+
+Show progress bar (requires Term::ProgressBar)
+
 =item B<--service,-s>
 
 Postgreql service to use; defaults to debbugs
@@ -49,6 +54,11 @@ postgresql default. [Operates by setting PGSYSCONFDIR]
 
 Debbugs spool directory; defaults to the value configured in the
 debbugs configuration file.
+
+=item B<--verbose>
+
+Output more information about what is happening. Probably not useful
+if you also set --progress.
 
 =item B<--debug, -d
 
@@ -80,24 +90,27 @@ use DateTime;
 use File::stat;
 
 
-my %options = (debug           => 0,
-	       help            => 0,
-	       man             => 0,
-	       verbose         => 0,
-	       quiet           => 0,
-	       quick           => 0,
-	       service         => 'debbugs',
-               progress        => 0,
-	      );
+my %options =
+    (debug           => 0,
+     help            => 0,
+     man             => 0,
+     verbose         => 0,
+     quiet           => 0,
+     quick           => 0,
+     service         => 'debbugs',
+     progress        => 0,
+    );
 
 
 GetOptions(\%options,
-	   'quick|q',
-	   'service|s',
-	   'sysconfdir|c',
+           'quick|q',
+           'service|s',
+           'sysconfdir|c',
            'progress!',
-	   'spool_dir|spool-dir=s',
-	   'debug|d+','help|h|?','man|m');
+           'spool_dir|spool-dir=s',
+           'verbose|v+',
+           'quiet+',
+           'debug|d+','help|h|?','man|m');
 
 pod2usage() if $options{help};
 pod2usage({verbose=>2}) if $options{man};
