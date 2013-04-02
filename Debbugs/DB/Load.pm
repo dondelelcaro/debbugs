@@ -43,7 +43,7 @@ use Params::Validate qw(validate_with :types);
 use Debbugs::Status qw(read_bug split_status_fields);
 use Debbugs::DB;
 use DateTime;
-use Debbugs::Common qw(make_list);
+use Debbugs::Common qw(make_list getparsedaddrs);
 use Debbugs::Config qw(:config);
 
 =head2 Bug loading
@@ -76,13 +76,17 @@ Loads a bug's metadata into the database. (Does not load any messages)
 =cut
 
 sub load_bug {
-     my %param = validate_with(params => \@_,
+    my %param = validate_with(params => \@_,
                               spec => {db => {type => OBJECT,
                                              },
                                        data => {type => HASHREF},
                                        tags => {type => HASHREF,
                                                 default => sub {return {}},
                                                 optional => 1},
+                                       severities => {type => HASHREF,
+                                                      default => sub {return {}},
+                                                      optional => 1,
+                                                     },
                                        queue => {type => HASHREF,
                                                  optional => 1},
                                       });
@@ -90,58 +94,88 @@ sub load_bug {
     my $data = $param{data};
     my $tags = $param{tags};
     my $queue = $param{queue};
+    my $severities = $param{severities};
     my $can_queue = 1;
     if (not defined $queue) {
         $can_queue = 0;
         $queue = {};
     }
+    my %tags;
     my $s_data = split_status_fields($data);
-    my @tags;
     for my $tag (make_list($s_data->{keywords})) {
 	next unless defined $tag and length $tag;
 	# this allows for invalid tags. But we'll use this to try to
 	# find those bugs and clean them up
 	if (not exists $tags->{$tag}) {
-	    $tags->{$tag} = $s->resultset('Tag')->find_or_create({tag => $tag});
+	    $tags->{$tag} = $s->resultset('Tag')->
+            find_or_create({tag => $tag});
 	}
-	push @tags, $tags->{$tag};
+	$tags{$tag} = $tags->{$tag};
     }
-    my $bug = {id => $data->{bug_num},
-	       creation => DateTime->from_epoch(epoch => $data->{date}),
-	       log_modified => DateTime->from_epoch(epoch => $data->{log_modified}),
-	       last_modified => DateTime->from_epoch(epoch => $data->{last_modified}),
-	       archived => $data->{archived},
-	       (defined $data->{unarchived} and length($data->{unarchived}))?(unarchived => DateTime->from_epoch(epoch => $data->{unarchived})):(),
-	       forwarded => $data->{forwarded} // '',
-	       summary => $data->{summary} // '',
-	       outlook => $data->{outlook} // '',
-	       subject => $data->{subject} // '',
-	       done => $data->{done} // '',
-	       owner => $data->{owner} // '',
-               submitter => $data->{submitter} // '',
-	       severity => length($data->{severity}) ? $data->{severity} : $config{default_severity},
-	      };
-    $s->resultset('Bug')->update_or_create($bug);
-    $s->txn_do(sub {
+    my $severity = length($data->{severity}) ? $data->{severity} : $config{default_severity};
+    if (exists $severities->{$severity}) {
+        $severity = $severities->{$severity};
+    } else {
+        $severity = $s->resultset('Severity')->
+            find_or_create({severity => $severity});
+    }
+    my $bug =
+        {id => $data->{bug_num},
+         creation => DateTime->from_epoch(epoch => $data->{date}),
+         log_modified => DateTime->from_epoch(epoch => $data->{log_modified}),
+         last_modified => DateTime->from_epoch(epoch => $data->{last_modified}),
+         archived => $data->{archived},
+         (defined $data->{unarchived} and length($data->{unarchived}))?(unarchived => DateTime->from_epoch(epoch => $data->{unarchived})):(),
+         forwarded => $data->{forwarded} // '',
+         summary => $data->{summary} // '',
+         outlook => $data->{outlook} // '',
+         subject => $data->{subject} // '',
+         done_full => $data->{done} // '',
+         severity => $severity,
+         owner_full => $data->{owner} // '',
+         submitter_full => $data->{originator} // '',
+        };
+    my %addr_map =
+        (done => 'done',
+         owner => 'owner',
+         submitter => 'originator',
+        );
+    for my $addr_type (keys %addr_map) {
+        my @addrs = getparsedaddrs($data->{$addr_map{$addr_type}} // '');
+        next unless @addrs;
+        $bug->{$addr_type} = $s->resultset('Correspondent')->find_or_create({addr => $addrs[0]->address()});
+        # insert the full name as well
+        my $full_name = $addrs[0]->phrase();
+        $full_name =~ s/^\"|\"$//g;
+        $full_name =~ s/^\s+|\s+$//g;
+        $bug->{$addr_type}->update_or_create_related('correspondent_full_names',{full_name=>$full_name}) if length $full_name;
+    }
+     my $b = $s->resultset('Bug')->update_or_create($bug) or
+         die "Unable to update or create bug $bug->{id}";
+     $s->txn_do(sub {
 		   for my $ff (qw(found fixed)) {
-		       my @elements = $s->resultset('BugVer')->search({bug_id => $data->{bug_num},
+		       my @elements = $s->resultset('BugVer')->search({bug => $data->{bug_num},
 								       found  => $ff eq 'found'?1:0,
 								      });
-		       my %elements_to_delete = map {($elements[$_]->ver_string(),$_)} 0..$#elements;
-		       my @elements_to_add;
+		       my %elements_to_delete = map {($elements[$_]->ver_string(),$elements[$_])} 0..$#elements;
+		       my %elements_to_add;
+                       my @elements_to_keep;
 		       for my $version (@{$data->{"${ff}_versions"}}) {
 			   if (exists $elements_to_delete{$version}) {
-			       delete $elements_to_delete{$version};
+			       push @elements_to_keep,$version;
 			   } else {
-			       push @elements_to_add,$version;
+			       $elements_to_add{$version} = 1;
 			   }
 		       }
+                       for my $version (@elements_to_keep) {
+                           delete $elements_to_delete{$version};
+                       }
 		       for my $element (keys %elements_to_delete) {
-			   $elements_to_delete{$element}->delete();
+                           $elements_to_delete{$element}->delete();
 		       }
-		       for my $element (@elements_to_add) {
+		       for my $element (keys %elements_to_add) {
 			   # find source package and source version id
-			   my $ne = $s->resultset('BugVer')->new_result({bug_id => $data->{bug_num},
+			   my $ne = $s->resultset('BugVer')->new_result({bug => $data->{bug_num},
 									 ver_string => $element,
 									 found => $ff eq 'found'?1:0,
 									}
@@ -161,8 +195,9 @@ sub load_bug {
 		   }
 	       });
     $s->txn_do(sub {
-		   $s->resultset('BugTag')->search({bug_id => $data->{bug_num}})->delete();
-		   $s->populate(BugTag => [[qw(bug_id tag_id)], map {[$data->{bug_num}, $_->id()]} @tags]);
+		   my $t = $s->resultset('BugTag')->search({bug => $data->{bug_num}});
+                   $t->delete() if defined $t;
+		   $s->populate(BugTag => [[qw(bug tag)], map {[$data->{bug_num}, $_->id()]} values %tags]);
 	       });
     # because these bugs reference other bugs which might not exist
     # yet, we can't handle them until we've loaded all bugs. queue
@@ -174,7 +209,6 @@ sub load_bug {
         handle_load_bug_queue(db => $s,queue => $queue);
     }
 
-    print STDERR "Handled $data->{bug_num}\n";
     # still need to handle merges, versions, etc.
 }
 
@@ -213,8 +247,9 @@ sub handle_load_bug_queue{
 	    my $qt = $queue_types{$queue_type};
 	    $s->txn_do(sub {
 			   $s->resultset($qt->{set})->search({$qt->{bug_id},$bug})->delete();
-			   $s->populate($qt->{set},[[@{$qt->{columns}}],map {[$bug,$_]} @{$queue->{$queue_type}{$bug}}]) if
-			       @{$queue->{$queue_type}{$bug}};
+			   $s->populate($qt->{set},[[@{$qt->{columns}}],
+                                                    map {[$bug,$_]} @{$queue->{$queue_type}{$bug}}]) if
+			       @{$queue->{$queue_type}{$bug}//[]};
 		       }
 		      );
 	}
