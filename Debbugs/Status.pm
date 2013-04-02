@@ -280,7 +280,7 @@ sub read_bug{
 
     my $status_modified = (stat($status))[9];
     # Add log last modified time
-    $data{log_modified} = (stat($log))[9];
+    $data{log_modified} = (stat($log))[9] // (stat("${log}.gz"))[9];
     my $report_modified = (stat($report))[9] // $data{log_modified};
     $data{last_modified} = max($status_modified,$data{log_modified});
     # if the date isn't set (ancient bug), use the smallest of any of the modified
