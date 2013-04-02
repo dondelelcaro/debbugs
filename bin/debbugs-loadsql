@@ -215,7 +215,7 @@ while (my $dir = shift @dirs) {
         }
     }
 }
-$p->remove();
+$p->remove() if $p;
 handle_load_bug_queue(db => $schema,
                       queue => \%queue);
 
