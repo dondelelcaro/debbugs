@@ -1,31 +1,27 @@
 
-DROP TABLE bug_severity CASCADE;
+DROP TABLE bug_status_cache CASCADE;
+DROP VIEW  bug_package CASCADE;
+DROP VIEW binary_versions CASCADE;
 DROP TABLE bug_tag CASCADE;
 DROP TABLE tag CASCADE;
 DROP TABLE severity CASCADE;
 DROP TABLE bug CASCADE;
 DROP TABLE src_pkg CASCADE;
 DROP TABLE bug_ver CASCADE;
-DROP TABLE src_pkg_alias CASCADE;
 DROP TABLE src_ver CASCADE;
 DROP TABLE arch CASCADE;
 DROP TABLE bin_ver CASCADE;
 DROP TABLE bin_pkg CASCADE;
 DROP TABLE bug_blocks CASCADE;
 DROP TABLE bug_merged CASCADE;
-DROP VIEW bug_package CASCADE;
 DROP TABLE bug_srcpackage CASCADE;
 DROP TABLE bug_binpackage CASCADE;
-DROP VIEW  bug_package CASCADE;
-DROP VIEW binary_versions CASCADE;
 DROP TABLE suite CASCADE;
 DROP TABLE bin_associations CASCADE;
 DROP TABLE src_associations CASCADE;
 DROP TABLE maintainer CASCADE;
 DROP TABLE bug_message CASCADE;
 DROP TABLE message_correspondent CASCADE;
-DROP TABLE bug_submitter CASCADE;
-DROP TABLE bug_done_by CASCADE;
 DROP TABLE correspondent_full_name CASCADE;
 DROP TABLE correspondent CASCADE;
 DROP TABLE message_refs CASCADE;
@@ -33,6 +29,7 @@ DROP TABLE message CASCADE;
 DROP TYPE message_correspondent_type CASCADE;
 DROP TABLE table_comments CASCADE;
 DROP TABLE column_comments CASCADE;
+DROP TYPE bug_status_type CASCADE;
 
 -- the following two tables are used to provide documentation about
 -- the tables and columns for DBIx::Class::Schema::Loader
@@ -59,6 +56,28 @@ INSERT INTO column_comments VALUES ('maintainer','name','Name of package maintai
 INSERT INTO column_comments VALUES ('maintainer','created','Time maintainer record created');
 INSERT INTO column_comments VALUES ('maintainer','modified','Time maintainer record modified');
 
+CREATE TABLE correspondent (
+       id SERIAL PRIMARY KEY,
+       addr TEXT NOT NULL UNIQUE
+);
+INSERT INTO table_comments VALUES ('correspondent','Individual who has corresponded with the BTS');
+INSERT INTO column_comments VALUES ('correspondent','id','Correspondent ID');
+INSERT INTO column_comments VALUES ('correspondent','addr','Correspondent address');
+
+CREATE TABLE severity (
+       id SERIAL PRIMARY KEY,
+       severity TEXT NOT NULL UNIQUE,
+       ordering INT NOT NULL DEFAULT 5,
+       strong BOOLEAN DEFAULT FALSE,
+       obsolete BOOLEAN DEFAULT FALSE
+);
+INSERT INTO table_comments VALUES ('severity','Bug severity');
+INSERT INTO column_comments VALUES ('severity','id','Severity id');
+INSERT INTO column_comments VALUES ('severity','severity','Severity name');
+INSERT INTO column_comments VALUES ('severity','ordering','Severity ordering (more severe severities have higher numbers)');
+INSERT INTO column_comments VALUES ('severity','strong','True if severity is a strong severity');
+INSERT INTO column_comments VALUES ('severity','obsolete','Whether a severity level is obsolete (should not be set on new bugs)');
+
 -- bugs table
 CREATE TABLE bug (
        id INTEGER NOT NULL PRIMARY KEY,
@@ -71,9 +90,14 @@ CREATE TABLE bug (
        summary TEXT NOT NULL DEFAULT '',
        outlook TEXT NOT NULL DEFAULT '',
        subject TEXT NOT NULL,
-       done TEXT NOT NULL DEFAULT '',
-       owner TEXT NOT NULL DEFAULT '',
-       submitter TEXT NOT NULL DEFAULT '',
+       severity INT NOT NULL REFERENCES severity(id),
+       done INT REFERENCES correspondent(id),
+       done_full TEXT NOT NULL DEFAULT '',
+       owner INT REFERENCES correspondent(id),
+       owner_full TEXT NOT NULL DEFAULT '',
+       -- submitter would ideally be NOT NULL, but there are some ancient bugs which do not have submitters
+       submitter INT REFERENCES correspondent(id),
+       submitter_full TEXT NOT NULL DEFAULT '',
        unknown_packages TEXT NOT NULL DEfAULT ''
 );
 INSERT INTO table_comments VALUES ('bug','Bugs');
@@ -91,6 +115,13 @@ INSERT INTO column_comments VALUES ('bug','done','Individual who did the -done; 
 INSERT INTO column_comments VALUES ('bug','owner','Individual who owns this bug; empty if no one owns it');
 INSERT INTO column_comments VALUES ('bug','submitter','Individual who submitted this bug; empty if there is no submitter');
 INSERT INTO column_comments VALUES ('bug','unknown_packages','Package name if the package is not known');
+
+CREATE INDEX ON bug(creation);
+CREATE INDEX ON bug(log_modified);
+CREATE INDEX ON bug(done);
+CREATE INDEX ON bug(owner);
+CREATE INDEX ON bug(submitter);
+CREATE INDEX ON bug(forwarded);
 
 
 
@@ -237,38 +268,17 @@ INSERT INTO column_comments VALUES ('tag','obsolete','Whether a tag is obsolete 
 CREATE TABLE bug_tag (
        id SERIAL PRIMARY KEY,
        bug INT NOT NULL REFERENCES bug,
-       tag_id INT NOT NULL REFERENCES tag
+       tag INT NOT NULL REFERENCES tag
 );
 INSERT INTO table_comments VALUES ('bug_tag','Bug <-> tag mapping');
 INSERT INTO column_comments VALUES ('bug_tag','bug','Bug id (matches bug)');
-INSERT INTO column_comments VALUES ('bug_tag','tag_id','Tag id (matches tag)');
+INSERT INTO column_comments VALUES ('bug_tag','tag','Tag id (matches tag)');
 
-CREATE UNIQUE INDEX bug_tag_bug_tag_id ON bug_tag (bug,tag_id);
-CREATE INDEX bug_tag_tag_id ON bug_tag (tag_id);
+CREATE UNIQUE INDEX bug_tag_bug_tag_id ON bug_tag (bug,tag);
+CREATE INDEX bug_tag_tag_id ON bug_tag (tag);
 CREATE INDEX bug_tag_bug_id ON bug_tag (bug);
 
 
-CREATE TABLE severity (
-       id SERIAL PRIMARY KEY,
-       severity TEXT NOT NULL UNIQUE,
-       ordering INT NOT NULL DEFAULT 5,
-       strong BOOLEAN DEFAULT FALSE,
-       obsolete BOOLEAN DEFAULT FALSE
-);
-INSERT INTO table_comments VALUES ('severity','Bug severity');
-INSERT INTO column_comments VALUES ('severity','id','Severity id');
-INSERT INTO column_comments VALUES ('severity','severity','Severity name');
-INSERT INTO column_comments VALUES ('severity','ordering','Severity ordering (more severe severities have higher numbers)');
-INSERT INTO column_comments VALUES ('severity','strong','True if severity is a strong severity');
-INSERT INTO column_comments VALUES ('severity','obsolete','Whether a severity level is obsolete (should not be set on new bugs)');
-
-CREATE TABLE bug_severity(
-       bug INT PRIMARY KEY REFERENCES bug,
-       severity_id INT NOT NULL REFERENCES severity
-);
-INSERT INTO table_comments VALUES ('bug_severity','Bug <-> tag mapping');
-INSERT INTO column_comments VALUES ('bug_severity','bug','Bug id (matches bug)');
-INSERT INTO column_comments VALUES ('bug_severity','severity_id','Severity id (matches severity)');
 
 CREATE TABLE bug_binpackage (
        id SERIAL PRIMARY KEY,
@@ -347,6 +357,32 @@ INSERT INTO column_comments VALUES ('src_associations','source','Source version 
 INSERT INTO column_comments VALUES ('src_associations','created','Time this source package entered this suite');
 INSERT INTO column_comments VALUES ('src_associations','modified','Time this entry was modified');
 
+
+
+CREATE TYPE bug_status_type AS ENUM ('pending','forwarded','pending-fixed','fixed','absent','done');
+CREATE TABLE bug_status_cache (
+       id SERIAL PRIMARY KEY,
+       bug INT NOT NULL REFERENCES bug ON DELETE CASCADE ON UPDATE CASCADE,
+       suite INT REFERENCES suite ON DELETE CASCADE ON UPDATE CASCADE,
+       arch INT REFERENCES arch ON DELETE CASCADE ON UPDATE CASCADE,
+       status bug_status_type NOT NULL,
+       modified TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+       asof TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+CREATE UNIQUE INDEX ON bug_status_cache(bug,suite,arch);
+CREATE INDEX ON bug_status_cache(bug);
+CREATE INDEX ON bug_status_cache(status);
+INSERT INTO table_comments  VALUES ('bug_status_cache','Source <-> suite associations');
+INSERT INTO column_comments VALUES ('bug_status_cache','id','Source <-> suite association id');
+INSERT INTO column_comments VALUES ('bug_status_cache','bug','Source <-> suite association id');
+INSERT INTO column_comments VALUES ('bug_status_cache','suite','Source <-> suite association id');
+INSERT INTO column_comments VALUES ('bug_status_cache','arch','Source <-> suite association id');
+INSERT INTO column_comments VALUES ('bug_status_cache','status','Source <-> suite association id');
+INSERT INTO column_comments VALUES ('bug_status_cache','modified','Source <-> suite association id');
+INSERT INTO column_comments VALUES ('bug_status_cache','asof','Source <-> suite association id');
+
+
+
 CREATE TABLE message (
        id SERIAL PRIMARY KEY,
        msgid TEXT,
@@ -393,50 +429,18 @@ INSERT INTO column_comments VALUES ('message_refs','inferred','TRUE if this mess
 INSERT INTO column_comments VALUES ('message_refs','primary_ref','TRUE if this message->ref came from In-Reply-To: or similar.');
 
 
-CREATE TABLE correspondent (
-       id SERIAL PRIMARY KEY,
-       addr TEXT NOT NULL UNIQUE
-);
-INSERT INTO table_comments VALUES ('correspondent','Individual who has corresponded with the BTS');
-INSERT INTO column_comments VALUES ('correspondent','id','Correspondent ID');
-INSERT INTO column_comments VALUES ('correspondent','addr','Correspondent address');
 
 CREATE TABLE correspondent_full_name(
        id SERIAL PRIMARY KEY,
        correspondent INT NOT NULL REFERENCES correspondent ON DELETE CASCADE ON UPDATE CASCADE,
-       full_name TEXT NOT NULL UNIQUE
+       full_name TEXT NOT NULL
 );
+CREATE UNIQUE INDEX ON correspondent_full_name(correspondent,full_name);
 
 INSERT INTO table_comments VALUES ('correspondent_full_name','Full names of BTS correspondents');
 INSERT INTO column_comments VALUES ('correspondent_full_name','id','Correspondent full name id');
 INSERT INTO column_comments VALUES ('correspondent_full_name','correpsondent','Correspondent ID (matches correspondent)');
 INSERT INTO column_comments VALUES ('correspondent_full_name','full_name','Correspondent full name (includes e-mail address)');
-
-CREATE TABLE bug_submitter (
-       id SERIAL PRIMARY KEY,
-       bug INT NOT NULL REFERENCES bug ON DELETE CASCADE ON UPDATE CASCADE,
-       submitter INT NOT NULL REFERENCES correspondent ON DELETE CASCADE ON UPDATE CASCADE
-);
-CREATE INDEX on bug_submitter(submitter);
-CREATE UNIQUE INDEX on bug_submitter(bug,submitter);
-
-INSERT INTO table_comments  VALUES ('bug_submitter','Submitter of a bug (connects to correspondent)');
-INSERT INTO column_comments VALUES ('bug_submitter','id','Bug Submitter ID');
-INSERT INTO column_comments VALUES ('bug_submitter','bug','Bug which was submitted by this submitter');
-INSERT INTO column_comments VALUES ('bug_submitter','submitter','Bug submitter (connects to correspondent)');
-
-CREATE TABLE bug_done_by (
-       id SERIAL PRIMARY KEY,
-       bug INT NOT NULL REFERENCES bug ON DELETE CASCADE ON UPDATE CASCADE,
-       done_by INT NOT NULL REFERENCES correspondent ON DELETE CASCADE ON UPDATE CASCADE
-);
-CREATE INDEX on bug_done_by(done_by);
-CREATE UNIQUE INDEX on bug_done_by(bug,done_by);
-
-INSERT INTO table_comments  VALUES ('bug_done_by','Correspondent who finished this bug (emailed -done)');
-INSERT INTO column_comments VALUES ('bug_done_by','id','Bug Done By ID');
-INSERT INTO column_comments VALUES ('bug_done_by','bug','Bug number which was done');
-INSERT INTO column_comments VALUES ('bug_done_by','done_by','Bug finisher (connects to correspondent)');
 
 CREATE TYPE message_correspondent_type AS ENUM ('to','from','envfrom','cc');
 
