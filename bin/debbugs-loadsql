@@ -87,6 +87,7 @@ my %options = (debug           => 0,
 	       quiet           => 0,
 	       quick           => 0,
 	       service         => 'debbugs',
+               progress        => 0,
 	      );
 
 
@@ -94,6 +95,7 @@ GetOptions(\%options,
 	   'quick|q',
 	   'service|s',
 	   'sysconfdir|c',
+           'progress!',
 	   'spool_dir|spool-dir=s',
 	   'debug|d+','help|h|?','man|m');
 
@@ -104,6 +106,12 @@ $DEBUG = $options{debug};
 
 my @USAGE_ERRORS;
 $options{verbose} = $options{verbose} - $options{quiet};
+
+if ($options{progress}) {
+    eval "use Term::ProgressBar";
+    push @USAGE_ERRORS, "You asked for a progress bar, but Term::ProgressBar isn't installed" if $@;
+}
+
 
 pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
 
@@ -138,6 +146,7 @@ if (not lockpid($config{spool_dir}.'/lock/debbugs-loadsql')) {
      exit 1;
 }
 
+
 # connect to the database; figure out how to handle errors properly
 # here.
 my $schema = Debbugs::DB->connect('dbi:Pg:service='.$options{service}) or
@@ -147,10 +156,20 @@ my $time = 0;
 my $start_time = time;
 
 
-my @dirs = ($initialdir);
+my @dirs = (@ARGV?@ARGV : $initialdir);
 my $cnt = 0;
 my %tags;
+my %severities;
 my %queue;
+my $tot_dirs = @ARGV ? @ARGV : 0;
+my $done_dirs = 0;
+my $avg_subfiles = 0;
+my $completed_files = 0;
+my $p;
+if ($options{progress}) {
+    $p = eval "Term::ProgressBar->new({count => 1,ETA=>q(linear)})";
+    warn "Unable to initialize progress bar: $@" if not $p;
+}
 while (my $dir = shift @dirs) {
     printf "Doing dir %s ...\n", $dir if $verbose;
 
@@ -159,9 +178,20 @@ while (my $dir = shift @dirs) {
     closedir(DIR);
 
     my @list = map { m/^(\d+)\.summary$/?($1):() } @subdirs;
+    $tot_dirs -= @dirs;
     push @dirs, map { m/^(\d+)$/ && -d "$dir/$1"?("$dir/$1"):() } @subdirs;
+    $tot_dirs += @dirs;
+    if ($avg_subfiles == 0) {
+        $avg_subfiles = @list;
+    }
+
+    $p->target($avg_subfiles*($tot_dirs-$done_dirs)+$completed_files+@list) if $p;
+    $avg_subfiles = ($avg_subfiles * $done_dirs + @list) / ($done_dirs+1);
+    $done_dirs += 1;
 
     for my $bug (@list) {
+        $completed_files++;
+        $p->update($completed_files) if $p;
 	print "Up to $cnt bugs...\n" if (++$cnt % 100 == 0 && $verbose);
 	my $stat = stat(getbugcomponent($bug,'summary',$initialdir));
 	if (not defined $stat) {
@@ -171,14 +201,24 @@ while (my $dir = shift @dirs) {
 	next if $stat->mtime < $time;
 	my $data = read_bug(bug => $bug,
 			    location => $initialdir);
-	load_bug(db => $schema,
-                 data => split_status_fields($data),
-                 tags => \%tags,
-                 queue => \%queue);
+        eval {
+            load_bug(db => $schema,
+                     data => split_status_fields($data),
+                     tags => \%tags,
+                     severities => \%severities,
+                     queue => \%queue);
+        };
+        if ($@) {
+            use Data::Dumper;
+            print STDERR Dumper($data) if $DEBUG;
+            die "failure while trying to load bug $bug\n$@";
+        }
     }
 }
+$p->remove();
 handle_load_bug_queue(db => $schema,
                       queue => \%queue);
+
 
 
 __END__
