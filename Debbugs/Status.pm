@@ -191,6 +191,7 @@ sub read_bug{
     my $status;
     my $log;
     my $location;
+    my $report;
     if (not defined $param{summary}) {
 	 my $lref;
 	 ($lref,$location) = @param{qw(bug location)};
@@ -200,13 +201,16 @@ sub read_bug{
 	 }
 	 $status = getbugcomponent($lref, 'summary', $location);
 	 $log    = getbugcomponent($lref, 'log'    , $location);
+	 $report    = getbugcomponent($lref, 'report'    , $location);
 	 return undef unless defined $status;
 	 return undef if not -e $status;
     }
     else {
 	 $status = $param{summary};
 	 $log = $status;
+	 $report = $status;
 	 $log =~ s/\.summary$/.log/;
+	 $report =~ s/\.summary$/.report/;
 	 ($location) = $status =~ m/(db-h|db|archive)/;
          ($param{bug}) = $status =~ m/(\d+)\.summary$/;
     }
@@ -277,7 +281,12 @@ sub read_bug{
     my $status_modified = (stat($status))[9];
     # Add log last modified time
     $data{log_modified} = (stat($log))[9];
+    my $report_modified = (stat($report))[9] // $data{log_modified};
     $data{last_modified} = max($status_modified,$data{log_modified});
+    # if the date isn't set (ancient bug), use the smallest of any of the modified
+    if (not defined $data{date} or not length($data{date})) {
+        $data{date} = min($report_modified,$status_modified,$data{log_modified});
+    }
     $data{location} = $location;
     $data{archived} = (defined($location) and ($location eq 'archive'))?1:0;
     $data{bug_num} = $param{bug};
