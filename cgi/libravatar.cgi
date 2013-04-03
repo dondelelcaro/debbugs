@@ -7,7 +7,6 @@ use Debbugs::Config qw(:config);
 use Debbugs::CGI qw(cgi_parameters);
 use Debbugs::Common;
 use Digest::MD5 qw(md5_hex);
-use Gravatar::URL;
 use File::LibMagic;
 use File::Temp qw(tempfile);
 
@@ -54,90 +53,6 @@ if (not defined $cache_location) {
     exit 0;
 }
 
-sub cache_valid{
-    my ($cache_location) = @_;
-    if (-e $cache_location) {
-        if (time - (stat($cache_location))[9] < 60*60) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
-sub retreive_libravatar{
-    my %type_mapping =
-        (jpeg => 'jpg',
-         png => 'png',
-         gif => 'png',
-         tiff => 'png',
-         tif => 'png',
-         pjpeg => 'jpg',
-         jpg => 'jpg'
-        );
-    my %param = @_;
-    my $cache_location = $param{location};
-    $cache_location =~ s/\.[^\.]+$//;
-    my $uri = libravatar_url(email => $param{email},
-                             default => 404,
-                             size => 80);
-    my $ua = LWP::UserAgent->new(agent => 'Debbugs libravatar service (not Mozilla)',
-                                );
-    $ua->from($config{maintainer});
-    # if we don't get an avatar within 10 seconds, return so we don't
-    # block forever
-    $ua->timeout(10);
-    # if the avatar is bigger than 30K, we don't want it either
-    $ua->max_size(30*1024);
-    my $r = $ua->get($uri);
-    if (not $r->is_success()) {
-        return undef;
-    }
-    my $aborted = $r->header('Client-Aborted');
-    # if we exceeded max size, I'm not sure if we'll be successfull or
-    # not, but regardless, there will be a Client-Aborted header. Stop
-    # here if that header is defined.
-    return undef if defined $aborted;
-    my $type = $r->header('Content-Type');
-    # if there's no content type, or it's not one we like, we won't
-    # bother going further
-    return undef if not defined $type;
-    return undef if not $type =~ m{^image/([^/]+)$};
-    my $dest_type = $type_mapping{$1};
-    return undef if not defined $dest_type;
-    # undo any content encoding
-    $r->decode() or return undef;
-    # ok, now we need to convert it from whatever it is into a format
-    # that we actually like
-    my ($temp_fh,$temp_fn) = tempfile() or
-        return undef;
-    eval {
-        print {$temp_fh} $r->content() or
-            die "Unable to print to temp file";
-        close ($temp_fh);
-        system('convert','-resize','80x80',
-               '-strip',
-               $temp_fn,
-               $cache_location.'.'.$dest_type) == 0 or
-                   die "convert file failed";
-        unlink($temp_fh);
-    };
-    if ($@) {
-        unlink($cache_location.'.'.$dest_type) if -e $cache_location.'.'.$dest_type;
-        unlink($temp_fn) if -e $temp_fn;
-        return undef;
-    }
-    return $cache_location.'.'.$dest_type;
-}
-
-sub cache_location {
-    my ($md5sum) = @_;
-    for my $ext (qw(.png .jpg)) {
-        if (-e $config{libravatar_cache_dir}.'/'.$md5sum.$ext) {
-            return $config{libravatar_cache_dir}.'/'.$md5sum.$ext;
-        }
-    }
-    return $config{libravatar_cache_dir}.'/'.$md5sum;
-}
 
 sub serve_cache {
     my ($cache_location,$q) = @_;
