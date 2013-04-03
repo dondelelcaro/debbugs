@@ -373,12 +373,11 @@ set_default(\%config,'bug_subscription_domain',$config{list_domain});
 
 URI to a libravatar configuration. If empty or undefined, libravatar
 support will be disabled. Defaults to
-http://cdn.libravatar.org/avatar/ which uses a federated Avatar system
-and falls back to gravatar if necessary.
+libravatar.cgi, our internal federated libravatar system.
 
 =cut
 
-set_default(\%config,'libravatar_uri',"http://cdn.libravatar.org/avatar/");
+set_default(\%config,'libravatar_uri',$config{cgi_domain}.'/libravatar.cgi'.);
 
 =item libravatar_uri_options $gLibravatarUriOptions
 
@@ -392,7 +391,7 @@ the API of libravatar for details.
 
 =cut
 
-set_default(\%config,'libravatar_uri_options','?d=retro');
+set_default(\%config,'libravatar_uri_options','');
 
 =item libravatar_default_image
 
