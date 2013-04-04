@@ -143,8 +143,6 @@ sub decode_utf8_safely{
 
 =cut
 
-our %iconv_converters;
-
 sub convert_to_utf8 {
     my ($data,$charset,$internal_call) = @_;
     $internal_call //= 0;
@@ -156,28 +154,22 @@ sub convert_to_utf8 {
     if ($charset eq 'RAW') {
         croak("Charset must not be raw when calling convert_to_utf8");
     }
-    if (not defined $iconv_converters{$charset}) {
-        eval {
-            $iconv_converters{$charset} = Text::Iconv->new($charset,"UTF-8") or
-                die "Unable to create converter for '$charset'";
-        };
-        if ($@) {
-            return undef if $internal_call;
-            warn $@;
-            # We weren't able to create the converter, so use Encode
-            # instead
-            return __fallback_convert_to_utf8($data,$charset);
-        }
-    }
-    if (not defined $iconv_converters{$charset}) {
+    my $iconv_converter;
+    eval {
+        $iconv_converter = Text::Iconv->new($charset,"UTF-8") or
+            die "Unable to create converter for '$charset'";
+    };
+    if ($@) {
         return undef if $internal_call;
-        warn "The converter for $charset wasn't created properly somehow!";
+        warn $@;
+        # We weren't able to create the converter, so use Encode
+        # instead
         return __fallback_convert_to_utf8($data,$charset);
     }
-    my $converted_data = $iconv_converters{$charset}->convert($data);
+    my $converted_data = $iconv_converter->convert($data);
     # if the conversion failed, retval will be undefined or perhaps
     # -1.
-    my $retval = $iconv_converters{$charset}->retval();
+    my $retval = $iconv_converter->retval();
     if (not defined $retval or
         $retval < 0
        ) {
