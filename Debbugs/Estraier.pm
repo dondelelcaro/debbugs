@@ -30,12 +30,11 @@ use strict;
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 use Debbugs::Log;
-#use Params::Validate;
 use Search::Estraier;
-use Date::Manip;
 use Debbugs::Common qw(getbuglocation getbugcomponent make_list);
 use Debbugs::Status qw(readbug);
 use Debbugs::MIME qw(parse);
+use Encode qw(encode_utf8);
 
 BEGIN{
      ($VERSION) = q$Revision: 1.3 $ =~ /^Revision:\s+([^\s+])/;
@@ -121,7 +120,7 @@ sub add_bug_message{
      $doc = new Search::Estraier::Document if not defined $doc;
 
      my $message = parse($bug_message);
-     $doc->add_text(join("\n",make_list(values %{$message})));
+     $doc->add_text(encode_utf8(join("\n",make_list(values %{$message}))));
 
      # * @id : the ID number determined automatically when the document is registered.
      # * @uri : the location of a document which any document should have.
@@ -140,17 +139,17 @@ sub add_bug_message{
      my @attr = qw(status subject date submitter package tags severity);
      # parse the date
      my ($date) = $bug_message =~ /^Date:\s+(.+?)\s*$/mi;
-     $doc->add_attr('@cdate' => $date) if defined $date;
+     $doc->add_attr('@cdate' => encode_utf8($date)) if defined $date;
      # parse the title
      my ($subject) = $bug_message =~ /^Subject:\s+(.+?)\s*$/mi;
-     $doc->add_attr('@title' => $subject) if defined $subject;
+     $doc->add_attr('@title' => encode_utf8($subject)) if defined $subject;
      # parse the author
      my ($author) = $bug_message =~ /^From:\s+(.+?)\s*$/mi;
-     $doc->add_attr('@author' => $author) if defined $author;
+     $doc->add_attr('@author' => encode_utf8($author)) if defined $author;
      # create the uri
-     $doc->add_attr('@uri' => $uri);
+     $doc->add_attr('@uri' => encode_utf8($uri));
      foreach my $attr (@attr) {
-	  $doc->add_attr($attr => $status->{$attr}) if defined $status->{$attr};
+	  $doc->add_attr($attr => encode_utf8($status->{$attr})) if defined $status->{$attr};
      }
      print STDERR "adding $uri\n" if $DEBUG;
      # Try a bit harder if estraier is returning timeouts
