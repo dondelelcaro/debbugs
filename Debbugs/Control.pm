@@ -2663,7 +2663,7 @@ Handles all setting of summary fields
 
 If summary is undef, unsets the summary
 
-If summary is 0, sets the summary to the first paragraph contained in
+If summary is 0 or -1, sets the summary to the first paragraph contained in
 the message passed.
 
 If summary is a positive integer, sets the summary to the message specified.
@@ -2751,7 +2751,7 @@ sub _summary {
     elsif ($param{$cmd} =~ /^\d+$/) {
 	 my $log = [];
 	 my @records = Debbugs::Log::read_log_records(bug_num => $param{bug});
-	 if ($param{$cmd} == 0) {
+	 if ($param{$cmd} == 0 or $param{$cmd} == -1) {
 	      $log = $param{message};
 	      $summary_msg = @records + 1;
 	 }
@@ -2785,7 +2785,7 @@ sub _summary {
 	      }
 	      # skip a paragraph if it looks like it's control or
 	      # pseudo-headers
-	      if ($line =~ m{^\s*(?:Package|Source|Version|User|Tag|Severity)\:\s+\S}xi or #pseudo headers
+	      if ($line =~ m{^\s*(?:Package|Source|Version|User|Tag|Severity|Control)\:\s+\S}xi or #pseudo headers
 		  $line =~ m{^(?:package:?|(?:no|)owner|severity|tags?|summary| #control
 				 \#|reopen|close|(?:not|)(?:fixed|found)|clone|
 				 debug|(?:not|)forwarded|priority|
