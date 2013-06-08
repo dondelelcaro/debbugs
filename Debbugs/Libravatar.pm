@@ -42,12 +42,14 @@ use Digest::MD5 qw(md5_hex);
 use LWP::UserAgent;
 use File::Temp qw(tempfile);
 
+use Carp;
+
 BEGIN{
      ($VERSION) = q$Revision$ =~ /^Revision:\s+([^\s+])/;
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (libravatar => [qw(cache_valid serve_cache retrieve_libravatar)]
+     %EXPORT_TAGS = (libravatar => [qw(cache_valid serve_cache retrieve_libravatar cache_location)]
 		    );
      @EXPORT_OK = ();
      Exporter::export_ok_tags(keys %EXPORT_TAGS);
