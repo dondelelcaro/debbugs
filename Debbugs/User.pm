@@ -406,7 +406,7 @@ sub _wrap_to_length {
         my $current_word = $1;
         $content = $2;
         if ($current_line_length != 0 and
-	    $current_line_length + length($current_word) <= $line_length) {
+	    $current_line_length + length($current_word) > $line_length) {
 	    $result .= "\n ";
 	    $current_line_length = 1;
 	}
