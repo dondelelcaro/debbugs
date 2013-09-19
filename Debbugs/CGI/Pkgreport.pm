@@ -54,6 +54,7 @@ BEGIN{
 			     ],
 		     misc => [qw(generate_package_info),
 			      qw(determine_ordering),
+                              qw(get_status_and_filter),
 			     ],
 		    );
      @EXPORT_OK = (qw());
@@ -259,49 +260,107 @@ sub short_bug_status_html {
 			    );
 }
 
+our %_get_status_and_filter_params =
+    (bugs => {type => ARRAYREF,
+             },
+     bugusertags => {type => HASHREF,
+                     default => {},
+                    },
+     repeatmerged => {type => BOOLEAN,
+                      default => 1,
+                     },
+     include => {type => ARRAYREF,
+                 default => [],
+                },
+     exclude => {type => ARRAYREF,
+                 default => [],
+                },
+     dist     => {type => SCALAR,
+                  optional => 1,
+                 },
+     version  => {type => SCALAR,
+                  optional => 1,
+                 },
+    );
+
+
+sub get_status_and_filter {
+    my %param = validate_with(params => \@_,
+                              spec   => {%_get_status_and_filter_params},
+                             );
+    my %seenmerged;
+    my %statuses;
+
+     my %include;
+     my %exclude;
+     for my $include (make_list($param{include})) {
+	  next unless defined $include;
+	  my ($key,$value) = split /\s*:\s*/,$include,2;
+	  unless (defined $value) {
+	       $key = 'tags';
+	       $value = $include;
+	  }
+	  push @{$include{$key}}, split /\s*,\s*/, $value;
+     }
+     for my $exclude (make_list($param{exclude})) {
+	  next unless defined $exclude;
+	  my ($key,$value) = split /\s*:\s*/,$exclude,2;
+	  unless (defined $value) {
+	       $key = 'tags';
+	       $value = $exclude;
+	  }
+	  push @{$exclude{$key}}, split /\s*,\s*/, $value;
+     }
+
+    foreach my $bug (@{$param{bugs}}) {
+        my $status = get_bug_status(bug=>$bug,
+                                    (exists $param{dist}?(dist => $param{dist}):()),
+                                    bugusertags => $param{bugusertags},
+                                    (exists $param{version}?(version => $param{version}):()),
+                                    (exists $param{arch}?(arch => $param{arch}):(arch => $config{default_architectures})),
+                                   );
+        next unless keys $status;
+        next if bug_filter(bug => $bug,
+                           status => $status,
+                           repeat_merged => $param{repeatmerged},
+                           seen_merged => \%seenmerged,
+                           (keys %include ? (include => \%include):()),
+                           (keys %exclude ? (exclude => \%exclude):()),
+                          );
+        $statuses{$bug} = $status;
+    }
+    return \%statuses;
+
+}
+
 
 sub pkg_htmlizebugs {
-     my %param = validate_with(params => \@_,
-			       spec   => {bugs => {type => ARRAYREF,
-						  },
-					  names => {type => ARRAYREF,
-						   },
-					  title => {type => ARRAYREF,
-						   },
-					  prior => {type => ARRAYREF,
-						   },
-					  order => {type => ARRAYREF,
-						   },
-					  ordering => {type => SCALAR,
-						      },
-					  bugusertags => {type => HASHREF,
-							  default => {},
-							 },
-					  bug_rev => {type => BOOLEAN,
-						      default => 0,
-						     },
-					  bug_order => {type => SCALAR,
-						       },
-					  repeatmerged => {type => BOOLEAN,
-							   default => 1,
-							  },
-					  include => {type => ARRAYREF,
-						      default => [],
-						     },
-					  exclude => {type => ARRAYREF,
-						      default => [],
-						     },
-					  this     => {type => SCALAR,
-						       default => '',
-						      },
-					  options  => {type => HASHREF,
-						       default => {},
-						      },
-					  dist     => {type => SCALAR,
-						       optional => 1,
-						      },
-					 }
-			      );
+    my %param = validate_with(params => \@_,
+                              spec   => {%_get_status_and_filter_params,
+                                         bugs => {type => ARRAYREF,
+                                                 },
+                                         bug_status => {type => HASHREF,
+                                                       },
+                                         names => {type => ARRAYREF,
+                                                  },
+                                         title => {type => ARRAYREF,
+                                                  },
+                                         prior => {type => ARRAYREF,
+                                                  },
+                                         order => {type => ARRAYREF,
+                                                  },
+                                         ordering => {type => SCALAR,
+                                                     },
+                                         bug_rev => {type => BOOLEAN,
+                                                     default => 0,
+                                                    },
+                                         bug_order => {type => SCALAR,
+                                                      },
+                                         options  => {type => HASHREF,
+                                                      default => {},
+                                                     },
+                                        }
+                             );
      my @bugs = @{$param{bugs}};
 
      my @status = ();
@@ -328,49 +387,22 @@ sub pkg_htmlizebugs {
 
      my %section = ();
      # Make the include/exclude map
-     my %include;
-     my %exclude;
-     for my $include (make_list($param{include})) {
-	  next unless defined $include;
-	  my ($key,$value) = split /\s*:\s*/,$include,2;
-	  unless (defined $value) {
-	       $key = 'tags';
-	       $value = $include;
-	  }
-	  push @{$include{$key}}, split /\s*,\s*/, $value;
+     if (not exists $param{bug_status}) {
+         $param{bug_status} =
+             get_status_and_filter(map{exists $param{$_}?($_,$param{$_}):()}
+                                   keys %_get_status_and_filter_params);
+         @bugs = sort keys %{$param{bug_status}};
      }
-     for my $exclude (make_list($param{exclude})) {
-	  next unless defined $exclude;
-	  my ($key,$value) = split /\s*:\s*/,$exclude,2;
-	  unless (defined $value) {
-	       $key = 'tags';
-	       $value = $exclude;
-	  }
-	  push @{$exclude{$key}}, split /\s*,\s*/, $value;
-     }
-
      foreach my $bug (@bugs) {
-	  my %status = %{get_bug_status(bug=>$bug,
-					(exists $param{dist}?(dist => $param{dist}):()),
-					bugusertags => $param{bugusertags},
-					(exists $param{version}?(version => $param{version}):()),
-					(exists $param{arch}?(arch => $param{arch}):(arch => $config{default_architectures})),
-				       )};
-	  next unless %status;
-	  next if bug_filter(bug => $bug,
-			     status => \%status,
-			     repeat_merged => $param{repeatmerged},
-			     seen_merged => \%seenmerged,
-			     (keys %include ? (include => \%include):()),
-			     (keys %exclude ? (exclude => \%exclude):()),
-			    );
-
-	  my $html = "<li>"; #<a href=\"%s\">#%d: %s</a>\n<br>",
-	       #bug_url($bug), $bug, html_escape($status{subject});
-	  $html .= short_bug_status_html(status  => \%status,
-					 options => $param{options},
-					) . "\n";
-	  push @status, [ $bug, \%status, $html ];
+         if (not exists $param{bug_status}{$bug}) {
+             use Data::Printer;
+             p $param{bug_status};
+             die "No status for $bug";
+         }
+         my $html = short_bug_status_html(status  => $param{bug_status}{$bug},
+                                          options => $param{options},
+                                         ) . "\n";
+         push @status, [ $bug, $param{bug_status}{$bug}, $html ];
      }
      if ($param{bug_order} eq 'age') {
 	  # MWHAHAHAHA
@@ -386,13 +418,13 @@ sub pkg_htmlizebugs {
 	       $count{"g_${i}_${v}"}++;
 	       $key .= "_$v";
 	  }
-	  $section{$key} .= $entry->[2];
+	  push @{$section{$key}}, $entry->[2];
 	  $count{"_$key"}++;
      }
 
      my $result = "";
      if ($param{ordering} eq "raw") {
-	  $result .= "<UL class=\"bugs\">\n" . join("", map( { $_->[ 2 ] } @status ) ) . "</UL>\n";
+	  $result .= "<UL class=\"bugs\">\n" . join("", map( { "<li>".$_->[ 2 ] } @status ) ) . "</UL>\n";
      }
      else {
 	  $header .= "<div class=\"msgreceived\">\n<ul>\n";
@@ -407,7 +439,7 @@ sub pkg_htmlizebugs {
 	       }
 	  }
 	  for my $order (@keys_in_order) {
-	       next unless defined $section{$order};
+	       next unless defined $section{$order} and @{$section{$order}};
 	       my @ttl = split /_/, $order;
 	       shift @ttl;
 	       my $title = $param{title}[0]->[$ttl[0]] . " bugs";
@@ -432,7 +464,7 @@ sub pkg_htmlizebugs {
 	       }
 	       $result .= "<div class=\"msgreceived\">\n<UL class=\"bugs\">\n";
 	       $result .= "\n\n\n\n";
-	       $result .= $section{$order};
+	       $result .= join("",@{$section{$order}||[]});
 	       $result .= "\n\n\n\n";
 	       $result .= "</UL>\n</div>\n";
 	  } 

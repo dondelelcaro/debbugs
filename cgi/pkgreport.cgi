@@ -217,7 +217,7 @@ our %cats = (
     } ],
     "classification" => [ {
         "nam" => "Classification",
-        "pri" => [qw(pending=pending+tag=wontfix 
+        "pri" => [qw(pending=pending+tag=wontfix
                      pending=pending+tag=moreinfo
                      pending=pending+tag=patch
                      pending=pending+tag=confirmed
@@ -393,7 +393,14 @@ if (not exists $param{affects} and not exists $param{noaffects} and
 }
 
 # filter out included or excluded bugs
-
+my $bug_status =
+    get_status_and_filter(bugs => \@bugs,
+                          bugusertags => \%bugusertags,
+                          repeatmerged => $param{repeatmerged},
+                          include => $include,
+                          exclude => $exclude,
+                          (exists $param{dist})?(dist    => $param{dist}):(),);
+@bugs = keys %{$bug_status};
 
 if (defined $param{version}) {
      $title .= " at version $param{version}";
@@ -404,7 +411,10 @@ elsif (defined $param{dist}) {
 
 $title = html_escape($title);
 
-my @names; my @prior; my @order;
+my @names;
+# @prior contains the priority of the categories; numbers closer to
+# zero are shown nearer the top
+my @prior; my @order;
 determine_ordering(cats => \%cats,
 		   param => \%param,
 		   ordering => \$ordering,
@@ -420,21 +430,18 @@ my %bugs;
 @bugs = keys %bugs;
 
 my $result = pkg_htmlizebugs(bugs => \@bugs,
-			     names => \@names,
-			     title => \@title,
-			     order => \@order,
-			     prior => \@prior,
-			     ordering => $ordering,
-			     bugusertags => \%bugusertags,
-			     bug_rev => $bug_rev,
-			     bug_order => $bug_order,
-			     repeatmerged => $param{repeatmerged},
-			     include => $include,
-			     exclude => $exclude,
-			     this => $this,
-			     options => \%param,
-			     (exists $param{dist})?(dist    => $param{dist}):(),
-			    );
+                             bug_status => $bug_status,
+                             names => \@names,
+                             title => \@title,
+                             order => \@order,
+                             prior => \@prior,
+                             ordering => $ordering,
+                             bugusertags => \%bugusertags,
+                             bug_rev => $bug_rev,
+                             bug_order => $bug_order,
+                             options => \%param,
+                             (exists $param{dist})?(dist    => $param{dist}):(),
+                            );
 
 print "Content-Type: text/html; charset=utf-8\n\n";
 
@@ -451,8 +458,8 @@ print "<H1>" . "$gProject$Archived $gBug report logs: $title" .
 
 my $showresult = 1;
 
-my $pkg = $param{package} if defined $param{package};
-my $src = $param{src} if defined $param{src};
+my ($pkg) = make_list($param{package}) if defined $param{package};
+my ($src) = make_list($param{src}) if defined $param{src};
 
 my $pseudodesc = getpseudodesc();
 if (defined $pseudodesc and defined $pkg and exists $pseudodesc->{$pkg}) {
