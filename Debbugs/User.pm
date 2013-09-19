@@ -248,7 +248,7 @@ sub write {
         next if @{$ut->{$t}} == 0;
         print {$uf} "Tag: $t\n";
         print {$uf} _wrap_to_length("Bugs: " . join(", ", @{$ut->{$t}}), 77) . "\n";
-        print $uf "\n";
+        print {$uf} "\n";
     }
 
     my $uc = $self->{"categories"};
@@ -256,31 +256,31 @@ sub write {
     for my $c (keys %{$uc}) {
         next if @{$uc->{$c}} == 0;
 
-        print $uf "Category: $c\n";
-	print $uf "Hidden: yes\n" unless defined $vis{$c};
+        print {$uf} "Category: $c\n";
+	print {$uf} "Hidden: yes\n" unless defined $vis{$c};
 	my $i = 0;
 	for my $cat (@{$uc->{$c}}) {
 	    $i++;
 	    if (ref($cat) eq "HASH") {
-	        printf $uf "Cat%d: %s\n", $i, $cat->{"nam"};
-	        printf $uf "Cat%dOptions:\n", $i;
+	        printf {$uf} "Cat%d: %s\n", $i, $cat->{"nam"};
+	        printf {$uf} "Cat%dOptions:\n", $i;
 	        for my $j (0..$#{$cat->{"pri"}}) {
 	            if (defined $cat->{"ttl"}->[$j]) {
-		        printf $uf " %s - %s\n",
+		        printf {$uf} " %s - %s\n",
 		            $cat->{"pri"}->[$j], $cat->{"ttl"}->[$j];
 		    } else {
-		        printf $uf " %s\n", $cat->{"pri"}->[$j];
+		        printf {$uf} " %s\n", $cat->{"pri"}->[$j];
 		    }
 		}
-	        printf $uf "Cat%dDefault: %s\n", $i, $cat->{"def"}
+	        printf {$uf} "Cat%dDefault: %s\n", $i, $cat->{"def"}
 	    	    if defined $cat->{"def"};
-		printf $uf "Cat%dOrder: %s\n", $i, join(", ", @{$cat->{"ord"}})
+		printf {$uf} "Cat%dOrder: %s\n", $i, join(", ", @{$cat->{"ord"}})
 		    if defined $cat->{"ord"};
 	    } else {
-	        printf $uf "Cat%d: %s\n", $i, $cat;
+	        printf {$uf} "Cat%d: %s\n", $i, $cat;
 	    }
 	}
-	print $uf "\n";
+	print {$uf} "\n";
     }
     # handle the value stanzas
     my %value;
