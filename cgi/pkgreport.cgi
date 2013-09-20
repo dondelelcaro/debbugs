@@ -424,11 +424,6 @@ determine_ordering(cats => \%cats,
 		   order => \@order,
 		  );
 
-# strip out duplicate bugs
-my %bugs;
-@bugs{@bugs} = @bugs;
-@bugs = keys %bugs;
-
 my $result = pkg_htmlizebugs(bugs => \@bugs,
                              bug_status => $bug_status,
                              names => \@names,

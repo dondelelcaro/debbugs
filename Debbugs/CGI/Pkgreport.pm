@@ -313,6 +313,7 @@ sub get_status_and_filter {
      }
 
     foreach my $bug (@{$param{bugs}}) {
+        next if exists $statuses{$bug};
         my $status = get_bug_status(bug=>$bug,
                                     (exists $param{dist}?(dist => $param{dist}):()),
                                     bugusertags => $param{bugusertags},
