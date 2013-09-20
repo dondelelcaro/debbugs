@@ -1,0 +1,29 @@
+{include(q(html/pre_title))}{$title} -- {html_escape($config{project})}{$Archived} {$config{bug}} report logs{include(q(html/post_title.tmpl))}
+</head>
+<body onload="pagemain();">
+<div id="status_mask"></div>
+<h1>{html_escape($config{project})}{$Archived} {$config{bug}} report logs: {$title}</h1>
+{$package_info}
+{ $OUT ='';
+if ($maint) {
+  $OUT .= <<END;
+<p>Note that maintainers may use different Maintainer fields for
+different packages, so there may be other reports filed under
+different addresses.
+END
+}}
+{ $OUT ='';
+if ($submitter) {
+  $OUT .= <<END;
+<p>Note that people may use different email accounts for
+different bugs, so there may be other reports filed under
+different addresses.
+END
+}}
+{$result}
+{include(q(cgi/pkgreport_javascript))}
+{$option_form}
+<hr>
+{include(q(html/html_tail))}
+</body>
+</html>

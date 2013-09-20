@@ -438,18 +438,6 @@ my $result = pkg_htmlizebugs(bugs => \@bugs,
                              (exists $param{dist})?(dist    => $param{dist}):(),
                             );
 
-print "Content-Type: text/html; charset=utf-8\n\n";
-
-print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
-print "<HTML><HEAD>\n" . 
-    "<TITLE>$title -- $gProject$Archived $gBug report logs</TITLE>\n" .
-    qq(<link rel="stylesheet" href="$gWebHostBugDir/css/bugs.css" type="text/css">) .
-    "</HEAD>\n" .
-    '<BODY onload="pagemain();">' .
-    "\n";
-print qq(<DIV id="status_mask"></DIV>\n);
-print "<H1>" . "$gProject$Archived $gBug report logs: $title" .
-      "</H1>\n";
 
 my $showresult = 1;
 
@@ -463,48 +451,56 @@ if (defined $pseudodesc and defined $pkg and exists $pseudodesc->{$pkg}) {
 
 # output information about the packages
 
+my $package_info = '';
 for my $package (make_list($param{package}||[])) {
-     print generate_package_info(binary => 1,
-				 package => $package,
-				 options => \%param,
-				 bugs    => \@bugs,
-				);
+     $package_info .=
+         generate_package_info(binary => 1,
+                               package => $package,
+                               options => \%param,
+                               bugs    => \@bugs,
+                              );
 }
 for my $package (make_list($param{src}||[])) {
-     print generate_package_info(binary => 0,
-				 package => $package,
-				 options => \%param,
-				 bugs    => \@bugs,
-				);
+    $package_info .=
+        generate_package_info(binary => 0,
+                              package => $package,
+                              options => \%param,
+                              bugs    => \@bugs,
+                             );
 }
 
+my $maint = 0;
 if (exists $param{maint} or exists $param{maintenc}) {
-    print "<p>Note that maintainers may use different Maintainer fields for\n";
-    print "different packages, so there may be other reports filed under\n";
-    print "different addresses.\n";
+    $maint = 1;
 }
+my $submitter = 0;
 if (exists $param{submitter}) {
-    print "<p>Note that people may use different email accounts for\n";
-    print "different bugs, so there may be other reports filed under\n";
-    print "different addresses.\n";
+    $submitter = 1;
 }
 
-print $result;
+my $option_form =
+    option_form(template => 'cgi/pkgreport_options',
+                param    => \%param,
+                form_options => $form_options,
+                variables => $form_option_variables,
+               );
 
-print fill_in_template(template=>'cgi/pkgreport_javascript');
+print "Content-Type: text/html; charset=utf-8\n\n";
 
-print qq(<h2 class="outstanding"><!--<a class="options" href="javascript:toggle(1)">-->Options<!--</a>--></h2>\n);
-
-print option_form(template => 'cgi/pkgreport_options',
-		  param    => \%param,
-		  form_options => $form_options,
-		  variables => $form_option_variables,
-		 );
-
-print "<hr>\n";
-print fill_in_template(template=>'html/html_tail',
-		       hole_var => {'&strftime' => \&POSIX::strftime,
-				   },
-		      );
-print "</body></html>\n";
-
+fill_in_template(template=>'cgi/pkgreport',
+                 variables => {
+                     result => $result,
+                     submitter => $submitter,
+                     maint => $maint,
+                     option_form => $option_form,
+                     title => $title,
+                 },
+                 hole_var  => {'&package_links' => \&Debbugs::CGI::package_links,
+                               '&bug_links'     => \&Debbugs::CGI::bug_links,
+                               '&version_url'   => \&Debbugs::CGI::version_url,
+                               '&bug_url'       => \&Debbugs::CGI::bug_url,
+                               '&strftime'      => \&POSIX::strftime,
+                               '&maybelink'     => \&Debbugs::CGI::maybelink,
+                           },
+                 output => \*STDOUT,
+                );
