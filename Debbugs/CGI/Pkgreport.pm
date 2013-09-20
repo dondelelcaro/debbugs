@@ -465,7 +465,7 @@ sub pkg_htmlizebugs {
 	       }
 	       $result .= "<div class=\"msgreceived\">\n<UL class=\"bugs\">\n";
 	       $result .= "\n\n\n\n";
-	       $result .= join("",@{$section{$order}||[]});
+	       $result .= join("",map {"<li>".$_} @{$section{$order}||[]});
 	       $result .= "\n\n\n\n";
 	       $result .= "</UL>\n</div>\n";
 	  } 
