@@ -521,12 +521,14 @@ sub lock_read_all_merged_bugs {
 	    push @data,$newdata;
 	    # perform a sanity check to make sure that the merged bugs
 	    # are all merged with eachother
-	    my $expectmerge= join(' ',grep {$_ != $bug } sort { $a <=> $b } @bugs);
+        # We do a cmp sort instead of an <=> sort here, because that's
+        # what merge does
+	    my $expectmerge= join(' ',grep {$_ != $bug } sort @bugs);
 	    if ($newdata->{mergedwith} ne $expectmerge) {
 		for (1..$locks) {
 		    unfilelock(exists $param{locks}?$param{locks}:());
 		}
-		die "Bug $param{bug} differs from bug $bug: ($newdata->{bug_num}: '$newdata->{mergedwith}') vs. ('$expectmerge') (".join(' ',@bugs).")";
+		die "Bug $param{bug} mergedwith differs from bug $bug: ($newdata->{bug_num}: '$newdata->{mergedwith}') vs. ('$expectmerge') (".join(' ',@bugs).")";
 	    }
 	}
     }

@@ -56,6 +56,7 @@ install_mostfiles:
 	# create the directories if they aren't there
 	for dir in $(sbin_dir) $(etc_dir)/html $(etc_dir)/indices \
 $(var_dir)/indices $(var_dir)/www/cgi $(var_dir)/www/db $(var_dir)/www/txt \
+$(var_dir)/www/css \
 $(var_dir)/spool/lock $(var_dir)/spool/archive $(var_dir)/spool/incoming \
 $(var_dir)/spool/db-h $(scripts_dir) $(examples_dir) $(man8_dir); \
           do test -d $$dir || $(install_exec) -d $$dir; done
@@ -82,7 +83,7 @@ $(var_dir)/spool/db-h $(scripts_dir) $(examples_dir) $(man8_dir); \
 	# install the HTML pages etc
 	$(foreach html, $(htmls_in), $(install_data) $(html) $(etc_dir)/html;)
 	$(install_data) html/htaccess $(var_dir)/www/db/.htaccess
-	$(install_data) html/bugs.css $(var_dir)/www/bugs.css
+	$(install_data) html/bugs.css $(var_dir)/www/css/bugs.css
 
 	# install the CGIs
 	for cgi in $(cgis); do $(install_exec) $$cgi $(var_dir)/www/cgi; done
