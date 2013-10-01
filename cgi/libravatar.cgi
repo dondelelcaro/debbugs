@@ -17,6 +17,7 @@ use LWP::UserAgent;
 use HTTP::Request;
 
 use CGI::Simple;
+use Cwd qw(abs_path);
 
 my $q = CGI::Simple->new();
 
@@ -42,7 +43,7 @@ if (cache_valid($cache_location)) {
     exit 0;
 }
 # if we don't have it, get it, and store it in the cache
-$cache_location = retreive_libravatar(location => $cache_location,
+$cache_location = retrieve_libravatar(location => $cache_location,
                                       email => lc($param{email}),
                                      );
 if (not defined $cache_location) {
@@ -65,12 +66,12 @@ sub serve_cache {
         error($q,404, "Failed to open cached image $cache_location");
     my $m = File::LibMagic->new() or
         error($q,500,'Unable to create File::LibMagic object');
-    my $mime_string = $m->checktype_filename($cache_location) or
+    my $mime_string = $m->checktype_filename(abs_path($cache_location)) or
         error($q,500,'Bad file; no mime known');
     print $q->header(-type => $mime_string,
                      -expires => '+1d',
                     );
-    print STDOUT <$fh>;
+    print <$fh>;
     close($fh);
 }
 
