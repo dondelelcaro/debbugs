@@ -244,7 +244,7 @@ sub handler {
     my $location = $r->location();
     my ($email) = $uri =~ m/\Q$location\E\/?(.*)$/;
     if (not length $email) {
-        return Apache2::Const::NOT_FOUND;
+        return Apache2::Const::NOT_FOUND();
     }
     my $q = CGI::Simple->new();
     my %param = cgi_parameters(query => $q,
@@ -285,7 +285,7 @@ sub serve_cache_mod_perl {
     }
     $r->filename($cache_location);
     $r->path_info('');
-    $r->finfo(APR::Finfo::stat($cache_location, APR::Const::FINFO_NORM, $r->pool));
+    $r->finfo(APR::Finfo::stat($cache_location, APR::Const::FINFO_NORM(), $r->pool));
 }
 
 =back
