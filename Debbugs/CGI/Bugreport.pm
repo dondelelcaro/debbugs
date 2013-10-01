@@ -148,10 +148,10 @@ sub display_entity {
                    if ($_ eq 'From' and $param{avatars}) {
                        my $libravatar_url = __libravatar_url(decode_rfc1522($head_field));
                        if (defined $libravatar_url and length $libravatar_url) {
-                           push @headers,q(<img src="http://).$libravatar_url.qq(">\n);
+                           push @headers,q(<img src="http://).$libravatar_url.qq(" alt="">\n);
                        }
                    }
-		   push @headers, qq(<p><span class="header">$_:</span> ) . html_escape(decode_rfc1522($head_field))."</p>\n";
+		   push @headers, qq(<div class="header"><span class="headerfield">$_:</span> ) . html_escape(decode_rfc1522($head_field))."</div>\n";
 	      }
 	      print {$output} join(qq(), @headers);
 	 } else {
@@ -172,7 +172,6 @@ sub display_entity {
 	    my $body = $entity->stringify_body;
 	    # this attachment has its own content type, so we must not
 	    # try to convert it to UTF-8 or do anything funky.
-	    my @layers = PerlIO::get_layers($output);
 	    binmode($output,':raw');
 	    print {$output} "Content-Type: $type";
 	    my ($charset) = $head->get('Content-Type:') =~ m/charset\s*=\s*\"?([\w-]+)\"?/i;
@@ -187,10 +186,10 @@ sub display_entity {
 	    print {$output} "\n";
 	    my $decoder = MIME::Decoder->new($head->mime_encoding);
 	    $decoder->decode(IO::Scalar->new(\$body), $output);
-	    if (grep {/utf8/} @layers) {
-		binmode($output,':utf8');
-	    }
-	    return;
+            # we don't reset the layers here, because it makes no
+            # sense to add anything to the output handle after this
+            # point.
+	    return(1);
 	}
 	elsif (not exists $param{att}) {
 	     my @dlargs = (msg=>$xmessage, att=>$#$attachments);
@@ -206,26 +205,30 @@ sub display_entity {
 	}
     }
 
-    return if not $param{outer} and $disposition eq 'attachment' and not exists $param{att};
-    return unless ($type =~ m[^text/?] and
-		   $type !~ m[^text/(?:html|enriched)(?:;|$)]) or
-		  $type =~ m[^application/pgp(?:;|$)] or
-		  $entity->parts;
+    return 0 if not $param{outer} and $disposition eq 'attachment' and not exists $param{att};
+    return 0 unless (($type =~ m[^text/?] and
+                      $type !~ m[^text/(?:html|enriched)(?:;|$)]) or
+                     $type =~ m[^application/pgp(?:;|$)] or
+                     $entity->parts);
 
     if ($entity->is_multipart) {
 	my @parts = $entity->parts;
 	foreach my $part (@parts) {
-	    display_entity(entity => $part,
-			   bug_num => $ref,
-			   outer => 0,
-			   msg_num => $xmessage,
-			   output => $output,
-			   attachments => $attachments,
-			   terse => $param{terse},
-			   exists $param{msg}?(msg=>$param{msg}):(),
-			   exists $param{att}?(att=>$param{att}):(),
-                           exists $param{avatars}?(avatars=>$param{avatars}):(),
-			  );
+	    my $raw_output =
+                display_entity(entity => $part,
+                               bug_num => $ref,
+                               outer => 0,
+                               msg_num => $xmessage,
+                               output => $output,
+                               attachments => $attachments,
+                               terse => $param{terse},
+                               exists $param{msg}?(msg=>$param{msg}):(),
+                               exists $param{att}?(att=>$param{att}):(),
+                               exists $param{avatars}?(avatars=>$param{avatars}):(),
+                              );
+            if ($raw_output) {
+                return $raw_output;
+            }
 	    # print {$output} "\n";
 	}
     } elsif ($entity->parts) {
@@ -286,6 +289,7 @@ sub display_entity {
 	      print {$output} qq(<pre class="message">$body</pre>\n);
 	 }
     }
+    return 0;
 }
 
 
@@ -314,19 +318,20 @@ sub handle_email_message{
      $parser->output_to_core(1);
      my $entity = $parser->parse_data( $email);
      my @attachments = ();
-     display_entity(entity  => $entity,
-		    bug_num => $param{ref},
-		    outer   => 1,
-		    msg_num => $param{msg_num},
-		    output => $output_fh,
-		    attachments => \@attachments,
-		    terse       => $param{terse},
-		    exists $param{msg}?(msg=>$param{msg}):(),
-		    exists $param{att}?(att=>$param{att}):(),
-		    exists $param{trim_headers}?(trim_headers=>$param{trim_headers}):(),
-		    exists $param{avatars}?(avatars=>$param{avatars}):(),
-		   );
-     return decode_utf8($output);
+     my $raw_output =
+         display_entity(entity  => $entity,
+                        bug_num => $param{ref},
+                        outer   => 1,
+                        msg_num => $param{msg_num},
+                        output => $output_fh,
+                        attachments => \@attachments,
+                        terse       => $param{terse},
+                        exists $param{msg}?(msg=>$param{msg}):(),
+                        exists $param{att}?(att=>$param{att}):(),
+                        exists $param{trim_headers}?(trim_headers=>$param{trim_headers}):(),
+                        exists $param{avatars}?(avatars=>$param{avatars}):(),
+                       );
+     return $raw_output?$output:decode_utf8($output);
 }
 
 =head2 handle_record

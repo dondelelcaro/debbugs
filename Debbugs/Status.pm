@@ -70,6 +70,7 @@ BEGIN{
 				  qw(removefoundversions removefixedversions)
 				 ],
 		     hook     => [qw(bughook bughook_archive)],
+                     indexdb  => [qw(generate_index_db_line)],
 		     fields   => [qw(%fields)],
 		    );
      @EXPORT_OK = ();
@@ -207,6 +208,7 @@ sub read_bug{
 	 $log = $status;
 	 $log =~ s/\.summary$/.log/;
 	 ($location) = $status =~ m/(db-h|db|archive)/;
+         ($param{bug}) = $status =~ m/(\d+)\.summary$/;
     }
     if ($param{lock}) {
 	filelock("$config{spool_dir}/lock/$param{bug}",exists $param{locks}?$param{locks}:());
@@ -274,7 +276,7 @@ sub read_bug{
 
     my $status_modified = (stat($status))[9];
     # Add log last modified time
-    $data{log_modified} = (stat($log))[9];
+    $data{log_modified} = (stat($log))[9] // (stat("${log}.gz"))[9];
     $data{last_modified} = max($status_modified,$data{log_modified});
     $data{location} = $location;
     $data{archived} = (defined($location) and ($location eq 'archive'))?1:0;
@@ -510,12 +512,14 @@ sub lock_read_all_merged_bugs {
 	    push @data,$newdata;
 	    # perform a sanity check to make sure that the merged bugs
 	    # are all merged with eachother
-	    my $expectmerge= join(' ',grep {$_ != $bug } sort { $a <=> $b } @bugs);
+        # We do a cmp sort instead of an <=> sort here, because that's
+        # what merge does
+	    my $expectmerge= join(' ',grep {$_ != $bug } sort @bugs);
 	    if ($newdata->{mergedwith} ne $expectmerge) {
 		for (1..$locks) {
 		    unfilelock(exists $param{locks}?$param{locks}:());
 		}
-		die "Bug $param{bug} differs from bug $bug: ($newdata->{bug_num}: '$newdata->{mergedwith}') vs. ('$expectmerge') (".join(' ',@bugs).")";
+		die "Bug $param{bug} mergedwith differs from bug $bug: ($newdata->{bug_num}: '$newdata->{mergedwith}') vs. ('$expectmerge') (".join(' ',@bugs).")";
 	    }
 	}
     }
@@ -655,7 +659,7 @@ sub makestatus {
 
 Writes the bug status and summary files out.
 
-Skips writting out a status file if minversion is 2
+Skips writing out a status file if minversion is 2
 
 Does not call bughook if disablebughook is true.
 
@@ -773,7 +777,7 @@ exactly are removed. Otherwise, all versions matching the version
 number are removed.
 
 Currently $package and $isbinary are entirely ignored, but accepted
-for backwards compatibilty.
+for backwards compatibility.
 
 =cut
 
@@ -1599,6 +1603,39 @@ sub isstrongseverity {
     return grep { $_ eq $severity } @{$config{strong_severities}};
 }
 
+=head1 indexdb
+
+=head2 generate_index_db_line
+
+      	my $data = read_bug(bug => $bug,
+			    location => $initialdir);
+        # generate_index_db_line hasn't been written yet at all.
+        my $line = generate_index_db_line($data);
+
+Returns a line for a bug suitable to be written out to index.db.
+
+=cut
+
+sub generate_index_db_line {
+    my ($data,$bug) = @_;
+
+    # just in case someone has given us a split out data
+    $data = join_status_fields($data);
+
+    my $whendone = "open";
+    my $severity = $config{default_severity};
+    (my $pkglist = $data->{package}) =~ s/[,\s]+/,/g;
+    $pkglist =~ s/^,+//;
+    $pkglist =~ s/,+$//;
+    $whendone = "forwarded" if defined $data->{forwarded} and length $data->{forwarded};
+    $whendone = "done" if defined $data->{done} and length $data->{done};
+    $severity = $data->{severity} if length $data->{severity};
+    return sprintf "%s %d %d %s [%s] %s %s\n",
+        $pkglist, $data->{bug_num}//$bug, $data->{date}, $whendone,
+            $data->{originator}, $severity, $data->{keywords};
+}
+
+
 
 =head1 PRIVATE FUNCTIONS
 
@@ -1681,19 +1718,7 @@ sub bughook {
 	     my $data = $bugs_temp{$bug};
 	     appendfile("$config{spool_dir}/debbugs.trace","$type $bug\n",makestatus($data, 1));
 
-	     my $whendone = "open";
-	     my $severity = $config{default_severity};
-	     (my $pkglist = $data->{package}) =~ s/[,\s]+/,/g;
-	     $pkglist =~ s/^,+//;
-	     $pkglist =~ s/,+$//;
-	     $whendone = "forwarded" if defined $data->{forwarded} and length $data->{forwarded};
-	     $whendone = "done" if defined $data->{done} and length $data->{done};
-	     $severity = $data->{severity} if length $data->{severity};
-
-	     my $k = sprintf "%s %d %d %s [%s] %s %s\n",
-		  $pkglist, $bug, $data->{date}, $whendone,
-		       $data->{originator}, $severity, $data->{keywords};
-	     $bugs{$bug} = $k;
+	     $bugs{$bug} = generate_index_db_line($data,$bug);
 	}
 	update_realtime("$config{spool_dir}/index.db.realtime", %bugs);
 

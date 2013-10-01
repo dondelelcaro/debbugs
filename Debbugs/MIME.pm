@@ -10,6 +10,8 @@
 
 package Debbugs::MIME;
 
+=encoding utf8
+
 =head1 NAME
 
 Debbugs::MIME -- Mime handling routines for debbugs
