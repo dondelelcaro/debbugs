@@ -46,7 +46,7 @@ Depends:
  libsafe-hole-perl, libmail-rfc822-address-perl, liblist-moreutils-perl,
  libtext-template-perl,
 # used by Debbugs::Libravatar and libravatar.cgi
- libfile-libmagic-perl, libgravatar-url-perl, libwww-perl
+ libfile-libmagic-perl, libgravatar-url-perl, libwww-perl, imagemagick
 Section: perl
 Description: modules used by the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
