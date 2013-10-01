@@ -49,7 +49,7 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (libravatar => [qw(cache_valid serve_cache retrieve_libravatar cache_location)]
+     %EXPORT_TAGS = (libravatar => [qw(cache_valid retrieve_libravatar cache_location)]
 		    );
      @EXPORT_OK = ();
      Exporter::export_ok_tags(keys %EXPORT_TAGS);
