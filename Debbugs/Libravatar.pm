@@ -41,6 +41,8 @@ use Debbugs::CGI qw(cgi_parameters);
 use Digest::MD5 qw(md5_hex);
 use LWP::UserAgent;
 use File::Temp qw(tempfile);
+use File::LibMagic;
+use Cwd qw(abs_path);
 
 use Carp;
 
@@ -263,7 +265,7 @@ sub handler {
         serve_cache_mod_perl($cache_location,$r);
         return Apache2::Const::DECLINED();
     }
-    $cache_location = retreive_libravatar(location => $cache_location,
+    $cache_location = retrieve_libravatar(location => $cache_location,
                                           email => $email,
                                          );
     if (not defined $cache_location) {
@@ -277,12 +279,21 @@ sub handler {
 }
 
 
+
+our $magic;
+
 sub serve_cache_mod_perl {
     my ($cache_location,$r) = @_;
     if (not defined $cache_location or not length $cache_location) {
         # serve the default image
         $cache_location = $config{libravatar_default_image};
     }
+    $magic = File::LibMagic->new() if not defined $magic;
+
+    return Apache2::Const::DECLINED() if not defined $magic;
+
+    $r->content_type($magic->checktype_filename(abs_path($cache_location)));
+
     $r->filename($cache_location);
     $r->path_info('');
     $r->finfo(APR::Finfo::stat($cache_location, APR::Const::FINFO_NORM(), $r->pool));
