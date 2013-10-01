@@ -148,7 +148,7 @@ sub display_entity {
                    if ($_ eq 'From' and $param{avatars}) {
                        my $libravatar_url = __libravatar_url(decode_rfc1522($head_field));
                        if (defined $libravatar_url and length $libravatar_url) {
-                           push @headers,q(<img src=").$libravatar_url.qq(" alt="">\n);
+                           push @headers,q(<img src="http://).$libravatar_url.qq(" alt="">\n);
                        }
                    }
 		   push @headers, qq(<div class="header"><span class="headerfield">$_:</span> ) . html_escape(decode_rfc1522($head_field))."</div>\n";
@@ -452,7 +452,7 @@ sub __libravatar_url {
         return undef;
     }
     ($email) = get_addresses($email);
-    return $config{libravatar_uri}.md5_hex(lc($email)).($config{libravatar_uri_options}//'');
+    return $config{libravatar_uri}.$email.($config{libravatar_uri_options}//'');
 }
 
 

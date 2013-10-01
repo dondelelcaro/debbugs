@@ -52,7 +52,7 @@ BEGIN{
 			       ],
 		     date   => [qw(secs_to_english)],
 		     quit   => [qw(quit)],
-		     lock   => [qw(filelock unfilelock lockpid)],
+		     lock   => [qw(filelock unfilelock lockpid simple_filelock simple_unlockfile)],
 		    );
      @EXPORT_OK = ();
      Exporter::export_ok_tags(keys %EXPORT_TAGS);
@@ -71,6 +71,7 @@ use Debbugs::MIME qw(decode_rfc1522);
 use Mail::Address;
 use Cwd qw(cwd);
 use Storable qw(dclone);
+use Time::HiRes qw(usleep);
 
 use Params::Validate qw(validate_with :types);
 
@@ -573,35 +574,77 @@ sub filelock {
 	    confess "Locking already locked file: $lockfile\n".Data::Dumper->Dump([$lockfile,$locks],[qw(lockfile locks)]);
 	}
     }
-    my ($count,$errors);
-    $count= 10; $errors= '';
-    for (;;) {
-	my $fh = eval {
+    my ($fh,$t_lockfile,$errors) =
+        simple_filelock($lockfile,10,1);
+    if ($fh) {
+        push @filelocks, {fh => $fh, file => $lockfile};
+        if (defined $locks) {
+            $locks->{locks}{$lockfile}++;
+            push @{$locks->{lockorder}},$lockfile;
+        }
+    } else {
+        use Data::Dumper;
+        croak "failed to get lock on $lockfile -- $errors".
+            (defined $locks?Data::Dumper->Dump([$locks],[qw(locks)]):'');
+    }
+}
+
+=head2 simple_filelock
+
+    my ($fh,$t_lockfile,$errors) =
+        simple_filelock($lockfile,$count,$wait);
+
+Does a flock of lockfile. If C<$count> is zero, does a blocking lock.
+Otherwise, does a non-blocking lock C<$count> times, waiting C<$wait>
+seconds in between.
+
+In list context, returns the lockfile filehandle, lockfile name, and
+any errors which occured.
+
+When the lockfile filehandle is undef, locking failed.
+
+These lockfiles must be unlocked manually at process end.
+
+
+=cut
+
+sub simple_filelock {
+    my ($lockfile,$count,$wait) = @_;
+    if (not defined $count) {
+        $count = 10;
+    }
+    if ($count < 0) {
+        $count = 0;
+    }
+    if (not defined $wait) {
+        $wait = 1;
+    }
+    my $errors= '';
+    my $fh;
+    while (1) {
+        $fh = eval {
 	     my $fh2 = IO::File->new($lockfile,'w')
 		  or die "Unable to open $lockfile for writing: $!";
-	     flock($fh2,LOCK_EX|LOCK_NB)
+             # Do a blocking lock if count is zero
+	     flock($fh2,LOCK_EX|($count == 0?0:LOCK_NB))
 		  or die "Unable to lock $lockfile $!";
 	     return $fh2;
 	};
 	if ($@) {
 	     $errors .= $@;
 	}
-	if ($fh) {
-	     push @filelocks, {fh => $fh, file => $lockfile};
-	     if (defined $locks) {
-		 $locks->{locks}{$lockfile}++;
-		 push @{$locks->{lockorder}},$lockfile;
-	     }
-	     last;
-	}
-        if (--$count <=0) {
-            $errors =~ s/\n+$//;
-	    use Data::Dumper;
-            croak "failed to get lock on $lockfile -- $errors".
-		(defined $locks?Data::Dumper->Dump([$locks],[qw(locks)]):'');
+        if ($fh) {
+            last;
         }
-#        sleep 10;
+        # use usleep for fractional wait seconds
+        usleep($wait * 1_000_000);
+    } continue {
+        last unless (--$count > 0);
+    } 
+    if ($fh) {
+        return wantarray?($fh,$lockfile,$errors):$fh
     }
+    return wantarray?(undef,$lockfile,$errors):undef;
 }
 
 # clean up all outstanding locks at end time
@@ -609,6 +652,23 @@ END {
      while (@filelocks) {
 	  unfilelock();
      }
+}
+
+=head2 simple_unlockfile
+
+     simple_unlockfile($fh,$lockfile);
+
+
+=cut
+
+sub simple_unlockfile {
+    my ($fh,$lockfile) = @_;
+    flock($fh,LOCK_UN)
+        or warn "Unable to unlock lockfile $lockfile: $!";
+    close($fh)
+        or warn "Unable to close lockfile $lockfile: $!";
+    unlink($lockfile)
+        or warn "Unable to unlink lockfile $lockfile: $!";
 }
 
 
@@ -644,12 +704,7 @@ sub unfilelock {
 	delete $locks->{locks}{$lockfile};
     }
     my %fl = %{pop(@filelocks)};
-    flock($fl{fh},LOCK_UN)
-	 or warn "Unable to unlock lockfile $fl{file}: $!";
-    close($fl{fh})
-	 or warn "Unable to close lockfile $fl{file}: $!";
-    unlink($fl{file})
-	 or warn "Unable to unlink lockfile $fl{file}: $!";
+    simple_unlockfile($fl{fh},$fl{file});
 }
 
 
