@@ -55,7 +55,7 @@ send_message(to=>'submit@bugs.something',
 			 From => 'föoﬀ@bugs.something',
 			 Subject => 'Submiting a bug',
 			],
-	     body => <<EOF,attachments => [{Type=>"text/plain",Charset=>"utf-8",Data=><<EOF2}]) or fail('Unable to send message');
+	     body => <<EOF,attachments => [{Type=>"text/plain",Charset=>"utf-8",Data=>encode_utf8(<<EOF2)}]) or fail('Unable to send message');
 Package: foo
 Severity: normal
 
