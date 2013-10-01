@@ -66,9 +66,11 @@ sub cache_valid{
     return 0;
 }
 
-=item retreive_libravatar
+=over
 
-     $cache_location = retreive_libravatar(location => $cache_location,
+=item retrieve_libravatar
+
+     $cache_location = retrieve_libravatar(location => $cache_location,
                                            email => lc($param{email}),
                                           );
 
@@ -78,7 +80,7 @@ there isn't a matching avatar, or there is an error, returns undef.
 
 =cut
 
-sub retreive_libravatar{
+sub retrieve_libravatar{
     my %type_mapping =
         (jpeg => 'jpg',
          png => 'png',
@@ -173,6 +175,22 @@ sub retreive_libravatar{
     return $cache_location.'.'.$dest_type;
 }
 
+sub blocked_libravatar {
+    my ($email,$md5sum) = @_;
+    my $blocked = 0;
+    for my $blocker (@{$config{libravatar_blacklist}||[]}) {
+        for my $element ($email,$md5sum) {
+            next unless defined $element;
+            eval {
+                if ($element =~ /$blocker/) {
+                    $blocked=1;
+                }
+            };
+        }
+    }
+    return $blocked;
+}
+
 sub cache_location {
     my %param = @_;
     my $md5sum;
@@ -183,6 +201,7 @@ sub cache_location {
     } else {
         croak("cache_location must be called with one of md5sum or email");
     }
+    return undef if blocked_libravatar($param{email},$md5sum);
     for my $ext (qw(.png .jpg)) {
         if (-e $config{libravatar_cache_dir}.'/'.$md5sum.$ext) {
             return $config{libravatar_cache_dir}.'/'.$md5sum.$ext;
@@ -269,6 +288,9 @@ sub serve_cache_mod_perl {
     $r->finfo(APR::Finfo::stat($cache_location, APR::Const::FINFO_NORM, $r->pool));
 }
 
+=back
+
+=cut
 
 1;
 

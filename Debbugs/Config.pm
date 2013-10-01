@@ -78,7 +78,7 @@ BEGIN {
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
-                     cgi => [qw($gLibravatarUri $gLibravatarUriOptions)],
+                     cgi => [qw($gLibravatarUri $gLibravatarUriOptions @gLibravatarBlacklist)],
 		     config   => [qw(%config)],
 		    );
      @EXPORT_OK = ();
@@ -1016,6 +1016,17 @@ Default: $config{web_dir}/libravatar/
 =cut
 
 set_default(\%config,'libravatar_cache_dir',$config{web_dir}.'/libravatar/');
+
+=item libravatar_blacklist
+
+Array of regular expressions to match against emails, domains, or
+images to only show the default image
+
+Default: empty array
+
+=cut
+
+set_default(\%config,'libravatar_blacklist',[]);
 
 =back
 
