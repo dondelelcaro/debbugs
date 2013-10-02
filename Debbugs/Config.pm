@@ -78,7 +78,7 @@ BEGIN {
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
-                     cgi => [qw($gLibravatarUri $gLibravatarUriOptions @gLibravatarBlacklist)],
+                     cgi => [qw($gLibravatarUri $gLibravatarCacheDir $gLibravatarUriOptions @gLibravatarBlacklist)],
 		     config   => [qw(%config)],
 		    );
      @EXPORT_OK = ();
