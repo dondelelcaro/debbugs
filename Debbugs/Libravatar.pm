@@ -94,7 +94,7 @@ sub retrieve_libravatar{
         );
     my %param = @_;
     my $cache_location = $param{location};
-    $cache_location =~ s/\.[^\.]+$//;
+    $cache_location =~ s/\.[^\.\/]+$//;
     # take out a lock on the cache location so that if another request
     # is made while we are serving this one, we don't do double work
     my ($fh,$lockfile,$errors) =
