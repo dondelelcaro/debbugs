@@ -111,9 +111,11 @@ END
 	    "$spool_dir/index.archive");
 
      # create the spool files and sub directories
-     map {system('mkdir','-p',"$spool_dir/$_"); }
-	  map {('db-h/'.$_,'archive/'.$_)}
-	       map { sprintf "%02d",$_ % 100} 0..99;
+     for my $dir (0..99) {
+         for my $archive (qw(db-h archive)) {
+             system('mkdir','-p',"$spool_dir/$archive/".sprintf('%02d',$dir));
+         }
+     }
      system('mkdir','-p',"$spool_dir/incoming");
      system('mkdir','-p',"$spool_dir/lock");
 
@@ -156,8 +158,9 @@ sub send_message{
      $ENV{LOCAL_PART} = $param{to};
      my ($rfd,$wfd);
      my $output='';
-     local $SIG{PIPE} = 'IGNORE';
-     local $SIG{CHLD} = sub {};
+     my $pipe_handler = $SIG{PIPE};
+     $SIG{PIPE} = 'IGNORE';
+     $SIG{CHLD} = 'DEFAULT';
      my $pid = open3($wfd,$rfd,$rfd,'scripts/receive')
 	  or die "Unable to start receive: $!";
      print {$wfd} create_mime_message($param{headers},
@@ -165,6 +168,7 @@ sub send_message{
 				      $param{attachments}) or
 					  die "Unable to to print to receive";
      close($wfd) or die "Unable to close receive";
+     $SIG{PIPE} = $pipe_handler;
      my $err = $? >> 8;
      my $childpid = waitpid($pid,0);
      if ($childpid != -1) {

@@ -78,7 +78,7 @@ BEGIN {
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
-                     cgi => [qw($gLibravatarUri $gLibravatarUriOptions)],
+                     cgi => [qw($gLibravatarUri $gLibravatarCacheDir $gLibravatarUriOptions @gLibravatarBlacklist)],
 		     config   => [qw(%config)],
 		    );
      @EXPORT_OK = ();
@@ -365,37 +365,6 @@ Default: list_domain
 set_default(\%config,'bug_subscription_domain',$config{list_domain});
 
 
-=head2 CGI Options
-
-=over
-
-=item libravatar_uri $gLibravatarUri
-
-URI to a libravatar configuration. If empty or undefined, libravatar
-support will be disabled. Defaults to
-http://cdn.libravatar.org/avatar/ which uses a federated Avatar system
-and falls back to gravatar if necessary.
-
-=cut
-
-set_default(\%config,'libravatar_uri',"http://cdn.libravatar.org/avatar/");
-
-=item libravatar_uri_options $gLibravatarUriOptions
-
-Options to append to the md5_hex of the e-mail. This sets the default
-avatar used when an avatar isn't available. Currently defaults to
-'?d=retro', which causes a bitmap-looking avatar to be displayed for
-unknown e-mails.
-
-Other options which make sense include ?d=404, ?d=wavatar, etc. See
-the API of libravatar for details.
-
-=cut
-
-set_default(\%config,'libravatar_uri_options','?d=retro');
-
-
-=back
 
 =head2 Misc Options
 
@@ -788,6 +757,16 @@ Default: $config{spool_dir}/user
 
 set_default(\%config,'usertag_dir',$config{spool_dir}.'/user');
 set_default(\%config,'incoming_dir','incoming');
+
+=item web_dir $gWebDir
+
+Directory where base html files are kept. Should normally be the same
+as the web server's document root.
+
+Default: /var/lib/debbugs/www
+
+=cut
+
 set_default(\%config,'web_dir','/var/lib/debbugs/www');
 set_default(\%config,'doc_dir','/var/lib/debbugs/www/txt');
 set_default(\%config,'lib_path','/usr/lib/debbugs');
@@ -988,6 +967,68 @@ set_default(\%config,'spam_rules_dir','/usr/share/spamassassin');
 
 =back
 
+=head2 CGI Options
+
+=over
+
+=item libravatar_uri $gLibravatarUri
+
+URI to a libravatar configuration. If empty or undefined, libravatar
+support will be disabled. Defaults to
+libravatar.cgi, our internal federated libravatar system.
+
+=cut
+
+set_default(\%config,'libravatar_uri',$config{cgi_domain}.'/libravatar.cgi?email=');
+
+=item libravatar_uri_options $gLibravatarUriOptions
+
+Options to append to the md5_hex of the e-mail. This sets the default
+avatar used when an avatar isn't available. Currently defaults to
+'?d=retro', which causes a bitmap-looking avatar to be displayed for
+unknown e-mails.
+
+Other options which make sense include ?d=404, ?d=wavatar, etc. See
+the API of libravatar for details.
+
+=cut
+
+set_default(\%config,'libravatar_uri_options','');
+
+=item libravatar_default_image
+
+Default image to serve for libravatar if there is no avatar for an
+e-mail address. By default, this is a 1x1 png. [This will also be the
+image served if someone specifies avatar=no.]
+
+Default: $config{web_dir}/1x1.png
+
+=cut
+
+set_default(\%config,'libravatar_default_image',$config{web_dir}.'/1x1.png');
+
+=item libravatar_cache_dir
+
+Directory where cached libravatar images are stored
+
+Default: $config{web_dir}/libravatar/
+
+=cut
+
+set_default(\%config,'libravatar_cache_dir',$config{web_dir}.'/libravatar/');
+
+=item libravatar_blacklist
+
+Array of regular expressions to match against emails, domains, or
+images to only show the default image
+
+Default: empty array
+
+=cut
+
+set_default(\%config,'libravatar_blacklist',[]);
+
+=back
 
 =head2 Text Fields
 

@@ -68,7 +68,7 @@ our $depth = 0;
 sub encode_utf8_structure {
     ++$depth;
     my @ret;
-    for my $_ (@_) {
+    for $_ (@_) {
 	if (ref($_) eq 'HASH') {
 	    push @ret, {encode_utf8_structure(%{$depth == 1 ? dclone($_):$_})};
 	}

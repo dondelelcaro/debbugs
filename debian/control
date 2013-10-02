@@ -44,6 +44,9 @@ Depends:
  libio-stringy-perl, libmldbm-perl, liburi-perl, libsoap-lite-perl,
  libcgi-simple-perl, libparams-validate-perl, libtext-template-perl,
  libsafe-hole-perl, libmail-rfc822-address-perl, liblist-moreutils-perl,
+ libtext-template-perl,
+# used by Debbugs::Libravatar and libravatar.cgi
+ libfile-libmagic-perl, libgravatar-url-perl, libwww-perl, imagemagick
 Section: perl
 Description: modules used by the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
@@ -60,7 +63,7 @@ Architecture: all
 Depends:
  ${misc:Depends},
  libdebbugs-perl, apache | httpd
-Suggests: libcgi-alert-perl
+Suggests: libcgi-alert-perl, libapache2-mod-perl2
 Description: web scripts for the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
  users and developers. Each bug is given a number, and is kept on file until
