@@ -154,7 +154,7 @@ __PACKAGE__->belongs_to(
   "Debbugs::DB::Result::SrcVer",
   { id => "based_on" },
   {
-    is_deferrable => 1,
+    is_deferrable => 0,
     join_type     => "LEFT",
     on_delete     => "CASCADE",
     on_update     => "CASCADE",
@@ -204,9 +204,9 @@ __PACKAGE__->belongs_to(
   "Debbugs::DB::Result::Maintainer",
   { id => "maintainer_id" },
   {
-    is_deferrable => 1,
+    is_deferrable => 0,
     join_type     => "LEFT",
-    on_delete     => "CASCADE",
+    on_delete     => "SET NULL",
     on_update     => "CASCADE",
   },
 );
@@ -238,7 +238,7 @@ __PACKAGE__->belongs_to(
   "src_pkg",
   "Debbugs::DB::Result::SrcPkg",
   { id => "src_pkg" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 =head2 src_vers
@@ -257,8 +257,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-27 18:54:20
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:hhXOPJ8se5BVKMsbvf+szw
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:P1zipd1t+2AOidtCSzyHVw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
