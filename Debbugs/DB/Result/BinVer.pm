@@ -153,7 +153,7 @@ __PACKAGE__->belongs_to(
   "arch",
   "Debbugs::DB::Result::Arch",
   { id => "arch_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 =head2 bin_associations
@@ -183,7 +183,7 @@ __PACKAGE__->belongs_to(
   "bin_pkg",
   "Debbugs::DB::Result::BinPkg",
   { id => "bin_pkg" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 =head2 src_ver
@@ -198,12 +198,12 @@ __PACKAGE__->belongs_to(
   "src_ver",
   "Debbugs::DB::Result::SrcVer",
   { id => "src_ver_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-27 18:54:20
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:3K+5M1Rohq6AB4uLnVco+w
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:FQGstQI5fa/5pJhSi7AtYg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

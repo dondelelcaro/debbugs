@@ -51,6 +51,14 @@ Package maintainer id
 
 Name of package maintainer
 
+=head2 correspondent
+
+  data_type: 'integer'
+  is_foreign_key: 1
+  is_nullable: 0
+
+Correspondent ID
+
 =head2 created
 
   data_type: 'timestamp with time zone'
@@ -81,6 +89,8 @@ __PACKAGE__->add_columns(
   },
   "name",
   { data_type => "text", is_nullable => 0 },
+  "correspondent",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "created",
   {
     data_type     => "timestamp with time zone",
@@ -125,6 +135,21 @@ __PACKAGE__->add_unique_constraint("maintainer_name_key", ["name"]);
 
 =head1 RELATIONS
 
+=head2 correspondent
+
+Type: belongs_to
+
+Related object: L<Debbugs::DB::Result::Correspondent>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "correspondent",
+  "Debbugs::DB::Result::Correspondent",
+  { id => "correspondent" },
+  { is_deferrable => 0, on_delete => "NO ACTION", on_update => "NO ACTION" },
+);
+
 =head2 src_vers
 
 Type: has_many
@@ -141,8 +166,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-27 18:54:20
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:pjSawHrI2qYqUHgkdxgh8g
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:wKZL5dHGvpVvuI9o0mh7fQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

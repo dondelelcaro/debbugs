@@ -134,7 +134,7 @@ __PACKAGE__->belongs_to(
   "source",
   "Debbugs::DB::Result::SrcVer",
   { id => "source" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 =head2 suite
@@ -149,12 +149,12 @@ __PACKAGE__->belongs_to(
   "suite",
   "Debbugs::DB::Result::Suite",
   { id => "suite" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-27 18:54:20
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:7lYnCaf4vZZFcZoz2S7O9A
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:23:58
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:3Hl8VlcLTNPdCLO6kMVyxQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -301,6 +301,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 bug_mergeds_merged
+
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::BugMerged>
+
+=cut
+
+__PACKAGE__->has_many(
+  "bug_mergeds_merged",
+  "Debbugs::DB::Result::BugMerged",
+  { "foreign.merged" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 bug_messages
 
 Type: has_many
@@ -376,21 +391,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 bugs_merged_merged
-
-Type: has_many
-
-Related object: L<Debbugs::DB::Result::BugMerged>
-
-=cut
-
-__PACKAGE__->has_many(
-  "bugs_merged_merged",
-  "Debbugs::DB::Result::BugMerged",
-  { "foreign.merged" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 done
 
 Type: belongs_to
@@ -404,10 +404,10 @@ __PACKAGE__->belongs_to(
   "Debbugs::DB::Result::Correspondent",
   { id => "done" },
   {
-    is_deferrable => 1,
+    is_deferrable => 0,
     join_type     => "LEFT",
-    on_delete     => "CASCADE",
-    on_update     => "CASCADE",
+    on_delete     => "NO ACTION",
+    on_update     => "NO ACTION",
   },
 );
 
@@ -424,10 +424,10 @@ __PACKAGE__->belongs_to(
   "Debbugs::DB::Result::Correspondent",
   { id => "owner" },
   {
-    is_deferrable => 1,
+    is_deferrable => 0,
     join_type     => "LEFT",
-    on_delete     => "CASCADE",
-    on_update     => "CASCADE",
+    on_delete     => "NO ACTION",
+    on_update     => "NO ACTION",
   },
 );
 
@@ -443,7 +443,7 @@ __PACKAGE__->belongs_to(
   "severity",
   "Debbugs::DB::Result::Severity",
   { id => "severity" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+  { is_deferrable => 0, on_delete => "NO ACTION", on_update => "NO ACTION" },
 );
 
 =head2 submitter
@@ -459,16 +459,16 @@ __PACKAGE__->belongs_to(
   "Debbugs::DB::Result::Correspondent",
   { id => "submitter" },
   {
-    is_deferrable => 1,
+    is_deferrable => 0,
     join_type     => "LEFT",
-    on_delete     => "CASCADE",
-    on_update     => "CASCADE",
+    on_delete     => "NO ACTION",
+    on_update     => "NO ACTION",
   },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-04-01 15:59:31
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:hRsCzIGJB1krEYpMKmSVYw
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:iaePW9PF93j30EB5iY9Bag
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 1;

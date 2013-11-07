@@ -116,7 +116,7 @@ __PACKAGE__->belongs_to(
   "bug",
   "Debbugs::DB::Result::Bug",
   { id => "bug" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+  { is_deferrable => 0, on_delete => "NO ACTION", on_update => "NO ACTION" },
 );
 
 =head2 merged
@@ -131,12 +131,12 @@ __PACKAGE__->belongs_to(
   "merged",
   "Debbugs::DB::Result::Bug",
   { id => "merged" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+  { is_deferrable => 0, on_delete => "NO ACTION", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-27 18:54:20
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:8wKFwMnVTQBFyOIgB82LSA
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:GILRzg9MHEZ4k8h6aJxISA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

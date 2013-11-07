@@ -153,6 +153,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 maintainers
+
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::Maintainer>
+
+=cut
+
+__PACKAGE__->has_many(
+  "maintainers",
+  "Debbugs::DB::Result::Maintainer",
+  { "foreign.correspondent" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 message_correspondents
 
 Type: has_many
@@ -169,8 +184,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-27 18:54:20
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:PnVRI1FMGlY8Go0XOM3wwA
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Wyisfi/87NgArvWis4/tuw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

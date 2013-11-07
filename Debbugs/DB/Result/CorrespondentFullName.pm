@@ -118,12 +118,12 @@ __PACKAGE__->belongs_to(
   "correspondent",
   "Debbugs::DB::Result::Correspondent",
   { id => "correspondent" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-04-01 17:05:37
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:xGcJNDjhN+ehcFQYzaBxBw
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ePNArKbdUxbj/cw4RbMHgg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
