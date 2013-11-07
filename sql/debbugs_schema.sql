@@ -44,17 +44,6 @@ CREATE TABLE column_comments (
 );
 CREATE UNIQUE INDEX ON column_comments(table_name,column_name);
 
-CREATE TABLE maintainer (
-       id SERIAL PRIMARY KEY,
-       name TEXT NOT NULL UNIQUE,
-       created TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-       modified TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
-);
-INSERT INTO table_comments  VALUES ('maintainer','Package maintainer names');
-INSERT INTO column_comments VALUES ('maintainer','id','Package maintainer id');
-INSERT INTO column_comments VALUES ('maintainer','name','Name of package maintainer');
-INSERT INTO column_comments VALUES ('maintainer','created','Time maintainer record created');
-INSERT INTO column_comments VALUES ('maintainer','modified','Time maintainer record modified');
 
 CREATE TABLE correspondent (
        id SERIAL PRIMARY KEY,
@@ -63,6 +52,21 @@ CREATE TABLE correspondent (
 INSERT INTO table_comments VALUES ('correspondent','Individual who has corresponded with the BTS');
 INSERT INTO column_comments VALUES ('correspondent','id','Correspondent ID');
 INSERT INTO column_comments VALUES ('correspondent','addr','Correspondent address');
+
+CREATE TABLE maintainer (
+       id SERIAL PRIMARY KEY,
+       name TEXT NOT NULL UNIQUE,
+       correspondent INT NOT NULL REFERENCES correspondent(id),
+       created TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+       modified TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+INSERT INTO table_comments  VALUES ('maintainer','Package maintainer names');
+INSERT INTO column_comments VALUES ('maintainer','id','Package maintainer id');
+INSERT INTO column_comments VALUES ('maintainer','name','Name of package maintainer');
+INSERT INTO column_comments VALUES ('maintainer','correspondent','Correspondent ID');
+INSERT INTO column_comments VALUES ('maintainer','created','Time maintainer record created');
+INSERT INTO column_comments VALUES ('maintainer','modified','Time maintainer record modified');
+
 
 CREATE TABLE severity (
        id SERIAL PRIMARY KEY,
