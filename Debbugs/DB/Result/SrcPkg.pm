@@ -140,22 +140,6 @@ __PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
 
-=head2 C<src_pkg_pkg_alias>
-
-=over 4
-
-=item * L</pkg>
-
-=item * L</alias_of>
-
-=item * L</obsolete>
-
-=back
-
-=cut
-
-__PACKAGE__->add_unique_constraint("src_pkg_pkg_alias", ["pkg", "alias_of", "obsolete"]);
-
 =head2 C<src_pkg_pkg_disabled>
 
 =over 4
@@ -253,8 +237,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-11-13 09:14:52
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:3Jq0yBnJv5OW6jfXwUPUBg
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-11-13 09:19:59
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:XKxXxExb3rnZZyuA+70mww
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

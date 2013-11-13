@@ -165,9 +165,9 @@ CREATE TABLE src_pkg (
        disabled TIMESTAMP WITH TIME ZONE DEFAULT NULL,
        last_modified TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
        obsolete BOOLEAN DEFAULT FALSE,
-       CONSTRAINT src_pkg_doesnt_alias_itself CHECK (id <> alias_of)
+       CONSTRAINT src_pkg_doesnt_alias_itself CHECK (id <> alias_of),
+       CONSTRAINT src_pkg_is_obsolete_if_disabled CHECK ((obsolete IS FALSE AND disabled IS NULL) OR (obsolete IS TRUE AND disabled IS NOT NULL))
 );
-CREATE UNIQUE INDEX src_pkg_pkg_alias ON src_pkg(pkg,alias_of,obsolete);
 CREATE INDEX src_pkg_pkg ON src_pkg(pkg);
 CREATE UNIQUE INDEX src_pkg_pkg_disabled ON src_pkg(pkg,disabled);
 INSERT INTO table_comments VALUES ('src_pkg','Source packages');
