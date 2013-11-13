@@ -158,11 +158,18 @@ INSERT INTO column_comments VALUES ('bug_merged','merged','Bug number which is m
 
 CREATE TABLE src_pkg (
        id SERIAL PRIMARY KEY,
-       pkg TEXT NOT NULL UNIQUE,
+       pkg TEXT NOT NULL,
        pseduopkg BOOLEAN DEFAULT FALSE,
-       alias_of INT REFERENCES src_pkg ON UPDATE CASCADE ON DELETE CASCADE
+       alias_of INT REFERENCES src_pkg ON UPDATE CASCADE ON DELETE CASCADE,
+       creation TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+       disabled TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+       last_modified TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+       obsolete BOOLEAN DEFAULT FALSE,
        CONSTRAINT src_pkg_doesnt_alias_itself CHECK (id <> alias_of)
 );
+CREATE UNIQUE INDEX src_pkg_pkg_alias ON src_pkg(pkg,alias_of,obsolete);
+CREATE INDEX src_pkg_pkg ON src_pkg(pkg);
+CREATE UNIQUE INDEX src_pkg_pkg_disabled ON src_pkg(pkg,disabled);
 INSERT INTO table_comments VALUES ('src_pkg','Source packages');
 INSERT INTO column_comments VALUES ('src_pkg','id','Source package id');
 INSERT INTO column_comments VALUES ('src_pkg','pkg','Source package name');
