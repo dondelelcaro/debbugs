@@ -65,6 +65,31 @@ Source package name
 
 Source package id which this source package is an alias of
 
+=head2 creation
+
+  data_type: 'timestamp with time zone'
+  default_value: current_timestamp
+  is_nullable: 1
+  original: {default_value => \"now()"}
+
+=head2 disabled
+
+  data_type: 'timestamp with time zone'
+  is_nullable: 1
+
+=head2 last_modified
+
+  data_type: 'timestamp with time zone'
+  default_value: current_timestamp
+  is_nullable: 1
+  original: {default_value => \"now()"}
+
+=head2 obsolete
+
+  data_type: 'boolean'
+  default_value: false
+  is_nullable: 1
+
 =cut
 
 __PACKAGE__->add_columns(
@@ -81,6 +106,24 @@ __PACKAGE__->add_columns(
   { data_type => "boolean", default_value => \"false", is_nullable => 1 },
   "alias_of",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
+  "creation",
+  {
+    data_type     => "timestamp with time zone",
+    default_value => \"current_timestamp",
+    is_nullable   => 1,
+    original      => { default_value => \"now()" },
+  },
+  "disabled",
+  { data_type => "timestamp with time zone", is_nullable => 1 },
+  "last_modified",
+  {
+    data_type     => "timestamp with time zone",
+    default_value => \"current_timestamp",
+    is_nullable   => 1,
+    original      => { default_value => \"now()" },
+  },
+  "obsolete",
+  { data_type => "boolean", default_value => \"false", is_nullable => 1 },
 );
 
 =head1 PRIMARY KEY
@@ -97,17 +140,35 @@ __PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
 
-=head2 C<src_pkg_pkg_key>
+=head2 C<src_pkg_pkg_alias>
 
 =over 4
 
 =item * L</pkg>
 
+=item * L</alias_of>
+
+=item * L</obsolete>
+
 =back
 
 =cut
 
-__PACKAGE__->add_unique_constraint("src_pkg_pkg_key", ["pkg"]);
+__PACKAGE__->add_unique_constraint("src_pkg_pkg_alias", ["pkg", "alias_of", "obsolete"]);
+
+=head2 C<src_pkg_pkg_disabled>
+
+=over 4
+
+=item * L</pkg>
+
+=item * L</disabled>
+
+=back
+
+=cut
+
+__PACKAGE__->add_unique_constraint("src_pkg_pkg_disabled", ["pkg", "disabled"]);
 
 =head1 RELATIONS
 
@@ -192,8 +253,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:JYP+MBnjgk3I/XtRNh2UyA
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-11-13 09:14:52
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:3Jq0yBnJv5OW6jfXwUPUBg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
