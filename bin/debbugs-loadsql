@@ -101,21 +101,38 @@ my %options =
      progress        => 0,
     );
 
-
-GetOptions(\%options,
-           'quick|q',
-           'service|s',
-           'sysconfdir|c',
-           'progress!',
-           'spool_dir|spool-dir=s',
-           'verbose|v+',
-           'quiet+',
-           'debug|d+','help|h|?','man|m');
+my $gop = Getopt::Long::Parser->new();
+$gop->configure('pass_through');
+$gop->getoptions(\%options,
+                 'quick|q',
+                 'service|s',
+                 'sysconfdir|c',
+                 'progress!',
+                 'spool_dir|spool-dir=s',
+                 'verbose|v+',
+                 'quiet+',
+                 'debug|d+','help|h|?','man|m');
+$gop->getoptions('default');
 
 pod2usage() if $options{help};
 pod2usage({verbose=>2}) if $options{man};
 
 $DEBUG = $options{debug};
+
+my %subcommands =
+    ('bugs' => {function => \&add_bugs,
+               },
+     'versions' => {function => \&add_versions,
+                   },
+     'debinfo' => {function => \&add_debinfo,
+                  },
+     'maintainers' => {function => \&add_maintainers,
+                      },
+     'configuration' => {function => \&add_configuration,
+                        },
+     'logs' => {function => \&add_logs,
+               },
+    );
 
 my @USAGE_ERRORS;
 $options{verbose} = $options{verbose} - $options{quiet};
@@ -130,107 +147,270 @@ pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
 
 if (exists $options{sysconfdir}) {
     if (not defined $options{sysconfdir} or not length $options{sysconfdir}) {
-	delete $ENV{PGSYSCONFDIR};
+        delete $ENV{PGSYSCONFDIR};
     } else {
-	$ENV{PGSYSCONFDIR} = $options{sysconfdir};
+        $ENV{PGSYSCONFDIR} = $options{sysconfdir};
     }
 }
 
 if (exists $options{spool_dir} and defined $options{spool_dir}) {
     $config{spool_dir} = $options{spool_dir};
 }
-chdir($config{spool_dir}) or die "chdir $config{spool_dir} failed: $!";
 
-my $verbose = $options{debug};
-
-my $initialdir = "db-h";
-
-if (defined $ARGV[0] and $ARGV[0] eq "archive") {
-    $initialdir = "archive";
-}
-
-if (not lockpid($config{spool_dir}.'/lock/debbugs-loadsql')) {
-     if ($options{quick}) {
-	  # If this is a quick run, just exit
-	  print STDERR "Another debbugs-loadsql is running; stopping\n" if $verbose;
-	  exit 0;
-     }
-     print STDERR "Another debbugs-loadsql is running; stopping\n";
-     exit 1;
-}
-
-
-# connect to the database; figure out how to handle errors properly
-# here.
-my $schema = Debbugs::DB->connect('dbi:Pg:service='.$options{service}) or
-    die "Unable to connect to database: ";
-
-my $time = 0;
-my $start_time = time;
-
-
-my @dirs = (@ARGV?@ARGV : $initialdir);
-my $cnt = 0;
-my %tags;
-my %severities;
-my %queue;
-my $tot_dirs = @ARGV ? @ARGV : 0;
-my $done_dirs = 0;
-my $avg_subfiles = 0;
-my $completed_files = 0;
-my $p;
+my $prog_bar;
 if ($options{progress}) {
-    $p = eval "Term::ProgressBar->new({count => 1,ETA=>q(linear)})";
+    $prog_bar = eval "Term::ProgressBar->new({count => 1,ETA=>q(linear)})";
     warn "Unable to initialize progress bar: $@" if not $p;
 }
-while (my $dir = shift @dirs) {
-    printf "Doing dir %s ...\n", $dir if $verbose;
 
-    opendir(DIR, "$dir/.") or die "opendir $dir: $!";
-    my @subdirs = readdir(DIR);
-    closedir(DIR);
 
-    my @list = map { m/^(\d+)\.summary$/?($1):() } @subdirs;
-    $tot_dirs -= @dirs;
-    push @dirs, map { m/^(\d+)$/ && -d "$dir/$1"?("$dir/$1"):() } @subdirs;
-    $tot_dirs += @dirs;
-    if ($avg_subfiles == 0) {
-        $avg_subfiles = @list;
+my $opts =
+    handle_arguments(\@ARGV,$subcommands{$subcommand}{arguments},$gop);
+$subcommands{$subcommand}{function}->($options,$opts,$prog_bar,$config,\@ARGV);
+
+sub add_bugs {
+    my ($options,$opts,$p,$config,$argv) = @_;
+    chdir($config->{spool_dir}) or
+        die "chdir $config->{spool_dir} failed: $!";
+
+    my $verbose = $options->{debug};
+
+    my $initialdir = "db-h";
+
+    if (defined $argv->[0] and $argv->[0] eq "archive") {
+        $initialdir = "archive";
     }
+    my $s = db_connect($options);
 
-    $p->target($avg_subfiles*($tot_dirs-$done_dirs)+$completed_files+@list) if $p;
-    $avg_subfiles = ($avg_subfiles * $done_dirs + @list) / ($done_dirs+1);
-    $done_dirs += 1;
 
-    for my $bug (@list) {
-        $completed_files++;
-        $p->update($completed_files) if $p;
-	print "Up to $cnt bugs...\n" if (++$cnt % 100 == 0 && $verbose);
-	my $stat = stat(getbugcomponent($bug,'summary',$initialdir));
-	if (not defined $stat) {
-	    print STDERR "Unable to stat $bug $!\n";
-	    next;
-	}
-	next if $stat->mtime < $time;
-	my $data = read_bug(bug => $bug,
-			    location => $initialdir);
-        eval {
-            load_bug(db => $schema,
-                     data => split_status_fields($data),
-                     tags => \%tags,
-                     severities => \%severities,
-                     queue => \%queue);
-        };
-        if ($@) {
-            use Data::Dumper;
-            print STDERR Dumper($data) if $DEBUG;
-            die "failure while trying to load bug $bug\n$@";
+    my $time = 0;
+    my $start_time = time;
+
+
+    my @dirs = (@{$argv}?@{$argv} : $initialdir);
+    my $cnt = 0;
+    my %tags;
+    my %severities;
+    my %queue;
+    my $tot_dirs = @{$argv}? @{$argv} : 0;
+    my $done_dirs = 0;
+    my $avg_subfiles = 0;
+    my $completed_files = 0;
+    while (my $dir = shift @dirs) {
+        printf "Doing dir %s ...\n", $dir if $verbose;
+
+        opendir(DIR, "$dir/.") or die "opendir $dir: $!";
+        my @subdirs = readdir(DIR);
+        closedir(DIR);
+
+        my @list = map { m/^(\d+)\.summary$/?($1):() } @subdirs;
+        $tot_dirs -= @dirs;
+        push @dirs, map { m/^(\d+)$/ && -d "$dir/$1"?("$dir/$1"):() } @subdirs;
+        $tot_dirs += @dirs;
+        if ($avg_subfiles == 0) {
+            $avg_subfiles = @list;
+        }
+
+        $p->target($avg_subfiles*($tot_dirs-$done_dirs)+$completed_files+@list) if $p;
+        $avg_subfiles = ($avg_subfiles * $done_dirs + @list) / ($done_dirs+1);
+        $done_dirs += 1;
+
+        for my $bug (@list) {
+            $completed_files++;
+            $p->update($completed_files) if $p;
+            print "Up to $cnt bugs...\n" if (++$cnt % 100 == 0 && $verbose);
+            my $stat = stat(getbugcomponent($bug,'summary',$initialdir));
+            if (not defined $stat) {
+                print STDERR "Unable to stat $bug $!\n";
+                next;
+            }
+            next if $stat->mtime < $time;
+            my $data = read_bug(bug => $bug,
+                                location => $initialdir);
+            eval {
+                load_bug(db => $s,
+                         data => split_status_fields($data),
+                         tags => \%tags,
+                         severities => \%severities,
+                         queue => \%queue);
+            };
+            if ($@) {
+                use Data::Dumper;
+                print STDERR Dumper($data) if $DEBUG;
+                die "failure while trying to load bug $bug\n$@";
+            }
         }
     }
+    $p->remove() if $p;
+    handle_load_bug_queue(db => $s,
+                          queue => \%queue);
 }
-$p->remove() if $p;
-handle_load_bug_queue(db => $schema,
-                      queue => \%queue);
+
+sub add_versions {
+    my ($options,$opts,$p,$config,$argv) = @_;
+
+    my $s = db_connect($options);
+
+    my @files = @{$argv};
+    $p->target(@files) if $p;
+    for my $file (@files) {
+        my $fh = IO::File->new($file,'r') or
+            die "Unable to open $file for reading: $!";
+        my @versions;
+        my %src_pkgs;
+        while (<$fh>) {
+            chomp;
+            next unless length $_;
+            if (/(\w[-+0-9a-z.]+) \(([^\(\) \t]+)\)/) {
+                push @versions, [$1,$2];
+            }
+        }
+        close($fh);
+        my $ancestor_sv;
+        for my $i (reverse 0..($#versions)) {
+            my $sp;
+            if (not defined $src_pkgs{$versions[$i][0]}) {
+                $src_pkgs{$versions[$i][0]} =
+                    $s->resultset('SrcPkg')->find({pkg => $versions[$i][0]});
+            }
+            $sp = $src_pkgs{$versions[$i][0]};
+            # There's probably something wrong if the source package
+            # doesn't exist, but we'll skip it for now
+            next unless defined $sp;
+            my $sv = $s->resultset('SrcVer')->find({src_pkg_id=>$sp->id(),
+                                                    ver => $versions[$i][1],
+                                                   });
+            if (defined $ancestor_sv and defined $sv and not defined $sv->based_on()) {
+                $sv->update({based_on => $ancestor_sv->id()})
+            }
+            $ancestor_sv = $sv;
+        }
+        $p->update() if $p;
+    }
+    $p->remove() if $p;
+}
+
+sub add_debinfo {
+    my ($options,$opts,$p,$config,$argv) = @_;
+
+    my @files = @{$argv};
+
+    my %arch;
+    $p->target(@files) if $p;
+    for my $file (@files) {
+        my $fh = IO::File->new($file,'r') or
+            die "Unable to open $file for reading: $!";
+        while (<$fh>) {
+            chomp;
+            next unless length $_;
+            my ($binname, $binver, $binarch, $srcname, $srcver) = split;
+            # if $srcver is not defined, this is probably a broken
+            # .debinfo file [they were causing #686106, see commit
+            # 49c85ab8 in dak.] Basically, $binarch didn't get put into
+            # the file, so we'll fudge it from the filename.
+            if (not defined $srcver) {
+                ($srcname,$srcver) = ($binarch,$srcname);
+                ($binarch) = $file =~ /_([^\.]+)\.debinfo/;
+            }
+            my $sp = $s->resultset('SrcPkg')->find_or_create({pkg => $srcname});
+            my $sv = $s->resultset('SrcVer')->find_or_create({src_pkg_id=>$sp->id(),
+                                                              ver => $srcver});
+            my $arch;
+            if (defined $arch{$binarch}) {
+                $arch = $arch{$binarch};
+            } else {
+                $arch = $s->resultset('Arch')->find_or_create({arch => $binarch});
+                $arch{$binarch} = $arch;
+            }
+            my $bp = $s->resultset('BinPkg')->find_or_create({pkg => $binname});
+            $s->resultset('BinVer')->find_or_create({bin_pkg_id => $bp->id(),
+                                                     src_ver_id => $sv->id(),
+                                                     arch_id    => $arch->id(),
+                                                     ver        => $binver,
+                                                    });
+        }
+        $p->update() if $p;
+    }
+    $p->remove() if $p;
+}
+
+sub add_maintainers {
+    my ($options,$opts,$p,$config,$argv) = @_;
+
+    my $maintainers = getmaintainers();
+    $p->target(scalar keys %{$maintainers}) if $p;
+    for my $pkg (keys %{$maintainers}) {
+        my $maint = $maintainers->{$pkg};
+        # see if a maintainer already exists; if so, we don't do
+        # anything here
+        my $maint_r = $s->resultset('Maintainer')->
+            find({name => $maint});
+        if (not defined $maint_r) {
+            # get e-mail address of maintainer
+            my $e_mail = getparsedaddrs($maint);
+            # find correspondent
+            my $correspondent = $s->resultset('Correspondent')->
+                find_or_create({addr => $e_mail});
+            $maint_r =
+                $s->resultset('Maintainer')->
+                find_or_create({name => $maint,
+                                correspondent => $correspondent,
+                               });
+        }
+        # add the maintainer to the source package
+        $p->update() if $p;
+    }
+    $p->remove() if $p;
+}
+
+sub add_configuration {
+    my ($options,$opts,$p,$config,$argv) = @_;
+}
+
+sub add_logs {
+    my ($options,$opts,$p,$config,$argv) = @_;
+}
+
+sub handle_subcommand_arguments {
+    my ($argv,$args,$gop) = @_;
+    my $subopt = {};
+    $gop->getoptionsfromarray($argv,
+                              $subopt,
+                              keys %{$args},
+                             );
+    my @usage_errors;
+    for my $arg  (keys %{$args}) {
+        next unless $args->{$arg};
+        my $r_arg = $arg; # real argument name
+        $r_arg =~ s/[=\|].+//g;
+        if (not defined $subopt->{$r_arg}) {
+            push @usage_errors, "You must give a $r_arg option";
+        }
+    }
+    pod2usage(join("\n",@usage_errors)) if @usage_errors;
+    return $subopt;
+}
+
+sub get_lock{
+    my ($subcommand,$config,$options) = @_;
+    if (not lockpid($config->{spool_dir}.'/lock/debbugs-loadsql-$subcommand')) {
+        if ($options->{quick}) {
+            # If this is a quick run, just exit
+            print STDERR "Another debbugs-loadsql is running; stopping\n" if $options->{verbose};
+            exit 0;
+        }
+        print STDERR "Another debbugs-loadsql is running; stopping\n";
+        exit 1;
+    }
+}
+
+sub db_connect {
+    my ($options) = @_;
+    # connect to the database; figure out how to handle errors
+    # properly here.
+    my $s = Debbugs::DB->connect('dbi:Pg:service='.$options->{service}) or
+        die "Unable to connect to database: ";
+}
 
 
 
