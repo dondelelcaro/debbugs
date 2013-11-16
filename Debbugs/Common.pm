@@ -40,6 +40,7 @@ BEGIN{
      @EXPORT = ();
      %EXPORT_TAGS = (util   => [qw(getbugcomponent getbuglocation getlocationpath get_hashname),
 				qw(appendfile overwritefile buglog getparsedaddrs getmaintainers),
+                                qw(getsourcemaintainers getsourcemaintainers_reverse),
 				qw(bug_status),
 				qw(getmaintainers_reverse),
 				qw(getpseudodesc),
