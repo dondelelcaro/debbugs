@@ -80,7 +80,7 @@ Display this manual.
 
 use vars qw($DEBUG);
 
-use Debbugs::Common qw(checkpid lockpid get_hashname getparsedaddrs getbugcomponent make_list);
+use Debbugs::Common qw(checkpid lockpid get_hashname getparsedaddrs getbugcomponent make_list getsourcemaintainers);
 use Debbugs::Config qw(:config);
 use Debbugs::Status qw(read_bug split_status_fields);
 use Debbugs::Log;
@@ -160,13 +160,15 @@ if (exists $options{spool_dir} and defined $options{spool_dir}) {
 my $prog_bar;
 if ($options{progress}) {
     $prog_bar = eval "Term::ProgressBar->new({count => 1,ETA=>q(linear)})";
-    warn "Unable to initialize progress bar: $@" if not $p;
+    warn "Unable to initialize progress bar: $@" if not $prog_bar;
 }
 
 
+my ($subcommand) = shift @ARGV;
+
 my $opts =
     handle_arguments(\@ARGV,$subcommands{$subcommand}{arguments},$gop);
-$subcommands{$subcommand}{function}->($options,$opts,$prog_bar,$config,\@ARGV);
+$subcommands{$subcommand}{function}->(\%options,$opts,$prog_bar,\%config,\@ARGV);
 
 sub add_bugs {
     my ($options,$opts,$p,$config,$argv) = @_;
@@ -294,12 +296,14 @@ sub add_debinfo {
     my ($options,$opts,$p,$config,$argv) = @_;
 
     my @files = @{$argv};
+    my $s = db_connect($options);
 
     my %arch;
     $p->target(@files) if $p;
     for my $file (@files) {
         my $fh = IO::File->new($file,'r') or
             die "Unable to open $file for reading: $!";
+        my $f_stat = stat($file);
         while (<$fh>) {
             chomp;
             next unless length $_;
@@ -337,7 +341,8 @@ sub add_debinfo {
 sub add_maintainers {
     my ($options,$opts,$p,$config,$argv) = @_;
 
-    my $maintainers = getmaintainers();
+    my $s = db_connect($options);
+    my $maintainers = getsourcemaintainers();
     $p->target(scalar keys %{$maintainers}) if $p;
     for my $pkg (keys %{$maintainers}) {
         my $maint = $maintainers->{$pkg};
@@ -357,7 +362,13 @@ sub add_maintainers {
                                 correspondent => $correspondent,
                                });
         }
-        # add the maintainer to the source package
+        # add the maintainer to the source package for packages with
+        # no maintainer
+        $s->txndo(sub {
+                      $s->resultset('SrcPkg')->
+                          search_related_rs('SrcVer',{ maintainer_id => undef})->
+                          update_all({maintainer_id => $maint_r});
+                  });
         $p->update() if $p;
     }
     $p->remove() if $p;
