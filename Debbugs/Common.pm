@@ -435,8 +435,11 @@ sub __add_to_hash {
     binmode($fh,':encoding(UTF-8)');
     while (<$fh>) {
 	chomp;
-	next unless m/^(\S+)\s+(\S.*\S)\s*$/;
-	my ($key,$value)=($1,$2);
+        my @elements = split /\t/;
+        next unless @elements >=2;
+        # we do this because the source maintainer file contains the
+        # archive location, which we don't care about
+        my ($key,$value)=($elements[0],$elements[-1]);
 	$key = lc $key;
 	$forward->{$key}= $value;
 	if (defined $reverse) {
