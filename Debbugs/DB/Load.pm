@@ -148,10 +148,15 @@ sub load_bug {
         my $full_name = $addrs[0]->phrase();
         $full_name =~ s/^\"|\"$//g;
         $full_name =~ s/^\s+|\s+$//g;
-        $bug->{$addr_type}->update_or_create_related('correspondent_full_names',{full_name=>$full_name}) if length $full_name;
+        if (length $full_name) {
+            $bug->{$addr_type}->
+                update_or_create_related('correspondent_full_names',
+                                        {full_name=>$full_name,
+                                         last_seen => 'NOW()'});
+        }
     }
-     my $b = $s->resultset('Bug')->update_or_create($bug) or
-         die "Unable to update or create bug $bug->{id}";
+    my $b = $s->resultset('Bug')->update_or_create($bug) or
+        die "Unable to update or create bug $bug->{id}";
      $s->txn_do(sub {
 		   for my $ff (qw(found fixed)) {
 		       my @elements = $s->resultset('BugVer')->search({bug => $data->{bug_num},

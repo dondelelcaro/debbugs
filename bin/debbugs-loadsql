@@ -29,6 +29,24 @@ debbugs-loadsql [options]
   --help, -h display this help
   --man, -m display manual
 
+=head1 SUBCOMMANDS
+
+=head2 help
+
+Display this manual
+
+=head2 bugs
+
+Add bugs
+
+=head2 versions
+
+Add versions
+
+=head2 maintainers
+
+Add source maintainers
+
 =head1 OPTIONS
 
 =over
@@ -132,6 +150,7 @@ my %subcommands =
                         },
      'logs' => {function => \&add_logs,
                },
+     'help' => {function => sub {pod2usage({verbose => 2});}}
     );
 
 my @USAGE_ERRORS;
@@ -167,7 +186,7 @@ if ($options{progress}) {
 my ($subcommand) = shift @ARGV;
 
 my $opts =
-    handle_arguments(\@ARGV,$subcommands{$subcommand}{arguments},$gop);
+    handle_subcommand_arguments(\@ARGV,$subcommands{$subcommand}{arguments},$gop);
 $subcommands{$subcommand}{function}->(\%options,$opts,$prog_bar,\%config,\@ARGV);
 
 sub add_bugs {
@@ -254,7 +273,7 @@ sub add_versions {
     my $s = db_connect($options);
 
     my @files = @{$argv};
-    $p->target(@files) if $p;
+    $p->target(scalar @files) if $p;
     for my $file (@files) {
         my $fh = IO::File->new($file,'r') or
             die "Unable to open $file for reading: $!";
@@ -273,13 +292,13 @@ sub add_versions {
             my $sp;
             if (not defined $src_pkgs{$versions[$i][0]}) {
                 $src_pkgs{$versions[$i][0]} =
-                    $s->resultset('SrcPkg')->find({pkg => $versions[$i][0]});
+                    $s->resultset('SrcPkg')->find_or_create({pkg => $versions[$i][0]});
             }
             $sp = $src_pkgs{$versions[$i][0]};
             # There's probably something wrong if the source package
             # doesn't exist, but we'll skip it for now
             next unless defined $sp;
-            my $sv = $s->resultset('SrcVer')->find({src_pkg_id=>$sp->id(),
+            my $sv = $s->resultset('SrcVer')->find({src_pkg=>$sp->id(),
                                                     ver => $versions[$i][1],
                                                    });
             if (defined $ancestor_sv and defined $sv and not defined $sv->based_on()) {
@@ -296,10 +315,10 @@ sub add_debinfo {
     my ($options,$opts,$p,$config,$argv) = @_;
 
     my @files = @{$argv};
+    return unless @files;
     my $s = db_connect($options);
-
     my %arch;
-    $p->target(@files) if $p;
+    $p->target(scalar @files) if $p;
     for my $file (@files) {
         my $fh = IO::File->new($file,'r') or
             die "Unable to open $file for reading: $!";
@@ -317,7 +336,7 @@ sub add_debinfo {
                 ($binarch) = $file =~ /_([^\.]+)\.debinfo/;
             }
             my $sp = $s->resultset('SrcPkg')->find_or_create({pkg => $srcname});
-            my $sv = $s->resultset('SrcVer')->find_or_create({src_pkg_id=>$sp->id(),
+            my $sv = $s->resultset('SrcVer')->find_or_create({src_pkg =>$sp->id(),
                                                               ver => $srcver});
             my $arch;
             if (defined $arch{$binarch}) {
@@ -327,9 +346,9 @@ sub add_debinfo {
                 $arch{$binarch} = $arch;
             }
             my $bp = $s->resultset('BinPkg')->find_or_create({pkg => $binname});
-            $s->resultset('BinVer')->find_or_create({bin_pkg_id => $bp->id(),
-                                                     src_ver_id => $sv->id(),
-                                                     arch_id    => $arch->id(),
+            $s->resultset('BinVer')->find_or_create({bin_pkg => $bp->id(),
+                                                     src_ver => $sv->id(),
+                                                     arch    => $arch->id(),
                                                      ver        => $binver,
                                                     });
         }
@@ -352,10 +371,19 @@ sub add_maintainers {
             find({name => $maint});
         if (not defined $maint_r) {
             # get e-mail address of maintainer
-            my $e_mail = getparsedaddrs($maint);
+            my $addr = getparsedaddrs($maint);
+            my $e_mail = $addr->address();
+            my $full_name = $addr->phrase();
+            $full_name =~ s/^\"|\"$//g;
+            $full_name =~ s/^\s+|\s+$//g;
             # find correspondent
             my $correspondent = $s->resultset('Correspondent')->
                 find_or_create({addr => $e_mail});
+            if (length $full_name) {
+                my $c_full_name = $correspondent->find_or_create_related('correspondent_full_names',
+                                                                        {full_name => $full_name}) if length $full_name;
+                $c_full_name->update({last_seen => 'NOW()'});
+            }
             $maint_r =
                 $s->resultset('Maintainer')->
                 find_or_create({name => $maint,
@@ -364,10 +392,10 @@ sub add_maintainers {
         }
         # add the maintainer to the source package for packages with
         # no maintainer
-        $s->txndo(sub {
-                      $s->resultset('SrcPkg')->
-                          search_related_rs('SrcVer',{ maintainer_id => undef})->
-                          update_all({maintainer_id => $maint_r});
+        $s->txn_do(sub {
+                      $s->resultset('SrcPkg')->search({pkg => $pkg})->
+                          search_related_rs('src_vers',{ maintainer => undef})->
+                          update_all({maintainer => $maint_r->id()});
                   });
         $p->update() if $p;
     }
