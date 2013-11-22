@@ -161,13 +161,13 @@ Related object: L<Debbugs::DB::Result::SrcVer>
 __PACKAGE__->has_many(
   "src_vers",
   "Debbugs::DB::Result::SrcVer",
-  { "foreign.maintainer_id" => "self.id" },
+  { "foreign.maintainer" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:wKZL5dHGvpVvuI9o0mh7fQ
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-11-21 21:57:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:E1iNr1IKDcHDQYtmVdsoHA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

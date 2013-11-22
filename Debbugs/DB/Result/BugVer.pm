@@ -58,7 +58,7 @@ Version string
 
 Source package id (matches src_pkg table)
 
-=head2 src_ver_id
+=head2 src_ver
 
   data_type: 'integer'
   is_foreign_key: 1
@@ -101,7 +101,7 @@ __PACKAGE__->add_columns(
   { data_type => "text", is_nullable => 1 },
   "src_pkg",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
-  "src_ver_id",
+  "src_ver",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
   "found",
   { data_type => "boolean", default_value => \"true", is_nullable => 0 },
@@ -190,7 +190,7 @@ Related object: L<Debbugs::DB::Result::SrcVer>
 __PACKAGE__->belongs_to(
   "src_ver",
   "Debbugs::DB::Result::SrcVer",
-  { id => "src_ver_id" },
+  { id => "src_ver" },
   {
     is_deferrable => 0,
     join_type     => "LEFT",
@@ -200,8 +200,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:AlnpfT/8jqREfK5zVfPyPw
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-11-21 21:57:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Yfu0BNTuEb3naSH/RR0YZA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

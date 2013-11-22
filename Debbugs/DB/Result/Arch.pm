@@ -104,7 +104,7 @@ Related object: L<Debbugs::DB::Result::BinVer>
 __PACKAGE__->has_many(
   "bin_vers",
   "Debbugs::DB::Result::BinVer",
-  { "foreign.arch_id" => "self.id" },
+  { "foreign.arch" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -124,8 +124,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Lp58Ajmt1p8qgL26cbgHZA
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-11-21 21:57:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:P0rjB+6uN8ddIxIvVN6OFg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

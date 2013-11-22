@@ -59,7 +59,7 @@ Source package id (matches src_pkg table)
 
 Version of the source package
 
-=head2 maintainer_id
+=head2 maintainer
 
   data_type: 'integer'
   is_foreign_key: 1
@@ -98,7 +98,7 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "ver",
   { data_type => "debversion", is_nullable => 0 },
-  "maintainer_id",
+  "maintainer",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
   "upload_date",
   {
@@ -172,7 +172,7 @@ Related object: L<Debbugs::DB::Result::BinVer>
 __PACKAGE__->has_many(
   "bin_vers",
   "Debbugs::DB::Result::BinVer",
-  { "foreign.src_ver_id" => "self.id" },
+  { "foreign.src_ver" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -187,7 +187,7 @@ Related object: L<Debbugs::DB::Result::BugVer>
 __PACKAGE__->has_many(
   "bug_vers",
   "Debbugs::DB::Result::BugVer",
-  { "foreign.src_ver_id" => "self.id" },
+  { "foreign.src_ver" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -202,7 +202,7 @@ Related object: L<Debbugs::DB::Result::Maintainer>
 __PACKAGE__->belongs_to(
   "maintainer",
   "Debbugs::DB::Result::Maintainer",
-  { id => "maintainer_id" },
+  { id => "maintainer" },
   {
     is_deferrable => 0,
     join_type     => "LEFT",
@@ -257,8 +257,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:P1zipd1t+2AOidtCSzyHVw
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-11-21 21:57:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Pp9Uh44hbBpvnLdssezZ9Q
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
