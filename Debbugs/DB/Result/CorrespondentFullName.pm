@@ -57,6 +57,13 @@ Correspondent full name id
 
 Correspondent full name (includes e-mail address)
 
+=head2 last_seen
+
+  data_type: 'timestamp'
+  default_value: current_timestamp
+  is_nullable: 0
+  original: {default_value => \"now()"}
+
 =cut
 
 __PACKAGE__->add_columns(
@@ -71,6 +78,13 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "full_name",
   { data_type => "text", is_nullable => 0 },
+  "last_seen",
+  {
+    data_type     => "timestamp",
+    default_value => \"current_timestamp",
+    is_nullable   => 0,
+    original      => { default_value => \"now()" },
+  },
 );
 
 =head1 PRIMARY KEY
@@ -122,8 +136,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ePNArKbdUxbj/cw4RbMHgg
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-11-21 20:33:17
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:cvA70xYSRFfzSAXK1z1QzQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

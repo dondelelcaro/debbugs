@@ -52,7 +52,7 @@ Binary version id
 
 Binary package id (matches bin_pkg)
 
-=head2 src_ver_id
+=head2 src_ver
 
   data_type: 'integer'
   is_foreign_key: 1
@@ -60,7 +60,7 @@ Binary package id (matches bin_pkg)
 
 Source version (matchines src_ver)
 
-=head2 arch_id
+=head2 arch
 
   data_type: 'integer'
   is_foreign_key: 1
@@ -87,9 +87,9 @@ __PACKAGE__->add_columns(
   },
   "bin_pkg",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "src_ver_id",
+  "src_ver",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "arch_id",
+  "arch",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "ver",
   { data_type => "debversion", is_nullable => 0 },
@@ -107,38 +107,6 @@ __PACKAGE__->add_columns(
 
 __PACKAGE__->set_primary_key("id");
 
-=head1 UNIQUE CONSTRAINTS
-
-=head2 C<bin_ver_bin_pkg_id_arch_idx>
-
-=over 4
-
-=item * L</bin_pkg>
-
-=item * L</arch_id>
-
-=item * L</ver>
-
-=back
-
-=cut
-
-__PACKAGE__->add_unique_constraint("bin_ver_bin_pkg_id_arch_idx", ["bin_pkg", "arch_id", "ver"]);
-
-=head2 C<bin_ver_src_ver_id_arch_idx>
-
-=over 4
-
-=item * L</src_ver_id>
-
-=item * L</arch_id>
-
-=back
-
-=cut
-
-__PACKAGE__->add_unique_constraint("bin_ver_src_ver_id_arch_idx", ["src_ver_id", "arch_id"]);
-
 =head1 RELATIONS
 
 =head2 arch
@@ -152,7 +120,7 @@ Related object: L<Debbugs::DB::Result::Arch>
 __PACKAGE__->belongs_to(
   "arch",
   "Debbugs::DB::Result::Arch",
-  { id => "arch_id" },
+  { id => "arch" },
   { is_deferrable => 0, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
@@ -197,13 +165,13 @@ Related object: L<Debbugs::DB::Result::SrcVer>
 __PACKAGE__->belongs_to(
   "src_ver",
   "Debbugs::DB::Result::SrcVer",
-  { id => "src_ver_id" },
+  { id => "src_ver" },
   { is_deferrable => 0, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:FQGstQI5fa/5pJhSi7AtYg
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-11-21 21:57:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:rPiyH454ztK18EaqQD45/w
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

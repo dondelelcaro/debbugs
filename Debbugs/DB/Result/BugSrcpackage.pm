@@ -88,7 +88,7 @@ __PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
 
-=head2 C<bug_srcpackage_id_pkg_id>
+=head2 C<bug_srcpackage_id_pkg>
 
 =over 4
 
@@ -100,7 +100,7 @@ __PACKAGE__->set_primary_key("id");
 
 =cut
 
-__PACKAGE__->add_unique_constraint("bug_srcpackage_id_pkg_id", ["bug", "src_pkg"]);
+__PACKAGE__->add_unique_constraint("bug_srcpackage_id_pkg", ["bug", "src_pkg"]);
 
 =head1 RELATIONS
 
@@ -135,8 +135,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:I/9GEPtJDUwfJq0BwrqpMA
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-11-21 21:57:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:2UJYLvd4tWOUwUFbVvQYvg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
