@@ -35,6 +35,15 @@ __PACKAGE__->table("bug_ver");
 
 =head1 ACCESSORS
 
+=head2 id
+
+  data_type: 'integer'
+  is_auto_increment: 1
+  is_nullable: 0
+  sequence: 'bug_ver_id_seq'
+
+Bug version id
+
 =head2 bug
 
   data_type: 'integer'
@@ -95,6 +104,13 @@ Time that this entry was modified
 =cut
 
 __PACKAGE__->add_columns(
+  "id",
+  {
+    data_type         => "integer",
+    is_auto_increment => 1,
+    is_nullable       => 0,
+    sequence          => "bug_ver_id_seq",
+  },
   "bug",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "ver_string",
@@ -120,6 +136,18 @@ __PACKAGE__->add_columns(
     original      => { default_value => \"now()" },
   },
 );
+
+=head1 PRIMARY KEY
+
+=over 4
+
+=item * L</id>
+
+=back
+
+=cut
+
+__PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
 
@@ -200,8 +228,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-11-21 21:57:41
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Yfu0BNTuEb3naSH/RR0YZA
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-11-23 17:31:18
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:yTXx9otJq7Ur+tbswRs8mQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

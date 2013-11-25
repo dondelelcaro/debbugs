@@ -109,7 +109,7 @@ __PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
 
-=head2 C<severity_severity_key>
+=head2 C<severity_severity_idx>
 
 =over 4
 
@@ -119,7 +119,7 @@ __PACKAGE__->set_primary_key("id");
 
 =cut
 
-__PACKAGE__->add_unique_constraint("severity_severity_key", ["severity"]);
+__PACKAGE__->add_unique_constraint("severity_severity_idx", ["severity"]);
 
 =head1 RELATIONS
 
@@ -139,8 +139,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-27 19:35:10
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:SVJ20W+hu/tjDthRG38xtA
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-11-23 17:31:18
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:xZN34NjFy5iDRay5w6JYVQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

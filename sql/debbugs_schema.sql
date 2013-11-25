@@ -212,6 +212,7 @@ INSERT INTO column_comments VALUES ('src_ver','based_on','Source package version
 
 
 CREATE TABLE bug_ver (
+       id SERIAL PRIMARY KEY,
        bug INT NOT NULL REFERENCES bug
          ON UPDATE CASCADE ON DELETE RESTRICT,
        ver_string TEXT,
@@ -228,6 +229,7 @@ CREATE INDEX bug_ver_src_pkg_id_src_ver_id_idx ON bug_ver(src_pkg,src_ver);
 CREATE INDEX bug_ver_src_ver_id_idx ON bug_ver(src_ver);
 CREATE UNIQUE INDEX ON bug_ver(bug,ver_string,found);
 INSERT INTO table_comments VALUES ('bug_ver','Bug versions');
+INSERT INTO column_comments VALUES ('bug_ver','id','Bug version id');
 INSERT INTO column_comments VALUES ('bug_ver','bug','Bug number');
 INSERT INTO column_comments VALUES ('bug_ver','ver_string','Version string');
 INSERT INTO column_comments VALUES ('bug_ver','src_pkg','Source package id (matches src_pkg table)');
@@ -430,7 +432,6 @@ INSERT INTO column_comments VALUES ('message','sent_date','Time/date message was
 INSERT INTO column_comments VALUES ('message','refs','Contents of References: header');
 INSERT INTO column_comments VALUES ('message','spam_score','Spam score from spamassassin');
 INSERT INTO column_comments VALUES ('message','is_spam','True if this message was spam and should not be shown');
-
 CREATE INDEX ON message(msgid);
 
 CREATE TABLE message_refs (
@@ -491,6 +492,8 @@ CREATE TABLE bug_message (
        bug_log_offset INT,
        offset_valid TIMESTAMP WITH TIME ZONE
 );
+CREATE UNIQUE INDEX bug_message(bug,message);
+CREATE INDEX bug_message(bug,message_number);
 INSERT INTO table_comments VALUES ('bug_mesage','Mapping between a bug and a message');
 INSERT INTO column_comments VALUES ('bug_message','bug','Bug id (matches bug)');
 INSERT INTO column_comments VALUES ('bug_message','message','Message id (matches message)');
