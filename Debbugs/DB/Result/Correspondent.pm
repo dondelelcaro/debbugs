@@ -79,7 +79,7 @@ __PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
 
-=head2 C<correspondent_addr_key>
+=head2 C<correspondent_addr_idx>
 
 =over 4
 
@@ -89,7 +89,7 @@ __PACKAGE__->set_primary_key("id");
 
 =cut
 
-__PACKAGE__->add_unique_constraint("correspondent_addr_key", ["addr"]);
+__PACKAGE__->add_unique_constraint("correspondent_addr_idx", ["addr"]);
 
 =head1 RELATIONS
 
@@ -184,8 +184,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Wyisfi/87NgArvWis4/tuw
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-11-23 17:31:18
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:iw5Rey49aurBMhqdnlKaiw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
