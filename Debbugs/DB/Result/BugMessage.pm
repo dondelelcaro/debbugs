@@ -113,6 +113,22 @@ __PACKAGE__->add_columns(
 
 __PACKAGE__->set_primary_key("id");
 
+=head1 UNIQUE CONSTRAINTS
+
+=head2 C<bug_message_bug_message_idx>
+
+=over 4
+
+=item * L</bug>
+
+=item * L</message>
+
+=back
+
+=cut
+
+__PACKAGE__->add_unique_constraint("bug_message_bug_message_idx", ["bug", "message"]);
+
 =head1 RELATIONS
 
 =head2 bug
@@ -146,8 +162,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:mDjAtzaj5diA9b0YFK/7cA
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-11-24 20:30:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:j9PbT+q4tBJhimXl7TQgLg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

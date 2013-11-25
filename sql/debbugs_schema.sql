@@ -492,8 +492,8 @@ CREATE TABLE bug_message (
        bug_log_offset INT,
        offset_valid TIMESTAMP WITH TIME ZONE
 );
-CREATE UNIQUE INDEX bug_message(bug,message);
-CREATE INDEX bug_message(bug,message_number);
+CREATE UNIQUE INDEX ON bug_message(bug,message);
+CREATE INDEX ON bug_message(bug,message_number);
 INSERT INTO table_comments VALUES ('bug_mesage','Mapping between a bug and a message');
 INSERT INTO column_comments VALUES ('bug_message','bug','Bug id (matches bug)');
 INSERT INTO column_comments VALUES ('bug_message','message','Message id (matches message)');
