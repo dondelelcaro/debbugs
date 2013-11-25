@@ -45,6 +45,7 @@ use Debbugs::DB;
 use DateTime;
 use Debbugs::Common qw(make_list getparsedaddrs);
 use Debbugs::Config qw(:config);
+use Carp;
 
 =head2 Bug loading
 
@@ -79,7 +80,12 @@ sub load_bug {
     my %param = validate_with(params => \@_,
                               spec => {db => {type => OBJECT,
                                              },
-                                       data => {type => HASHREF},
+                                       data => {type => HASHREF,
+                                                optional => 1,
+                                               },
+                                       bug => {type => SCALAR,
+                                               optional => 1,
+                                              },
                                        tags => {type => HASHREF,
                                                 default => sub {return {}},
                                                 optional => 1},
@@ -91,6 +97,12 @@ sub load_bug {
                                                  optional => 1},
                                       });
     my $s = $param{db};
+    if (not exists $param{data} and not exists $param{bug}) {
+        croak "One of data or bug must be provided to load_bug";
+    }
+    if (not exists $param{data}) {
+        $param{data} = read_bug(bug => $param{bug});
+    }
     my $data = $param{data};
     my $tags = $param{tags};
     my $queue = $param{queue};
@@ -188,11 +200,11 @@ sub load_bug {
 			   if (my ($src_pkg,$src_ver) = $element =~ m{^([^\/]+)/(.+)$}) {
 			       my $src_pkg_e = $s->resultset('SrcPkg')->single({pkg => $src_pkg});
 			       if (defined $src_pkg_e) {
-				   $ne->src_pkg_id($src_pkg_e->id());
-				   my $src_ver_e = $s->resultset('SrcVer')->single({src_pkg_id => $src_pkg_e->id(),
+				   $ne->src_pkg($src_pkg_e->id());
+				   my $src_ver_e = $s->resultset('SrcVer')->single({src_pkg => $src_pkg_e->id(),
 										    ver => $src_ver
 										   });
-				   $ne->src_ver_id($src_ver_e->id()) if defined $src_ver_e;
+				   $ne->src_ver($src_ver_e->id()) if defined $src_ver_e;
 			       }
 			   }
 			   $ne->insert();
@@ -207,10 +219,23 @@ sub load_bug {
     # because these bugs reference other bugs which might not exist
     # yet, we can't handle them until we've loaded all bugs. queue
     # them up.
-    $queue->{merged}{$data->{bug_num}} = [@{$data->{mergedwith}}];
-    $queue->{blocks}{$data->{bug_num}} = [@{$data->{blocks}}];
+    for my $merge_block (qw(merged block)) {
+        my $data_key = $merge_block;
+        $data_key .= 'with' if $merge_block eq 'merged';
+        if (@{$data->{$data_key}||[]}) {
+            my $count = $s->resultset('Bug')->search({id => [@{$data->{$data_key}}]})->count();
+            if ($count == @{$data->{$data_key}}) {
+                handle_load_bug_queue(db=>$s,
+                                      queue => {$merge_block,
+                                               {$data->{bug_num},[@{$data->{$data_key}}]}
+                                               });
+            } else {
+                $queue->{$merge_block}{$data->{bug_num}} = [@{$data->{$data_key}}];
+            }
+        }
+    }
 
-    if (not $can_queue) {
+    if (not $can_queue and keys %{$queue}) {
         handle_load_bug_queue(db => $s,queue => $queue);
     }
 
@@ -239,19 +264,19 @@ sub handle_load_bug_queue{
     my $queue = $param{queue};
     my %queue_types =
 	(merged => {set => 'BugMerged',
-		    columns => [qw(bug_id merged)],
-		    bug_id => 'bug_id',
+		    columns => [qw(bug merged)],
+		    bug => 'bug',
 		   },
 	 blocks => {set => 'BugBlock',
-		    columns => [qw(bug_id blocks)],
-		    bug_id => 'bug_id',
+		    columns => [qw(bug blocks)],
+		    bug => 'bug',
 		   },
 	);
     for my $queue_type (keys %queue_types) {
 	for my $bug (%{$queue->{$queue_type}}) {
 	    my $qt = $queue_types{$queue_type};
 	    $s->txn_do(sub {
-			   $s->resultset($qt->{set})->search({$qt->{bug_id},$bug})->delete();
+			   $s->resultset($qt->{set})->search({$qt->{bug},$bug})->delete();
 			   $s->populate($qt->{set},[[@{$qt->{columns}}],
                                                     map {[$bug,$_]} @{$queue->{$queue_type}{$bug}}]) if
 			       @{$queue->{$queue_type}{$bug}//[]};
