@@ -49,8 +49,8 @@ BEGIN {
     $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
-use File::Path;
-use File::Temp qw();
+use File::Path qw(remove_tree);
+use File::Temp qw(tempdir);
 use MIME::Parser;
 
 use POSIX qw(strftime);
@@ -94,7 +94,7 @@ sub parse
     my (@headerlines, @bodylines);
 
     my $parser = MIME::Parser->new();
-    my $tempdir = File::Temp::tempdir();
+    my $tempdir = tempdir(CLEANUP => 1);
     $parser->output_under($tempdir);
     my $entity = eval { $parser->parse_data($_[0]) };
 
@@ -135,7 +135,7 @@ sub parse
 	@bodylines = map {convert_to_utf8($_,$charset)} @msg[$i .. $#msg];
     }
 
-    rmtree $tempdir, 0, 1;
+    remove_tree($tempdir,{verbose => 0, safe => 1});
 
     # Remove blank lines.
     shift @bodylines while @bodylines and $bodylines[0] !~ /\S/;
