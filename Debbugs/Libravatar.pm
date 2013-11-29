@@ -159,7 +159,7 @@ sub retrieve_libravatar{
                    $temp_fn,
                    $cache_location.'.'.$dest_type) == 0 or
                        die "convert file failed";
-            unlink($temp_fh);
+            unlink($temp_fn);
         };
         if ($@) {
             unlink($cache_location.'.'.$dest_type) if -e $cache_location.'.'.$dest_type;
