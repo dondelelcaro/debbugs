@@ -21,6 +21,8 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   * uri_escape e-mails in libravatar (closes: #728034). Thanks to Fabien
     Givors for pointing this out and providing a patch.
   * Fix title of $gBug (closes: #546383). Thanks to Jakub Wilk.
+  * Support CVEs surrounded by parenthesis (closes: #662228). Thanks to
+    Ari Pollak.
 
   [Thanks to Arnout Engelen: ]
   * Add Homepage (closes: #670555).
