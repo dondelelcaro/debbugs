@@ -75,6 +75,7 @@ BEGIN {
 				 qw($gTemplateDir),
 				 qw($gDefaultPackage),
 				 qw($gSpamMaxThreads $gSpamSpamsPerThread $gSpamKeepRunning $gSpamScan $gSpamCrossassassinDb),
+                                 qw($gDebbugsDb),
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
@@ -1029,6 +1030,18 @@ Default: empty array
 set_default(\%config,'libravatar_blacklist',[]);
 
 =back
+
+=head2 Database
+
+=over
+
+=item debbugs_db
+
+Name of debbugs PostgreSQL database service
+
+=back
+
+set_default(\%config,'debbugs_db',undef);
 
 =head2 Text Fields
 
