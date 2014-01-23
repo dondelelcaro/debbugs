@@ -55,7 +55,7 @@ use Params::Validate qw(validate_with :types);
 use IO::File;
 use Debbugs::Status qw(splitpackages get_bug_status);
 use Debbugs::Packages qw(getsrcpkgs getpkgsrc);
-use Debbugs::Common qw(getparsedaddrs package_maintainer getmaintainers make_list);
+use Debbugs::Common qw(getparsedaddrs package_maintainer getmaintainers make_list hash_slice);
 use Fcntl qw(O_RDONLY);
 use MLDBM qw(DB_File Storable);
 use List::Util qw(first);
@@ -152,55 +152,60 @@ bug should not.
 
 =cut
 
+my %_get_bugs_common_options =
+    (package   => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     src       => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     maint     => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     submitter => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     severity  => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     status    => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     tag       => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     owner     => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     dist      => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     correspondent => {type => SCALAR|ARRAYREF,
+                       optional => 1,
+                      },
+     affects   => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     function  => {type => CODEREF,
+                   optional => 1,
+                  },
+     bugs      => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     archive   => {type => BOOLEAN|SCALAR,
+                   default => 0,
+                  },
+     usertags  => {type => HASHREF,
+                   optional => 1,
+                  },
+    );
+
+
+my $_get_bugs_options = {%_get_bugs_common_options};
 sub get_bugs{
      my %param = validate_with(params => \@_,
-			       spec   => {package   => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  src       => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  maint     => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  submitter => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  severity  => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  status    => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  tag       => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  owner     => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  dist      => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  correspondent => {type => SCALAR|ARRAYREF,
-							    optional => 1,
-							   },
-					  affects   => {type => SCALAR|ARRAYREF,
-							optional => 1,
-						       },
-					  function  => {type => CODEREF,
-							optional => 1,
-						       },
-					  bugs      => {type => SCALAR|ARRAYREF,
-							optional => 1,
-						       },
-					  archive   => {type => BOOLEAN|SCALAR,
-							default => 0,
-						       },
-					  usertags  => {type => HASHREF,
-							optional => 1,
-						       },
-					 },
-			      );
+			       spec   => $_get_bugs_options,
+                              );
 
      # Normalize options
      my %options = %param;
@@ -388,45 +393,17 @@ searches.
 
 =cut
 
+
+my $_get_bugs_by_idx_options =
+   {hash_slice(%_get_bugs_common_options,
+               (qw(package submitter severity tag archive),
+                qw(owner src maint bugs correspondent),
+                qw(affects usertags))
+              )
+   };
 sub get_bugs_by_idx{
      my %param = validate_with(params => \@_,
-			       spec   => {package   => {type => SCALAR|ARRAYREF,
-							optional => 1,
-						       },
-					  submitter => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  severity  => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  tag       => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  archive   => {type => BOOLEAN,
-							default => 0,
-						       },
-					  owner     => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  src       => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  maint     => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  bugs      => {type => SCALAR|ARRAYREF,
-							optional => 1,
-						       },
-					  correspondent => {type => SCALAR|ARRAYREF,
-							    optional => 1,
-							   },
-					  affects => {type => SCALAR|ARRAYREF,
-						      optional => 1,
-						     },
-					  usertags  => {type => HASHREF,
-							optional => 1,
-						       },
-					 },
+			       spec   => $_get_bugs_by_idx_options
 			      );
      my %bugs = ();
 
@@ -504,55 +481,15 @@ searches. [Or at least, that's the idea.]
 
 =cut
 
+my $_get_bugs_flatfile_options =
+   {hash_slice(%_get_bugs_common_options,
+               map {$_ eq 'dist'?():($_)} keys %_get_bugs_common_options
+              )
+   };
+
 sub get_bugs_flatfile{
      my %param = validate_with(params => \@_,
-			       spec   => {package   => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  src       => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  maint     => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  submitter => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  severity  => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  status    => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  tag       => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
- 					  owner     => {type => SCALAR|ARRAYREF,
- 						        optional => 1,
- 						       },
-					  correspondent => {type => SCALAR|ARRAYREF,
-							    optional => 1,
-							   },
-					  affects   => {type => SCALAR|ARRAYREF,
-							optional => 1,
-						       },
-# not yet supported
-# 					  dist      => {type => SCALAR|ARRAYREF,
-# 						        optional => 1,
-# 						       },
-					  bugs      => {type => SCALAR|ARRAYREF,
-							optional => 1,
-						       },
-					  archive   => {type => BOOLEAN,
-							default => 1,
-						       },
-					  usertags  => {type => HASHREF,
-							optional => 1,
-						       },
-					  function  => {type => CODEREF,
-							optional => 1,
-						       },
-					 },
+			       spec   => $_get_bugs_flatfile_options
 			      );
      my $flatfile;
      if ($param{archive}) {
