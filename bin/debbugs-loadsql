@@ -78,7 +78,7 @@ debbugs configuration file.
 Output more information about what is happening. Probably not useful
 if you also set --progress.
 
-=item B<--debug, -d
+=item B<--debug, -d>
 
 Debug verbosity.
 
