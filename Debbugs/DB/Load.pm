@@ -292,6 +292,8 @@ sub handle_load_bug_queue{
 
 Commands to handle src and package version loading from debinfo files
 
+=over
+
 =item load_debinfo
 
      load_debinfo($schema,$binname, $binver, $binarch, $srcname, $srcver);
@@ -313,6 +315,11 @@ sub load_debinfo {
                                                   ver        => $binver,
                                                  });
 }
+
+
+=back
+
+=cut
 
 1;
 
