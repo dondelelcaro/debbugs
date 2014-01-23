@@ -43,7 +43,7 @@ Postgreql service to use; defaults to debbugs
 System configuration directory to use; if not set, defaults to the
 postgresql default. [Operates by setting PGSYSCONFDIR]
 
-=item B<--debug, -d
+=item B<--debug, -d>
 
 Debug verbosity.
 
