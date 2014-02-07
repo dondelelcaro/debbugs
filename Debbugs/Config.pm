@@ -979,7 +979,7 @@ libravatar.cgi, our internal federated libravatar system.
 
 =cut
 
-set_default(\%config,'libravatar_uri',$config{cgi_domain}.'/libravatar.cgi?email=');
+set_default(\%config,'libravatar_uri','http://'.$config{cgi_domain}.'/libravatar.cgi?email=');
 
 =item libravatar_uri_options $gLibravatarUriOptions
 

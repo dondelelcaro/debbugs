@@ -149,7 +149,7 @@ sub display_entity {
                    if ($_ eq 'From' and $param{avatars}) {
                        my $libravatar_url = __libravatar_url(decode_rfc1522($head_field));
                        if (defined $libravatar_url and length $libravatar_url) {
-                           push @headers,q(<img src="http://).html_escape($libravatar_url).qq(" alt="">\n);
+                           push @headers,q(<img src=").html_escape($libravatar_url).qq(" alt="">\n);
                        }
                    }
 		   push @headers, qq(<div class="header"><span class="headerfield">$_:</span> ) . html_escape(decode_rfc1522($head_field))."</div>\n";
@@ -283,7 +283,7 @@ sub display_entity {
 	     length $config{cve_tracker}
 	    ) {
 	     # Add links to CVE vulnerabilities (closes #568464)
-	     $body =~ s{(^|\s)(CVE-\d{4}-\d{4,})(\s|[,.-\[\]]|$)}
+	     $body =~ s{(^|\s|[\(\[])(CVE-\d{4}-\d{4,})(\s|[,.-\[\]\)]|$)}
 		       {$1<a href="http://$config{cve_tracker}$2">$2</a>$3}gxm;
 	 }
 	 if (not exists $param{att}) {
