@@ -224,6 +224,7 @@ for my $phline (@bodylines)
     # Remove BOM markers from UTF-8 strings
     # Fixes #488554
     $phline =~ s/\xef\xbb\xbf//g;
+    $phline =~ s/\N{U+FEFF}//g;
     last if $phline !~ m/^([\w-]+):\s*(\S.*)/;
     my ($fn, $fv) = ($1, $2);
     $fv =~ s/\s*$//;
