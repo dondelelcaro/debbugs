@@ -732,7 +732,7 @@ sub addfoundversions {
     my $version = shift;
     my $isbinary = shift;
     return unless defined $version;
-    undef $package if $package =~ m[(?:\s|/)];
+    undef $package if defined $package and $package =~ m[(?:\s|/)];
     my $source = $package;
     if (defined $package and $package =~ s/^src://) {
 	$isbinary = 0;
