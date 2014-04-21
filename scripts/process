@@ -541,10 +541,10 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
               Subject       => "$gBug#$ref closed by $markedby ($header{'subject'})",
               "Message-ID"  => "<handler.$ref.$nn.notifdone\@$gEmailDomain>",
               (defined $data->{msgid})?("In-Reply-To" => $data->{msgid}):(),
-              References    => join(' ',grep {defined $_} ($header{'message-id'},$data->{msgid})),
+              References    => join(' ',grep {defined $_} ($header{'message-id'},$data->{msgid},'')),
               "X-$gProject-PR-Message"  => "they-closed $ref",
-              "X-$gProject-PR-Package"  => "$data->{package}",
-              "X-$gProject-PR-Keywords" => "$data->{keywords}",
+              (defined $data->{package})?("X-$gProject-PR-Package"  => $data->{package}):(),
+              (defined $data->{keywords})?("X-$gProject-PR-Keywords" => $data->{keywords}):(),
 	      # Only have a X-$gProject-PR-Source when we know the source package
 	      (defined($source_package) and length($source_package))?("X-$gProject-PR-Source" => $source_package):(),
               "Reply-To"                => "$ref\@$gEmailDomain",
