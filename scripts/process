@@ -248,7 +248,7 @@ for my $key (grep /X-Debbugs-.*/i, keys %pheader) {
 # set $i to beginning of encoded body data, so we can dump it out
 # verbatim later
 my $i = 0;
-++$i while $msg[$i] =~ /./;
+++$i while $i <= $#msg and $msg[$i] =~ /./;
 $fwd .= join("\n",@msg[$i..$#msg]);
 
 binmode($debugfh,':raw');
