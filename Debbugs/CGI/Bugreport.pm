@@ -274,7 +274,11 @@ sub display_entity {
 		    ((?:\&gt\;)?[)]?(?:'|\&\#39\;)?[:.\,]?(?:\s|$)) # terminators
 	      }{<a href=\"$1\">$1</a>$2}gox;
 	 # Add links to bug closures
-	 $body =~ s[(closes:\s*(?:bug)?\#?\s?\d+(?:,?\s*(?:bug)?\#?\s?\d+)*)]
+	 $body =~ s[((?:closes|see):\s* # start of closed/referenced bugs
+                        (?:bug)?\#?\s?\d+\s? # first bug
+                        (?:,?\s*(?:bug)?\#?\s?\d+)* # additional bugs
+                    (?:\s|\n|\)|\]|\}|\.|\,|$)) # ends with a space, newline, end of string, or ); fixes #747267
+                  ]
 		   [my $temp = $1;
 		    $temp =~ s{(\d+)}
 			      {bug_links(bug=>$1)}ge;
