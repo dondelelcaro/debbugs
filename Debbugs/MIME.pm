@@ -193,7 +193,7 @@ sub create_mime_message{
      die "The third argument to create_mime_message must be an arrayref" unless ref($attachments) eq 'ARRAY';
 
      if ($include_date) {
-	 my %headers = apply {lc($_)} @{$headers};
+	 my %headers = apply {defined $_ ? lc($_) : ''} @{$headers};
 	 if (not exists $headers{date}) {
 	     push @{$headers},
 		 ('Date',
@@ -206,7 +206,7 @@ sub create_mime_message{
      # MIME::Entity is stupid, and doesn't rfc1522 encode its headers, so we do it for it.
      my $msg = MIME::Entity->build('Content-Type' => 'text/plain; charset=utf-8',
 				   'Encoding'     => 'quoted-printable',
-				   (map{encode_rfc1522(encode_utf8($_))} @{$headers}),
+				   (map{encode_rfc1522(encode_utf8(defined $_ ? $_:''))} @{$headers}),
 				   Data    => encode_utf8($body),
 				  );
 
