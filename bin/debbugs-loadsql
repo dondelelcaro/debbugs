@@ -115,7 +115,7 @@ my %options =
      verbose         => 0,
      quiet           => 0,
      quick           => 0,
-     service         => 'debbugs',
+     service         => $config{debbugs_db},
      progress        => 0,
     );
 
