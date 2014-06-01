@@ -307,7 +307,7 @@ CREATE INDEX bug_tag_bug ON bug_tag (bug);
 CREATE TABLE bug_binpackage (
        id SERIAL PRIMARY KEY,
        bug INT NOT NULL REFERENCES bug,
-       bin_pkg INT NOT NULL REFERENCES bin_pkg
+       bin_pkg INT NOT NULL REFERENCES bin_pkg ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE UNIQUE INDEX bug_binpackage_id_pkg ON bug_binpackage(bug,bin_pkg);
 INSERT INTO table_comments VALUES ('bug_binpackage','Bug <-> binary package mapping');
@@ -327,6 +327,26 @@ INSERT INTO column_comments VALUES ('bug_srcpackage','src_pkg','Source package i
 CREATE VIEW bug_package (bug,pkg_id,pkg_type,package) AS
        SELECT b.bug,b.bin_pkg,'binary',bp.pkg FROM bug_binpackage b JOIN bin_pkg bp ON bp.id=b.bin_pkg UNION
               SELECT s.bug,s.src_pkg,'source',sp.pkg FROM bug_srcpackage s JOIN src_pkg sp ON sp.id=s.src_pkg;
+
+CREATE TABLE bug_affects_binpackage (
+       id SERIAL PRIMARY KEY,
+       bug INT NOT NULL REFERENCES bug,
+       bin_pkg INT NOT NULL REFERENCES bin_pkg ON UPDATE CASCADE ON DELETE CASCADE
+);
+CREATE UNIQUE INDEX bug_affects_binpackage_id_pkg ON bug_affects_binpackage(bug,bin_pkg);
+INSERT INTO table_comments VALUES ('bug_affects_binpackage','Bug <-> binary package mapping');
+INSERT INTO column_comments VALUES ('bug_affects_binpackage','bug','Bug id (matches bug)');
+INSERT INTO column_comments VALUES ('bug_affects_binpackage','bin_pkg','Binary package id (matches bin_pkg)');
+
+CREATE TABLE bug_affects_srcpackage (
+       id SERIAL PRIMARY KEY,
+       bug INT NOT NULL REFERENCES bug,
+       src_pkg INT NOT NULL REFERENCES src_pkg ON UPDATE CASCADE ON DELETE CASCADE
+);
+CREATE UNIQUE INDEX bug_affects_srcpackage_id_pkg ON bug_affects_srcpackage(bug,src_pkg);
+INSERT INTO table_comments VALUES ('bug_affects_srcpackage','Bug <-> source package mapping');
+INSERT INTO column_comments VALUES ('bug_affects_srcpackage','bug','Bug id (matches bug)');
+INSERT INTO column_comments VALUES ('bug_affects_srcpackage','src_pkg','Source package id (matches src_pkg)');
 
 CREATE VIEW binary_versions (src_pkg, src_ver, bin_pkg, arch, bin_ver) AS
        SELECT sp.pkg AS src_pkg, sv.ver AS src_ver, bp.pkg AS bin_pkg, a.arch AS arch, b.ver AS bin_ver,
