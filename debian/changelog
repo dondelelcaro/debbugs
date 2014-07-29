@@ -23,6 +23,8 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   * Fix title of $gBug (closes: #546383). Thanks to Jakub Wilk.
   * Support CVEs surrounded by parenthesis (closes: #662228). Thanks to
     Ari Pollak.
+  * Add reply links to individual bug messages with headers (closes:
+    #412815). Thanks to martin krafft, Paul Wise, and Julien Valroff.
 
   [Thanks to Arnout Engelen: ]
   * Add Homepage (closes: #670555).

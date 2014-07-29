@@ -61,6 +61,7 @@ BEGIN{
      %EXPORT_TAGS = (addresses => [qw(get_addresses)],
 		     misc      => [qw(rfc822_date)],
 		     mail      => [qw(send_mail_message encode_headers default_headers)],
+                     reply     => [qw(reply_headers)],
 		    );
      @EXPORT_OK = ();
      Exporter::export_ok_tags(keys %EXPORT_TAGS);
@@ -412,6 +413,47 @@ Return the current date in RFC822 format in the UTC timezone
 
 sub rfc822_date{
      return scalar strftime "%a, %d %h %Y %T +0000", gmtime;
+}
+
+=head2 reply_headers
+
+     reply_headers(MIME::Parser->new()->parse_data(\$data));
+
+Generates suggested headers and a body for replies. Primarily useful
+for use in RFC2368 mailto: entries.
+
+=cut
+
+sub reply_headers{
+    my ($entity) = @_;
+
+    my $head = $entity->head;
+    # build reply link
+    my %r_l;
+    $r_l{subject} = $head->get('Subject');
+    $r_l{subject} //= 'Your mail';
+    $r_l{subject} = 'Re: '. $r_l{subject} unless $r_l{subject} =~ /(?:^|\s)Re:\s+/;
+    $r_l{subject} =~ s/(?:^\s*|\s*$)//g;
+    $r_l{'In-Reply-To'} = $head->get('Message-Id');
+    delete $r_l{'In-Reply-To'} unless defined $r_l{'In-Reply-To'};
+    $r_l{References} = ($head->get('References')//''). ' '.($head->get('Message-Id')//'');
+    my $date = $head->get('Date') // 'some date';
+    $date =~ s/(?:^\s*|\s*$)//g;
+    my $who = $head->get('From') // $head->get('Reply-To') // 'someone';
+    $who =~ s/(?:^\s*|\s*$)//g;
+
+    my $body = "On $date $who wrote:\n";
+    my $i = 60;
+    my $b_h = $entity->bodyhandle;
+    my $IO = $b_h->open("r");
+    while (defined($_ = $IO->getline)) {
+        $i--;
+        last if $i < 0;
+        $body .= '> '. $_;
+    }
+    $IO->close();
+    $r_l{body} = $body;
+    return \%r_l;
 }
 
 =head1 PRIVATE FUNCTIONS
