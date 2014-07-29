@@ -444,14 +444,36 @@ sub reply_headers{
 
     my $body = "On $date $who wrote:\n";
     my $i = 60;
-    my $b_h = $entity->bodyhandle;
-    my $IO = $b_h->open("r");
-    while (defined($_ = $IO->getline)) {
-        $i--;
-        last if $i < 0;
-        $body .= '> '. $_;
+    my $b_h;
+    ## find the first part which has a defined body handle and appears
+    ## to be text
+    if (defined $entity->bodyhandle) {
+        $b_h = $entity->bodyhandle;
+    } elsif ($entity->parts) {
+        my @parts = $entity->parts;
+        while (defined(my $part = shift @parts)) {
+            if ($part->parts) {
+                push @parts,$part->parts;
+            }
+            if (defined $part->bodyhandle and
+                $part->effective_type =~ /text/) {
+                print STDERR $part->effective_type."\n";
+                $b_h = $part->bodyhandle;
+                last;
+            }
+        }
     }
-    $IO->close();
+    if (defined $b_h) {
+        eval {
+            my $IO = $b_h->open("r");
+            while (defined($_ = $IO->getline)) {
+                $i--;
+                last if $i < 0;
+                $body .= '> '. $_;
+            }
+            $IO->close();
+        };
+    }
     $r_l{body} = $body;
     return \%r_l;
 }
