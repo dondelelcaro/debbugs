@@ -435,8 +435,10 @@ sub reply_headers{
     $r_l{subject} = 'Re: '. $r_l{subject} unless $r_l{subject} =~ /(?:^|\s)Re:\s+/;
     $r_l{subject} =~ s/(?:^\s*|\s*$)//g;
     $r_l{'In-Reply-To'} = $head->get('Message-Id');
+    $r_l{'In-Reply-To'} =~ s/(?:^\s*|\s*$)//g if defined $r_l{'In-Reply-To'};
     delete $r_l{'In-Reply-To'} unless defined $r_l{'In-Reply-To'};
     $r_l{References} = ($head->get('References')//''). ' '.($head->get('Message-Id')//'');
+    $r_l{References} =~ s/(?:^\s*|\s*$)//g;
     my $date = $head->get('Date') // 'some date';
     $date =~ s/(?:^\s*|\s*$)//g;
     my $who = $head->get('From') // $head->get('Reply-To') // 'someone';
