@@ -1,0 +1,151 @@
+#!/usr/bin/perl
+# debbugs-installsql installs the SQL database using DBIx::Class::DeploymentHandler
+# and is released under the terms of the GNU GPL version 3, or any
+# later version, at your option. See the file README and COPYING for
+# more information.
+# Copyright 2013-2014 by Don Armstrong <don@donarmstrong.com>.
+
+
+use warnings;
+use strict;
+
+use Getopt::Long;
+use Pod::Usage;
+
+=head1 NAME
+
+debbugs-installsql - installs the SQL database using DBIx::Class::DeploymentHandler
+
+=head1 SYNOPSIS
+
+debbugs-installsql [ --upgrade | --install ]
+
+ Options:
+  --service postgresql service to connect to
+  --sysconfdir postgresql system configuration directory
+  --deployment-dir SQL deployment directory
+  --debug, -d debugging level (Default 0)
+  --help, -h display this help
+  --man, -m display manual
+
+=head1 OPTIONS
+
+=over
+
+=item B<--service>
+
+Postgresl service to connect to (defaults to debbugs)
+
+=item B<--sysconfdir>
+
+Postgresql sysconf dir. May also be set using the PGSYSCONFDIR
+environmental variable (which this option overrides).
+
+=item B<--deployment-dir>
+
+Deployment directory (defaults to /usr/share/debbugs/sqldeployment)
+
+=item B<--debug, -d>
+
+Debug verbosity. (Default 0)
+
+=item B<--help, -h>
+
+Display brief usage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+=head1 EXAMPLES
+
+debbugs-installsql
+
+=cut
+
+
+use vars qw($DEBUG);
+
+use Debbugs::DB;
+use aliased 'DBIx::Class::DeploymentHandler' => 'DH';
+
+my %options = (debug           => 0,
+	       help            => 0,
+	       man             => 0,
+               developer_prepare => 0,
+               overwrite_deployment => 0,
+               service         => 'debbugs',
+               deployment_dir  => '/usr/share/debbugs/sqldeployment',
+              );
+
+GetOptions(\%options,
+           'service|s',
+           'sysconfdir|c',
+           'install',
+           'upgrade',
+           'current_version|current-version',
+           'developer_prepare|developer-prepare',
+           'overwrite_deployment|overwrite-deployment',
+           'deployment_dir|deployment-dir=s',
+	   'debug|d+','help|h|?','man|m');
+
+pod2usage() if $options{help};
+pod2usage({verbose=>2}) if $options{man};
+
+$DEBUG = $options{debug};
+
+my @USAGE_ERRORS;
+
+my @exclusive_options = qw(install upgrade current_version);
+if (1 < grep {exists $options{$_}} @exclusive_options) {
+      push @USAGE_ERRORS,"You must only give one of the ".
+          join(', ',map {s/_/-/g; "--".$_} @exclusive_options).
+          " options";
+}
+if (not grep {exists $options{$_}} @exclusive_options) {
+    $options{current_version} = 1;
+}
+
+pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
+
+if (exists $options{sysconfdir}) {
+    if (not defined $options{sysconfdir} or not length $options{sysconfdir}) {
+	delete $ENV{PGSYSCONFDIR};
+    } else {
+	$ENV{PGSYSCONFDIR} = $options{sysconfdir};
+    }
+}
+
+
+my $schema = Debbugs::DB->connect('dbi:Pg:service='.$options{service}) or
+    die "Unable to connect to database";
+
+
+my $dh = DH->new({schema => $schema,
+                  force_overwrite => $options{overwrite_deployment},
+                  script_directory => $options{deployment_dir},
+                  databases => 'PostgreSQL'
+                 });
+
+if ($options{current_version}) {
+    print "The current database version is: ".$dh->database_version."\n";
+    exit 0;
+} elsif ($options{install}) {
+    if ($options{developer_prepare}) {
+        $dh->prepare_install;
+    } else {
+        $dh->install;
+    }
+} elsif ($options{upgrade}) {
+    if ($options{developer_prepare}) {
+        $dh->prepare_deploy;
+        $dh->prepare_upgrade;
+    } else {
+        $dh->upgrade;
+    }
+}
+
+
+__END__

@@ -1,0 +1,19 @@
+# Developer specific instructions #
+## Upgrading Schema ##
+
+To make changes to the database schema:
+
+1. Make whatever changes are appropriate to the SQL directly in the
+   debbugs_schema.sql file, and make corresponding changes to the
+   database (or dump the entire database and otherwise make the
+   changes).
+2. Run `./sql/dbicdump_command.sh` to update the DBIx::Class classes
+   which are under Debbugs::DB
+3. Increment the version of Debbugs::DB;
+4. Run `./bin/debbugs-installsql --install --deployment-dir sql --developer-prepare`
+   and `./bin/debbugs-installsql --upgrade --deployment-dir sql --developer-prepare`
+   which will generate the files necessary to do upgrades in the field.
+
+
+Steps 1 and 2 can alternatively be performed by changing the
+DBIx::Class classes directly if that is desired.
