@@ -184,6 +184,10 @@ if ($options{progress}) {
 
 
 my ($subcommand) = shift @ARGV;
+if (not defined $subcommand) {
+    $subcommand = 'help';
+    print STDERR "You must provide a subcommand; displaying help";
+}
 
 my $opts =
     handle_subcommand_arguments(\@ARGV,$subcommands{$subcommand}{arguments},$gop);
