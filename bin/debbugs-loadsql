@@ -119,18 +119,17 @@ my %options =
      progress        => 0,
     );
 
-my $gop = Getopt::Long::Parser->new();
-$gop->configure('pass_through');
-$gop->getoptions(\%options,
-                 'quick|q',
-                 'service|s',
-                 'sysconfdir|c',
-                 'progress!',
-                 'spool_dir|spool-dir=s',
-                 'verbose|v+',
-                 'quiet+',
-                 'debug|d+','help|h|?','man|m');
-$gop->getoptions('default');
+Getopt::Long::Configure('pass_through');
+GetOptions(\%options,
+           'quick|q',
+           'service|s',
+           'sysconfdir|c',
+           'progress!',
+           'spool_dir|spool-dir=s',
+           'verbose|v+',
+           'quiet+',
+           'debug|d+','help|h|?','man|m');
+Getopt::Long::Configure('default');
 
 pod2usage() if $options{help};
 pod2usage({verbose=>2}) if $options{man};
@@ -186,11 +185,15 @@ if ($options{progress}) {
 my ($subcommand) = shift @ARGV;
 if (not defined $subcommand) {
     $subcommand = 'help';
-    print STDERR "You must provide a subcommand; displaying help";
+    print STDERR "You must provide a subcommand; displaying usage.\n";
+    pod2usage();
+} elsif (not exists $subcommands{$subcommand}) {
+    print STDERR "$subcommand is not a valid subcommand; displaying usage.\n";
+    pod2uage();
 }
 
 my $opts =
-    handle_subcommand_arguments(\@ARGV,$subcommands{$subcommand}{arguments},$gop);
+    handle_subcommand_arguments(\@ARGV,$subcommands{$subcommand}{arguments});
 $subcommands{$subcommand}{function}->(\%options,$opts,$prog_bar,\%config,\@ARGV);
 
 sub add_bugs {
@@ -415,7 +418,7 @@ sub add_logs {
 }
 
 sub handle_subcommand_arguments {
-    my ($argv,$args,$gop) = @_;
+    my ($argv,$args) = @_;
     my $subopt = {};
     Getopt::Long::GetOptionsFromArray($argv,
                               $subopt,
