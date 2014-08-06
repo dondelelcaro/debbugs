@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::PostgreSQL
--- Created on Wed Aug  6 09:18:36 2014
+-- Created on Wed Aug  6 14:09:26 2014
 -- 
 ;
 --
@@ -69,19 +69,6 @@ CREATE TABLE "correspondent" (
   "addr" text NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "correspondent_addr_idx" UNIQUE ("addr")
-);
-
-;
---
--- Table: dbix_class_deploymenthandler_versions.
---
-CREATE TABLE "dbix_class_deploymenthandler_versions" (
-  "id" serial NOT NULL,
-  "version" character varying(50) NOT NULL,
-  "ddl" text,
-  "upgrade_sql" text,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "dbix_class_deploymenthandler_versions_version" UNIQUE ("version")
 );
 
 ;

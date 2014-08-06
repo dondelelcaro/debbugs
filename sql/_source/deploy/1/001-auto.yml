@@ -161,7 +161,7 @@ schema:
           type: NORMAL
       name: bin_associations
       options: []
-      order: 30
+      order: 29
     bin_pkg:
       constraints:
         - deferrable: 1
@@ -337,7 +337,7 @@ schema:
           type: NORMAL
       name: bin_ver
       options: []
-      order: 28
+      order: 27
     binary_versions:
       constraints: []
       fields:
@@ -689,7 +689,7 @@ schema:
           type: NORMAL
       name: bug
       options: []
-      order: 17
+      order: 16
     bug_binpackage:
       constraints:
         - deferrable: 1
@@ -788,7 +788,7 @@ schema:
           type: NORMAL
       name: bug_binpackage
       options: []
-      order: 22
+      order: 21
     bug_blocks:
       constraints:
         - deferrable: 1
@@ -887,7 +887,7 @@ schema:
           type: NORMAL
       name: bug_blocks
       options: []
-      order: 19
+      order: 18
     bug_merged:
       constraints:
         - deferrable: 1
@@ -986,7 +986,7 @@ schema:
           type: NORMAL
       name: bug_merged
       options: []
-      order: 20
+      order: 19
     bug_message:
       constraints:
         - deferrable: 1
@@ -1115,7 +1115,7 @@ schema:
           type: NORMAL
       name: bug_message
       options: []
-      order: 23
+      order: 22
     bug_package:
       constraints: []
       fields:
@@ -1261,7 +1261,7 @@ schema:
           type: NORMAL
       name: bug_srcpackage
       options: []
-      order: 24
+      order: 23
     bug_status_cache:
       constraints:
         - deferrable: 1
@@ -1430,7 +1430,7 @@ schema:
           type: NORMAL
       name: bug_status_cache
       options: []
-      order: 26
+      order: 25
     bug_tag:
       constraints:
         - deferrable: 1
@@ -1529,7 +1529,7 @@ schema:
           type: NORMAL
       name: bug_tag
       options: []
-      order: 25
+      order: 24
     bug_ver:
       constraints:
         - deferrable: 1
@@ -1700,7 +1700,7 @@ schema:
           type: NORMAL
       name: bug_ver
       options: []
-      order: 29
+      order: 28
     column_comments:
       constraints:
         - deferrable: 1
@@ -1894,79 +1894,7 @@ schema:
           type: NORMAL
       name: correspondent_full_name
       options: []
-      order: 14
-    dbix_class_deploymenthandler_versions:
-      constraints:
-        - deferrable: 1
-          expression: ''
-          fields:
-            - id
-          match_type: ''
-          name: ''
-          on_delete: ''
-          on_update: ''
-          options: []
-          reference_fields: []
-          reference_table: ''
-          type: PRIMARY KEY
-        - deferrable: 1
-          expression: ''
-          fields:
-            - version
-          match_type: ''
-          name: dbix_class_deploymenthandler_versions_version
-          on_delete: ''
-          on_update: ''
-          options: []
-          reference_fields: []
-          reference_table: ''
-          type: UNIQUE
-      fields:
-        ddl:
-          data_type: text
-          default_value: ~
-          is_nullable: 1
-          is_primary_key: 0
-          is_unique: 0
-          name: ddl
-          order: 3
-          size:
-            - 0
-        id:
-          data_type: integer
-          default_value: ~
-          is_auto_increment: 1
-          is_nullable: 0
-          is_primary_key: 1
-          is_unique: 0
-          name: id
-          order: 1
-          size:
-            - 0
-        upgrade_sql:
-          data_type: text
-          default_value: ~
-          is_nullable: 1
-          is_primary_key: 0
-          is_unique: 0
-          name: upgrade_sql
-          order: 4
-          size:
-            - 0
-        version:
-          data_type: varchar
-          default_value: ~
-          is_nullable: 0
-          is_primary_key: 0
-          is_unique: 1
-          name: version
-          order: 2
-          size:
-            - 50
-      indices: []
-      name: dbix_class_deploymenthandler_versions
-      options: []
-      order: 7
+      order: 13
     maintainer:
       constraints:
         - deferrable: 1
@@ -2068,7 +1996,7 @@ schema:
           type: NORMAL
       name: maintainer
       options: []
-      order: 15
+      order: 14
     message:
       constraints:
         - deferrable: 1
@@ -2199,7 +2127,7 @@ schema:
       indices: []
       name: message
       options: []
-      order: 8
+      order: 7
     message_correspondent:
       constraints:
         - deferrable: 1
@@ -2316,7 +2244,7 @@ schema:
           type: NORMAL
       name: message_correspondent
       options: []
-      order: 18
+      order: 17
     message_refs:
       constraints:
         - deferrable: 1
@@ -2437,7 +2365,7 @@ schema:
           type: NORMAL
       name: message_refs
       options: []
-      order: 16
+      order: 15
     severity:
       constraints:
         - deferrable: 1
@@ -2521,7 +2449,7 @@ schema:
       indices: []
       name: severity
       options: []
-      order: 9
+      order: 8
     src_associations:
       constraints:
         - deferrable: 1
@@ -2629,7 +2557,7 @@ schema:
           type: NORMAL
       name: src_associations
       options: []
-      order: 27
+      order: 26
     src_pkg:
       constraints:
         - deferrable: 1
@@ -2764,7 +2692,7 @@ schema:
           type: NORMAL
       name: src_pkg
       options: []
-      order: 10
+      order: 9
     src_ver:
       constraints:
         - deferrable: 1
@@ -2912,7 +2840,7 @@ schema:
           type: NORMAL
       name: src_ver
       options: []
-      order: 21
+      order: 20
     suite:
       constraints:
         - deferrable: 1
@@ -2995,7 +2923,7 @@ schema:
       indices: []
       name: suite
       options: []
-      order: 11
+      order: 10
     table_comments:
       constraints:
         - deferrable: 1
@@ -3034,7 +2962,7 @@ schema:
       indices: []
       name: table_comments
       options: []
-      order: 12
+      order: 11
     tag:
       constraints:
         - deferrable: 1
@@ -3097,7 +3025,7 @@ schema:
       indices: []
       name: tag
       options: []
-      order: 13
+      order: 12
   triggers: {}
   views: {}
 translator:
@@ -3124,7 +3052,6 @@ translator:
       - ColumnComment
       - Correspondent
       - CorrespondentFullName
-      - DbixClassDeploymenthandlerVersion
       - Maintainer
       - Message
       - MessageCorrespondent
