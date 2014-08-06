@@ -122,8 +122,8 @@ my %options =
 Getopt::Long::Configure('pass_through');
 GetOptions(\%options,
            'quick|q',
-           'service|s',
-           'sysconfdir|c',
+           'service|s=s',
+           'sysconfdir|c=s',
            'progress!',
            'spool_dir|spool-dir=s',
            'verbose|v+',
