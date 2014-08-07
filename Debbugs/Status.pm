@@ -312,20 +312,39 @@ our $ditch_empty = sub{
     return grep {length $_} map {split $splitter} @t;
 };
 
-my $ditch_empty_space = sub {return &{$ditch_empty}(' ',@_)};
+our $sort_and_unique = sub {
+    my @v;
+    my %u;
+    my $all_numeric = 1;
+    for my $v (@_) {
+        if ($all_numeric and $v =~ /\D/) {
+            $all_numeric = 0;
+        }
+        next if exists $u{$v};
+        $u{$v} = 1;
+        push @v, $v;
+    }
+    if ($all_numeric) {
+        return sort {$a <=> $b} @v;
+    } else {
+        return sort @v;
+    }
+};
+
+my $ditch_space_unique_and_sort = sub {return &{$sort_and_unique}(&{$ditch_empty}(' ',@_))};
 my %split_fields =
     (package        => \&splitpackages,
      affects        => \&splitpackages,
-     blocks         => $ditch_empty_space,
-     blockedby      => $ditch_empty_space,
+     blocks         => $ditch_space_unique_and_sort,
+     blockedby      => $ditch_space_unique_and_sort,
      # this isn't strictly correct, but we'll split both of them for
      # the time being until we ditch all use of keywords everywhere
      # from the code
-     keywords       => $ditch_empty_space,
-     tags           => $ditch_empty_space,
-     found_versions => $ditch_empty_space,
-     fixed_versions => $ditch_empty_space,
-     mergedwith     => $ditch_empty_space,
+     keywords       => $ditch_space_unique_and_sort,
+     tags           => $ditch_space_unique_and_sort,
+     found_versions => $ditch_space_unique_and_sort,
+     fixed_versions => $ditch_space_unique_and_sort,
+     mergedwith     => $ditch_space_unique_and_sort,
     );
 
 sub split_status_fields {
