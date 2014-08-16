@@ -252,7 +252,10 @@ sub add_bugs {
                 print STDERR "Unable to stat $bug $!\n";
                 next;
             }
-            next if $stat->mtime < $time;
+            if ($options{quick}) {
+                my $rs = $s->resultset('Bug')->search({bug=>$bug})->single();
+                next if defined $rs and $stat->mtime < $rs->last_modified()->epoch();
+            }
             my $data = read_bug(bug => $bug,
                                 location => $initialdir);
             eval {
