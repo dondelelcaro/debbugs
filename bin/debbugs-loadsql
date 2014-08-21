@@ -189,7 +189,7 @@ if (not defined $subcommand) {
     pod2usage();
 } elsif (not exists $subcommands{$subcommand}) {
     print STDERR "$subcommand is not a valid subcommand; displaying usage.\n";
-    pod2uage();
+    pod2usage();
 }
 
 my $opts =
