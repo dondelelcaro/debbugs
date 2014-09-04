@@ -937,7 +937,7 @@ sub cleanup_eval_fail {
     # ditch the "at foo/bar/baz.pm line 5"
     $error =~ s/\sat\s\S+\sline\s\d+//;
     # ditch croak messages
-    $error =~ s/^\t+.+\n?//g;
+    $error =~ s/^\t+.+\n?//mg;
     # ditch trailing multiple periods in case there was a cascade of
     # die messages.
     $error =~ s/\.+$/\./;
