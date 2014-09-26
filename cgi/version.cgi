@@ -5,7 +5,7 @@ use strict;
 
 # Hack to work on merkel where suexec is in place
 BEGIN{
-     if ($ENV{HTTP_HOST} eq 'merkel.debian.org') {
+     if (defined $ENV{HTTP_HOST} and $ENV{HTTP_HOST} eq 'merkel.debian.org') {
 	  unshift @INC, qw(/home/don/perl/usr/share/perl5 /home/don/perl/usr/lib/perl5 /home/don/source);
 	  $ENV{DEBBUGS_CONFIG_FILE}="/home/don/config_internal";
      }
@@ -93,9 +93,9 @@ if ($cgi_var{info} and not defined $cgi_var{dot}) {
      print <<END;
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
-<head><title>$cgi_var{package} Version Graph</title></head>
-<body>
 END
+     print '<head><title>'.html_escape($cgi_var{package}).' Version Graph</title></head>'."\n";
+     print "<body>\n";
      print '<a href="'.html_escape(munge_url($this,ignore_boring=>$cgi_var{ignore_boring}?0:1)).
 	  '">['.($cgi_var{ignore_boring}?"Don't i":'I').'gnore boring]</a> ';
      print '<a href="'.html_escape(munge_url($this,collapse=>$cgi_var{collapse}?0:1)).
