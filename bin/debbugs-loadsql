@@ -104,6 +104,7 @@ use Debbugs::Status qw(read_bug split_status_fields);
 use Debbugs::Log;
 use Debbugs::DB;
 use Debbugs::DB::Load qw(load_bug handle_load_bug_queue);
+use Debbugs::BugWalker;
 use DateTime;
 use File::stat;
 
@@ -220,32 +221,12 @@ sub add_bugs {
     my %tags;
     my %severities;
     my %queue;
-    my $tot_dirs = @{$argv}? @{$argv} : 0;
-    my $done_dirs = 0;
-    my $avg_subfiles = 0;
-    my $completed_files = 0;
-    while (my $dir = shift @dirs) {
-        printf "Doing dir %s ...\n", $dir if $verbose;
-
-        opendir(DIR, "$dir/.") or die "opendir $dir: $!";
-        my @subdirs = readdir(DIR);
-        closedir(DIR);
-
-        my @list = map { m/^(\d+)\.summary$/?($1):() } @subdirs;
-        $tot_dirs -= @dirs;
-        push @dirs, map { m/^(\d+)$/ && -d "$dir/$1"?("$dir/$1"):() } @subdirs;
-        $tot_dirs += @dirs;
-        if ($avg_subfiles == 0) {
-            $avg_subfiles = @list;
-        }
-
-        $p->target($avg_subfiles*($tot_dirs-$done_dirs)+$completed_files+@list) if $p;
-        $avg_subfiles = ($avg_subfiles * $done_dirs + @list) / ($done_dirs+1);
-        $done_dirs += 1;
-
-        for my $bug (@list) {
-            $completed_files++;
-            $p->update($completed_files) if $p;
+    my $w = Debbugs::BugWalker->new(dir => [@dirs],
+                                    defined $p ? (progress => $p):(),
+                                    what => 'bug',
+                                   );
+    my $bug;
+    while (defined($bug = $w->get_next())) {
             print "Up to $cnt bugs...\n" if (++$cnt % 100 == 0 && $verbose);
             my $stat = stat(getbugcomponent($bug,'summary',$initialdir));
             if (not defined $stat) {
@@ -270,7 +251,6 @@ sub add_bugs {
                 print STDERR Dumper($data) if $DEBUG;
                 die "failure while trying to load bug $bug\n$@";
             }
-        }
     }
     $p->remove() if $p;
     handle_load_bug_queue(db => $s,
