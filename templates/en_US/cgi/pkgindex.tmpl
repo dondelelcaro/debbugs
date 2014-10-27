@@ -4,12 +4,12 @@
 <h1>{html_escape($config{project})} {html_escape($config{bug})} report logs by {html_escape($tag)}</h1> 
 {$note}
 <form>
-<input type="hidden" name="skip" value="$param{skip}">
-<input type="hidden" name="max_results" value="$param{max_results}">
-<input type="hidden" name="indexon" value="$param{indexon}">
-<input type="hidden" name="repeatmerged" value="$param{repeatmerged}">
-<input type="hidden" name="archive" value="$param{archive}">
-<input type="hidden" name="sortby" value="$param{sortby}">
+<input type="hidden" name="skip" value="{html_escape($param{skip})}">
+<input type="hidden" name="max_results" value="{html_escape($param{max_results})}">
+<input type="hidden" name="indexon" value="{html_escape($param{indexon})}">
+<input type="hidden" name="repeatmerged" value="{html_escape($param{repeatmerged})}">
+<input type="hidden" name="archive" value="{html_escape($param{archive})}">
+<input type="hidden" name="sortby" value="{html_escape($param{sortby})}">
 { my $output = '';
 if (defined $param{first}) {
     $output .= qq(<input type="hidden" name="first" value=").html_escape($param{first}).qq(">\n);
