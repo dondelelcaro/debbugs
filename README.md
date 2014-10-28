@@ -122,7 +122,8 @@ Feature patches can also be emailed to the maintaining list at
 
 #### Website ####
 
-
+   * [Code](https://bugs.debian.org/debbugs-source/debbugs.git/)
+   * [Debbugs Team](https://wiki.debian.org/Teams/Debbugs|Debbugs Team)
 
 ### Copyright and Lack-of-Warranty Notice ###
 
