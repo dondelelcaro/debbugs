@@ -71,6 +71,44 @@ this: "package       maintainer name <e-mail@address>".
 If you need a template, look in /usr/share/doc/debbugs/examples/ directory.
 
 =============================================================================
+CONTRIBUTING TO DEBBUGS
+=============================================================================
+
+Getting the Source Code
+
+Debbugs is managed in git. You can clone the repository into your local workspace as follows:
+
+git clone http://bugs-master.debian.org/debbugs-source/debbugs.git
+
+Additional branches are available from:
+
+ * http://git.donarmstrong.com/debbugs.git/ (Maintainer: Don Armstrong)
+
+Make a working branch for your code and check it out to start working:
+
+git checkout -b example-branch
+
+Stage and commit your changes using appropriate commit messages
+
+git add example-file
+
+git commit -m "Created an example file to demonstrate basic git commands."
+
+Submitting a Patch
+
+Submitting a patch can be done using git format-patch.
+
+For example 
+
+git format-patch origin/master
+
+Creates .patch files for all commits since the branch diverged from master.
+
+Debbugs bugs are tracked using debbugs (what else). Patches should therefore be attached to the bug report for the issue. This can be done by emailing xxxx@bugs.debian.org (where xxxx is the bug number) with the patches attached. That's a terrible way of saying it, Stoopid.
+ 
+Feature patches can also be emailed to the maintaining list at  debian-debbugs@lists.debian.org
+
+=============================================================================
 FURTHER INFORMATION
 =============================================================================
 
