@@ -307,24 +307,30 @@ unless (%status) {
 
 #$|=1;
 
-my %package;
+
 my @packages = make_list($status{package});
 
-foreach my $pkg (@packages) {
-     if ($pkg =~ /^src\:/) {
-	  my ($srcpkg) = $pkg =~ /^src:(.*)/;
-	  $package{$pkg} = {maintainer => exists($maintainer{$srcpkg}) ? $maintainer{$srcpkg} : '(unknown)',
-			    source     => $srcpkg,
-			    package    => $pkg,
-			    is_source  => 1,
-			   };
-     }
-     else {
-	  $package{$pkg} = {maintainer => exists($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)',
-			    exists($pkgsrc{$pkg}) ? (source => $pkgsrc{$pkg}) : (),
-			    package    => $pkg,
-			   };
-     }
+
+my %packages_affects;
+for my $p_a (qw(package affects)) {
+    foreach my $pkg (make_list($status{$p_a})) {
+        if ($pkg =~ /^src\:/) {
+            my ($srcpkg) = $pkg =~ /^src:(.*)/;
+            $packages_affects{$p_a}{$pkg} =
+               {maintainer => exists($maintainer{$srcpkg}) ? $maintainer{$srcpkg} : '(unknown)',
+                source     => $srcpkg,
+                package    => $pkg,
+                is_source  => 1,
+               };
+        }
+        else {
+            $packages_affects{$p_a}{$pkg} =
+               {maintainer => exists($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)',
+                exists($pkgsrc{$pkg}) ? (source => $pkgsrc{$pkg}) : (),
+                package    => $pkg,
+               };
+        }
+    }
 }
 
 # fixup various bits of the status
@@ -387,7 +393,8 @@ print $q->header(-type => "text/html",
 
 print fill_in_template(template => 'cgi/bugreport',
 		       variables => {status => \%status,
-				     package => \%package,
+				     package => $packages_affects{'package'},
+				     affects => $packages_affects{'affects'},
 				     log           => $log,
 				     bug_num       => $ref,
 				     version_graph => $version_graph,

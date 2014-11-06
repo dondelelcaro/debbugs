@@ -26,6 +26,7 @@ debbugs (2.4.2~exp2) UNRELEASED; urgency=low
   * Add reply links to individual bug messages with headers (closes:
     #412815). Thanks to martin krafft, Paul Wise, and Julien Valroff.
   * Fix XSS in version.cgi, thanks to Vlad Constantin (Closes: #762967).
+  * Add affects to bugreport.cgi package info header (Closes: #609687).
 
   [Thanks to Arnout Engelen: ]
   * Add Homepage (closes: #670555).
