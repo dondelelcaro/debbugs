@@ -41,7 +41,7 @@ use Debbugs::UTF8;
 use Debbugs::Config qw(:config);
 use POSIX qw(strftime);
 use Encode qw(decode_utf8 encode_utf8);
-use URI::Escape qw(uri_escape);
+use URI::Escape qw(uri_escape_utf8);
 use Scalar::Util qw(blessed);
 
 BEGIN{
@@ -452,7 +452,7 @@ sub handle_record{
           my $r_l = reply_headers($entity);
           $output .= q(<a href=").
               html_escape('mailto:'.$bug_number.'@'.$config{email_domain}.'?'.
-                          join('&',map {defined $r_l->{$_}?$_.'='.uri_escape($r_l->{$_}):()} keys %{$r_l})).
+                          join('&',map {defined $r_l->{$_}?$_.'='.uri_escape_utf8($r_l->{$_}):()} keys %{$r_l})).
                               qq(">reply</a>);
 
           $output .= ')'.":</p>\n";
@@ -475,7 +475,7 @@ sub __libravatar_url {
         return undef;
     }
     ($email) = get_addresses($email);
-    return $config{libravatar_uri}.uri_escape($email.($config{libravatar_uri_options}//''));
+    return $config{libravatar_uri}.uri_escape_utf8($email.($config{libravatar_uri_options}//''));
 }
 
 
