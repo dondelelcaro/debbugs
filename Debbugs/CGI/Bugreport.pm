@@ -474,7 +474,7 @@ sub __libravatar_url {
     if (not defined $config{libravatar_uri} or not length $config{libravatar_uri}) {
         return undef;
     }
-    ($email) = get_addresses($email);
+    ($email) = grep {/\@/} get_addresses($email);
     return $config{libravatar_uri}.uri_escape_utf8($email.($config{libravatar_uri_options}//''));
 }
 
