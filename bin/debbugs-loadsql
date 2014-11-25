@@ -213,66 +213,41 @@ sub add_bugs {
 
     my $time = 0;
     my $start_time = time;
-
-
-    my @dirs = (@{$argv}?@{$argv} : $initialdir);
-    my $cnt = 0;
     my %tags;
     my %severities;
     my %queue;
-    my $tot_dirs = @{$argv}? @{$argv} : 0;
-    my $done_dirs = 0;
-    my $avg_subfiles = 0;
-    my $completed_files = 0;
-    while (my $dir = shift @dirs) {
-        printf "Doing dir %s ...\n", $dir if $verbose;
 
-        opendir(DIR, "$dir/.") or die "opendir $dir: $!";
-        my @subdirs = readdir(DIR);
-        closedir(DIR);
-
-        my @list = map { m/^(\d+)\.summary$/?($1):() } @subdirs;
-        $tot_dirs -= @dirs;
-        push @dirs, map { m/^(\d+)$/ && -d "$dir/$1"?("$dir/$1"):() } @subdirs;
-        $tot_dirs += @dirs;
-        if ($avg_subfiles == 0) {
-            $avg_subfiles = @list;
-        }
-
-        $p->target($avg_subfiles*($tot_dirs-$done_dirs)+$completed_files+@list) if $p;
-        $avg_subfiles = ($avg_subfiles * $done_dirs + @list) / ($done_dirs+1);
-        $done_dirs += 1;
-
-        for my $bug (@list) {
-            $completed_files++;
-            $p->update($completed_files) if $p;
-            print "Up to $cnt bugs...\n" if (++$cnt % 100 == 0 && $verbose);
-            my $stat = stat(getbugcomponent($bug,'summary',$initialdir));
-            if (not defined $stat) {
-                print STDERR "Unable to stat $bug $!\n";
-                next;
-            }
-            if ($options{quick}) {
-                my $rs = $s->resultset('Bug')->search({bug=>$bug})->single();
-                next if defined $rs and $stat->mtime < $rs->last_modified()->epoch();
-            }
-            my $data = read_bug(bug => $bug,
-                                location => $initialdir);
-            eval {
-                load_bug(db => $s,
-                         data => split_status_fields($data),
-                         tags => \%tags,
-                         severities => \%severities,
-                         queue => \%queue);
-            };
-            if ($@) {
-                use Data::Dumper;
-                print STDERR Dumper($data) if $DEBUG;
-                die "failure while trying to load bug $bug\n$@";
-            }
-        }
-    }
-    $p->remove() if $p;
+    walk_bugs([(@{$argv}?@{$argv} : $initialdir)],
+              $p,
+              'summary',
+              $verbose,
+              sub {
+                  my $bug = shift;
+                  my $stat = stat(getbugcomponent($bug,'summary',$initialdir));
+                  if (not defined $stat) {
+                      print STDERR "Unable to stat $bug $!\n";
+                      next;
+                  }
+                  if ($options{quick}) {
+                      my $rs = $s->resultset('Bug')->search({bug=>$bug})->single();
+                      next if defined $rs and $stat->mtime < $rs->last_modified()->epoch();
+                  }
+                  my $data = read_bug(bug => $bug,
+                                      location => $initialdir);
+                  eval {
+                      load_bug(db => $s,
+                               data => split_status_fields($data),
+                               tags => \%tags,
+                               severities => \%severities,
+                               queue => \%queue);
+                  };
+                  if ($@) {
+                      use Data::Dumper;
+                      print STDERR Dumper($data) if $DEBUG;
+                      die "failure while trying to load bug $bug\n$@";
+                  }
+              }
+             );
     handle_load_bug_queue(db => $s,
                           queue => \%queue);
 }
@@ -418,6 +393,38 @@ sub add_configuration {
 
 sub add_logs {
     my ($options,$opts,$p,$config,$argv) = @_;
+
+    chdir($config->{spool_dir}) or
+        die "chdir $config->{spool_dir} failed: $!";
+
+    my $verbose = $options->{debug};
+
+    my $initialdir = "db-h";
+
+    if (defined $argv->[0] and $argv->[0] eq "archive") {
+        $initialdir = "archive";
+    }
+    my $s = db_connect($options);
+
+
+    my $time = 0;
+    my $start_time = time;
+
+    walk_bugs([(@{$argv}?@{$argv} : $initialdir)],
+              $p,
+              'log',
+              $verbose,
+              sub {
+                  my $bug = shift;
+                  eval { 
+                      load_bug_log(db => $s,
+                                   bug => $bug);
+                  };
+                  if ($@) {
+                      die "failure while trying to load bug log $bug\n$@";
+                  }
+              });
+
 }
 
 sub handle_subcommand_arguments {
@@ -459,6 +466,42 @@ sub db_connect {
     # properly here.
     my $s = Debbugs::DB->connect('dbi:Pg:service='.$options->{service}) or
         die "Unable to connect to database: ";
+}
+
+sub walk_bugs {
+    my ($dirs,$p,$what,$verbose,$sub) = @_;
+    my @dirs = @{$dirs};
+    my $tot_dirs = @dirs;
+    my $done_dirs = 0;
+    my $avg_subfiles = 0;
+    my $completed_files = 0;
+    while (my $dir = shift @dirs) {
+        printf "Doing dir %s ...\n", $dir if $verbose;
+
+        opendir(DIR, "$dir/.") or die "opendir $dir: $!";
+        my @subdirs = readdir(DIR);
+        closedir(DIR);
+
+        my @list = map { m/^(\d+)\.$what$/?($1):() } @subdirs;
+        $tot_dirs -= @dirs;
+        push @dirs, map { m/^(\d+)$/ && -d "$dir/$1"?("$dir/$1"):() } @subdirs;
+        $tot_dirs += @dirs;
+        if ($avg_subfiles == 0) {
+            $avg_subfiles = @list;
+        }
+
+        $p->target($avg_subfiles*($tot_dirs-$done_dirs)+$completed_files+@list) if $p;
+        $avg_subfiles = ($avg_subfiles * $done_dirs + @list) / ($done_dirs+1);
+        $done_dirs += 1;
+
+        for my $bug (@list) {
+            $completed_files++;
+            $p->update($completed_files) if $p;
+            print "Up to $completed_files bugs...\n" if ($completed_files % 100 == 0 && $verbose);
+            $sub->($bug);
+        }
+    }
+    $p->remove() if $p;
 }
 
 
