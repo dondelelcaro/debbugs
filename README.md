@@ -4,6 +4,9 @@
 
 ********************************
 
+### What is Debbugs ###
+Debbugs is a stable, scaleable bug reporting and issue tracking system. Debbugs has a web interface for viewing and searching issues in the database but unlike other bug tracking systems, Debbugs has no web interface for editing bug reports - all modification is done via email.
+
 ### Developers ###
 
 This bug tracking system was developed by Ian Jackson from 1994-1997,
