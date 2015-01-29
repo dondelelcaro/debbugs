@@ -3,6 +3,12 @@
 # You *must* edit it in order for debbugs to work.
 # $Id: config.in,v 1.23 2005/07/17 19:07:01 cjwatson Exp $
 
+$gConfigDir = "/etc/debbugs";				# directory where this file is
+$gSpoolDir = "/var/lib/debbugs/spool";			# working directory
+$gIncomingDir = "incoming";				# unprocessed e-mails
+$gWebDir = "/var/lib/debbugs/www";			# base location of web pages
+$gDocDir = "/var/lib/debbugs/www/txt";			# location of text doc files
+
 # Domains
 $gEmailDomain = "bugs.something";			# e.g. bugs.debian.org
 $gListDomain = "lists.something";			# e.g. lists.debian.org
@@ -43,11 +49,7 @@ $gMirrorList = "bug-mirrors-list";		# sends to all mirrors
 
 # Various configurable options
 $gMailer = "exim";				# valid: exim, qmail and sendmail
-$gBug = "bug";					# how to spell `bug'
-$gBugs = "bugs";				# how to spell `bugs'
-$gRemoveAge = 28;				# days after closed bugs are cleaned out,
-						# 0 disables
-$gSaveOldBugs = 1;				# whether to archive such bugs
+
 $gDefaultSeverity = "normal";
 $gShowSeverities = "critical, grave, normal, minor, wishlist";
 @gStrongSeverities = ( 'critical', 'grave' );
@@ -58,16 +60,6 @@ $gShowSeverities = "critical, grave, normal, minor, wishlist";
                       'wishlist', "Wishlist items" );
 @gTags = ( 'patch', 'wontfix', 'moreinfo', 'unreproducible', 'fixed', 'stable' );
 
-# better don't change this
-$gBounceFroms = "^mailer|^da?emon|^post.*mast|^root|^wpuser|^mmdf|^smt.*|^mrgate|^vmmail|^mail.*system|^uucp|-maiser-|^mal\@|^mail.*agent|^tcpmail|^bitmail|^mailman";
-
-# Directories -- do _not_ change their locations.
-# They are currently hardcoded, variables are here for future expansion.
-$gConfigDir = "/etc/debbugs";				# directory where this file is
-$gSpoolDir = "/var/lib/debbugs/spool";			# working directory
-$gIncomingDir = "incoming";				# unprocessed e-mails
-$gWebDir = "/var/lib/debbugs/www";			# base location of web pages
-$gDocDir = "/var/lib/debbugs/www/txt";			# location of text doc files
 
 # Required data files
 $gMaintainerFile = "$gConfigDir/Maintainers";
@@ -75,11 +67,5 @@ $gMaintainerFileOverride = "$gConfigDir/Maintainers.override";
 $gPseudoDescFile = "$gConfigDir/pseudo-packages.description";
 $gPackageSource = "$gConfigDir/indices/sources";
 
-
-# Estraier Configuration
-%gSearchEstraier = (url  => 'http://localhost:1978/node/bts1',
-		    user => 'user',
-		    pass => 'pass',
-		   );
 
 1;
