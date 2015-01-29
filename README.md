@@ -7,17 +7,7 @@
 ### What is Debbugs ###
 Debbugs is a stable, scaleable bug reporting and issue tracking system. Debbugs has a web interface for viewing and searching issues in the database but unlike other bug tracking systems, Debbugs has no web interface for editing bug reports - all modification is done via email.
 
-### Developers ###
-
-This bug tracking system was developed by Ian Jackson from 1994-1997,
-with assistance from nCipher Corporation Limited in 1997.  nCipher allowed
-Ian to redistribute modifications he made to the system while working as an
-employee of nCipher.
-
-Since then, it has been developed by the various administrators of
-bugs.debian.org, including Darren Benham, Adam Heath, Josip Rodin, Anthony
-Towns, and Colin Watson.  As in the case of Ian, nCipher allowed Colin to
-redistribute modifications he made while working as an employee of nCipher.
+The most notable deployment of Debbugs is on the [Debian project](https://www.debian.org/Bugs/)
 
 ### System Requirements ###
 
@@ -73,9 +63,7 @@ follows:
 
 If you need a template, look in `/usr/share/doc/debbugs/examples/` directory.
 
-### Contributing to Debbugs ###
-
-#### Getting the Source Code ####
+### Where do I get the Source? ###
 
 Debbugs is managed in git. You can clone the repository into your local
 workspace as follows:
@@ -85,6 +73,15 @@ workspace as follows:
 Additional branches are available from:
 
  * [Don Armstrong](http://git.donarmstrong.com/debbugs.git/)
+
+### How do I contribute to Debbugs? ###
+ 
+#### Debbugs for Debbugs ####
+
+Debbugs bugs are tracked using Debbugs. The web interface is available:
+[Debbugs bugs](https://bugs.debian.org/cgi-bin/pkgreport.cgi?repeatmerged=no&src=debbugs)
+
+#### Start contributing ####
 
 Make a working branch for your code and check it out to start working:
 
@@ -113,7 +110,7 @@ attached to the bug report for the issue. This can be done by emailing the
 Feature patches can also be emailed to the maintaining list at 
 [Debugs mailing list](debian-debbugs@lists.debian.org)
 
-### Further Information ###
+### Further Information and Assistance ###
 
 #### Email ####
 
@@ -127,6 +124,22 @@ Feature patches can also be emailed to the maintaining list at
 
    * [Code](https://bugs.debian.org/debbugs-source/debbugs.git/)
    * [Debbugs Team](https://wiki.debian.org/Teams/Debbugs|Debbugs Team)
+
+#### IRC ####
+
+Join the #debbugs channel on [OFTC](irc.oftc.net)
+
+### Developers ###
+
+This bug tracking system was developed by Ian Jackson from 1994-1997,
+with assistance from nCipher Corporation Limited in 1997. nCipher allowed
+Ian to redistribute modifications he made to the system while working as an
+employee of nCipher.
+
+Since then, it has been developed by the various administrators of
+bugs.debian.org, including Darren Benham, Adam Heath, Josip Rodin, Anthony
+Towns, and Colin Watson. As in the case of Ian, nCipher allowed Colin to
+redistribute modifications he made while working as an employee of nCipher.
 
 ### Copyright and Lack-of-Warranty Notice ###
 
