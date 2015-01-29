@@ -26,43 +26,6 @@ The most notable deployment of Debbugs is on the [Debian project](https://www.de
  * Somewhere to run CGI scripts (unless you don't need the web forms for
    searching for bugs by number, package, maintainer or submitter).
 
-### Installation Instructions ###
-
-Install the Debian package and read `/usr/share/doc/debbugs/README.Debian` file.
-
-If you can't use the `.deb`, do the following:
-
-1. Run `make install` from the source directory.
-
-2. Edit the config files in `/etc/debbugs/` directory to suit your needs.
-   Re-run debbugsconfig when you're finished to regenerate the documentation.
-
-3. Set up the mail arrangements to deliver mail to the right place, and to set
-   up a blackhole mail alias if you need one.  Ensure that `owner@bugs`, the
-   address of the BTS owner, if that's what you're using, is handled by the MTA.
-   All other email should be piped into the receive script.
-
-4. Set up your HTTP server to point people looking for bug reports to
-   `/var/lib/debbugs/www` and set `/var/lib/debbugs/www/cgi` as a valid CGI
-   directory.
-
-5. Test things a bit, by sending mail messages to the bug system and running
-   `/usr/lib/debbugs/processall` and/or `/usr/lib/debbugs/rebuild`.  The latter
-   updates index files used by the CGI scripts.  If you're feeling brave, you
-   can link `/var/lib/debbugs/spool/index.db` to `index.db.realtime` and
-   `.../index.archive` to `index.archive.realtime` to remove the need for the
-   rebuild script; this is still semi-experimental.
-
-6. If all seems well then install the crontab from
-   `/usr/share/doc/debbugs/examples/crontab`.
-
-Note that each line of `/etc/debbugs/Maintainers` file needs to be formatted as
-follows: 
-
-    package    maintainer name <email@address>
-
-If you need a template, look in `/usr/share/doc/debbugs/examples/` directory.
-
 ### Where do I get the Source? ###
 
 Debbugs is managed in git. You can clone the repository into your local
@@ -73,6 +36,156 @@ workspace as follows:
 Additional branches are available from:
 
  * [Don Armstrong](http://git.donarmstrong.com/debbugs.git/)
+
+### Installation Instructions ###
+
+Install the Debian package and read `/usr/share/doc/debbugs/README.Debian` file.
+
+If you can't use the `.deb`, do the following:
+
+1.  Clone the repo
+
+        git clone http://bugs-master.debian.org/debbugs-source/debbugs.git
+
+2.  Create version and spool directory
+
+        cd
+        mkdir version spool
+
+3.  Retrieve a partial database of bugs for testing
+
+    Optional - It is useful to have some bugs in the database for testing our new Debbugs instance.
+
+    1. Get a list of rsync targets from Debbugs
+
+           rsync --list-only rsync://bugs-mirror.debian.org
+
+    2. Grab bugs ending in 00
+
+           mkdir -p splool/db-h/00;
+           cd spool/db-h;
+           rsync -av rsync://bugs-mirror.debian.org/bts-spool-db/00 .;
+
+4.  Retrieve bts-versions directory for testing purposes
+
+    Optional - Required for testing using test database retrieved at 3.
+
+    1. Pull versions directory
+
+           cd
+           rsync -av rsync://bugs-mirror.debian.org/bts-versions/ versions/
+
+    2. Pull index directory
+
+           rsync -av rsync://bugs-mirror.debian.org/bts-spool-index index
+
+5.  Configure Debbugs config
+
+    1. Create a config directory for Debbugs
+
+           sudo mkdir /etc/debbugs
+
+    2. Copy sample configuration to config directory
+
+           sudo cp ~/debbugs/scripts/config.debian /etc/debbugs/config
+
+    3. Update the following variables
+       * $gConfigDir
+       * $gSpoolDir
+       * $gIndicesDir
+       * $gWebDir
+       * $gDocDir
+
+             70,72c70,72
+             < $gConfigDir = "/org/bugs.debian.org/etc"; # directory where this file is
+             < $gSpoolDir = "/org/bugs.debian.org/spool"; # working directory
+             < $gIndicesDir = "/org/bugs.debian.org/indices"; # directory where the indices are
+          ---
+             > $gConfigDir = "/etc/debbugs"; # directory where this file is
+             > $gSpoolDir = "/home/opw/spool"; # working directory
+             > $gIndicesDir = "/home/opw/spool/indices"; # directory where the indices are
+
+             74,75c74,75
+             < $gWebDir = "/org/bugs.debian.org/www"; # base location of web pages
+             < $gDocDir = "/org/ftp.debian.org/ftp/doc"; # location of text doc files
+          ---
+             > $gWebDir = "/home/opw/debbugs/html"; # base location of web pages
+             > $gDocDir = "/home/opw/debbugs/doc"; # location of text doc files
+
+6.  Configure Webserver
+
+    1. Copy example apache config
+
+           sudo cp $HOME/debbugs/examples/apache.conf  /etc/apache2/sites-available/debbugs.conf
+
+    2. Update the directory entries and the following variables
+       * DocumentRoot
+       * ScriptAlias
+
+             5c5
+             < DocumentRoot /var/lib/debbugs/www/
+          ---
+             > DocumentRoot /home/opw/debbugs/html/
+             10c10
+             < <Directory /var/lib/debbugs/www>
+          ---
+             > <Directory /home/opw/debbugs/html>
+             16,17c16,17
+             < ScriptAlias /cgi-bin/ /var/lib/debbugs/www/cgi/
+             < <Directory "/var/lib/debbugs/www/cgi/">
+          ---
+             > ScriptAlias /cgi-bin/ /home/opw/debbugs/cgi/
+             > <Directory "/home/opw/debbugs/cgi/">
+    
+    3. Enable required apache mods
+       
+           sudo a2enmod rewrite
+           sudo a2enmod cgid
+    
+    4. Install site
+       
+           sudo a2ensite debbugs
+           
+7. Install dependencies
+
+       sudo apt-get install libmailtools-perl ed libmime-tools-perl libio-stringy-perl libmldbm-perl liburi-perl libsoap-lite-perl libcgi-simple-perl libparams-validate-perl libtext-template-perl libsafe-hole-perl libmail-rfc822-address-perl liblist-moreutils-perl libtext-template-perl libfile-libmagic-perl libgravatar-url-perl libwww-perl imagemagick libapache2-mod-perl2
+       
+8. Set up libraries
+   
+    1. Create symlinks to link source to their expected locations
+       
+       sudo mkdir -p /usr/local/lib/site_perl
+       sudo ln -s /home/opw/debbugs/Debbugs /usr/local/lib/site_perl/
+    
+       sudo mkdir -p /usr/share/debbugs/
+       sudo ln -s /home/opw/debbugs/templates /usr/share/debbugs/
+
+9. Create required files
+       
+    1. Create files
+    
+           touch /etc/debbugs/pseudo-packages.description
+           touch /etc/debbugs/Source_maintainers
+           touch /etc/debbugs/pseudo-packages.maintainers
+           touch /etc/debbugs/Maintainers
+           touch /etc/debbugs/Maintainers.override
+           mkdir /etc/debbugs/indices
+           touch /etc/debbugs/indices/sources
+       
+    2. Test
+    
+           cd $HOME/debbugs
+           perl -c cgi/bugreport.cgi
+           REQUEST_METHOD=GET QUERY_STRING="bug=775300" perl cgi/bugreport.cgi; 
+
+10. Install MTA. See README.mail for details.
+
+Note that each line of `/etc/debbugs/Maintainers` file needs to be formatted as
+follows: 
+
+    package    maintainer name <email@address>
+
+If you need a template, look in `/usr/share/doc/debbugs/examples/` directory.
 
 ### How do I contribute to Debbugs? ###
  
