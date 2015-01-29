@@ -90,27 +90,29 @@ If you can't use the `.deb`, do the following:
             sudo cp ~/debbugs/scripts/config.debian /etc/debbugs/config
 
     3. Update the following variables
-       * $gConfigDir
-       * $gSpoolDir
-       * $gIndicesDir
-       * $gWebDir
-       * $gDocDir
+		* $gConfigDir
+		* $gSpoolDir
+		* $gIndicesDir
+		* $gWebDir
+		* $gDocDir
+	
+	   as follows:
 
-               70,72c70,72
-               < $gConfigDir = "/org/bugs.debian.org/etc"; # directory where this file is
-               < $gSpoolDir = "/org/bugs.debian.org/spool"; # working directory
-               < $gIndicesDir = "/org/bugs.debian.org/indices"; # directory where the indices are
-           ---
-               > $gConfigDir = "/etc/debbugs"; # directory where this file is
-               > $gSpoolDir = "/home/opw/spool"; # working directory
-               > $gIndicesDir = "/home/opw/spool/indices"; # directory  where the indices are
-
-               74,75c74,75
-               < $gWebDir = "/org/bugs.debian.org/www"; # base location of web pages
-               < $gDocDir = "/org/ftp.debian.org/ftp/doc"; # location of text doc files
-           ---
-               > $gWebDir = "/home/opw/debbugs/html"; # base location of web pages
-               > $gDocDir = "/home/opw/debbugs/doc"; # location of text doc files
+			70,72c70,72
+			< $gConfigDir = "/org/bugs.debian.org/etc"; # directory where this file is
+			< $gSpoolDir = "/org/bugs.debian.org/spool"; # working directory
+			< $gIndicesDir = "/org/bugs.debian.org/indices"; # directory where the indices are
+			---
+			> $gConfigDir = "/etc/debbugs"; # directory where this file is
+			> $gSpoolDir = "/path/to/directory/spool"; # working directory
+			> $gIndicesDir = "/path/to/directory/spool/indices"; # directory  where the indices are
+			
+			74,75c74,75
+			< $gWebDir = "/org/bugs.debian.org/www"; # base location of web pages
+			< $gDocDir = "/org/ftp.debian.org/ftp/doc"; # location of text doc files
+			---
+			> $gWebDir = "/path/to/directory/debbugs/html"; # base location of web pages
+			> $gDocDir = "/path/to/directory/debbugs/doc"; # location of text doc files
 
 6.  Configure Webserver
 
@@ -118,24 +120,24 @@ If you can't use the `.deb`, do the following:
 
             sudo cp $HOME/debbugs/examples/apache.conf  /etc/apache2/sites-available/debbugs.conf
 
-    2. Update the directory entries and the following variables
-       * DocumentRoot
-       * ScriptAlias
+    2. Update the directory entries and the DocumentRoot and ScriptAlias variables
 
-              5c5
-              < DocumentRoot /var/lib/debbugs/www/
-          ---
-              > DocumentRoot /home/opw/debbugs/html/
-              10c10
-              < <Directory /var/lib/debbugs/www>
-          ---
-              > <Directory /home/opw/debbugs/html>
-              16,17c16,17
-              < ScriptAlias /cgi-bin/ /var/lib/debbugs/www/cgi/
-              < <Directory "/var/lib/debbugs/www/cgi/">
-          ---
-              > ScriptAlias /cgi-bin/ /home/opw/debbugs/cgi/
-              > <Directory "/home/opw/debbugs/cgi/">
+		    5c5
+		    < DocumentRoot /var/lib/debbugs/www/
+			---
+		    > DocumentRoot /path/to/directory/debbugs/html/
+		
+		    10c10
+		    < <Directory /var/lib/debbugs/www>
+			---
+		    > <Directory /path/to/directory/debbugs/html>
+		
+		    16,17c16,17
+		    < ScriptAlias /cgi-bin/ /var/lib/debbugs/www/cgi/
+		    < <Directory "/var/lib/debbugs/www/cgi/">
+			---
+		    > ScriptAlias /cgi-bin/ /path/to/directory/debbugs/cgi/
+		    > <Directory "/path/to/directory/debbugs/cgi/">
     
     3. Enable required apache mods
        
@@ -154,11 +156,11 @@ If you can't use the `.deb`, do the following:
    
     1. Create symlinks to link source to their expected locations
        
-        sudo mkdir -p /usr/local/lib/site_perl
-        sudo ln -s /home/opw/debbugs/Debbugs /usr/local/lib/site_perl/
+			sudo mkdir -p /usr/local/lib/site_perl
+			sudo ln -s /path/to/directory/debbugs/Debbugs /usr/local/lib/site_perl/
     
-        sudo mkdir -p /usr/share/debbugs/
-        sudo ln -s /home/opw/debbugs/templates /usr/share/debbugs/
+			sudo mkdir -p /usr/share/debbugs/
+			sudo ln -s /path/to/directory/debbugs/templates /usr/share/debbugs/
 
 9. Create required files
        
