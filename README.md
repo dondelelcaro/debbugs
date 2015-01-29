@@ -4,7 +4,8 @@
 
 ********************************
 
-### What is Debbugs ###
+### What is Debbugs? ###
+
 Debbugs is a stable, scaleable bug reporting and issue tracking system. Debbugs has a web interface for viewing and searching issues in the database but unlike other bug tracking systems, Debbugs has no web interface for editing bug reports - all modification is done via email.
 
 The most notable deployment of Debbugs is on the [Debian project](https://www.debian.org/Bugs/)
@@ -31,7 +32,7 @@ The most notable deployment of Debbugs is on the [Debian project](https://www.de
 Debbugs is managed in git. You can clone the repository into your local
 workspace as follows:
 
-    git clone http://bugs-master.debian.org/debbugs-source/debbugs.git
+        git clone http://bugs-master.debian.org/debbugs-source/debbugs.git
 
 Additional branches are available from:
 
@@ -54,8 +55,6 @@ If you can't use the `.deb`, do the following:
 
 3.  Optional - Retrieve a partial database of bugs for testing
 
-    It's useful to have some bugs in the database for testing our new Debbugs instance.
-
     1. Get a list of rsync targets from Debbugs
 
             rsync --list-only rsync://bugs-mirror.debian.org
@@ -68,11 +67,10 @@ If you can't use the `.deb`, do the following:
 
 4.  Optional - Retrieve bts-versions directory for testing purposes
 
-    Required for testing using test database retrieved at 3.
+    The database obtained in step 3 requires associated version and index information.
 
     1. Pull versions directory
 
-            cd
             rsync -av rsync://bugs-mirror.debian.org/bts-versions/ versions/
 
     2. Pull index directory
@@ -118,7 +116,7 @@ If you can't use the `.deb`, do the following:
 
     1. Copy example apache config
 
-            sudo cp $HOME/debbugs/examples/apache.conf  /etc/apache2/sites-available/debbugs.conf
+            sudo cp /path/to/directory/debbugs/examples/apache.conf  /etc/apache2/sites-available/debbugs.conf
 
     2. Update the directory entries and the DocumentRoot and ScriptAlias variables
 
@@ -148,6 +146,10 @@ If you can't use the `.deb`, do the following:
        
             sudo a2ensite debbugs
             
+    5. Reload apache
+    
+			sudo service apache2 reload
+            
 7. Install dependencies
 
         sudo apt-get install libmailtools-perl ed libmime-tools-perl libio-stringy-perl libmldbm-perl liburi-perl libsoap-lite-perl libcgi-simple-perl libparams-validate-perl libtext-template-perl libsafe-hole-perl libmail-rfc822-address-perl liblist-moreutils-perl libtext-template-perl libfile-libmagic-perl libgravatar-url-perl libwww-perl imagemagick libapache2-mod-perl2
@@ -176,7 +178,7 @@ If you can't use the `.deb`, do the following:
        
     2. Test
     
-            cd $HOME/debbugs
+            cd /path/to/directory/debbugs
             perl -c cgi/bugreport.cgi
             REQUEST_METHOD=GET QUERY_STRING="bug=775300" perl cgi/bugreport.cgi; 
 
@@ -191,22 +193,22 @@ If you need a template, look in `/usr/share/doc/debbugs/examples/` directory.
 
 ### How do I contribute to Debbugs? ###
  
-#### Debbugs for Debbugs ####
+#### Debbugs bugs ####
 
-Debbugs bugs are tracked using Debbugs. The web interface is available:
-[Debbugs bugs](https://bugs.debian.org/cgi-bin/pkgreport.cgi?repeatmerged=no&src=debbugs)
+Bugs in debbugs are tracked on the Debian bugtracker. The web interface is available at
+[bugs.debian.org](https://bugs.debian.org/cgi-bin/pkgreport.cgi?repeatmerged=no&src=debbugs)
 
 #### Start contributing ####
 
 Make a working branch for your code and check it out to start working:
 
-    git checkout -b example-branch
+        git checkout -b example-branch
 
 Stage and commit your changes using appropriate commit messages
 
-    git add example-file
+        git add example-file
 
-    git commit -m "Created an example file to demonstrate basic git commands."
+        git commit -m "Created an example file to demonstrate basic git commands."
 
 #### Submitting a Patch ####
 
@@ -214,7 +216,7 @@ Submitting a patch can be done using git format-patch.
 
 For example
 
-    git format-patch origin/master
+        git format-patch origin/master
 
 Creates `.patch` files for all commits since the branch diverged from master.
 
@@ -238,11 +240,11 @@ Feature patches can also be emailed to the maintaining list at
 #### Website ####
 
    * [Code](https://bugs.debian.org/debbugs-source/debbugs.git/)
-   * [Debbugs Team](https://wiki.debian.org/Teams/Debbugs|Debbugs Team)
+   * [Debbugs Team](https://wiki.debian.org/Teams/Debbugs)
 
 #### IRC ####
 
-Join the #debbugs channel on [OFTC](irc.oftc.net)
+Join the `#debbugs` channel on `irc.oftc.net`
 
 ### Developers ###
 
@@ -252,7 +254,7 @@ Ian to redistribute modifications he made to the system while working as an
 employee of nCipher.
 
 Since then, it has been developed by the various administrators of
-bugs.debian.org, including Darren Benham, Adam Heath, Josip Rodin, Anthony
+`bugs.debian.org`, including Darren Benham, Adam Heath, Josip Rodin, Anthony
 Towns, and Colin Watson. As in the case of Ian, nCipher allowed Colin to
 redistribute modifications he made while working as an employee of nCipher.
 
