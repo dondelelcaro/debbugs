@@ -52,9 +52,9 @@ If you can't use the `.deb`, do the following:
         cd
         mkdir version spool
 
-3.  Retrieve a partial database of bugs for testing
+3.  Optional - Retrieve a partial database of bugs for testing
 
-    Optional - It is useful to have some bugs in the database for testing our new Debbugs instance.
+    It's useful to have some bugs in the database for testing our new Debbugs instance.
 
     1. Get a list of rsync targets from Debbugs
 
@@ -66,9 +66,9 @@ If you can't use the `.deb`, do the following:
             cd spool/db-h;
             rsync -av rsync://bugs-mirror.debian.org/bts-spool-db/00 .;
 
-4.  Retrieve bts-versions directory for testing purposes
+4.  Optional - Retrieve bts-versions directory for testing purposes
 
-    Optional - Required for testing using test database retrieved at 3.
+    Required for testing using test database retrieved at 3.
 
     1. Pull versions directory
 
@@ -96,21 +96,21 @@ If you can't use the `.deb`, do the following:
        * $gWebDir
        * $gDocDir
 
-              70,72c70,72
-              < $gConfigDir = "/org/bugs.debian.org/etc"; # directory where this file is
-              < $gSpoolDir = "/org/bugs.debian.org/spool"; # working directory
-              < $gIndicesDir = "/org/bugs.debian.org/indices"; # directory where the indices are
-          ---
-              > $gConfigDir = "/etc/debbugs"; # directory where this file is
-              > $gSpoolDir = "/home/opw/spool"; # working directory
-              > $gIndicesDir = "/home/opw/spool/indices"; # directory  where the indices are
+               70,72c70,72
+               < $gConfigDir = "/org/bugs.debian.org/etc"; # directory where this file is
+               < $gSpoolDir = "/org/bugs.debian.org/spool"; # working directory
+               < $gIndicesDir = "/org/bugs.debian.org/indices"; # directory where the indices are
+           ---
+               > $gConfigDir = "/etc/debbugs"; # directory where this file is
+               > $gSpoolDir = "/home/opw/spool"; # working directory
+               > $gIndicesDir = "/home/opw/spool/indices"; # directory  where the indices are
 
-              74,75c74,75
-              < $gWebDir = "/org/bugs.debian.org/www"; # base location of web pages
-              < $gDocDir = "/org/ftp.debian.org/ftp/doc"; # location of text doc files
-          ---
-              > $gWebDir = "/home/opw/debbugs/html"; # base location of web pages
-              > $gDocDir = "/home/opw/debbugs/doc"; # location of text doc files
+               74,75c74,75
+               < $gWebDir = "/org/bugs.debian.org/www"; # base location of web pages
+               < $gDocDir = "/org/ftp.debian.org/ftp/doc"; # location of text doc files
+           ---
+               > $gWebDir = "/home/opw/debbugs/html"; # base location of web pages
+               > $gDocDir = "/home/opw/debbugs/doc"; # location of text doc files
 
 6.  Configure Webserver
 
