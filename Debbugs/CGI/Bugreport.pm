@@ -271,7 +271,7 @@ sub display_entity {
 	 # We don't html escape here because we escape above;
 	 # wierd terminators are because of that
 	 $body =~ s{((?:ftp|http|https|svn|ftps|rsync)://[\S~-]+?/?) # Url
-		    ((?:\&gt\;)?[)]?(?:'|\&\#39\;)?[:.\,]?(?:\s|$)) # terminators
+		    ((?:\&gt\;)?[)]?(?:'|\&\#39\;|\&quot\;)?[:.\,]?(?:\s|$)) # terminators
 	      }{<a href=\"$1\">$1</a>$2}gox;
 	 # Add links to bug closures
 	 $body =~ s[((?:closes|see):\s* # start of closed/referenced bugs
@@ -369,7 +369,8 @@ sub handle_record{
 	  $output .= $text;
 	  # Link to forwarded http:// urls in the midst of the report
 	  # (even though these links already exist at the top)
-	  $output =~ s,((?:ftp|http|https)://[\S~-]+?/?)((?:[\)\'\:\.\,]|\&\#39;)?(?:\s|\.<|$)),<a href=\"$1\">$1</a>$2,go;
+	  $output =~ s,((?:ftp|http|https)://[\S~-]+?/?)((?:[\)\'\:\.\,]|\&\#39;|\&quot\;)?
+                           (?:\s|\.<|$)),<a href=\"$1\">$1</a>$2,gxo;
 	  # Add links to the cloned bugs
 	  $output =~ s{(Bug )(\d+)( cloned as bugs? )(\d+)(?:\-(\d+)|)}{$1.bug_links(bug=>$2).$3.bug_links(bug=>(defined $5)?[$4..$5]:$4)}eo;
 	  # Add links to merged bugs
@@ -386,8 +387,10 @@ sub handle_record{
 		      {$1.$2.(bug_links(bug=>$3)).$4.
 			   english_join([map {bug_links(bug=>$_)} (split /\,?\s+(?:and\s+)?/, $5)])}eo;
 	  # Add links to reassigned packages
-	  $output =~ s{(Bug reassigned from package (?:[\`']|\&\#39;))([^']+?)((?:'|\&\#39;) to (?:[\`']|\&\#39;))([^']+?)((?:'|\&\#39;))}
-	  {$1.q(<a href=").html_escape(package_links(package=>$2)).qq(">$2</a>).$3.q(<a href=").html_escape(package_links(package=>$4)).qq(">$4</a>).$5}eo;
+	  $output =~ s{(Bug\sreassigned\sfrom\spackage\s(?:[\`']|\&\#39;))([^']+?)((?:'|\&\#39;|\&quot\;)
+                               \sto\s(?:[\`']|\&\#39;|\&quot\;))([^']+?)((?:'|\&\#39;|\&quot\;))}
+	  {$1.q(<a href=").html_escape(package_links(package=>$2)).qq(">$2</a>).$3.
+               q(<a href=").html_escape(package_links(package=>$4)).qq(">$4</a>).$5}exo;
 	  if (defined $time) {
 	       $output .= ' ('.strftime('%a, %d %b %Y %T GMT',gmtime($time)).') ';
 	  }

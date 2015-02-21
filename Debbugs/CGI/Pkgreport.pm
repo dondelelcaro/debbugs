@@ -458,35 +458,55 @@ sub pkg_htmlizebugs {
      return $result;
 }
 
+sub parse_order_statement_into_boolean {
+    my ($statement,$status,$tags) = @_;
+
+    if (not defined $tags) {
+        $tags = {map { $_, 1 } split / /, $status->{"tags"}
+                }
+            if defined $status->{"tags"};
+
+    }
+    # replace all + with &&
+    $statement =~ s/\+/&&/g;
+    # replace all , with ||
+    $statement =~ s/,/||/g;
+    $statement =~ s{(?<field>[^\&\|\=]+)=(?<value>[^\&\|\=]+)}
+              {
+                  my $ok = 0;
+                  if ($+{field} eq 'tag') {
+                      $ok = 1 if defined $tags->{$+{value}};
+                  } else {
+                      $ok = 1 if defined $status->{$+{field}} and
+                          $status->{$+{field}} eq $+{value};
+                  }
+                  $ok;
+              }exg;
+    # check that the parsed statement is just valid boolean statements
+    if ($statement =~ /^([01\(\)\&\|]+)$/) {
+        return eval "$statement";
+    } else {
+        # this is an invalid boolean statement
+        return 0;
+    }
+}
+
 sub get_bug_order_index {
      my $order = shift;
      my $status = shift;
-     my $pos = -1;
-
-     my %tags = ();
-     %tags = map { $_, 1 } split / /, $status->{"tags"}
-	  if defined $status->{"tags"};
-
+     my $pos = 0;
+     my $tags = {map { $_, 1 } split / /, $status->{"tags"}
+                }
+         if defined $status->{"tags"};
      for my $el (@${order}) {
-	  $pos++;
-	  my $match = 1;
-	  for my $item (split /[+]/, $el) {
-	       my ($f, $v) = split /=/, $item, 2;
-	       next unless (defined $f and defined $v);
-	       my $isokay = 0;
-	       $isokay = 1 if (defined $status->{$f} and $v eq $status->{$f});
-	       $isokay = 1 if ($f eq "tag" && defined $tags{$v});
-	       unless ($isokay) {
-		    $match = 0;
-		    last;
-	       }
-	  }
-	  if ($match) {
-	       return $pos;
-	       last;
-	  }
+         if (not length $el or
+             parse_order_statement_into_boolean($el,$status,$tags)
+            ) {
+             return $pos;
+         }
+         $pos++;
      }
-     return $pos + 1;
+     return $pos;
 }
 
 # sets: my @names; my @prior; my @title; my @order;

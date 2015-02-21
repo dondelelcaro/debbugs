@@ -4,17 +4,11 @@
 
 ********************************
 
-### Developers ###
+### What is Debbugs? ###
 
-This bug tracking system was developed by Ian Jackson from 1994-1997,
-with assistance from nCipher Corporation Limited in 1997.  nCipher allowed
-Ian to redistribute modifications he made to the system while working as an
-employee of nCipher.
+Debbugs is a stable, scaleable bug reporting and issue tracking system. Debbugs has a web interface for viewing and searching issues in the database but unlike other bug tracking systems, Debbugs has no web interface for editing bug reports - all modification is done via email.
 
-Since then, it has been developed by the various administrators of
-bugs.debian.org, including Darren Benham, Adam Heath, Josip Rodin, Anthony
-Towns, and Colin Watson.  As in the case of Ian, nCipher allowed Colin to
-redistribute modifications he made while working as an employee of nCipher.
+The most notable deployment of Debbugs is on the [Debian project](https://www.debian.org/Bugs/)
 
 ### System Requirements ###
 
@@ -33,35 +27,162 @@ redistribute modifications he made while working as an employee of nCipher.
  * Somewhere to run CGI scripts (unless you don't need the web forms for
    searching for bugs by number, package, maintainer or submitter).
 
+### Where do I get the Source? ###
+
+Debbugs is managed in git. You can clone the repository into your local
+workspace as follows:
+
+        git clone http://bugs-master.debian.org/debbugs-source/debbugs.git
+
+Additional branches are available from:
+
+ * [Don Armstrong](http://git.donarmstrong.com/debbugs.git/)
+
 ### Installation Instructions ###
 
 Install the Debian package and read `/usr/share/doc/debbugs/README.Debian` file.
 
 If you can't use the `.deb`, do the following:
 
-1. Run `make install` from the source directory.
+1.  Clone the repo
 
-2. Edit the config files in `/etc/debbugs/` directory to suit your needs.
-   Re-run debbugsconfig when you're finished to regenerate the documentation.
+        git clone http://bugs-master.debian.org/debbugs-source/debbugs.git
 
-3. Set up the mail arrangements to deliver mail to the right place, and to set
-   up a blackhole mail alias if you need one.  Ensure that `owner@bugs`, the
-   address of the BTS owner, if that's what you're using, is handled by the MTA.
-   All other email should be piped into the receive script.
+2.  Create version and spool directory
 
-4. Set up your HTTP server to point people looking for bug reports to
-   `/var/lib/debbugs/www` and set `/var/lib/debbugs/www/cgi` as a valid CGI
-   directory.
+        cd
+        mkdir version spool
 
-5. Test things a bit, by sending mail messages to the bug system and running
-   `/usr/lib/debbugs/processall` and/or `/usr/lib/debbugs/rebuild`.  The latter
-   updates index files used by the CGI scripts.  If you're feeling brave, you
-   can link `/var/lib/debbugs/spool/index.db` to `index.db.realtime` and
-   `.../index.archive` to `index.archive.realtime` to remove the need for the
-   rebuild script; this is still semi-experimental.
+3.  Optional - Retrieve a partial database of bugs for testing
 
-6. If all seems well then install the crontab from
-   `/usr/share/doc/debbugs/examples/crontab`.
+    1. Get a list of rsync targets from Debbugs
+
+            rsync --list-only rsync://bugs-mirror.debian.org
+
+    2. Grab bugs ending in 00
+
+            mkdir -p splool/db-h/00;
+            cd spool/db-h;
+            rsync -av rsync://bugs-mirror.debian.org/bts-spool-db/00 .;
+
+4.  Optional - Retrieve bts-versions directory for testing purposes
+
+    The database obtained in step 3 requires associated version and index information.
+
+    1. Pull versions directory
+
+            rsync -av rsync://bugs-mirror.debian.org/bts-versions/ versions/
+
+    2. Pull index directory
+
+            rsync -av rsync://bugs-mirror.debian.org/bts-spool-index index
+
+5.  Configure Debbugs config
+
+    1. Create a config directory for Debbugs
+
+            sudo mkdir /etc/debbugs
+
+    2. Copy sample configuration to config directory
+
+            sudo cp ~/debbugs/scripts/config.debian /etc/debbugs/config
+
+    3. Update the following variables
+		* $gConfigDir
+		* $gSpoolDir
+		* $gIndicesDir
+		* $gWebDir
+		* $gDocDir
+	
+	   as follows:
+
+			70,72c70,72
+			< $gConfigDir = "/org/bugs.debian.org/etc"; # directory where this file is
+			< $gSpoolDir = "/org/bugs.debian.org/spool"; # working directory
+			< $gIndicesDir = "/org/bugs.debian.org/indices"; # directory where the indices are
+			---
+			> $gConfigDir = "/etc/debbugs"; # directory where this file is
+			> $gSpoolDir = "/path/to/directory/spool"; # working directory
+			> $gIndicesDir = "/path/to/directory/spool/indices"; # directory  where the indices are
+			
+			74,75c74,75
+			< $gWebDir = "/org/bugs.debian.org/www"; # base location of web pages
+			< $gDocDir = "/org/ftp.debian.org/ftp/doc"; # location of text doc files
+			---
+			> $gWebDir = "/path/to/directory/debbugs/html"; # base location of web pages
+			> $gDocDir = "/path/to/directory/debbugs/doc"; # location of text doc files
+
+6.  Configure Webserver
+
+    1. Copy example apache config
+
+            sudo cp /path/to/directory/debbugs/examples/apache.conf  /etc/apache2/sites-available/debbugs.conf
+
+    2. Update the directory entries and the DocumentRoot and ScriptAlias variables
+
+		    5c5
+		    < DocumentRoot /var/lib/debbugs/www/
+			---
+		    > DocumentRoot /path/to/directory/debbugs/html/
+		
+		    10c10
+		    < <Directory /var/lib/debbugs/www>
+			---
+		    > <Directory /path/to/directory/debbugs/html>
+		
+		    16,17c16,17
+		    < ScriptAlias /cgi-bin/ /var/lib/debbugs/www/cgi/
+		    < <Directory "/var/lib/debbugs/www/cgi/">
+			---
+		    > ScriptAlias /cgi-bin/ /path/to/directory/debbugs/cgi/
+		    > <Directory "/path/to/directory/debbugs/cgi/">
+    
+    3. Enable required apache mods
+       
+            sudo a2enmod rewrite
+            sudo a2enmod cgid
+    
+    4. Install site
+       
+            sudo a2ensite debbugs
+            
+    5. Reload apache
+    
+			sudo service apache2 reload
+            
+7. Install dependencies
+
+        sudo apt-get install libmailtools-perl ed libmime-tools-perl libio-stringy-perl libmldbm-perl liburi-perl libsoap-lite-perl libcgi-simple-perl libparams-validate-perl libtext-template-perl libsafe-hole-perl libmail-rfc822-address-perl liblist-moreutils-perl libtext-template-perl libfile-libmagic-perl libgravatar-url-perl libwww-perl imagemagick libapache2-mod-perl2
+       
+8. Set up libraries
+   
+    1. Create symlinks to link source to their expected locations
+       
+			sudo mkdir -p /usr/local/lib/site_perl
+			sudo ln -s /path/to/directory/debbugs/Debbugs /usr/local/lib/site_perl/
+    
+			sudo mkdir -p /usr/share/debbugs/
+			sudo ln -s /path/to/directory/debbugs/templates /usr/share/debbugs/
+
+9. Create required files
+       
+    1. Create files
+    
+            touch /etc/debbugs/pseudo-packages.description
+            touch /etc/debbugs/Source_maintainers
+            touch /etc/debbugs/pseudo-packages.maintainers
+            touch /etc/debbugs/Maintainers
+            touch /etc/debbugs/Maintainers.override
+            mkdir /etc/debbugs/indices
+            touch /etc/debbugs/indices/sources
+       
+    2. Test
+    
+            cd /path/to/directory/debbugs
+            perl -c cgi/bugreport.cgi
+            REQUEST_METHOD=GET QUERY_STRING="bug=775300" perl cgi/bugreport.cgi; 
+
+10. Install MTA. See README.mail for details.
 
 Note that each line of `/etc/debbugs/Maintainers` file needs to be formatted as
 follows: 
@@ -70,28 +191,24 @@ follows:
 
 If you need a template, look in `/usr/share/doc/debbugs/examples/` directory.
 
-### Contributing to Debbugs ###
+### How do I contribute to Debbugs? ###
+ 
+#### Debbugs bugs ####
 
-#### Getting the Source Code ####
+Bugs in debbugs are tracked on the Debian bugtracker. The web interface is available at
+[bugs.debian.org](https://bugs.debian.org/cgi-bin/pkgreport.cgi?repeatmerged=no&src=debbugs)
 
-Debbugs is managed in git. You can clone the repository into your local
-workspace as follows:
-
-    git clone http://bugs-master.debian.org/debbugs-source/debbugs.git
-
-Additional branches are available from:
-
- * [Don Armstrong](http://git.donarmstrong.com/debbugs.git/)
+#### Start contributing ####
 
 Make a working branch for your code and check it out to start working:
 
-    git checkout -b example-branch
+        git checkout -b example-branch
 
 Stage and commit your changes using appropriate commit messages
 
-    git add example-file
+        git add example-file
 
-    git commit -m "Created an example file to demonstrate basic git commands."
+        git commit -m "Created an example file to demonstrate basic git commands."
 
 #### Submitting a Patch ####
 
@@ -99,7 +216,7 @@ Submitting a patch can be done using git format-patch.
 
 For example
 
-    git format-patch origin/master
+        git format-patch origin/master
 
 Creates `.patch` files for all commits since the branch diverged from master.
 
@@ -110,7 +227,7 @@ attached to the bug report for the issue. This can be done by emailing the
 Feature patches can also be emailed to the maintaining list at 
 [Debugs mailing list](debian-debbugs@lists.debian.org)
 
-### Further Information ###
+### Further Information and Assistance ###
 
 #### Email ####
 
@@ -123,7 +240,23 @@ Feature patches can also be emailed to the maintaining list at
 #### Website ####
 
    * [Code](https://bugs.debian.org/debbugs-source/debbugs.git/)
-   * [Debbugs Team](https://wiki.debian.org/Teams/Debbugs|Debbugs Team)
+   * [Debbugs Team](https://wiki.debian.org/Teams/Debbugs)
+
+#### IRC ####
+
+Join the `#debbugs` channel on `irc.oftc.net`
+
+### Developers ###
+
+This bug tracking system was developed by Ian Jackson from 1994-1997,
+with assistance from nCipher Corporation Limited in 1997. nCipher allowed
+Ian to redistribute modifications he made to the system while working as an
+employee of nCipher.
+
+Since then, it has been developed by the various administrators of
+`bugs.debian.org`, including Darren Benham, Adam Heath, Josip Rodin, Anthony
+Towns, and Colin Watson. As in the case of Ian, nCipher allowed Colin to
+redistribute modifications he made while working as an employee of nCipher.
 
 ### Copyright and Lack-of-Warranty Notice ###
 
