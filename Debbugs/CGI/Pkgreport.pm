@@ -469,19 +469,30 @@ sub get_bug_order_index {
 
      for my $el (@${order}) {
 	  $pos++;
-	  my $match = 1;
-	  for my $item (split /[+]/, $el) {
-	       my ($f, $v) = split /=/, $item, 2;
-	       next unless (defined $f and defined $v);
-	       my $isokay = 0;
-	       $isokay = 1 if (defined $status->{$f} and $v eq $status->{$f});
-	       $isokay = 1 if ($f eq "tag" && defined $tags{$v});
-	       unless ($isokay) {
-		    $match = 0;
-		    last;
-	       }
-	  }
-	  if ($match) {
+	  my $match = 0;
+          my $first_field = 1; # true if no previous fields have been
+                               # checked
+          while ($el =~ /(?<joiner>^|\+|,)(?<field>[^=]+)=(?<value>[^=,\+])/) {
+              my ($j,$f,$v) = @+{qw(joiner field value)};
+              if (not defined $j) {
+                  $j = '+';
+              }
+              if ($j eq '+' and $first_field) {
+                  $match = 1;
+              }
+              my $isokay = 0;
+              $isokay = 1 if (defined $status->{$f} and $v eq $status->{$f});
+              $isokay = 1 if ($f eq "tag" && defined $tags{$v});
+              if ($j eq ',') {
+                  $match ||= $isokay;
+              } else {
+                  $match &&= $isokay;
+              }
+              $first_field = 0;
+          }
+          # if there is a match, or if there were no fields to check,
+          # this usertag matched.
+	  if ($match || $first_field) {
 	       return $pos;
 	       last;
 	  }
