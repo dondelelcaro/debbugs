@@ -472,7 +472,7 @@ sub get_bug_order_index {
 	  my $match = 0;
           my $first_field = 1; # true if no previous fields have been
                                # checked
-          while ($el =~ /(?<joiner>^|\+|,)(?<field>[^=]+)=(?<value>[^=,\+])/) {
+          while ($el =~ /(?<joiner>^|\+|,)(?<field>[^=]+)=(?<value>[^=,\+])/g) {
               my ($j,$f,$v) = @+{qw(joiner field value)};
               if (not defined $j) {
                   $j = '+';
