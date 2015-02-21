@@ -471,14 +471,16 @@ sub parse_order_statement_into_boolean {
     $statement =~ s/\+/&&/g;
     # replace all , with ||
     $statement =~ s/,/||/g;
-    $statement =~ s{(?<field>[^\&\|\=]+)=(?<value>[^\&\|\=]+)}
-              {
+    $statement =~ s{([^\&\|\=]+) # field
+                    =
+                    ([^\&\|\=]+) # value
+              }{
                   my $ok = 0;
-                  if ($+{field} eq 'tag') {
-                      $ok = 1 if defined $tags->{$+{value}};
+                  if ($1 eq 'tag') {
+                      $ok = 1 if defined $tags->{$2};
                   } else {
-                      $ok = 1 if defined $status->{$+{field}} and
-                          $status->{$+{field}} eq $+{value};
+                      $ok = 1 if defined $status->{$1} and
+                          $status->{$1} eq $2;
                   }
                   $ok;
               }exg;
