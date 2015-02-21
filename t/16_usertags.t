@@ -17,22 +17,23 @@ my @usertags = ('severity=serious,severity=grave,severity=critical',
 
 my @bugs =
     ({severity => 'normal',
-      tag => 'wrongtag',
+      tags => 'wrongtag',
       order => 3,
      },
     {severity => 'critical',
-     tag => 'second',
+     tags => 'second',
      order => 0,
     },
     {severity => 'normal',
-     tag => 'third',
+     tags => 'third',
      order => 2,
     },
     );
 
 for my $bug (@bugs) {
-    ok(Debbugs::CGI::Pkgreport::get_bug_order_index(\@usertags,$bug) == $bug->{order},
-       "order is actually $bug->{order}",
+    my $order = Debbugs::CGI::Pkgreport::get_bug_order_index(\@usertags,$bug);
+    ok($order == $bug->{order},
+       "order $bug->{order} == $order",
       );
 }
 
