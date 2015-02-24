@@ -486,7 +486,7 @@ sub parse_order_statement_into_boolean {
               }exg;
     # check that the parsed statement is just valid boolean statements
     if ($statement =~ /^([01\(\)\&\|]+)$/) {
-        return eval "$statement";
+        return eval "$1";
     } else {
         # this is an invalid boolean statement
         return 0;
