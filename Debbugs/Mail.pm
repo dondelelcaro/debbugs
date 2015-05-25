@@ -459,7 +459,6 @@ sub reply_headers{
             }
             if (defined $part->bodyhandle and
                 $part->effective_type =~ /text/) {
-                print STDERR $part->effective_type."\n";
                 $b_h = $part->bodyhandle;
                 last;
             }
