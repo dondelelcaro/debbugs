@@ -87,6 +87,7 @@ BEGIN {
      $ENV{HOME} = '' if not defined $ENV{HOME};
 }
 
+use Sys::Hostname;
 use File::Basename qw(dirname);
 use IO::File;
 use Safe;
@@ -298,18 +299,13 @@ set_default(\%config,'unknown_maintainer_email',$config{maintainer_email});
 The name of the machine that this instance of debbugs is running on
 (currently used for debbuging purposes and web page output.)
 
-Default: qx(hostname --fqdn)
+Default: Sys::Hostname::hostname()
 
 =back
 
 =cut
 
-my $_old_path = $ENV{PATH};
-$ENV{PATH} = '/bin:/usr/bin:/usr/local/bin';
-my $temp_hostname = qx(hostname --fqdn);
-chomp $temp_hostname;
-set_default(\%config,'machine_name',$temp_hostname);
-$ENV{PATH} = $_old_path;
+set_default(\%config,'machine_name',Sys::Hostname::hostname());
 
 =head2 BTS Mailing Lists
 
