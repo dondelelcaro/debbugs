@@ -1070,7 +1070,7 @@ if (@control_bits) {
 					address_only => 1,
 					cc => 1,
 				       );
-    my $error_text = $errors > 0 ? " (with $errors errors)":'';
+    my $error_text = $errors > 0 ? " (with $errors error" . ($errors > 1 ? "s" : "") . ")" : "";
     my $reply =
 	create_mime_message(['X-Loop'      => $gMaintainerEmail,
 			     From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",

@@ -509,7 +509,7 @@ if (!defined $header{'subject'} || $header{'subject'} eq "") {
 }
 
 # Error text here advertises how many errors there were
-my $error_text = $errors > 0 ? " (with $errors errors)":'';
+my $error_text = $errors > 0 ? " (with $errors error" . ($errors > 1 ? "s" : "") . ")" : "";
 
 my @common_headers;
 push @common_headers, 'X-Loop',$gMaintainerEmail;
