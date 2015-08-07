@@ -904,9 +904,12 @@ END
 sub sendlynxdocraw {
     my ($relpath,$description) = @_;
     $doc='';
-    open(L,"lynx -nolist -dump $gCGIDomain/\Q$relpath\E 2>&1 |") || die "fork for lynx: $!";
+    # work around DSA cert setup
+    $ENV{SSL_CERT_FILE}='/etc/ssl/ca-debian/ca-certificates.crt';
+    open(L,"lynx -nolist -dump https://$gCGIDomain/\Q$relpath\E 2>&1 |") || die "fork for lynx: $!";
     while(<L>) { $doc.=$_; }
     $!=0; close(L);
+    delete $ENV{SSL_CERT_FILE};
     if ($? == 255 && $doc =~ m/^\n*lynx: Can\'t access start file/) {
         print {$transcript} "Information ($description) is not available -\n".
 	     "perhaps the $gBug does not exist or is not on the WWW yet.\n";
