@@ -236,6 +236,7 @@ sub read_record
     my $record = {};
 
     while (defined (my $line = <$logfh>)) {
+        $record->{start} = $logfh->tell() if not defined $record->{start};
 	chomp $line;
 	++$this->{linenum};
 	if (length($line) == 1 and exists $states{ord($line)}) {
