@@ -322,8 +322,9 @@ sub handle_email_message{
          my $parser = MIME::Parser->new();
          # Because we are using memory, not tempfiles, there's no need to
          # clean up here like in Debbugs::MIME
-         $parser->tmp_to_core(1);
-         $parser->output_to_core(1);
+         # this will be cleaned up once it goes out of scope
+         my $tempdir = File::Temp->newdir();
+         $parser->output_under($tempdir->dirname());
          $entity = $parser->parse_data( $email);
      } else {
          $entity = $email
