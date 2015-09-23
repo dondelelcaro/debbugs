@@ -34,6 +34,8 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
   * Depend on libmime-tools-perl instead of libmime-perl. (Closes: #665001).
   * Fix SOAP module hack to work around Date/Time encoding which broke in
     newer versions of SOAP::Lite. (Closes: #785405)
+  * Add patch to do singular/plural in error messages from Rafael.
+    (Closes: #790716)
 
   [Thanks to Arnout Engelen: ]
   * Add Homepage (closes: #670555).

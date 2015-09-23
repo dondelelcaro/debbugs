@@ -72,8 +72,8 @@ $(var_dir)/spool/db-h $(scripts_dir) $(examples_dir) $(man8_dir); \
 	$(install_data) scripts/errorlib $(scripts_dir)/errorlib
 
 	# install examples
-	$(install_data) scripts/config $(examples_dir)/config
-	$(install_data) scripts/config.debian $(examples_dir)/config.debian
+	$(install_data) examples/config $(examples_dir)/config
+	$(install_data) examples/config.debian $(examples_dir)/config.debian
 	$(install_data) scripts/text $(examples_dir)/text
 	$(install_data) debian/crontab misc/nextnumber misc/Maintainers \
 	  misc/Maintainers.override misc/pseudo-packages.description \

@@ -78,7 +78,7 @@ $SD_SIZE =
 		      'control@bugs.something messages appear to have been sent out properly');
 
 # make sure this fails
-ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed (with 1 errors): Munging a bug with limit_package_bar")) == 0,
+ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed (with 1 error): Munging a bug with limit_package_bar")) == 0,
    'control@bugs.something'. "limit message failed with 1 error");
 
 send_message(to => 'control@bugs.something',
@@ -134,7 +134,7 @@ $SD_SIZE =
 		      'control@bugs.something messages appear to have been sent out properly');
 
 # make sure this fails
-ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed (with 1 errors): Munging a bug with limit_package_bar")) == 0,
+ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed (with 1 error): Munging a bug with limit_package_bar")) == 0,
    'control@bugs.something'. "limit message failed with 1 error");
 
 send_message(to => 'control@bugs.something',
