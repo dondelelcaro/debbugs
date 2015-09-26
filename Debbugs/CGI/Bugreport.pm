@@ -318,12 +318,13 @@ sub handle_email_message{
      my $output;
      my $output_fh = globify_scalar(\$output);
      my $entity;
+     my $tempdir;
      if (not blessed $email) {
          my $parser = MIME::Parser->new();
          # Because we are using memory, not tempfiles, there's no need to
          # clean up here like in Debbugs::MIME
          # this will be cleaned up once it goes out of scope
-         my $tempdir = File::Temp->newdir();
+         $tempdir = File::Temp->newdir();
          $parser->output_under($tempdir->dirname());
          $entity = $parser->parse_data( $email);
      } else {
