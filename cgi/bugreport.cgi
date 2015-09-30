@@ -18,7 +18,7 @@ use IO::File;
 use Debbugs::Config qw(:globals :text);
 
 # for read_log_records
-use Debbugs::Log qw(read_log_records);
+use Debbugs::Log qw(:read);
 use Debbugs::CGI qw(:url :html :util);
 use Debbugs::CGI::Bugreport qw(:all);
 use Debbugs::Common qw(buglog getmaintainers make_list bug_status);
