@@ -39,6 +39,7 @@ use Debbugs::CGI qw(:url :html :util);
 use Debbugs::Common qw(globify_scalar english_join);
 use Debbugs::UTF8;
 use Debbugs::Config qw(:config);
+use Debbugs::Log qw(:read);
 use POSIX qw(strftime);
 use Encode qw(decode_utf8 encode_utf8);
 use URI::Escape qw(uri_escape_utf8);
@@ -313,22 +314,28 @@ appropriate.
 =cut
 
 sub handle_email_message{
-     my ($email,%param) = @_;
+     my ($record,%param) = @_;
 
      my $output;
      my $output_fh = globify_scalar(\$output);
      my $entity;
      my $tempdir;
-     if (not blessed $email) {
+     if (not blessed $record) {
          my $parser = MIME::Parser->new();
          # Because we are using memory, not tempfiles, there's no need to
          # clean up here like in Debbugs::MIME
          # this will be cleaned up once it goes out of scope
          $tempdir = File::Temp->newdir();
          $parser->output_under($tempdir->dirname());
-         $entity = $parser->parse_data( $email);
+         if ($record->{inner_file}) {
+             $entity = $parser->parse($record->{fh}) or
+                 die "Unable to parse entity";
+         } else {
+             $entity = $parser->parse_data($record->{text}) or
+                 die "Unable to parse entity";
+         }
      } else {
-         $entity = $email
+         $entity = $record;
      }
      my @attachments = ();
      my $raw_output =
@@ -366,7 +373,7 @@ sub handle_record{
      local $_ = $record->{type};
      if (/html/) {
 	 # $record->{text} is not in perl's internal encoding; convert it
-	 my $text = decode_rfc1522(decode_utf8($record->{text}));
+	 my $text = decode_rfc1522(decode_utf8(record_text($record)));
 	  my ($time) = $text =~ /<!--\s+time:(\d+)\s+-->/;
 	  my $class = $text =~ /^<strong>(?:Acknowledgement|Reply|Information|Report|Notification)/m ? 'infmessage':'msgreceived';
 	  $output .= $text;
@@ -412,8 +419,8 @@ sub handle_record{
 	  $output = qq(<div class="$class"><hr>\n<a name="$msg_number"></a>\n) . $output . "</div>\n";
      }
      elsif (/recips/) {
-	  my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
-	  if (defined $msg_id and exists $$seen_msg_ids{$msg_id}) {
+         my ($msg_id) = record_regex($record,qr/^Message-Id:\s+<(.+)>/i);
+         if (defined $msg_id and exists $$seen_msg_ids{$msg_id}) {
 	       return ();
 	  }
 	  elsif (defined $msg_id) {
@@ -421,7 +428,7 @@ sub handle_record{
 	  }
 	  $output .= qq(<hr><p class="msgreceived"><a name="$msg_number"></a>\n);
 	  $output .= 'View this message in <a href="' . html_escape(bug_links(bug=>$bug_number, links_only => 1, options=>{msg=>$msg_number, mbox=>'yes'})) . '">rfc822 format</a></p>';
-	  $output .= handle_email_message($record->{text},
+	  $output .= handle_email_message($record,
 					  ref     => $bug_number,
 					  msg_num => $msg_number,
                                           %param,
@@ -431,7 +438,7 @@ sub handle_record{
 	  # Do nothing
      }
      elsif (/incoming-recv/) {
-	  my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
+         my ($msg_id) = record_regex($record,qr/^Message-Id:\s+<(.+)>/i);
 	  if (defined $msg_id and exists $$seen_msg_ids{$msg_id}) {
 	       return ();
 	  }
@@ -439,7 +446,7 @@ sub handle_record{
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
 	  # Incomming Mail Message
-	  my ($received,$hostname) = $record->{text} =~ m/Received: \(at (\S+)\) by (\S+)\;/;
+	  my ($received,$hostname) = record_regex($record,qr/Received: \(at (\S+)\) by (\S+)\;/o);
 	  $output .= qq|<hr><p class="msgreceived"><a name="$msg_number"></a><a name="msg$msg_number"></a><a href="#$msg_number">Message #$msg_number</a> received at |.
 	       html_escape("$received\@$hostname") .
 		    q| (<a href="| . html_escape(bug_links(bug => $bug_number, links_only => 1, options => {msg=>$msg_number})) . '">full text</a>'.
@@ -454,7 +461,12 @@ sub handle_record{
           # this will be cleaned up once it goes out of scope
           my $tempdir = File::Temp->newdir();
           $parser->output_under($tempdir->dirname());
-          my $entity = $parser->parse_data($record->{text});
+         my $entity;
+         if ($record->{inner_file}) {
+             $entity = $parser->parse($record->{fh});
+         } else {
+             $entity = $parser->parse_data($record->{text});
+         }
           my $r_l = reply_headers($entity);
           $output .= q(<a href=").
               html_escape('mailto:'.$bug_number.'@'.$config{email_domain}.'?'.

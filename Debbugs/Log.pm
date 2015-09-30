@@ -25,7 +25,7 @@ BEGIN {
     @EXPORT = ();
     %EXPORT_TAGS = (write => [qw(write_log_records),
 			     ],
-		    read  => [qw(read_log_records),
+		    read  => [qw(read_log_records record_text record_regex),
 			     ],
 		    misc  => [qw(escape_log),
 			     ],
@@ -40,6 +40,7 @@ use Carp;
 use Debbugs::Common qw(getbuglocation getbugcomponent make_list);
 use Params::Validate qw(:types validate_with);
 use Encode qw(encode encode_utf8 is_utf8);
+use IO::InnerFile;
 
 =head1 NAME
 
@@ -169,6 +170,7 @@ sub new
     my %param;
     if (@_ == 1) {
 	 ($param{logfh}) = @_;
+	 $param{inner_file} = 0;
     }
     else {
 	 %param = validate_with(params => \@_,
@@ -180,7 +182,10 @@ sub new
 						      },
 					   log_name => {type => SCALAR,
 							optional => 1,
-						       },
+                                   },
+                           inner_file => {type => BOOLEAN,
+                                          default => 0,
+                                         },
 					  }
 			       );
     }
@@ -208,6 +213,7 @@ sub new
 
     $self->{state} = 'kill-init';
     $self->{linenum} = 0;
+    $self->{inner_file} = $param{inner_file};
     return $self;
 }
 
@@ -245,16 +251,21 @@ sub read_record
 	    }
 
 	    $this->{state} = $newstate;
-
 	    if ($this->{state} =~ /^(autocheck|recips|html|incoming-recv)$/) {
-		$record->{type} = $this->{state};
+            $record->{type} = $this->{state};
+            $record->{start} = $logfh->tell;
+            $record->{stop} = $logfh->tell;
+            $record->{inner_file} = $this->{inner_file};
 	    } elsif ($this->{state} eq 'kill-end') {
+            if ($this->{inner_file}) {
+                $record->{fh} = IO::InnerFile->new($logfh,$record->{start},$record->{stop} - $record->{start})
+            }
 		return $record;
 	    }
 
 	    next;
 	}
-
+    $record->{stop} = $logfh->tell;
 	$_ = $line;
 	if ($this->{state} eq 'incoming-recv') {
 	    my $pl = $_;
@@ -262,14 +273,14 @@ sub read_record
 		die "bad line '$pl' in state incoming-recv";
 	    }
 	    $this->{state} = 'go';
-	    $record->{text} .= "$_\n";
+	    $record->{text} .= "$_\n" unless $this->{inner_file};
 	} elsif ($this->{state} eq 'html') {
-	    $record->{text} .= "$_\n";
+	    $record->{text} .= "$_\n"  unless $this->{inner_file};
 	} elsif ($this->{state} eq 'go') {
 	    s/^\030//;
-	    $record->{text} .= "$_\n";
+	    $record->{text} .= "$_\n"  unless $this->{inner_file};
 	} elsif ($this->{state} eq 'go-nox') {
-	    $record->{text} .= "$_\n";
+	    $record->{text} .= "$_\n"  unless $this->{inner_file};
 	} elsif ($this->{state} eq 'recips') {
 	    if (/^-t$/) {
 		undef $record->{recips};
@@ -279,11 +290,11 @@ sub read_record
 	    }
 	    $this->{state} = 'kill-body';
 	} elsif ($this->{state} eq 'autocheck') {
-	    $record->{text} .= "$_\n";
+	    $record->{text} .= "$_\n" unless $this->{inner_file};
 	    next if !/^X-Debian-Bugs(-\w+)?: This is an autoforward from (\S+)/;
 	    $this->{state} = 'autowait';
 	} elsif ($this->{state} eq 'autowait') {
-	    $record->{text} .= "$_\n";
+	    $record->{text} .= "$_\n" unless $this->{inner_file};
 	    next if !/^$/;
 	    $this->{state} = 'go-nox';
 	} else {
@@ -326,6 +337,9 @@ sub read_log_records
 					   log_name => {type => SCALAR,
 							optional => 1,
 						       },
+                           inner_file => {type => BOOLEAN,
+                                          default => 0,
+                                         },
 					  }
 			       );
     }
@@ -449,6 +463,41 @@ Applies the log escape regex to the passed logfile.
 sub escape_log {
 	my @log = @_;
 	return map {s/^([\01-\07\030])/\030$1/gm; $_ } @log;
+}
+
+
+sub record_text {
+    my ($record) = @_;
+    if ($record->{inner_file}) {
+        local $/;
+        my $text;
+        my $t = $record->{fh};
+        $text = <$t>;
+        $record->{fh}->seek(0,0);
+        return $text;
+    } else {
+        return $record->{text};
+    }
+}
+
+sub record_regex {
+    my ($record,$regex) = @_;
+    if ($record->{inner_file}) {
+        my @result;
+        my $fh = $record->{fh};
+        while (<$fh>) {
+            if (@result = $_ =~ m/$regex/) {
+                $record->{fh}->seek(0,0);
+                return @result;
+            }
+        }
+        $record->{fh}->seek(0,0);
+        return ();
+    } else {
+        my @result = $record->{text} =~ m/$regex/;
+        return @result;
+        return $record->{text};
+    }
 }
 
 

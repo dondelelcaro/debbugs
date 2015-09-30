@@ -156,7 +156,7 @@ my %status =
 
 my @records;
 eval{
-     @records = read_log_records($buglogfh);
+     @records = read_log_records(logfh => $buglogfh,inner_file => 1);
 };
 if ($@) {
      quitcgi("Bad bug log for $gBug $ref. Unable to read records: $@");
@@ -225,23 +225,30 @@ END
 	  my $wanted_type = $mbox_maint?'recips':'incoming-recv';
 	  # we want to include control messages anyway
 	  my $record_wanted_anyway = 0;
-	  my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
+	  my ($msg_id) = record_regex($record,qr/^Message-Id:\s+<(.+)>/im);
 	  next if defined $msg_id and exists $seen_message_ids{$msg_id};
 	  next if defined $msg_id and $msg_id =~/handler\..+\.ack(?:info|done)?\@/;
-	  $record_wanted_anyway = 1 if $record->{text} =~ /^Received: \(at control\)/;
+	  $record_wanted_anyway = 1 if record_regex($record,qr/^Received: \(at control\)/);
 	  next if not $boring and not $record->{type} eq $wanted_type and not $record_wanted_anyway and @records > 1;
 	  $seen_message_ids{$msg_id} = 1 if defined $msg_id;
-	  my @lines = split( "\n", $record->{text}, -1 );
+      my @lines;
+      if ($record->{inner_file}) {
+          push @lines, $record->{fh}->getline;
+          push @lines, $record->{fh}->getline;
+      } else {
+          @lines = split( "\n", $record->{text}, -1 );
+      }
 	  if ( $lines[ 1 ] =~ m/^From / ) {
-	       my $tmp = $lines[ 0 ];
-	       $lines[ 0 ] = $lines[ 1 ];
-	       $lines[ 1 ] = $tmp;
+          @lines = reverse @lines;
 	  }
 	  if ( !( $lines[ 0 ] =~ m/^From / ) ) {
 	       unshift @lines, "From unknown $date";
 	  }
-	  map { s/^(>*From )/>$1/ } @lines[ 1 .. $#lines ];
-	  print join( "\n", @lines ) . "\n";
+	  print map { s/^(>*From )/>$1/; $_."\n" } @lines[ 1 .. $#lines ];
+      if ($record->{inner_file}) {
+          my $fh = $record->{fh};
+          print <$fh>;
+      }
      }
      exit 0;
 }
@@ -250,7 +257,7 @@ else {
      if (defined $att and defined $msg and @records) {
 	 binmode(STDOUT,":raw");
 	  $msg_num++;
-	  print handle_email_message($records[0]->{text},
+	  print handle_email_message($records[0],
 				     ref => $ref,
 				     msg_num => $msg_num,
 				     att => $att,
