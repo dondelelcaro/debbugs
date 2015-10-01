@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 
 
-use Test::More tests => 3;
+use Test::More tests => 6;
 
 use warnings;
 use strict;
@@ -76,6 +76,14 @@ $mech->get_ok('http://localhost:'.$port.'/?bug=1',
 	      'Page received ok');
 ok($mech->content() =~ qr/\<title\>\#1.+Submitting a bug/i,
    'Title of bug is submitting a bug');
+
+$mech->get_ok('http://localhost:'.$port.'/?bug=1;mbox=yes',
+              'Page received ok');
+ok($mech->content() =~ qr/Subject: Submitting a bug/i,
+   'Subject of bug maibox is right');
+ok($mech->content() =~ qr/^From /m,
+   'Starts with a From appropriately');
+
 
 # Other tests for bugs in the page should be added here eventually
 

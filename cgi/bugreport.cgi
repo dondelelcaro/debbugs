@@ -235,6 +235,8 @@ END
       if ($record->{inner_file}) {
           push @lines, $record->{fh}->getline;
           push @lines, $record->{fh}->getline;
+          chomp $lines[0];
+          chomp $lines[1];
       } else {
           @lines = split( "\n", $record->{text}, -1 );
       }
@@ -243,11 +245,12 @@ END
 	  }
 	  if ( !( $lines[ 0 ] =~ m/^From / ) ) {
 	       unshift @lines, "From unknown $date";
-	  }
+       }
+      print $lines[0]."\n";
 	  print map { s/^(>*From )/>$1/; $_."\n" } @lines[ 1 .. $#lines ];
       if ($record->{inner_file}) {
           my $fh = $record->{fh};
-          print <$fh>;
+          print $_ while (<$fh>);
       }
      }
      exit 0;
