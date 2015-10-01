@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 
 
-use Test::More tests => 6;
+use Test::More tests => 8;
 
 use warnings;
 use strict;
@@ -83,6 +83,13 @@ ok($mech->content() =~ qr/Subject: Submitting a bug/i,
    'Subject of bug maibox is right');
 ok($mech->content() =~ qr/^From /m,
    'Starts with a From appropriately');
+
+$mech->get_ok('http://localhost:'.$port.'/?bug=1;mboxmaint=yes',
+              'Page received ok');
+print STDERR $mech->content();
+ok($mech->content() !~ qr/[\x01\x02\x03\x05\x06\x07]/i,
+   'No unescaped states');
+
 
 
 # Other tests for bugs in the page should be added here eventually

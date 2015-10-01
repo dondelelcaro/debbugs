@@ -289,6 +289,9 @@ sub read_record
 		$record->{recips} = [split /\04/, $_, -1];
 	    }
 	    $this->{state} = 'kill-body';
+        $record->{start} = $logfh->tell+2;
+        $record->{stop} = $logfh->tell+2;
+        $record->{inner_file} = $this->{inner_file};
 	} elsif ($this->{state} eq 'autocheck') {
 	    $record->{text} .= "$_\n" unless $this->{inner_file};
 	    next if !/^X-Debian-Bugs(-\w+)?: This is an autoforward from (\S+)/;
