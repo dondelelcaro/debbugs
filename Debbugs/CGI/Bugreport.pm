@@ -322,8 +322,6 @@ sub handle_email_message{
      my $tempdir;
      if (not blessed $record) {
          my $parser = MIME::Parser->new();
-         # Because we are using memory, not tempfiles, there's no need to
-         # clean up here like in Debbugs::MIME
          # this will be cleaned up once it goes out of scope
          $tempdir = File::Temp->newdir();
          $parser->output_under($tempdir->dirname());
