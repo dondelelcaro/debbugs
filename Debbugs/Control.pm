@@ -2963,19 +2963,19 @@ sub clone_bug {
     # bugs that this bug is blocking are also blocked by the new clone(s)
     for my $bug (split ' ', $data->{blocks}) {
 	for my $new_bug (@new_bugs) {
-	    set_blocks(bug => $new_bug,
-		       block => $bug,
+	    set_blocks(bug => $bug,
+                   block => $new_bug,
 		       hash_slice(%param,
 				  keys %common_options,
 				  keys %append_action_options),
 		      );
 	}
     }
-    # bugs that this bug is blocked by are also blocking the new clone(s)
+    # bugs that are blocking this bug are also blocking the new clone(s)
     for my $bug (split ' ', $data->{blockedby}) {
 	for my $new_bug (@new_bugs) {
-	    set_blocks(bug => $bug,
-		       block => $new_bug,
+	    set_blocks(bug => $new_bug,
+                   block => $bug,
 		       hash_slice(%param,
 				  keys %common_options,
 				  keys %append_action_options),
