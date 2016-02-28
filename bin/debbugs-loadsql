@@ -147,6 +147,8 @@ my %subcommands =
                       },
      'configuration' => {function => \&add_configuration,
                         },
+     'suites' => {function => \&add_suites,
+                 },
      'logs' => {function => \&add_logs,
                },
      'help' => {function => sub {pod2usage({verbose => 2});}}
@@ -389,6 +391,12 @@ sub add_maintainers {
 
 sub add_configuration {
     my ($options,$opts,$p,$config,$argv) = @_;
+}
+
+sub add_suite {
+    my ($options,$opts,$p,$config,$argv) = @_;
+    # suites
+    die "add_suite is currently not implemented; modify suites manually using SQL."
 }
 
 sub add_logs {
