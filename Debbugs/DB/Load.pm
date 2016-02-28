@@ -286,6 +286,48 @@ sub handle_load_bug_queue{
     }
 }
 
+=item load_bug_log
+
+     load_bug_log(db => $db, bug => $bug_num);
+
+=cut
+
+sub load_bug_log {
+    my %param = validate_with(params => \@_,
+                              spec => {db => {type => OBJECT,
+                                             },
+                                       bug => {type => SCALAR,
+                                              },
+                                       queue => {type => HASHREF,
+                                                 optional => 1},
+                                      });
+    my $s = $param{db};
+    my $msg_num=0;
+    my %seen_msg_ids;
+    my $log = Debbugs::Log->new(bug_num => $param{bug}) or
+        die "Unable to open log for $param{bug} for reading: $!";
+    while (my $record = $log->read_record()) {
+        next unless $record->{type} eq 'incoming-recv';
+        my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
+        next if defined $msg_id and exists $seen_msg_ids{$msg_id};
+        $seen_msg_ids{$msg_id} = 1 if defined $msg_id;
+        next if defined $msg_id and $msg_id =~ /handler\..+\.ack(?:info)?\@/;
+        my $message = parse($record->{text});
+        # search for a message with this message id in the database
+        
+        # check to see if the subject, to, and from match. if so, it's
+        # probably the same message.
+
+        # if not, create a new message
+
+        # add correspondents if necessary
+
+        # link message to bugs if necessary
+
+    }
+
+}
+
 =back
 
 =head2 Debinfo
