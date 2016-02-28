@@ -323,8 +323,19 @@ sub add_debinfo {
                 ($binarch) = $file =~ /_([^\.]+)\.debinfo/;
             }
             my $sp = $s->resultset('SrcPkg')->find_or_create({pkg => $srcname});
+            # update the creation date if the data we have is earlier
+            my $ct_date = DateTime->from_epoch($f_stat->ctime);
+            if ($ct_date < $sp->creation) {
+                $sp->creation($ct_date);
+                $sp->last_modified(DateTime->now);
+                $sp->update;
+            }
             my $sv = $s->resultset('SrcVer')->find_or_create({src_pkg =>$sp->id(),
                                                               ver => $srcver});
+            if ($ct_date < $sv->upload_date()) {
+                $sv->upload_date($ct_date);
+                $sv->update;
+            }
             my $arch;
             if (defined $arch{$binarch}) {
                 $arch = $arch{$binarch};
