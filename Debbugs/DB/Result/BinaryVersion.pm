@@ -21,11 +21,14 @@ use base 'DBIx::Class::Core';
 
 =item * L<DBIx::Class::InflateColumn::DateTime>
 
+=item * L<DBIx::Class::TimeStamp>
+
 =back
 
 =cut
 
-__PACKAGE__->load_components("InflateColumn::DateTime");
+__PACKAGE__->load_components("InflateColumn::DateTime", "TimeStamp");
+__PACKAGE__->table_class("DBIx::Class::ResultSource::View");
 
 =head1 TABLE: C<binary_versions>
 
@@ -90,9 +93,19 @@ __PACKAGE__->add_columns(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-27 18:54:20
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:PiJglTBqLYRIi63gvGWIDQ
+# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:fH11OTb1r9SS1Ps9tM6WPQ
 
+__PACKAGE__->result_source_instance->view_definition(<<EOF);
+SELECT sp.pkg AS src_pkg, sv.ver AS src_ver, bp.pkg AS bin_pkg, a.arch AS arch, b.ver AS bin_ver,
+svb.ver AS src_ver_based_on, spb.pkg AS src_pkg_based_on
+FROM bin_ver b JOIN arch a ON b.arch = a.id
+	              JOIN bin_pkg bp ON b.bin_pkg  = bp.id
+               JOIN src_ver sv ON b.src_ver  = sv.id
+               JOIN src_pkg sp ON sv.src_pkg = sp.id
+               LEFT OUTER JOIN src_ver svb ON sv.based_on = svb.id
+               LEFT OUTER JOIN src_pkg spb ON spb.id = svb.src_pkg;
+EOF
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 1;

@@ -21,11 +21,13 @@ use base 'DBIx::Class::Core';
 
 =item * L<DBIx::Class::InflateColumn::DateTime>
 
+=item * L<DBIx::Class::TimeStamp>
+
 =back
 
 =cut
 
-__PACKAGE__->load_components("InflateColumn::DateTime");
+__PACKAGE__->load_components("InflateColumn::DateTime", "TimeStamp");
 
 =head1 TABLE: C<bin_pkg>
 
@@ -108,6 +110,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 bug_affects_binpackages
+
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::BugAffectsBinpackage>
+
+=cut
+
+__PACKAGE__->has_many(
+  "bug_affects_binpackages",
+  "Debbugs::DB::Result::BugAffectsBinpackage",
+  { "foreign.bin_pkg" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 bug_binpackages
 
 Type: has_many
@@ -124,8 +141,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:k32MQX4vbBhX4m9+EqR7ww
+# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:My1zg7yJ4SSXL78poec5ag
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

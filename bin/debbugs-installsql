@@ -81,8 +81,8 @@ my %options = (debug           => 0,
               );
 
 GetOptions(\%options,
-           'service|s',
-           'sysconfdir|c',
+           'service|s=s',
+           'sysconfdir|c=s',
            'install',
            'upgrade',
            'current_version|current-version',
@@ -135,16 +135,13 @@ if ($options{current_version}) {
 } elsif ($options{install}) {
     if ($options{developer_prepare}) {
         $dh->prepare_install;
+        $dh->prepare_deploy;
     } else {
         $dh->install;
     }
 } elsif ($options{upgrade}) {
-    if ($options{developer_prepare}) {
-        $dh->prepare_deploy;
-        $dh->prepare_upgrade;
-    } else {
-        $dh->upgrade;
-    }
+    $dh->prepare_upgrade;
+    $dh->upgrade;
 }
 
 

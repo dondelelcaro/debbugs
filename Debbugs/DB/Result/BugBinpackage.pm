@@ -21,11 +21,13 @@ use base 'DBIx::Class::Core';
 
 =item * L<DBIx::Class::InflateColumn::DateTime>
 
+=item * L<DBIx::Class::TimeStamp>
+
 =back
 
 =cut
 
-__PACKAGE__->load_components("InflateColumn::DateTime");
+__PACKAGE__->load_components("InflateColumn::DateTime", "TimeStamp");
 
 =head1 TABLE: C<bug_binpackage>
 
@@ -116,7 +118,7 @@ __PACKAGE__->belongs_to(
   "bin_pkg",
   "Debbugs::DB::Result::BinPkg",
   { id => "bin_pkg" },
-  { is_deferrable => 0, on_delete => "NO ACTION", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 =head2 bug
@@ -135,8 +137,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-11-21 21:57:41
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:MEtrsZjULXyH4vcYA0C7Vw
+# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:FZAi6kX8ICe/ZJI0JEqZLg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -1,6 +1,6 @@
 
 DROP TABLE bug_status_cache CASCADE;
-DROP VIEW  bug_package CASCADE;
+DROP VIEW bug_package CASCADE;
 DROP VIEW binary_versions CASCADE;
 DROP TABLE bug_tag CASCADE;
 DROP TABLE tag CASCADE;
@@ -16,6 +16,8 @@ DROP TABLE bug_blocks CASCADE;
 DROP TABLE bug_merged CASCADE;
 DROP TABLE bug_srcpackage CASCADE;
 DROP TABLE bug_binpackage CASCADE;
+DROP TABLE bug_affects_binpackage CASCADE;
+DROP TABLE bug_affects_srcpackage CASCADE;
 DROP TABLE suite CASCADE;
 DROP TABLE bin_associations CASCADE;
 DROP TABLE src_associations CASCADE;
@@ -34,22 +36,23 @@ DROP TYPE bug_status_type CASCADE;
 -- the following two tables are used to provide documentation about
 -- the tables and columns for DBIx::Class::Schema::Loader
 CREATE TABLE table_comments (
-       table_name TEXT UNIQUE NOT NULL,
+       table_name TEXT NOT NULL,
        comment_text TEXT NOT NULL
 );
+CREATE UNIQUE INDEX table_comments_table_name_idx ON table_comments(table_name);
 CREATE TABLE column_comments (
        table_name TEXT  NOT NULL,
        column_name TEXT  NOT NULL,
        comment_text TEXT NOT NULL
 );
-CREATE UNIQUE INDEX ON column_comments(table_name,column_name);
+CREATE UNIQUE INDEX column_comments_table_name_column_name_idx ON column_comments(table_name,column_name);
 
 
 CREATE TABLE correspondent (
        id SERIAL PRIMARY KEY,
        addr TEXT NOT NULL
 );
-CREATE UNIQUE INDEX ON correspondent(addr);
+CREATE UNIQUE INDEX correspondent_addr_idx ON correspondent(addr);
 INSERT INTO table_comments VALUES ('correspondent','Individual who has corresponded with the BTS');
 INSERT INTO column_comments VALUES ('correspondent','id','Correspondent ID');
 INSERT INTO column_comments VALUES ('correspondent','addr','Correspondent address');
@@ -61,8 +64,8 @@ CREATE TABLE maintainer (
        created TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
        modified TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
-CREATE UNIQUE INDEX ON maintainer(name);
-CREATE INDEX ON maintainer(correspondent);
+CREATE UNIQUE INDEX maintainer_name_idx ON maintainer(name);
+CREATE INDEX maintainer_idx_correspondent ON maintainer(correspondent);
 INSERT INTO table_comments  VALUES ('maintainer','Package maintainer names');
 INSERT INTO column_comments VALUES ('maintainer','id','Package maintainer id');
 INSERT INTO column_comments VALUES ('maintainer','name','Name of package maintainer');
@@ -78,8 +81,8 @@ CREATE TABLE severity (
        strong BOOLEAN DEFAULT FALSE,
        obsolete BOOLEAN DEFAULT FALSE
 );
-CREATE UNIQUE INDEX ON severity(severity);
-CREATE INDEX ON severity(ordering);
+CREATE UNIQUE INDEX severity_severity_idx ON severity(severity);
+CREATE INDEX severity_ordering_idx ON severity(ordering);
 INSERT INTO table_comments VALUES ('severity','Bug severity');
 INSERT INTO column_comments VALUES ('severity','id','Severity id');
 INSERT INTO column_comments VALUES ('severity','severity','Severity name');
@@ -109,12 +112,15 @@ CREATE TABLE bug (
        submitter_full TEXT NOT NULL DEFAULT '',
        unknown_packages TEXT NOT NULL DEfAULT ''
 );
-CREATE INDEX ON bug(owner);
-CREATE INDEX ON bug(submitter);
-CREATE INDEX ON bug(done);
-CREATE INDEX ON bug(forwarded);
-CREATE INDEX ON bug(last_modified);
-CREATE INDEX ON bug(severity);
+CREATE INDEX bug_idx_owner ON bug(owner);
+CREATE INDEX bug_idx_submitter ON bug(submitter);
+CREATE INDEX bug_idx_done ON bug(done);
+CREATE INDEX bug_idx_forwarded ON bug(forwarded);
+CREATE INDEX bug_idx_last_modified ON bug(last_modified);
+CREATE INDEX bug_idx_severity ON bug(severity);
+CREATE INDEX bug_idx_creation ON bug(creation);
+CREATE INDEX bug_idx_log_modified ON bug(log_modified);
+
 INSERT INTO table_comments VALUES ('bug','Bugs');
 INSERT INTO column_comments VALUES ('bug','id','Bug number');
 INSERT INTO column_comments VALUES ('bug','creation','Time bug created');
@@ -130,13 +136,6 @@ INSERT INTO column_comments VALUES ('bug','done','Individual who did the -done; 
 INSERT INTO column_comments VALUES ('bug','owner','Individual who owns this bug; empty if no one owns it');
 INSERT INTO column_comments VALUES ('bug','submitter','Individual who submitted this bug; empty if there is no submitter');
 INSERT INTO column_comments VALUES ('bug','unknown_packages','Package name if the package is not known');
-
-CREATE INDEX ON bug(creation);
-CREATE INDEX ON bug(log_modified);
-CREATE INDEX ON bug(done);
-CREATE INDEX ON bug(owner);
-CREATE INDEX ON bug(submitter);
-CREATE INDEX ON bug(forwarded);
 
 
 
@@ -193,7 +192,7 @@ CREATE TABLE src_ver (
        id SERIAL PRIMARY KEY,
        src_pkg INT NOT NULL REFERENCES src_pkg
             ON UPDATE CASCADE ON DELETE CASCADE,
-       ver public.debversion NOT NULL,
+       ver debversion NOT NULL,
        maintainer INT REFERENCES maintainer
             ON UPDATE CASCADE ON DELETE SET NULL,
        upload_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
@@ -227,7 +226,7 @@ CREATE TABLE bug_ver (
 CREATE INDEX bug_ver_src_pkg_id_idx ON bug_ver(src_pkg);
 CREATE INDEX bug_ver_src_pkg_id_src_ver_id_idx ON bug_ver(src_pkg,src_ver);
 CREATE INDEX bug_ver_src_ver_id_idx ON bug_ver(src_ver);
-CREATE UNIQUE INDEX ON bug_ver(bug,ver_string,found);
+CREATE UNIQUE INDEX bug_ver_bug_ver_string_found_idx ON bug_ver(bug,ver_string,found);
 INSERT INTO table_comments VALUES ('bug_ver','Bug versions');
 INSERT INTO column_comments VALUES ('bug_ver','id','Bug version id');
 INSERT INTO column_comments VALUES ('bug_ver','bug','Bug number');
@@ -241,8 +240,9 @@ INSERT INTO column_comments VALUES ('bug_ver','last_modified','Time that this en
 
 CREATE TABLE arch (
        id SERIAL PRIMARY KEY,
-       arch TEXT NOT NULL UNIQUE
+       arch TEXT NOT NULL
 );
+CREATE UNIQUE INDEX arch_arch_key ON arch(arch);
 INSERT INTO table_comments VALUES ('arch','Architectures');
 INSERT INTO column_comments VALUES ('arch','id','Architecture id');
 INSERT INTO column_comments VALUES ('arch','arch','Architecture name');
@@ -250,8 +250,9 @@ INSERT INTO column_comments VALUES ('arch','arch','Architecture name');
 
 CREATE TABLE bin_pkg (
        id SERIAL PRIMARY KEY,
-       pkg TEXT NOT NULL UNIQUE
+       pkg TEXT NOT NULL
 );
+CREATE UNIQUE INDEX bin_pkg_pkg_key ON bin_pkg(pkg);
 INSERT INTO table_comments VALUES ('bin_pkg','Binary packages');
 INSERT INTO column_comments VALUES ('bin_pkg','id','Binary package id');
 INSERT INTO column_comments VALUES ('bin_pkg','pkg','Binary package name');
@@ -265,11 +266,11 @@ CREATE TABLE bin_ver(
             ON UPDATE CASCADE ON DELETE CASCADE,
        arch INT NOT NULL REFERENCES arch
        	    ON UPDATE CASCADE ON DELETE CASCADE,
-       ver public.debversion NOT NULL
+       ver debversion NOT NULL
 );
 CREATE INDEX bin_ver_ver_idx ON bin_ver(ver);
-CREATE UNIQUE INDEX bin_ver_bin_pkg_id_arch_idx ON bin_ver(bin_pkg,arch_id,ver);
-CREATE UNIQUE INDEX bin_ver_src_ver_id_arch_idx ON bin_ver(src_ver_id,arch);
+CREATE UNIQUE INDEX bin_ver_bin_pkg_id_arch_idx ON bin_ver(bin_pkg,arch,ver);
+CREATE UNIQUE INDEX bin_ver_src_ver_id_arch_idx ON bin_ver(src_ver,arch);
 CREATE INDEX bin_ver_bin_pkg_id_idx ON bin_ver(bin_pkg);
 CREATE INDEX bin_ver_src_ver_id_idx ON bin_ver(src_ver);
 INSERT INTO table_comments VALUES ('bin_ver','Binary versions');
@@ -320,6 +321,9 @@ CREATE TABLE bug_srcpackage (
        src_pkg INT NOT NULL REFERENCES src_pkg ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE UNIQUE INDEX bug_srcpackage_id_pkg ON bug_srcpackage(bug,src_pkg);
+CREATE INDEX bug_srcpackage_idx_bug ON bug_srcpackage(bug);
+CREATE INDEX bug_srcpackage_idx_src_pkg ON bug_srcpackage(src_pkg);
+
 INSERT INTO table_comments VALUES ('bug_srcpackage','Bug <-> source package mapping');
 INSERT INTO column_comments VALUES ('bug_srcpackage','bug','Bug id (matches bug)');
 INSERT INTO column_comments VALUES ('bug_srcpackage','src_pkg','Source package id (matches src_pkg)');
@@ -360,12 +364,13 @@ CREATE VIEW binary_versions (src_pkg, src_ver, bin_pkg, arch, bin_ver) AS
 
 CREATE TABLE suite (
        id SERIAL PRIMARY KEY,
-       suite_name TEXT NOT NULL UNIQUE,
+       suite_name TEXT NOT NULL,
        version TEXT,
        codename TEXT,
        active BOOLEAN DEFAULT TRUE);
-CREATE INDEX ON suite(codename);
-CREATE INDEX ON suite(version);
+CREATE UNIQUE INDEX suite_suite_name_key ON suite(suite_name);
+CREATE INDEX suite_idx_codename ON suite(codename);
+CREATE INDEX suite_idx_version ON suite(version);
 INSERT INTO table_comments VALUES ('suite','Debian Release Suite (stable, testing, etc.)');
 INSERT INTO column_comments VALUES ('suite','id','Suite id');
 INSERT INTO column_comments VALUES ('suite','suite_name','Suite name');
@@ -413,9 +418,11 @@ CREATE TABLE bug_status_cache (
        modified TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
        asof TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
-CREATE UNIQUE INDEX ON bug_status_cache(bug,suite,arch);
-CREATE INDEX ON bug_status_cache(bug);
-CREATE INDEX ON bug_status_cache(status);
+CREATE UNIQUE INDEX bug_status_cache_bug_suite_arch_idx ON bug_status_cache(bug,suite,arch);
+CREATE INDEX bug_status_cache_idx_bug ON bug_status_cache(bug);
+CREATE INDEX bug_status_cache_idx_status ON bug_status_cache(status);
+CREATE INDEX bug_status_cache_idx_arch ON bug_status_cache(arch);
+CREATE INDEX bug_status_cache_idx_suite ON bug_status_cache(suite);
 INSERT INTO table_comments  VALUES ('bug_status_cache','Source <-> suite associations');
 INSERT INTO column_comments VALUES ('bug_status_cache','id','Source <-> suite association id');
 INSERT INTO column_comments VALUES ('bug_status_cache','bug','Source <-> suite association id');
@@ -429,16 +436,16 @@ INSERT INTO column_comments VALUES ('bug_status_cache','asof','Source <-> suite 
 
 CREATE TABLE message (
        id SERIAL PRIMARY KEY,
-       msgid TEXT,
-       from_complete TEXT,
-       from_addr TEXT,
-       to_complete TEXT,
-       to_addr TEXT,
+       msgid TEXT NOT NULL DEFAULT '',
+       from_complete TEXT NOT NULL DEFAULT '',
+       from_addr TEXT NOT NULL DEFAULT '',
+       to_complete TEXT NOT NULL DEFAULT '',
+       to_addr TEXT NOT NULL DEFAULT '',
        subject TEXT NOT NULL DEFAULT '',
        sent_date TIMESTAMP WITH TIME ZONE,
        refs TEXT NOT NULL DEFAULT '',
-       spam_score FLOAT,
-       is_spam BOOLEAN DEFAULT FALSE
+       spam_score FLOAT NOT NULL DEFAULT 0,
+       is_spam BOOLEAN NOT NULL DEFAULT FALSE
 );
 INSERT INTO table_comments VALUES ('message','Messages sent to bugs');
 INSERT INTO column_comments VALUES ('message','id','Message id');
@@ -452,7 +459,10 @@ INSERT INTO column_comments VALUES ('message','sent_date','Time/date message was
 INSERT INTO column_comments VALUES ('message','refs','Contents of References: header');
 INSERT INTO column_comments VALUES ('message','spam_score','Spam score from spamassassin');
 INSERT INTO column_comments VALUES ('message','is_spam','True if this message was spam and should not be shown');
-CREATE INDEX ON message(msgid);
+CREATE INDEX message_msgid_idx ON message(msgid);
+CREATE UNIQUE INDEX message_msgid_from_complete_to_complete_subject_idx
+    ON message(msgid,from_complete,to_complete,subject);
+CREATE INDEX message_subject_idx ON message(subject);
 
 CREATE TABLE message_refs (
        id SERIAL PRIMARY KEY,
@@ -462,9 +472,9 @@ CREATE TABLE message_refs (
        primary_ref BOOLEAN DEFAULT FALSE,
        CONSTRAINT message_doesnt_reference_itself CHECK (message <> refs)
 );
-CREATE UNIQUE INDEX ON message_refs(message,refs);
-CREATE INDEX ON message_refs(refs);
-CREATE INDEX ON message_refs(message);
+CREATE UNIQUE INDEX message_refs_message_refs_idx ON message_refs(message,refs);
+CREATE INDEX message_refs_idx_refs ON message_refs(refs);
+CREATE INDEX message_refs_idx_message ON message_refs(message);
 INSERT INTO table_comments VALUES ('message_refs','Message references');
 INSERT INTO column_comments VALUES ('message_refs','message','Message id (matches message)');
 INSERT INTO column_comments VALUES ('message_refs','refs','Reference id (matches message)');
@@ -479,9 +489,10 @@ CREATE TABLE correspondent_full_name(
        full_name TEXT NOT NULL,
        last_seen TIMESTAMP NOT NULL DEFAULT NOW()
 );
-CREATE UNIQUE INDEX ON correspondent_full_name(correspondent,full_name);
-CREATE INDEX ON correspondent_full_name(full_name);
-CREATE INDEX ON correspondent_full_name(last_seen);
+CREATE UNIQUE INDEX correspondent_full_name_correspondent_full_name_idx 
+    ON correspondent_full_name(correspondent,full_name);
+CREATE INDEX correspondent_full_name_idx_full_name ON correspondent_full_name(full_name);
+CREATE INDEX correspondent_full_name_idx_last_seen ON correspondent_full_name(last_seen);
 INSERT INTO table_comments VALUES ('correspondent_full_name','Full names of BTS correspondents');
 INSERT INTO column_comments VALUES ('correspondent_full_name','id','Correspondent full name id');
 INSERT INTO column_comments VALUES ('correspondent_full_name','correpsondent','Correspondent ID (matches correspondent)');
@@ -500,9 +511,10 @@ INSERT INTO column_comments VALUES ('message_correspondent','message','Message i
 INSERT INTO column_comments VALUES ('message_correspondent','correspondent','Correspondent (matches correspondent)');
 INSERT INTO column_comments VALUES ('message_correspondent','correspondent_type','Type of correspondent (to, from, envfrom, cc, etc.)');
 
-CREATE UNIQUE INDEX ON message_correspondent(message,correspondent,correspondent_type);
-CREATE INDEX ON message_correspondent(correspondent);
-CREATE INDEX ON message_correspondent(message);
+CREATE UNIQUE INDEX message_correspondent_message_correspondent_correspondent_t_idx 
+    ON message_correspondent(message,correspondent,correspondent_type);
+CREATE INDEX message_correspondent_idx_correspondent ON message_correspondent(correspondent);
+CREATE INDEX message_correspondent_idx_message ON message_correspondent(message);
 
 CREATE TABLE bug_message (
        id SERIAL PRIMARY KEY,
@@ -512,8 +524,8 @@ CREATE TABLE bug_message (
        bug_log_offset INT,
        offset_valid TIMESTAMP WITH TIME ZONE
 );
-CREATE UNIQUE INDEX ON bug_message(bug,message);
-CREATE INDEX ON bug_message(bug,message_number);
+CREATE UNIQUE INDEX bug_message_bug_message_idx ON bug_message(bug,message);
+CREATE INDEX bug_message_idx_bug_message_number ON bug_message(bug,message_number);
 INSERT INTO table_comments VALUES ('bug_mesage','Mapping between a bug and a message');
 INSERT INTO column_comments VALUES ('bug_message','bug','Bug id (matches bug)');
 INSERT INTO column_comments VALUES ('bug_message','message','Message id (matches message)');

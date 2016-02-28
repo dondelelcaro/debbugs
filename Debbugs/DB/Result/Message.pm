@@ -21,11 +21,13 @@ use base 'DBIx::Class::Core';
 
 =item * L<DBIx::Class::InflateColumn::DateTime>
 
+=item * L<DBIx::Class::TimeStamp>
+
 =back
 
 =cut
 
-__PACKAGE__->load_components("InflateColumn::DateTime");
+__PACKAGE__->load_components("InflateColumn::DateTime", "TimeStamp");
 
 =head1 TABLE: C<message>
 
@@ -47,35 +49,40 @@ Message id
 =head2 msgid
 
   data_type: 'text'
-  is_nullable: 1
+  default_value: (empty string)
+  is_nullable: 0
 
 Message id header
 
 =head2 from_complete
 
   data_type: 'text'
-  is_nullable: 1
+  default_value: (empty string)
+  is_nullable: 0
 
 Complete from header of message
 
 =head2 from_addr
 
   data_type: 'text'
-  is_nullable: 1
+  default_value: (empty string)
+  is_nullable: 0
 
 Address(es) of From: headers
 
 =head2 to_complete
 
   data_type: 'text'
-  is_nullable: 1
+  default_value: (empty string)
+  is_nullable: 0
 
 Complete to header of message
 
 =head2 to_addr
 
   data_type: 'text'
-  is_nullable: 1
+  default_value: (empty string)
+  is_nullable: 0
 
 Address(es) of To: header
 
@@ -105,7 +112,8 @@ Contents of References: header
 =head2 spam_score
 
   data_type: 'double precision'
-  is_nullable: 1
+  default_value: 0
+  is_nullable: 0
 
 Spam score from spamassassin
 
@@ -113,7 +121,7 @@ Spam score from spamassassin
 
   data_type: 'boolean'
   default_value: false
-  is_nullable: 1
+  is_nullable: 0
 
 True if this message was spam and should not be shown
 
@@ -128,15 +136,15 @@ __PACKAGE__->add_columns(
     sequence          => "message_id_seq",
   },
   "msgid",
-  { data_type => "text", is_nullable => 1 },
+  { data_type => "text", default_value => "", is_nullable => 0 },
   "from_complete",
-  { data_type => "text", is_nullable => 1 },
+  { data_type => "text", default_value => "", is_nullable => 0 },
   "from_addr",
-  { data_type => "text", is_nullable => 1 },
+  { data_type => "text", default_value => "", is_nullable => 0 },
   "to_complete",
-  { data_type => "text", is_nullable => 1 },
+  { data_type => "text", default_value => "", is_nullable => 0 },
   "to_addr",
-  { data_type => "text", is_nullable => 1 },
+  { data_type => "text", default_value => "", is_nullable => 0 },
   "subject",
   { data_type => "text", default_value => "", is_nullable => 0 },
   "sent_date",
@@ -144,9 +152,9 @@ __PACKAGE__->add_columns(
   "refs",
   { data_type => "text", default_value => "", is_nullable => 0 },
   "spam_score",
-  { data_type => "double precision", is_nullable => 1 },
+  { data_type => "double precision", default_value => 0, is_nullable => 0 },
   "is_spam",
-  { data_type => "boolean", default_value => \"false", is_nullable => 1 },
+  { data_type => "boolean", default_value => \"false", is_nullable => 0 },
 );
 
 =head1 PRIMARY KEY
@@ -160,6 +168,29 @@ __PACKAGE__->add_columns(
 =cut
 
 __PACKAGE__->set_primary_key("id");
+
+=head1 UNIQUE CONSTRAINTS
+
+=head2 C<message_msgid_from_complete_to_complete_subject_idx>
+
+=over 4
+
+=item * L</msgid>
+
+=item * L</from_complete>
+
+=item * L</to_complete>
+
+=item * L</subject>
+
+=back
+
+=cut
+
+__PACKAGE__->add_unique_constraint(
+  "message_msgid_from_complete_to_complete_subject_idx",
+  ["msgid", "from_complete", "to_complete", "subject"],
+);
 
 =head1 RELATIONS
 
@@ -224,8 +255,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07025 @ 2013-03-27 18:54:20
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:5H4wsTVgTSnpnO1XcbvhHA
+# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Dow6t1MS7ldAy6KBMtBWRQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -21,11 +21,13 @@ use base 'DBIx::Class::Core';
 
 =item * L<DBIx::Class::InflateColumn::DateTime>
 
+=item * L<DBIx::Class::TimeStamp>
+
 =back
 
 =cut
 
-__PACKAGE__->load_components("InflateColumn::DateTime");
+__PACKAGE__->load_components("InflateColumn::DateTime", "TimeStamp");
 
 =head1 TABLE: C<bug>
 
@@ -240,6 +242,36 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("id");
 
 =head1 RELATIONS
+
+=head2 bug_affects_binpackages
+
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::BugAffectsBinpackage>
+
+=cut
+
+__PACKAGE__->has_many(
+  "bug_affects_binpackages",
+  "Debbugs::DB::Result::BugAffectsBinpackage",
+  { "foreign.bug" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 bug_affects_srcpackages
+
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::BugAffectsSrcpackage>
+
+=cut
+
+__PACKAGE__->has_many(
+  "bug_affects_srcpackages",
+  "Debbugs::DB::Result::BugAffectsSrcpackage",
+  { "foreign.bug" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
 
 =head2 bug_binpackages
 
@@ -467,8 +499,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-09 20:27:54
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:iaePW9PF93j30EB5iY9Bag
+# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:rd0pst8cgR9UPi092sJebw
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 1;
