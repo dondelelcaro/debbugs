@@ -582,7 +582,7 @@ sub get_bugs_by_db{
      }
      # handle archive
      if (defined $param{archive} and $param{archive} ne 'both') {
-         $rs = $rs->search('me.archived' => $param{archive})
+         $rs = $rs->search({'me.archived' => $param{archive}})
      }
      return $rs->get_column('id')->all();
 }
