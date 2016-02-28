@@ -17,7 +17,7 @@ __PACKAGE__->load_namespaces;
 
 # This version must be incremented any time the schema changes so that
 # DBIx::Class::DeploymentHandler can do its work
-our $VERSION=1;
+our $VERSION=2;
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 1;
