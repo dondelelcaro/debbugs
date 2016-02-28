@@ -391,6 +391,34 @@ sub add_maintainers {
 
 sub add_configuration {
     my ($options,$opts,$p,$config,$argv) = @_;
+
+    my $s = db_connect($options);
+
+    # tags
+    # add all tags
+    # mark obsolete tags
+
+    # severities
+    my %sev_names;
+    my $order = 0;
+    for my $sev_name (@{$config{severities}}) {
+        # add all severitites
+        my $sev = $s->resultset('Severity')->find_or_create({severity => $sev_name});
+        # mark strong severities
+        if (grep $sev_name $config{strong_severities}) {
+            $sev->strong(1);
+        }
+        $sev->order($order);
+        $sev->update();
+        $order++;
+        $sev_names{$sev_name} = 1;
+    }
+    # mark obsolete severities
+    for my $sev ($s->resultset('Severity')->find()) {
+        next if exists $sev_names{$sev->severity()};
+        $sev->obsolete(1);
+        $sev->update();
+    }
 }
 
 sub add_suite {
@@ -432,6 +460,9 @@ sub add_logs {
                       die "failure while trying to load bug log $bug\n$@";
                   }
               });
+}
+
+sub add_packages {
 
 }
 
