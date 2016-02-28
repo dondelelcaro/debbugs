@@ -31,7 +31,7 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (load_bug    => [qw(load_bug handle_load_bug_queue)],
+     %EXPORT_TAGS = (load_bug    => [qw(load_bug handle_load_bug_queue load_bug_log)],
 		    );
      @EXPORT_OK = ();
      Exporter::export_ok_tags(keys %EXPORT_TAGS);
@@ -286,9 +286,19 @@ sub handle_load_bug_queue{
     }
 }
 
-=item load_bug_log
+=item load_bug_log -- load bug logs
 
-     load_bug_log(db => $db, bug => $bug_num);
+       load_bug_log(db  => $s,
+                    bug => $bug);
+
+
+=over
+
+=item db -- database 
+
+=item bug -- bug whose log should be loaded
+
+=back
 
 =cut
 
