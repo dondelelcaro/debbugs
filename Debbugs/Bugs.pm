@@ -506,7 +506,7 @@ sub get_bugs_by_db{
      # handle it, so bail out here
      for my $maint (make_list(exists $param{maint}?$param{maint}:[])) {
 	  if (defined $maint and $maint eq '') {
-	       die "Can't handle empty maint (unmaintained packages) in get_bugs_by_idx";
+	       die "Can't handle empty maint (unmaintained packages) in get_bugs_by_db";
 	  }
      }
 
