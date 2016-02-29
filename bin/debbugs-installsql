@@ -84,6 +84,7 @@ GetOptions(\%options,
            'service|s=s',
            'sysconfdir|c=s',
            'install',
+           'install_version_storage|install-version-storage',
            'upgrade',
            'current_version|current-version',
            'developer_prepare|developer-prepare',
@@ -98,7 +99,7 @@ $DEBUG = $options{debug};
 
 my @USAGE_ERRORS;
 
-my @exclusive_options = qw(install upgrade current_version);
+my @exclusive_options = qw(install upgrade current_version install_version_storage);
 if (1 < grep {exists $options{$_}} @exclusive_options) {
       push @USAGE_ERRORS,"You must only give one of the ".
           join(', ',map {s/_/-/g; "--".$_} @exclusive_options).
@@ -142,6 +143,9 @@ if ($options{current_version}) {
 } elsif ($options{upgrade}) {
     $dh->prepare_upgrade;
     $dh->upgrade;
+} elsif ($options{install_version_storage}) {
+    $dh->prepare_version_storage_install;
+    $dh->install_version_storage;
 }
 
 
