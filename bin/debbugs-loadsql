@@ -416,7 +416,7 @@ sub add_configuration {
         # add all severitites
         my $sev = $s->resultset('Severity')->find_or_create({severity => $sev_name});
         # mark strong severities
-        if (grep $sev_name $config{strong_severities}) {
+        if (grep {$_ eq $sev_name} @{$config{strong_severities}}) {
             $sev->strong(1);
         }
         $sev->order($order);
