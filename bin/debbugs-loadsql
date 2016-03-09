@@ -332,7 +332,7 @@ sub add_debinfo {
             }
             my $sv = $s->resultset('SrcVer')->find_or_create({src_pkg =>$sp->id(),
                                                               ver => $srcver});
-            if ($ct_date < $sv->upload_date()) {
+            if (not defined $sv->upload_date() or $ct_date < $sv->upload_date()) {
                 $sv->upload_date($ct_date);
                 $sv->update;
             }
