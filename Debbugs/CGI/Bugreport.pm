@@ -395,10 +395,10 @@ sub handle_record{
 		      {$1.$2.(bug_links(bug=>$3)).$4.
 			   english_join([map {bug_links(bug=>$_)} (split /\,?\s+(?:and\s+)?/, $5)])}eo;
 	  # Add links to reassigned packages
-	  $output =~ s{(Bug\sreassigned\sfrom\spackage\s(?:[\`']|\&\#39;))([^']+?)((?:'|\&\#39;|\&quot\;)
+	  $output =~ s{($config{bug}\sreassigned\sfrom\spackage\s(?:[\`']|\&\#39;))([^']+?)((?:'|\&\#39;|\&quot\;)
                                \sto\s(?:[\`']|\&\#39;|\&quot\;))([^']+?)((?:'|\&\#39;|\&quot\;))}
-	  {$1.q(<a href=").html_escape(package_links(package=>$2)).qq(">$2</a>).$3.
-               q(<a href=").html_escape(package_links(package=>$4)).qq(">$4</a>).$5}exo;
+	  {$1.package_links(package=>$2).$3.
+               package_links(package=>$4).$5}exo;
 	  if (defined $time) {
 	       $output .= ' ('.strftime('%a, %d %b %Y %T GMT',gmtime($time)).') ';
 	  }
