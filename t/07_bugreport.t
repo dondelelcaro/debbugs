@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 
 
-use Test::More tests => 14;
+use Test::More tests => 16;
 
 use warnings;
 use strict;
@@ -100,6 +100,10 @@ my @control_commands =
       forwarded_foo      => {command => 'forwarded',
 			     value   => 'https://foo.invalid/bugs?id=1',
 			     regex   => qr{<strong>Set bug forwarded-to-address to &#39;<a href="https://foo\.invalid/bugs\?id=1">https://foo\.invalid/bugs\?id=1</a>&#39;\.},
+			    },
+      forwarded_foo_2    => {command => 'forwarded',
+			     value   => 'https://foo.example/bugs?id=1',
+			     regex   => qr{<strong>Changed bug forwarded-to-address to &#39;<a href="https://foo\.example/bugs\?id=1">https://foo\.example/bugs\?id=1</a>&#39; from &#39;<a href="https://foo\.invalid/bugs\?id=1">https://foo\.invalid/bugs\?id=1</a>&#39;\.},
 			    },
       clone        => {command => 'clone',
 		       value   => '-1',
