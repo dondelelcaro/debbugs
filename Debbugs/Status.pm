@@ -270,7 +270,7 @@ sub read_bug{
 	 # create the found/fixed hashes which indicate when a
 	 # particular version was marked found or marked fixed.
 	 @{$data{$field}}{@{$data{"${field}_versions"}}} =
-	      (('') x (@{$data{"${field}_date"}} - @{$data{"${field}_versions"}}),
+	      (('') x (@{$data{"${field}_versions"}} - @{$data{"${field}_date"}}),
 	       @{$data{"${field}_date"}});
     }
 
