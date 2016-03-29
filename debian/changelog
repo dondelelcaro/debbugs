@@ -91,6 +91,10 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
   * Raise Standards to 3.9.4 (after fixing several lintian issues).
   * Pass param bug=<NNN> to bugreport.html call in bugreport.cgi.
 
+  [Frank Lichtenheld]
+  * Fix broken link in changed forwarded-to address (closes: #782740)
+  * Fix package links in reassigned message (closes: #767327)
+
  --
 
 debbugs (2.4.2~exp1) experimental; urgency=low
