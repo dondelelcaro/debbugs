@@ -50,7 +50,8 @@ use POSIX qw(ceil);
 use Storable qw(dclone);
 
 use List::Util qw(max);
-
+use File::stat;
+use Digest::MD5 qw(md5_hex);
 use Carp;
 
 use Debbugs::Text qw(fill_in_template);
@@ -77,6 +78,7 @@ BEGIN{
 		     usertags => [qw(add_user)],
 		     misc   => [qw(maint_decode)],
 		     package_search => [qw(@package_search_key_order %package_search_keys)],
+		     cache => [qw(calculate_etag etag_does_not_match)],
 		     #status => [qw(getbugstatus)],
 		    );
      @EXPORT_OK = ();
@@ -934,6 +936,77 @@ sub maint_decode {
 	  push @output,$decoded;
      }
      wantarray ? @output : $output[0];
+}
+
+=head1 cache
+
+=head2 calculate_etags
+
+    calculate_etags(files => [qw(list of files)],additional_data => [qw(any additional data)]);
+
+=cut
+
+sub calculate_etags {
+    my %param =
+	validate_with(params => \@_,
+		      spec => {files => {type => ARRAYREF,
+					 default => [],
+					},
+			       additional_data => {type => ARRAYREF,
+						   default => [],
+						  },
+			      },
+		     );
+    my @additional_data = @{$param{additional_data}};
+    for my $file (@{$param{files}}) {
+	my $st = File::stat($file) or warn "Unable to stat $file:: $!";
+	push @additional_data,$st->mtime;
+	push @additional_data,$st->size;
+    }
+    return(md5_hex(join('',sort @additional_data)));
+}
+
+=head2 etag_does_not_match
+
+     etag_does_not_match(cgi=>$q,files=>[qw(list of files)],
+         additional_data=>[qw(any additional data)])
+
+
+Checks to see if the CGI request contains an etag which matches the calculated
+etag.
+
+If there wasn't an etag given, or the etag given doesn't match, return the etag.
+
+If the etag does match, return 0.
+
+=cut
+
+sub etag_does_not_match {
+    my %param =
+	validate_with(params => \@_,
+		      spec => {files => {type => ARRAYREF,
+					 default => [],
+					},
+			       additional_data => {type => ARRAYREF,
+						   default => [],
+						  },
+			       cgi => {type => OBJECT},
+			      },
+		     );
+    my $submitted_etag =
+	$param{cgi}->http('if-none-match');
+    my $etag =
+	calculate_etags(files=>$param{files},
+			additional_data=>$param{additional_data});
+    if (not defined $submitted_etag or
+	length($submitted_etag) != 32
+	or $etag ne $submitted_etag
+       ) {
+	return $etag;
+    }
+    if ($etag eq $submitted_etag) {
+	return 0;
+    }
 }
 
 
