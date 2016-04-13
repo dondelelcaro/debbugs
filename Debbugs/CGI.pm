@@ -161,7 +161,9 @@ sub munge_url {
      while (my ($key,$value) = splice @old_param,0,2) {
 	  push @new_param,($key,$value) unless exists $params{$key};
      }
-     $new_url->query_form(@new_param,%params);
+     $new_url->query_form(@new_param,
+			  map {($_,$params{$_})}
+			  sort keys %params);
      return $new_url->as_string;
 }
 
