@@ -19,11 +19,9 @@ use CGI::Simple;
 
 use Debbugs::Config qw(:config);
 
-BEGIN{
-     # $CGI::Alert::Maintainer = $config{maintainer};
-}
+our $VERSION=1;
 
-use Debbugs::CGI qw(htmlize_packagelinks html_escape cgi_parameters munge_url);
+use Debbugs::CGI qw(htmlize_packagelinks html_escape cgi_parameters munge_url :cache);
 use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
 use Debbugs::Packages qw(get_versions makesourceversions);
@@ -56,21 +54,6 @@ my $this = munge_url('version.cgi?',
 		     %cgi_var,
 		    );
 
-# we want to first load the appropriate file,
-# then figure out which versions are there in which architectures,
-my %versions;
-my %version_to_dist;
-for my $dist (@{$config{distributions}}) {
-     $versions{$dist} = [get_versions(package => [split /\s*,\s*/, $cgi_var{package}],
-				      dist => $dist,
-				      source => 1,
-				     )];
-     # make version_to_dist
-     foreach my $version (@{$versions{$dist}}){
-	  push @{$version_to_dist{$version}}, $dist;
-     }
-}
-
 if (defined $cgi_var{width}) {
      $cgi_var{width} =~ /(\d+)/;
      $cgi_var{width} = $1;
@@ -88,9 +71,27 @@ else {
      $cgi_var{format} = 'png';
 }
 
+my $etag;
 if ($cgi_var{info} and not defined $cgi_var{dot}) {
-     print "Content-Type: text/html\n\n";
-     print <<END;
+    $etag = etag_does_not_match(cgi=>$q,
+				additional_data=>[grep {defined $_ ? $_ : ()}
+						  @cgi_var{(qw(package ignore_boring),
+							    qw(collapse))
+						       },
+						  $this,
+						  $VERSION],
+			       );
+    if (not $etag) {
+	print $q->header(-status => 304);
+	print "304: Not modified\n";
+	exit 0;
+    }
+    print $q->header(-status => 200,
+		     -cache_control => 'public, max-age=86400',
+		     -etag => $etag,
+		     -content_type => 'text/html',
+		    );
+    print <<END;
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 END
@@ -110,6 +111,21 @@ END
 	  exit 0;
 }
 
+# we want to first load the appropriate file,
+# then figure out which versions are there in which architectures,
+my %versions;
+my %version_to_dist;
+for my $dist (@{$config{distributions}}) {
+     $versions{$dist} = [get_versions(package => [split /\s*,\s*/, $cgi_var{package}],
+				      dist => $dist,
+				      source => 1,
+				     )];
+     # make version_to_dist
+     foreach my $version (@{$versions{$dist}}){
+	  push @{$version_to_dist{$version}}, $dist;
+     }
+}
+
 # then figure out which are affected.
 # turn found and fixed into full versions
 @{$cgi_var{found}} = map {makesourceversions($_,undef,@{$cgi_var{found}})} split/\s*,\s*/, $cgi_var{package};
@@ -121,13 +137,36 @@ my %sources;
 @sources{map {m{(.+)/}; $1} @{$cgi_var{found}}} = (1) x @{$cgi_var{found}};
 @sources{map {m{(.+)/}; $1} @{$cgi_var{fixed}}} = (1) x @{$cgi_var{fixed}};
 @sources{map {m{(.+)/}; $1} @interesting_versions} = (1) x @interesting_versions;
-my $version = Debbugs::Versions->new(\&Debbugs::Versions::Dpkg::vercmp);
+
+# at this point, we know enough to calculate the etag.
+
+my @versions_files;
 foreach my $source (keys %sources) {
-     my $srchash = substr $source, 0, 1;
-     next unless -e "$config{version_packages_dir}/$srchash/$source";
-     my $version_fh = IO::File->new("$config{version_packages_dir}/$srchash/$source", 'r') or
-	  warn "Unable to open $config{version_packages_dir}/$srchash/$source for reading: $!";
-     $version->load($version_fh);
+    my $srchash = substr $source, 0, 1;
+    next unless -e "$config{version_packages_dir}/$srchash/$source";
+    push @versions_files, "$config{version_packages_dir}/$srchash/$source";
+}
+
+$etag = etag_does_not_match(cgi=>$q,
+			    additional_data=>[@cgi_var{(qw(package ignore_boring),
+							qw(collapse))
+						   },
+					      $this,
+					      $VERSION],
+			    files => [@versions_files
+				     ],
+			   );
+if (not $etag) {
+    print $q->header(-status => 304);
+    print "304: Not modified\n";
+    exit 0;
+}
+
+my $version = Debbugs::Versions->new(\&Debbugs::Versions::Dpkg::vercmp);
+for my $version_fn (@versions_files) {
+    my $version_fh = IO::File->new($version_fn, 'r') or
+	warn "Unable to open $version_fn for reading: $!";
+    $version->load($version_fh);
 }
 # Here, we need to generate a short version to full version map
 my %version_map;
@@ -294,12 +333,20 @@ if (not defined $cgi_var{dot}) {
 	  or print "Content-Type: text\n\nDot failed." and die "Dot failed: $?";
      my $img_fh = IO::File->new("$temp_dir/temp.$cgi_var{format}", 'r') or
 	  die "Unable to open $temp_dir/temp.$cgi_var{format} for reading: $!";
-     print "Content-Type: $img_types{$cgi_var{format}}\n\n";
+    print $q->header(-status => 200,
+		     -cache_control => 'public, max-age=300',
+		     -etag => $etag,
+		     -content_type => $img_types{$cgi_var{format}},
+		    );
      print <$img_fh>;
      close $img_fh;
 }
 else {
-     print "Content-Type: text\n\n";
+    print $q->header(-status => 200,
+		     -cache_control => 'public, max-age=300',
+		     -etag => $etag,
+		     -content_type => 'text',
+		    );
      print $dot;
 }
 
