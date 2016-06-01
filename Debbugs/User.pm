@@ -109,6 +109,23 @@ sub is_valid_user {
     return ($u =~ /^[a-zA-Z0-9._+-]+[@][a-z0-9-.]{4,}$/);
 }
 
+=head2 usertag_file_from_email
+
+     my $filename = usertag_file_from_email($email)
+
+Turns an email into the filename where the usertag can be located.
+
+=cut
+
+sub usertag_file_from_email {
+    my ($email) = @_;
+    my $email_length = length($email) % 7;
+    my $escaped_email = $email;
+    $escaped_email =~ s/([^0-9a-zA-Z_+.-])/sprintf("%%%02X", ord($1))/eg;
+    return "$config{usertag_dir}/$email_length/$escaped_email";
+}
+
+
 #######################################################################
 # The real deal
 
@@ -141,7 +158,7 @@ sub new {
 	       };
     bless $self, $class;
 
-    $self->{filename} = _file_from_email($self->{email});
+    $self->{filename} = usertag_file_from_email($self->{email});
     if (not -r $self->{filename}) {
 	 return $self;
     }
@@ -347,22 +364,6 @@ sub write_usertags {
 
 
 =head1 PRIVATE FUNCTIONS
-
-=head2 _file_from_email
-
-     my $filename = _file_from_email($email)
-
-Turns an email into the filename where the usertag can be located.
-
-=cut
-
-sub _file_from_email {
-    my ($email) = @_;
-    my $email_length = length($email) % 7;
-    my $escaped_email = $email;
-    $escaped_email =~ s/([^0-9a-zA-Z_+.-])/sprintf("%%%02X", ord($1))/eg;
-    return "$config{usertag_dir}/$email_length/$escaped_email";
-}
 
 =head2 _read_stanza
 
