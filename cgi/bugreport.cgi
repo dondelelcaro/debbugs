@@ -73,6 +73,17 @@ my $mbox = $param{'mbox'} eq 'yes';
 my $mime = $param{'mime'} eq 'yes';
 my $avatars = $param{avatars} eq 'yes';
 
+my $trim_headers = ($param{trim} || ((defined $msg and $msg)?'no':'yes')) eq 'yes';
+
+my $mbox_status_message = $param{mboxstat} eq 'yes';
+my $mbox_maint = $param{mboxmaint} eq 'yes';
+$mbox = 1 if $mbox_status_message or $mbox_maint;
+
+# Not used by this script directly, but fetch these so that pkgurl() and
+# friends can propagate them correctly.
+my $archive = $param{'archive'} eq 'yes';
+my $repeatmerged = $param{'repeatmerged'} eq 'yes';
+
 my %bugusertags;
 my %ut;
 my %seen_users;
@@ -122,20 +133,6 @@ if (defined $param{usertag}) {
 	  push @{$param{tag}}, split /,/, $t;
      }
 }
-
-
-my $trim_headers = ($param{trim} || ((defined $msg and $msg)?'no':'yes')) eq 'yes';
-
-my $mbox_status_message = $param{mboxstat} eq 'yes';
-my $mbox_maint = $param{mboxmaint} eq 'yes';
-$mbox = 1 if $mbox_status_message or $mbox_maint;
-
-
-# Not used by this script directly, but fetch these so that pkgurl() and
-# friends can propagate them correctly.
-my $archive = $param{'archive'} eq 'yes';
-my $repeatmerged = $param{'repeatmerged'} eq 'yes';
-
 
 
 my $buglogfh;
