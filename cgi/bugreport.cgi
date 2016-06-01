@@ -91,16 +91,24 @@ my %seen_users;
 my $buglog = buglog($ref);
 my $bug_status = bug_status($ref);
 if (not defined $buglog or not defined $bug_status) {
-     print $q->header(-status => "404 No such bug",
-		      -type => "text/html",
-		      -charset => 'utf-8',
-		     );
-     print fill_in_template(template=>'cgi/no_such_bug',
-			    variables => {modify_time => strftime('%a, %e %b %Y %T UTC', gmtime),
-					  bug_num     => $ref,
-					 },
-			   );
-     exit 0;
+    no_such_bug($q,$ref);
+}
+
+sub no_such_bug {
+    my ($q,$ref) = @_;
+    print $q->header(-status => 404,
+		     -content_type => "text/html",
+		     -charset => 'utf-8',
+		     -cache_control => 'public, max-age=600',
+		    );
+    print fill_in_template(template=>'cgi/no_such_bug',
+			   variables => {modify_time => strftime('%a, %e %b %Y %T UTC', gmtime),
+					 bug_num     => $ref,
+					},
+			  );
+    exit 0;
+}
+
 }
 
 # the log should almost always be newer, but just in case
@@ -300,16 +308,7 @@ my $tmain;
 my $dtime = strftime "%a, %e %b %Y %T UTC", gmtime;
 
 unless (%status) {
-    print $q->header(-type => "text/html",
-		     -charset => 'utf-8',
-		     (length $mtime)?(-last_modified => $mtime):(),
-		    );
-    print fill_in_template(template=>'cgi/no_such_bug',
-			   variables => {modify_time => $dtime,
-					 bug_num     => $ref,
-					},
-			  );
-    exit 0;
+    no_such_bug($q,$ref);
 }
 
 #$|=1;
