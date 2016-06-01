@@ -109,18 +109,55 @@ sub no_such_bug {
     exit 0;
 }
 
+## calculate etag for this bugreport.cgi call
+my $etag;
+## identify the files that we need to look at; if someone just wants the mbox,
+## they don't need to see anything but the buglog; otherwise, track what is
+## necessary for the usertags and things to calculate status.
+
+my @dependent_files = ($buglog);
+my $need_status = 0;
+if (not (($mbox and not $mbox_status_message) or
+	 (defined $att and defined $msg))) {
+    $need_status = 1;
+    push @dependent_files,
+	$bug_status,
+	defined $config{version_index} ? $config{version_index}:(),
+	defined $config{binary_source_map} ? $config{binary_source_map}:();
 }
 
-# the log should almost always be newer, but just in case
-my $log_mtime = +(stat $buglog)[9] || time;
-my $status_mtime = +(stat $bug_status)[9] || time;
-my $mtime = strftime '%a, %d %b %Y %T GMT', gmtime(max($status_mtime,$log_mtime));
+## Identify the users required
+for my $user (map {split /[\s*,\s*]+/} make_list($param{users}||[])) {
+    next unless length($user);
+    push @dependent_files,Debbugs::User::usertag_flie_from_email($user);
+}
+if (defined $param{usertag}) {
+    for my $usertag (make_list($param{usertag})) {
+	my ($user, $tag) = split /:/, $usertag, 2;
+	push @dependent_files,Debbugs::User::usertag_flie_from_email($user);
+    }
+}
+$etag =
+    etag_does_not_match(cgi => $q,
+			additional_data => [grep {defined $_ ? $_ :()}
+					    values %param
+					   ],
+			files => [@dependent_files,
+				 ],
+		       );
+if (not $etag) {
+    print $q->header(-status => 304);
+    print "304: Not modified\n";
+    exit 0;
+}
 
+## if they're just asking for the head, stop here.
 if ($q->request_method() eq 'HEAD' and not defined($att) and not $mbox) {
-     print $q->header(-type => "text/html",
-		      -charset => 'utf-8',
-		      (length $mtime)?(-last_modified => $mtime):(),
-		     );
+    print $q->header(-status => 200,
+		     -cache_control => 'public, max-age=600',
+		     -etag => $etag,
+		     -content_type => 'text/html',
+		    );
      exit 0;
 }
 
@@ -154,10 +191,12 @@ if ($buglog =~ m/\.gz$/) {
 }
 
 
-my %status =
-    %{split_status_fields(get_bug_status(bug=>$ref,
-					 bugusertags => \%bugusertags,
-					))};
+my %status;
+if ($need_status) {
+    %status = %{split_status_fields(get_bug_status(bug=>$ref,
+						   bugusertags => \%bugusertags,
+						  ))}
+}
 
 my @records;
 eval{
@@ -182,6 +221,8 @@ if ( $mbox ) {
      my $date = strftime "%a %b %d %T %Y", localtime;
      if (@records > 1) {
 	 print $q->header(-type => "text/plain",
+			  -cache_control => 'public, max-age=600',
+			  -etag => $etag,
 			  content_disposition => qq(attachment; filename="bug_${ref}.mbox"),
 			  (length $mtime)?(-last_modified => $mtime):(),
 			 );
@@ -189,6 +230,8 @@ if ( $mbox ) {
      else {
 	  $msg_num++;
 	  print $q->header(-type => "message/rfc822",
+			   -cache_control => 'public, max-age=86400',
+			   -etag => $etag,
 			   content_disposition => qq(attachment; filename="bug_${ref}_message_${msg_num}.mbox"),
 			   (length $mtime)?(-last_modified => $mtime):(),
 			  );
@@ -264,7 +307,11 @@ END
 else {
      if (defined $att and defined $msg and @records) {
 	 binmode(STDOUT,":raw");
-	  $msg_num++;
+	 $msg_num++;
+	 ## allow this to be cached for a week
+	 print "Status: 200 OK\n";
+	 print "Cache-control: public, max-age=604800\n";
+	 print "Etag: $etag\n";
 	  print handle_email_message($records[0],
 				     ref => $ref,
 				     msg_num => $msg_num,
@@ -394,7 +441,8 @@ my $descriptivehead = $indexentry;
 
 print $q->header(-type => "text/html",
 		 -charset => 'utf-8',
-		 (length $mtime)?(-last_modified => $mtime):(),
+		 -cache_control => 'public, max-age=300',
+		 -etag => $etag,
 		);
 
 print fill_in_template(template => 'cgi/bugreport',
