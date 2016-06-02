@@ -1,64 +1,42 @@
 # -*- mode: cperl;-*-
 
-use Test::More;
-
 use warnings;
 use strict;
 
-plan tests => 2;
+use Test::More;
+# The test functions are placed here to make things easier
+use lib qw(t/lib);
+use DebbugsTest qw(:all);
 
-my $port = 11343;
+plan tests => 3;
 
-our $child_pid = undef;
+my $port = 11344;
 
-END{
-     if (defined $child_pid) {
-	  my $temp_exit = $?;
-	  kill(15,$child_pid);
-	  waitpid(-1,0);
-	  $? = $temp_exit;
-     }
-}
-
-my $pid = fork;
-die "Unable to fork child" if not defined $pid;
-if ($pid) {
-     $child_pid = $pid;
-     # Wait for two seconds to let the child start
-     sleep 2;
-}
-else {
-    # UGH.
-    package SillyWebServer;
-    use HTTP::Server::Simple;
-    use base qw(HTTP::Server::Simple::CGI::Environment HTTP::Server::Simple);
-    sub handler {
-	my $fh;
-	open($fh,'-|',-e './cgi/version.cgi'? './cgi/version.cgi' : '../cgi/version.cgi');
-	my $headers;
-	my $status = 200;
-	while (<$fh>) {
-	    if (/^\s*$/ and $status) {
-		print "HTTP/1.1 $status OK\n";
-		print $headers;
-		$status = 0;
-		print $_;
-	    } elsif ($status) {
-		$headers .= $_;
-		if (/^Status:\s*(\d+)/i) {
-		    $status = $1;
-		}
-	    } else {
-		print $_;
+my $version_cgi_handler = sub {
+    my $fh;
+    open($fh,'-|',-e './cgi/version.cgi'? './cgi/version.cgi' : '../cgi/version.cgi');
+    my $headers;
+    my $status = 200;
+    while (<$fh>) {
+	if (/^\s*$/ and $status) {
+	    print "HTTP/1.1 $status OK\n";
+	    print $headers;
+	    $status = 0;
+	    print $_;
+	} elsif ($status) {
+	    $headers .= $_;
+	    if (/^Status:\s*(\d+)/i) {
+		$status = $1;
 	    }
-
+	} else {
+	    print $_;
 	}
-     }
-    my $server = SillyWebServer->new($port);
-    $server->run();
-    exit 0;
-}
+    }
+};
 
+
+ok(DebbugsTest::HTTPServer::fork_and_create_webserver($version_cgi_handler,$port),
+   'forked HTTP::Server::Simple successfully');
 
 use LWP::UserAgent;
 my $ua = LWP::UserAgent->new;
