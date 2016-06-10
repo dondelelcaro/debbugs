@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 
 
-use Test::More tests => 16;
+use Test::More tests => 18;
 
 use warnings;
 use strict;
@@ -19,6 +19,7 @@ use Cwd qw(getcwd);
 use Debbugs::MIME qw(create_mime_message);
 use File::Basename qw(dirname basename);
 use Test::WWW::Mechanize;
+use HTTP::Status qw(RC_NOT_MODIFIED);
 # The test functions are placed here to make things easier
 use lib qw(t/lib);
 use DebbugsTest qw(:all);
@@ -58,11 +59,27 @@ EOF
 
 # start up an HTTP::Server::Simple
 my $bugreport_cgi_handler = sub {
-     # I do not understand why this is necessary.
-     $ENV{DEBBUGS_CONFIG_FILE} = "$config{config_dir}/debbugs_config";
-     my $content = qx(perl -I. -T cgi/bugreport.cgi);
-     $content =~ s/^\s*Content-Type:[^\n]+\n*//si;
-     print $content;
+    # I do not understand why this is necessary.
+    $ENV{DEBBUGS_CONFIG_FILE} = "$config{config_dir}/debbugs_config";
+    my $fh;
+    open($fh,'-|',-e './cgi/version.cgi'? 'perl -I. -T ./cgi/bugreport.cgi' : 'perl -I. -T ../cgi/bugreport.cgi');
+    my $headers;
+    my $status = 200;
+    while (<$fh>) {
+        if (/^\s*$/ and $status) {
+            print "HTTP/1.1 $status OK\n";
+            print $headers;
+            $status = 0;
+            print $_;
+        } elsif ($status) {
+            $headers .= $_;
+            if (/^Status:\s*(\d+)/i) {
+                $status = $1;
+            }
+        } else {
+            print $_;
+        }
+    }
 };
 
 my $port = 11342;
@@ -76,6 +93,11 @@ $mech->get_ok('http://localhost:'.$port.'/?bug=1',
 	      'Page received ok');
 ok($mech->content() =~ qr/\<title\>\#1.+Submitting a bug/i,
    'Title of bug is submitting a bug');
+my $etag = $mech->response->header('Etag');
+$mech->get('http://localhost:'.$port.'/?bug=1',
+	   'If-None-Match' => $etag);
+is($mech->res->code, RC_NOT_MODIFIED,
+   'Not modified when the same ETag sent for bug');
 
 $mech->get_ok('http://localhost:'.$port.'/?bug=1;mbox=yes',
               'Page received ok');
@@ -86,9 +108,13 @@ ok($mech->content() =~ qr/^From /m,
 
 $mech->get_ok('http://localhost:'.$port.'/?bug=1;mboxmaint=yes',
               'Page received ok');
-print STDERR $mech->content();
 ok($mech->content() !~ qr/[\x01\x02\x03\x05\x06\x07]/i,
    'No unescaped states');
+$etag = $mech->response->header('Etag');
+$mech->get('http://localhost:'.$port.'/?bug=1;mboxmaint=yes',
+	   'If-None-Match' => $etag);
+is($mech->res->code, RC_NOT_MODIFIED,
+   'Not modified when the same ETag sent for bug maintmbox');
 
 # now test the output of some control commands
 my @control_commands =

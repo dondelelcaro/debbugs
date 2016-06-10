@@ -15,11 +15,11 @@ use MIME::Decoder;
 use IO::Scalar;
 use IO::File;
 
-use Debbugs::Config qw(:globals :text);
+use Debbugs::Config qw(:globals :text :config);
 
 # for read_log_records
 use Debbugs::Log qw(:read);
-use Debbugs::CGI qw(:url :html :util);
+use Debbugs::CGI qw(:url :html :util :cache);
 use Debbugs::CGI::Bugreport qw(:all);
 use Debbugs::Common qw(buglog getmaintainers make_list bug_status);
 use Debbugs::Packages qw(getpkgsrc);
@@ -224,7 +224,6 @@ if ( $mbox ) {
 			  -cache_control => 'public, max-age=600',
 			  -etag => $etag,
 			  content_disposition => qq(attachment; filename="bug_${ref}.mbox"),
-			  (length $mtime)?(-last_modified => $mtime):(),
 			 );
      }
      else {
@@ -233,7 +232,6 @@ if ( $mbox ) {
 			   -cache_control => 'public, max-age=86400',
 			   -etag => $etag,
 			   content_disposition => qq(attachment; filename="bug_${ref}_message_${msg_num}.mbox"),
-			   (length $mtime)?(-last_modified => $mtime):(),
 			  );
      }
      if ($mbox_status_message and @records > 1) {
