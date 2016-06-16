@@ -220,7 +220,7 @@ if ( $mbox ) {
      binmode(STDOUT,":raw");
      my $date = strftime "%a %b %d %T %Y", localtime;
      if (@records > 1) {
-	 print $q->header(-type => "text/plain",
+	 print $q->header(-type => "application/mbox",
 			  -cache_control => 'public, max-age=600',
 			  -etag => $etag,
 			  content_disposition => qq(attachment; filename="bug_${ref}.mbox"),
