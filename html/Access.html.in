@@ -3,6 +3,7 @@ $gAccessHtml = <<HTML_END
 <html>
 <head>
   <title>$gProject $gBugs - Accessing the logs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rev="made" href="mailto:$gMaintainerEmail">
   <link rel="stylesheet" href="$gWebHostBugDir/css/bugs.css" type="text/css">
 </head>

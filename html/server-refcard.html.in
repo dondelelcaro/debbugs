@@ -3,6 +3,7 @@ $gRefcardHtml = <<HTML_END
 <html>
 <head>
   <title>$gProject $gBug system - mail servers' reference card</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rev="made" href="mailto:$gMaintainerEmail">
   <link rel="stylesheet" href="$gWebHostBugDir/css/bugs.css" type="text/css">
 </head>
