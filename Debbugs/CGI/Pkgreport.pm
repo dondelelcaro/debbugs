@@ -41,6 +41,7 @@ use Debbugs::Bugs qw(bug_filter);
 use Debbugs::Packages qw(:mapping);
 
 use Debbugs::Text qw(:templates);
+use Encode qw(encode_utf8);
 
 use POSIX qw(strftime);
 
@@ -167,7 +168,7 @@ sub generate_package_info{
 	  printf {$output} "<a href=\"%s\">report it</a>.</p>\n",
 	       html_escape("http://$config{web_domain}/Reporting$config{html_suffix}");
      }
-     return $output_scalar;
+     return encode_utf8($output_scalar);
 }
 
 
