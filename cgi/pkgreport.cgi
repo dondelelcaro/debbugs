@@ -436,7 +436,7 @@ my $result = pkg_htmlizebugs(bugs => \@bugs,
 			     (exists $param{dist})?(dist    => $param{dist}):(),
 			    );
 
-print "Cache-control: public, max-age=300\n";
+print "Cache-Control: public, max-age=300\n";
 print "Content-Type: text/html; charset=utf-8\n\n";
 
 print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";

@@ -308,7 +308,7 @@ else {
 	 $msg_num++;
 	 ## allow this to be cached for a week
 	 print "Status: 200 OK\n";
-	 print "Cache-control: public, max-age=604800\n";
+	 print "Cache-Control: public, max-age=604800\n";
 	 print "Etag: $etag\n";
 	  print handle_email_message($records[0],
 				     ref => $ref,
