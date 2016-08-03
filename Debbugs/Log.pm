@@ -16,7 +16,7 @@ use warnings;
 use strict;
 
 use vars qw($VERSION $DEBUG @EXPORT @EXPORT_OK %EXPORT_TAGS);
-use base qw(Exporter);
+use Exporter qw(import);
 
 BEGIN {
     $VERSION = 1.00;

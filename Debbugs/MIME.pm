@@ -32,7 +32,7 @@ None known.
 use warnings;
 use strict;
 
-use base qw(Exporter);
+use Exporter qw(import);
 use vars qw($DEBUG $VERSION @EXPORT_OK %EXPORT_TAGS @EXPORT);
 
 BEGIN {

@@ -25,7 +25,7 @@ None known.
 use warnings;
 use strict;
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
-use base qw(Exporter);
+use Exporter qw(import);
 
 BEGIN{
      ($VERSION) = q$Revision: 1221 $ =~ /^Revision:\s+([^\s+])/;

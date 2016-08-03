@@ -12,7 +12,7 @@ package Debbugs::Packages;
 use warnings;
 use strict;
 
-use base qw(Exporter);
+use Exporter qw(import);
 use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS @EXPORT);
 
 use Carp;

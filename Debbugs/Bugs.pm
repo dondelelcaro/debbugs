@@ -38,7 +38,7 @@ incomplete) to slowest (and most complete).]
 use warnings;
 use strict;
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
-use base qw(Exporter);
+use Exporter qw(import);
 
 BEGIN{
      $VERSION = 1.00;

@@ -25,7 +25,8 @@ use warnings;
 use strict;
 use vars qw($DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use Debbugs::SOAP::Server;
-use base qw(Exporter SOAP::Server::Parameters);
+use Exporter qw(import);
+use base qw(SOAP::Server::Parameters);
 
 BEGIN{
      $DEBUG = 0 unless defined $DEBUG;

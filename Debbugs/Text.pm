@@ -33,7 +33,7 @@ None known.
 
 
 use vars qw($DEBUG $VERSION @EXPORT_OK %EXPORT_TAGS @EXPORT @ISA);
-use base qw(Exporter);
+use Exporter qw(import);
 
 BEGIN {
      $VERSION = 1.00;

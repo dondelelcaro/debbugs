@@ -39,7 +39,7 @@ END
 use warnings;
 use strict;
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
-use base qw(Exporter);
+use Exporter qw(import);
 
 use IPC::Open3;
 use POSIX qw(:sys_wait_h strftime);

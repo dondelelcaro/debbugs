@@ -28,7 +28,7 @@ None known.
 use warnings;
 use strict;
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
-use base qw(Exporter);
+use Exporter qw(import);
 use Debbugs::Log;
 use Search::Estraier;
 use Debbugs::Common qw(getbuglocation getbugcomponent make_list);
