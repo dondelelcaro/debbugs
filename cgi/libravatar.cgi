@@ -13,7 +13,6 @@ use Debbugs::Libravatar qw(:libravatar);
 
 use Libravatar::URL;
 
-use LWP::UserAgent;
 use HTTP::Request;
 
 use CGI::Simple;

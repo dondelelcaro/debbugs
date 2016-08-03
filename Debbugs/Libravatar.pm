@@ -39,7 +39,6 @@ use Libravatar::URL;
 use CGI::Simple;
 use Debbugs::CGI qw(cgi_parameters);
 use Digest::MD5 qw(md5_hex);
-use LWP::UserAgent;
 use File::Temp qw(tempfile);
 use File::LibMagic;
 use Cwd qw(abs_path);
@@ -109,6 +108,8 @@ sub retrieve_libravatar{
             return $temp_location;
         }
     }
+    require LWP::UserAgent;
+
     my $dest_type;
     eval {
         my $uri = libravatar_url(email => $param{email},
