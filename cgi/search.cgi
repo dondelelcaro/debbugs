@@ -198,11 +198,11 @@ for my $attribute (@{$cgi_var{attribute}}) {
      }
      print qq(</select>\n);
      $$attribute{value}='' if not defined $$attribute{value};
-     print qq(<input type="text" name="attribute_value" value="$$attribute{value}"><input type="submit" name="delete_attribute_$attr_num" value="Delete"><br/>\n);
+     print qq(<input type="text" name="attribute_value" value="$$attribute{value}"><input type="submit" name="delete_attribute_$attr_num" value="Delete"><br>\n);
      $attr_num++;
 
 }
-print qq(<input type="submit" name="add_attribute" value="Add Attribute"><br/>);
+print qq(<input type="submit" name="add_attribute" value="Add Attribute"><br>);
 
 # order
 
@@ -269,9 +269,9 @@ if (defined $nres) {
 	  my $showseverity;
 	  $showseverity = "Severity: <em>$attr{severity}</em>;\n";
 	  print <<END;
-<li><a href="$url${bugnum}#${msgnum}">#${bugnum}: $attr{'@title'}</a> @{[htmlize_packagelinks($attr{package})]}<br/>
-$showseverity<br/>
-Sent by: @{[encode_entities($attr{'@author'})]} at $attr{'@cdate'}<br/>
+<li><a href="$url${bugnum}#${msgnum}">#${bugnum}: $attr{'@title'}</a> @{[htmlize_packagelinks($attr{package})]}<br>
+$showseverity<br>
+Sent by: @{[encode_entities($attr{'@author'})]} at $attr{'@cdate'}<br>
 END
 	  # Deal with the snippet
 	  # make the things that match bits of the phrase bold, the rest normal.

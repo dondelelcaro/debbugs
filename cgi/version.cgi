@@ -102,7 +102,7 @@ END
      print '<a href="'.html_escape(munge_url($this,collapse=>$cgi_var{collapse}?0:1)).
 	  '">['.($cgi_var{collapse}?"Don't c":'C').'ollapse]</a> ';
      print '<a href="'.html_escape(munge_url($this,dot=>1)).
-	  '">[Dot]</a><br/>';
+	  '">[Dot]</a><br>';
      print '<img src="'.html_escape(munge_url($this,info=>0)).'">';
      print <<END;
 </body>

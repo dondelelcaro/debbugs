@@ -17,7 +17,7 @@ function toggle_infmessages()
 </head>
 <body>
 <h1>{html_escape($config{project})} {html_escape($config{bug})} report logs - 
-<a href="mailto:{$bug_num}@{html_escape($config{email_domain})}">#{$bug_num}</a><br/>
+<a href="mailto:{$bug_num}@{html_escape($config{email_domain})}">#{$bug_num}</a><br>
 {html_escape($status{subject})}</h1>
 <div class="versiongraph">{$version_graph}</div>
 {include(q(cgi/bugreport_pkginfo))}
