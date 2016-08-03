@@ -8,12 +8,9 @@ use Debbugs::CGI qw(cgi_parameters);
 use Debbugs::Common;
 use Digest::MD5 qw(md5_hex);
 use File::LibMagic;
-use File::Temp qw(tempfile);
 use Debbugs::Libravatar qw(:libravatar);
 
 use Libravatar::URL;
-
-use HTTP::Request;
 
 use CGI::Simple;
 use Cwd qw(abs_path);
