@@ -50,22 +50,13 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (libravatar => [qw(cache_valid retrieve_libravatar cache_location)]
+     %EXPORT_TAGS = (libravatar => [qw(retrieve_libravatar cache_location)]
 		    );
      @EXPORT_OK = ();
      Exporter::export_ok_tags(keys %EXPORT_TAGS);
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
-sub cache_valid{
-    my ($cache_location) = @_;
-    if (-e $cache_location) {
-        if (time - (stat($cache_location))[9] < 60*60) {
-            return 1;
-        }
-    }
-    return 0;
-}
 
 =over
 
@@ -103,8 +94,8 @@ sub retrieve_libravatar{
     } else {
         # figure out if the cache is now valid; if it is, return the
         # cache location
-        my $temp_location = cache_location(email => $param{email});
-        if (cache_valid($temp_location)) {
+        my ($temp_location, $is_valid) = cache_location(email => $param{email});
+        if ($is_valid) {
             return $temp_location;
         }
     }
@@ -194,9 +185,13 @@ sub blocked_libravatar {
     return $blocked;
 }
 
+# Returns ($path, $is_valid)
+# - For blocked images, $path will be undef
+# - If $is_valid is false (and $path is not undef), the image should
+#   be re-fetched.
 sub cache_location {
     my %param = @_;
-    my $md5sum;
+    my ($md5sum, $stem);
     if (exists $param{md5sum}) {
         $md5sum = $param{md5sum};
     }elsif (exists $param{email}) {
@@ -204,13 +199,16 @@ sub cache_location {
     } else {
         croak("cache_location must be called with one of md5sum or email");
     }
-    return undef if blocked_libravatar($param{email},$md5sum);
-    for my $ext (qw(.png .jpg)) {
-        if (-e $config{libravatar_cache_dir}.'/'.$md5sum.$ext) {
-            return $config{libravatar_cache_dir}.'/'.$md5sum.$ext;
+    return (undef, 0) if blocked_libravatar($param{email},$md5sum);
+    $stem = $config{libravatar_cache_dir}.'/'.$md5sum;
+    for my $ext ('.png', '.jpg', '') {
+        my $path = $stem.$ext;
+        if (-e $path) {
+            my $is_valid = (time - (stat(_))[9] < 60*60) ? 1 : 0;
+            return ($path, $is_valid);
         }
     }
-    return $config{libravatar_cache_dir}.'/'.$md5sum;
+    return ($stem, 0);
 }
 
 ## the following is mod_perl specific
@@ -260,9 +258,9 @@ sub handler {
         return Apache2::Const::DECLINED();
     }
     # figure out what the md5sum of the e-mail is.
-    my $cache_location = cache_location(email => $email);
+    my ($cache_location, $is_valid) = cache_location(email => $email);
     # if we've got it, and it's less than one hour old, return it.
-    if (cache_valid($cache_location)) {
+    if ($is_valid) {
         serve_cache_mod_perl($cache_location,$r);
         return Apache2::Const::DECLINED();
     }

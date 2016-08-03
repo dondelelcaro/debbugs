@@ -32,9 +32,9 @@ if ($param{avatar} ne 'yes' or not defined $param{email} or not length $param{em
 
 # figure out what the md5sum of the e-mail is.
 my $email_md5sum = md5_hex(lc($param{email}));
-my $cache_location = cache_location(email => lc($param{email}));
+my ($cache_location, $is_valid) = cache_location(email => lc($param{email}));
 # if we've got it, and it's less than one hour old, return it.
-if (cache_valid($cache_location)) {
+if ($is_valid) {
     serve_cache($cache_location,$q);
     exit 0;
 }
