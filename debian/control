@@ -13,7 +13,7 @@ Build-Depends-Indep: libparams-validate-perl,
  libhttp-server-simple-perl, libtest-www-mechanize-perl,
  libmail-rfc822-address-perl, libsafe-hole-perl, libuser-perl,
  libconfig-simple-perl, libtest-pod-perl, liblist-moreutils-perl,
- libtext-template-perl
+ libtext-template-perl, graphviz
 Homepage: http://wiki.debian.org/Teams/Debbugs
 
 Package: debbugs
