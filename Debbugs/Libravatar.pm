@@ -118,7 +118,18 @@ sub retrieve_libravatar{
         $ua->max_size(30*1024);
         my $r = $ua->get($uri);
         if (not $r->is_success()) {
-            die "Not successful in request";
+            if ($r->code != 404) {
+                die "Not successful in request";
+            }
+            # No avatar - cache a negative result
+            if ($config{libravatar_default_image} =~ m/\.(png|jpg)$/) {
+                $dest_type = $1;
+
+                system('cp', '-laf', $config{libravatar_default_image},  $cache_location.'.'.$dest_type) == 0
+                  or die("Cannot copy $config{libravatar_default_image}");
+                # Returns from eval {}
+                return;
+            }
         }
         my $aborted = $r->header('Client-Aborted');
         # if we exceeded max size, I'm not sure if we'll be
