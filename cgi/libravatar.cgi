@@ -6,7 +6,6 @@ use strict;
 use Debbugs::Config qw(:config);
 use Debbugs::CGI qw(cgi_parameters);
 use Debbugs::Common;
-use Digest::MD5 qw(md5_hex);
 use File::LibMagic;
 use Debbugs::Libravatar qw(:libravatar);
 
@@ -30,8 +29,6 @@ if ($param{avatar} ne 'yes' or not defined $param{email} or not length $param{em
     exit 0;
 }
 
-# figure out what the md5sum of the e-mail is.
-my $email_md5sum = md5_hex(lc($param{email}));
 my ($cache_location, $is_valid) = cache_location(email => lc($param{email}));
 # if we've got it, and it's less than one hour old, return it.
 if ($is_valid) {
