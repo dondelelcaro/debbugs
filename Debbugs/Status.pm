@@ -416,7 +416,6 @@ data.
 =cut
 
 sub lockreadbugmerge {
-     my ($bug_num,$location) = @_;
      my $data = lockreadbug(@_);
      if (not defined $data) {
 	  return (0,undef);

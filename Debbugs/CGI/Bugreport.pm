@@ -126,7 +126,6 @@ sub display_entity {
     my $output = globify_scalar($param{output});
     my $entity = $param{entity};
     my $ref = $param{bug_num};
-    my $top = $param{outer};
     my $xmessage = $param{msg_num};
     my $attachments = $param{attachments};
 

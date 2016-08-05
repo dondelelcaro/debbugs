@@ -561,9 +561,7 @@ sub control_line {
 	    print {$transcript} "Failed to forcibly merge $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif ($ctl eq 'clone') {
-	my $origref = $matches[0];
 	my @newclonedids = split /\s+/, $matches[1];
-	my $newbugsneeded = scalar(@newclonedids);
 
 	eval {
 	    my %new_clones;

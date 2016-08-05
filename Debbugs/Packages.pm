@@ -234,7 +234,6 @@ sub binary_to_source{
 	    }
 	}
 	else {
-	    my $found_one_version = 0;
 	    for my $version (@versions) {
 		next unless exists $bin->{$version};
 		if (exists $bin->{$version}{all}) {
@@ -530,7 +529,6 @@ sub makesourceversions {
                           arch    => 'source',
                           versions => '0.1.1',
                           guess_source => 1,
-                          debug    => \$debug,
                           warnings => \$warnings,
                          );
 
@@ -573,7 +571,6 @@ sub make_source_versions {
 					},
 			     );
     my ($warnings) = globify_scalar(exists $param{warnings}?$param{warnings}:undef);
-    my ($debug)    = globify_scalar(exists $param{debug}   ?$param{debug}   :undef);
 
     my @packages = grep {defined $_ and length $_ } make_list($param{package});
     my @archs    = grep {defined $_ } make_list ($param{arch});

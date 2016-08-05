@@ -444,7 +444,6 @@ sub set_blocks {
 	    }
 	}
     }
-    my @new_blockers = keys %blockers;
     for my $data (@data) {
 	my $old_data = dclone($data);
 	# remove blockers and/or add new ones as appropriate
@@ -487,9 +486,7 @@ sub set_blocks {
     $mungable_blocks{add} = \%added_blockers if keys %added_blockers;
     my $new_locks = 0;
     for my $add_remove (keys %mungable_blocks) {
-	my @munge_blockers;
 	my %munge_blockers;
-	my $block_locks = 0;
 	for my $blocker (keys %{$mungable_blocks{$add_remove}}) {
 	    next if $munge_blockers{$blocker};
 	    my ($temp_locks, @blocking_data) =
@@ -628,10 +625,8 @@ sub set_tag {
 	__begin_control(%param,
 			command  => 'tag'
 		       );
-    my ($debug,$transcript) =
-	@info{qw(debug transcript)};
+    my $transcript = $info{transcript};
     my @data = @{$info{data}};
-    my @bugs = @{$info{bugs}};
     my @tags = make_list($param{tag});
     if (not @tags and ($param{remove} or $param{add})) {
 	if ($param{remove}) {
@@ -649,11 +644,9 @@ sub set_tag {
 	my $action = 'Did not alter tags';
 	my %tag_added = ();
 	my %tag_removed = ();
-	my %fixed_removed = ();
 	my @old_tags = split /\,?\s+/, $data->{keywords};
 	my %tags;
 	@tags{@old_tags} = (1) x @old_tags;
-	my $reopened = 0;
 	my $old_data = dclone($data);
 	if (not $param{add} and not $param{remove}) {
 	    $tag_removed{$_} = 1 for @old_tags;
@@ -773,10 +766,8 @@ sub set_severity {
 	__begin_control(%param,
 			command  => 'severity'
 		       );
-    my ($debug,$transcript) =
-	@info{qw(debug transcript)};
+    my $transcript = $info{transcript};
     my @data = @{$info{data}};
-    my @bugs = @{$info{bugs}};
 
     my $action = '';
     for my $data (@data) {
@@ -878,10 +869,8 @@ sub set_done {
 	__begin_control(%param,
 			command  => $param{reopen}?'reopen':'done',
 		       );
-    my ($debug,$transcript) =
-	@info{qw(debug transcript)};
+    my $transcript = $info{transcript};
     my @data = @{$info{data}};
-    my @bugs = @{$info{bugs}};
     my $action ='';
 
     if ($param{reopen}) {
@@ -941,7 +930,6 @@ sub set_done {
     }
     else {
 	my %submitter_notified;
-	my $requester_notified = 0;
 	my $orig_report_set = 0;
 	for my $data (@data) {
 	    if (exists $data->{done} and
@@ -1100,7 +1088,6 @@ sub set_submitter {
     my ($debug,$transcript) =
 	@info{qw(debug transcript)};
     my @data = @{$info{data}};
-    my @bugs = @{$info{bugs}};
     my $action = '';
     # here we only concern ourselves with the first of the merged bugs
     for my $data ($data[0]) {
@@ -1215,7 +1202,6 @@ sub set_forwarded {
     my ($debug,$transcript) =
 	@info{qw(debug transcript)};
     my @data = @{$info{data}};
-    my @bugs = @{$info{bugs}};
     my $action = '';
     for my $data (@data) {
 	my $old_data = dclone($data);
@@ -1304,7 +1290,6 @@ sub set_title {
     my ($debug,$transcript) =
 	@info{qw(debug transcript)};
     my @data = @{$info{data}};
-    my @bugs = @{$info{bugs}};
     my $action = '';
     for my $data (@data) {
 	my $old_data = dclone($data);
@@ -1399,7 +1384,6 @@ sub set_package {
     my ($debug,$transcript) =
 	@info{qw(debug transcript)};
     my @data = @{$info{data}};
-    my @bugs = @{$info{bugs}};
     # clean up the new package
     my $new_package =
 	join(',',
@@ -1523,7 +1507,6 @@ sub set_found {
     my ($debug,$transcript) =
 	@info{qw(debug transcript)};
     my @data = @{$info{data}};
-    my @bugs = @{$info{bugs}};
     my %versions;
     for my $version (make_list($param{found})) {
 	next unless defined $version;
@@ -1743,7 +1726,6 @@ sub set_fixed {
     my ($debug,$transcript) =
 	@info{qw(debug transcript)};
     my @data = @{$info{data}};
-    my @bugs = @{$info{bugs}};
     my %versions;
     for my $version (make_list($param{fixed})) {
 	next unless defined $version;
@@ -1970,7 +1952,6 @@ sub set_merged {
 	return;
     }
     my @data = @{$info{data}};
-    my @bugs = @{$info{bugs}};
     my %data;
     my %merged_bugs;
     for my $data (@data) {
@@ -1981,7 +1962,6 @@ sub set_merged {
     # handle unmerging
     my $new_locks = 0;
     if (not exists $param{merge_with}) {
-	my $ok_to_unmerge = 1;
 	delete $merged_bugs{$param{bug}};
 	if (not keys %merged_bugs) {
 	    print {$transcript} "Ignoring request to unmerge a bug which is not merged with any others.\n";
@@ -2015,9 +1995,6 @@ sub set_merged {
 	return;
     }
     # lock and load all of the bugs we need
-    my @bugs_to_load = keys %merging;
-    my $bug_to_load;
-    my %merge_added;
     my ($data,$n_locks) =
 	__lock_and_load_merged_bugs(bugs_to_load => [keys %merging],
 				    data => \@data,
@@ -2109,7 +2086,6 @@ sub set_merged {
 		    my %target_blockedby;
 		    @target_blockedby{@{$change->{func_value}}} = (1) x @{$change->{func_value}};
 		    my %unhandled_targets = %target_blockedby;
-		    my @blocks_to_remove;
 		    for my $key (split / /,$change->{orig_value}) {
 			delete $unhandled_targets{$key};
 			next if exists $target_blockedby{$key};
@@ -2560,7 +2536,6 @@ sub affects {
     my ($debug,$transcript) =
 	@info{qw(debug transcript)};
     my @data = @{$info{data}};
-    my @bugs = @{$info{bugs}};
     my $action = '';
     for my $data (@data) {
 	$action = '';
@@ -2738,7 +2713,6 @@ sub _summary {
     my ($debug,$transcript) =
 	@info{qw(debug transcript)};
     my @data = @{$info{data}};
-    my @bugs = @{$info{bugs}};
     # figure out the log that we're going to use
     my $summary = '';
     my $summary_msg = '';
@@ -2894,10 +2868,8 @@ sub clone_bug {
 	__begin_control(%param,
 			command  => 'clone'
 		       );
-    my ($debug,$transcript) =
-	@info{qw(debug transcript)};
+    my $transcript = $info{transcript};
     my @data = @{$info{data}};
-    my @bugs = @{$info{bugs}};
 
     my $action = '';
     for my $data (@data) {
@@ -3029,7 +3001,6 @@ sub owner {
      my ($debug,$transcript) =
 	@info{qw(debug transcript)};
      my @data = @{$info{data}};
-     my @bugs = @{$info{bugs}};
      my $action = '';
      for my $data (@data) {
 	  print {$debug} "Going to change owner to '".(defined $param{owner}?$param{owner}:'(going to unset it)')."'\n";
@@ -3242,7 +3213,6 @@ sub bug_unarchive {
 				command=>'unarchive');
      my ($debug,$transcript) =
 	 @info{qw(debug transcript)};
-     my @data = @{$info{data}};
      my @bugs = @{$info{bugs}};
      my $action = "$config{bug} unarchived.";
      my @files_to_remove;

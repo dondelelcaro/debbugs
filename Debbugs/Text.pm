@@ -64,7 +64,6 @@ use Data::Dumper;
 our %tt_templates;
 our %filled_templates;
 our $safe;
-our $hole = Safe::Hole->new({});
 our $language;
 
 # This function is what is called when someone does include('foo/bar')
