@@ -1076,6 +1076,7 @@ set_default(\%config,'html_tail',<<END);
  Copyright (C) 1999 Darren O. Benham,
  1997,2003 nCipher Corporation Ltd,
  1994-97 Ian Jackson.
+ </P>
  </ADDRESS>
 END
 
