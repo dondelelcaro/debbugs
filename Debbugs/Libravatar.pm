@@ -84,6 +84,7 @@ sub retrieve_libravatar{
         );
     my %param = @_;
     my $cache_location = $param{location};
+    my $timestamp;
     $cache_location =~ s/\.[^\.\/]+$//;
     # take out a lock on the cache location so that if another request
     # is made while we are serving this one, we don't do double work
@@ -94,9 +95,10 @@ sub retrieve_libravatar{
     } else {
         # figure out if the cache is now valid; if it is, return the
         # cache location
-        my ($temp_location, $is_valid) = cache_location(email => $param{email});
-        if ($is_valid) {
-            return $temp_location;
+	my $temp_location;
+        ($temp_location, $timestamp) = cache_location(email => $param{email});
+        if ($timestamp) {
+            return ($temp_location,$timestamp);
         }
     }
     require LWP::UserAgent;
@@ -166,7 +168,8 @@ sub retrieve_libravatar{
         return undef;
     }
     simple_unlockfile($fh,$lockfile);
-    return $cache_location.'.'.$dest_type;
+    $timestamp = (stat($cache_location.'.'.$dest_type))[9];
+    return ($cache_location.'.'.$dest_type,$timestamp);
 }
 
 sub blocked_libravatar {
@@ -185,9 +188,9 @@ sub blocked_libravatar {
     return $blocked;
 }
 
-# Returns ($path, $is_valid)
+# Returns ($path, $timestamp)
 # - For blocked images, $path will be undef
-# - If $is_valid is false (and $path is not undef), the image should
+# - If $timestamp is 0 (and $path is not undef), the image should
 #   be re-fetched.
 sub cache_location {
     my %param = @_;
@@ -204,8 +207,8 @@ sub cache_location {
     for my $ext ('.png', '.jpg', '') {
         my $path = $stem.$ext;
         if (-e $path) {
-            my $is_valid = (time - (stat(_))[9] < 60*60) ? 1 : 0;
-            return ($path, $is_valid);
+            my $timestamp = (time - (stat(_))[9] < 60*60) ? (stat(_))[9] : 0;
+            return ($path, $timestamp);
         }
     }
     return ($stem, 0);
@@ -258,21 +261,22 @@ sub handler {
         return Apache2::Const::DECLINED();
     }
     # figure out what the md5sum of the e-mail is.
-    my ($cache_location, $is_valid) = cache_location(email => $email);
+    my ($cache_location, $timestamp) = cache_location(email => $email);
     # if we've got it, and it's less than one hour old, return it.
-    if ($is_valid) {
+    if ($timestamp) {
         serve_cache_mod_perl($cache_location,$r);
         return Apache2::Const::DECLINED();
     }
-    $cache_location = retrieve_libravatar(location => $cache_location,
-                                          email => $email,
-                                         );
+    ($cache_location,$timestamp) =
+	retrieve_libravatar(location => $cache_location,
+			    email => $email,
+			   );
     if (not defined $cache_location) {
         # failure, serve the default image
-        serve_cache_mod_perl('',$r);
+        serve_cache_mod_perl('',$r,$timestamp);
         return Apache2::Const::DECLINED();
     } else {
-        serve_cache_mod_perl($cache_location,$r);
+        serve_cache_mod_perl($cache_location,$r,$timestamp);
         return Apache2::Const::DECLINED();
     }
 }
@@ -282,7 +286,7 @@ sub handler {
 our $magic;
 
 sub serve_cache_mod_perl {
-    my ($cache_location,$r) = @_;
+    my ($cache_location,$r,$timestamp) = @_;
     if (not defined $cache_location or not length $cache_location) {
         # serve the default image
         $cache_location = $config{libravatar_default_image};

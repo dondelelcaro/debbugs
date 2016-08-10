@@ -82,6 +82,7 @@ sub create_debbugs_configuration {
 \$gSpoolDir='$spool_dir';
 \$gLibPath='@{[getcwd()]}/scripts';
 \$gTemplateDir='@{[getcwd()]}/templates';
+\$gWebDir='@{[getcwd()]}/html';
 \$gWebHost='localhost';
 1;
 END
@@ -194,7 +195,7 @@ sub send_message{
 
 {
      package DebbugsTest::HTTPServer;
-     use base qw(HTTP::Server::Simple::CGI);
+     use base qw(HTTP::Server::Simple::CGI HTTP::Server::Simple::CGI::Environment);
 
      our $child_pid = undef;
      our $webserver = undef;
