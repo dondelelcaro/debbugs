@@ -959,7 +959,7 @@ sub calculate_etags {
 		     );
     my @additional_data = @{$param{additional_data}};
     for my $file (@{$param{files}}) {
-	my $st = stat($file) or warn "Unable to stat $file:: $!";
+	my $st = stat($file) or warn "Unable to stat $file: $!";
 	push @additional_data,$st->mtime;
 	push @additional_data,$st->size;
     }
