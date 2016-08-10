@@ -38,7 +38,7 @@ test_%: t/%.t
 	$(PERL) -MTest::Harness -I. -e 'runtests(q($<))'
 
 testcover:
-	PERLLIB=t/cover_lib/ cover -test
+	PERL5LIB=t/cover_lib/:. cover -test
 
 clean:
 	if [ -e Makefile.perl ]; then \
