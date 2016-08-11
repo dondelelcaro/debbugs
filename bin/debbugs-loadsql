@@ -142,6 +142,7 @@ my %subcommands =
      'versions' => {function => \&add_versions,
                    },
      'debinfo' => {function => \&add_debinfo,
+                   arguments => {'0|null' => 0},
                   },
      'maintainers' => {function => \&add_maintainers,
                       },
@@ -302,6 +303,16 @@ sub add_debinfo {
     my ($options,$opts,$p,$config,$argv) = @_;
 
     my @files = @{$argv};
+    if (not @files) {
+       {
+           if ($opts->{0}) {
+               local $/ = "\0";
+           }
+           while (<STDIN>) {
+               push @files, $_;
+           }
+       }
+    }
     return unless @files;
     my $s = db_connect($options);
     my %arch;
