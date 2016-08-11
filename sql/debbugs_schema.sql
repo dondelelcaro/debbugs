@@ -423,14 +423,14 @@ CREATE INDEX bug_status_cache_idx_bug ON bug_status_cache(bug);
 CREATE INDEX bug_status_cache_idx_status ON bug_status_cache(status);
 CREATE INDEX bug_status_cache_idx_arch ON bug_status_cache(arch);
 CREATE INDEX bug_status_cache_idx_suite ON bug_status_cache(suite);
-INSERT INTO table_comments  VALUES ('bug_status_cache','Source <-> suite associations');
-INSERT INTO column_comments VALUES ('bug_status_cache','id','Source <-> suite association id');
-INSERT INTO column_comments VALUES ('bug_status_cache','bug','Source <-> suite association id');
-INSERT INTO column_comments VALUES ('bug_status_cache','suite','Source <-> suite association id');
-INSERT INTO column_comments VALUES ('bug_status_cache','arch','Source <-> suite association id');
-INSERT INTO column_comments VALUES ('bug_status_cache','status','Source <-> suite association id');
-INSERT INTO column_comments VALUES ('bug_status_cache','modified','Source <-> suite association id');
-INSERT INTO column_comments VALUES ('bug_status_cache','asof','Source <-> suite association id');
+INSERT INTO table_comments  VALUES ('bug_status_cache','Bug Status Cache');
+INSERT INTO column_comments VALUES ('bug_status_cache','id','Bug status cache entry id');
+INSERT INTO column_comments VALUES ('bug_status_cache','bug','Bug number (matches bug)');
+INSERT INTO column_comments VALUES ('bug_status_cache','suite','Suite id (matches suite)');
+INSERT INTO column_comments VALUES ('bug_status_cache','arch','Architecture id (matches arch)');
+INSERT INTO column_comments VALUES ('bug_status_cache','status','Status (bug status)');
+INSERT INTO column_comments VALUES ('bug_status_cache','modified','Time that this status was last modified');
+INSERT INTO column_comments VALUES ('bug_status_cache','asof','Time that this status was last calculated');
 
 
 
