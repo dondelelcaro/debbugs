@@ -155,7 +155,7 @@ sub load_bug {
     for my $addr_type (keys %addr_map) {
         my @addrs = getparsedaddrs($data->{$addr_map{$addr_type}} // '');
         next unless @addrs;
-        $bug->{$addr_type} = $s->resultset('Correspondent')->find_or_create({addr => $addrs[0]->address()});
+        $bug->{$addr_type} = $s->resultset('Correspondent')->find_or_create({addr => lc($addrs[0]->address())});
         # insert the full name as well
         my $full_name = $addrs[0]->phrase();
         $full_name =~ s/^\"|\"$//g;
