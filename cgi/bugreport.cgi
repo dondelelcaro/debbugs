@@ -60,8 +60,8 @@ my %param = cgi_parameters(query => $q,
 			  );
 # This is craptacular.
 
-my $ref = $param{bug} or quitcgi("No bug number");
-$ref =~ /(\d+)/ or quitcgi("Invalid bug number");
+my $ref = $param{bug} or quitcgi("No bug number", '400 Bad Request');
+$ref =~ /(\d+)/ or quitcgi("Invalid bug number", '400 Bad Request');
 $ref = $1;
 my $short = "#$ref";
 my ($msg) = $param{msg} =~ /^(\d+)$/ if exists $param{msg};

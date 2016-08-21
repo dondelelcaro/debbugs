@@ -275,7 +275,8 @@ if (defined $param{usertag}) {
      }
 }
 
-quitcgi("You have to choose something to select by") unless grep {exists $param{$_}} keys %package_search_keys;
+quitcgi("You have to choose something to select by", '400 Bad Request')
+  unless grep {exists $param{$_}} keys %package_search_keys;
 
 
 my $Archived = $param{archive} ? " Archived" : "";

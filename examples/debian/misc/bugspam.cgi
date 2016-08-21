@@ -3,8 +3,10 @@
 use strict;
 use CGI qw(param remote_host);
 
-sub quitcgi($) {
-    my $msg = shift;
+sub quitcgi($;$) {
+    my ($msg, $status) = @_;
+    $status //= '500 Internal Server Error';
+    print "Status: $status\n";
     print "Content-Type: text/html\n\n";
     print "<HTML><HEAD><TITLE>Error</TITLE></HEAD><BODY>\n";
     print "An error occurred. Dammit.\n";
@@ -13,8 +15,8 @@ sub quitcgi($) {
     exit 0;
 }
 
-my $bug = param('bug') or quitcgi('No bug specfied');
-quitcgi('No valid bug number') unless $bug =~ /^\d{3,6}$/;
+my $bug = param('bug') or quitcgi('No bug specfied', '400 Bad Request');
+quitcgi('No valid bug number', '400 Bad Request') unless $bug =~ /^\d{3,6}$/;
 my $remote_host = remote_host or quitcgi("No remote host");
 my $ok = param('ok');
 if (not defined $ok) {

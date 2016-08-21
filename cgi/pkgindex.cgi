@@ -43,14 +43,14 @@ elsif (defined $param{prev}) {
 
 my $indexon = $param{indexon};
 if ($param{indexon} !~ m/^(pkg|src|maint|submitter|tag)$/) {
-    quitcgi("You have to choose something to index on");
+    quitcgi("You have to choose something to index on", '400 Bad Request');
 }
 
 my $repeatmerged = $param{repeatmerged} eq 'yes';
 my $archive = $param{archive} eq "yes";
 my $sortby = $param{sortby};
 if ($sortby !~ m/^(alpha|count)$/) {
-    quitcgi("Don't know how to sort like that");
+    quitcgi("Don't know how to sort like that", '400 Bad Request');
 }
 
 my $Archived = $archive ? " Archived" : "";
