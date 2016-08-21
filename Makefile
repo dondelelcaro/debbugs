@@ -24,6 +24,8 @@ install_exec	:= install -m755 -p
 install_data	:= install -m644 -p
 
 PERL ?= /usr/bin/perl
+# Some tests need to run under an UTF-8 locale.
+UTF8_LOCALE ?= C.UTF-8
 
 all: build test
 
@@ -32,13 +34,13 @@ build:
 	$(MAKE) -f Makefile.perl
 
 test:
-	$(PERL) -MTest::Harness -I. -e 'runtests(glob(q(t/*.t)))'
+	LC_ALL=$(UTF8_LOCALE) $(PERL) -MTest::Harness -I. -e 'runtests(glob(q(t/*.t)))'
 
 test_%: t/%.t
-	$(PERL) -MTest::Harness -I. -e 'runtests(q($<))'
+	LC_ALL=$(UTF8_LOCALE) $(PERL) -MTest::Harness -I. -e 'runtests(q($<))'
 
 testcover:
-	PERL5LIB=t/cover_lib/:. cover -test
+	LC_ALL=$(UTF8_LOCALE) PERL5LIB=t/cover_lib/:. cover -test
 
 clean:
 	if [ -e Makefile.perl ]; then \
