@@ -103,10 +103,11 @@ use Debbugs::Config qw(:config);
 use Debbugs::Status qw(read_bug split_status_fields);
 use Debbugs::Log;
 use Debbugs::DB;
-use Debbugs::DB::Load qw(load_bug handle_load_bug_queue);
+use Debbugs::DB::Load qw(load_bug handle_load_bug_queue :load_package);
 use DateTime;
 use File::stat;
-
+use IO::Dir;
+use IO::Uncompress::AnyUncompress;
 
 my %options =
     (debug           => 0,
@@ -152,6 +153,10 @@ my %subcommands =
                  },
      'logs' => {function => \&add_logs,
                },
+     'packages' => {function => \&add_packages,
+		    arguments => {'ftpdists=s' => 1,
+				 },
+		   },
      'help' => {function => sub {pod2usage({verbose => 2});}}
     );
 
@@ -485,7 +490,80 @@ sub add_logs {
 }
 
 sub add_packages {
+    my ($options,$opts,$p,$config,$argv) = @_;
 
+    my $s = db_connect($options);
+
+    my $dist_dir = IO::Dir->new($opts->{ftpdists});
+    my @dist_names =
+	grep { $_ !~ /^\./ and
+	       -d $opts->{ftpdists}.'/'.$_ and
+	       not -l $opts->{ftpdists}.'/'.$_
+	   } $dist_dir->read;
+    my %s_p;
+    my %s_info;
+    while (my $dist = shift @dist_names) {
+	my $dist_dir = $opts->{ftpdists}.'/'.$dist;
+	# parse release
+	my $rfh =  IO::Uncompress::AnyUncompress->new($dist_dir.'/Release');
+	my %dist_info;
+	my $in_sha1;
+	my %p_f;
+ 	while (<$rfh>) {
+	    chomp;
+	    if (s/^(\S+):\s*//) {
+		if ($1 eq 'SHA1'or $1 eq 'SHA256') {
+		    $in_sha1 = 1;
+		    next;
+		}
+		$dist_info{$1} = $_;
+	    } elsif ($in_sha1) {
+		s/^\s//;
+		my ($sha,$size,$file) = split /\s+/,$_;
+		next unless $file =~ /(?:Packages|Sources)(?:\.gz|\.xz)$/;
+		next unless $file =~ m{^([^/]+)/([^/]+)/([^/]+)$};
+		my ($component,$arch,$package_source) = ($1,$2,$3);
+		$arch =~ s/binary-//;
+		next if exists $p_f{$component}{$arch};
+		$p_f{$component}{$arch} = $dist_dir.'/'.$file;
+	    }
+	}
+	$s_p{$dist_info{Suite}} = \%p_f;
+	$s_info{$dist_info{Suite}} = \%s_info;
+    }
+    # parse packages files
+    for my $suite (keys %s_p) {
+	for my $component (keys %{$s_p{$suite}}) {
+	    for my $arch (keys %{$s_p{$suite}{$component}}) {
+		my $pfh =  IO::Uncompress::AnyUncompress->new($s_p{$suite}{$component}{$arch}) or
+		    die "Unable to open $s_p{$suite}{$component}{$arch} for reading: $!";
+		my $lastkey;
+		my %pkg;
+		while (<$pfh>) {
+		    if (/^$/) {
+			load_package($s,$suite,$component,$arch,\%pkg);
+			%pkg = ();
+			next;
+		    }
+		    if (my ($key, $value) = m/^(\S+): (.*)/) {
+			$pkg{$key} = $value;
+			$lastkey=$key;
+		    }
+		    else {
+			s/ //;
+			s/^\.$//;
+			chomp;
+			$pkg{$lastkey} .= "\n" . $_;
+		    }
+		}
+		if (keys %pkg) {
+		    load_package($s,$suite,$component,$arch,\%pkg);
+		}
+	    }
+	}
+    }
+    use Data::Printer;
+    p %s_p;
 }
 
 sub handle_subcommand_arguments {

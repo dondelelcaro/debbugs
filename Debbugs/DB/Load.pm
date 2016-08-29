@@ -32,6 +32,8 @@ BEGIN{
 
      @EXPORT = ();
      %EXPORT_TAGS = (load_bug    => [qw(load_bug handle_load_bug_queue load_bug_log)],
+		     load_debinfo => [qw(load_debinfo)],
+		     load_package => [qw(load_package)],
 		    );
      @EXPORT_OK = ();
      Exporter::export_ok_tags(keys %EXPORT_TAGS);
@@ -357,7 +359,7 @@ Commands to handle src and package version loading from debinfo files
 sub load_debinfo {
     my ($schema,$binname, $binver, $binarch, $srcname, $srcver) = @_;
     my $sp = $schema->resultset('SrcPkg')->find_or_create({pkg => $srcname});
-    my $sv = $schema->resultset('SrcVer')->find_or_create({src_pkg_id=>$sp->id(),
+    my $sv = $schema->resultset('SrcVer')->find_or_create({src_pkg=>$sp->id(),
                                                            ver => $srcver});
     my $arch = $schema->resultset('Arch')->find_or_create({arch => $binarch});
     my $bp = $schema->resultset('BinPkg')->find_or_create({pkg => $binname});
@@ -368,6 +370,78 @@ sub load_debinfo {
                                                  });
 }
 
+
+=back
+
+=head Packages
+
+=over
+
+=item load_package
+
+     load_package($schema,$suite,$component,$arch,$pkg)
+
+=cut
+
+sub load_package {
+    my ($schema,$suite,$component,$arch,$pkg) = @_;
+    if ($arch eq 'source') {
+	my $sp = $schema->resultset('SrcPkg')->find_or_create({pkg => $pkg->{Package}});
+	my $suite = $schema->resultset('Suite')->find_or_create({suite_name => $suite});
+	my $sv = $schema->resultset('SrcVer')->find_or_create({src_pkg =>$sp->id,
+							       ver => $pkg->{Version}});
+	my @addrs = getparsedaddrs($pkg->{Maintainer} // '');
+	if (@addrs) {
+	    my $mc = $schema->resultset('Correspondent')->
+		find_or_create({addr => lc($addrs[0]->address())});
+	    my $full_name = $addrs[0]->phrase();
+	    $full_name =~ s/^\"|\"$//g;
+	    $full_name =~ s/^\s+|\s+$//g;
+	    $sv->discard_changes;
+	    $sv->find_or_create_related('maintainer',
+				       {name => $full_name,
+					correspondent => $mc->id},
+				       );
+	    $mc->update_or_create_related('correspondent_full_names',
+					 {full_name=>$full_name,
+					  last_seen => 'NOW()'});
+	}
+	# update the link for this source package
+	$schema->
+	    txndo(sub {
+		     # delete associations for this source package in this
+		     # suite
+		     $schema->resultset('SrcAssociations')->
+			 search_rs({suite => $suite->id,})->
+			 search_related_rs('src_pkg',
+					  {src_pkg => $sp->id})->delete;
+		     $schema->resultset('SrcAssociations')->
+			 create({suite => $suite->id,
+				 source => $sv->id,
+				});
+		 });
+    } else {
+	my $bp = $schema->resultset('BinPkg')->find_or_create({pkg => $pkg->{Package}});
+	my $suite = $schema->resultset('Suite')->find_or_create({suite_name => $suite});
+	my ($bv) = $bp->search_related('bin_vers',{ver => $pkg->{Version}});
+	# if there isn't already a binary version for this package, we don't
+	# know what source it belongs to, so we can't associate it with a
+	# release
+	return if (not defined $bv);
+	$schema->
+	    txndo(sub {
+		      $schema->resultset('BinAssociations')->
+			  search_rs({suite => $suite->id,})->
+			  search_related_rs('bin_pkg',
+					   {bin_pkg_id => $bp->id}
+					   )->delete;
+		      $schema->resultset('BinAssociations')->
+			  create({suite => $suite->id,
+				  bin => $bv->id
+				 });
+		  });
+    }
+}
 
 =back
 
