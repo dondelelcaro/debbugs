@@ -13,6 +13,8 @@ use DB_File;
 use MLDBM qw(DB_FILE Storable);
 use Fcntl qw/O_RDWR O_CREAT O_TRUNC/;
 use File::Copy;
+use File::Path qw(make_path);
+use Cwd qw(abs_path);
 
 use Getopt::Long;
 use Pod::Usage;
@@ -68,27 +70,28 @@ Display this manual.
 $MLDBM::DumpMeth=q(portable);
 
 
-my %options = (debug           => 0,
-	       help            => 0,
-	       man             => 0,
-	       quick           => 0,
-	       index_path      => undef,
-	       );
-
-GetOptions(\%options,'quick!','index_path|index-path=s','debug|d+','help|h|?','man|m') or pod2usage(2);
-pod2usage(1) if $options{help};
-pod2usage(-verbose=>2) if $options{man};
-
 use Debbugs::Config qw(:config);
 use Debbugs::Common qw(getparsedaddrs getbugcomponent lockpid);
 use Debbugs::Status qw(readbug split_status_fields);
 use Debbugs::Log;
 use Debbugs::UTF8 qw(encode_utf8_structure);
 
-chdir($config{spool_dir}) or die "chdir $config{spool_dir} failed: $!";
+my %options = (debug           => 0,
+	       help            => 0,
+	       man             => 0,
+	       quick           => 0,
+	       index_path      => undef,
+	       spool_dir       => $config{spool_dir},
+	       );
+
+GetOptions(\%options,'quick!','index_path|index-path=s',
+	   'spool_dir|spool-dir=s',
+	   'debug|d+','help|h|?','man|m') or pod2usage(2);
+pod2usage(1) if $options{help};
+pod2usage(-verbose=>2) if $options{man};
 
 my $verbose = $options{debug};
-my $indexdest = $options{index_path} || $config{spool_dir};
+my $indexdest = abs_path($options{index_path}) || abs_path($options{spool_dir});
 
 my $initialdir = "db-h";
 my $suffix = "";
@@ -97,8 +100,11 @@ if (defined $ARGV[0] and $ARGV[0] eq "archive") {
     $initialdir = "archive";
     $suffix = "-arc";
 }
+$config{spool_dir} = $options{spool_dir};
 
-if (not lockpid($config{spool_dir}.'/lock/gen-indices')) {
+chdir($options{spool_dir}) or die "chdir $options{spool_dir} failed: $!";
+make_path('lock');
+if (not lockpid('lock/gen-indices')) {
      if ($options{quick}) {
 	  # If this is a quick run, just exit
 	  print STDERR "Another gen-indices is running; stopping\n" if $verbose;
@@ -251,4 +257,4 @@ for my $i (@indexes) {
     }
 }
 
-unlink($config{spool_dir}.'/lock/gen-indices')
+unlink('lock/gen-indices')
