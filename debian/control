@@ -62,7 +62,7 @@ Package: debbugs-web
 Architecture: all
 Depends:
  ${misc:Depends},
- libdebbugs-perl, apache2 | httpd
+ libdebbugs-perl, apache2 | httpd | debbugs-local
 Suggests: libcgi-alert-perl, libapache2-mod-perl2
 Description: web scripts for the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
