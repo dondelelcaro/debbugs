@@ -186,12 +186,15 @@ sub binary_to_source{
 					 cache => {type => HASHREF,
 						   default => {},
 						  },
+					 schema => {type => OBJECT,
+						    optional => 1,
+						   },
 					},
 			     );
 
     # TODO: This gets hit a lot, especially from buggyversion() - probably
     # need an extra cache for speed here.
-    return () unless defined $gBinarySourceMap;
+    return () unless defined $gBinarySourceMap or defined $param{schema};
 
     if ($param{scalar_only} or not wantarray) {
 	$param{source_only} = 1;
@@ -203,6 +206,59 @@ sub binary_to_source{
     my @versions = grep {defined $_} make_list(exists $param{version}?$param{version}:[]);
     my @archs = grep {defined $_} make_list(exists $param{arch}?$param{arch}:[]);
     return () unless @binaries;
+
+    # any src:foo is source package foo with unspecified version
+    @source = map {/^src:(.+)$/?
+		       [$1,'']:()} @binaries;
+    @binaries = grep {$_ !~ /^src:/} @binaries;
+    if ($param{schema}) {
+	if ($param{source_only}) {
+	    @source = map {$_->[0]} @source;
+	    my $src_rs = $param{schema}->resultset('SrcPkg')->
+		search_rs({'binpkg.pkg' => [@binaries],
+			   @versions?('bin_vers.ver'    => [@versions]):(),
+			   @archs?('arch.arch' => [@archs]):(),
+			  },
+			 {join => {'src_vers'=>
+				  {'bin_vers'=> ['arch','bin_pkg']}
+				  },
+			  distinct => 1,
+			 },
+			 );
+	    push @source,
+		map {$_->pkg} $src_rs->all;
+	    if ($param{scalar_only}) {
+		return join(',',@source);
+	    }
+	    return @source;
+
+	}
+	my $src_rs = $param{schema}->resultset('SrcVer')->
+	    search_rs({'bin_pkg.pkg' => [@binaries],
+		       @versions?('bin_vers.ver' => [@versions]):(),
+		       @archs?('arch.arch' => [@archs]):(),
+		      },
+		     {join => ['src_pkg',
+			      {'bin_vers' => ['arch','binpkg']},
+			      ],
+		      distinct => 1,
+		     },
+		     );
+	push @source,
+	    map {[$_->get_column('src_pkg.pkg'),
+		  $_->get_column('src_ver.ver'),
+		 ]} $src_rs->all;
+	if (not @source and not @versions and not @archs) {
+	    $src_rs = $param{schema}->resultset('SrcPkg')->
+		search_rs({pkg => [@binaries]},
+			 {distinct => 1},
+			 );
+	    push @source,
+		map {[$_->pkg,
+		     ]} $src_rs->all;
+	}
+	return @source;
+    }
     my $cache_key = join("\1",
 			 join("\0",@binaries),
 			 join("\0",@versions),
@@ -213,10 +269,6 @@ sub binary_to_source{
 	    @{$param{cache}{$cache_key}};
     }
     for my $binary (@binaries) {
-	if ($binary =~ m/^src:(.+)$/) {
-	    push @source,[$1,''];
-	    next;
-	}
 	if (not tied %_binarytosource) {
 	    tie %_binarytosource, MLDBM => $config{binary_source_map}, O_RDONLY or
 		die "Unable to open $config{binary_source_map} for reading";
