@@ -1033,7 +1033,9 @@ set_default(\%config,'libravatar_blacklist',[]);
 
 =item debbugs_db
 
-Name of debbugs PostgreSQL database service
+Name of debbugs PostgreSQL database service. If you wish to not use a service
+file, provide a full DBD::Pg compliant data-source, for example:
+C<"dbi:Pg:dbname=dbname">
 
 =back
 

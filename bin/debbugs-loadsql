@@ -603,7 +603,7 @@ sub db_connect {
     my ($options) = @_;
     # connect to the database; figure out how to handle errors
     # properly here.
-    my $s = Debbugs::DB->connect('dbi:Pg:service='.$options->{service}) or
+    my $s = Debbugs::DB->connect($options->{service}) or
         die "Unable to connect to database: ";
 }
 

@@ -20,4 +20,14 @@ __PACKAGE__->load_namespaces;
 our $VERSION=2;
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
+
+# override connect to handle just passing a bare service
+sub connect {
+    my ($self,@rem) = @_;
+    if ($rem[0] !~ /:/) {
+	$rem[0] = 'dbi:Pg:service='.$rem[0];
+    }
+    $self->clone->connection(@rem);
+}
+
 1;
