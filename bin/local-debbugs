@@ -438,9 +438,8 @@ sub run_rsync{
 			      );
      my ($output,$error) = ('','');
      my $h = IPC::Run::start(['rsync',@{$param{options}}],
-			     \undef,\$output,\$error);
+			     \undef,$param{log},$param{log});
      while ($h->pump) {
-	 print {$param{log}} $output,$error;
 	 #print {$param{debug}} $error if defined $param{debug};
      }
      $h->finish();
