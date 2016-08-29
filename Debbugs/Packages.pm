@@ -72,7 +72,8 @@ our $_pkgcomponent;
 our $_srcpkg;
 sub getpkgsrc {
     return $_pkgsrc if $_pkgsrc;
-    return {} unless defined $Debbugs::Packages::gPackageSource;
+    return {} unless defined $config{package_source} and
+	length $config{package_source};
     my %pkgsrc;
     my %pkgcomponent;
     my %srcpkg;

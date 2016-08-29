@@ -364,7 +364,7 @@ sub package_maintainer {
 	for my $fn (@config{('source_maintainer_file',
 			     'source_maintainer_file_override',
 			     'pseudo_maint_file')}) {
-	    next unless defined $fn;
+	    next unless defined $fn and length $fn;
 	    if (not -e $fn) {
 		warn "Missing source maintainer file '$fn'";
 		next;
@@ -471,7 +471,8 @@ sub getpseudodesc {
     return $_pseudodesc if defined $_pseudodesc;
     $_pseudodesc = {};
     __add_to_hash($config{pseudo_desc_file},$_pseudodesc) if
-	defined $config{pseudo_desc_file};
+	defined $config{pseudo_desc_file} and
+	length $config{pseudo_desc_file};
     return $_pseudodesc;
 }
 
