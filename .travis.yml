@@ -1,0 +1,14 @@
+before_install:
+  - sudo apt-get -qq update
+  - >
+    sudo apt-get install -y libparams-validate-perl
+    libmailtools-perl libmime-tools-perl libio-stringy-perl
+    libmldbm-perl liburi-perl libsoap-lite-perl libcgi-simple-perl
+    libhttp-server-simple-perl libtest-www-mechanize-perl
+    libmail-rfc822-address-perl libsafe-hole-perl libuser-perl
+    libconfig-simple-perl libtest-pod-perl
+    liblist-moreutils-perl libtext-template-perl graphviz
+language: perl
+script:
+  - make
+  - make test
