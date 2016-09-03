@@ -8,9 +8,6 @@ before_install:
     libmail-rfc822-address-perl libsafe-hole-perl libuser-perl
     libconfig-simple-perl libtest-pod-perl
     liblist-moreutils-perl libtext-template-perl graphviz
-language: perl
-perl:
-  - "system" # we need to use the system perl modules
 script:
   - make
   - make test
