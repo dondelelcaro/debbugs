@@ -28,7 +28,7 @@ use Encode qw(decode encode);
 $SIG{CHLD} = sub {};
 my %config;
 eval {
-     %config = create_debbugs_configuration(debug => exists $ENV{DEBUG}?$ENV{DEBUG}:0);
+     %config = create_debbugs_configuration();
 };
 if ($@) {
      BAIL_OUT($@);
@@ -38,13 +38,7 @@ my $sendmail_dir = $config{sendmail_dir};
 my $spool_dir = $config{spool_dir};
 my $config_dir = $config{config_dir};
 
-END{
-     if ($ENV{DEBUG}) {
-	  diag("spool_dir:   $spool_dir\n");
-	  diag("config_dir:   $config_dir\n");
-	  diag("sendmail_dir: $sendmail_dir\n");
-     }
-}
+
 
 # We're going to use create mime message to create these messages, and
 # then just send them to receive.

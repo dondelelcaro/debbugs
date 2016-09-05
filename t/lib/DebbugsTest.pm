@@ -57,7 +57,8 @@ BEGIN{
 sub create_debbugs_configuration {
      my %param = validate_with(params => \@_,
 			       spec   => {debug => {type => BOOLEAN,
-						    default => 0,
+						    default => exists $ENV{DEBUG}?
+						    $ENV{DEBUG}:0,
 						   },
 					  cleanup => {type => BOOLEAN,
 						      optional => 1,
@@ -73,6 +74,7 @@ sub create_debbugs_configuration {
      $ENV{DEBBUGS_CONFIG_FILE}  ="$config_dir/debbugs_config";
      $ENV{PERL5LIB} = getcwd();
      $ENV{SENDMAIL_TESTDIR} = $sendmail_dir;
+     eval {
      my $sendmail_tester = getcwd().'/t/sendmail_tester';
      unless (-x $sendmail_tester) {
 	  die q(t/sendmail_tester doesn't exist or isn't executable. You may be in the wrong directory.);
@@ -119,7 +121,17 @@ END
      }
      system('mkdir','-p',"$spool_dir/incoming");
      system('mkdir','-p',"$spool_dir/lock");
+     eval '
+END{
+     if ($ENV{DEBUG}) {
+	  diag("spool_dir:   $spool_dir\n");
+	  diag("config_dir:   $config_dir\n",);
+	  diag("sendmail_dir: $sendmail_dir\n");
+     }
+}';
 
+     };
+     BAIL_OUT ($@) if ($@);
      return (spool_dir => $spool_dir,
 	     sendmail_dir => $sendmail_dir,
 	     config_dir => $config_dir,
@@ -192,6 +204,8 @@ sub send_message{
 	  system('scripts/processall') == 0 or die "processall failed";
      }
 }
+
+$SIG{CHLD} = sub {};
 
 {
      package DebbugsTest::HTTPServer;

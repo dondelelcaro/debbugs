@@ -16,19 +16,12 @@ my $port = 11344;
 $SIG{CHLD} = sub {};
 our %config;
 eval {
-    %config = create_debbugs_configuration(debug => exists $ENV{DEBUG}?$ENV{DEBUG}:0);
+    %config = create_debbugs_configuration();
 };
 if ($@) {
      BAIL_OUT($@);
  }
 $ENV{DEBBUGS_CONFIG_FILE}  = "$config{config_dir}/debbugs_config";
-END{
-     if ($ENV{DEBUG}) {
-	  diag("spool_dir:   $config{spool_dir}\n");
-	  diag("config_dir:   $config{config_dir}\n");
-	  diag("sendmail_dir: $config{sendmail_dir}\n");
-     }
-}
 
 my $libravatar_cgi_handler = sub {
     my $fh;

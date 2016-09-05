@@ -19,19 +19,10 @@ use Cwd;
 
 my %config;
 eval {
-     %config = create_debbugs_configuration(debug => exists $ENV{DEBUG}?$ENV{DEBUG}:0);
+     %config = create_debbugs_configuration();
 };
 if ($@) {
      BAIL_OUT($@);
-}
-
-# Output some debugging information if we're debugging
-END{
-     if ($ENV{DEBUG}) {
-	  foreach my $key (keys %config) {
-	       diag("$key: $config{$key}\n");
-	  }
-     }
 }
 
 # create a bug
