@@ -17,13 +17,8 @@ use lib qw(t/lib);
 use DebbugsTest qw(:configuration);
 use Cwd;
 
-my %config;
-eval {
-     %config = create_debbugs_configuration();
-};
-if ($@) {
-     BAIL_OUT($@);
-}
+my %config = create_debbugs_configuration();
+
 
 # create a bug
 send_message(to=>'submit@bugs.something',

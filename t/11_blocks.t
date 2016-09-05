@@ -25,13 +25,8 @@ use Test::WWW::Mechanize;
 
 # HTTP::Server:::Simple defines a SIG{CHLD} handler that breaks system; undef it here.
 $SIG{CHLD} = sub {};
-my %config;
-eval {
-     %config = create_debbugs_configuration();
-};
-if ($@) {
-     BAIL_OUT($@);
-}
+my %config = create_debbugs_configuration();
+
 
 my $sendmail_dir = $config{sendmail_dir};
 my $spool_dir = $config{spool_dir};
