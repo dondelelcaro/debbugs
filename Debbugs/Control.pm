@@ -2748,7 +2748,7 @@ sub _summary {
 	 print {$debug} "Removing $cmd fields\n";
 	 $action = "Removed $cmd";
     }
-    elsif ($param{$cmd} =~ /^\d+$/) {
+    elsif ($param{$cmd} =~ /^-?\d+$/) {
 	 my $log = [];
 	 my @records = Debbugs::Log::read_log_records(bug_num => $param{bug});
 	 if ($param{$cmd} == 0 or $param{$cmd} == -1) {

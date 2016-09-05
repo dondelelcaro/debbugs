@@ -1015,7 +1015,7 @@ if (@control_bits) {
 	 request_subject   => $header{subject},
 	 request_nn        => $nn,
 	 request_replyto   => $replyto,
-	 message           => $msg,
+	 message           => [$msg],
 	 affected_bugs     => \%bug_affected,
 	 affected_packages => \%affected_packages,
 	 recipients        => \%recipients,

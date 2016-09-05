@@ -36,6 +36,8 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
     newer versions of SOAP::Lite. (Closes: #785405)
   * Add patch to do singular/plural in error messages from Rafael.
     (Closes: #790716)
+  * Fix (and test) setting summary/outlook in Control: messages (Closes:
+    #836613).
 
   [Thanks to Arnout Engelen: ]
   * Add Homepage (closes: #670555).
