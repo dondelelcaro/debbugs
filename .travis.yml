@@ -11,3 +11,8 @@ before_install:
     libfile-libmagic-perl libgravatar-url-perl libwww-perl imagemagick
 script:
   - make
+notifications:
+  irc:
+    channels:
+      - "irc.oftc.net#debbugs"
+  email: false
