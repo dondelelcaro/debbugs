@@ -39,6 +39,9 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
   * Fix (and test) setting summary/outlook in Control: messages (Closes:
     #836613).
 
+  [ Niels Thykier ]
+  * quitcgi() now returns 400/500 status codes instead of 200 (Closes: #584922)
+
   [Thanks to Arnout Engelen: ]
   * Add Homepage (closes: #670555).
   * Fix VCS in control (closes: #670556).
