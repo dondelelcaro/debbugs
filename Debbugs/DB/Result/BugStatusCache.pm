@@ -6,7 +6,7 @@ package Debbugs::DB::Result::BugStatusCache;
 
 =head1 NAME
 
-Debbugs::DB::Result::BugStatusCache - Source <-> suite associations
+Debbugs::DB::Result::BugStatusCache - Bug Status Cache
 
 =cut
 
@@ -44,7 +44,7 @@ __PACKAGE__->table("bug_status_cache");
   is_nullable: 0
   sequence: 'bug_status_cache_id_seq'
 
-Source <-> suite association id
+Bug status cache entry id
 
 =head2 bug
 
@@ -52,7 +52,7 @@ Source <-> suite association id
   is_foreign_key: 1
   is_nullable: 0
 
-Source <-> suite association id
+Bug number (matches bug)
 
 =head2 suite
 
@@ -60,7 +60,7 @@ Source <-> suite association id
   is_foreign_key: 1
   is_nullable: 1
 
-Source <-> suite association id
+Suite id (matches suite)
 
 =head2 arch
 
@@ -68,7 +68,7 @@ Source <-> suite association id
   is_foreign_key: 1
   is_nullable: 1
 
-Source <-> suite association id
+Architecture id (matches arch)
 
 =head2 status
 
@@ -76,7 +76,7 @@ Source <-> suite association id
   extra: {custom_type_name => "bug_status_type",list => ["pending","forwarded","pending-fixed","fixed","absent","done"]}
   is_nullable: 0
 
-Source <-> suite association id
+Status (bug status)
 
 =head2 modified
 
@@ -85,7 +85,7 @@ Source <-> suite association id
   is_nullable: 0
   original: {default_value => \"now()"}
 
-Source <-> suite association id
+Time that this status was last modified
 
 =head2 asof
 
@@ -94,7 +94,7 @@ Source <-> suite association id
   is_nullable: 0
   original: {default_value => \"now()"}
 
-Source <-> suite association id
+Time that this status was last calculated
 
 =cut
 
@@ -235,8 +235,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:A4gA20BsSs2R4VKmUCRs/g
+# Created by DBIx::Class::Schema::Loader v0.07045 @ 2016-09-24 14:51:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:jrPFpLs6vLgKWMSLyJAkxA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
