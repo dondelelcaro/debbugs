@@ -185,9 +185,24 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 user_tags
 
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:lFyRZdUZXsbDv0Xc6c4cAQ
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::UserTag>
+
+=cut
+
+__PACKAGE__->has_many(
+  "user_tags",
+  "Debbugs::DB::Result::UserTag",
+  { "foreign.correspondent" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+
+# Created by DBIx::Class::Schema::Loader v0.07045 @ 2016-09-24 14:51:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:CUVcqt94wCYJOPbiPt00+Q
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

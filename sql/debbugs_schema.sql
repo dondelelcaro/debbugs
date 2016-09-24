@@ -4,6 +4,8 @@ DROP VIEW bug_package CASCADE;
 DROP VIEW binary_versions CASCADE;
 DROP TABLE bug_tag CASCADE;
 DROP TABLE tag CASCADE;
+DROP TABLE bug_user_tag CASCADE;
+DROP TABLE user_tag CASCADE;
 DROP TABLE severity CASCADE;
 DROP TABLE bug CASCADE;
 DROP TABLE src_pkg CASCADE;
@@ -303,7 +305,31 @@ CREATE UNIQUE INDEX bug_tag_bug_tag ON bug_tag (bug,tag);
 CREATE INDEX bug_tag_tag ON bug_tag (tag);
 CREATE INDEX bug_tag_bug ON bug_tag (bug);
 
+CREATE TABLE user_tag (
+       id SERIAL PRIMARY KEY,
+       tag TEXT NOT NULL,
+       correspondent INT NOT NULL REFERENCES correspondent(id)
+);
+INSERT INTO table_comments VALUES ('user_tag','User bug tags');
+INSERT INTO column_comments VALUES ('user_tag','id','User bug tag id');
+INSERT INTO column_comments VALUES ('user_tag','tag','User bug tag name');
+INSERT INTO column_comments VALUES ('user_tag','correspondent','User bug tag correspondent');
 
+CREATE UNIQUE INDEX user_tag_tag_correspondent ON user_tag(tag,correspondent);
+CREATE INDEX user_tag_correspondent ON user_tag(correspondent);
+
+CREATE TABLE bug_user_tag (
+       id SERIAL PRIMARY KEY,
+       bug INT NOT NULL REFERENCES bug,
+       user_tag INT NOT NULL REFERENCES user_tag
+);
+INSERT INTO table_comments VALUES ('bug_user_tag','Bug <-> user tag mapping');
+INSERT INTO column_comments VALUES ('bug_user_tag','bug','Bug id (matches bug)');
+INSERT INTO column_comments VALUES ('bug_user_tag','tag','User tag id (matches user_tag)');
+
+CREATE UNIQUE INDEX bug_user_tag_bug_tag ON bug_user_tag (bug,user_tag);
+CREATE INDEX bug_user_tag_tag ON bug_user_tag (user_tag);
+CREATE INDEX bug_user_tag_bug ON bug_user_tag (bug);
 
 CREATE TABLE bug_binpackage (
        id SERIAL PRIMARY KEY,

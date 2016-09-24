@@ -408,6 +408,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 bug_user_tags
+
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::BugUserTag>
+
+=cut
+
+__PACKAGE__->has_many(
+  "bug_user_tags",
+  "Debbugs::DB::Result::BugUserTag",
+  { "foreign.bug" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 bug_vers
 
 Type: has_many
@@ -499,8 +514,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:rd0pst8cgR9UPi092sJebw
+# Created by DBIx::Class::Schema::Loader v0.07045 @ 2016-09-24 14:51:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:iaipVETTaokcFNrICfIEAw
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 1;
