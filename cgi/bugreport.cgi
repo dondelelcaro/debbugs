@@ -146,7 +146,12 @@ $etag =
 				 ],
 		       );
 if (not $etag) {
-    print $q->header(-status => 304);
+    print $q->header(-status => 304,
+		     -cache_control => 'public, max-age=600',
+		     -etag => $etag,
+		     -charset => 'utf-8',
+		     -content_type => 'text/html',
+		    );
     print "304: Not modified\n";
     exit 0;
 }
@@ -156,6 +161,7 @@ if ($q->request_method() eq 'HEAD' and not defined($att) and not $mbox) {
     print $q->header(-status => 200,
 		     -cache_control => 'public, max-age=600',
 		     -etag => $etag,
+		     -charset => 'utf-8',
 		     -content_type => 'text/html',
 		    );
      exit 0;
