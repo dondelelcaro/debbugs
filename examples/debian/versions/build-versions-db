@@ -1,0 +1,179 @@
+#!/usr/bin/perl
+# build-versions-db builds the versions mldmb database
+# and is released under the terms of the GNU GPL version 3, or any
+# later version, at your option. See the file README and COPYING for
+# more information.
+# Copyright 2016 by Don Armstrong <don@donarmstrong.com>.
+
+
+use warnings;
+use strict;
+
+use Getopt::Long;
+use Pod::Usage;
+
+=head1 NAME
+
+build-versions-db -- builds source and source maintainers file
+
+=head1 SYNOPSIS
+
+    build-versions-db [options] versions.idx.new versions.idx.new \
+           /srv/bugs.debian.org/versions/indices/ftp
+
+ Options:
+   --debug, -d debugging level (Default 0)
+   --help, -h display this help
+   --man, -m display manual
+
+=head1 OPTIONS
+
+=over
+
+=item B<--debug, -d>
+
+Debug verbosity. (Default 0)
+
+=item B<--help, -h>
+
+Display brief usage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+=head1 EXAMPLES
+
+     build-versions-db versions.idx.new versions.idx.new \
+           /srv/bugs.debian.org/versions/indices/ftp \
+           stable
+
+=cut
+
+
+use vars qw($DEBUG);
+use Debbugs::Versions::Dpkg;
+use IO::Uncompress::AnyUncompress;
+use MLDBM qw(DB_File Storable);
+use Fcntl;
+
+my %options = (debug           => 0,
+               help            => 0,
+               man             => 0,
+               compprefix      => '',
+              );
+
+GetOptions(\%options,
+           'hostname=s',
+           'compprefix=s',
+           'debug|d+','help|h|?','man|m');
+
+pod2usage() if $options{help};
+pod2usage({verbose=>2}) if $options{man};
+
+$DEBUG = $options{debug};
+
+my @USAGE_ERRORS;
+if (not defined $options{hostname}) {
+    push @USAGE_ERRORS,"You must provide a hostname";
+}
+
+if (not @ARGV >= 4) {
+    push @USAGE_ERRORS,
+        "You must provide at least four arguments, two databases, ".
+        "a top level directory and at least one suite";
+}
+
+pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
+
+
+my $versions = shift @ARGV;
+my $versions_time = shift @ARGV;
+my $toplevel = shift @ARGV;
+my @suites = @ARGV;
+
+$MLDBM::DumpMeth=q(portable);
+
+my $time = time;
+
+my %db;
+my %db2;
+tie %db, "MLDBM", $versions, O_CREAT|O_RDWR, 0664
+    or die "tie $versions: $!";
+tie %db2, "MLDBM", $versions_time,O_CREAT|O_RDWR, 0664
+     or die "tie $versions_time failed: $!";
+
+# Read Package, Version, and Source fields from a Packages.gz file.
+sub read_packages {
+    my ($packages, $component,$arch,$dist) = @_;
+    my $PACKAGES = IO::Uncompress::AnyUncompress->new($packages) or
+        die "Unable to open $packages for reading: $!";
+    local $_;
+    local $/ = '';	# paragraph mode
+
+    print STDERR "reading packages $packages\n" if $DEBUG;
+    for (<$PACKAGES>) {
+	/^Package: (.+)/im or next;
+	my $pkg = $1;
+	/^Version: (.+)/im or next;
+	my $ver = $1;
+	my $extra_source_only = 0;
+	if (/^Extra-Source-Only: yes/im) {
+	    $extra_source_only = 1;
+	}
+	update_package_version($dist,$arch,$pkg,$ver,$time) unless
+	    $extra_source_only;
+    }
+}
+
+
+sub update_package_version {
+    my ($d,$a,$p,$v,$t) = @_;
+    # see MLDBM(3pm)/BUGS
+    my $tmp = $db{$p};
+    # we allow multiple versions in an architecture now; this
+    # should really only happen in the case of source, however.
+    push @{$tmp->{$d}{$a}}, $v;
+    $db{$p} = $tmp;
+    $tmp = $db2{$p};
+    $tmp->{$d}{$a}{$v} = $time if not exists
+	$tmp->{$d}{$a}{$v};
+    $db2{$p} = $tmp;
+}
+
+# Iterate through all Packages and Sources files.
+for my $suite (@suites) {
+    my $suitedir = "$toplevel/$suite";
+
+    for my $component ('main', 'main/debian-installer',
+		       'contrib', 'non-free') {
+	my $componentdir = "$suitedir/$component";
+	next unless -d $componentdir;
+	my $COMPONENT;
+	opendir $COMPONENT, $componentdir or die "opendir $componentdir: $!";
+
+	# debian-installer is really a section rather than a component
+	# (ugh).
+	(my $viscomponent = $component) =~ s[/.*][];
+	$viscomponent = $options{compprefix} . $viscomponent;
+
+	my $sources = (grep { -f $_ } glob "$suitedir/$component/source/Sources.*")[0];
+	next unless defined $sources;
+	read_packages($sources, $viscomponent,'source',$suite);
+
+	for my $arch (readdir $COMPONENT) {
+	    next unless $arch =~ s/^binary-//;
+	    my $archdir = "$componentdir/binary-$arch";
+
+	    my $packages = (grep { -f $_ } glob("$archdir/Packages.*"))[0];
+	    next unless defined $packages;
+	    read_packages($packages, $viscomponent,$arch,$suite);
+	}
+
+	closedir $COMPONENT;
+    }
+}
+
+

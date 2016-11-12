@@ -13,54 +13,13 @@ if [ -e versions_time.idx ]; then
     cp versions_time.idx versions_time.idx.new;
 fi;
 
-set -e
-for archive in $ARCHIVES; do
-    case $archive in
-	ftp)
-	    SUITES='oldstable stable proposed-updates testing testing-proposed-updates unstable experimental'
-	    di_main='main main/debian-installer'
-	    ;;
-	nonus)
-	    SUITES='oldstable'
-	    di_main='main'
-	    ;;
-	security)
-	    SUITES='oldstable stable testing'
-	    di_main='main'
-	    ;;
-    esac
-    for suite in $SUITES; do
-        if [ "$suite" != "oldstable" ] || [ -d /org/bugs.debian.org/etc/indices/$archive/$suite ]; then
-	case $suite in
-	    oldstable|stable|proposed-updates)
-		ARCHES='alpha amd64 arm hppa i386 ia64 m68k mips mipsel powerpc s390 sparc'
-		;;
-	    testing|testing-proposed-updates)
-		ARCHES='alpha amd64 arm hppa i386 ia64 mips mipsel powerpc s390 sparc'
-		;;
-	    unstable|experimental)
-		ARCHES='alpha amd64 arm hppa hurd-i386 i386 ia64 m68k mips mipsel powerpc s390 sparc'
-		;;
-	esac
-	case $suite in
-	    oldstable|experimental)
-		COMPONENTS='main contrib non-free'
-		;;
-	    stable|proposed-updates|testing|testing-proposed-updates|unstable)
-		COMPONENTS="$di_main contrib non-free"
-		;;
-	esac
-	for component in $COMPONENTS; do
-	    for arch in $ARCHES; do
-		zcat "/org/bugs.debian.org/etc/indices/$archive/$suite/$component/binary-$arch/Packages.gz" | ../bin/build-mldbm.pl "$archive" "$suite" "$arch"
-	    done
-	    if [ "$component" != main/debian-installer ]; then
-		zcat "/org/bugs.debian.org/etc/indices/$archive/$suite/$component/source/Sources.gz" | ../bin/build-mldbm.pl "$archive" "$suite" source
-	    fi
-	done
-	fi
-    done
-done
+../bin/build-versions-db versions.idx.new versions_time.idx.new \
+			 /srv/bugs.debian.org/versions/indices/ftp \
+			 oldstable stable proposed-updates \
+			 testing \
+			 testing-proposed-updates \
+			 unstable \
+			 experimental;
 
 # This removes old versions
 ../bin/versions_time_cleanup
