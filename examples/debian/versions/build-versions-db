@@ -62,12 +62,9 @@ use Fcntl;
 my %options = (debug           => 0,
                help            => 0,
                man             => 0,
-               compprefix      => '',
               );
 
 GetOptions(\%options,
-           'hostname=s',
-           'compprefix=s',
            'debug|d+','help|h|?','man|m');
 
 pod2usage() if $options{help};
@@ -76,9 +73,6 @@ pod2usage({verbose=>2}) if $options{man};
 $DEBUG = $options{debug};
 
 my @USAGE_ERRORS;
-if (not defined $options{hostname}) {
-    push @USAGE_ERRORS,"You must provide a hostname";
-}
 
 if (not @ARGV >= 4) {
     push @USAGE_ERRORS,
