@@ -151,7 +151,6 @@ for my $suite (@suites) {
 	# debian-installer is really a section rather than a component
 	# (ugh).
 	(my $viscomponent = $component) =~ s[/.*][];
-	$viscomponent = $options{compprefix} . $viscomponent;
 
 	my $sources = (grep { -f $_ } glob "$suitedir/$component/source/Sources.*")[0];
 	next unless defined $sources;
