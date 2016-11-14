@@ -13,6 +13,7 @@ if [ -e versions_time.idx ]; then
     cp versions_time.idx versions_time.idx.new;
 fi;
 
+set -e
 ../bin/build-versions-db versions.idx.new versions_time.idx.new \
 			 /srv/bugs.debian.org/versions/indices/ftp \
 			 oldstable stable proposed-updates \
