@@ -40,6 +40,8 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
     #836613).
   * Fix clone removing all other blocks instead of adding them (Closes:
     #820044). Thanks to James Clarke.
+  * Use a supported version of debhelper and switch to dh $@ style rules
+    (Closes: #800287)
 
   [ Niels Thykier ]
   * quitcgi() now returns 400/500 status codes instead of 200 (Closes: #584922)

@@ -27,7 +27,7 @@ PERL ?= /usr/bin/perl
 # Some tests need to run under an UTF-8 locale.
 UTF8_LOCALE ?= C.UTF-8
 
-all: build test
+all: build
 
 build:
 	$(PERL) Makefile.PL
@@ -49,10 +49,8 @@ clean:
 
 install: install_mostfiles
 	# install basic debbugs documentation
-	$(install_data) COPYING UPGRADE README debian/README.mail $(doc_dir)
-
-	# configure debbugs
-	$(sbin_dir)/debbugsconfig
+	$(install_data) COPYING UPGRADE README.md debian/README.mail $(doc_dir)
+	$(MAKE) -f Makefile.perl install DESTDIR=$(DESTDIR)
 
 install_mostfiles:
 	# create the directories if they aren't there

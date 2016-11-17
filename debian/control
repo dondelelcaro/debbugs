@@ -6,7 +6,7 @@ Uploaders: Colin Watson <cjwatson@debian.org>, Don Armstrong <don@debian.org>
 Standards-Version: 3.9.4
 Vcs-Browser: http://bugs.debian.org/debbugs-source/mainline
 Vcs-Git: http://bugs.debian.org/debbugs-source/debbugs.git
-Build-Depends: debhelper (>= 5)
+Build-Depends: debhelper (>= 9)
 Build-Depends-Indep: libparams-validate-perl,
  libmailtools-perl, libmime-tools-perl, libio-stringy-perl, libmldbm-perl,
  liburi-perl, libsoap-lite-perl, libcgi-simple-perl,
@@ -24,7 +24,7 @@ Depends:
  ${perl:Depends},
  ${misc:Depends},
  exim4 | mail-transport-agent,
- libdebbugs-perl,
+ libdebbugs-perl
 Recommends: debbugs-web
 Suggests: spamassassin (>= 3.0), libcgi-alert-perl
 Description: bug tracking system based on the active Debian BTS
@@ -63,6 +63,7 @@ Description: modules used by the active Debian BTS
 Package: debbugs-web
 Architecture: all
 Depends:
+ ${perl:Depends},
  ${misc:Depends},
  libdebbugs-perl, apache2 | httpd
 Suggests: libcgi-alert-perl, libapache2-mod-perl2
@@ -78,6 +79,7 @@ Description: web scripts for the active Debian BTS
 Package: debbugs-local
 Architecture: all
 Depends:
+ ${perl:Depends},
  ${misc:Depends},
  libdebbugs-perl, debbugs-web, libconfig-simple-perl,
  libuser-perl, rsync, libhttp-server-simple-perl, libnet-server-perl
