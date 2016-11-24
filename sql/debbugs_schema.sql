@@ -390,18 +390,18 @@ CREATE VIEW binary_versions (src_pkg, src_ver, bin_pkg, arch, bin_ver) AS
 
 CREATE TABLE suite (
        id SERIAL PRIMARY KEY,
-       suite_name TEXT NOT NULL,
+       codename TEXT NOT NULL,
+       suite_name TEXT,
        version TEXT,
-       codename TEXT,
        active BOOLEAN DEFAULT TRUE);
+CREATE UNIQUE INDEX suite_idx_codename ON suite(codename);
 CREATE UNIQUE INDEX suite_suite_name_key ON suite(suite_name);
-CREATE INDEX suite_idx_codename ON suite(codename);
-CREATE INDEX suite_idx_version ON suite(version);
+CREATE UNIQUE INDEX suite_idx_version ON suite(version);
 INSERT INTO table_comments VALUES ('suite','Debian Release Suite (stable, testing, etc.)');
 INSERT INTO column_comments VALUES ('suite','id','Suite id');
-INSERT INTO column_comments VALUES ('suite','suite_name','Suite name');
+INSERT INTO column_comments VALUES ('suite','suite_name','Suite name (testing, stable, etc.)');
 INSERT INTO column_comments VALUES ('suite','version','Suite version; NULL if there is no appropriate version');
-INSERT INTO column_comments VALUES ('suite','codename','Suite codename');
+INSERT INTO column_comments VALUES ('suite','codename','Suite codename (sid, squeeze, etc.)');
 INSERT INTO column_comments VALUES ('suite','active','TRUE if the suite is still accepting uploads');
 
 CREATE TABLE bin_associations (

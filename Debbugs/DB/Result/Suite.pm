@@ -46,12 +46,19 @@ __PACKAGE__->table("suite");
 
 Suite id
 
-=head2 suite_name
+=head2 codename
 
   data_type: 'text'
   is_nullable: 0
 
-Suite name
+Suite codename (sid, squeeze, etc.)
+
+=head2 suite_name
+
+  data_type: 'text'
+  is_nullable: 1
+
+Suite name (testing, stable, etc.)
 
 =head2 version
 
@@ -59,13 +66,6 @@ Suite name
   is_nullable: 1
 
 Suite version; NULL if there is no appropriate version
-
-=head2 codename
-
-  data_type: 'text'
-  is_nullable: 1
-
-Suite codename
 
 =head2 active
 
@@ -85,11 +85,11 @@ __PACKAGE__->add_columns(
     is_nullable       => 0,
     sequence          => "suite_id_seq",
   },
-  "suite_name",
-  { data_type => "text", is_nullable => 0 },
-  "version",
-  { data_type => "text", is_nullable => 1 },
   "codename",
+  { data_type => "text", is_nullable => 0 },
+  "suite_name",
+  { data_type => "text", is_nullable => 1 },
+  "version",
   { data_type => "text", is_nullable => 1 },
   "active",
   { data_type => "boolean", default_value => \"true", is_nullable => 1 },
@@ -108,6 +108,18 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
+
+=head2 C<suite_idx_codename>
+
+=over 4
+
+=item * L</codename>
+
+=back
+
+=cut
+
+__PACKAGE__->add_unique_constraint("suite_idx_codename", ["codename"]);
 
 =head2 C<suite_suite_name_key>
 
@@ -169,8 +181,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:3csVa5t/HsPdWr0/Nmr7WA
+# Created by DBIx::Class::Schema::Loader v0.07045 @ 2016-11-23 18:13:51
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:32GH2trGMuarLv+EjO1l8w
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
