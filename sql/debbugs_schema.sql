@@ -272,7 +272,7 @@ CREATE TABLE bin_ver(
 );
 CREATE INDEX bin_ver_ver_idx ON bin_ver(ver);
 CREATE UNIQUE INDEX bin_ver_bin_pkg_id_arch_idx ON bin_ver(bin_pkg,arch,ver);
-CREATE UNIQUE INDEX bin_ver_src_ver_id_arch_idx ON bin_ver(src_ver,arch);
+CREATE INDEX bin_ver_src_ver_id_arch_idx ON bin_ver(src_ver,arch);
 CREATE INDEX bin_ver_bin_pkg_id_idx ON bin_ver(bin_pkg);
 CREATE INDEX bin_ver_src_ver_id_idx ON bin_ver(src_ver);
 INSERT INTO table_comments VALUES ('bin_ver','Binary versions');
@@ -417,6 +417,7 @@ INSERT INTO column_comments VALUES ('bin_associations','suite','Suite id (matche
 INSERT INTO column_comments VALUES ('bin_associations','bin','Binary version id (matches bin_ver)');
 INSERT INTO column_comments VALUES ('bin_associations','created','Time this binary package entered this suite');
 INSERT INTO column_comments VALUES ('bin_associations','modified','Time this entry was modified');
+CREATE UNIQUE INDEX bin_associations_bin_suite ON bin_associations(bin,suite);
 
 CREATE TABLE src_associations (
        id SERIAL PRIMARY KEY,
@@ -431,7 +432,7 @@ INSERT INTO column_comments VALUES ('src_associations','suite','Suite id (matche
 INSERT INTO column_comments VALUES ('src_associations','source','Source version id (matches src_ver)');
 INSERT INTO column_comments VALUES ('src_associations','created','Time this source package entered this suite');
 INSERT INTO column_comments VALUES ('src_associations','modified','Time this entry was modified');
-
+CREATE UNIQUE INDEX src_associations_source_suite ON src_associations(source,suite);
 
 
 CREATE TYPE bug_status_type AS ENUM ('pending','forwarded','pending-fixed','fixed','absent','done');
