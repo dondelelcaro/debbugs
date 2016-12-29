@@ -4,29 +4,10 @@ cd /org/bugs.debian.org/versions/indices
 
 ARCHIVES='ftp' # security -- should be included too, but too difficult to deal with
 
-# Nuke old versions of versions.idx.new in case there's one hanging about
-rm -f versions.idx.new
-# This index is much larger and keeps track of historic versions of
-# packages, and is used for expiring bugs
-rm -f versions_time.idx.new
-if [ -e versions_time.idx ]; then
-    cp versions_time.idx versions_time.idx.new;
-fi;
-
-set -e
-../bin/build-versions-db versions.idx.new versions_time.idx.new \
+../bin/build-versions-db versions.idx versions_time.idx \
 			 /srv/bugs.debian.org/versions/indices/ftp \
 			 oldstable stable proposed-updates \
 			 testing \
 			 testing-proposed-updates \
 			 unstable \
 			 experimental;
-
-# This removes old versions
-../bin/versions_time_cleanup
-
-chmod 664 versions.idx.new
-mv versions.idx.new versions.idx
-
-chmod 664 versions_time.idx.new
-mv versions_time.idx.new versions_time.idx
