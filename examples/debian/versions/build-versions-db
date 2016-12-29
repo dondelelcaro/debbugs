@@ -55,7 +55,6 @@ Display this manual.
 
 use vars qw($DEBUG);
 use Debbugs::Versions::Dpkg;
-use IO::Uncompress::AnyUncompress;
 use MLDBM qw(DB_File Storable);
 use Fcntl;
 
@@ -99,10 +98,27 @@ tie %db, "MLDBM", $versions, O_CREAT|O_RDWR, 0664
 tie %db2, "MLDBM", $versions_time,O_CREAT|O_RDWR, 0664
      or die "tie $versions_time failed: $!";
 
+sub open_compressed_file {
+    my ($file) = @_;
+    my $fh;
+    my $mode = '<:encoding(UTF-8)';
+    my @opts;
+    if ($file =~ /\.gz$/) {
+	$mode = '-|:encoding(UTF-8)';
+	push @opts,'gzip','-dc';
+    }
+    if ($file =~ /^\.xz$/) {
+	$mode = '-|:encoding(UTF-8)';
+	push @opts,'xz','-dc';
+    }
+    open($fh,$mode,@opts,$file);
+    return $fh;
+}
+
 # Read Package, Version, and Source fields from a Packages.gz file.
 sub read_packages {
     my ($packages, $component,$arch,$dist) = @_;
-    my $PACKAGES = IO::Uncompress::AnyUncompress->new($packages) or
+    my $PACKAGES = open_compressed_file($packages)
         die "Unable to open $packages for reading: $!";
     local $_;
     local $/ = '';	# paragraph mode
