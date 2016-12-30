@@ -129,11 +129,11 @@ sub open_compressed_file {
 	$mode = '-|:encoding(UTF-8)';
 	push @opts,'gzip','-dc';
     }
-    if ($file =~ /^\.xz$/) {
+    if ($file =~ /\.xz$/) {
 	$mode = '-|:encoding(UTF-8)';
 	push @opts,'xz','-dc';
     }
-    if ($file =~ /^\.bz2$/) {
+    if ($file =~ /\.bz2$/) {
 	$mode = '-|:encoding(UTF-8)';
 	push @opts,'bzip2','-dc';
     }
