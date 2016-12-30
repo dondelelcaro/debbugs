@@ -3,7 +3,7 @@ set -e
 
 cd /org/bugs.debian.org/versions/indices
 
-../bin/build-versions-db versions.idx.new versions_time.idx.new \
+../bin/build-versions-db versions.idx versions_time.idx \
 			 /etc/debbugs/indices/ftp \
 			 oldstable stable proposed-updates \
 			 testing \
