@@ -133,6 +133,10 @@ sub open_compressed_file {
 	$mode = '-|:encoding(UTF-8)';
 	push @opts,'xz','-dc';
     }
+    if ($file =~ /^\.bz2$/) {
+	$mode = '-|:encoding(UTF-8)';
+	push @opts,'bzip2','-dc';
+    }
     open($fh,$mode,@opts,$file);
     return $fh;
 }
