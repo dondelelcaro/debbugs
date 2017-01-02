@@ -106,7 +106,6 @@ my $time = time;
 my %db;
 my %db2;
 if ($options{update}) {
-    copy($versions,$versions_new);
     copy($versions_time,$versions_time_new);
 }
 tie %db, "MLDBM", $versions_new, O_CREAT|O_RDWR, 0664
