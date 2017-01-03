@@ -161,6 +161,8 @@ sub read_packages {
 	update_package_version($db,$db2,$dist,$arch,$pkg,$ver,$time) unless
 	    $extra_source_only;
     }
+    close($PACKAGES) or
+	die "Error while closing ${packages}: $!";
 }
 
 
@@ -208,7 +210,8 @@ for my $suite (@{$suites}) {
 	    read_packages($db,$db2,$packages, $viscomponent,$arch,$suite);
 	}
 
-	closedir $COMPONENT;
+	closedir $COMPONENT or
+	    die "Unable to closedir $componentdir: $!";
     }
 }
 }
