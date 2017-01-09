@@ -122,6 +122,22 @@ __PACKAGE__->add_columns(
 
 __PACKAGE__->set_primary_key("id");
 
+=head1 UNIQUE CONSTRAINTS
+
+=head2 C<bin_associations_bin_suite>
+
+=over 4
+
+=item * L</bin>
+
+=item * L</suite>
+
+=back
+
+=cut
+
+__PACKAGE__->add_unique_constraint("bin_associations_bin_suite", ["bin", "suite"]);
+
 =head1 RELATIONS
 
 =head2 bin
@@ -155,8 +171,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:T7Jms1yHoqpzOdL4mnmBOA
+# Created by DBIx::Class::Schema::Loader v0.07045 @ 2016-11-24 09:00:00
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:3F77iWjlJrHs/98TOfroAA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

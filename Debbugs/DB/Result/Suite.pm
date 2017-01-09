@@ -121,6 +121,18 @@ __PACKAGE__->set_primary_key("id");
 
 __PACKAGE__->add_unique_constraint("suite_idx_codename", ["codename"]);
 
+=head2 C<suite_idx_version>
+
+=over 4
+
+=item * L</version>
+
+=back
+
+=cut
+
+__PACKAGE__->add_unique_constraint("suite_idx_version", ["version"]);
+
 =head2 C<suite_suite_name_key>
 
 =over 4
@@ -181,8 +193,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07045 @ 2016-11-23 18:13:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:32GH2trGMuarLv+EjO1l8w
+# Created by DBIx::Class::Schema::Loader v0.07045 @ 2016-11-24 08:52:49
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:nXoQCYZhM9cFgC1x+RY9rA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

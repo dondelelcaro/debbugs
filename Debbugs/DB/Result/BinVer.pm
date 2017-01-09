@@ -127,20 +127,6 @@ __PACKAGE__->set_primary_key("id");
 
 __PACKAGE__->add_unique_constraint("bin_ver_bin_pkg_id_arch_idx", ["bin_pkg", "arch", "ver"]);
 
-=head2 C<bin_ver_src_ver_id_arch_idx>
-
-=over 4
-
-=item * L</src_ver>
-
-=item * L</arch>
-
-=back
-
-=cut
-
-__PACKAGE__->add_unique_constraint("bin_ver_src_ver_id_arch_idx", ["src_ver", "arch"]);
-
 =head1 RELATIONS
 
 =head2 arch
@@ -204,8 +190,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Jie49PiJahtnqmfkKQYtcw
+# Created by DBIx::Class::Schema::Loader v0.07045 @ 2016-11-24 09:08:27
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:DzTzZbPkilT8WMhXoZv9xw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
