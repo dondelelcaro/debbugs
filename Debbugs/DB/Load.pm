@@ -384,64 +384,123 @@ sub load_debinfo {
 
 =cut
 
-sub load_package {
-    my ($schema,$suite,$component,$arch,$pkg) = @_;
-    if ($arch eq 'source') {
-	my $sp = $schema->resultset('SrcPkg')->find_or_create({pkg => $pkg->{Package}});
-	my $suite = $schema->resultset('Suite')->find_or_create({suite_name => $suite});
-	my $sv = $schema->resultset('SrcVer')->find_or_create({src_pkg =>$sp->id,
-							       ver => $pkg->{Version}});
-	my @addrs = getparsedaddrs($pkg->{Maintainer} // '');
-	if (@addrs) {
-	    my $mc = $schema->resultset('Correspondent')->
-		find_or_create({addr => lc($addrs[0]->address())});
-	    my $full_name = $addrs[0]->phrase();
-	    $full_name =~ s/^\"|\"$//g;
-	    $full_name =~ s/^\s+|\s+$//g;
-	    $sv->discard_changes;
-	    $sv->find_or_create_related('maintainer',
-				       {name => $full_name,
+sub load_packages {
+    my ($schema,$suite,$pkgs,$p) = @_;
+    my $suite_id = $schema->resultset('Suite')->
+	find_or_create({codename => $suite})->id;
+    my %maint_cache;
+    my %arch_cache;
+    my %source_cache;
+    my $src_max_last_modified = $schema->resultset('SrcAssociation')->
+	search_rs({suite => $suite_id},
+		 {order_by => {-desc => ['me.modified']},
+		  rows => 1,
+		  page => 1
+		 }
+		 )->single();
+    my $bin_max_last_modified = $schema->resultset('BinAssociation')->
+	search_rs({suite => $suite_id},
+		 {order_by => {-desc => ['me.modified']},
+		  rows => 1,
+		  page => 1
+		 }
+		 )->single();
+    print STDERR time." handling packages\n";
+    for my $pkg_tuple (@{$pkgs}) {
+	my ($arch,$component,$pkg) = @{$pkg_tuple};
+	$p->update() if $p;
+	if ($arch eq 'source') {
+	    my $source = $pkg->{Package};
+	    my $source_ver = $pkg->{Version};
+	    if (not exists $maint_cache{$pkg->{Maintainer}}) {
+		my @addrs = getparsedaddrs($pkg->{Maintainer} // '');
+		if (@addrs) {
+		    my $mc = $schema->resultset('Correspondent')->
+			find_or_create({addr => lc($addrs[0]->address())},
+				      {key => 'correspondent_addr_idx'}
+				      );
+		    my $full_name = $addrs[0]->phrase();
+		    $full_name =~ s/^\"|\"$//g;
+		    $full_name =~ s/^\s+|\s+$//g;
+		    # $sv->discard_changes;
+		    my $maint = $schema->resultset('Maintainer')->
+			find_or_create({name => $pkg->{Maintainer},
 					correspondent => $mc->id},
-				       );
-	    $mc->update_or_create_related('correspondent_full_names',
-					 {full_name=>$full_name,
-					  last_seen => 'NOW()'});
+				      {key => 'maintainer_name_idx'},
+				      );
+		    $mc->find_or_create_related('correspondent_full_names',
+					       {full_name => $full_name},
+					       {key => 'correspondent_full_name_correspondent_full_name_idx'}
+					       );
+		    $mc->update;
+		    $maint_cache{$pkg->{Maintainer}} = $maint;
+		}
+	    }
+	    if (not exists $source_cache{$source}{$source_ver}) {
+		my $sp = $schema->resultset('SrcPkg')->
+		    find_or_create({pkg => $source});
+		my $sv = $sp->find_or_create_related('src_vers',
+						    {ver => $source_ver});
+		$source_cache{$source}{$source_ver} = $sv;
+		if (exists $maint_cache{$pkg->{Maintainer}}) {
+		    $source_cache{$source}{$source_ver}->
+			set_from_related('maintainer',
+					 $maint_cache{$pkg->{Maintainer}}
+					);
+		    $source_cache{$source}{$source_ver}->update;
+		}
+	    }
+	    $schema->resultset('SrcAssociation')->
+		update_or_create({suite => $suite_id,
+				  source => $source_cache{$source}{$source_ver}->id,
+				  modified => 'NOW()',
+				 },
+				{key => 'src_associations_source_suite'}
+				);
+	} else {
+	    my $ar = $schema->resultset('Arch')->
+		find_or_create(arch => $arch);
+	    my $bp = $schema->resultset('BinPkg')->
+		find_or_create({pkg => $pkg->{Package}});
+	    my $source = $pkg->{Source} // $pkg->{Package};
+	    my $source_ver = $pkg->{Version};
+	    if ($source =~ /^\s*(\S+) \(([^\)]+)\)\s*$/) {
+		($source,$source_ver) = ($1,$2);
+	    }
+	    if (not exists $source_cache{$source}{$source_ver}) {
+		my $sp = $schema->resultset('SrcPkg')->
+		    find_or_create({pkg => $source});
+		my $sv = $sp->find_or_create_related('src_vers',
+						    {ver => $source_ver});
+		$source_cache{$source}{$source_ver} = $sv;
+	    }
+	    my $bv = $bp->find_or_create_related('bin_vers',
+						{ver => $pkg->{Version},
+						 src_ver => $source_cache{$source}{$source_ver}->id,
+						 arch => $ar->id,
+						});
+	    $schema->resultset('BinAssociation')->
+		update_or_create({suite => $suite_id,
+				  bin => $bv->id,
+				  modified => 'NOW()',
+				 },
+				{key => 'bin_associations_bin_suite'}
+				);
 	}
-	# update the link for this source package
-	$schema->
-	    txndo(sub {
-		     # delete associations for this source package in this
-		     # suite
-		     $schema->resultset('SrcAssociations')->
-			 search_rs({suite => $suite->id,})->
-			 search_related_rs('src_pkg',
-					  {src_pkg => $sp->id})->delete;
-		     $schema->resultset('SrcAssociations')->
-			 create({suite => $suite->id,
-				 source => $sv->id,
-				});
-		 });
-    } else {
-	my $bp = $schema->resultset('BinPkg')->find_or_create({pkg => $pkg->{Package}});
-	my $suite = $schema->resultset('Suite')->find_or_create({suite_name => $suite});
-	my ($bv) = $bp->search_related('bin_vers',{ver => $pkg->{Version}});
-	# if there isn't already a binary version for this package, we don't
-	# know what source it belongs to, so we can't associate it with a
-	# release
-	return if (not defined $bv);
-	$schema->
-	    txndo(sub {
-		      $schema->resultset('BinAssociations')->
-			  search_rs({suite => $suite->id,})->
-			  search_related_rs('bin_pkg',
-					   {bin_pkg_id => $bp->id}
-					   )->delete;
-		      $schema->resultset('BinAssociations')->
-			  create({suite => $suite->id,
-				  bin => $bv->id
-				 });
-		  });
     }
+    print STDERR time." deleting associations\n";
+    # delete old binary associations in this suite which have not recently been
+    # modified
+    $schema->resultset('BinAssociation')->
+	search_rs({suite => $suite_id,
+		   modified => {'<',$bin_max_last_modified->modified()},
+		  }) if defined
+		      $bin_max_last_modified;
+    $schema->resultset('SrcAssociation')->
+	search_rs({suite => $suite_id,
+		   modified => {'<',$src_max_last_modified->modified()},
+		  }) if defined
+		      $src_max_last_modified;
 }
 
 =back

@@ -98,7 +98,8 @@ Display this manual.
 
 use vars qw($DEBUG);
 
-use Debbugs::Common qw(checkpid lockpid get_hashname getparsedaddrs getbugcomponent make_list getsourcemaintainers);
+use Debbugs::Common (qw(checkpid lockpid get_hashname getparsedaddrs getbugcomponent make_list getsourcemaintainers),
+		     qw(hash_slice));
 use Debbugs::Config qw(:config);
 use Debbugs::Status qw(read_bug split_status_fields);
 use Debbugs::Log;
@@ -106,8 +107,12 @@ use Debbugs::DB;
 use Debbugs::DB::Load qw(load_bug handle_load_bug_queue :load_package :load_suite);
 use DateTime;
 use File::stat;
+use File::Basename;
+use File::Spec;
 use IO::Dir;
+use IO::File;
 use IO::Uncompress::AnyUncompress;
+use Encode qw(decode_utf8);
 
 my %options =
     (debug           => 0,
@@ -157,6 +162,7 @@ my %subcommands =
                },
      'packages' => {function => \&add_packages,
 		    arguments => {'ftpdists=s' => 1,
+				  'suites=s@' => 0,
 				 },
 		   },
      'help' => {function => sub {pod2usage({verbose => 2});}}
@@ -201,6 +207,9 @@ if (not defined $subcommand) {
     print STDERR "$subcommand is not a valid subcommand; displaying usage.\n";
     pod2usage();
 }
+
+binmode(STDOUT,':encoding(UTF-8)');
+binmode(STDERR,':encoding(UTF-8)');
 
 my $opts =
     handle_subcommand_arguments(\@ARGV,$subcommands{$subcommand}{arguments});
@@ -507,8 +516,6 @@ sub add_logs {
 sub add_packages {
     my ($options,$opts,$p,$config,$argv) = @_;
 
-    my $s = db_connect($options);
-
     my $dist_dir = IO::Dir->new($opts->{ftpdists});
     my @dist_names =
 	grep { $_ !~ /^\./ and
@@ -516,69 +523,67 @@ sub add_packages {
 	       not -l $opts->{ftpdists}.'/'.$_
 	   } $dist_dir->read;
     my %s_p;
-    my %s_info;
     while (my $dist = shift @dist_names) {
 	my $dist_dir = $opts->{ftpdists}.'/'.$dist;
-	# parse release
-	my $rfh =  IO::Uncompress::AnyUncompress->new($dist_dir.'/Release');
-	my %dist_info;
-	my $in_sha1;
-	my %p_f;
- 	while (<$rfh>) {
-	    chomp;
-	    if (s/^(\S+):\s*//) {
-		if ($1 eq 'SHA1'or $1 eq 'SHA256') {
-		    $in_sha1 = 1;
-		    next;
-		}
-		$dist_info{$1} = $_;
-	    } elsif ($in_sha1) {
-		s/^\s//;
-		my ($sha,$size,$file) = split /\s+/,$_;
-		next unless $file =~ /(?:Packages|Sources)(?:\.gz|\.xz)$/;
-		next unless $file =~ m{^([^/]+)/([^/]+)/([^/]+)$};
-		my ($component,$arch,$package_source) = ($1,$2,$3);
-		$arch =~ s/binary-//;
-		next if exists $p_f{$component}{$arch};
-		$p_f{$component}{$arch} = $dist_dir.'/'.$file;
-	    }
-	}
-	$s_p{$dist_info{Suite}} = \%p_f;
-	$s_info{$dist_info{Suite}} = \%s_info;
+	my ($dist_info,$package_files) =
+	    read_release_file($dist_dir.'/Release');
+	$s_p{$dist_info->{Codename}} = $package_files;
     }
-    # parse packages files
+    my $tot = 0;
     for my $suite (keys %s_p) {
 	for my $component (keys %{$s_p{$suite}}) {
-	    for my $arch (keys %{$s_p{$suite}{$component}}) {
-		my $pfh =  IO::Uncompress::AnyUncompress->new($s_p{$suite}{$component}{$arch}) or
+	    $tot += scalar keys %{$s_p{$suite}{$component}};
+	}
+    }
+    $p->target($tot) if $p;
+    my $i = 0;
+    my $avg_pkgs = 0;
+    my $tot_suites = scalar keys %s_p;
+    my $done_suites=0;
+    my $completed_pkgs=0;
+    # parse packages files
+    for my $suite (keys %s_p) {
+	print STDERR "working on $suite\n";
+	my @pkgs;
+	for my $component (keys %{$s_p{$suite}}) {
+	    my @archs = keys %{$s_p{$suite}{$component}};
+	    if (grep {$_ eq 'source'} @archs) {
+		@archs = ('source',grep {$_ ne 'source'} @archs);
+	    }
+	    for my $arch (@archs) {
+		my $pfh =  open_compressed_file($s_p{$suite}{$component}{$arch}) or
 		    die "Unable to open $s_p{$suite}{$component}{$arch} for reading: $!";
-		my $lastkey;
-		my %pkg;
+		local $_;
+		local $/ = '';	# paragraph mode
 		while (<$pfh>) {
-		    if (/^$/) {
-			load_package($s,$suite,$component,$arch,\%pkg);
-			%pkg = ();
-			next;
+		    my %pkg;
+		    for my $field (qw(Package Maintainer Version Source)) {
+			/^\Q$field\E: (.*)/m;
+			$pkg{$field} = $1;
 		    }
-		    if (my ($key, $value) = m/^(\S+): (.*)/) {
-			$pkg{$key} = $value;
-			$lastkey=$key;
-		    }
-		    else {
-			s/ //;
-			s/^\.$//;
-			chomp;
-			$pkg{$lastkey} .= "\n" . $_;
-		    }
-		}
-		if (keys %pkg) {
-		    load_package($s,$suite,$component,$arch,\%pkg);
+		    next unless defined $pkg{Package} and
+			defined $pkg{Version};
+		    push @pkgs,[$arch,$component,\%pkg];
 		}
 	    }
 	}
+	my $s = db_connect($options);
+	if ($avg_pkgs==0) {
+	    $avg_pkgs = @pkgs;
+	}
+        $p->target($avg_pkgs*($tot_suites-$done_suites-1)+
+		   $completed_pkgs+@pkgs) if $p;
+	$s->txn_do(sub {
+		       Debbugs::DB::Load::load_packages($s,
+							$suite,
+							\@pkgs,
+							$p)
+		       });
+	$avg_pkgs=($avg_pkgs*$done_suites + @pkgs)/($done_suites+1);
+	$completed_pkgs += @pkgs;
+	$done_suites++;
     }
-    use Data::Printer;
-    p %s_p;
+    $p->remove() if $p;
 }
 
 sub handle_subcommand_arguments {
@@ -620,6 +625,57 @@ sub db_connect {
     # properly here.
     my $s = Debbugs::DB->connect($options->{service}) or
         die "Unable to connect to database: ";
+}
+
+sub open_compressed_file {
+    my ($file) = @_;
+    my $fh;
+    my $mode = '<:encoding(UTF-8)';
+    my @opts;
+    if ($file =~ /\.gz$/) {
+	$mode = '-|:encoding(UTF-8)';
+	push @opts,'gzip','-dc';
+    }
+    if ($file =~ /\.xz$/) {
+	$mode = '-|:encoding(UTF-8)';
+	push @opts,'xz','-dc';
+    }
+    if ($file =~ /\.bz2$/) {
+	$mode = '-|:encoding(UTF-8)';
+	push @opts,'bzip2','-dc';
+    }
+    open($fh,$mode,@opts,$file);
+    return $fh;
+}
+
+sub read_release_file {
+    my ($file) = @_;
+    # parse release
+    my $rfh =  open_compressed_file($file) or
+	die "Unable to open $file for reading: $!";
+    my %dist_info;
+    my $in_sha1;
+    my %p_f;
+    while (<$rfh>) {
+	chomp;
+	if (s/^(\S+):\s*//) {
+	    if ($1 eq 'SHA1'or $1 eq 'SHA256') {
+		$in_sha1 = 1;
+		next;
+	    }
+	    $dist_info{$1} = $_;
+	} elsif ($in_sha1) {
+	    s/^\s//;
+	    my ($sha,$size,$f) = split /\s+/,$_;
+	    next unless $f =~ /(?:Packages|Sources)(?:\.gz|\.xz)$/;
+	    next unless $f =~ m{^([^/]+)/([^/]+)/([^/]+)$};
+	    my ($component,$arch,$package_source) = ($1,$2,$3);
+	    $arch =~ s/binary-//;
+	    next if exists $p_f{$component}{$arch};
+	    $p_f{$component}{$arch} = File::Spec->catfile(dirname($file),$f);
+	}
+    }
+    return (\%dist_info,\%p_f);
 }
 
 sub walk_bugs {
