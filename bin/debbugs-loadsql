@@ -103,7 +103,7 @@ use Debbugs::Config qw(:config);
 use Debbugs::Status qw(read_bug split_status_fields);
 use Debbugs::Log;
 use Debbugs::DB;
-use Debbugs::DB::Load qw(load_bug handle_load_bug_queue :load_package);
+use Debbugs::DB::Load qw(load_bug handle_load_bug_queue :load_package :load_suite);
 use DateTime;
 use File::stat;
 use IO::Dir;
@@ -149,7 +149,9 @@ my %subcommands =
                       },
      'configuration' => {function => \&add_configuration,
                         },
-     'suites' => {function => \&add_suites,
+     'suites' => {function => \&add_suite,
+		  arguments => {'ftpdists=s' => 1,
+			       },
                  },
      'logs' => {function => \&add_logs,
                },
@@ -451,7 +453,20 @@ sub add_configuration {
 sub add_suite {
     my ($options,$opts,$p,$config,$argv) = @_;
     # suites
-    die "add_suite is currently not implemented; modify suites manually using SQL."
+
+    my $s = db_connect($options);
+    my $dist_dir = IO::Dir->new($opts->{ftpdists});
+    my @dist_names =
+	grep { $_ !~ /^\./ and
+	       -d $opts->{ftpdists}.'/'.$_ and
+	       not -l $opts->{ftpdists}.'/'.$_
+	   } $dist_dir->read;
+    while (my $dist = shift @dist_names) {
+	my $dist_dir = $opts->{ftpdists}.'/'.$dist;
+	my ($dist_info,$package_files) =
+	    read_release_file($dist_dir.'/Release');
+	load_suite($s,$dist_info);
+    }
 }
 
 sub add_logs {

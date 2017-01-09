@@ -34,6 +34,7 @@ BEGIN{
      %EXPORT_TAGS = (load_bug    => [qw(load_bug handle_load_bug_queue load_bug_log)],
 		     load_debinfo => [qw(load_debinfo)],
 		     load_package => [qw(load_package)],
+		     load_suite => [qw(load_suite)],
 		    );
      @EXPORT_OK = ();
      Exporter::export_ok_tags(keys %EXPORT_TAGS);
@@ -441,6 +442,36 @@ sub load_package {
 				 });
 		  });
     }
+}
+
+=back
+
+=cut
+
+=head Suites
+
+=over
+
+=item load_suite
+
+     load_suite($schema,$codename,$suite,$version,$active);
+
+=cut
+
+sub load_suite {
+    my ($schema,$codename,$suite,$version,$active) = @_;
+    if (ref($codename)) {
+	($codename,$suite,$version) =
+	    @{$codename}{qw(Codename Suite Version)};
+	$active = 1;
+    }
+    my $s = $schema->resultset('Suite')->find_or_create({codename => $codename});
+    $s->suite_name($suite);
+    $s->version($version);
+    $s->active($active);
+    $s->update();
+    return $s;
+
 }
 
 =back
