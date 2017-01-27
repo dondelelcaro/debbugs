@@ -171,16 +171,17 @@ INSERT INTO column_comments VALUES ('bug_merged','merged','Bug number which is m
 CREATE TABLE src_pkg (
        id SERIAL PRIMARY KEY,
        pkg TEXT NOT NULL,
-       pseduopkg BOOLEAN DEFAULT FALSE,
+       pseduopkg BOOLEAN NOT NULL DEFAULT FALSE,
        alias_of INT REFERENCES src_pkg ON UPDATE CASCADE ON DELETE CASCADE,
-       creation TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-       disabled TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-       last_modified TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-       obsolete BOOLEAN DEFAULT FALSE,
+       creation TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+       disabled TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT 'infinity'::timestamp with time zone,
+       last_modified TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+       obsolete BOOLEAN NOT NULL DEFAULT FALSE,
        CONSTRAINT src_pkg_doesnt_alias_itself CHECK (id <> alias_of),
-       CONSTRAINT src_pkg_is_obsolete_if_disabled CHECK ((obsolete IS FALSE AND disabled IS NULL) OR (obsolete IS TRUE AND disabled IS NOT NULL))
+       CONSTRAINT src_pkg_is_obsolete_if_disabled CHECK ((obsolete IS FALSE AND disabled='infinity'::timestamp with time zone) OR (obsolete IS TRUE AND disabled < 'infinity'::timestamp with time zone))
 );
 CREATE INDEX src_pkg_pkg ON src_pkg(pkg);
+CREATE UNIQUE INDEX src_pkg_pkg_null ON src_pkg(pkg) WHERE disabled='infinity'::timestamp with time zone;
 CREATE UNIQUE INDEX src_pkg_pkg_disabled ON src_pkg(pkg,disabled);
 INSERT INTO table_comments VALUES ('src_pkg','Source packages');
 INSERT INTO column_comments VALUES ('src_pkg','id','Source package id');
