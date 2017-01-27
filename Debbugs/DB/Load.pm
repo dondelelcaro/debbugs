@@ -503,6 +503,268 @@ sub load_packages {
 		      $src_max_last_modified;
 }
 
+sub load_packages_dbi {
+    my ($schema,$suite,$pkgs,$p) = @_;
+    my $suite_id = $schema->resultset('Suite')->
+	find_or_create({codename => $suite})->id;
+    my %maint_cache;
+    my %arch_cache;
+    my %source_cache;
+    my $src_max_last_modified = $schema->resultset('SrcAssociation')->
+	search_rs({suite => $suite_id},
+		 {order_by => {-desc => ['me.modified']},
+		  rows => 1,
+		  page => 1
+		 }
+		 )->single();
+    my $bin_max_last_modified = $schema->resultset('BinAssociation')->
+	search_rs({suite => $suite_id},
+		 {order_by => {-desc => ['me.modified']},
+		  rows => 1,
+		  page => 1
+		 }
+		 )->single();
+    print STDERR time." handling packages\n";
+    # prepare SQL
+    my $st = {};
+    my $dbi = $schema->storage()->dbh();
+    my %s =
+        (insert_correspondent => <<'EOF',
+WITH ins AS (
+INSERT INTO correspondent (addr) VALUES (?)
+ ON CONFLICT (addr) DO NOTHING RETURNING id
+)
+SELECT id FROM ins
+UNION ALL
+SELECT id FROM correspondent WHERE addr = ?
+LIMIT 1;
+EOF
+         insert_maintainer => <<'EOF',
+WITH ins AS (
+INSERT INTO maintainer (name,correspondent) VALUES (?,?)
+ON CONFLICT (name) DO NOTHING RETURNING id
+)
+SELECT id FROM ins
+UNION ALL
+SELECT id FROM maintainer WHERE name = ?
+LIMIT 1;
+EOF
+         insert_correspondent_full_name => <<'EOF',
+WITH ins AS (
+INSERT INTO correspondent_full_name (correspondent,full_name)
+   VALUES (?,?) ON CONFLICT (correspondent,full_name) DO NOTHING RETURNING id
+)
+SELECT id FROM ins
+UNION ALL
+SELECT id FROM correspondent_full_name WHERE correspondent=? AND full_name = ?
+LIMIT 1;
+EOF
+         insert_src_pkg => <<'EOF',
+WITH ins AS (
+INSERT INTO src_pkg (pkg)
+   VALUES (?) ON CONFLICT (pkg,disabled) DO NOTHING RETURNING id
+)
+SELECT id FROM ins
+UNION ALL
+SELECT id FROM src_pkg where pkg = ? AND disabled = 'infinity'::timestamptz
+LIMIT 1;
+EOF
+         insert_src_ver => <<'EOF',
+INSERT INTO src_ver (src_pkg,ver,maintainer)
+   VALUES (?,?,?) ON CONFLICT (src_pkg,ver) DO
+     UPDATE SET maintainer = ?
+   RETURNING id;
+EOF
+         insert_src_associations => <<'EOF',
+INSERT INTO src_associations (suite,source)
+   VALUES (?,?) ON CONFLICT (suite,source) DO
+     UPDATE SET modified = NOW()
+RETURNING id;
+EOF
+	 insert_bin_pkg => <<'EOF',
+WITH ins AS (
+INSERT INTO bin_pkg (pkg)
+VALUES (?) ON CONFLICT (pkg) DO NOTHING RETURNING id
+)
+SELECT id FROM ins
+UNION ALL
+SELECT id FROM bin_pkg where pkg = ?
+LIMIT 1;
+EOF
+	 insert_bin_ver => <<'EOF',
+WITH ins AS (
+INSERT INTO bin_ver (bin_pkg,src_ver,arch,ver)
+VALUES (?,?,?,?) ON CONFLICT (bin_pkg,arch,ver) DO NOTHING RETURNING id
+)
+SELECT id FROM ins
+UNION ALL
+SELECT id FROM bin_ver WHERE bin_pkg = ? AND arch = ? AND ver = ?
+LIMIT 1;
+EOF
+	 insert_bin_associations => <<'EOF',
+INSERT INTO bin_associations (suite,bin)
+   VALUES (?,?) ON CONFLICT (suite,bin) DO
+    UPDATE SET modified = NOW()
+   RETURNING id;
+EOF
+	);
+    _prepare_sql_statements($dbi,$st,\%s);
+    for my $pkg_tuple (@{$pkgs}) {
+	my ($arch,$component,$pkg) = @{$pkg_tuple};
+	$p->update() if $p;
+	sub _get_maintainer {
+	    my ($addr,$dbi,$st,$schema) = @_;
+	    my $rs =
+		$schema->resultset('Maintainer')->
+		search({name => $addr},
+		      {result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+		      }
+		      )->first();
+	    if (defined $rs) {
+		return $rs->{id};
+	    }
+	    my @addrs = getparsedaddrs($addr // '');
+	    my $m_id;
+	    my $c_id;
+	    if (@addrs) {
+		$c_id = _select_one($dbi,$st,
+				    'insert_correspondent',
+				    lc($addrs[0]->address()),
+				    lc($addrs[0]->address()),
+				   );
+		my $full_name = $addrs[0]->phrase();
+		$full_name =~ s/^\"|\"$//g;
+		$full_name =~ s/^\s+|\s+$//g;
+		_select_one($dbi,$st,
+			    'insert_correspondent_full_name',
+			    $c_id,
+			    $full_name,
+			    $c_id,
+			    $full_name,
+			   );
+	    }
+	    $m_id =
+		_select_one($dbi,$st,
+			    'insert_maintainer',
+			    $addr,
+			    $c_id,
+			    $addr,
+			   );
+	    return $m_id;
+	}
+	if ($arch eq 'source') {
+	    my $source = $pkg->{Package};
+	    my $source_ver = $pkg->{Version};
+	    if (not exists $maint_cache{$pkg->{Maintainer}}) {
+		$maint_cache{$pkg->{Maintainer}} =
+		    _get_maintainer($pkg->{Maintainer},$dbi,$st,$schema);
+	    }
+	    if (not exists $source_cache{$source}{$source_ver}) {
+            my $sp_id =
+                _select_one($dbi,$st,'insert_src_pkg',
+                            $source,
+                            $source,
+                           );
+            my $sv_id =
+                _select_one($dbi,$st,'insert_src_ver',
+                            $sp_id,
+                            $source_ver,
+                            $maint_cache{$pkg->{Maintainer}},
+                            $maint_cache{$pkg->{Maintainer}});
+            $source_cache{$source}{$source_ver} = $sv_id;
+        }
+	    _select_one($dbi,$st,'insert_src_associations',
+			$suite_id,
+			$source_cache{$source}{$source_ver}
+		       );
+	} else {
+	    if (not exists $arch_cache{$arch}) {
+            my $ar = $schema->resultset('Arch')->
+                find_or_create(arch => $arch);
+            $arch_cache{$arch} = $ar->id;
+	    }
+	    my $bp =
+            _select_one($dbi,$st,
+                        'insert_bin_pkg',
+                        $pkg->{Package},
+                        $pkg->{Package},
+                       );
+	    my $source = $pkg->{Source} // $pkg->{Package};
+	    my $source_ver = $pkg->{Version};
+	    if ($source =~ /^\s*(\S+) \(([^\)]+)\)\s*$/) {
+            ($source,$source_ver) = ($1,$2);
+	    }
+	    if (not exists $source_cache{$source}{$source_ver}) {
+            my $sp_id =
+                _select_one($dbi,$st,'insert_src_pkg',
+                            $source,
+                            $source,
+                           );
+            if (not exists $maint_cache{$pkg->{Maintainer}}) {
+                $maint_cache{$pkg->{Maintainer}} =
+                    _get_maintainer($pkg->{Maintainer},$dbi,$st,$schema);
+            }
+            my $sv_id =
+                _select_one($dbi,$st,'insert_src_ver',
+                            $sp_id,
+                            $source_ver,
+                            $maint_cache{$pkg->{Maintainer}},
+                            $maint_cache{$pkg->{Maintainer}});
+            $source_cache{$source}{$source_ver} = $sv_id;
+	    }
+	    my $bv =
+            _select_one($dbi,$st,'insert_bin_ver',
+                        $bp,
+                        $source_cache{$source}{$source_ver},
+                        $arch_cache{$arch},
+                        $pkg->{Version},
+                        $bp,
+                        $arch_cache{$arch},
+                        $pkg->{Version},
+                       );
+        my $ba =
+            _select_one($dbi,$st,'insert_bin_associations',
+                        $suite_id,
+                        $bv,
+                       );
+	}
+    }
+    print STDERR time." deleting associations\n";
+    # delete old binary associations in this suite which have not recently been
+    # modified
+    $schema->resultset('BinAssociation')->
+        search_rs({suite => $suite_id,
+                   modified => {'<',$bin_max_last_modified->modified()},
+                  }) if defined
+                      $bin_max_last_modified;
+    $schema->resultset('SrcAssociation')->
+        search_rs({suite => $suite_id,
+                   modified => {'<',$src_max_last_modified->modified()},
+                  }) if defined
+                      $src_max_last_modified;
+}
+
+sub _select_one {
+    my ($dbh,$sth,$s,@bind_vals) = @_;
+    if (not defined $sth->{$s}) {
+        die "No such statement '$s'";
+    }
+    $sth->{$s}->execute(@bind_vals) or
+        die "Unable to select one: ".$dbh->errstr();
+    my $results = $sth->{$s}->fetchall_arrayref([0]);
+    $sth->{$s}->finish();
+    return (ref($results) and ref($results->[0]))?$results->[0][0]:undef;
+}
+
+sub _prepare_sql_statements {
+    my ($dbi,$st,$s) = @_;
+    for my $key (keys %{$s}) {
+        $st->{$key} = $dbi->prepare($s->{$key}) //
+            die "Unable to prepare sql statement: ".$dbi->errstr;
+    }
+}
+
+
 =back
 
 =cut
