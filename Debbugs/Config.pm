@@ -526,12 +526,12 @@ set_default(\%config,'removal_distribution_tags',
 For removal/archival purposes, all bugs are assumed to have these tags
 set.
 
-Default: qw(unstable testing);
+Default: qw(experimental unstable testing);
 
 =cut
 
 set_default(\%config,'removal_default_distribution_tags',
-	    [qw(unstable testing)]
+	    [qw(experimental unstable testing)]
 	   );
 
 =item removal_strong_severity_default_distribution_tags
@@ -539,12 +539,12 @@ set_default(\%config,'removal_default_distribution_tags',
 For removal/archival purposes, all bugs with strong severity are
 assumed to have these tags set.
 
-Default: qw(unstable testing stable);
+Default: qw(experimental unstable testing stable);
 
 =cut
 
 set_default(\%config,'removal_strong_severity_default_distribution_tags',
-	    [qw(unstable testing stable)]
+	    [qw(experimental unstable testing stable)]
 	   );
 
 
