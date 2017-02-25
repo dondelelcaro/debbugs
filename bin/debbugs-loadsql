@@ -543,7 +543,6 @@ sub add_packages {
     my $completed_pkgs=0;
     # parse packages files
     for my $suite (keys %s_p) {
-	print STDERR "working on $suite\n";
 	my @pkgs;
 	for my $component (keys %{$s_p{$suite}}) {
 	    my @archs = keys %{$s_p{$suite}{$component}};
@@ -573,12 +572,10 @@ sub add_packages {
 	}
         $p->target($avg_pkgs*($tot_suites-$done_suites-1)+
 		   $completed_pkgs+@pkgs) if $p;
-	$s->txn_do(sub {
-		       Debbugs::DB::Load::load_packages($s,
-							$suite,
-							\@pkgs,
-							$p)
-		       });
+	load_packages($s,
+		      $suite,
+		      \@pkgs,
+		      $p);
 	$avg_pkgs=($avg_pkgs*$done_suites + @pkgs)/($done_suites+1);
 	$completed_pkgs += @pkgs;
 	$done_suites++;

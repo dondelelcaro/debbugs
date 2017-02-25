@@ -33,7 +33,7 @@ BEGIN{
      @EXPORT = ();
      %EXPORT_TAGS = (load_bug    => [qw(load_bug handle_load_bug_queue load_bug_log)],
 		     load_debinfo => [qw(load_debinfo)],
-		     load_package => [qw(load_package)],
+		     load_package => [qw(load_packages)],
 		     load_suite => [qw(load_suite)],
 		    );
      @EXPORT_OK = ();
@@ -42,6 +42,7 @@ BEGIN{
 }
 
 use Params::Validate qw(validate_with :types);
+use List::MoreUtils qw(natatime);
 
 use Debbugs::Status qw(read_bug split_status_fields);
 use Debbugs::DB;
@@ -405,363 +406,160 @@ sub load_packages {
 		  page => 1
 		 }
 		 )->single();
-    print STDERR time." handling packages\n";
+    my %maints;
+    my %sources;
+    my %bins;
     for my $pkg_tuple (@{$pkgs}) {
 	my ($arch,$component,$pkg) = @{$pkg_tuple};
-	$p->update() if $p;
+	$maints{$pkg->{Maintainer}} = $pkg->{Maintainer};
 	if ($arch eq 'source') {
 	    my $source = $pkg->{Package};
 	    my $source_ver = $pkg->{Version};
-	    if (not exists $maint_cache{$pkg->{Maintainer}}) {
-		my @addrs = getparsedaddrs($pkg->{Maintainer} // '');
-		if (@addrs) {
-		    my $mc = $schema->resultset('Correspondent')->
-			find_or_create({addr => lc($addrs[0]->address())},
-				      {key => 'correspondent_addr_idx'}
-				      );
-		    my $full_name = $addrs[0]->phrase();
-		    $full_name =~ s/^\"|\"$//g;
-		    $full_name =~ s/^\s+|\s+$//g;
-		    # $sv->discard_changes;
-		    my $maint = $schema->resultset('Maintainer')->
-			find_or_create({name => $pkg->{Maintainer},
-					correspondent => $mc->id},
-				      {key => 'maintainer_name_idx'},
-				      );
-		    $mc->find_or_create_related('correspondent_full_names',
-					       {full_name => $full_name},
-					       {key => 'correspondent_full_name_correspondent_full_name_idx'}
-					       );
-		    $mc->update;
-		    $maint_cache{$pkg->{Maintainer}} = $maint;
-		}
-	    }
-	    if (not exists $source_cache{$source}{$source_ver}) {
-		my $sp = $schema->resultset('SrcPkg')->
-		    find_or_create({pkg => $source});
-		my $sv = $sp->find_or_create_related('src_vers',
-						    {ver => $source_ver});
-		$source_cache{$source}{$source_ver} = $sv;
-		if (exists $maint_cache{$pkg->{Maintainer}}) {
-		    $source_cache{$source}{$source_ver}->
-			set_from_related('maintainer',
-					 $maint_cache{$pkg->{Maintainer}}
-					);
-		    $source_cache{$source}{$source_ver}->update;
-		}
-	    }
-	    $schema->resultset('SrcAssociation')->
-		update_or_create({suite => $suite_id,
-				  source => $source_cache{$source}{$source_ver}->id,
-				  modified => 'NOW()',
-				 },
-				{key => 'src_associations_source_suite'}
-				);
+	    $sources{$source}{$source_ver} = $pkg->{Maintainer};
 	} else {
-	    my $ar = $schema->resultset('Arch')->
-		find_or_create(arch => $arch);
-	    my $bp = $schema->resultset('BinPkg')->
-		find_or_create({pkg => $pkg->{Package}});
 	    my $source = $pkg->{Source} // $pkg->{Package};
 	    my $source_ver = $pkg->{Version};
 	    if ($source =~ /^\s*(\S+) \(([^\)]+)\)\s*$/) {
 		($source,$source_ver) = ($1,$2);
 	    }
-	    if (not exists $source_cache{$source}{$source_ver}) {
-		my $sp = $schema->resultset('SrcPkg')->
-		    find_or_create({pkg => $source});
-		my $sv = $sp->find_or_create_related('src_vers',
-						    {ver => $source_ver});
-		$source_cache{$source}{$source_ver} = $sv;
-	    }
-	    my $bv = $bp->find_or_create_related('bin_vers',
-						{ver => $pkg->{Version},
-						 src_ver => $source_cache{$source}{$source_ver}->id,
-						 arch => $ar->id,
-						});
-	    $schema->resultset('BinAssociation')->
-		update_or_create({suite => $suite_id,
-				  bin => $bv->id,
-				  modified => 'NOW()',
-				 },
-				{key => 'bin_associations_bin_suite'}
-				);
+	    $sources{$source}{$source_ver} = $pkg->{Maintainer};
+	    $bins{$arch}{$pkg->{Package}} =
+	       {arch => $arch,
+		bin => $pkg->{Package},
+		bin_ver => $pkg->{Version},
+		src_ver => $source_ver,
+		source  => $source,
+		maint   => $pkg->{Maintainer},
+	       };
 	}
     }
-    print STDERR time." deleting associations\n";
-    # delete old binary associations in this suite which have not recently been
-    # modified
-    $schema->resultset('BinAssociation')->
-	search_rs({suite => $suite_id,
-		   modified => {'<',$bin_max_last_modified->modified()},
-		  }) if defined
-		      $bin_max_last_modified;
-    $schema->resultset('SrcAssociation')->
-	search_rs({suite => $suite_id,
-		   modified => {'<',$src_max_last_modified->modified()},
-		  }) if defined
-		      $src_max_last_modified;
-}
-
-sub load_packages_dbi {
-    my ($schema,$suite,$pkgs,$p) = @_;
-    my $suite_id = $schema->resultset('Suite')->
-	find_or_create({codename => $suite})->id;
-    my %maint_cache;
-    my %arch_cache;
-    my %source_cache;
-    my $src_max_last_modified = $schema->resultset('SrcAssociation')->
-	search_rs({suite => $suite_id},
-		 {order_by => {-desc => ['me.modified']},
-		  rows => 1,
-		  page => 1
-		 }
-		 )->single();
-    my $bin_max_last_modified = $schema->resultset('BinAssociation')->
-	search_rs({suite => $suite_id},
-		 {order_by => {-desc => ['me.modified']},
-		  rows => 1,
-		  page => 1
-		 }
-		 )->single();
-    print STDERR time." handling packages\n";
-    # prepare SQL
-    my $st = {};
-    my $dbi = $schema->storage()->dbh();
-    my %s =
-        (insert_correspondent => <<'EOF',
-WITH ins AS (
-INSERT INTO correspondent (addr) VALUES (?)
- ON CONFLICT (addr) DO NOTHING RETURNING id
-)
-SELECT id FROM ins
-UNION ALL
-SELECT id FROM correspondent WHERE addr = ?
-LIMIT 1;
-EOF
-         insert_maintainer => <<'EOF',
-WITH ins AS (
-INSERT INTO maintainer (name,correspondent) VALUES (?,?)
-ON CONFLICT (name) DO NOTHING RETURNING id
-)
-SELECT id FROM ins
-UNION ALL
-SELECT id FROM maintainer WHERE name = ?
-LIMIT 1;
-EOF
-         insert_correspondent_full_name => <<'EOF',
-WITH ins AS (
-INSERT INTO correspondent_full_name (correspondent,full_name)
-   VALUES (?,?) ON CONFLICT (correspondent,full_name) DO NOTHING RETURNING id
-)
-SELECT id FROM ins
-UNION ALL
-SELECT id FROM correspondent_full_name WHERE correspondent=? AND full_name = ?
-LIMIT 1;
-EOF
-         insert_src_pkg => <<'EOF',
-WITH ins AS (
-INSERT INTO src_pkg (pkg)
-   VALUES (?) ON CONFLICT (pkg,disabled) DO NOTHING RETURNING id
-)
-SELECT id FROM ins
-UNION ALL
-SELECT id FROM src_pkg where pkg = ? AND disabled = 'infinity'::timestamptz
-LIMIT 1;
-EOF
-         insert_src_ver => <<'EOF',
-INSERT INTO src_ver (src_pkg,ver,maintainer)
-   VALUES (?,?,?) ON CONFLICT (src_pkg,ver) DO
-     UPDATE SET maintainer = ?
-   RETURNING id;
-EOF
-         insert_src_associations => <<'EOF',
-INSERT INTO src_associations (suite,source)
-   VALUES (?,?) ON CONFLICT (suite,source) DO
-     UPDATE SET modified = NOW()
-RETURNING id;
-EOF
-	 insert_bin_pkg => <<'EOF',
-WITH ins AS (
-INSERT INTO bin_pkg (pkg)
-VALUES (?) ON CONFLICT (pkg) DO NOTHING RETURNING id
-)
-SELECT id FROM ins
-UNION ALL
-SELECT id FROM bin_pkg where pkg = ?
-LIMIT 1;
-EOF
-	 insert_bin_ver => <<'EOF',
-WITH ins AS (
-INSERT INTO bin_ver (bin_pkg,src_ver,arch,ver)
-VALUES (?,?,?,?) ON CONFLICT (bin_pkg,arch,ver) DO NOTHING RETURNING id
-)
-SELECT id FROM ins
-UNION ALL
-SELECT id FROM bin_ver WHERE bin_pkg = ? AND arch = ? AND ver = ?
-LIMIT 1;
-EOF
-	 insert_bin_associations => <<'EOF',
-INSERT INTO bin_associations (suite,bin)
-   VALUES (?,?) ON CONFLICT (suite,bin) DO
-    UPDATE SET modified = NOW()
-   RETURNING id;
-EOF
-	);
-    _prepare_sql_statements($dbi,$st,\%s);
-    for my $pkg_tuple (@{$pkgs}) {
-	my ($arch,$component,$pkg) = @{$pkg_tuple};
-	$p->update() if $p;
-	sub _get_maintainer {
-	    my ($addr,$dbi,$st,$schema) = @_;
-	    my $rs =
-		$schema->resultset('Maintainer')->
-		search({name => $addr},
-		      {result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-		      }
-		      )->first();
-	    if (defined $rs) {
-		return $rs->{id};
-	    }
-	    my @addrs = getparsedaddrs($addr // '');
-	    my $m_id;
-	    my $c_id;
-	    if (@addrs) {
-		$c_id = _select_one($dbi,$st,
-				    'insert_correspondent',
-				    lc($addrs[0]->address()),
-				    lc($addrs[0]->address()),
-				   );
-		my $full_name = $addrs[0]->phrase();
-		$full_name =~ s/^\"|\"$//g;
-		$full_name =~ s/^\s+|\s+$//g;
-		_select_one($dbi,$st,
-			    'insert_correspondent_full_name',
-			    $c_id,
-			    $full_name,
-			    $c_id,
-			    $full_name,
-			   );
-	    }
-	    $m_id =
-		_select_one($dbi,$st,
-			    'insert_maintainer',
-			    $addr,
-			    $c_id,
-			    $addr,
-			   );
-	    return $m_id;
+    # Retrieve and Insert new maintainers
+    my $maints =
+	$schema->resultset('Maintainer')->
+	get_maintainers(keys %maints);
+    my $archs =
+	$schema->resultset('Arch')->
+	get_archs(keys %bins);
+    # We want all of the source package/versions which are in this suite to
+    # start with
+    my @sa_to_add;
+    my @sa_to_del;
+    my %included_sa;
+    # Calculate which source packages are no longer in this suite
+    for my $s ($schema->resultset('SrcPkg')->
+	       src_pkg_and_ver_in_suite($suite)) {
+	if (not exists $sources{$s->{pkg}} or
+	    not exists $sources{$s->{pkg}}{$s->{src_vers}{ver}}
+	   ) {
+	    push @sa_to_del,
+		$s->{src_associations}{id};
 	}
-	if ($arch eq 'source') {
-	    my $source = $pkg->{Package};
-	    my $source_ver = $pkg->{Version};
-	    if (not exists $maint_cache{$pkg->{Maintainer}}) {
-		$maint_cache{$pkg->{Maintainer}} =
-		    _get_maintainer($pkg->{Maintainer},$dbi,$st,$schema);
+	$included_sa{$s->{pkg}}{$s->{src_vers}} = 1;
+    }
+    # Calculate which source packages are newly in this suite
+    for my $s (keys %sources) {
+	for my $v (keys %{$sources{$s}}) {
+	    if (not exists $included_sa{$s} and
+		not $included_sa{$s}{$v}) {
+		push @sa_to_add,
+		    [$s,$v,$sources{$s}{$v}];
+	    } else {
+		$p->update() if defined $p;
 	    }
-	    if (not exists $source_cache{$source}{$source_ver}) {
-            my $sp_id =
-                _select_one($dbi,$st,'insert_src_pkg',
-                            $source,
-                            $source,
-                           );
-            my $sv_id =
-                _select_one($dbi,$st,'insert_src_ver',
-                            $sp_id,
-                            $source_ver,
-                            $maint_cache{$pkg->{Maintainer}},
-                            $maint_cache{$pkg->{Maintainer}});
-            $source_cache{$source}{$source_ver} = $sv_id;
-        }
-	    _select_one($dbi,$st,'insert_src_associations',
-			$suite_id,
-			$source_cache{$source}{$source_ver}
+	}
+    }
+    # add new source packages
+    my $it = natatime 100, @sa_to_add;
+    while (my @v = $it->()) {
+	$schema->txn_do(
+	    sub {
+		for my $svm (@_) {
+		    my $s_id = $schema->resultset('SrcPkg')->
+			get_src_pkg_id($svm->[0]);
+		    my $sv_id = $schema->resultset('SrcVer')->
+			get_src_ver_id($s_id,$svm->[1],$maints->{$svm->[2]});
+		    $schema->resultset('SrcAssociation')->
+			insert_suite_src_ver_association($suite_id,$sv_id);
+		}
+	    },
+			@v
 		       );
-	} else {
-	    if (not exists $arch_cache{$arch}) {
-            my $ar = $schema->resultset('Arch')->
-                find_or_create(arch => $arch);
-            $arch_cache{$arch} = $ar->id;
+	$p->update($p->last_update()+
+		   scalar @v) if defined $p;
+    }
+    # remove associations for packages not in this suite
+    if (@sa_to_del) {
+	$schema->resultset('SrcAssociation')->
+	    search_rs({id => \@sa_to_del})->delete();
+    }
+    # update packages in this suite to have a modification time of now
+    $schema->resultset('SrcAssociation')->
+	search_rs({suite => $suite_id})->
+	update({modified => 'NOW()'});
+    ## Handle binary packages
+    my @bin_to_del;
+    my @bin_to_add;
+    my %included_bin;
+    # calculate which binary packages are no longer in this suite
+    for my $b ($schema->resultset('BinPkg')->
+	       bin_pkg_and_ver_in_suite($suite)) {
+	if (not exists $bins{$b->{arch}{arch}} or
+	    not exists $bins{$b->{arch}{arch}}{$b->{pkg}} or
+	    ($bins{$b->{arch}{arch}}{$b->{pkg}}{bin_ver} ne
+	     $b->{bin_vers}{ver}
+	    )
+	   ) {
+	    push @bin_to_del,
+		$b->{bin_associations}{id};
+	}
+	$included_bin{$b->{arch}{arch}}{$b->{pkg}} =
+	    $b->{bin_vers}{ver};
+    }
+    # calculate which binary packages are newly in this suite
+    for my $a (keys %bins) {
+	for my $pkg (keys %{$bins{$a}}) {
+	    if (not exists $included_bin{$a} or
+		not exists $included_bin{$a}{$pkg} or
+		$bins{$a}{$pkg}{bin_ver} ne
+		$included_bin{$a}{$pkg}) {
+		push @bin_to_add,
+		    $bins{$a}{$pkg};
+	    } else {
+		$p->update() if defined $p;
 	    }
-	    my $bp =
-            _select_one($dbi,$st,
-                        'insert_bin_pkg',
-                        $pkg->{Package},
-                        $pkg->{Package},
-                       );
-	    my $source = $pkg->{Source} // $pkg->{Package};
-	    my $source_ver = $pkg->{Version};
-	    if ($source =~ /^\s*(\S+) \(([^\)]+)\)\s*$/) {
-            ($source,$source_ver) = ($1,$2);
-	    }
-	    if (not exists $source_cache{$source}{$source_ver}) {
-            my $sp_id =
-                _select_one($dbi,$st,'insert_src_pkg',
-                            $source,
-                            $source,
-                           );
-            if (not exists $maint_cache{$pkg->{Maintainer}}) {
-                $maint_cache{$pkg->{Maintainer}} =
-                    _get_maintainer($pkg->{Maintainer},$dbi,$st,$schema);
-            }
-            my $sv_id =
-                _select_one($dbi,$st,'insert_src_ver',
-                            $sp_id,
-                            $source_ver,
-                            $maint_cache{$pkg->{Maintainer}},
-                            $maint_cache{$pkg->{Maintainer}});
-            $source_cache{$source}{$source_ver} = $sv_id;
-	    }
-	    my $bv =
-            _select_one($dbi,$st,'insert_bin_ver',
-                        $bp,
-                        $source_cache{$source}{$source_ver},
-                        $arch_cache{$arch},
-                        $pkg->{Version},
-                        $bp,
-                        $arch_cache{$arch},
-                        $pkg->{Version},
-                       );
-        my $ba =
-            _select_one($dbi,$st,'insert_bin_associations',
-                        $suite_id,
-                        $bv,
-                       );
 	}
     }
-    print STDERR time." deleting associations\n";
-    # delete old binary associations in this suite which have not recently been
-    # modified
+    $it = natatime 100, @bin_to_add;
+    while (my @v = $it->()) {
+	$schema->txn_do(
+	sub {
+	    for my $bvm (@_) {
+		my $s_id = $schema->resultset('SrcPkg')->
+		    get_src_pkg_id($bvm->{source});
+		my $sv_id = $schema->resultset('SrcVer')->
+		    get_src_ver_id($s_id,$bvm->{src_ver},$maints->{$bvm->{maint}});
+		my $b_id = $schema->resultset('BinPkg')->
+		    get_bin_pkg_id($bvm->{bin});
+		my $bv_id = $schema->resultset('BinVer')->
+		    get_bin_ver_id($b_id,$bvm->{bin_ver},
+				   $archs->{$bvm->{arch}},$sv_id);
+		$schema->resultset('BinAssociation')->
+		    insert_suite_bin_ver_association($suite_id,$bv_id);
+	    }
+	},
+			@v
+		       );
+	$p->update($p->last_update()+
+		   scalar @v) if defined $p;
+    }
+    if (@bin_to_del) {
+	$schema->resultset('BinAssociation')->
+	    search_rs({id => \@bin_to_del})->delete();
+    }
     $schema->resultset('BinAssociation')->
-        search_rs({suite => $suite_id,
-                   modified => {'<',$bin_max_last_modified->modified()},
-                  }) if defined
-                      $bin_max_last_modified;
-    $schema->resultset('SrcAssociation')->
-        search_rs({suite => $suite_id,
-                   modified => {'<',$src_max_last_modified->modified()},
-                  }) if defined
-                      $src_max_last_modified;
-}
+	search_rs({suite => $suite_id})->
+	update({modified => 'NOW()'});
 
-sub _select_one {
-    my ($dbh,$sth,$s,@bind_vals) = @_;
-    if (not defined $sth->{$s}) {
-        die "No such statement '$s'";
-    }
-    $sth->{$s}->execute(@bind_vals) or
-        die "Unable to select one: ".$dbh->errstr();
-    my $results = $sth->{$s}->fetchall_arrayref([0]);
-    $sth->{$s}->finish();
-    return (ref($results) and ref($results->[0]))?$results->[0][0]:undef;
-}
-
-sub _prepare_sql_statements {
-    my ($dbi,$st,$s) = @_;
-    for my $key (keys %{$s}) {
-        $st->{$key} = $dbi->prepare($s->{$key}) //
-            die "Unable to prepare sql statement: ".$dbi->errstr;
-    }
 }
 
 
