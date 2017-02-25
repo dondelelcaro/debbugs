@@ -178,7 +178,9 @@ CREATE TABLE src_pkg (
        last_modified TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
        obsolete BOOLEAN NOT NULL DEFAULT FALSE,
        CONSTRAINT src_pkg_doesnt_alias_itself CHECK (id <> alias_of),
-       CONSTRAINT src_pkg_is_obsolete_if_disabled CHECK ((obsolete IS FALSE AND disabled='infinity'::timestamp with time zone) OR (obsolete IS TRUE AND disabled < 'infinity'::timestamp with time zone))
+       CONSTRAINT src_pkg_is_obsolete_if_disabled CHECK (
+	   (obsolete IS FALSE AND disabled='infinity'::timestamp with time zone) OR
+	   (obsolete IS TRUE AND disabled < 'infinity'::timestamp with time zone))
 );
 CREATE INDEX src_pkg_pkg ON src_pkg(pkg);
 CREATE UNIQUE INDEX src_pkg_pkg_null ON src_pkg(pkg) WHERE disabled='infinity'::timestamp with time zone;
