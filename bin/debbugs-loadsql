@@ -387,42 +387,36 @@ sub add_maintainers {
 
     my $s = db_connect($options);
     my $maintainers = getsourcemaintainers();
-    $p->target(scalar keys %{$maintainers}) if $p;
-    for my $pkg (keys %{$maintainers}) {
-        my $maint = $maintainers->{$pkg};
-        # see if a maintainer already exists; if so, we don't do
-        # anything here
-        my $maint_r = $s->resultset('Maintainer')->
-            find({name => $maint});
-        if (not defined $maint_r) {
-            # get e-mail address of maintainer
-            my $addr = getparsedaddrs($maint);
-            my $e_mail = $addr->address();
-            my $full_name = $addr->phrase();
-            $full_name =~ s/^\"|\"$//g;
-            $full_name =~ s/^\s+|\s+$//g;
-            # find correspondent
-            my $correspondent = $s->resultset('Correspondent')->
-                find_or_create({addr => $e_mail});
-            if (length $full_name) {
-                my $c_full_name = $correspondent->find_or_create_related('correspondent_full_names',
-                                                                        {full_name => $full_name}) if length $full_name;
-                $c_full_name->update({last_seen => 'NOW()'});
-            }
-            $maint_r =
-                $s->resultset('Maintainer')->
-                find_or_create({name => $maint,
-                                correspondent => $correspondent,
-                               });
-        }
-        # add the maintainer to the source package for packages with
-        # no maintainer
-        $s->txn_do(sub {
-                      $s->resultset('SrcPkg')->search({pkg => $pkg})->
-                          search_related_rs('src_vers',{ maintainer => undef})->
-                          update_all({maintainer => $maint_r->id()});
-                  });
-        $p->update() if $p;
+    $p->target(2) if $p;
+    ## get all of the maintainers, and add the missing ones
+    my $maints = $s->resultset('Maintainer')->
+	get_maintainers(values %{$maintainers});
+    $p->update();
+    my @svs = $s->resultset('SrcVer')->
+	search({maintainer => undef
+	       },
+	      {join => 'src_pkg',
+	       group_by => 'me.src_pkg, src_pkg.pkg',
+	       result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+	       columns => [qw(me.src_pkg src_pkg.pkg)],
+	      }
+	      )->all();
+    $p->target(2+@svs) if $p;
+    $p->update() if $p;
+    for my $sv (@svs) {
+	if (exists $maintainers->{$sv->{src_pkg}{pkg}}) {
+	    my $pkg = $sv->{src_pkg}{pkg};
+	    my $maint = $maints->
+	       {$maintainers->{$pkg}};
+	    $s->txn_do(sub {$s->resultset('SrcVer')->
+				search({maintainer => undef,
+					'src_pkg.pkg' => $pkg
+				       },
+				      {join => 'src_pkg'}
+				      )->update({maintainer => $maint})
+				  });
+	}
+	$p->update() if $p;
     }
     $p->remove() if $p;
 }
