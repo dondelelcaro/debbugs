@@ -144,6 +144,7 @@ $DEBUG = $options{debug};
 
 my %subcommands =
     ('bugs' => {function => \&add_bugs,
+		arguments => {'preload' => 0},
                },
      'versions' => {function => \&add_versions,
                    },
@@ -236,6 +237,17 @@ sub add_bugs {
     my %severities;
     my %queue;
 
+    if ($opts->{preload}) {
+	my @bugs;
+	walk_bugs([(@{$argv}?@{$argv} : $initialdir)],
+		  undef,
+		  'summary',
+		  undef,
+		  sub {
+		      push @bugs,shift;
+		  });
+	$s->resultset('Bug')->quick_insert_bugs(@bugs);
+    }
     walk_bugs([(@{$argv}?@{$argv} : $initialdir)],
               $p,
               'summary',
