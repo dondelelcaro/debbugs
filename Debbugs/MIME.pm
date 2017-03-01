@@ -88,6 +88,43 @@ sub getmailbody
     return undef;
 }
 
+=item parse_to_mime_entity
+
+     $entity = parse_to_mime_entity($record);
+
+Returns a MIME::Entity from a record (from Debbugs::Log), a filehandle, or a
+scalar mail message. Will die upon failure.
+
+Intermediate parsing results will be output under a temporary directory which
+should be cleaned up upon process exit.
+
+=cut
+
+sub parse_to_mime_entity {
+    my ($record) = @_;
+    my $parser = MIME::Parser->new();
+    my $entity;
+    # this will be cleaned up once we exit
+    $tempdir = File::Temp->newdir();
+    $parser->output_dir($tempdir->dirname());
+    if (ref($record) eq 'HASH') {
+	if ($record->{inner_file}) {
+	    $entity = $parser->parse($record->{fh}) or
+		die "Unable to parse entity";
+	} else {
+	    $entity = $parser->parse_data($record->{text}) or
+		die "Unable to parse entity";
+	}
+    } elsif (ref($record)) {
+	$entity = $parser->parse($record) or
+	    die "Unable to parse entity";
+    } else {
+	$entity = $parser->parse_data($record) or
+	    die "Unable to parse entity";
+    }
+    return $entity;
+}
+
 sub parse
 {
     # header and decoded body respectively

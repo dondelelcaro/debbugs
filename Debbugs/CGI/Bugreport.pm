@@ -34,7 +34,7 @@ use IO::Scalar;
 use Params::Validate qw(validate_with :types);
 use Digest::MD5 qw(md5_hex);
 use Debbugs::Mail qw(get_addresses :reply);
-use Debbugs::MIME qw(decode_rfc1522 create_mime_message);
+use Debbugs::MIME qw(decode_rfc1522 create_mime_message parse_to_mime_entity);
 use Debbugs::CGI qw(:url :html :util);
 use Debbugs::Common qw(globify_scalar english_join);
 use Debbugs::UTF8;
@@ -321,17 +321,7 @@ sub handle_email_message{
      my $entity;
      my $tempdir;
      if (not blessed $record) {
-         my $parser = MIME::Parser->new();
-         # this will be cleaned up once it goes out of scope
-         $tempdir = File::Temp->newdir();
-         $parser->output_under($tempdir->dirname());
-         if ($record->{inner_file}) {
-             $entity = $parser->parse($record->{fh}) or
-                 die "Unable to parse entity";
-         } else {
-             $entity = $parser->parse_data($record->{text}) or
-                 die "Unable to parse entity";
-         }
+	 $entity = parse_to_mime_entity($record);
      } else {
          $entity = $record;
      }
