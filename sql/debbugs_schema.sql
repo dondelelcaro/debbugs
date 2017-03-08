@@ -499,7 +499,6 @@ INSERT INTO column_comments VALUES ('message_refs','primary_ref','TRUE if this m
 
 
 CREATE TABLE correspondent_full_name(
-       id SERIAL PRIMARY KEY,
        correspondent INT NOT NULL REFERENCES correspondent ON DELETE CASCADE ON UPDATE CASCADE,
        full_name TEXT NOT NULL,
        last_seen TIMESTAMP NOT NULL DEFAULT NOW()
@@ -509,8 +508,7 @@ CREATE UNIQUE INDEX correspondent_full_name_correspondent_full_name_idx
 CREATE INDEX correspondent_full_name_idx_full_name ON correspondent_full_name(full_name);
 CREATE INDEX correspondent_full_name_idx_last_seen ON correspondent_full_name(last_seen);
 INSERT INTO table_comments VALUES ('correspondent_full_name','Full names of BTS correspondents');
-INSERT INTO column_comments VALUES ('correspondent_full_name','id','Correspondent full name id');
-INSERT INTO column_comments VALUES ('correspondent_full_name','correpsondent','Correspondent ID (matches correspondent)');
+INSERT INTO column_comments VALUES ('correspondent_full_name','correspondent','Correspondent ID (matches correspondent)');
 INSERT INTO column_comments VALUES ('correspondent_full_name','full_name','Correspondent full name (includes e-mail address)');
 
 CREATE TYPE message_correspondent_type AS ENUM ('to','from','envfrom','cc');
