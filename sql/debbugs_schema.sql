@@ -296,7 +296,6 @@ INSERT INTO column_comments VALUES ('tag','tag','Tag name');
 INSERT INTO column_comments VALUES ('tag','obsolete','Whether a tag is obsolete (should not be set on new bugs)');
 
 CREATE TABLE bug_tag (
-       id SERIAL PRIMARY KEY,
        bug INT NOT NULL REFERENCES bug,
        tag INT NOT NULL REFERENCES tag
 );
@@ -322,7 +321,6 @@ CREATE UNIQUE INDEX user_tag_tag_correspondent ON user_tag(tag,correspondent);
 CREATE INDEX user_tag_correspondent ON user_tag(correspondent);
 
 CREATE TABLE bug_user_tag (
-       id SERIAL PRIMARY KEY,
        bug INT NOT NULL REFERENCES bug,
        user_tag INT NOT NULL REFERENCES user_tag
 );
@@ -335,7 +333,6 @@ CREATE INDEX bug_user_tag_tag ON bug_user_tag (user_tag);
 CREATE INDEX bug_user_tag_bug ON bug_user_tag (bug);
 
 CREATE TABLE bug_binpackage (
-       id SERIAL PRIMARY KEY,
        bug INT NOT NULL REFERENCES bug,
        bin_pkg INT NOT NULL REFERENCES bin_pkg ON UPDATE CASCADE ON DELETE CASCADE
 );
@@ -345,7 +342,6 @@ INSERT INTO column_comments VALUES ('bug_binpackage','bug','Bug id (matches bug)
 INSERT INTO column_comments VALUES ('bug_binpackage','bin_pkg','Binary package id (matches bin_pkg)');
 
 CREATE TABLE bug_srcpackage (
-       id SERIAL PRIMARY KEY,
        bug INT NOT NULL REFERENCES bug,
        src_pkg INT NOT NULL REFERENCES src_pkg ON UPDATE CASCADE ON DELETE CASCADE
 );
@@ -362,7 +358,6 @@ CREATE VIEW bug_package (bug,pkg_id,pkg_type,package) AS
               SELECT s.bug,s.src_pkg,'source',sp.pkg FROM bug_srcpackage s JOIN src_pkg sp ON sp.id=s.src_pkg;
 
 CREATE TABLE bug_affects_binpackage (
-       id SERIAL PRIMARY KEY,
        bug INT NOT NULL REFERENCES bug,
        bin_pkg INT NOT NULL REFERENCES bin_pkg ON UPDATE CASCADE ON DELETE CASCADE
 );
@@ -372,7 +367,6 @@ INSERT INTO column_comments VALUES ('bug_affects_binpackage','bug','Bug id (matc
 INSERT INTO column_comments VALUES ('bug_affects_binpackage','bin_pkg','Binary package id (matches bin_pkg)');
 
 CREATE TABLE bug_affects_srcpackage (
-       id SERIAL PRIMARY KEY,
        bug INT NOT NULL REFERENCES bug,
        src_pkg INT NOT NULL REFERENCES src_pkg ON UPDATE CASCADE ON DELETE CASCADE
 );
@@ -440,7 +434,6 @@ CREATE UNIQUE INDEX src_associations_source_suite ON src_associations(source,sui
 
 CREATE TYPE bug_status_type AS ENUM ('pending','forwarded','pending-fixed','fixed','absent','done');
 CREATE TABLE bug_status_cache (
-       id SERIAL PRIMARY KEY,
        bug INT NOT NULL REFERENCES bug ON DELETE CASCADE ON UPDATE CASCADE,
        suite INT REFERENCES suite ON DELETE CASCADE ON UPDATE CASCADE,
        arch INT REFERENCES arch ON DELETE CASCADE ON UPDATE CASCADE,
@@ -495,7 +488,6 @@ CREATE UNIQUE INDEX message_msgid_from_complete_to_complete_subject_idx
 CREATE INDEX message_subject_idx ON message(subject);
 
 CREATE TABLE message_refs (
-       id SERIAL PRIMARY KEY,
        message INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
        refs INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
        inferred BOOLEAN DEFAULT FALSE,
@@ -531,7 +523,6 @@ INSERT INTO column_comments VALUES ('correspondent_full_name','full_name','Corre
 CREATE TYPE message_correspondent_type AS ENUM ('to','from','envfrom','cc');
 
 CREATE TABLE message_correspondent (
-       id SERIAL PRIMARY KEY,
        message INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
        correspondent INT NOT NULL REFERENCES correspondent ON DELETE CASCADE ON UPDATE CASCADE,
        correspondent_type message_correspondent_type NOT NULL DEFAULT 'to'
@@ -547,7 +538,6 @@ CREATE INDEX message_correspondent_idx_correspondent ON message_correspondent(co
 CREATE INDEX message_correspondent_idx_message ON message_correspondent(message);
 
 CREATE TABLE bug_message (
-       id SERIAL PRIMARY KEY,
        bug INT NOT NULL REFERENCES bug ON DELETE CASCADE ON UPDATE CASCADE,
        message INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
        message_number INT NOT NULL,
