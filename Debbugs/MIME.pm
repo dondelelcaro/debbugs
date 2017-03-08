@@ -41,7 +41,9 @@ BEGIN {
 
     @EXPORT = ();
 
-    %EXPORT_TAGS = (mime => [qw(parse create_mime_message getmailbody)],
+    %EXPORT_TAGS = (mime => [qw(parse create_mime_message getmailbody),
+			     qw(parse_to_mime_entity),
+			    ],
 		    rfc1522 => [qw(decode_rfc1522 encode_rfc1522)],
 		   );
     @EXPORT_OK=();
@@ -105,7 +107,7 @@ sub parse_to_mime_entity {
     my $parser = MIME::Parser->new();
     my $entity;
     # this will be cleaned up once we exit
-    $tempdir = File::Temp->newdir();
+    my $tempdir = File::Temp->newdir();
     $parser->output_dir($tempdir->dirname());
     if (ref($record) eq 'HASH') {
 	if ($record->{inner_file}) {
