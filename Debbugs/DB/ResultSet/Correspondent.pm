@@ -28,16 +28,22 @@ use Debbugs::DB::Util qw(select_one);
 
 use Debbugs::Common qw(getparsedaddrs);
 use Debbugs::DB::Util qw(select_one);
+use Scalar::Util qw(blessed);
 
 sub get_correspondent_id {
     my ($self,$addr) = @_;
     my $full_name;
-    if ($addr =~ /</) {
+    if (blessed($addr)) {
+	$full_name = $addr->phrase();
+	$addr = $addr->address();
+    } elsif ($addr =~ /</) {
 	$addr = getparsedaddrs($addr);
 	$full_name = $addr->phrase();
+	$addr = $addr->address();
+    }
+    if (defined $full_name) {
 	$full_name =~ s/^\"|\"$//g;
 	$full_name =~ s/^\s+|\s+$//g;
-	$addr = $addr->address();
     }
     my $rs =
 	$self->
@@ -61,16 +67,16 @@ UNION ALL
 SELECT id FROM correspondent WHERE addr = ?
 LIMIT 1;
 SQL
-		   select_one($dbh,<<'SQL',$ci,$full_name,$ci,$full_name);
+		   if (defined $full_name) {
+		       select_one($dbh,<<'SQL',$ci,$full_name);
 WITH ins AS (
 INSERT INTO correspondent_full_name (correspondent,full_name)
-   VALUES (?,?) ON CONFLICT (correspondent,full_name) DO NOTHING RETURNING id
-)
-SELECT id FROM ins
+   VALUES (?,?) ON CONFLICT (correspondent,full_name) DO NOTHING RETURNING 1
+) SELECT 1 FROM ins
 UNION ALL
-SELECT id FROM correspondent_full_name WHERE correspondent=? AND full_name = ?
-LIMIT 1;
+SELECT 1;
 SQL
+		   }
 		   return $ci;
 },
 	       $addr,
