@@ -305,7 +305,6 @@ INSERT INTO column_comments VALUES ('bug_tag','tag','Tag id (matches tag)');
 
 CREATE UNIQUE INDEX bug_tag_bug_tag ON bug_tag (bug,tag);
 CREATE INDEX bug_tag_tag ON bug_tag (tag);
-CREATE INDEX bug_tag_bug ON bug_tag (bug);
 
 CREATE TABLE user_tag (
        id SERIAL PRIMARY KEY,
@@ -330,7 +329,6 @@ INSERT INTO column_comments VALUES ('bug_user_tag','tag','User tag id (matches u
 
 CREATE UNIQUE INDEX bug_user_tag_bug_tag ON bug_user_tag (bug,user_tag);
 CREATE INDEX bug_user_tag_tag ON bug_user_tag (user_tag);
-CREATE INDEX bug_user_tag_bug ON bug_user_tag (bug);
 
 CREATE TABLE bug_binpackage (
        bug INT NOT NULL REFERENCES bug,
@@ -346,7 +344,6 @@ CREATE TABLE bug_srcpackage (
        src_pkg INT NOT NULL REFERENCES src_pkg ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE UNIQUE INDEX bug_srcpackage_id_pkg ON bug_srcpackage(bug,src_pkg);
-CREATE INDEX bug_srcpackage_idx_bug ON bug_srcpackage(bug);
 CREATE INDEX bug_srcpackage_idx_src_pkg ON bug_srcpackage(src_pkg);
 
 INSERT INTO table_comments VALUES ('bug_srcpackage','Bug <-> source package mapping');
