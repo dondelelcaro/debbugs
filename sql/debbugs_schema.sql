@@ -511,7 +511,7 @@ INSERT INTO table_comments VALUES ('correspondent_full_name','Full names of BTS 
 INSERT INTO column_comments VALUES ('correspondent_full_name','correspondent','Correspondent ID (matches correspondent)');
 INSERT INTO column_comments VALUES ('correspondent_full_name','full_name','Correspondent full name (includes e-mail address)');
 
-CREATE TYPE message_correspondent_type AS ENUM ('to','from','envfrom','cc');
+CREATE TYPE message_correspondent_type AS ENUM ('to','from','envfrom','cc','recv');
 
 CREATE TABLE message_correspondent (
        message INT NOT NULL REFERENCES message ON DELETE CASCADE ON UPDATE CASCADE,
