@@ -444,7 +444,6 @@ CREATE INDEX bug_status_cache_idx_status ON bug_status_cache(status);
 CREATE INDEX bug_status_cache_idx_arch ON bug_status_cache(arch);
 CREATE INDEX bug_status_cache_idx_suite ON bug_status_cache(suite);
 INSERT INTO table_comments  VALUES ('bug_status_cache','Bug Status Cache');
-INSERT INTO column_comments VALUES ('bug_status_cache','id','Bug status cache entry id');
 INSERT INTO column_comments VALUES ('bug_status_cache','bug','Bug number (matches bug)');
 INSERT INTO column_comments VALUES ('bug_status_cache','suite','Suite id (matches suite)');
 INSERT INTO column_comments VALUES ('bug_status_cache','arch','Architecture id (matches arch)');
