@@ -23,6 +23,8 @@ use strict;
 use warnings;
 
 use base 'DBIx::Class::ResultSet';
+__PACKAGE__->load_components('Helper::ResultSet');
+
 use Debbugs::DB::Util qw(select_one);
 
 use List::MoreUtils qw(natatime);
@@ -44,7 +46,7 @@ for first time.
 sub quick_insert_bugs {
     my ($self,@bugs) = @_;
 
-    my $it = natatime 300, @bugs;
+    my $it = natatime 2000, @bugs;
 
     while (my @b = $it->()) {
 	$self->result_source->schema->
