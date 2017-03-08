@@ -458,9 +458,7 @@ CREATE TABLE message (
        id SERIAL PRIMARY KEY,
        msgid TEXT NOT NULL DEFAULT '',
        from_complete TEXT NOT NULL DEFAULT '',
-       from_addr TEXT NOT NULL DEFAULT '',
        to_complete TEXT NOT NULL DEFAULT '',
-       to_addr TEXT NOT NULL DEFAULT '',
        subject TEXT NOT NULL DEFAULT '',
        sent_date TIMESTAMP WITH TIME ZONE,
        refs TEXT NOT NULL DEFAULT '',
@@ -471,9 +469,7 @@ INSERT INTO table_comments VALUES ('message','Messages sent to bugs');
 INSERT INTO column_comments VALUES ('message','id','Message id');
 INSERT INTO column_comments VALUES ('message','msgid','Message id header');
 INSERT INTO column_comments VALUES ('message','from_complete','Complete from header of message');
-INSERT INTO column_comments VALUES ('message','from_addr','Address(es) of From: headers');
 INSERT INTO column_comments VALUES ('message','to_complete','Complete to header of message');
-INSERT INTO column_comments VALUES ('message','to_addr','Address(es) of To: header');
 INSERT INTO column_comments VALUES ('message','subject','Subject of the message');
 INSERT INTO column_comments VALUES ('message','sent_date','Time/date message was sent (from Date header)');
 INSERT INTO column_comments VALUES ('message','refs','Contents of References: header');
