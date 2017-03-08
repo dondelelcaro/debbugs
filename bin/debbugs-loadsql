@@ -104,7 +104,7 @@ use Debbugs::Config qw(:config);
 use Debbugs::Status qw(read_bug split_status_fields);
 use Debbugs::Log;
 use Debbugs::DB;
-use Debbugs::DB::Load qw(load_bug handle_load_bug_queue :load_package :load_suite);
+use Debbugs::DB::Load qw(:load_bug :load_package :load_suite);
 use DateTime;
 use File::stat;
 use File::Basename;
