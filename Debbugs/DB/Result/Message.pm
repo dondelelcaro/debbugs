@@ -62,14 +62,6 @@ Message id header
 
 Complete from header of message
 
-=head2 from_addr
-
-  data_type: 'text'
-  default_value: (empty string)
-  is_nullable: 0
-
-Address(es) of From: headers
-
 =head2 to_complete
 
   data_type: 'text'
@@ -77,14 +69,6 @@ Address(es) of From: headers
   is_nullable: 0
 
 Complete to header of message
-
-=head2 to_addr
-
-  data_type: 'text'
-  default_value: (empty string)
-  is_nullable: 0
-
-Address(es) of To: header
 
 =head2 subject
 
@@ -139,11 +123,7 @@ __PACKAGE__->add_columns(
   { data_type => "text", default_value => "", is_nullable => 0 },
   "from_complete",
   { data_type => "text", default_value => "", is_nullable => 0 },
-  "from_addr",
-  { data_type => "text", default_value => "", is_nullable => 0 },
   "to_complete",
-  { data_type => "text", default_value => "", is_nullable => 0 },
-  "to_addr",
   { data_type => "text", default_value => "", is_nullable => 0 },
   "subject",
   { data_type => "text", default_value => "", is_nullable => 0 },
@@ -255,9 +235,13 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Dow6t1MS7ldAy6KBMtBWRQ
+# Created by DBIx::Class::Schema::Loader v0.07046 @ 2017-03-07 19:03:32
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:n8U0vD9R8M5wFoeoLlIWeQ
 
+__PACKAGE__->many_to_many(bugs => 'bug_messages','bug');
+__PACKAGE__->many_to_many(correspondents => 'message_correspondents','correspondent');
+__PACKAGE__->many_to_many(references => 'message_refs_message','message');
+__PACKAGE__->many_to_many(referenced_by => 'message_refs_refs','message');
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 1;

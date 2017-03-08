@@ -37,15 +37,6 @@ __PACKAGE__->table("bug_status_cache");
 
 =head1 ACCESSORS
 
-=head2 id
-
-  data_type: 'integer'
-  is_auto_increment: 1
-  is_nullable: 0
-  sequence: 'bug_status_cache_id_seq'
-
-Bug status cache entry id
-
 =head2 bug
 
   data_type: 'integer'
@@ -99,13 +90,6 @@ Time that this status was last calculated
 =cut
 
 __PACKAGE__->add_columns(
-  "id",
-  {
-    data_type         => "integer",
-    is_auto_increment => 1,
-    is_nullable       => 0,
-    sequence          => "bug_status_cache_id_seq",
-  },
   "bug",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "suite",
@@ -143,18 +127,6 @@ __PACKAGE__->add_columns(
     original      => { default_value => \"now()" },
   },
 );
-
-=head1 PRIMARY KEY
-
-=over 4
-
-=item * L</id>
-
-=back
-
-=cut
-
-__PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
 
@@ -235,8 +207,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07045 @ 2016-09-24 14:51:07
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:jrPFpLs6vLgKWMSLyJAkxA
+# Created by DBIx::Class::Schema::Loader v0.07046 @ 2017-03-04 10:59:03
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:dgaCogdpUWo99BQhdH68Mg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

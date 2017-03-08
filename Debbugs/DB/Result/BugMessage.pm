@@ -37,13 +37,6 @@ __PACKAGE__->table("bug_message");
 
 =head1 ACCESSORS
 
-=head2 id
-
-  data_type: 'integer'
-  is_auto_increment: 1
-  is_nullable: 0
-  sequence: 'bug_message_id_seq'
-
 =head2 bug
 
   data_type: 'integer'
@@ -84,13 +77,6 @@ Time offset was valid
 =cut
 
 __PACKAGE__->add_columns(
-  "id",
-  {
-    data_type         => "integer",
-    is_auto_increment => 1,
-    is_nullable       => 0,
-    sequence          => "bug_message_id_seq",
-  },
   "bug",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "message",
@@ -102,18 +88,6 @@ __PACKAGE__->add_columns(
   "offset_valid",
   { data_type => "timestamp with time zone", is_nullable => 1 },
 );
-
-=head1 PRIMARY KEY
-
-=over 4
-
-=item * L</id>
-
-=back
-
-=cut
-
-__PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
 
@@ -164,8 +138,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:gof8IcnKupbpDmbU39kx6A
+# Created by DBIx::Class::Schema::Loader v0.07046 @ 2017-03-04 10:59:03
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:BRbN9C6P/wvWWmSmjNGjLA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

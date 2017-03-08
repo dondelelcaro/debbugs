@@ -57,7 +57,7 @@ Source package name
 
   data_type: 'boolean'
   default_value: false
-  is_nullable: 1
+  is_nullable: 0
 
 =head2 alias_of
 
@@ -71,26 +71,27 @@ Source package id which this source package is an alias of
 
   data_type: 'timestamp with time zone'
   default_value: current_timestamp
-  is_nullable: 1
+  is_nullable: 0
   original: {default_value => \"now()"}
 
 =head2 disabled
 
   data_type: 'timestamp with time zone'
-  is_nullable: 1
+  default_value: infinity
+  is_nullable: 0
 
 =head2 last_modified
 
   data_type: 'timestamp with time zone'
   default_value: current_timestamp
-  is_nullable: 1
+  is_nullable: 0
   original: {default_value => \"now()"}
 
 =head2 obsolete
 
   data_type: 'boolean'
   default_value: false
-  is_nullable: 1
+  is_nullable: 0
 
 =cut
 
@@ -105,27 +106,31 @@ __PACKAGE__->add_columns(
   "pkg",
   { data_type => "text", is_nullable => 0 },
   "pseduopkg",
-  { data_type => "boolean", default_value => \"false", is_nullable => 1 },
+  { data_type => "boolean", default_value => \"false", is_nullable => 0 },
   "alias_of",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
   "creation",
   {
     data_type     => "timestamp with time zone",
     default_value => \"current_timestamp",
-    is_nullable   => 1,
+    is_nullable   => 0,
     original      => { default_value => \"now()" },
   },
   "disabled",
-  { data_type => "timestamp with time zone", is_nullable => 1 },
+  {
+    data_type     => "timestamp with time zone",
+    default_value => "infinity",
+    is_nullable   => 0,
+  },
   "last_modified",
   {
     data_type     => "timestamp with time zone",
     default_value => \"current_timestamp",
-    is_nullable   => 1,
+    is_nullable   => 0,
     original      => { default_value => \"now()" },
   },
   "obsolete",
-  { data_type => "boolean", default_value => \"false", is_nullable => 1 },
+  { data_type => "boolean", default_value => \"false", is_nullable => 0 },
 );
 
 =head1 PRIMARY KEY
@@ -254,8 +259,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:qJt8Dn/9gBxJKauPUCFS7w
+# Created by DBIx::Class::Schema::Loader v0.07046 @ 2017-03-04 10:59:03
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:j8LGu4eUfNUNxM/jkHUG2A
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

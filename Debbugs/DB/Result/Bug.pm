@@ -517,5 +517,13 @@ __PACKAGE__->belongs_to(
 # Created by DBIx::Class::Schema::Loader v0.07045 @ 2016-09-24 14:51:07
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:iaipVETTaokcFNrICfIEAw
 
+__PACKAGE__->many_to_many(tags => 'bug_tags','tag');
+__PACKAGE__->many_to_many(user_tags => 'bug_user_tags','user_tag');
+__PACKAGE__->many_to_many(srcpackages => 'bug_srcpackages','src_pkg');
+__PACKAGE__->many_to_many(binpackages => 'bug_binpackages','bin_pkg');
+__PACKAGE__->many_to_many(affects_binpackages => 'bug_affects_binpackages','bin_pkg');
+__PACKAGE__->many_to_many(affects_srcpackages => 'bug_affects_srcpackages','src_pkg');
+__PACKAGE__->many_to_many(messages => 'bug_messages','message');
+
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 1;

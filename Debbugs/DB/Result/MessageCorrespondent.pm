@@ -37,13 +37,6 @@ __PACKAGE__->table("message_correspondent");
 
 =head1 ACCESSORS
 
-=head2 id
-
-  data_type: 'integer'
-  is_auto_increment: 1
-  is_nullable: 0
-  sequence: 'message_correspondent_id_seq'
-
 =head2 message
 
   data_type: 'integer'
@@ -64,7 +57,7 @@ Correspondent (matches correspondent)
 
   data_type: 'enum'
   default_value: 'to'
-  extra: {custom_type_name => "message_correspondent_type",list => ["to","from","envfrom","cc"]}
+  extra: {custom_type_name => "message_correspondent_type",list => ["to","from","envfrom","cc","recv"]}
   is_nullable: 0
 
 Type of correspondent (to, from, envfrom, cc, etc.)
@@ -72,13 +65,6 @@ Type of correspondent (to, from, envfrom, cc, etc.)
 =cut
 
 __PACKAGE__->add_columns(
-  "id",
-  {
-    data_type         => "integer",
-    is_auto_increment => 1,
-    is_nullable       => 0,
-    sequence          => "message_correspondent_id_seq",
-  },
   "message",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "correspondent",
@@ -89,23 +75,11 @@ __PACKAGE__->add_columns(
     default_value => "to",
     extra => {
       custom_type_name => "message_correspondent_type",
-      list => ["to", "from", "envfrom", "cc"],
+      list => ["to", "from", "envfrom", "cc", "recv"],
     },
     is_nullable => 0,
   },
 );
-
-=head1 PRIMARY KEY
-
-=over 4
-
-=item * L</id>
-
-=back
-
-=cut
-
-__PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
 
@@ -161,8 +135,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:HiQOa7XliOu8PNC8DxQPnQ
+# Created by DBIx::Class::Schema::Loader v0.07046 @ 2017-03-07 19:03:32
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:kIhya7skj4ZNM3DkC+gAPw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

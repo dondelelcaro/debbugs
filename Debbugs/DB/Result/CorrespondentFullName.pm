@@ -37,20 +37,13 @@ __PACKAGE__->table("correspondent_full_name");
 
 =head1 ACCESSORS
 
-=head2 id
-
-  data_type: 'integer'
-  is_auto_increment: 1
-  is_nullable: 0
-  sequence: 'correspondent_full_name_id_seq'
-
-Correspondent full name id
-
 =head2 correspondent
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
+
+Correspondent ID (matches correspondent)
 
 =head2 full_name
 
@@ -69,13 +62,6 @@ Correspondent full name (includes e-mail address)
 =cut
 
 __PACKAGE__->add_columns(
-  "id",
-  {
-    data_type         => "integer",
-    is_auto_increment => 1,
-    is_nullable       => 0,
-    sequence          => "correspondent_full_name_id_seq",
-  },
   "correspondent",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "full_name",
@@ -88,18 +74,6 @@ __PACKAGE__->add_columns(
     original      => { default_value => \"now()" },
   },
 );
-
-=head1 PRIMARY KEY
-
-=over 4
-
-=item * L</id>
-
-=back
-
-=cut
-
-__PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
 
@@ -138,8 +112,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:rXiBbe/rMz4dOMgW5ZovWw
+# Created by DBIx::Class::Schema::Loader v0.07046 @ 2017-03-04 10:59:03
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:2Ac8mrDV2IsE/11YsYoqQQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

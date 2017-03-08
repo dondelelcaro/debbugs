@@ -35,6 +35,7 @@ __PACKAGE__->table_class("DBIx::Class::ResultSource::View");
 =cut
 
 __PACKAGE__->table("binary_versions");
+__PACKAGE__->result_source_instance->view_definition(" SELECT sp.pkg AS src_pkg,\n    sv.ver AS src_ver,\n    bp.pkg AS bin_pkg,\n    a.arch,\n    b.ver AS bin_ver,\n    svb.ver AS src_ver_based_on,\n    spb.pkg AS src_pkg_based_on\n   FROM ((((((bin_ver b\n     JOIN arch a ON ((b.arch = a.id)))\n     JOIN bin_pkg bp ON ((b.bin_pkg = bp.id)))\n     JOIN src_ver sv ON ((b.src_ver = sv.id)))\n     JOIN src_pkg sp ON ((sv.src_pkg = sp.id)))\n     LEFT JOIN src_ver svb ON ((sv.based_on = svb.id)))\n     LEFT JOIN src_pkg spb ON ((spb.id = svb.src_pkg)))");
 
 =head1 ACCESSORS
 
@@ -93,8 +94,8 @@ __PACKAGE__->add_columns(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:fH11OTb1r9SS1Ps9tM6WPQ
+# Created by DBIx::Class::Schema::Loader v0.07046 @ 2017-03-04 10:59:03
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:0MeJnGxBc8gdEoPE6Sn6Sw
 
 __PACKAGE__->result_source_instance->view_definition(<<EOF);
 SELECT sp.pkg AS src_pkg, sv.ver AS src_ver, bp.pkg AS bin_pkg, a.arch AS arch, b.ver AS bin_ver,
