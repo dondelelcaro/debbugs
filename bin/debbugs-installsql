@@ -87,7 +87,7 @@ GetOptions(\%options,
            'install_version_storage|install-version-storage',
            'upgrade',
            'current_version|current-version',
-           'developer_prepare|developer-prepare',
+#           'developer_prepare|developer-prepare',
            'overwrite_deployment|overwrite-deployment',
            'deployment_dir|deployment-dir=s',
 	   'debug|d+','help|h|?','man|m');
@@ -134,14 +134,10 @@ if ($options{current_version}) {
     print "The current database version is: ".$dh->database_version."\n";
     exit 0;
 } elsif ($options{install}) {
-    if ($options{developer_prepare}) {
-        $dh->prepare_install;
-        $dh->prepare_deploy;
-    } else {
-        $dh->install;
-    }
+    $dh->prepare_install;
+    $dh->install;
 } elsif ($options{upgrade}) {
-    $dh->prepare_upgrade;
+    $dh->prepare_deploy;
     $dh->upgrade;
 } elsif ($options{install_version_storage}) {
     $dh->prepare_version_storage_install;
