@@ -319,18 +319,75 @@ sub load_bug_log {
         next if defined $msg_id and exists $seen_msg_ids{$msg_id};
         $seen_msg_ids{$msg_id} = 1 if defined $msg_id;
         next if defined $msg_id and $msg_id =~ /handler\..+\.ack(?:info)?\@/;
-        my $message = parse($record->{text});
+        my $entity = parse_to_mime_entity($record);
         # search for a message with this message id in the database
-        
-        # check to see if the subject, to, and from match. if so, it's
+        $msg_id = $entity->head->get('Message-Id:');
+	$msg_id =~ s/^\s*\<//;
+	$msg_id =~ s/>\s*$//;
+	# check to see if the subject, to, and from match. if so, it's
         # probably the same message.
-
-        # if not, create a new message
-
-        # add correspondents if necessary
-
+	my $subject = decode_rfc1522($entity->head->get('Subject:'));
+	$subject =~ s/\n(?:(\s)\s*|\s*$)/$1/g;
+	my $to = decode_rfc1522($entity->head->get('To:'));
+	$to =~ s/\n(?:(\s)\s*|\s*$)/$1/g;
+	my $from = decode_rfc1522($entity->head->get('From:'));
+	$from =~ s/\n(?:(\s)\s*|\s*$)/$1/g;
+	my $m = $s->resultset('Message')->
+	    find({msgid => $msg_id,
+		  from_complete => $from,
+		  to_complete => $to,
+		  subject => $subject
+		 });
+	if (not defined $m) {
+	    # if not, create a new message
+	    $m = $s->resultset('Message')->
+		find_or_create({msgid => $msg_id,
+				from_complete => $from,
+				to_complete => $to,
+				subject => $subject
+			       });
+	    eval {
+		$m->sent_date(DateTime::Format::Mail->
+			      parse_datetime($entity->head->get('Date:',0)));
+	    };
+	    my $spam = $entity->head->get('X-Spam-Status:',0);
+	    if ($spam=~ /score=([\d\.]+)/) {
+		$m->spam_score($1);
+	    }
+	    my %corr;
+	    @{$corr{from}} = getparsedaddrs($from);
+	    @{$corr{to}} = getparsedaddrs($to);
+	    @{$corr{cc}} = getparsedaddrs($entity->head->get('Cc:'));
+	    # add correspondents if necessary
+	    my @cors;
+	    for my $type (keys %corr) {
+		for my $addr (@{$corr{$type}}) {
+		    push @cors,
+			{correspondent => $s->resultset('Correspondent')->
+			 get_correspondent_id($addr),
+			 correspondent_type => $type,
+			};
+		}
+	    }
+	    $m->update();
+	    $s->txn_do(sub {
+			   $m->message_correspondents()->delete();
+			   $m->add_to_message_correspondents(@cors);
+		       }
+		      );
+	}
+	my $recv;
+	if ($entity->head->get('Received:',0)
+	    =~ /via spool by (\S+)/) {
+	    $recv = $s->resultset('Correspondent')->
+		get_correspondent_id($1);
+	    $m->add_to_message_correspondents({correspondent=>$recv,
+					       correspondent_type => 'recv'});
+	}
         # link message to bugs if necessary
-
+	$m->find_or_create_related('bug_messages',
+				  {bug=>$param{bug},
+				   message_number => $msg_num});
     }
 
 }
