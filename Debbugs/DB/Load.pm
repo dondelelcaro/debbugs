@@ -49,6 +49,8 @@ use Debbugs::DB;
 use DateTime;
 use Debbugs::Common qw(make_list getparsedaddrs);
 use Debbugs::Config qw(:config);
+use Debbugs::MIME qw(parse_to_mime_entity decode_rfc1522);
+use DateTime::Format::Mail;
 use Carp;
 
 =head2 Bug loading
@@ -128,20 +130,23 @@ sub load_bug {
 	}
 	$tags{$tag} = $tags->{$tag};
     }
-    my $severity = length($data->{severity}) ? $data->{severity} : $config{default_severity};
-    if (exists $severities->{$severity}) {
-        $severity = $severities->{$severity};
-    } else {
-        $severity = $s->resultset('Severity')->
-            find_or_create({severity => $severity});
+    my $severity = length($data->{severity}) ? $data->{severity} :
+	$config{default_severity};
+    if (not exists $severities->{$severity}) {
+	$severities->{$severity} =
+	    $s->resultset('Severity')->
+            find_or_create({severity => $severity},
+			  );
     }
+    $severity = $severities->{$severity};
     my $bug =
         {id => $data->{bug_num},
          creation => DateTime->from_epoch(epoch => $data->{date}),
          log_modified => DateTime->from_epoch(epoch => $data->{log_modified}),
          last_modified => DateTime->from_epoch(epoch => $data->{last_modified}),
          archived => $data->{archived},
-         (defined $data->{unarchived} and length($data->{unarchived}))?(unarchived => DateTime->from_epoch(epoch => $data->{unarchived})):(),
+         (defined $data->{unarchived} and length($data->{unarchived}))?
+	 (unarchived => DateTime->from_epoch(epoch => $data->{unarchived})):(),
          forwarded => $data->{forwarded} // '',
          summary => $data->{summary} // '',
          outlook => $data->{outlook} // '',
@@ -157,19 +162,9 @@ sub load_bug {
          submitter => 'originator',
         );
     for my $addr_type (keys %addr_map) {
-        my @addrs = getparsedaddrs($data->{$addr_map{$addr_type}} // '');
-        next unless @addrs;
-        $bug->{$addr_type} = $s->resultset('Correspondent')->find_or_create({addr => lc($addrs[0]->address())});
-        # insert the full name as well
-        my $full_name = $addrs[0]->phrase();
-        $full_name =~ s/^\"|\"$//g;
-        $full_name =~ s/^\s+|\s+$//g;
-        if (length $full_name) {
-            $bug->{$addr_type}->
-                update_or_create_related('correspondent_full_names',
-                                        {full_name=>$full_name,
-                                         last_seen => 'NOW()'});
-        }
+        $bug->{$addr_type} =
+	    $s->resultset('Correspondent')->
+	    get_correspondent_id($addr_map{$addr_type})
     }
     my $b = $s->resultset('Bug')->update_or_create($bug) or
         die "Unable to update or create bug $bug->{id}";
@@ -178,7 +173,8 @@ sub load_bug {
 		       my @elements = $s->resultset('BugVer')->search({bug => $data->{bug_num},
 								       found  => $ff eq 'found'?1:0,
 								      });
-		       my %elements_to_delete = map {($elements[$_]->ver_string(),$elements[$_])} 0..$#elements;
+		       my %elements_to_delete = map {($elements[$_]->ver_string(),
+						      $elements[$_])} 0..$#elements;
 		       my %elements_to_add;
                        my @elements_to_keep;
 		       for my $version (@{$data->{"${ff}_versions"}}) {
@@ -215,11 +211,8 @@ sub load_bug {
 		       }
 		   }
 	       });
-    $s->txn_do(sub {
-		   my $t = $s->resultset('BugTag')->search({bug => $data->{bug_num}});
-                   $t->delete() if defined $t;
-		   $s->populate(BugTag => [[qw(bug tag)], map {[$data->{bug_num}, $_->id()]} values %tags]);
-	       });
+    ### set bug tags
+    $s->txn_do(sub {$b->set_tags([values %tags ] )});
     # because these bugs reference other bugs which might not exist
     # yet, we can't handle them until we've loaded all bugs. queue
     # them up.
