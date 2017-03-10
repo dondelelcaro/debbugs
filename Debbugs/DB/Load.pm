@@ -164,7 +164,7 @@ sub load_bug {
     for my $addr_type (keys %addr_map) {
         $bug->{$addr_type} =
 	    $s->resultset('Correspondent')->
-	    get_correspondent_id($addr_map{$addr_type})
+	    get_correspondent_id($data->{$addr_map{$addr_type}})
     }
     my $b = $s->resultset('Bug')->update_or_create($bug) or
         die "Unable to update or create bug $bug->{id}";
