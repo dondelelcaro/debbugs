@@ -41,10 +41,9 @@ sub get_archs {
 	$archs{$a} =
 	    $self->result_source->schema->resultset('Arch')->
 	    find_or_create({arch => $a},
-			  {result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-			   columns => [qw[id arch]],
+			  {columns => [qw[id arch]],
 			  }
-			  )->{id};
+			  )->id;
     }
 
     return {%archs{@archs}};
