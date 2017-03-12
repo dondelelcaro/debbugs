@@ -162,6 +162,9 @@ sub load_bug {
          submitter => 'originator',
         );
     for my $addr_type (keys %addr_map) {
+	$bug->{$addr_type} = undef;
+	next unless defined $data->{$addr_map{$addr_type}} and
+	    length($data->{$addr_map{$addr_type}});
         $bug->{$addr_type} =
 	    $s->resultset('Correspondent')->
 	    get_correspondent_id($data->{$addr_map{$addr_type}})
