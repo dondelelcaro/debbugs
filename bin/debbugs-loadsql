@@ -17,10 +17,10 @@ debbugs-loadsql -- load debbugs sql database
 
 =head1 SYNOPSIS
 
-debbugs-loadsql [options]
+debbugs-loadsql [options] [subcommand]
 
  Options:
-  --quick, -q only load changed bugs
+  --quick, -q only load changed things
   --progress Show progress bar
   --service, -s service name
   --sysconfdir, -c postgresql service config dir
@@ -37,15 +37,45 @@ Display this manual
 
 =head2 bugs
 
-Add bugs
+Add bugs (subject, number, etc) to the database
+
+   --preload create all bugs first, then add information
 
 =head2 versions
 
-Add versions
+Add version descendant information (which version is based on which version) to
+the database
 
 =head2 maintainers
 
-Add source maintainers
+Add source maintainers to the BTS
+
+=head2 configuration
+
+Add debbugs configuration information (tags, severity, etc)
+
+=head2 suites
+
+Add suite information from ftp distribution
+
+  --ftpdists location of FTP mirror
+
+=head2 logs
+
+Add bug logs
+
+=head2 packages
+
+Add package information from the ftp archive
+
+  --ftpdists location of FTP mirror
+  --suites Suite to operate on
+
+=head2 debinfo
+
+Add package information from a debinfo file
+
+  --null -0 names of debinfo files are null separated
 
 =head1 OPTIONS
 
@@ -238,7 +268,7 @@ sub add_bugs {
     my %queue;
 
     if ($opts->{preload}) {
-	my @bugs;
+1	my @bugs;
 	walk_bugs([(@{$argv}?@{$argv} : $initialdir)],
 		  undef,
 		  'summary',
