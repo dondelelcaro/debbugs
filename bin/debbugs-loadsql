@@ -268,7 +268,7 @@ sub add_bugs {
     my %queue;
 
     if ($opts->{preload}) {
-1	my @bugs;
+	my @bugs;
 	walk_bugs([(@{$argv}?@{$argv} : $initialdir)],
 		  undef,
 		  'summary',
