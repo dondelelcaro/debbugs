@@ -1235,9 +1235,9 @@ sub get_bug_status {
      $status{package} = '' if not defined $status{package};
      $status{"package"} =~ s/\s*$//;
 
-     $status{source} = binary_to_source(binary=>[split /\s*,\s*/, $status{package}],
+     $status{source} = [binary_to_source(binary=>[split /\s*,\s*/, $status{package}],
 					source_only => 1,
-				       );
+				       )];
 
      $status{"package"} = 'unknown' if ($status{"package"} eq '');
      $status{"severity"} = 'normal' if (not defined $status{severity} or $status{"severity"} eq '');

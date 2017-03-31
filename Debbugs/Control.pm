@@ -3792,7 +3792,7 @@ LIMIT:	    for my $limit (make_list($param{limit}{$field})) {
 	    }
 	    if (not $match) {
 		$going_to_fail = 1;
-		print {$transcript} qq($field: ).join(', ',map{qq("$_")} make_list($data->{$field})).
+		print {$transcript} qq($field: ').join(', ',map{qq("$_")} make_list($data->{$field})).
 		    "' does not match at least one of ".
 		    join(', ',map {ref($_)?'(regex)':qq("$_")} make_list($param{limit}{$field}))."\n";
 	    }

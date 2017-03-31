@@ -43,6 +43,7 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
   * Use a supported version of debhelper and switch to dh $@ style rules
     (Closes: #800287)
   * debbugs-web now Breaks/Replaces debbugs (<< 2.4.2) (Closes: #717967)
+  * Split source file properly (Closes: #858671). Thanks to James McCoy.
 
   [ Niels Thykier ]
   * quitcgi() now returns 400/500 status codes instead of 200 (Closes: #584922)
