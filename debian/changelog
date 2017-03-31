@@ -44,6 +44,7 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
     (Closes: #800287)
   * debbugs-web now Breaks/Replaces debbugs (<< 2.4.2) (Closes: #717967)
   * Split source file properly (Closes: #858671). Thanks to James McCoy.
+  * Prefix 'src:' to all source package names.
 
   [ Niels Thykier ]
   * quitcgi() now returns 400/500 status codes instead of 200 (Closes: #584922)

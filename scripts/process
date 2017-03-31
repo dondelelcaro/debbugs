@@ -592,7 +592,8 @@ if ($ref<0) { # new bug report
 
     if (defined $pheader{source}) {
 	# source packages are identified by the src: prefix
-        $data->{package} = 'src:'.$pheader{source};
+        $data->{package} = $pheader{source};
+        $data->{package} =~ s/(^|,\s*)/${1}src:/g;
     } elsif (defined $pheader{package}) {
         $data->{package} = $pheader{package};
 	if ($data->{package} =~ /^src:(.+)/) {
