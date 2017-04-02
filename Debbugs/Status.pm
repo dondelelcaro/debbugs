@@ -307,6 +307,9 @@ my $ditch_empty_space = sub {return &{$ditch_empty}(' ',@_)};
 my %split_fields =
     (package        => \&splitpackages,
      affects        => \&splitpackages,
+     # Ideally we won't have to split source, but because some consumers of
+     # get_bug_status cannot handle arrayref, we will split it here.
+     source         => \&splitpackages,
      blocks         => $ditch_empty_space,
      blockedby      => $ditch_empty_space,
      # this isn't strictly correct, but we'll split both of them for
@@ -1235,9 +1238,9 @@ sub get_bug_status {
      $status{package} = '' if not defined $status{package};
      $status{"package"} =~ s/\s*$//;
 
-     $status{source} = [binary_to_source(binary=>[split /\s*,\s*/, $status{package}],
+     $status{source} = binary_to_source(binary=>[split /\s*,\s*/, $status{package}],
 					source_only => 1,
-				       )];
+				       );
 
      $status{"package"} = 'unknown' if ($status{"package"} eq '');
      $status{"severity"} = 'normal' if (not defined $status{severity} or $status{"severity"} eq '');
