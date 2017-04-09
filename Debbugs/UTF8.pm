@@ -179,12 +179,9 @@ sub convert_to_utf8 {
             # if there's an Ã (0xC3), it's probably something
             # horrible, and we shouldn't try to convert it.
             if (defined $call_back_data and $call_back_data !~ /\x{C3}/) {
-                # this warning produces far too much useless output; elminating it
-                # warn "failed to convert to utf8 (charset: $charset, data: $data), but succeeded with ISO8859-1: ".encode_utf8($call_back_data);
                 return $call_back_data;
             }
         }
-        warn "failed to convert to utf8 (charset: $charset, data: $data)";
         # Fallback to encode, which will probably also fail.
         return __fallback_convert_to_utf8($data,$charset);
     }
