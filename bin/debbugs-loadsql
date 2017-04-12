@@ -19,6 +19,9 @@ debbugs-loadsql -- load debbugs sql database
 
 debbugs-loadsql [options] [subcommand]
 
+ Subcommands:
+  bugs help versions configuration
+  suites logs packages debinfo
  Options:
   --quick, -q only load changed things
   --progress Show progress bar
