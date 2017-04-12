@@ -101,6 +101,10 @@ sub load_bug {
                                                      },
                                        queue => {type => HASHREF,
                                                  optional => 1},
+				       packages => {type => HASHREF,
+						    default => sub {return {}},
+						    optional => 1,
+						   },
                                       });
     my $s = $param{db};
     if (not exists $param{data} and not exists $param{bug}) {
@@ -171,8 +175,33 @@ sub load_bug {
     }
     my $b = $s->resultset('Bug')->update_or_create($bug) or
         die "Unable to update or create bug $bug->{id}";
-     $s->txn_do(sub {
-		   for my $ff (qw(found fixed)) {
+    $s->txn_do(sub {
+		 $b->set_related_packages('binpackages',
+					  [grep {defined $_ and
+						   length $_ and $_ !~ /^src:/}
+					   make_list($data->{package})],
+					  $param{packages},
+					 );
+		 $b->set_related_packages('srcpackages',
+					  [grep {defined $_ and
+						   $_ =~ /^src:/}
+					   make_list($data->{package})],
+					  $param{packages},
+					 );
+		 $b->set_related_packages('affects_binpackages',
+					  [grep {defined $_ and
+						   length $_ and $_ !~ /^src:/}
+					   make_list($data->{affects})
+					  ],
+					  $param{packages},
+					 );
+		 $b->set_related_packages('affects_srcpackages',
+					  [grep {defined $_ and
+						   $_ =~ /^src:/}
+					   make_list($data->{affects})],
+					  $param{packages},
+					 );
+		 for my $ff (qw(found fixed)) {
 		       my @elements = $s->resultset('BugVer')->search({bug => $data->{bug_num},
 								       found  => $ff eq 'found'?1:0,
 								      });

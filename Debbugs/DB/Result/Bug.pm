@@ -14,6 +14,7 @@ use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
+use Carp;
 
 =head1 COMPONENTS LOADED
 
@@ -525,5 +526,36 @@ __PACKAGE__->many_to_many(affects_binpackages => 'bug_affects_binpackages','bin_
 __PACKAGE__->many_to_many(affects_srcpackages => 'bug_affects_srcpackages','src_pkg');
 __PACKAGE__->many_to_many(messages => 'bug_messages','message');
 
+sub set_related_packages {
+    my ($self,$relationship,$pkgs,$pkg_cache) = @_;
+
+    my @pkg_ids;
+    if ($relationship =~ /binpackages/) {
+        for my $pkg (@{$pkgs}) {
+            push @pkg_ids,
+              $self->result_source->schema->resultset('BinPkg')->
+              get_bin_pkg_id($pkg);
+        }
+    } elsif ($relationship =~ /srcpackages/) {
+        for my $pkg (@{$pkgs}) {
+            push @pkg_ids,
+              $self->result_source->schema->resultset('SrcPkg')->
+              get_src_pkg_id($pkg);
+        }
+    } else {
+        croak "Unsupported relationship $relationship";
+    }
+    if ($relationship eq 'binpackages') {
+        $self->set_binpackages([map {{id => $_}} @pkg_ids]);
+    } elsif ($relationship eq 'srcpackages') {
+        $self->set_srcpackages([map {{id => $_}} @pkg_ids]);
+    } elsif ($relationship eq 'affects_binpackages') {
+        $self->set_affects_binpackages([map {{id => $_}} @pkg_ids]);
+    } elsif ($relationship eq 'affects_srcpackages') {
+        $self->set_affects_srcpackages([map {{id => $_}} @pkg_ids]);
+    } else {
+        croak "Unsupported relationship $relationship";
+    }
+}
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 1;
