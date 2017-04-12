@@ -51,10 +51,12 @@ sub update_bug_status {
 	dbh_do(sub {
 		   my ($s,$dbh,$bug,$suite,$arch,$status,$modified,$asof) = @_;
 		   select_one($dbh,<<'SQL',$bug,$suite,$arch,$status,$status);
-INSERT INTO bug_status_cache (bug,suite,arch,status,modified,asof)
+INSERT INTO bug_status_cache AS bsc
+(bug,suite,arch,status,modified,asof)
 VALUES (?,?,?,?,NOW(),NOW())
-ON CONFLICT (bug,suite,arch) DO 
-UPDATE SET asof=NOW(),modified=CASE WHEN status=? THEN modified ELSE NOW() END
+ON CONFLICT (bug,suite,arch) DO
+UPDATE
+ SET asof=NOW(),modified=CASE WHEN bsc.status=? THEN bsc.modified ELSE NOW() END
 RETURNING status;
 SQL
 	       },

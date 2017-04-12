@@ -92,7 +92,7 @@ use vars qw($DEBUG);
 
 use Debbugs::Common qw(checkpid lockpid get_hashname getparsedaddrs getbugcomponent make_list getsourcemaintainers);
 use Debbugs::Config qw(:config);
-use Debbugs::Status qw(bug_presence);
+use Debbugs::Status qw(bug_presence read_bug);
 use Debbugs::DB;
 use DateTime;
 use File::stat;
@@ -204,13 +204,16 @@ sub update_cache {
     } else {
         $bugs = $s->resultset('Bug')->
 	    search_rs(undef,
-		     {rows => 100});
+		     {rows => 100,
+		      page => 1,
+		     });
     }
     my $update_bug =
 	sub {
 	    my @bugs = @_;
 	    for my $bug (@bugs) {
 		my $status = read_bug(bug => $bug->id);
+		next unless defined $status;
 		for my $suite (@suites) {
 		    my $presence =
 			bug_presence(bug => $bug->id,
@@ -239,6 +242,7 @@ sub update_cache {
 	}
 	$s->txn_do($update_bug,
 		   $bugs_on_page->all());
+	$p->update($page);
     }
 }
 
