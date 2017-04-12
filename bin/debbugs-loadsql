@@ -146,6 +146,7 @@ use IO::Dir;
 use IO::File;
 use IO::Uncompress::AnyUncompress;
 use Encode qw(decode_utf8);
+use List::MoreUtils qw(natatime);
 
 my %options =
     (debug           => 0,
@@ -277,8 +278,10 @@ sub add_bugs {
 		  'summary',
 		  undef,
 		  sub {
-		      push @bugs,shift;
-		  });
+		    push @bugs,@_;
+		  },
+		  10000
+		 );
 	$s->resultset('Bug')->quick_insert_bugs(@bugs);
     }
     walk_bugs([(@{$argv}?@{$argv} : $initialdir)],
@@ -286,31 +289,38 @@ sub add_bugs {
               'summary',
               $verbose,
               sub {
-                  my $bug = shift;
-                  my $stat = stat(getbugcomponent($bug,'summary',$initialdir));
-                  if (not defined $stat) {
+		my @bugs = @_;
+		my @bugs_to_update;
+		if ($options{quick}) {
+		  for my $bug (@bugs) {
+		    my $stat = stat(getbugcomponent($bug,'summary',$initialdir));
+		    if (not defined $stat) {
                       print STDERR "Unable to stat $bug $!\n";
                       next;
+		    }
+		    my $rs = $s->resultset('Bug')->search({bug=>$bug})->single();
+		    next if defined $rs and $stat->mtime < $rs->last_modified()->epoch();
+		    push @bugs_to_update, $bug;
                   }
-                  if ($options{quick}) {
-                      my $rs = $s->resultset('Bug')->search({bug=>$bug})->single();
-                      next if defined $rs and $stat->mtime < $rs->last_modified()->epoch();
-                  }
-                  my $data = read_bug(bug => $bug,
-                                      location => $initialdir);
-                  eval {
-                      load_bug(db => $s,
-                               data => split_status_fields($data),
-                               tags => \%tags,
-                               severities => \%severities,
-                               queue => \%queue);
-                  };
-                  if ($@) {
-                      use Data::Dumper;
-                      print STDERR Dumper($data) if $DEBUG;
-                      die "failure while trying to load bug $bug\n$@";
-                  }
-              }
+		} else {
+		  @bugs_to_update = @bugs;
+		}
+		eval {
+		  $s->txn_do(sub {
+			       for my $bug (@bugs) {
+				 load_bug(db => $s,
+					  bug => $bug,
+					  tags => \%tags,
+					  severities => \%severities,
+					  queue => \%queue);
+			       }
+			     });
+		};
+		if ($@) {
+		  die "failure while trying to load bug: $@";
+		}
+              },
+	      50
              );
     handle_load_bug_queue(db => $s,
                           queue => \%queue);
@@ -734,12 +744,13 @@ sub read_release_file {
 }
 
 sub walk_bugs {
-    my ($dirs,$p,$what,$verbose,$sub) = @_;
+    my ($dirs,$p,$what,$verbose,$sub,$n) = @_;
     my @dirs = @{$dirs};
     my $tot_dirs = @dirs;
     my $done_dirs = 0;
     my $avg_subfiles = 0;
     my $completed_files = 0;
+    $n //= 1;
     while (my $dir = shift @dirs) {
         printf "Doing dir %s ...\n", $dir if $verbose;
 
@@ -759,11 +770,13 @@ sub walk_bugs {
         $avg_subfiles = ($avg_subfiles * $done_dirs + @list) / ($done_dirs+1);
         $done_dirs += 1;
 
-        for my $bug (@list) {
-            $completed_files++;
-            $p->update($completed_files) if $p;
-            print "Up to $completed_files bugs...\n" if ($completed_files % 100 == 0 && $verbose);
-            $sub->($bug);
+	my $it = natatime $n,@list;
+	while (my @bugs = $it->()) {
+	  $sub->(@bugs);
+	  $completed_files += scalar @bugs;
+	  $p->update($completed_files) if $p;
+	  print "Up to $completed_files bugs...\n"
+	    if ($completed_files % 100 == 0 && $verbose);
         }
     }
     $p->remove() if $p;
