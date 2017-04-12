@@ -123,8 +123,8 @@ sub load_bug {
         $queue = {};
     }
     my %tags;
-    my $s_data = split_status_fields($data);
-    for my $tag (make_list($s_data->{keywords})) {
+    $data = split_status_fields($data);
+    for my $tag (make_list($data->{keywords})) {
 	next unless defined $tag and length $tag;
 	# this allows for invalid tags. But we'll use this to try to
 	# find those bugs and clean them up
