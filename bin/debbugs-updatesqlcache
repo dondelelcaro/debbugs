@@ -111,7 +111,7 @@ my %options =
 
 Getopt::Long::Configure('pass_through');
 GetOptions(\%options,
-           'quick|q',
+           'quick|q!',
            'service|s=s',
            'sysconfdir|c=s',
            'progress!',
@@ -197,8 +197,44 @@ sub update_cache {
 		 {result_class => 'DBIx::Class::ResultClass::HashRefInflator'}
 		 )->all();
     my $bugs;
-    if ($opts->{quick}) {
+    if ($options->{quick}) {
+	# identify the last time that we ran this query
+	my $last_query_time =
+	    $s->resultset('BugStatusCache')->
+	    search_rs(undef,
+		     {rows => 1,
+		      order_by => { -desc => 'asof' },
+		      columns => [qw(asof)],
+		     }
+		     )->first();
+	my $dtf = $s->storage->datetime_parser;
+	if (defined $last_query_time) {
+	    $last_query_time = $last_query_time->asof();
+	} else {
+	    $last_query_time = DateTime->from_epoch(0);
+	}
         # select last status update
+	$last_query_time = $dtf->format_datetime($last_query_time);
+	$bugs = $s->resultset('Bug')->
+	    search_rs({-or => {'bin_associations.modified' => {'>=',$last_query_time},
+			       'src_associations.modified' => {'>=',$last_query_time},
+			       'me.log_modified' => {'>=',$last_query_time},
+			       'me.last_modified' => {'>=',$last_query_time},
+			      }
+		      },
+		     {join => [{bug_binpackages =>
+			       {bin_pkg =>
+			       {bin_vers =>
+				'bin_associations'}}},
+			      {bug_srcpackages =>
+			      {src_pkg =>
+			      {src_vers =>
+			       'src_associations'}}},
+			      ],
+		      columns => [qw(id)],
+		      distinct => 1,
+		     },
+		     );
 
 	# select bugs which have been modified since the last updatex
     } else {
@@ -206,6 +242,7 @@ sub update_cache {
 	    search_rs(undef,
 		     {rows => 100,
 		      page => 1,
+		      columns => [qw(id)],
 		     });
     }
     my $update_bug =
@@ -242,7 +279,7 @@ sub update_cache {
 	}
 	$s->txn_do($update_bug,
 		   $bugs_on_page->all());
-	$p->update($page);
+	$p->update($page) if defined $p;
     }
 }
 
