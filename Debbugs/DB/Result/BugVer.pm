@@ -234,5 +234,14 @@ __PACKAGE__->belongs_to(
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:cvdjFL2o+rBg2PfcintuNA
 
 
-# You can replace this text with custom code or comments, and it will be preserved on regeneration
+sub sqlt_deploy_hook {
+    my ($self, $sqlt_table) = @_;
+    for my $idx (qw(src_pkg src_ver)) {
+	$sqlt_table->add_index(name => 'bug_ver_'.$idx.'_id_idx',
+			       fields => [$idx]);
+    }
+    $sqlt_table->add_index(name => 'bug_ver_src_pkg_id_src_ver_id_idx',
+			   fields => [qw(src_pkg src_var)],
+			  );
+}
 1;

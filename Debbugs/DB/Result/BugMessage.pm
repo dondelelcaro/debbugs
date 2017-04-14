@@ -141,6 +141,10 @@ __PACKAGE__->belongs_to(
 # Created by DBIx::Class::Schema::Loader v0.07046 @ 2017-03-04 10:59:03
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:BRbN9C6P/wvWWmSmjNGjLA
 
-
-# You can replace this text with custom code or comments, and it will be preserved on regeneration
+sub sqlt_deploy_hook {
+    my ($self, $sqlt_table) = @_;
+    $sqlt_table->add_index(name => 'bug_message_idx_bug_message_number',
+			   fields => [qw(bug message_number)],
+			  );
+}
 1;

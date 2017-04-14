@@ -134,6 +134,12 @@ __PACKAGE__->belongs_to(
 # Created by DBIx::Class::Schema::Loader v0.07046 @ 2017-03-04 10:59:03
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:0YaAP/sB5N2Xr2rAFNK1lg
 
+sub sqlt_deploy_hook {
+    my ($self, $sqlt_table) = @_;
+    for my $idx (qw(refs message)) {
+	$sqlt_table->add_index(name => 'message_refs_idx_'.$idx,
+			       fields => [$idx]);
+    }
+}
 
-# You can replace this text with custom code or comments, and it will be preserved on regeneration
 1;

@@ -526,6 +526,24 @@ __PACKAGE__->many_to_many(affects_binpackages => 'bug_affects_binpackages','bin_
 __PACKAGE__->many_to_many(affects_srcpackages => 'bug_affects_srcpackages','src_pkg');
 __PACKAGE__->many_to_many(messages => 'bug_messages','message');
 
+sub sqlt_deploy_hook {
+    my ($self, $sqlt_table) = @_;
+    # CREATE INDEX bug_idx_owner ON bug(owner);
+    # CREATE INDEX bug_idx_submitter ON bug(submitter);
+    # CREATE INDEX bug_idx_done ON bug(done);
+    # CREATE INDEX bug_idx_forwarded ON bug(forwarded);
+    # CREATE INDEX bug_idx_last_modified ON bug(last_modified);
+    # CREATE INDEX bug_idx_severity ON bug(severity);
+    # CREATE INDEX bug_idx_creation ON bug(creation);
+    # CREATE INDEX bug_idx_log_modified ON bug(log_modified);
+    for my $idx (qw(owner submitter done forwarded last_modified),
+		 qw(severity creation log_modified),
+		) {
+	$sqlt_table->add_index(name => 'bug_idx'.$idx,
+			       fields => [$idx]);
+    }
+}
+
 sub set_related_packages {
     my ($self,$relationship,$pkgs,$pkg_cache) = @_;
 

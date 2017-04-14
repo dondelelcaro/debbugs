@@ -144,6 +144,11 @@ __PACKAGE__->has_many(
 # Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:nI4ZqWa6IW7LgWuG7S1Gog
 
+sub sqlt_deploy_hook {
+    my ($self, $sqlt_table) = @_;
+    $sqlt_table->add_index(name => 'severity_ordering_idx',
+			   fields => [qw(ordering)],
+			  );
+}
 
-# You can replace this text with custom code or comments, and it will be preserved on regeneration
 1;

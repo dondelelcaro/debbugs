@@ -243,5 +243,13 @@ __PACKAGE__->many_to_many(correspondents => 'message_correspondents','correspond
 __PACKAGE__->many_to_many(references => 'message_refs_message','message');
 __PACKAGE__->many_to_many(referenced_by => 'message_refs_refs','message');
 
-# You can replace this text with custom code or comments, and it will be preserved on regeneration
+
+sub sqlt_deploy_hook {
+    my ($self, $sqlt_table) = @_;
+    for my $idx (qw(msgid subject)) {
+	$sqlt_table->add_index(name => 'message_'.$idx.'_idx',
+			       fields => [$idx]);
+    }
+}
+
 1;

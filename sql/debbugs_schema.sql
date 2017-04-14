@@ -350,10 +350,6 @@ INSERT INTO table_comments VALUES ('bug_srcpackage','Bug <-> source package mapp
 INSERT INTO column_comments VALUES ('bug_srcpackage','bug','Bug id (matches bug)');
 INSERT INTO column_comments VALUES ('bug_srcpackage','src_pkg','Source package id (matches src_pkg)');
 
-CREATE VIEW bug_package (bug,pkg_id,pkg_type,package) AS
-       SELECT b.bug,b.bin_pkg,'binary',bp.pkg FROM bug_binpackage b JOIN bin_pkg bp ON bp.id=b.bin_pkg UNION
-              SELECT s.bug,s.src_pkg,'source',sp.pkg FROM bug_srcpackage s JOIN src_pkg sp ON sp.id=s.src_pkg;
-
 CREATE TABLE bug_affects_binpackage (
        bug INT NOT NULL REFERENCES bug,
        bin_pkg INT NOT NULL REFERENCES bin_pkg ON UPDATE CASCADE ON DELETE CASCADE
@@ -371,6 +367,12 @@ CREATE UNIQUE INDEX bug_affects_srcpackage_id_pkg ON bug_affects_srcpackage(bug,
 INSERT INTO table_comments VALUES ('bug_affects_srcpackage','Bug <-> source package mapping');
 INSERT INTO column_comments VALUES ('bug_affects_srcpackage','bug','Bug id (matches bug)');
 INSERT INTO column_comments VALUES ('bug_affects_srcpackage','src_pkg','Source package id (matches src_pkg)');
+
+CREATE VIEW bug_package (bug,pkg_id,pkg_type,package) AS
+       SELECT b.bug,b.bin_pkg,'binary',bp.pkg FROM bug_binpackage b JOIN bin_pkg bp ON bp.id=b.bin_pkg UNION
+              SELECT s.bug,s.src_pkg,'source',sp.pkg FROM bug_srcpackage s JOIN src_pkg sp ON sp.id=s.src_pkg UNION
+       SELECT b.bug,b.bin_pkg,'binary_affects',bp.pkg FROM bug_affects_binpackage b JOIN bin_pkg bp ON bp.id=b.bin_pkg UNION
+              SELECT s.bug,s.src_pkg,'source_affects',sp.pkg FROM bug_affects_srcpackage s JOIN src_pkg sp ON sp.id=s.src_pkg;
 
 CREATE VIEW binary_versions (src_pkg, src_ver, bin_pkg, arch, bin_ver) AS
        SELECT sp.pkg AS src_pkg, sv.ver AS src_ver, bp.pkg AS bin_pkg, a.arch AS arch, b.ver AS bin_ver,
@@ -443,6 +445,7 @@ CREATE INDEX bug_status_cache_idx_bug ON bug_status_cache(bug);
 CREATE INDEX bug_status_cache_idx_status ON bug_status_cache(status);
 CREATE INDEX bug_status_cache_idx_arch ON bug_status_cache(arch);
 CREATE INDEX bug_status_cache_idx_suite ON bug_status_cache(suite);
+CREATE INDEX bug_status_cache_idx_asof ON bug_status_cache(asof);
 INSERT INTO table_comments  VALUES ('bug_status_cache','Bug Status Cache');
 INSERT INTO column_comments VALUES ('bug_status_cache','bug','Bug number (matches bug)');
 INSERT INTO column_comments VALUES ('bug_status_cache','suite','Suite id (matches suite)');

@@ -115,5 +115,11 @@ __PACKAGE__->belongs_to(
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:yyHP5f8zAxn/AdjOCr8WAg
 
 
-# You can replace this text with custom code or comments, and it will be preserved on regeneration
+sub sqlt_deploy_hook {
+    my ($self, $sqlt_table) = @_;
+    $sqlt_table->add_index(name => 'bug_tag_tag',
+			   fields => [qw(tag)],
+			  );
+}
+
 1;
