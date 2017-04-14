@@ -14,7 +14,6 @@ use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
-use Carp;
 
 =head1 COMPONENTS LOADED
 
@@ -518,6 +517,9 @@ __PACKAGE__->belongs_to(
 # Created by DBIx::Class::Schema::Loader v0.07045 @ 2016-09-24 14:51:07
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:iaipVETTaokcFNrICfIEAw
 
+use Carp;
+use List::Util qw(uniq);
+
 __PACKAGE__->many_to_many(tags => 'bug_tags','tag');
 __PACKAGE__->many_to_many(user_tags => 'bug_user_tags','user_tag');
 __PACKAGE__->many_to_many(srcpackages => 'bug_srcpackages','src_pkg');
@@ -563,6 +565,7 @@ sub set_related_packages {
     } else {
         croak "Unsupported relationship $relationship";
     }
+    @pkg_ids = uniq @pkg_ids;
     if ($relationship eq 'binpackages') {
         $self->set_binpackages([map {{id => $_}} @pkg_ids]);
     } elsif ($relationship eq 'srcpackages') {
