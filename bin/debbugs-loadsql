@@ -298,7 +298,7 @@ sub add_bugs {
                       print STDERR "Unable to stat $bug $!\n";
                       next;
 		    }
-		    my $rs = $s->resultset('Bug')->search({bug=>$bug})->single();
+		    my $rs = $s->resultset('Bug')->search({id=>$bug})->single();
 		    next if defined $rs and $stat->mtime < $rs->last_modified()->epoch();
 		    push @bugs_to_update, $bug;
                   }
