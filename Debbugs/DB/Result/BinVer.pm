@@ -196,7 +196,7 @@ __PACKAGE__->belongs_to(
 
 sub sqlt_deploy_hook {
     my ($self, $sqlt_table) = @_;
-    for my $idx (qw(var bin_pkg src_ver)) {
+    for my $idx (qw(ver bin_pkg src_ver)) {
 	$sqlt_table->add_index(name => 'bin_ver_'.$idx.'_id_idx',
 			       fields => [$idx]);
     }

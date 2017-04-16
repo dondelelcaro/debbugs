@@ -241,7 +241,7 @@ sub sqlt_deploy_hook {
 			       fields => [$idx]);
     }
     $sqlt_table->add_index(name => 'bug_ver_src_pkg_id_src_ver_id_idx',
-			   fields => [qw(src_pkg src_var)],
+			   fields => [qw(src_pkg src_ver)],
 			  );
 }
 1;

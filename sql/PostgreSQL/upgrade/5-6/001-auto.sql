@@ -28,7 +28,10 @@ CREATE INDEX bug_message_idx_bug_message_number on bug_message (bug, message_num
 CREATE INDEX bug_ver_src_pkg_id_src_ver_id_idx on bug_ver (src_pkg, src_ver);
 
 ;
-CREATE INDEX message_correspondent_idxmessage on correspondent_full_name (message);
+CREATE INDEX correspondent_full_name_idx_full_name on correspondent_full_name (full_name);
+
+;
+CREATE INDEX correspondent_full_name_idx_last_seen on correspondent_full_name (last_seen);
 
 ;
 CREATE INDEX message_msgid_idx on message (msgid);

@@ -117,8 +117,8 @@ __PACKAGE__->belongs_to(
 
 sub sqlt_deploy_hook {
     my ($self, $sqlt_table) = @_;
-    for my $idx (qw(correspondent message)) {
-	$sqlt_table->add_index(name => 'message_correspondent_idx'.$idx,
+    for my $idx (qw(full_name last_seen)) {
+	$sqlt_table->add_index(name => 'correspondent_full_name_idx_'.$idx,
 			       fields => [$idx]);
     }
 }

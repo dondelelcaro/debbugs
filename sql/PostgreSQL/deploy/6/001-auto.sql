@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::PostgreSQL
--- Created on Fri Apr 14 20:22:11 2017
+-- Created on Sat Apr 15 20:14:22 2017
 -- 
 ;
 --
@@ -150,8 +150,8 @@ CREATE TABLE "correspondent_full_name" (
   CONSTRAINT "correspondent_full_name_correspondent_full_name_idx" UNIQUE ("correspondent", "full_name")
 );
 CREATE INDEX "correspondent_full_name_idx_correspondent" on "correspondent_full_name" ("correspondent");
-CREATE INDEX "message_correspondent_idxcorrespondent" on "correspondent_full_name" ("correspondent");
-CREATE INDEX "message_correspondent_idxmessage" on "correspondent_full_name" ("message");
+CREATE INDEX "correspondent_full_name_idx_full_name" on "correspondent_full_name" ("full_name");
+CREATE INDEX "correspondent_full_name_idx_last_seen" on "correspondent_full_name" ("last_seen");
 
 ;
 --
@@ -246,6 +246,8 @@ CREATE TABLE "message_correspondent" (
 );
 CREATE INDEX "message_correspondent_idx_correspondent" on "message_correspondent" ("correspondent");
 CREATE INDEX "message_correspondent_idx_message" on "message_correspondent" ("message");
+CREATE INDEX "message_correspondent_idxcorrespondent" on "message_correspondent" ("correspondent");
+CREATE INDEX "message_correspondent_idxmessage" on "message_correspondent" ("message");
 
 ;
 --

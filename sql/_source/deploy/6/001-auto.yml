@@ -2009,13 +2009,13 @@ schema:
           options: []
           type: NORMAL
         - fields:
-            - correspondent
-          name: message_correspondent_idxcorrespondent
+            - full_name
+          name: correspondent_full_name_idx_full_name
           options: []
           type: NORMAL
         - fields:
-            - message
-          name: message_correspondent_idxmessage
+            - last_seen
+          name: correspondent_full_name_idx_last_seen
           options: []
           type: NORMAL
       name: correspondent_full_name
@@ -2349,6 +2349,16 @@ schema:
         - fields:
             - message
           name: message_correspondent_idx_message
+          options: []
+          type: NORMAL
+        - fields:
+            - correspondent
+          name: message_correspondent_idxcorrespondent
+          options: []
+          type: NORMAL
+        - fields:
+            - message
+          name: message_correspondent_idxmessage
           options: []
           type: NORMAL
       name: message_correspondent
