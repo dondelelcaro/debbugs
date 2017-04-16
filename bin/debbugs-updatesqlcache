@@ -233,6 +233,8 @@ sub update_cache {
 			      ],
 		      columns => [qw(id)],
 		      distinct => 1,
+		      rows => 100,
+		      page => 1,
 		     },
 		     );
 
