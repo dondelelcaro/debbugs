@@ -58,6 +58,8 @@ BEGIN{
 }
 
 
+our $magic;
+
 =over
 
 =item retrieve_libravatar
@@ -103,7 +105,7 @@ sub retrieve_libravatar{
     }
     require LWP::UserAgent;
 
-    my $dest_type;
+    my $dest_type = 'png';
     eval {
         my $uri = libravatar_url(email => $param{email},
                                  default => 404,
@@ -116,6 +118,7 @@ sub retrieve_libravatar{
         $ua->timeout(10);
         # if the avatar is bigger than 30K, we don't want it either
         $ua->max_size(30*1024);
+        $ua->default_header('Accept' => 'image/*');
         my $r = $ua->get($uri);
         if (not $r->is_success()) {
             if ($r->code != 404) {
@@ -139,10 +142,11 @@ sub retrieve_libravatar{
         my $type = $r->header('Content-Type');
         # if there's no content type, or it's not one we like, we won't
         # bother going further
-        die "No content type" if not defined $type;
-        die "Wrong content type" if not $type =~ m{^image/([^/]+)$};
-        $dest_type = $type_mapping{$1};
-        die "No dest type" if not defined $dest_type;
+        if (defined $type) {
+            die "Wrong content type" if not $type =~ m{^image/([^/]+)$};
+            $dest_type = $type_mapping{$1};
+            die "No dest type" if not defined $dest_type;
+        }
         # undo any content encoding
         $r->decode() or die "Unable to decode content encoding";
         # ok, now we need to convert it from whatever it is into a
@@ -152,7 +156,14 @@ sub retrieve_libravatar{
         eval {
             print {$temp_fh} $r->content() or
                 die "Unable to print to temp file";
-            close ($temp_fh);
+            close ($temp_fh) or
+                die "Unable to close temp file";
+            ### Figure out the actual type from the file
+            $magic = File::LibMagic->new() if not defined $magic;
+            $type = $magic->checktype_filename(abs_path($temp_fn));
+            die "Wrong content type ($type)" if not $type =~ m{^image/([^/;]+)(?:;|$)};
+            $dest_type = $type_mapping{$1};
+            die "No dest type for ($1)" if not defined $dest_type;
             ### resize all images to 80x80 and strip comments out of
             ### them. If convert has a bug, it would be possible for
             ### this to be an attack vector, but hopefully minimizing
@@ -214,7 +225,8 @@ sub cache_location {
         croak("cache_location must be called with one of md5sum or email");
     }
     return (undef, 0) if blocked_libravatar($param{email},$md5sum);
-    $stem = $config{libravatar_cache_dir}.'/'.$md5sum;
+    my $cache_dir = $param{cache_dir} // $config{libravatar_cache_dir};
+    $stem = $cache_dir.'/'.$md5sum;
     for my $ext ('.png', '.jpg', '') {
         my $path = $stem.$ext;
         if (-e $path) {
@@ -293,8 +305,6 @@ sub handler {
 }
 
 
-
-our $magic;
 
 sub serve_cache_mod_perl {
     my ($cache_location,$r,$timestamp) = @_;

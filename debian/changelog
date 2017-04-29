@@ -45,6 +45,9 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
   * debbugs-web now Breaks/Replaces debbugs (<< 2.4.2) (Closes: #717967)
   * Split source file properly (Closes: #858671). Thanks to James McCoy.
   * Prefix 'src:' to all source package names.
+  * cdn.libravatar.org no longer sends Content-Type. Switch to verifying
+    the content-type using libmagic instead (which we probably should have
+    been doing from the beginning anyway). (Closes: #856991)
 
   [ Niels Thykier ]
   * quitcgi() now returns 400/500 status codes instead of 200 (Closes: #584922)
