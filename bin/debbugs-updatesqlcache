@@ -96,7 +96,8 @@ use Debbugs::Status qw(bug_presence read_bug);
 use Debbugs::DB;
 use DateTime;
 use File::stat;
-
+use List::MoreUtils qw(natatime);
+use POSIX qw(ceil);
 
 my %options =
     (debug           => 0,
@@ -105,6 +106,7 @@ my %options =
      verbose         => 0,
      quiet           => 0,
      quick           => 0,
+     archived        => 0,
      service         => $config{debbugs_db},
      progress        => 0,
     );
@@ -115,6 +117,7 @@ GetOptions(\%options,
            'service|s=s',
            'sysconfdir|c=s',
            'progress!',
+	   'archived+',
            'spool_dir|spool-dir=s',
            'verbose|v+',
            'quiet+',
@@ -196,6 +199,7 @@ sub update_cache {
 		  },
 		 {result_class => 'DBIx::Class::ResultClass::HashRefInflator'}
 		 )->all();
+    my @bugs;
     my $bugs;
     if ($options->{quick}) {
 	# identify the last time that we ran this query
@@ -215,52 +219,75 @@ sub update_cache {
 	}
         # select last status update
 	$last_query_time = $dtf->format_datetime($last_query_time);
-	$bugs = $s->resultset('Bug')->
-	    search_rs({-or => {'bin_associations.modified' => {'>=',$last_query_time},
-			       'src_associations.modified' => {'>=',$last_query_time},
-			       'me.log_modified' => {'>=',$last_query_time},
-			       'me.last_modified' => {'>=',$last_query_time},
-			      }
+	# select all bugs which are in packages which have had a binary
+	# association modified
+	push @bugs,
+	    map {$_->{'bug_binpackages.id'}}
+	    $s->resultset('BinAssociations')->
+	    search_rs({'me.modified' => {'>=',$last_query_time},
 		      },
-		     {join => [{bug_binpackages =>
-			       {bin_pkg =>
-			       {bin_vers =>
-				'bin_associations'}}},
-			      {bug_srcpackages =>
-			      {src_pkg =>
-			      {src_vers =>
-			       'src_associations'}}},
-			      ],
-		      columns => [qw(id)],
-		      distinct => 1,
-		      rows => 100,
-		      page => 1,
+		     {columns => [qw(bug_binpackages.id)],
+		      join => {bin_vers =>
+			      {bin_pkg =>
+			       'bug_binpackages'
+			      }},
+		      result_class => 'DBIx::Class::ResultClass::HashRefInflator',
 		     },
-		     );
+		     )->all();
+	# or a source association modified
+	push @bugs,
+	    map {$_->{'bug_srcpackages.id'}}
+	    $s->resultset('SrcAssociations')->
+	    search_rs({'me.modified' => {'>=',$last_query_time},
+		      },
+		     {columns => [qw(bug_srcpackages.id)],
+		      join => {src_vers =>
+			      {src_pkg =>
+			       'bug_srcpackages'
+			      }},
+		      result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+		     },
+		     )->all();
+	# or bugs which have been modified since we last ran
+	push @bugs,
+	    map {$_->{id}}
+	    $s->resultset('Bug')->
+	    search_rs({-or => {'me.log_modified' => {'>=',$last_query_time},
+			       'me.last_modified' => {'>=',$last_query_time},
+			      },
+		       archived => ! $options->{archived},
+		      },
+		     {columns => [qw(id)],
+		      result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+		     },
+		     )->all();
+	@bugs = uniq(@bugs);
 
-	# select bugs which have been modified since the last updatex
     } else {
-        $bugs = $s->resultset('Bug')->
-	    search_rs(undef,
-		     {rows => 100,
-		      page => 1,
-		      columns => [qw(id)],
-		     });
+	## or just select all of them
+	push @bugs,
+	    map {$_->{id}}
+	    $s->resultset('Bug')->
+	    search_rs({archived => ! $options->{archived}},
+		     {columns => [qw(id)],
+		      result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+		     },
+		     )->all();
     }
     my $update_bug =
 	sub {
-	    my @bugs = @_;
-	    for my $bug (@bugs) {
-		my $status = read_bug(bug => $bug->id);
+	    my @b = @_;
+	    for my $bug (@b) {
+		my $status = read_bug(bug => $bug);
 		next unless defined $status;
 		for my $suite (@suites) {
 		    my $presence =
-			bug_presence(bug => $bug->id,
+			bug_presence(bug => $bug,
 				     status => $status,
 				     dist => $suite->{suite_name},
 				    );
 		    $s->resultset('BugStatusCache')->
-			update_bug_status($bug->id,
+			update_bug_status($bug,
 					  $suite->{id},
 					  undef,
 					  $presence,
@@ -268,21 +295,17 @@ sub update_cache {
 		}
 	    }
 	};
-    my $last_page = 1;
-    if ($bugs->is_paged) {
-	$last_page = 
-	    $bugs->pager->last_page;
-    }
+    my $it = natatime 500,@bugs;
+    my $page = 0;
+    my $last_page = ceil(@bugs / 500);
     $p->target($last_page) if defined $p;
-    for my $page (1..$last_page) {
-	my $bugs_on_page = $bugs;
-	if ($bugs->is_paged) {
-	    $bugs_on_page = $bugs->page($page);
-	}
+    while (my @b_sub = $it->()) {
 	$s->txn_do($update_bug,
-		   $bugs_on_page->all());
+		   @b_sub);
+	$page++;
 	$p->update($page) if defined $p;
     }
+    $p->remove() if $p;
 }
 
 
