@@ -502,52 +502,44 @@ sub get_bugs_by_db{
                               );
      my %bugs = ();
 
-     # If we're given an empty maint (unmaintained packages), we can't
-     # handle it, so bail out here
-     for my $maint (make_list(exists $param{maint}?$param{maint}:[])) {
-	  if (defined $maint and $maint eq '') {
-	       die "Can't handle empty maint (unmaintained packages) in get_bugs_by_db";
-	  }
-     }
-
-     # We handle src packages, maint and maintenc by mapping to the
-     # appropriate binary packages, then removing all packages which
-     # don't match all queries
-     my @packages = __handle_pkg_src_and_maint(map {exists $param{$_}?($_,$param{$_}):()}
-					       qw(package src maint)
-					      );
-     if (exists $param{package} or
-	 exists $param{src} or
-	 exists $param{maint}) {
-	  delete @param{qw(maint src)};
-	  $param{package} = [@packages];
-     }
      my $keys = grep {$_ !~ $_non_search_key_regex} keys(%param);
      die "Need at least 1 key to search by" unless $keys;
      my $rs = $param{schema}->resultset('Bug');
+     if (exists $param{package}) {
+	 $rs = $rs->search({-or => {map 'bin_package.'}})
+     }
      if (exists $param{severity}) {
-         $rs = $rs->search([map {('severity.severity' => $_)} make_list($param{severity})],
+         $rs = $rs->search({-or => {map {('severity.severity' => $_)}
+				    make_list($param{severity})},
+			   },
                           {join => 'severity'},
                           );
      }
      for my $key (qw(owner submitter done)) {
          if (exists $param{$key}) {
-             $rs = $rs->search([map {("${key}.addr" => $_)} make_list($param{$key})],
+             $rs = $rs->search({-or => {map {("${key}.addr" => $_)}
+					make_list($param{$key})},
+			       },
                               {join => $key},
                               );
          }
      }
      if (exists $param{correspondent}) {
-         $rs = $rs->search([map {('message_correspondents.addr' => $_)} make_list($param{correspondent})],
+         $rs = $rs->search({-or => {map {('message_correspondents.addr' => $_)}
+				    make_list($param{correspondent})},
+			   },
                           {join => {correspondent =>
                                    {bug_messages =>
                                    {message => 'message_correspondents'}}}},
                           );
      }
      if (exists $param{affects}) {
-         $rs = $rs->search([map {('bin_pkg.pkg' => $_)} make_list($param{affects}),
-                            map {('src_pkg.pkg' => $_)} make_list($param{affects}),
-                           ],
+         $rs = $rs->search({-or => {map {('bin_pkg.pkg' => $_,
+					  'src_pkg.pkg' => $_,
+					 )}
+				    make_list($param{affects}),
+				   },
+			   },
                           {join => [{bug_affects_binpackages => 'bin_pkg'},
                                    {bug_affects_srcpackages => 'src_pkg'},
                                    ],
@@ -555,34 +547,65 @@ sub get_bugs_by_db{
                           );
      }
      if (exists $param{package}) {
-         $rs = $rs->search([map {('bin_pkg.pkg' => $_)} make_list($param{package})],
+         $rs = $rs->search({-or => {map {('bin_pkg.pkg' => $_)}
+				    make_list($param{package})},
+			   },
                           {join => {bug_binpackages => 'bin_pkg'}});
      }
+     if (exists $param{maintainer}) {
+	 $rs = $rs->search({-or => {map {(correspondent => $_ eq '' ? undef : $_,
+					  correspondent2 => $_ eq '' ? undef : $_,
+					 )}
+				    make_list($param{maintainer})
+				   }
+			   },
+			  {join => {bug_affects_binpackage =>
+				   {bin_pkg =>
+				   {bin_ver =>
+				   {src_ver =>
+				   {maintainer => 'correspondent'}
+				   }}},
+				   {bug_affects_srcpackage =>
+				   {src_pkg =>
+				   {src_ver =>
+				   {maintainer => 'correspondent'}
+				   }}}}
+			  }
+			  );
+     }
      if (exists $param{src}) {
-         $rs = $rs->search([map {('src_pkg.pkg' => $_)} make_list($param{src})],
+         $rs = $rs->search({-or => {map {('src_pkg.pkg' => $_)}
+				    make_list($param{src})},
+			   },
                           {join => {bug_srcpackages => 'src_pkg'}});
      }
      # tags are very odd, because we must handle usertags.
      if (exists $param{tag}) {
          # bugs from usertags which matter
          my %bugs_matching_usertags;
-         for my $bug (make_list(grep {defined $_ } @{$param{usertags}}{make_list($param{tag})})) {
+         for my $bug (make_list(grep {defined $_ }
+				@{$param{usertags}}{make_list($param{tag})})) {
              $bugs_matching_usertags{$bug} = 1;
          }
          # we want all bugs which either match the tag name given in
          # param, or have a usertag set which matches one of the tag
          # names given in param.
-         $rs = $rs->search([map {('tag.tag' => $_)} make_list($param{tag}),
-                            map {('me.id' => $_)} keys %bugs_matching_usertags
-                           ],
+         $rs = $rs->search({-or => {map {('tag.tag' => $_)}
+				    make_list($param{tag}),
+				    map {('me.id' => $_)}
+				    keys %bugs_matching_usertags
+				   },
+			   },
                           {join => {bug_tags => 'tag'}});
      }
      if (exists $param{bugs}) {
-         $rs = $rs->search([map {('me.id' => $_)} make_list($param{bugs})]);
+         $rs = $rs->search({-or => {map {('me.id' => $_)}
+				    make_list($param{bugs})}
+			   });
      }
      # handle archive
      if (defined $param{archive} and $param{archive} ne 'both') {
-         $rs = $rs->search(['me.archived' => $param{archive}]);
+         $rs = $rs->search({'me.archived' => $param{archive}});
      }
      return $rs->get_column('id')->all();
 }
