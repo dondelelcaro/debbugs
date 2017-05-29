@@ -129,12 +129,12 @@ if (not (($mbox and not $mbox_status_message) or
 ## Identify the users required
 for my $user (map {split /[\s*,\s*]+/} make_list($param{users}||[])) {
     next unless length($user);
-    push @dependent_files,Debbugs::User::usertag_flie_from_email($user);
+    push @dependent_files,Debbugs::User::usertag_file_from_email($user);
 }
 if (defined $param{usertag}) {
     for my $usertag (make_list($param{usertag})) {
 	my ($user, $tag) = split /:/, $usertag, 2;
-	push @dependent_files,Debbugs::User::usertag_flie_from_email($user);
+	push @dependent_files,Debbugs::User::usertag_file_from_email($user);
     }
 }
 $etag =
