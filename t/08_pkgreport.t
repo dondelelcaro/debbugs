@@ -46,8 +46,7 @@ EOF
 my $pkgreport_cgi_handler = sub {
      # I do not understand why this is necessary.
      $ENV{DEBBUGS_CONFIG_FILE} = "$config{config_dir}/debbugs_config";
-     # We cd here because pkgreport uses require ./common.pl
-     my $content = qx(cd cgi; perl -I.. -T pkgreport.cgi);
+     my $content = qx(perl -I. -T cgi/pkgreport.cgi);
      # Strip off the Content-Type: stuff
      $content =~ s/^\s*Content-Type:[^\n]+\n*//si;
      print $content;
