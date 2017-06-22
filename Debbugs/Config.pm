@@ -213,6 +213,15 @@ Domain where subscriptions to package lists happen
 set_default(\%config,'subscription_domain',undef);
 
 
+=item cc_all_mails_to_addr $gCcAllMailsToAddr
+
+Address to Cc (well, Bcc) all e-mails to
+
+=cut
+
+set_default(\%config,'cc_all_mails_to_addr',undef);
+
+
 =item cve_tracker $gCVETracker
 
 URI to CVE security tracker; in bugreport.cgi, CVE-2001-0002 becomes
