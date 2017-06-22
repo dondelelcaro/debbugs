@@ -36,13 +36,13 @@ $gHTMLCopies
 
 <p>Find a bug by <strong>number</strong>:
   <br>
-  <form method="get" action="http://$gCGIDomain/bugreport.cgi">
+  <form method="get" action="$gCGIDomain/bugreport.cgi">
   <input type="text" size="9" name="bug" value="">
   <input type="submit" value="Find">
   <input type="checkbox" name="mbox" value="yes"> as mbox
   </form>
 
-<form method="get" action="http://$gCGIDomain/pkgreport.cgi">
+<form method="get" action="$gCGIDomain/pkgreport.cgi">
 <p>Find bugs by:
 <input type="radio" name="which" value="pkg" checked><strong>package</strong>
 <input type="radio" name="which" value="src"><strong>source&nbsp;package</strong>
@@ -57,24 +57,24 @@ What to search for:<input type="text" name="data" value="" size="50">
 <p>The following bug report indices are available:
 <ul>
   <li>Packages with
-      <a href="http://$gCGIDomain/pkgindex.cgi?indexon=pkg">active</a>
+      <a href="$gCGIDomain/pkgindex.cgi?indexon=pkg">active</a>
       and
-      <a href="http://$gCGIDomain/pkgindex.cgi?indexon=pkg&amp;archived=yes">archived</a>
+      <a href="$gCGIDomain/pkgindex.cgi?indexon=pkg&amp;archived=yes">archived</a>
       bug reports.
   <li>Source packages with
-      <a href="http://$gCGIDomain/pkgindex.cgi?indexon=src">active</a>
+      <a href="$gCGIDomain/pkgindex.cgi?indexon=src">active</a>
       and
-      <a href="http://$gCGIDomain/pkgindex.cgi?indexon=src&amp;archived=yes">archived</a>
+      <a href="$gCGIDomain/pkgindex.cgi?indexon=src&amp;archived=yes">archived</a>
       bug reports.
   <li>Maintainers of packages with
-      <a href="http://$gCGIDomain/pkgindex.cgi?indexon=maint">active</a>
+      <a href="$gCGIDomain/pkgindex.cgi?indexon=maint">active</a>
       and
-      <a href="http://$gCGIDomain/pkgindex.cgi?indexon=maint&amp;archived=yes">archived</a>
+      <a href="$gCGIDomain/pkgindex.cgi?indexon=maint&amp;archived=yes">archived</a>
       bug reports.
   <li>Submitters of
-      <a href="http://$gCGIDomain/pkgindex.cgi?indexon=submitter">active</a>
+      <a href="$gCGIDomain/pkgindex.cgi?indexon=submitter">active</a>
       and
-      <a href="http://$gCGIDomain/pkgindex.cgi?indexon=submitter&amp;archived=yes">archived</a>
+      <a href="$gCGIDomain/pkgindex.cgi?indexon=submitter&amp;archived=yes">archived</a>
       bug reports.
 </ul>
 

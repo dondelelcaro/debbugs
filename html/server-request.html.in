@@ -179,7 +179,7 @@ sending <code>help</code> to <code>control\@$gEmailDomain</code>.
 
 <p>In case you are reading this as a plain text file or via email: an
 HTML version is available via the $gBug system main contents page
-<code>http://$gWebDomain/</code>.
+<code>$gWebDomain/</code>.
 
 <hr>
 

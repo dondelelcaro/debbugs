@@ -74,7 +74,7 @@ Every Friday, the listing by age of the report is posted.
 
 Please see the documentation for more information about how to
 use the $gBug tracking system.  It is available on the WWW at
-<A HREF=\"http://$gWebDomain/txt/\">$gWebDomain/txt</A>
+<A HREF=\"$gWebDomain/txt/\">$gWebDomain/txt</A>
 END
 
 close(D);

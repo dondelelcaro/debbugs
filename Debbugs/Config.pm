@@ -151,12 +151,13 @@ set_default(\%config,'web_host_bug_dir','');
 
 =item web_domain $gWebDomain
 
-Full path of the web domain where bugs are kept, defaults to the
-concatenation of L</web_host> and L</web_host_bug_dir>
+Full path of the web domain where bugs are kept including the protocol (http://
+or https://). Defaults to the concatenation of 'http://', L</web_host> and
+L</web_host_bug_dir>
 
 =cut
 
-set_default(\%config,'web_domain',$config{web_host}.($config{web_host}=~m{/$}?'':'/').$config{web_host_bug_dir});
+set_default(\%config,'web_domain','http://'.$config{web_host}.($config{web_host}=~m{/$}?'':'/').$config{web_host_bug_dir});
 
 =item html_suffix $gHTMLSuffix
 
@@ -169,7 +170,7 @@ set_default(\%config,'html_suffix','.html');
 =item cgi_domain $gCGIDomain
 
 Full path of the web domain where cgi scripts are kept. Defaults to
-the concatentation of L</web_host> and cgi.
+the concatentation of L</web_domain> and cgi.
 
 =cut
 
@@ -984,7 +985,7 @@ libravatar.cgi, our internal federated libravatar system.
 
 =cut
 
-set_default(\%config,'libravatar_uri','http://'.$config{cgi_domain}.'/libravatar.cgi?email=');
+set_default(\%config,'libravatar_uri',$config{cgi_domain}.'/libravatar.cgi?email=');
 
 =item libravatar_uri_options $gLibravatarUriOptions
 
@@ -1081,7 +1082,7 @@ set_default(\%config,'html_tail',<<END);
  SUBSTITUTE_DTIME
  <!--timestamp-->
  <P>
- <A HREF=\"http://$config{web_domain}/\">Debian $config{bug} tracking system</A><BR>
+ <A HREF=\"$config{web_domain}/\">Debian $config{bug} tracking system</A><BR>
  Copyright (C) 1999 Darren O. Benham,
  1997,2003 nCipher Corporation Ltd,
  1994-97 Ian Jackson.
