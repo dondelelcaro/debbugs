@@ -337,6 +337,7 @@ else {
                                    \%seen_msg_ids,
                                    trim_headers => $trim_headers,
                                    avatars => $avatars,
+				   terse => $terse,
                                   );
      }
 }
