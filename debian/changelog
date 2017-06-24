@@ -48,6 +48,8 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
   * cdn.libravatar.org no longer sends Content-Type. Switch to verifying
     the content-type using libmagic instead (which we probably should have
     been doing from the beginning anyway). (Closes: #856991)
+  * Reply sent messages (-forwarded and -done) are not informational messages.
+    (Closes: #864725)
 
   [ Niels Thykier ]
   * quitcgi() now returns 400/500 status codes instead of 200 (Closes: #584922)
