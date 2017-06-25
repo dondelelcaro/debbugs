@@ -334,7 +334,7 @@ sub send_mail_message{
 					 message              => {type => SCALAR,
 								 },
 					 envelope_from        => {type => SCALAR,
-								  optional => 1,
+								  default => $config{envelope_from},
 								 },
 					 recipients           => {type => ARRAYREF|UNDEF,
 								  optional => 1,
@@ -342,7 +342,10 @@ sub send_mail_message{
 					},
 			      );
      my @sendmail_arguments = @{$param{sendmail_arguments}};
-     push @sendmail_arguments, '-f', $param{envelope_from} if exists $param{envelope_from};
+     push @sendmail_arguments, '-f', $param{envelope_from} if
+	 exists $param{envelope_from} and
+	 defined $param{envelope_from} and
+	 length $param{envelope_from};
 
      my @recipients;
      @recipients = @{$param{recipients}} if defined $param{recipients} and

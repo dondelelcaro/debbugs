@@ -877,6 +877,15 @@ Default arguments to pass to sendmail. Defaults to C<qw(-oem -oi)>.
 
 set_default(\%config,'sendmail_arguments',[qw(-oem -oi)]);
 
+=item envelope_from
+
+Envelope from to use for sent messages. If not set, whatever sendmail picks is
+used.
+
+=cut
+
+set_default(\%config,'envelope_from',undef);
+
 =item spam_scan
 
 Whether or not spamscan is being used; defaults to 0 (not being used
