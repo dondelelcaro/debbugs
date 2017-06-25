@@ -52,6 +52,7 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
     (Closes: #864725)
   * Pluralize singular tag and usertag in pseudoheaders (Closes: #861234).
     Thanks to James Clarke
+  * Include link to the location of the debbugs source (Closes: #721569).
 
   [ Niels Thykier ]
   * quitcgi() now returns 400/500 status codes instead of 200 (Closes: #584922)
