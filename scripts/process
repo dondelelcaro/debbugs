@@ -228,6 +228,8 @@ for my $phline (@bodylines)
     last if $phline !~ m/^([\w-]+):\s*(\S.*)/;
     my ($fn, $fv) = ($1, $2);
     $fv =~ s/\s*$//;
+    # pluralize tag/usertag
+    $fn = $fn.'s' if $fn =~ /^(?:tag|usertag)$/;
     print {$debugfh} ">$fn|$fv|\n";
     $fn = lc $fn;
     if ($fn =~ /^control$/) {

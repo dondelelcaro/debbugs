@@ -50,6 +50,8 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
     been doing from the beginning anyway). (Closes: #856991)
   * Reply sent messages (-forwarded and -done) are not informational messages.
     (Closes: #864725)
+  * Pluralize singular tag and usertag in pseudoheaders (Closes: #861234).
+    Thanks to James Clarke
 
   [ Niels Thykier ]
   * quitcgi() now returns 400/500 status codes instead of 200 (Closes: #584922)
