@@ -229,7 +229,8 @@ our %cats = (
         "ord" => [2,3,4,1,0,5],
     } ],
     "oldview" => [ qw(status severity) ],
-    "normal" => [ qw(status severity classification) ],
+	     "normal" => [ qw(status severity classification) ],
+	     raw => [{nam => 'Raw',def => 'Raw'}],
 );
 
 if (exists $param{which} and exists $param{data}) {
