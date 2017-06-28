@@ -102,6 +102,11 @@ pre.message {
     padding-top: 8px;
     margin-top: 0;
     border-top: 0;
+    white-space: pre-wrap;
+}
+
+pre.wrapping {
+    width: 80ch;
 }
 
 .sparse li {

@@ -262,11 +262,24 @@ sub display_entity {
 	 my $body = $entity->bodyhandle->as_string;
 	 $body = convert_to_utf8($body,$charset//'utf8');
 	 $body = html_escape($body);
+	 my $css_class = "message";
 	 # Attempt to deal with format=flowed
 	 if ($content_type =~ m/format\s*=\s*\"?flowed\"?/i) {
 	      $body =~ s{^\ }{}mgo;
 	      # we ignore the other things that you can do with
 	      # flowed e-mails cause they don't really matter.
+	      $css_class .= " flowed";
+	 }
+
+	 # if the message is composed entirely of lines which are separated by
+	 # newlines, wrap it. [Allow the signature to have special formatting.]
+	 if ($body =~ /^([^\n]+\n\n)*[^\n]*\n?(-- \n.+)*$/s or
+	     # if the first 20 lines in the message which have any non-space
+	     # characters are larger than 100 characters more often than they
+	     # are not, then use CSS to try to impose sensible wrapping
+	     sum0(map {length ($_) > 100?1:-1} grep {/\S/} split /\n/,$body,20) > 0
+	    ) {
+	     $css_class .= " wrapping";
 	 }
 	 # Add links to URLs
 	 # We don't html escape here because we escape above;
@@ -292,7 +305,7 @@ sub display_entity {
 		       {$1<a href="http://$config{cve_tracker}$2">$2</a>$3}gxm;
 	 }
 	 if (not exists $param{att}) {
-	      print {$output} qq(<pre class="message">$body</pre>\n);
+	      print {$output} qq(<pre class="$css_class">$body</pre>\n);
 	 }
     }
     return 0;
