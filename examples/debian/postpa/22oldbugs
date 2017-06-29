@@ -64,6 +64,7 @@ my $nrbugs = keys %oldpackage;
 
 open OLDBUGS, '> /org/bugs.debian.org/www/stats/oldbugs.html.new'
     or die "can't open oldbugs.html.new: $!";
+binmode(OLDBUGS,':encoding(UTF-8)');
 print OLDBUGS <<EOF or die "can't write to oldbugs.html.new: $!";
 <html><head><title>Bugs Over Two Years Old</title></head>
 <body>
