@@ -203,17 +203,25 @@ sub new
     bless $self, $class;
 
     if (exists $param{logfh}) {
-	 $self->{logfh} = $param{logfh}
-    }
-    elsif (exists $param{log_name}) {
-	 $self->{logfh} = IO::File->new($param{log_name},'r') or
-	      die "Unable to open bug log $param{log_name} for reading: $!";
-    }
-    elsif (exists $param{bug_num}) {
-	 my $location = getbuglocation($param{bug_num},'log');
-	 my $bug_log = getbugcomponent($param{bug_num},'log',$location);
-	 $self->{logfh} = IO::File->new($bug_log, 'r') or
-	      die "Unable to open bug log $bug_log for reading: $!";
+        $self->{logfh} = $param{logfh}
+    } else {
+	my $bug_log;
+	if (exists $param{bug_num}) {
+	    my $location = getbuglocation($param{bug_num},'log');
+	    $bug_log = getbugcomponent($param{bug_num},'log',$location);
+	} else {
+	    $bug_log = $param{log_name};
+	}
+	if ($bug_log =~ m/\.gz$/) {
+	    my $oldpath = $ENV{'PATH'};
+	    $ENV{'PATH'} = '/bin:/usr/bin';
+	    open($self->{logfh},'-|','gzip','-dc',$bug_log) or
+		die "Unable to open $bug_log for reading: $!";
+            $ENV{'PATH'} = $oldpath;
+	} else {
+            open($self->{logfh},'<',$bug_log) or
+                die "Unable to open $bug_log for reading: $!";
+	}
     }
 
     $self->{state} = 'kill-init';
