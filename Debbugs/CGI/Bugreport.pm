@@ -394,7 +394,7 @@ sub handle_record{
 	  # Add links to the cloned bugs
 	  $output =~ s{(Bug )(\d+)( cloned as bugs? )(\d+)(?:\-(\d+)|)}{$1.bug_links(bug=>$2).$3.bug_links(bug=>(defined $5)?[$4..$5]:$4)}eo;
 	  # Add links to merged bugs
-	  $output =~ s{(?<=Merged )([\d\s]+)(?=\.)}{join(' ',map {bug_links(bug=>$_)} (split /\s+/, $1))}eo;
+	  $output =~ s{(?<=Merged )([\d\s]+)(?=[\.<])}{join(' ',map {bug_links(bug=>$_)} (split /\s+/, $1))}eo;
 	  # Add links to blocked bugs
 	  $output =~ s{(?<=Blocking bugs)(?:( of )(\d+))?( (?:added|set to|removed):\s+)([\d\s\,]+)}
 		      {(defined $2?$1.bug_links(bug=>$2):'').$3.
@@ -403,7 +403,7 @@ sub handle_record{
 		       (\d+(?:,\s+\d+)*(?:\,?\s+and\s+\d+)?)}
 		      {$1.(defined $3?$2.bug_links(bug=>$3):'').$4.
 			   english_join([map {bug_links(bug=>$_)} (split /\,?\s+(?:and\s+)?/, $5)])}xeo;
-	  $output =~ s{([Aa]dded|[Rr]emoved)( indication that bug )(\d+)( blocks )([\d\s\,]+)}
+	  $output =~ s{([Aa]dded|[Rr]emoved)( indication that bug )(\d+)( blocks ?)([\d\s\,]+)}
 		      {$1.$2.(bug_links(bug=>$3)).$4.
 			   english_join([map {bug_links(bug=>$_)} (split /\,?\s+(?:and\s+)?/, $5)])}eo;
 	  # Add links to reassigned packages

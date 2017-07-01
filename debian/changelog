@@ -55,6 +55,7 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
   * Include link to the location of the debbugs source (Closes: #721569).
   * Add envelope_from configuration variable so sites can set a valid return
     path if the sendmail default is wrong. (Closes: #719205)
+  * Fix links to merged and blocked bugs. (Closes: #539691)
 
   [ Niels Thykier ]
   * quitcgi() now returns 400/500 status codes instead of 200 (Closes: #584922)
