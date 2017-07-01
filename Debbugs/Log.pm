@@ -41,6 +41,7 @@ use Debbugs::Common qw(getbuglocation getbugcomponent make_list);
 use Params::Validate qw(:types validate_with);
 use Encode qw(encode encode_utf8 is_utf8);
 use IO::InnerFile;
+use feature 'state';
 
 =head1 NAME
 
@@ -173,24 +174,28 @@ sub new
 	 $param{inner_file} = 0;
     }
     else {
-	 %param = validate_with(params => \@_,
-				spec   => {bug_num => {type => SCALAR,
-						       optional => 1,
-						      },
-					   logfh   => {type => HANDLE,
-						       optional => 1,
-						      },
-					   log_name => {type => SCALAR,
-							optional => 1,
-                                   },
-                           inner_file => {type => BOOLEAN,
-                                          default => 0,
-                                         },
-					  }
-			       );
+        state $spec =
+            {bug_num => {type => SCALAR,
+                         optional => 1,
+                        },
+             logfh   => {type => HANDLE,
+                         optional => 1,
+                        },
+             log_name => {type => SCALAR,
+                          optional => 1,
+                         },
+             inner_file => {type => BOOLEAN,
+                            default => 0,
+                           },
+            };
+        %param = validate_with(params => \@_,
+                               spec   => $spec,
+                              );
     }
-    if (grep({exists $param{$_} and defined $param{$_}} qw(bug_num logfh log_name)) ne 1) {
-	 croak "Exactly one of bug_num, logfh, or log_name must be passed and must be defined";
+    if (grep({exists $param{$_} and defined $param{$_}}
+             qw(bug_num logfh log_name)) ne 1) {
+        croak "Exactly one of bug_num, logfh, or log_name ".
+            "must be passed and must be defined";
     }
 
     my $class = ref($this) || $this;
