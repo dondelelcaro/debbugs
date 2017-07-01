@@ -185,6 +185,10 @@ sub add_spam {
 
 1;
 
+=back
+
+=cut
+
 __END__
 
 # Local Variables:
