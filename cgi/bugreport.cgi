@@ -185,18 +185,6 @@ if (defined $param{usertag}) {
      }
 }
 
-
-my $buglogfh;
-if ($buglog =~ m/\.gz$/) {
-    my $oldpath = $ENV{'PATH'};
-    $ENV{'PATH'} = '/bin:/usr/bin';
-    $buglogfh = IO::File->new("zcat $buglog |") or quitcgi("open log for $ref: $!");
-    $ENV{'PATH'} = $oldpath;
-} else {
-    $buglogfh = IO::File->new($buglog,'r') or quitcgi("open log for $ref: $!");
-}
-
-
 my %status;
 if ($need_status) {
     %status = %{split_status_fields(get_bug_status(bug=>$ref,
@@ -206,13 +194,11 @@ if ($need_status) {
 
 my @records;
 eval{
-     @records = read_log_records(logfh => $buglogfh,inner_file => 1);
+    @records = read_log_records(bug_num => $ref,inner_file => 1);
 };
 if ($@) {
      quitcgi("Bad bug log for $gBug $ref. Unable to read records: $@");
 }
-undef $buglogfh;
-
 
 my $log='';
 my $msg_num = 0;
