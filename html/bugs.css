@@ -186,6 +186,18 @@ pre.mime {
     color: #686868;
 }
 
+.msgreceived p {
+    width: 120ch;
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+p.msgreceived {
+    width: 120ch;
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
 .buginfo p
 { 
   font-family: sans-serif;

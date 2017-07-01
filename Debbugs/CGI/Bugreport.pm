@@ -44,6 +44,7 @@ use POSIX qw(strftime);
 use Encode qw(decode_utf8 encode_utf8);
 use URI::Escape qw(uri_escape_utf8);
 use Scalar::Util qw(blessed);
+use List::Util qw(sum0);
 use File::Temp;
 
 BEGIN{
@@ -414,7 +415,7 @@ sub handle_record{
 	  if (defined $time) {
 	       $output .= ' ('.strftime('%a, %d %b %Y %T GMT',gmtime($time)).') ';
 	  }
-	  $output .= '<a href="' .
+	  $output .= '</p><p><a href="' .
 	       html_escape(bug_links(bug => $bug_number,
 				     options => {msg => ($msg_number+1)},
 				     links_only => 1,
@@ -426,7 +427,7 @@ sub handle_record{
 						     links_only => 1)
 					  ) . '">rfc822 format</a> available.';
 
-	  $output = qq(<div class="$class"><hr>\n<a name="$msg_number"></a>\n) . $output . "</div>\n";
+	  $output = qq(<div class="$class"><hr><p>\n<a name="$msg_number"></a>\n) . $output . "</p></div>\n";
      }
      elsif (/recips/) {
          my ($msg_id) = record_regex($record,qr/^Message-Id:\s+<(.+)>/i);
