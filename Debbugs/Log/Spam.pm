@@ -158,6 +158,7 @@ Returns 0 if this message is not spam
 =cut
 sub is_spam {
     my ($self,$msgid) = @_;
+    return 0 if not defined $msgid or not length $msgid;
     $msgid =~ s/^<|>$//;
     if (exists $self->{spam}{$msgid} and
         $self->{spam}{$msgid}
