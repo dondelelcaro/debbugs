@@ -436,6 +436,7 @@ sub handle_record{
 	  elsif (defined $msg_id) {
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
+	  return () if defined $param{spam} and $param{spam}->is_spam($msg_id);
 	  $output .= qq(<hr><p class="msgreceived"><a name="$msg_number"></a>\n);
 	  $output .= 'View this message in <a href="' . html_escape(bug_links(bug=>$bug_number, links_only => 1, options=>{msg=>$msg_number, mbox=>'yes'})) . '">rfc822 format</a></p>';
 	  $output .= handle_email_message($record,
@@ -455,6 +456,7 @@ sub handle_record{
 	  elsif (defined $msg_id) {
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
+	  return () if defined $param{spam} and $param{spam}->is_spam($msg_id);
 	  # Incomming Mail Message
 	  my ($received,$hostname) = record_regex($record,qr/Received: \(at (\S+)\) by (\S+)\;/o);
 	  $output .= qq|<hr><p class="msgreceived"><a name="$msg_number"></a><a name="msg$msg_number"></a><a href="#$msg_number">Message #$msg_number</a> received at |.

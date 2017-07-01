@@ -19,6 +19,7 @@ use Debbugs::Config qw(:globals :text :config);
 
 # for read_log_records
 use Debbugs::Log qw(:read);
+use Debbugs::Log::Spam;
 use Debbugs::CGI qw(:url :html :util :cache);
 use Debbugs::CGI::Bugreport qw(:all);
 use Debbugs::Common qw(buglog getmaintainers make_list bug_status);
@@ -193,8 +194,10 @@ if ($need_status) {
 }
 
 my @records;
+my $spam;
 eval{
     @records = read_log_records(bug_num => $ref,inner_file => 1);
+    $spam = Debbugs::Log::Spam->new(bug_num => $ref);
 };
 if ($@) {
      quitcgi("Bad bug log for $gBug $ref. Unable to read records: $@");
@@ -269,6 +272,8 @@ END
 	  $record_wanted_anyway = 1 if record_regex($record,qr/^Received: \(at control\)/);
 	  next if not $boring and not $record->{type} eq $wanted_type and not $record_wanted_anyway and @records > 1;
 	  $seen_message_ids{$msg_id} = 1 if defined $msg_id;
+          # skip spam messages if we're outputting more than one message
+          next if @records > 1 and $spam->is_spam($msg_id);
       my @lines;
       if ($record->{inner_file}) {
           push @lines, $record->{fh}->getline;
@@ -324,6 +329,9 @@ else {
                                    trim_headers => $trim_headers,
                                    avatars => $avatars,
 				   terse => $terse,
+                                   # if we're only looking at one record, allow
+                                   # spam to be output
+                                   spam  => (@records > 1)?$spam:undef,
                                   );
      }
 }
