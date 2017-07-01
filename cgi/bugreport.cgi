@@ -471,3 +471,10 @@ print fill_in_template(template => 'cgi/bugreport',
 				     '&maybelink'     => \&Debbugs::CGI::maybelink,
 				    },
 		      );
+
+__END__
+
+# Local Variables:
+# indent-tabs-mode: nil
+# cperl-indent-level: 4
+# End:

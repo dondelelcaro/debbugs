@@ -525,3 +525,8 @@ simply a means for extracting and rewriting raw records.
 =cut
 
 1;
+
+# Local Variables:
+# indent-tabs-mode: nil
+# cperl-indent-level: 4
+# End:
