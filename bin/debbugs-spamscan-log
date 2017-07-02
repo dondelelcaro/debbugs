@@ -1,0 +1,173 @@
+#! /usr/bin/perl
+# debbugs-spamscan-log is part of debbugs, and is released
+# under the terms of the GPL version 2, or any later version, at your
+# option. See the file README and COPYING for more information.
+# Copyright 2012 by Don Armstrong <don@donarmstrong.com>.
+
+
+use warnings;
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case);
+use Pod::Usage;
+
+=head1 NAME
+
+debbugs-spamscan-log -- Scan log files for spam and populate nnn.log.spam
+
+=head1 SYNOPSIS
+
+debbugs-spamscan-log [options] bugnumber [[bugnumber2]..]
+
+ Options:
+  --spool-dir debbugs spool directory
+  --debug, -d debugging level (Default 0)
+  --help, -h display this help
+  --man, -m display manual
+
+=head1 OPTIONS
+
+=over
+
+=item B<--spool-dir>
+
+Debbugs spool directory; defaults to the value configured in the
+debbugs configuration file.
+
+=item B<--debug, -d>
+
+Debug verbosity.
+
+=item B<--help, -h>
+
+Display brief useage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+=head1 EXAMPLES
+
+Rebuild the index.db for db-h.
+
+ debbugs-spamscan-log;
+
+Rebuild the index.db for archive
+
+ debbugs-spamscan-log archive;
+
+
+=cut
+
+
+use vars qw($DEBUG);
+
+use Debbugs::Log qw(record_regex);
+use Debbugs::Log::Spam;
+use Debbugs::Config qw(:config);
+use IPC::Open3 qw(open3);
+
+my %options =
+    (debug   => 0,
+     help    => 0,
+     man     => 0,
+     verbose => 0,
+     quiet   => 0,
+     quick   => 0,
+     spamc   => 'spamc',
+     spamc_opts => [],
+    );
+
+
+GetOptions(\%options,
+           'quick|q',
+           'service|s',
+           'sysconfdir|c',
+           'spool_dir|spool-dir=s',
+           'spamc=s',
+           'spamc_opts|spamc-opts=s@',
+           'debug|d+','help|h|?','man|m');
+
+pod2usage() if $options{help};
+pod2usage({verbose=>2}) if $options{man};
+
+$DEBUG = $options{debug};
+
+my @USAGE_ERRORS;
+$options{verbose} = $options{verbose} - $options{quiet};
+
+if (not @ARGV) {
+    push @USAGE_ERRORS,
+        "You must provide a bug number to examine\n";
+}
+
+pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
+
+if (exists $options{spool_dir} and defined $options{spool_dir}) {
+    $config{spool_dir} = $options{spool_dir};
+}
+chdir($config{spool_dir}) or die "chdir $config{spool_dir} failed: $!";
+
+for my $bug_num (@ARGV) {
+    my $log = Debbugs::Log->new(bug_num => $bug_num) or
+        die "Unable to open bug log for $bug_num";
+    my $spam = Debbugs::Log::Spam->new(bug_num => $bug_num) or
+        die "Unable to open bug log spam for $bug_num";
+
+    my %seen_msgids;
+    while (my $record = $log->read_record()) {
+        next if $record->{type} eq 'html';
+        next if $record->{type} eq 'autocheck';
+        my ($msg_id) = record_regex($record,
+                                    qr/^Message-Id:\s+<(.+)>/mi);
+        next unless defined $msg_id;
+        if ($msg_id =~ /$config{email_domain}$/) {
+            print STDERR "skipping $msg_id\n" if $DEBUG;
+            next;
+        }
+        print STDERR "examining $msg_id: " if $DEBUG;
+        if ($seen_msgids{$msg_id}) {
+            print STDERR "already seen\n" if $DEBUG;
+            next;
+        }
+        $seen_msgids{$msg_id}=1;
+        if ($spam->is_spam($msg_id)) {
+            print STDERR "already spam\n" if $DEBUG;
+            next;
+        }
+        my ($spamc,$child_out);
+        my $childpid =
+            open3($spamc,$child_out,0,
+                  $options{spamc},'-c',@{$options{spamc_opts}}) or
+                      die "Unable to fork spamc: $!";
+        if (not $childpid) {
+            die "Unable to fork spamc";
+        }
+        print {$spamc} $record->{text};
+        close($spamc) or die "Unable to close spamc: $!";
+        waitpid($childpid,0);
+        if ($DEBUG) {
+            print STDERR "[$?;".($? >> 8)."] ";
+            print STDERR map {s/\n//; $_ } <$child_out>;
+            print STDERR " ";
+        }
+        close($child_out);
+        if ($? >> 8) {
+            print STDERR "it's spam\n" if $DEBUG;
+            $spam->add_spam($msg_id);
+        } else {
+            print STDERR "it's ham\n" if $DEBUG;
+        }
+    }
+    $spam->save();
+}
+
+
+__END__
+
+# Local Variables:
+# cperl-indent-level: 4
+# indent-tabs-mode: nil
+# End:
