@@ -512,7 +512,6 @@ sub record_regex {
     } else {
         my @result = $record->{text} =~ m/$regex/;
         return @result;
-        return $record->{text};
     }
 }
 
