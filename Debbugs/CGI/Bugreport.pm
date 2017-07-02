@@ -27,6 +27,7 @@ None known.
 
 use warnings;
 use strict;
+use utf8;
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use Exporter qw(import);
 
@@ -415,17 +416,18 @@ sub handle_record{
 	  if (defined $time) {
 	       $output .= ' ('.strftime('%a, %d %b %Y %T GMT',gmtime($time)).') ';
 	  }
-	  $output .= '</p><p><a href="' .
+	  $output .= qq{(<a href="} .
 	       html_escape(bug_links(bug => $bug_number,
 				     options => {msg => ($msg_number+1)},
 				     links_only => 1,
 				    )
-			  ) . '">Full text</a> and <a href="' .
+			  ) . '">full text</a>, <a href="' .
 			       html_escape(bug_links(bug => $bug_number,
 						     options => {msg => ($msg_number+1),
 								 mbox => 'yes'},
 						     links_only => 1)
-					  ) . '">rfc822 format</a> available.';
+					  ) . '">mbox</a>, '.
+					      qq{<a href="#$msg_number">link</a>).</p>};
 
 	  $output = qq(<div class="$class"><hr><p>\n<a name="$msg_number"></a>\n) . $output . "</p></div>\n";
      }
@@ -438,7 +440,7 @@ sub handle_record{
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
 	  return () if defined $param{spam} and $param{spam}->is_spam($msg_id);
-	  $output .= qq(<hr><p class="msgreceived"><a name="$msg_number"></a>\n);
+	  $output .= qq(<hr><p class="msgreceived"><a name="$msg_number" href="#$msg_number">🔗</a>\n);
 	  $output .= 'View this message in <a href="' . html_escape(bug_links(bug=>$bug_number, links_only => 1, options=>{msg=>$msg_number, mbox=>'yes'})) . '">rfc822 format</a></p>';
 	  $output .= handle_email_message($record,
 					  ref     => $bug_number,
