@@ -40,7 +40,7 @@ use Debbugs::Text qw(:templates);
 
 use Scalar::Util qw(looks_like_number);
 
-use List::Util qw(first);
+use List::AllUtils qw(first);
 
 use Mail::RFC822::Address;
 use Encode qw(decode encode);

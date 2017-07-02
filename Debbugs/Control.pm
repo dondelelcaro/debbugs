@@ -134,7 +134,7 @@ use Mail::RFC822::Address qw();
 use POSIX qw(strftime);
 
 use Storable qw(dclone nfreeze);
-use List::Util qw(first max);
+use List::AllUtils qw(first max);
 use Encode qw(encode_utf8);
 
 use Carp;

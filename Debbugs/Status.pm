@@ -49,7 +49,7 @@ use File::Copy qw(copy);
 use Encode qw(decode encode is_utf8);
 
 use Storable qw(dclone);
-use List::Util qw(min max);
+use List::AllUtils qw(min max);
 
 use Carp qw(croak);
 

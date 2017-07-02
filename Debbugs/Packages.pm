@@ -39,7 +39,7 @@ use Storable qw(dclone);
 use Params::Validate qw(validate_with :types);
 use Debbugs::Common qw(make_list globify_scalar sort_versions);
 
-use List::Util qw(min max);
+use List::AllUtils qw(min max);
 
 use IO::File;
 

@@ -49,7 +49,7 @@ use Mail::Address;
 use POSIX qw(ceil);
 use Storable qw(dclone);
 
-use List::Util qw(max);
+use List::AllUtils qw(max);
 use File::stat;
 use Digest::MD5 qw(md5_hex);
 use Carp;

@@ -45,7 +45,7 @@ use POSIX qw(strftime);
 use Encode qw(decode_utf8 encode_utf8);
 use URI::Escape qw(uri_escape_utf8);
 use Scalar::Util qw(blessed);
-use List::Util qw(sum);
+use List::AllUtils qw(sum);
 use File::Temp;
 
 BEGIN{

@@ -20,7 +20,7 @@ BEGIN{
 
 binmode(STDOUT,':encoding(UTF-8)');
 use POSIX qw(strftime nice);
-use List::Util qw(uniq);
+use List::AllUtils qw(uniq);
 
 use Debbugs::Config qw(:globals :text :config);
 

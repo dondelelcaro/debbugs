@@ -54,7 +54,7 @@ use File::Temp qw(tempdir);
 use MIME::Parser;
 
 use POSIX qw(strftime);
-use List::MoreUtils qw(apply);
+use List::AllUtils qw(apply);
 
 # for convert_to_utf8
 use Debbugs::UTF8 qw(convert_to_utf8);

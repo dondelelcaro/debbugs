@@ -30,7 +30,7 @@ use Scalar::Util qw(looks_like_number);
 
 use Debbugs::Text qw(:templates);
 
-use List::Util qw(max);
+use List::AllUtils qw(max);
 
 
 use CGI::Simple;

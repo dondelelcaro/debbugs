@@ -58,7 +58,7 @@ use Debbugs::Packages qw(getsrcpkgs getpkgsrc);
 use Debbugs::Common qw(getparsedaddrs package_maintainer getmaintainers make_list);
 use Fcntl qw(O_RDONLY);
 use MLDBM qw(DB_File Storable);
-use List::Util qw(first);
+use List::AllUtils qw(first);
 use Carp;
 
 =head2 get_bugs
