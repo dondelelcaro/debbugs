@@ -20,13 +20,11 @@ use Debbugs::Config qw(:globals :text :config);
 # for read_log_records
 use Debbugs::Log qw(:read);
 use Debbugs::Log::Spam;
-use Debbugs::CGI qw(:url :html :util :cache);
+use Debbugs::CGI qw(:url :html :util :cache :usertags);
 use Debbugs::CGI::Bugreport qw(:all);
 use Debbugs::Common qw(buglog getmaintainers make_list bug_status);
 use Debbugs::Packages qw(getpkgsrc);
 use Debbugs::Status qw(splitpackages split_status_fields get_bug_status isstrongseverity);
-
-use Debbugs::User;
 
 use Scalar::Util qw(looks_like_number);
 
