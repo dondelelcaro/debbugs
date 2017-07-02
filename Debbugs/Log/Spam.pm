@@ -45,7 +45,7 @@ BEGIN{
 use Carp;
 use feature 'state';
 use Params::Validate qw(:types validate_with);
-use Debbugs::Common qw(getbuglocation getbugcomponent);
+use Debbugs::Common qw(getbuglocation getbugcomponent filelock unfilelock);
 
 =head1 FUNCTIONS
 
@@ -135,6 +135,7 @@ Saves changes to the bug log spam file.
 
 sub save {
     my $self = shift;
+    return unless keys %{$self->{spam}};
     filelock($self->{name});
     open(my $fh,'>',$self->{name}.'.tmp') or
         croak "Unable to open bug log spam '$self->{name}.tmp' for writing: $!";
