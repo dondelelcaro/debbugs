@@ -45,7 +45,7 @@ use POSIX qw(strftime);
 use Encode qw(decode_utf8 encode_utf8);
 use URI::Escape qw(uri_escape_utf8);
 use Scalar::Util qw(blessed);
-use List::Util qw(sum0);
+use List::Util qw(sum);
 use File::Temp;
 
 BEGIN{
@@ -279,7 +279,7 @@ sub display_entity {
 	     # if the first 20 lines in the message which have any non-space
 	     # characters are larger than 100 characters more often than they
 	     # are not, then use CSS to try to impose sensible wrapping
-	     sum0(map {length ($_) > 100?1:-1} grep {/\S/} split /\n/,$body,20) > 0
+	     sum(0,map {length ($_) > 100?1:-1} grep {/\S/} split /\n/,$body,20) > 0
 	    ) {
 	     $css_class .= " wrapping";
 	 }
