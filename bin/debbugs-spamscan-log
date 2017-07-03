@@ -137,28 +137,44 @@ for my $bug_num (@ARGV) {
             print STDERR "already spam\n" if $DEBUG;
             next;
         }
-        my ($spamc,$child_out);
-        my $childpid =
-            open3($spamc,$child_out,0,
-                  $options{spamc},'-c',@{$options{spamc_opts}}) or
-                      die "Unable to fork spamc: $!";
-        if (not $childpid) {
-            die "Unable to fork spamc";
-        }
-        print {$spamc} $record->{text};
-        close($spamc) or die "Unable to close spamc: $!";
-        waitpid($childpid,0);
-        if ($DEBUG) {
-            print STDERR "[$?;".($? >> 8)."] ";
-            print STDERR map {s/\n//; $_ } <$child_out>;
-            print STDERR " ";
-        }
-        close($child_out);
-        if ($? >> 8) {
-            print STDERR "it's spam\n" if $DEBUG;
-            $spam->add_spam($msg_id);
+        my $is_spam;
+        eval {
+            my ($spamc,$child_out);
+            my $old_sig = $SIG{"PIPE"};
+            $SIG{"PIPE"} = sub {
+                die "SIGPIPE in child for some reason";
+            };
+            my $childpid =
+                open3($spamc,$child_out,0,
+                      $options{spamc},'-E',@{$options{spamc_opts}}) or
+                          die "Unable to fork spamc: $!";
+            if (not $childpid) {
+                die "Unable to fork spamc";
+            }
+            print {$spamc} $record->{text};
+            close($spamc) or die "Unable to close spamc: $!";
+            waitpid($childpid,0);
+            if ($DEBUG) {
+                print STDERR "[$?;".($? >> 8)."] ";
+                print STDERR map {s/\n//; $_ } <$child_out>;
+                print STDERR " ";
+            }
+            close($child_out);
+            $SIG{"PIPE"} = $old_sig;
+            if ($? >> 8) {
+                $is_spam = 1;
+            }
+        };
+        if ($@) {
+            print STDERR "processing of $msg_id failed [$@]\n";
         } else {
-            print STDERR "it's ham\n" if $DEBUG;
+            if ($is_spam) {
+                print STDERR "it's spam\n" if $DEBUG;
+                $spam->add_spam($msg_id);
+            }
+            else {
+                print STDERR "it's ham\n" if $DEBUG;
+            }
         }
     }
     $spam->save();
