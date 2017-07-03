@@ -47,6 +47,7 @@ BEGIN {
 				 qw($gWebDomain $gHTMLSuffix $gCGIDomain $gMirrors),
 				 qw($gPackagePages $gSubscriptionDomain $gProject $gProjectTitle),
 				 qw($gMaintainer $gMaintainerWebpage $gMaintainerEmail $gUnknownMaintainerEmail),
+				 qw($gPackageTrackingDomain),
 				 qw($gSubmitList $gMaintList $gQuietList $gForwardList),
 				 qw($gDoneList $gRequestList $gSubmitterList $gControlList),
 				 qw($gStrongList),
@@ -195,6 +196,17 @@ package links will not be made.
 
 
 set_default(\%config,'package_pages',undef);
+
+=item package_tracking_domain  $gPackageTrackingDomain
+
+Domain where the package pages are kept; links should work in a
+package_tracking_domain/foopackage manner. Defaults to undef, which means that
+package links will not be made. Should be prefixed with the appropriate protocol
+(http or https).
+
+=cut
+
+set_default(\%config,'package_tracking_domain',undef);
 
 =item package_pages  $gUsertagPackageDomain
 
