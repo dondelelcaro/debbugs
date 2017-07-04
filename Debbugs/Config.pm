@@ -47,7 +47,7 @@ BEGIN {
 				 qw($gWebDomain $gHTMLSuffix $gCGIDomain $gMirrors),
 				 qw($gPackagePages $gSubscriptionDomain $gProject $gProjectTitle),
 				 qw($gMaintainer $gMaintainerWebpage $gMaintainerEmail $gUnknownMaintainerEmail),
-				 qw($gPackageTrackingDomain),
+				 qw($gPackageTrackingDomain $gUsertagPackageDomain),
 				 qw($gSubmitList $gMaintList $gQuietList $gForwardList),
 				 qw($gDoneList $gRequestList $gSubmitterList $gControlList),
 				 qw($gStrongList),
@@ -214,7 +214,7 @@ Domain where where usertags of packages belong; defaults to $gPackagePages
 
 =cut
 
-set_default(\%config,'usertag_package_domain',$config{package_pages});
+set_default(\%config,'usertag_package_domain',map {defined $_?s{https?://}{}:(); $_} $config{package_pages});
 
 
 =item subscription_domain $gSubscriptionDomain
