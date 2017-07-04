@@ -304,7 +304,7 @@ sub display_entity {
 	    ) {
 	     # Add links to CVE vulnerabilities (closes #568464)
 	     $body =~ s{(^|\s|[\(\[])(CVE-\d{4}-\d{4,})(\s|[,.-\[\]\)]|$)}
-		       {$1<a href="http://$config{cve_tracker}$2">$2</a>$3}gxm;
+		       {$1<a href="$config{cve_tracker}$2">$2</a>$3}gxm;
 	 }
 	 if (not exists $param{att}) {
 	      print {$output} qq(<pre class="$css_class">$body</pre>\n);
