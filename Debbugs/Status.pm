@@ -282,6 +282,17 @@ sub read_bug{
     $data{archived} = (defined($location) and ($location eq 'archive'))?1:0;
     $data{bug_num} = $param{bug};
 
+    # mergedwith occasionally is sorted badly. Fix it to always be sorted by <=>
+    # and not include this bug
+    if (defined $data{mergedwith} and
+       $data{mergedwith}) {
+	$data{mergedwith} =
+	    join(' ',
+		 grep { $_ != $data{bug_num}}
+		 sort { $a <=> $b }
+		 split / /, $data{mergedwith}
+		);
+    }
     return \%data;
 }
 
@@ -516,7 +527,10 @@ sub lock_read_all_merged_bugs {
 	    # are all merged with eachother
         # We do a cmp sort instead of an <=> sort here, because that's
         # what merge does
-	    my $expectmerge= join(' ',grep {$_ != $bug } sort @bugs);
+	    my $expectmerge=
+		join(' ',grep {$_ != $bug }
+		     sort { $a <=> $b }
+		     @bugs);
 	    if ($newdata->{mergedwith} ne $expectmerge) {
 		for (1..$locks) {
 		    unfilelock(exists $param{locks}?$param{locks}:());

@@ -1975,8 +1975,11 @@ sub set_merged {
 		$data->{mergedwith} = '';
 	    }
 	    else {
-		$data->{mergedwith} = join(' ',sort grep {$_ != $data->{bug_num}}
-					    keys %merged_bugs);
+		$data->{mergedwith} =
+		    join(' ',
+			 sort {$a <=> $b}
+			 grep {$_ != $data->{bug_num}}
+			 keys %merged_bugs);
 	    }
 	    append_action_to_log(bug => $data->{bug_num},
 				 command  => 'merge',
@@ -2157,11 +2160,14 @@ sub set_merged {
     }
 
     # finally, we can merge the bugs
-    my $action = "Merged ".join(' ',sort keys %merged_bugs);
+    my $action = "Merged ".join(' ',sort { $a <=> $b } keys %merged_bugs);
     for my $data (@data) {
 	my $old_data = dclone($data);
-	$data->{mergedwith} = join(' ',sort grep {$_ != $data->{bug_num}}
-				    keys %merged_bugs);
+	$data->{mergedwith} =
+	    join(' ',
+		 sort { $a <=> $b }
+		 grep {$_ != $data->{bug_num}}
+		 keys %merged_bugs);
 	append_action_to_log(bug => $data->{bug_num},
 			     command  => 'merge',
 			     new_data => $data,
