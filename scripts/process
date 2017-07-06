@@ -503,6 +503,8 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
               "X-$gProject-PR-Keywords" => $data->{keywords},
 	      # Only have a X-$gProject-PR-Source when we know the source package
 	      (defined($source_package) and length($source_package))?("X-$gProject-PR-Source" => $source_package):(),
+              "Reply-To"                => "$ref\@$gEmailDomain",
+              "Content-Type"            => 'text/plain; charset="utf-8"',
              ],message_body_template('mail/process_mark_as_forwarded',
 				     {date => $header{date},
 				      messageid => $header{'message-id'},
@@ -526,6 +528,8 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
               "X-$gProject-PR-Keywords" => $data->{keywords},
 	      # Only have a X-$gProject-PR-Source when we know the source package
 	      (defined($source_package) and length($source_package))?("X-$gProject-PR-Source" => $source_package):(),
+              "Reply-To"                => "$ref\@$gEmailDomain",
+              "Content-Type"            => 'text/plain; charset="utf-8"',
              ],message_body_template('mail/process_mark_as_done',
 				     {date => $header{date},
 				      messageid => $header{'message-id'},
