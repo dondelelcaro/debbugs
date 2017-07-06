@@ -431,7 +431,7 @@ sub __add_to_hash {
     }
     $type //= 'address';
     my $fh = IO::File->new($fn,'r') or
-	die "Unable to open $fn for reading: $!";
+	croak "Unable to open $fn for reading: $!";
     binmode($fh,':encoding(UTF-8)');
     while (<$fh>) {
 	chomp;

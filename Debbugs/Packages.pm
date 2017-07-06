@@ -79,7 +79,7 @@ sub getpkgsrc {
     my %srcpkg;
 
     my $fh = IO::File->new($config{package_source},'r')
-	or die("Unable to open $config{package_source} for reading: $!");
+	or croak("Unable to open $config{package_source} for reading: $!");
     while(<$fh>) {
 	next unless m/^(\S+)\s+(\S+)\s+(\S.*\S)\s*$/;
 	my ($bin,$cmp,$src)=($1,$2,$3);
