@@ -143,7 +143,7 @@ my %option_defaults = (port => 8080,
 		      );
 
 GetOptions(\%options,
-	   'daemon|D','show|s','search|select|S','mirror|M', 'stop',
+	   'daemon|D','show|s','search|select|S','mirror|M', 'stop|exit|quit',
 	   'detach!',
 	   'css=s','cgi_bin|cgi-bin|cgi=s',
 	   'verbose|v+','quiet|q+',
@@ -158,7 +158,7 @@ $DEBUG = $options{debug};
 
 my @USAGE_ERRORS;
 if (1 != grep {exists $options{$_}} qw(daemon show search mirror stop)) {
-     push @USAGE_ERRORS,"You must pass one (and only one) of --daemon --show --search or --mirror";
+     push @USAGE_ERRORS,"You must pass one (and only one) of --daemon --show --search --mirror or --stop";
 }
 $options{verbose} = $options{verbose} - $options{quiet};
 
