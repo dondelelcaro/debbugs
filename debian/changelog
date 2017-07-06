@@ -414,6 +414,7 @@ debbugs (2.4.2~exp0) experimental; urgency=low
     #517834)
   * Ditch extra blank lines (closes: #494843)
   * Handle &#39; ending links in Debbugs::CGI::Bugreport (closes: #539020)
+  * Add a link to ack_thanks in process (Closes: #863274)
 
   
  -- Don Armstrong <don@debian.org>  Sun, 26 Jul 2009 05:48:16 -0700
