@@ -183,6 +183,24 @@ if ($options{daemon}) {
 	  print STDERR "Unable to determine if daemon is running: $!\n";
 	  exit 1;
      }
+     my $conf = IO::File->new($options{mirror_location}.'/debbugs_config_local','w') or
+	 die "Unable to open $options{mirror_location}/debbugs_config_local for writing: $!";
+     print {$conf} <<"EOF";
+\$gConfigDir = "$options{mirror_location}";
+\$gSpoolDir = "$options{mirror_location}";
+\$gWebHost = 'localhost:$options{port}';
+\$gPackageSource = '';
+\$gPseudoDescFile = '';
+\$gPseudoMaintFile = '';
+\$gMaintainerFile = '';
+\$gMaintainerFileOverride = '';
+\$config{source_maintainer_file} = '';
+\$config{source_maintainer_file_override} = '';
+\$gProject = 'Local Debbugs';
+1;
+EOF
+     close $conf;
+     $ENV{DEBBUGS_CONFIG_FILE} = $options{mirror_location}.'/debbugs_config_local';
      # ok, now lets daemonize
 
      # XXX make sure that all paths have been turned into absolute
@@ -222,6 +240,7 @@ if ($options{daemon}) {
 	  sub handle_request {
 	       my ($self,$cgi) = @_;
 
+	       $ENV{DEBBUGS_CONFIG_FILE} = $options{mirror_location}.'/debbugs_config_local';
 	       my $base_uri = 'http://'.$cgi->virtual_host;
 	       if ($cgi->virtual_port ne 80) {
 		    $base_uri .= ':'.$cgi->virtual_port;
