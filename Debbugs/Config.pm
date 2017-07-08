@@ -215,7 +215,7 @@ Domain where where usertags of packages belong; defaults to $gPackagePages
 
 =cut
 
-set_default(\%config,'usertag_package_domain',map {my $a = $_; defined $a?s{https?://}{}:(); $a} $config{package_pages});
+set_default(\%config,'usertag_package_domain',map {my $a = $_; defined $a?$a =~ s{https?://}{}:(); $a} $config{package_pages});
 
 
 =item subscription_domain $gSubscriptionDomain
