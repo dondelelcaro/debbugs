@@ -180,8 +180,8 @@ for my $hdr (@headerlines) {
     $_ = $hdr;
     s/\n\s/ /g;
     finish() if m/^x-loop: (\S+)$/i && $1 eq "$gMaintainerEmail";
-    my $ins = !m/^subject:/i && !m/^reply-to:/i && !m/^return-path:/i
-           && !m/^From / && !m/^X-Debbugs-/i;
+    my $ins = !m/^(?:(?:subject|reply-to|return-path|mail-followup-to):
+		 |From\s|X-Debbugs-)/xi;
     $fwd .= encode_utf8($hdr)."\n" if $ins;
     # print {$debugfh} ">$_<\n";
     if (s/^(\S+):\s*//) {
