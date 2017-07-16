@@ -1,8 +1,4 @@
 #!/usr/bin/perl
-# $Id: process.in,v 1.109 2006/02/09 22:02:04 don Exp $
-#
-# Usage: process nn
-# Temps:  incoming/Pnn
 
 use warnings;
 use strict;
@@ -34,6 +30,7 @@ use Debbugs::Config qw(:globals :config);
 use Debbugs::Control qw(append_action_to_log);
 use Debbugs::Control::Service qw(valid_control control_line);
 use Debbugs::Recipients qw(determine_recipients);
+use Debbugs::Incomming;
 use Encode qw(encode_utf8 decode);
 
 =head1 NAME
@@ -64,84 +61,89 @@ use vars qw($DEBUG);
 my %options = (debug           => 0,
 	       help            => 0,
 	       man             => 0,
+	       spool           => $config{spool_dir},
 	      );
 
 GetOptions(\%options,
 	   'debug|d+','help|h|?','man|m');
 
+$DEBUG=$options{debug};
+
 pod2usage() if $options{help};
 pod2usage({verbose=>2}) if $options{man};
 
+my @USAGE_ERRORS;
 
-$DEBUG=$options{debug};
-my $debugfh = IO::File->new('/dev/null','w') or
-    die "Unable to open /dev/null for writing; $!";
-if ($DEBUG > 0) {
-    $debugfh = \*STDERR;
+if (@ARGV != 1) {
+    push @USAGE_ERRORS,"You must provide exactly one incomming mail message";
 }
-binmode($debugfh,':raw:encoding(UTF-8)');
-
-# these are the valid bug addresses
-my %baddress = (B => 'submit',
-	        M => 'maintonly',
-	        Q => 'quiet',
-		F => 'forwarded',
-		D => 'done',
-		U => 'submitter',
-		L => 'list',
-	       );
-my $valid_codeletters = join('',keys %baddress);
+pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
 
 
-chdir($config{spool_dir}) or die "Unable to chdir to spool ($config{spool_dir}): $!";
+my $msg =
+    Debbugs::Incoming->new($ARGV[0]) or
+    die "Unable to start processing message $ARGV[0]";
 
-umask(002);
+if ($msg->bug_address eq 'list') { # this message is list administrivia
+    bug_list_forward($msg);
+}
 
-my $intdate = time or die "failed to get time: $!";
-
-my ($nn) = @ARGV;
-my ($codeletter,$tryref) =
-    $nn =~ m/^([$valid_codeletters])(\d*)\.\d+$/
-    or die "bad argument: $_";
-$tryref = undef unless length ($tryref) and
-    $tryref > 0;
-
-if (!rename("incoming/G$nn","incoming/P$nn"))  {
-    my $error = $!;
-    $error = '' if not defined $error;
-    # this is very fragile, but we should probably die here anyway
-    if ($error =~ m/no such file or directory/i) {
-	exit 0;
+my $ph = $msg->pseudoheaders();
+my $new_bug = 0;
+# create the bug if necessary
+if (not defined $msg->bug_num) {
+    # if this message was sent to -submitter, error out
+    if ($msg->bug_address eq 'submitter') {
+        $msg->send_reply({message => 'error',
+                          template => 'process_no_bug_number',
+                          type => 'nonumnosub',
+                         });
+        $msg->finish;
+        exit 0;
     }
-    die "Unable to rename incoming/G$nn to lock: $error";
+    if (not defined $ph->{source} and
+        not defined $ph->{package} and
+        not defined $config{default_package}
+       ) {
+        $msg->send_reply({message => 'error',
+                          template => 'process_no_package',
+                          type => 'nopkgnosub',
+                         });
+        $msg->finish;
+        exit 0;
+    }
+    $msg->bug_num(new_bug());
+    $new_bug = 1;
+}
+# load the bug data for this bug
+my ($locks_recv,@data) = lock_read_all_merged_bugs($msg->bug_num);
+if (not $locks_recv or $data[0]->{archived}) {
+    unfilelock() while ($locks_recv--);
+    $msg->send_reply({message=> 'error',
+                      template => 'process_unknown_bug_number',
+                      type => 'unknown',
+                     });
+    $msg->finish();
+}
+# write the received message to the log
+$msg->append_to_log($_->{bug_num}) foreach @data;
+
+# if this is a new bug, add the appropriate new control actions
+if ($new_bug) {
+    # figure out the package
+    my $package = $config{default_package};
+    if (defined $ph->{source} and length $ph->{source}) {
+        
+    }
+    unshift @{$ph->{control}}
 }
 
-# die here to avoid continuously processing this mail
-if (not exists $baddress{$codeletter}) {
-    die "bad codeletter $codeletter";
-}
+# perform control actions if necessary
 
-my $baddress = $baddress{$codeletter};
-if ($baddress eq 'list') {
-    bug_list_forward($nn) if $codeletter eq 'L';
-}
-
+# send the received message to recipients
 
 my $baddressroot= $baddress;
 $baddress= "$tryref-$baddress" if defined $tryref;
-
-my $msg;
-my @msg;
-
-{
-    my $log = IO::File->new("incoming/P$nn",'r') or
-	die "Unable to open 'incoming/P$nn' for reading; $!";
-    local $/;
-    $msg=<$log>;
-    @msg = split /\n/, $msg;
-    close($log);
-}
-
 
 my $tdate = strftime "%a, %d %h %Y %T +0000", gmtime;
 my $fwd= "Received: via spool by $baddress\@$gEmailDomain id=$nn\n".
@@ -1390,3 +1392,20 @@ sub bug_list_forward{
      unlink("incoming/P$bug_fn") || die "unlinking incoming/P$bug_fn: $!";
      exit 0;
 }
+
+sub DEBUG {
+    return unless $DEBUG;
+    print STDERR
+	map {defined $_?encode_utf8($_):()} @_;
+}
+sub DEBUG_RAW {
+    return unless $DEBUG;
+    print STDERR @_;
+}
+
+
+__END__
+# Local Variables:
+# indent-tabs-mode: nil
+# cperl-indent-level: 4
+# End:
