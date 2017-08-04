@@ -45,6 +45,7 @@ BEGIN{
 				qw(getpseudodesc),
 				qw(package_maintainer),
 				qw(sort_versions),
+				qw(open_compressed_file),
 			       ],
 		     misc   => [qw(make_list globify_scalar english_join checkpid),
 				qw(cleanup_eval_fail),
@@ -239,7 +240,40 @@ sub overwritefile {
 	    die "Unable to rename ${file}.new to $file: $!";
 }
 
+=head2 open_compressed_file
 
+     my $fh = open_compressed_file('foo.gz') or
+          die "Unable to open compressed file: $!";
+
+
+Opens a file; if the file ends in .gz, .xz, or .bz2, the appropriate
+decompression program is forked and output from it is read.
+
+This routine by default opens the file with UTF-8 encoding; if you want some
+other encoding, specify it with the second option.
+
+=cut
+sub open_compressed_file {
+    my ($file,$encoding) = @_;
+    $encoding //= ':encoding(UTF-8)';
+    my $fh;
+    my $mode = "<$encoding";
+    my @opts;
+    if ($file =~ /\.gz$/) {
+	$mode = "-|$encoding";
+	push @opts,'gzip','-dc';
+    }
+    if ($file =~ /\.xz$/) {
+	$mode = "-|$encoding";
+	push @opts,'xz','-dc';
+    }
+    if ($file =~ /\.bz2$/) {
+	$mode = "-|$encoding";
+	push @opts,'bzip2','-dc';
+    }
+    open($fh,$mode,@opts,$file);
+    return $fh;
+}
 
 
 
