@@ -57,6 +57,8 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
     path if the sendmail default is wrong. (Closes: #719205)
   * Fix links to merged and blocked bugs. (Closes: #539691)
   * Strip out Mail-Followup-To: (Closes: #798092)
+  * Include references from the original message in replies. (Closes: #485697)
+    Thanks to Julien Cristau
 
   [ Niels Thykier ]
   * quitcgi() now returns 400/500 status codes instead of 200 (Closes: #584922)

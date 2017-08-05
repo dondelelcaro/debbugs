@@ -180,7 +180,9 @@ for my $hdr (@headerlines) {
     $_ = $hdr;
     s/\n\s/ /g;
     finish() if m/^x-loop: (\S+)$/i && $1 eq "$gMaintainerEmail";
-    my $ins = !m/^(?:(?:subject|reply-to|return-path|mail-followup-to):
+    my $ins = !m/^(?:(?:subject|reply-to|return-path|
+			 mail-followup-to|
+			 references):
 		 |From\s|X-Debbugs-)/xi;
     $fwd .= encode_utf8($hdr)."\n" if $ins;
     # print {$debugfh} ">$_<\n";
@@ -812,6 +814,12 @@ if (length($resentccval)) {
     $resentcc= "Resent-CC: $resentccval\n"; 
 }
 
+my $referencesval = join(' ',grep {defined $_} $header{'references'},$data->{msgid});
+my $references = '';
+if (!$newref && length($referencesval)) {
+    $references = "References: $referencesval\n";
+}
+
 my $common_headers='';
 {
     my @tmp = @common_headers;
@@ -831,7 +839,7 @@ Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: report $ref
 X-$gProject-PR-Package: $data->{package}
 X-$gProject-PR-Keywords: $data->{keywords}
-${source_pr_header}
+${references}${source_pr_header}
 END
     chomp $enc_msg;
     $enc_msg = encode_utf8($enc_msg).$fwd."\n";
@@ -854,7 +862,7 @@ Resent-Sender: $gMaintainerEmail
 X-$gProject-PR-Message: $report_followup $ref
 X-$gProject-PR-Package: $data->{package}
 X-$gProject-PR-Keywords: $data->{keywords}
-${source_pr_header}
+${references}${source_pr_header}
 END
     chomp $enc_msg;
     $enc_msg = encode_utf8($enc_msg).$fwd."\n";
@@ -888,7 +896,7 @@ Resent-Sender: $gMaintainerEmail
 ${common_headers}X-$gProject-PR-Message: $report_followup $ref
 X-$gProject-PR-Package: $data->{package}
 X-$gProject-PR-Keywords: $data->{keywords}
-${source_pr_header}
+${references}${source_pr_header}
 END
     chomp $enc_msg;
     $enc_msg = encode_utf8($enc_msg).$fwd."\n";
