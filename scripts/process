@@ -225,7 +225,10 @@ for my $phline (@bodylines)
     # Fixes #488554
     $phline =~ s/\xef\xbb\xbf//g;
     $phline =~ s/\N{U+FEFF}//g;
-    last if $phline !~ m/^([\w-]+):\s*(\S.*)/;
+    last if $phline !~ m/^([\w-]+): # psuedoheader
+			 (?:\s|\N{U+00A0})* # zero or more spaces, including
+                                            # non-breaking space
+			 (\S.*)/x; # pseudoheader value
     my ($fn, $fv) = ($1, $2);
     $fv =~ s/\s*$//;
     # pluralize tag/usertag
