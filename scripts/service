@@ -40,7 +40,7 @@ use Debbugs::Text qw(:templates);
 
 use Scalar::Util qw(looks_like_number);
 
-use List::Util qw(first);
+use List::AllUtils qw(first);
 
 use Mail::RFC822::Address;
 use Encode qw(decode encode);
@@ -285,7 +285,7 @@ for ($procline=0; $procline<=$#bodylines; $procline++) {
     } elsif (m/^subscribe/i) {
         print {$transcript} <<END;
 There is no $gProject $gBug mailing list.  If you wish to review bug reports
-please do so via http://$gWebDomain/ or ask this mail server
+please do so via $gWebDomain or ask this mail server
 to send them to you.
 soon: MAILINGLISTS_TEXT
 END
@@ -579,7 +579,7 @@ sub fill_template{
 		     };
      my $hole_var = {'&bugurl' =>
 		     sub{"$_[0]: ".
-			      'http://'.$config{cgi_domain}.'/'.
+			      $config{cgi_domain}.'/'.
 				   Debbugs::CGI::bug_links(bug=>$_[0],
 							   links_only => 1,
 							  );
@@ -901,7 +901,7 @@ END
 sub sendlynxdocraw {
     my ($relpath,$description) = @_;
     $doc='';
-    open(L,"lynx -nolist -dump http://$gCGIDomain/\Q$relpath\E 2>&1 |") || die "fork for lynx: $!";
+    open(L,"lynx -nolist -dump $gCGIDomain/\Q$relpath\E 2>&1 |") || die "fork for lynx: $!";
     while(<L>) { $doc.=$_; }
     $!=0; close(L);
     if ($? == 255 && $doc =~ m/^\n*lynx: Can\'t access start file/) {

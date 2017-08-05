@@ -49,7 +49,7 @@ use Mail::Address;
 use POSIX qw(ceil);
 use Storable qw(dclone);
 
-use List::Util qw(max);
+use List::AllUtils qw(max);
 use File::stat;
 use Digest::MD5 qw(md5_hex);
 use Carp;
@@ -292,7 +292,9 @@ sub cgi_parameters {
 
 
 sub quitcgi {
-    my $msg = shift;
+    my ($msg, $status) = @_;
+    $status //= '500 Internal Server Error';
+    print "Status: $status\n";
     print "Content-Type: text/html\n\n";
     print fill_in_template(template=>'cgi/quit',
 			   variables => {msg => $msg}
@@ -622,10 +624,6 @@ sub htmlize_maintlinks {
     return htmlize_addresslinks($prefixfunc, \&mainturl, $maints);
 }
 
-
-our $_maintainer;
-our $_maintainer_rev;
-
 =head2 bug_linklist
 
      bug_linklist($separator,$class,@bugs)
@@ -841,7 +839,6 @@ sub option_form{
      for my $key (keys %{$param{form_option}}) {
 	  # strip out leader; shouldn't be anything here without one,
 	  # but skip stupid things anyway
-	  my $o_key = $key;
 	  next unless $key =~ s/^\Q$form_option_leader\E//;
 	  if ($key =~ /^add_(.+)$/) {
 	       # this causes a specific parameter to be added

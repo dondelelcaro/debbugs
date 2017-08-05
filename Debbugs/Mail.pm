@@ -49,7 +49,7 @@ use Debbugs::MIME qw(encode_rfc1522);
 use Debbugs::Config qw(:config);
 use Params::Validate qw(:types validate_with);
 use Encode qw(encode is_utf8);
-use Debbugs::UTF8 qw(encode_utf8_safely);
+use Debbugs::UTF8 qw(encode_utf8_safely convert_to_utf8);
 
 use Debbugs::Packages;
 
@@ -334,7 +334,7 @@ sub send_mail_message{
 					 message              => {type => SCALAR,
 								 },
 					 envelope_from        => {type => SCALAR,
-								  optional => 1,
+								  default => $config{envelope_from},
 								 },
 					 recipients           => {type => ARRAYREF|UNDEF,
 								  optional => 1,
@@ -342,7 +342,10 @@ sub send_mail_message{
 					},
 			      );
      my @sendmail_arguments = @{$param{sendmail_arguments}};
-     push @sendmail_arguments, '-f', $param{envelope_from} if exists $param{envelope_from};
+     push @sendmail_arguments, '-f', $param{envelope_from} if
+	 exists $param{envelope_from} and
+	 defined $param{envelope_from} and
+	 length $param{envelope_from};
 
      my @recipients;
      @recipients = @{$param{recipients}} if defined $param{recipients} and
@@ -447,9 +450,16 @@ sub reply_headers{
     my $body = "On $date $who wrote:\n";
     my $i = 60;
     my $b_h;
+    # Default to UTF-8.
+    my $charset="utf-8";
     ## find the first part which has a defined body handle and appears
     ## to be text
     if (defined $entity->bodyhandle) {
+	my $this_charset =
+	    $entity->head->mime_attr("content-type.charset");
+	$charset = $this_charset if
+	    defined $this_charset and
+	    length $this_charset;
         $b_h = $entity->bodyhandle;
     } elsif ($entity->parts) {
         my @parts = $entity->parts;
@@ -459,6 +469,11 @@ sub reply_headers{
             }
             if (defined $part->bodyhandle and
                 $part->effective_type =~ /text/) {
+		my $this_charset =
+		    $part->head->mime_attr("content-type.charset");
+		$charset =  $this_charset if
+		    defined $this_charset and
+		    length $this_charset;
                 $b_h = $part->bodyhandle;
                 last;
             }
@@ -470,7 +485,7 @@ sub reply_headers{
             while (defined($_ = $IO->getline)) {
                 $i--;
                 last if $i < 0;
-                $body .= '> '. $_;
+                $body .= '> '. convert_to_utf8($_,$charset);
             }
             $IO->close();
         };

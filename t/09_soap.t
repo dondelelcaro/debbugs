@@ -17,22 +17,8 @@ use lib qw(t/lib);
 use DebbugsTest qw(:configuration);
 use Cwd;
 
-my %config;
-eval {
-     %config = create_debbugs_configuration(debug => exists $ENV{DEBUG}?$ENV{DEBUG}:0);
-};
-if ($@) {
-     BAIL_OUT($@);
-}
+my %config = create_debbugs_configuration();
 
-# Output some debugging information if we're debugging
-END{
-     if ($ENV{DEBUG}) {
-	  foreach my $key (keys %config) {
-	       diag("$key: $config{$key}\n");
-	  }
-     }
-}
 
 # create a bug
 send_message(to=>'submit@bugs.something',

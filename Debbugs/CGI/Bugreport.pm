@@ -27,6 +27,7 @@ None known.
 
 use warnings;
 use strict;
+use utf8;
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use Exporter qw(import);
 
@@ -44,6 +45,7 @@ use POSIX qw(strftime);
 use Encode qw(decode_utf8 encode_utf8);
 use URI::Escape qw(uri_escape_utf8);
 use Scalar::Util qw(blessed);
+use List::AllUtils qw(sum);
 use File::Temp;
 
 BEGIN{
@@ -126,7 +128,6 @@ sub display_entity {
     my $output = globify_scalar($param{output});
     my $entity = $param{entity};
     my $ref = $param{bug_num};
-    my $top = $param{outer};
     my $xmessage = $param{msg_num};
     my $attachments = $param{attachments};
 
@@ -263,11 +264,24 @@ sub display_entity {
 	 my $body = $entity->bodyhandle->as_string;
 	 $body = convert_to_utf8($body,$charset//'utf8');
 	 $body = html_escape($body);
+	 my $css_class = "message";
 	 # Attempt to deal with format=flowed
 	 if ($content_type =~ m/format\s*=\s*\"?flowed\"?/i) {
 	      $body =~ s{^\ }{}mgo;
 	      # we ignore the other things that you can do with
 	      # flowed e-mails cause they don't really matter.
+	      $css_class .= " flowed";
+	 }
+
+	 # if the message is composed entirely of lines which are separated by
+	 # newlines, wrap it. [Allow the signature to have special formatting.]
+	 if ($body =~ /^([^\n]+\n\n)*[^\n]*\n?(-- \n.+)*$/s or
+	     # if the first 20 lines in the message which have any non-space
+	     # characters are larger than 100 characters more often than they
+	     # are not, then use CSS to try to impose sensible wrapping
+	     sum(0,map {length ($_) > 100?1:-1} grep {/\S/} split /\n/,$body,20) > 0
+	    ) {
+	     $css_class .= " wrapping";
 	 }
 	 # Add links to URLs
 	 # We don't html escape here because we escape above;
@@ -290,10 +304,10 @@ sub display_entity {
 	    ) {
 	     # Add links to CVE vulnerabilities (closes #568464)
 	     $body =~ s{(^|\s|[\(\[])(CVE-\d{4}-\d{4,})(\s|[,.-\[\]\)]|$)}
-		       {$1<a href="http://$config{cve_tracker}$2">$2</a>$3}gxm;
+		       {$1<a href="$config{cve_tracker}$2">$2</a>$3}gxm;
 	 }
 	 if (not exists $param{att}) {
-	      print {$output} qq(<pre class="message">$body</pre>\n);
+	      print {$output} qq(<pre class="$css_class">$body</pre>\n);
 	 }
     }
     return 0;
@@ -363,7 +377,7 @@ sub handle_record{
 	 # $record->{text} is not in perl's internal encoding; convert it
 	 my $text = decode_rfc1522(decode_utf8(record_text($record)));
 	  my ($time) = $text =~ /<!--\s+time:(\d+)\s+-->/;
-	  my $class = $text =~ /^<strong>(?:Acknowledgement|Reply|Information|Report|Notification)/m ? 'infmessage':'msgreceived';
+	  my $class = $text =~ /^<strong>(?:Acknowledgement|Information|Report|Notification)/m ? 'infmessage':'msgreceived';
 	  $output .= $text;
 	  # Link to forwarded http:// urls in the midst of the report
 	  # (even though these links already exist at the top)
@@ -372,7 +386,7 @@ sub handle_record{
 	  # Add links to the cloned bugs
 	  $output =~ s{(Bug )(\d+)( cloned as bugs? )(\d+)(?:\-(\d+)|)}{$1.bug_links(bug=>$2).$3.bug_links(bug=>(defined $5)?[$4..$5]:$4)}eo;
 	  # Add links to merged bugs
-	  $output =~ s{(?<=Merged )([\d\s]+)(?=\.)}{join(' ',map {bug_links(bug=>$_)} (split /\s+/, $1))}eo;
+	  $output =~ s{(?<=Merged )([\d\s]+)(?=[\.<])}{join(' ',map {bug_links(bug=>$_)} (split /\s+/, $1))}eo;
 	  # Add links to blocked bugs
 	  $output =~ s{(?<=Blocking bugs)(?:( of )(\d+))?( (?:added|set to|removed):\s+)([\d\s\,]+)}
 		      {(defined $2?$1.bug_links(bug=>$2):'').$3.
@@ -381,7 +395,7 @@ sub handle_record{
 		       (\d+(?:,\s+\d+)*(?:\,?\s+and\s+\d+)?)}
 		      {$1.(defined $3?$2.bug_links(bug=>$3):'').$4.
 			   english_join([map {bug_links(bug=>$_)} (split /\,?\s+(?:and\s+)?/, $5)])}xeo;
-	  $output =~ s{([Aa]dded|[Rr]emoved)( indication that bug )(\d+)( blocks )([\d\s\,]+)}
+	  $output =~ s{([Aa]dded|[Rr]emoved)( indication that bug )(\d+)( blocks ?)([\d\s\,]+)}
 		      {$1.$2.(bug_links(bug=>$3)).$4.
 			   english_join([map {bug_links(bug=>$_)} (split /\,?\s+(?:and\s+)?/, $5)])}eo;
 	  # Add links to reassigned packages
@@ -392,19 +406,20 @@ sub handle_record{
 	  if (defined $time) {
 	       $output .= ' ('.strftime('%a, %d %b %Y %T GMT',gmtime($time)).') ';
 	  }
-	  $output .= '<a href="' .
+	  $output .= qq{(<a href="} .
 	       html_escape(bug_links(bug => $bug_number,
 				     options => {msg => ($msg_number+1)},
 				     links_only => 1,
 				    )
-			  ) . '">Full text</a> and <a href="' .
+			  ) . '">full text</a>, <a href="' .
 			       html_escape(bug_links(bug => $bug_number,
 						     options => {msg => ($msg_number+1),
 								 mbox => 'yes'},
 						     links_only => 1)
-					  ) . '">rfc822 format</a> available.';
+					  ) . '">mbox</a>, '.
+					      qq{<a href="#$msg_number">link</a>).</p>};
 
-	  $output = qq(<div class="$class"><hr>\n<a name="$msg_number"></a>\n) . $output . "</div>\n";
+	  $output = qq(<div class="$class"><hr><p>\n<a name="$msg_number"></a>\n) . $output . "</p></div>\n";
      }
      elsif (/recips/) {
          my ($msg_id) = record_regex($record,qr/^Message-Id:\s+<(.+)>/i);
@@ -414,7 +429,8 @@ sub handle_record{
 	  elsif (defined $msg_id) {
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
-	  $output .= qq(<hr><p class="msgreceived"><a name="$msg_number"></a>\n);
+	  return () if defined $param{spam} and $param{spam}->is_spam($msg_id);
+	  $output .= qq(<hr><p class="msgreceived"><a name="$msg_number" href="#$msg_number">🔗</a>\n);
 	  $output .= 'View this message in <a href="' . html_escape(bug_links(bug=>$bug_number, links_only => 1, options=>{msg=>$msg_number, mbox=>'yes'})) . '">rfc822 format</a></p>';
 	  $output .= handle_email_message($record,
 					  ref     => $bug_number,
@@ -433,6 +449,7 @@ sub handle_record{
 	  elsif (defined $msg_id) {
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
+	  return () if defined $param{spam} and $param{spam}->is_spam($msg_id);
 	  # Incomming Mail Message
 	  my ($received,$hostname) = record_regex($record,qr/Received: \(at (\S+)\) by (\S+)\;/o);
 	  $output .= qq|<hr><p class="msgreceived"><a name="$msg_number"></a><a name="msg$msg_number"></a><a href="#$msg_number">Message #$msg_number</a> received at |.

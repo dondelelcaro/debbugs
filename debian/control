@@ -6,16 +6,18 @@ Uploaders: Colin Watson <cjwatson@debian.org>, Don Armstrong <don@debian.org>
 Standards-Version: 3.9.4
 Vcs-Browser: http://bugs.debian.org/debbugs-source/mainline
 Vcs-Git: http://bugs.debian.org/debbugs-source/debbugs.git
-Build-Depends: debhelper (>= 5)
+Build-Depends: debhelper (>= 9)
 Build-Depends-Indep: libparams-validate-perl,
  libmailtools-perl, libmime-tools-perl, libio-stringy-perl, libmldbm-perl,
  liburi-perl, libsoap-lite-perl, libcgi-simple-perl,
  libhttp-server-simple-perl, libtest-www-mechanize-perl,
  libmail-rfc822-address-perl, libsafe-hole-perl, libuser-perl,
- libconfig-simple-perl, libtest-pod-perl, liblist-moreutils-perl,
- libtext-template-perl, graphviz,
+ libconfig-simple-perl, libtest-pod-perl, liblist-allutils-perl,
+# used by Debbugs::Libravatar and libravatar.cgi
+ libfile-libmagic-perl, libgravatar-url-perl, libwww-perl, imagemagick,
  libdbix-class-perl, libdatetime-format-pg-perl,
- libdatetime-format-mail-perl
+ libdatetime-format-mail-perl,
+ libtext-template-perl, graphviz, libtext-iconv-perl
 Homepage: http://wiki.debian.org/Teams/Debbugs
 
 Package: debbugs
@@ -24,8 +26,8 @@ Depends:
  ${perl:Depends},
  ${misc:Depends},
  exim4 | mail-transport-agent,
- libdebbugs-perl,
-Recommends: debbugs-web
+ libdebbugs-perl
+Recommends: debbugs-web (>= 2.6~)
 Suggests: spamassassin (>= 3.0), libcgi-alert-perl
 Description: bug tracking system based on the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
@@ -65,9 +67,12 @@ Description: modules used by the active Debian BTS
 Package: debbugs-web
 Architecture: all
 Depends:
+ ${perl:Depends},
  ${misc:Depends},
  libdebbugs-perl, apache2 | httpd
 Suggests: libcgi-alert-perl, libapache2-mod-perl2
+Replaces: debbugs (<< 2.4.2)
+Breaks: debbugs (<< 2.4.2)
 Description: web scripts for the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
  users and developers. Each bug is given a number, and is kept on file until
@@ -80,6 +85,7 @@ Description: web scripts for the active Debian BTS
 Package: debbugs-local
 Architecture: all
 Depends:
+ ${perl:Depends},
  ${misc:Depends},
  libdebbugs-perl, debbugs-web, libconfig-simple-perl,
  libuser-perl, rsync, libhttp-server-simple-perl, libnet-server-perl

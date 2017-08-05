@@ -94,7 +94,7 @@ use Debbugs::Common qw(cleanup_eval_fail);
 use Debbugs::Control qw(:all);
 use Debbugs::Status qw(splitpackages);
 use Params::Validate qw(:types validate_with);
-use List::Util qw(first);
+use List::AllUtils qw(first);
 
 my $bug_num_re = '-?\d+';
 my %control_grammar =
@@ -561,9 +561,7 @@ sub control_line {
 	    print {$transcript} "Failed to forcibly merge $ref: ".cleanup_eval_fail($@,$debug)."\n";
 	}
     } elsif ($ctl eq 'clone') {
-	my $origref = $matches[0];
 	my @newclonedids = split /\s+/, $matches[1];
-	my $newbugsneeded = scalar(@newclonedids);
 
 	eval {
 	    my %new_clones;

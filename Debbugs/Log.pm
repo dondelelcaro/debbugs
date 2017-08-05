@@ -41,6 +41,7 @@ use Debbugs::Common qw(getbuglocation getbugcomponent make_list);
 use Params::Validate qw(:types validate_with);
 use Encode qw(encode encode_utf8 is_utf8);
 use IO::InnerFile;
+use feature 'state';
 
 =head1 NAME
 
@@ -173,24 +174,28 @@ sub new
 	 $param{inner_file} = 0;
     }
     else {
-	 %param = validate_with(params => \@_,
-				spec   => {bug_num => {type => SCALAR,
-						       optional => 1,
-						      },
-					   logfh   => {type => HANDLE,
-						       optional => 1,
-						      },
-					   log_name => {type => SCALAR,
-							optional => 1,
-                                   },
-                           inner_file => {type => BOOLEAN,
-                                          default => 0,
-                                         },
-					  }
-			       );
+        state $spec =
+            {bug_num => {type => SCALAR,
+                         optional => 1,
+                        },
+             logfh   => {type => HANDLE,
+                         optional => 1,
+                        },
+             log_name => {type => SCALAR,
+                          optional => 1,
+                         },
+             inner_file => {type => BOOLEAN,
+                            default => 0,
+                           },
+            };
+        %param = validate_with(params => \@_,
+                               spec   => $spec,
+                              );
     }
-    if (grep({exists $param{$_} and defined $param{$_}} qw(bug_num logfh log_name)) ne 1) {
-	 croak "Exactly one of bug_num, logfh, or log_name must be passed and must be defined";
+    if (grep({exists $param{$_} and defined $param{$_}}
+             qw(bug_num logfh log_name)) ne 1) {
+        croak "Exactly one of bug_num, logfh, or log_name ".
+            "must be passed and must be defined";
     }
 
     my $class = ref($this) || $this;
@@ -198,17 +203,25 @@ sub new
     bless $self, $class;
 
     if (exists $param{logfh}) {
-	 $self->{logfh} = $param{logfh}
-    }
-    elsif (exists $param{log_name}) {
-	 $self->{logfh} = IO::File->new($param{log_name},'r') or
-	      die "Unable to open bug log $param{log_name} for reading: $!";
-    }
-    elsif (exists $param{bug_num}) {
-	 my $location = getbuglocation($param{bug_num},'log');
-	 my $bug_log = getbugcomponent($param{bug_num},'log',$location);
-	 $self->{logfh} = IO::File->new($bug_log, 'r') or
-	      die "Unable to open bug log $bug_log for reading: $!";
+        $self->{logfh} = $param{logfh}
+    } else {
+	my $bug_log;
+	if (exists $param{bug_num}) {
+	    my $location = getbuglocation($param{bug_num},'log');
+	    $bug_log = getbugcomponent($param{bug_num},'log',$location);
+	} else {
+	    $bug_log = $param{log_name};
+	}
+	if ($bug_log =~ m/\.gz$/) {
+	    my $oldpath = $ENV{'PATH'};
+	    $ENV{'PATH'} = '/bin:/usr/bin';
+	    open($self->{logfh},'-|','gzip','-dc',$bug_log) or
+		die "Unable to open $bug_log for reading: $!";
+            $ENV{'PATH'} = $oldpath;
+	} else {
+            open($self->{logfh},'<',$bug_log) or
+                die "Unable to open $bug_log for reading: $!";
+	}
     }
 
     $self->{state} = 'kill-init';
@@ -500,7 +513,6 @@ sub record_regex {
     } else {
         my @result = $record->{text} =~ m/$regex/;
         return @result;
-        return $record->{text};
     }
 }
 
@@ -513,3 +525,8 @@ simply a means for extracting and rewriting raw records.
 =cut
 
 1;
+
+# Local Variables:
+# indent-tabs-mode: nil
+# cperl-indent-level: 4
+# End:

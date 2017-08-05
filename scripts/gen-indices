@@ -18,7 +18,7 @@ use Getopt::Long;
 use Pod::Usage;
 
 use File::stat;
-use List::Util qw(min);
+use List::AllUtils qw(min);
 
 use Debbugs::Common qw(make_list);
 

@@ -180,8 +180,8 @@ for my $hdr (@headerlines) {
     $_ = $hdr;
     s/\n\s/ /g;
     finish() if m/^x-loop: (\S+)$/i && $1 eq "$gMaintainerEmail";
-    my $ins = !m/^subject:/i && !m/^reply-to:/i && !m/^return-path:/i
-           && !m/^From / && !m/^X-Debbugs-/i;
+    my $ins = !m/^(?:(?:subject|reply-to|return-path|mail-followup-to):
+		 |From\s|X-Debbugs-)/xi;
     $fwd .= encode_utf8($hdr)."\n" if $ins;
     # print {$debugfh} ">$_<\n";
     if (s/^(\S+):\s*//) {
@@ -225,9 +225,14 @@ for my $phline (@bodylines)
     # Fixes #488554
     $phline =~ s/\xef\xbb\xbf//g;
     $phline =~ s/\N{U+FEFF}//g;
-    last if $phline !~ m/^([\w-]+):\s*(\S.*)/;
+    last if $phline !~ m/^([\w-]+): # psuedoheader
+			 (?:\s|\N{U+00A0})* # zero or more spaces, including
+                                            # non-breaking space
+			 (\S.*)/x; # pseudoheader value
     my ($fn, $fv) = ($1, $2);
     $fv =~ s/\s*$//;
+    # pluralize tag/usertag
+    $fn = $fn.'s' if $fn =~ /^(?:tag|usertag)$/;
     print {$debugfh} ">$fn|$fv|\n";
     $fn = lc $fn;
     if ($fn =~ /^control$/) {
@@ -501,6 +506,8 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
               "X-$gProject-PR-Keywords" => $data->{keywords},
 	      # Only have a X-$gProject-PR-Source when we know the source package
 	      (defined($source_package) and length($source_package))?("X-$gProject-PR-Source" => $source_package):(),
+              "Reply-To"                => "$ref\@$gEmailDomain",
+              "Content-Type"            => 'text/plain; charset="utf-8"',
              ],message_body_template('mail/process_mark_as_forwarded',
 				     {date => $header{date},
 				      messageid => $header{'message-id'},
@@ -524,6 +531,8 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
               "X-$gProject-PR-Keywords" => $data->{keywords},
 	      # Only have a X-$gProject-PR-Source when we know the source package
 	      (defined($source_package) and length($source_package))?("X-$gProject-PR-Source" => $source_package):(),
+              "Reply-To"                => "$ref\@$gEmailDomain",
+              "Content-Type"            => 'text/plain; charset="utf-8"',
              ],message_body_template('mail/process_mark_as_done',
 				     {date => $header{date},
 				      messageid => $header{'message-id'},
@@ -592,7 +601,8 @@ if ($ref<0) { # new bug report
 
     if (defined $pheader{source}) {
 	# source packages are identified by the src: prefix
-        $data->{package} = 'src:'.$pheader{source};
+        $data->{package} = $pheader{source};
+        $data->{package} =~ s/(^|,\s*)/${1}src:/g;
     } elsif (defined $pheader{package}) {
         $data->{package} = $pheader{package};
 	if ($data->{package} =~ /^src:(.+)/) {
@@ -1015,7 +1025,7 @@ if (@control_bits) {
 	 request_subject   => $header{subject},
 	 request_nn        => $nn,
 	 request_replyto   => $replyto,
-	 message           => $msg,
+	 message           => [$msg],
 	 affected_bugs     => \%bug_affected,
 	 affected_packages => \%affected_packages,
 	 recipients        => \%recipients,
@@ -1261,7 +1271,7 @@ sub fill_template{
 		     };
      my $hole_var = {'&bugurl' =>
 		     sub{"$_[0]: ".
-			      'http://'.$config{cgi_domain}.'/'.
+			      $config{cgi_domain}.'/'.
 				   Debbugs::CGI::bug_links(bug=>$_[0],
 							   links_only => 1,
 							  );

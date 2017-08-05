@@ -95,7 +95,6 @@ sub remove_old_messages{
      my $cond = new Search::Estraier::Condition;
      $cond->add_attr('@uri STRBW '.$bug_num.'/');
      $cond->set_max(50);
-     my $skip;
      my $nres;
      while ($nres = $est->search($cond,0) and $nres->doc_num > 0){
 	  for my $rdoc (map {$nres->get_doc($_)} 0..($nres->doc_num-1)) {

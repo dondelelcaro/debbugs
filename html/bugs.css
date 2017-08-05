@@ -102,6 +102,11 @@ pre.message {
     padding-top: 8px;
     margin-top: 0;
     border-top: 0;
+    white-space: pre-wrap;
+}
+
+pre.wrapping {
+    width: 80ch;
 }
 
 .sparse li {
@@ -179,6 +184,18 @@ pre.mime {
     font-family: sans-serif;
     font-size: 90%;
     color: #686868;
+}
+
+.msgreceived p {
+    width: 120ch;
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+p.msgreceived {
+    width: 120ch;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 .buginfo p

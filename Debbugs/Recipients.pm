@@ -111,8 +111,7 @@ sub add_recipients {
 	  }
 	  return;
      }
-     my ($p, $addmaint);
-     my $anymaintfound=0; my $anymaintnotfound=0;
+     my ($addmaint);
      my $ref = $param{data}{bug_num};
      for my $p (splitpackages($param{data}{package})) {
 	  $p = lc($p);
@@ -182,6 +181,16 @@ sub add_recipients {
 		       bug_num    => $param{data}{bug_num},
 		       type       => 'bcc',
 		      );
+      }
+     if (defined $config{cc_all_mails_to_addr} and
+	 length $config{cc_all_mails_to_addr}
+	) {
+	 _add_address(recipients => $param{recipients},
+		      address    => $config{cc_all_mails_to},
+		      reason     => "cc_all_mails_to",
+		      bug_num    => $param{data}{bug_num},
+		      type       => 'bcc',
+		     );
      }
 
      if (length $param{data}{owner}) {

@@ -23,22 +23,8 @@ use Test::WWW::Mechanize;
 use lib qw(t/lib);
 use DebbugsTest qw(:all);
 
-my %config;
-eval {
-     %config = create_debbugs_configuration(debug => exists $ENV{DEBUG}?$ENV{DEBUG}:0);
-};
-if ($@) {
-     BAIL_OUT($@);
-}
+my %config = create_debbugs_configuration();
 
-# Output some debugging information if there's an error
-END{
-     if ($ENV{DEBUG}) {
-	  foreach my $key (keys %config) {
-	       diag("$key: $config{$key}\n");
-	  }
-     }
-}
 
 # create a bug
 send_message(to=>'submit@bugs.something',
@@ -60,8 +46,7 @@ EOF
 my $pkgreport_cgi_handler = sub {
      # I do not understand why this is necessary.
      $ENV{DEBBUGS_CONFIG_FILE} = "$config{config_dir}/debbugs_config";
-     # We cd here because pkgreport uses require ./common.pl
-     my $content = qx(cd cgi; perl -I.. -T pkgreport.cgi);
+     my $content = qx(perl -I. -T cgi/pkgreport.cgi);
      # Strip off the Content-Type: stuff
      $content =~ s/^\s*Content-Type:[^\n]+\n*//si;
      print $content;

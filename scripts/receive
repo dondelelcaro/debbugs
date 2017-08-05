@@ -103,10 +103,10 @@ $gBadEmailPrefix
 $gBadEmailPrefix (all \@$gEmailDomain.)
 $gBadEmailPrefix
 $gBadEmailPrefix For instructions via the WWW see:
-$gBadEmailPrefix   http://$gWebDomain/
-$gBadEmailPrefix   http://$gWebDomain/Reporting$gHTMLSuffix
-$gBadEmailPrefix   http://$gWebDomain/Developer$gHTMLSuffix
-$gBadEmailPrefix   http://$gWebDomain/Access$gHTMLSuffix
+$gBadEmailPrefix   $gWebDomain/
+$gBadEmailPrefix   $gWebDomain/Reporting$gHTMLSuffix
+$gBadEmailPrefix   $gWebDomain/Developer$gHTMLSuffix
+$gBadEmailPrefix   $gWebDomain/Access$gHTMLSuffix
 $gTextInstructions
 $gBadEmailPrefix For details of how to access $gBug report logs by email:
 $gBadEmailPrefix   send \`request\@$gEmailDomain' the word \`help'

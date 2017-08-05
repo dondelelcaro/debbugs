@@ -20,6 +20,7 @@ BEGIN{
 
 binmode(STDOUT,':encoding(UTF-8)');
 use POSIX qw(strftime nice);
+use List::AllUtils qw(uniq);
 
 use Debbugs::Config qw(:globals :text :config);
 
@@ -228,7 +229,8 @@ our %cats = (
         "ord" => [2,3,4,1,0,5],
     } ],
     "oldview" => [ qw(status severity) ],
-    "normal" => [ qw(status severity classification) ],
+	     "normal" => [ qw(status severity classification) ],
+	     raw => [{nam => 'Raw',def => 'Raw'}],
 );
 
 if (exists $param{which} and exists $param{data}) {
@@ -275,7 +277,8 @@ if (defined $param{usertag}) {
      }
 }
 
-quitcgi("You have to choose something to select by") unless grep {exists $param{$_}} keys %package_search_keys;
+quitcgi("You have to choose something to select by", '400 Bad Request')
+  unless grep {exists $param{$_}} keys %package_search_keys;
 
 
 my $Archived = $param{archive} ? " Archived" : "";
@@ -494,6 +497,9 @@ print fill_in_template(template=>'cgi/pkgreport_javascript');
 
 print qq(<h2 class="outstanding"><!--<a class="options" href="javascript:toggle(1)">-->Options<!--</a>--></h2>\n);
 
+$param{orderings} =
+    [uniq((grep {!$hidden{$_}} keys %cats),
+	  $param{ordering})];
 print option_form(template => 'cgi/pkgreport_options',
 		  param    => \%param,
 		  form_options => $form_options,

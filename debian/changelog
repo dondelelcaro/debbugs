@@ -36,6 +36,30 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
     newer versions of SOAP::Lite. (Closes: #785405)
   * Add patch to do singular/plural in error messages from Rafael.
     (Closes: #790716)
+  * Fix (and test) setting summary/outlook in Control: messages (Closes:
+    #836613).
+  * Fix clone removing all other blocks instead of adding them (Closes:
+    #820044). Thanks to James Clarke.
+  * Use a supported version of debhelper and switch to dh $@ style rules
+    (Closes: #800287)
+  * debbugs-web now Breaks/Replaces debbugs (<< 2.4.2) (Closes: #717967)
+  * Split source file properly (Closes: #858671). Thanks to James McCoy.
+  * Prefix 'src:' to all source package names.
+  * cdn.libravatar.org no longer sends Content-Type. Switch to verifying
+    the content-type using libmagic instead (which we probably should have
+    been doing from the beginning anyway). (Closes: #856991)
+  * Reply sent messages (-forwarded and -done) are not informational messages.
+    (Closes: #864725)
+  * Pluralize singular tag and usertag in pseudoheaders (Closes: #861234).
+    Thanks to James Clarke
+  * Include link to the location of the debbugs source (Closes: #721569).
+  * Add envelope_from configuration variable so sites can set a valid return
+    path if the sendmail default is wrong. (Closes: #719205)
+  * Fix links to merged and blocked bugs. (Closes: #539691)
+  * Strip out Mail-Followup-To: (Closes: #798092)
+
+  [ Niels Thykier ]
+  * quitcgi() now returns 400/500 status codes instead of 200 (Closes: #584922)
 
   [Thanks to Arnout Engelen: ]
   * Add Homepage (closes: #670555).
@@ -391,6 +415,8 @@ debbugs (2.4.2~exp0) experimental; urgency=low
     #517834)
   * Ditch extra blank lines (closes: #494843)
   * Handle &#39; ending links in Debbugs::CGI::Bugreport (closes: #539020)
+  * Forcibly wrap format flowed and other messages (closes: #601242)
+  * Add a link to ack_thanks in process (Closes: #863274)
 
   
  -- Don Armstrong <don@debian.org>  Sun, 26 Jul 2009 05:48:16 -0700

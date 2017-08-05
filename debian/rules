@@ -1,73 +1,7 @@
 #!/usr/bin/make -f
-# Made with the aid of dh_make, by Craig Small
-# Sample debian/rules that uses debhelper. GNU copyright 1997 by Joey Hess.
-# Some lines taken from debmake, by Cristoph Lameter.
 
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
+%:
+	dh $@ --parallel
 
-DEST_DIR := $(CURDIR)/debian/tmp
-PERL ?= /usr/bin/perl
-
-
-build: build-arch build-indep
-
-build-arch:
-# nothing to do, as there aren't any architecture-dependent packages
-
-build-indep: build-stamp
-
-build-stamp:
-# Call the test suite
-	$(PERL) Makefile.PL INSTALLDIRS=vendor
-	$(MAKE) -f Makefile.perl
-	$(MAKE) test
-	touch $@
-
-clean:
-	dh_testdir
-	dh_testroot
-	rm -f *-stamp;
-	if [ -e Makefile.perl ]; then  \
-		$(MAKE) -f Makefile.perl clean; \
-	fi;
-	#something to remove all trace and *.trace files?
-	rm -f debbugs.trace Makefile.perl.old
-	dh_clean
-
-install: install-stamp
-install-stamp: build
-	dh_testroot
-	dh_clean -k
-	dh_installdirs
-	$(MAKE) install_mostfiles DESTDIR=$(DEST_DIR)
-	$(MAKE) -f Makefile.perl install DESTDIR=$(DEST_DIR)
-	touch $@
-
-binary-arch:
-# nothing to do, as there aren't any architecture-dependent packages
-
-binary-indep: build install
-	dh_testdir
-	dh_testroot
-	dh_clean -k
-	dh_installdirs
-	$(MAKE) install_mostfiles DESTDIR=$(DEST_DIR)
-	$(MAKE) -f Makefile.perl install DESTDIR=$(DEST_DIR)
-	dh_install --sourcedir=debian/tmp --fail-missing
-	dh_installdocs
-	dh_installchangelogs
-	dh_strip
-	dh_fixperms
-	#chown bugs.bugs $(var_dir)/spool/incoming
-	dh_installdeb
-	dh_perl
-	dh_compress -X examples/text
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-
-binary: binary-indep binary-arch
-.PHONY: build clean install binary-indep binary-arch binary
+override_dh_auto_install:
+	dh_auto_install -- INSTALLDIRS=vendor

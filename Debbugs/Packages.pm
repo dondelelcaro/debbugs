@@ -39,7 +39,7 @@ use Storable qw(dclone);
 use Params::Validate qw(validate_with :types);
 use Debbugs::Common qw(make_list globify_scalar sort_versions);
 
-use List::Util qw(min max);
+use List::AllUtils qw(min max);
 
 use IO::File;
 
@@ -72,13 +72,14 @@ our $_pkgcomponent;
 our $_srcpkg;
 sub getpkgsrc {
     return $_pkgsrc if $_pkgsrc;
-    return {} unless defined $Debbugs::Packages::gPackageSource;
+    return {} unless defined $config{package_source} and
+	length $config{package_source};
     my %pkgsrc;
     my %pkgcomponent;
     my %srcpkg;
 
     my $fh = IO::File->new($config{package_source},'r')
-	or die("Unable to open $config{package_source} for reading: $!");
+	or croak("Unable to open $config{package_source} for reading: $!");
     while(<$fh>) {
 	next unless m/^(\S+)\s+(\S+)\s+(\S.*\S)\s*$/;
 	my ($bin,$cmp,$src)=($1,$2,$3);
@@ -286,7 +287,6 @@ sub binary_to_source{
 	    }
 	}
 	else {
-	    my $found_one_version = 0;
 	    for my $version (@versions) {
 		next unless exists $bin->{$version};
 		if (exists $bin->{$version}{all}) {
@@ -582,7 +582,6 @@ sub makesourceversions {
                           arch    => 'source',
                           versions => '0.1.1',
                           guess_source => 1,
-                          debug    => \$debug,
                           warnings => \$warnings,
                          );
 
@@ -625,7 +624,6 @@ sub make_source_versions {
 					},
 			     );
     my ($warnings) = globify_scalar(exists $param{warnings}?$param{warnings}:undef);
-    my ($debug)    = globify_scalar(exists $param{debug}   ?$param{debug}   :undef);
 
     my @packages = grep {defined $_ and length $_ } make_list($param{package});
     my @archs    = grep {defined $_ } make_list ($param{arch});

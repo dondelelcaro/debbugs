@@ -24,21 +24,23 @@ install_exec	:= install -m755 -p
 install_data	:= install -m644 -p
 
 PERL ?= /usr/bin/perl
+# Some tests need to run under an UTF-8 locale.
+UTF8_LOCALE ?= C.UTF-8
 
-all: build test
+all: build
 
 build:
 	$(PERL) Makefile.PL
 	$(MAKE) -f Makefile.perl
 
 test:
-	$(PERL) -MTest::Harness -I. -e 'runtests(glob(q(t/*.t)))'
+	LC_ALL=$(UTF8_LOCALE) $(PERL) -MTest::Harness -I. -e 'runtests(glob(q(t/*.t)))'
 
 test_%: t/%.t
-	$(PERL) -MTest::Harness -I. -e 'runtests(q($<))'
+	LC_ALL=$(UTF8_LOCALE) $(PERL) -MTest::Harness -I. -e 'runtests(q($<))'
 
 testcover:
-	PERL5LIB=t/cover_lib/:. cover -test
+	LC_ALL=$(UTF8_LOCALE) PERL5LIB=t/cover_lib/:. cover -test
 
 clean:
 	if [ -e Makefile.perl ]; then \
@@ -47,10 +49,8 @@ clean:
 
 install: install_mostfiles
 	# install basic debbugs documentation
-	$(install_data) COPYING UPGRADE README debian/README.mail $(doc_dir)
-
-	# configure debbugs
-	$(sbin_dir)/debbugsconfig
+	$(install_data) COPYING UPGRADE README.md debian/README.mail $(doc_dir)
+	$(MAKE) -f Makefile.perl install DESTDIR=$(DESTDIR)
 
 install_mostfiles:
 	# create the directories if they aren't there

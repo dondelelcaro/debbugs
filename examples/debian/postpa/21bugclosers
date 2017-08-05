@@ -8,8 +8,6 @@ use Debbugs::Config qw(:globals);
 use Debbugs::Bugs qw(count_bugs);
 use Debbugs::Status qw(get_bug_status);
 
-require '/org/bugs.debian.org/cgi-bin/common.pl';
-
 package main;
 
 my $startdate = time;

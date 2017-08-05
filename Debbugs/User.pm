@@ -86,7 +86,7 @@ use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use Exporter qw(import);
 
 use Debbugs::Config qw(:config);
-use List::Util qw(min);
+use List::AllUtils qw(min);
 
 use Carp;
 use IO::File;

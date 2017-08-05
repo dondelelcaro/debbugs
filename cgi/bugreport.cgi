@@ -19,19 +19,18 @@ use Debbugs::Config qw(:globals :text :config);
 
 # for read_log_records
 use Debbugs::Log qw(:read);
-use Debbugs::CGI qw(:url :html :util :cache);
+use Debbugs::Log::Spam;
+use Debbugs::CGI qw(:url :html :util :cache :usertags);
 use Debbugs::CGI::Bugreport qw(:all);
 use Debbugs::Common qw(buglog getmaintainers make_list bug_status);
 use Debbugs::Packages qw(getpkgsrc);
 use Debbugs::Status qw(splitpackages split_status_fields get_bug_status isstrongseverity);
 
-use Debbugs::User;
-
 use Scalar::Util qw(looks_like_number);
 
 use Debbugs::Text qw(:templates);
 
-use List::Util qw(max);
+use List::AllUtils qw(max);
 
 
 use CGI::Simple;
@@ -60,8 +59,8 @@ my %param = cgi_parameters(query => $q,
 			  );
 # This is craptacular.
 
-my $ref = $param{bug} or quitcgi("No bug number");
-$ref =~ /(\d+)/ or quitcgi("Invalid bug number");
+my $ref = $param{bug} or quitcgi("No bug number", '400 Bad Request');
+$ref =~ /(\d+)/ or quitcgi("Invalid bug number", '400 Bad Request');
 $ref = $1;
 my $short = "#$ref";
 my ($msg) = $param{msg} =~ /^(\d+)$/ if exists $param{msg};
@@ -129,12 +128,12 @@ if (not (($mbox and not $mbox_status_message) or
 ## Identify the users required
 for my $user (map {split /[\s*,\s*]+/} make_list($param{users}||[])) {
     next unless length($user);
-    push @dependent_files,Debbugs::User::usertag_flie_from_email($user);
+    push @dependent_files,Debbugs::User::usertag_file_from_email($user);
 }
 if (defined $param{usertag}) {
     for my $usertag (make_list($param{usertag})) {
 	my ($user, $tag) = split /:/, $usertag, 2;
-	push @dependent_files,Debbugs::User::usertag_flie_from_email($user);
+	push @dependent_files,Debbugs::User::usertag_file_from_email($user);
     }
 }
 $etag =
@@ -146,7 +145,12 @@ $etag =
 				 ],
 		       );
 if (not $etag) {
-    print $q->header(-status => 304);
+    print $q->header(-status => 304,
+		     -cache_control => 'public, max-age=600',
+		     -etag => $etag,
+		     -charset => 'utf-8',
+		     -content_type => 'text/html',
+		    );
     print "304: Not modified\n";
     exit 0;
 }
@@ -156,6 +160,7 @@ if ($q->request_method() eq 'HEAD' and not defined($att) and not $mbox) {
     print $q->header(-status => 200,
 		     -cache_control => 'public, max-age=600',
 		     -etag => $etag,
+		     -charset => 'utf-8',
 		     -content_type => 'text/html',
 		    );
      exit 0;
@@ -179,18 +184,6 @@ if (defined $param{usertag}) {
      }
 }
 
-
-my $buglogfh;
-if ($buglog =~ m/\.gz$/) {
-    my $oldpath = $ENV{'PATH'};
-    $ENV{'PATH'} = '/bin:/usr/bin';
-    $buglogfh = IO::File->new("zcat $buglog |") or quitcgi("open log for $ref: $!");
-    $ENV{'PATH'} = $oldpath;
-} else {
-    $buglogfh = IO::File->new($buglog,'r') or quitcgi("open log for $ref: $!");
-}
-
-
 my %status;
 if ($need_status) {
     %status = %{split_status_fields(get_bug_status(bug=>$ref,
@@ -199,14 +192,14 @@ if ($need_status) {
 }
 
 my @records;
+my $spam;
 eval{
-     @records = read_log_records(logfh => $buglogfh,inner_file => 1);
+    @records = read_log_records(bug_num => $ref,inner_file => 1);
+    $spam = Debbugs::Log::Spam->new(bug_num => $ref);
 };
 if ($@) {
      quitcgi("Bad bug log for $gBug $ref. Unable to read records: $@");
 }
-undef $buglogfh;
-
 
 my $log='';
 my $msg_num = 0;
@@ -277,6 +270,8 @@ END
 	  $record_wanted_anyway = 1 if record_regex($record,qr/^Received: \(at control\)/);
 	  next if not $boring and not $record->{type} eq $wanted_type and not $record_wanted_anyway and @records > 1;
 	  $seen_message_ids{$msg_id} = 1 if defined $msg_id;
+          # skip spam messages if we're outputting more than one message
+          next if @records > 1 and $spam->is_spam($msg_id);
       my @lines;
       if ($record->{inner_file}) {
           push @lines, $record->{fh}->getline;
@@ -331,6 +326,10 @@ else {
                                    \%seen_msg_ids,
                                    trim_headers => $trim_headers,
                                    avatars => $avatars,
+				   terse => $terse,
+                                   # if we're only looking at one record, allow
+                                   # spam to be output
+                                   spam  => (@records > 1)?$spam:undef,
                                   );
      }
 }
@@ -416,7 +415,9 @@ $status{blockedby_array} = [];
 if (@blockedby && $status{"pending"} ne 'fixed' && ! length($status{done})) {
     for my $b (@blockedby) {
         my %s = %{get_bug_status($b)};
-        next if $s{"pending"} eq 'fixed' || length $s{done};
+        next if (defined $s{pending} and
+                 $s{"pending"} eq 'fixed') or
+                     length $s{done};
 	push @{$status{blockedby_array}},{bug_num => $b, subject => $s{subject}, status => \%s};
    }
 }
@@ -464,3 +465,10 @@ print fill_in_template(template => 'cgi/bugreport',
 				     '&maybelink'     => \&Debbugs::CGI::maybelink,
 				    },
 		      );
+
+__END__
+
+# Local Variables:
+# indent-tabs-mode: nil
+# cperl-indent-level: 4
+# End:

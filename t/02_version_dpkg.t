@@ -40,16 +40,6 @@ my @versions = ({a      => '1.0-1',
 		 result => -1,
 		 relation => 'lt',
 		},
-		{a      => '1foo-',
-		 b      => '1foo',
-		 result => 0,
-		 relation => 'eq',
-		},
-		{a      => '1foo-',
-		 b      => '1foo+',
-		 result => -1,
-		 relation => 'lt',
-		},
 	       );
 
 plan tests => @versions * 2 + 1;

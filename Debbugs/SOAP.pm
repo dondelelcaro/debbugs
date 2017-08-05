@@ -233,7 +233,6 @@ sub get_bug_log{
 
      my %seen_msg_ids;
      my $current_msg=0;
-     my $status = {};
      my @messages;
      while (my $record = $log->read_record()) {
 	  $current_msg++;

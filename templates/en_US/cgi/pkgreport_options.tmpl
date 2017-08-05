@@ -46,13 +46,9 @@ include('cgi/pkgreport_options_include_exclude');
 </td>
 <td></td>
 </tr>
-<tr><td><h2>Categorize using</h2></td>
-<td></td>
-</tr>
-<tr><td><h2>Order by</h2></td>
+<tr><td><h2>Categorize/<wbr>Order using</h2></td>
 <td><select name="ordering">{ my $output = '';
-  my @orderings = qw(normal oldview raw age);
-  for my $order (@orderings) {
+  for my $order (@{$param{orderings}}) {
     $output .= '<option value="'.$order.'"'.(($order eq $param{ordering})?' selected':'').
      ">$order</option>\n";
   }

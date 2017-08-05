@@ -49,7 +49,7 @@ use File::Copy qw(copy);
 use Encode qw(decode encode is_utf8);
 
 use Storable qw(dclone);
-use List::Util qw(min max);
+use List::AllUtils qw(min max);
 
 use Carp qw(croak);
 
@@ -291,6 +291,17 @@ sub read_bug{
     $data{archived} = (defined($location) and ($location eq 'archive'))?1:0;
     $data{bug_num} = $param{bug};
 
+    # mergedwith occasionally is sorted badly. Fix it to always be sorted by <=>
+    # and not include this bug
+    if (defined $data{mergedwith} and
+       $data{mergedwith}) {
+	$data{mergedwith} =
+	    join(' ',
+		 grep { $_ != $data{bug_num}}
+		 sort { $a <=> $b }
+		 split / /, $data{mergedwith}
+		);
+    }
     return \%data;
 }
 
@@ -335,6 +346,9 @@ my $ditch_space_unique_and_sort = sub {return &{$sort_and_unique}(&{$ditch_empty
 my %split_fields =
     (package        => \&splitpackages,
      affects        => \&splitpackages,
+     # Ideally we won't have to split source, but because some consumers of
+     # get_bug_status cannot handle arrayref, we will split it here.
+     source         => \&splitpackages,
      blocks         => $ditch_space_unique_and_sort,
      blockedby      => $ditch_space_unique_and_sort,
      # this isn't strictly correct, but we'll split both of them for
@@ -444,7 +458,6 @@ data.
 =cut
 
 sub lockreadbugmerge {
-     my ($bug_num,$location) = @_;
      my $data = lockreadbug(@_);
      if (not defined $data) {
 	  return (0,undef);
@@ -542,7 +555,10 @@ sub lock_read_all_merged_bugs {
 	    # are all merged with eachother
         # We do a cmp sort instead of an <=> sort here, because that's
         # what merge does
-	    my $expectmerge= join(' ',grep {$_ != $bug } sort @bugs);
+	    my $expectmerge=
+		join(' ',grep {$_ != $bug }
+		     sort { $a <=> $b }
+		     @bugs);
 	    if ($newdata->{mergedwith} ne $expectmerge) {
 		for (1..$locks) {
 		    unfilelock(exists $param{locks}?$param{locks}:());

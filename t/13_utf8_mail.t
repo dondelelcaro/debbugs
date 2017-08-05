@@ -28,25 +28,14 @@ use Encode qw(decode encode decode_utf8 encode_utf8);
 
 # HTTP::Server:::Simple defines a SIG{CHLD} handler that breaks system; undef it here.
 $SIG{CHLD} = sub {};
-my %config;
-eval {
-     %config = create_debbugs_configuration(debug => exists $ENV{DEBUG}?$ENV{DEBUG}:0);
-};
-if ($@) {
-     BAIL_OUT($@);
-}
+my %config = create_debbugs_configuration();
+
 
 my $sendmail_dir = $config{sendmail_dir};
 my $spool_dir = $config{spool_dir};
 my $config_dir = $config{config_dir};
 
-END{
-     if ($ENV{DEBUG}) {
-	  diag("spool_dir:   $spool_dir\n");
-	  diag("config_dir:   $config_dir\n");
-	  diag("sendmail_dir: $sendmail_dir\n");
-     }
-}
+
 
 # We're going to use create mime message to create these messages, and
 # then just send them to receive.
