@@ -132,7 +132,7 @@ Display this manual.
 use vars qw($DEBUG);
 
 use Debbugs::Common (qw(checkpid lockpid get_hashname getparsedaddrs getbugcomponent make_list getsourcemaintainers),
-		     qw(hash_slice));
+		     qw(hash_slice open_compressed_file),);
 use Debbugs::Config qw(:config);
 use Debbugs::Status qw(read_bug split_status_fields);
 use Debbugs::Log;
@@ -690,27 +690,6 @@ sub db_connect {
     # properly here.
     my $s = Debbugs::DB->connect($options->{service}) or
         die "Unable to connect to database: ";
-}
-
-sub open_compressed_file {
-    my ($file) = @_;
-    my $fh;
-    my $mode = '<:encoding(UTF-8)';
-    my @opts;
-    if ($file =~ /\.gz$/) {
-	$mode = '-|:encoding(UTF-8)';
-	push @opts,'gzip','-dc';
-    }
-    if ($file =~ /\.xz$/) {
-	$mode = '-|:encoding(UTF-8)';
-	push @opts,'xz','-dc';
-    }
-    if ($file =~ /\.bz2$/) {
-	$mode = '-|:encoding(UTF-8)';
-	push @opts,'bzip2','-dc';
-    }
-    open($fh,$mode,@opts,$file);
-    return $fh;
 }
 
 sub read_release_file {
