@@ -127,7 +127,8 @@ my $schema = Debbugs::DB->connect('dbi:Pg:service='.$options{service}) or
 my $dh = DH->new({schema => $schema,
                   force_overwrite => $options{overwrite_deployment},
                   script_directory => $options{deployment_dir},
-                  databases => 'PostgreSQL'
+                  databases => 'PostgreSQL',
+		  sql_translator_args => {producer_args=> {postgres_version => 9}},
                  });
 
 if ($options{current_version}) {
