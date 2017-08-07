@@ -228,10 +228,9 @@ sub update_cache {
 		      },
 		     {columns => [qw(bug_binpackage.id)],
 		      join => {bin =>
-			      {bin_vers =>
 			      {bin_pkg =>
 			       'bug_binpackage'
-			      }}},
+			      }},
 		      result_class => 'DBIx::Class::ResultClass::HashRefInflator',
 		     },
 		     )->all();
