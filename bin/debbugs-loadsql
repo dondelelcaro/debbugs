@@ -299,7 +299,7 @@ sub add_bugs {
                       next;
 		    }
 		    my $rs = $s->resultset('Bug')->search({id=>$bug})->single();
-		    next if defined $rs and $stat->mtime < $rs->last_modified()->epoch();
+		    next if defined $rs and $stat->mtime <= $rs->last_modified()->epoch();
 		    push @bugs_to_update, $bug;
                   }
 		} else {
@@ -569,7 +569,7 @@ sub add_logs {
                   }
                   if ($options{quick}) {
                       my $rs = $s->resultset('Bug')->search({bug=>$bug})->single();
-                      next if defined $rs and $stat->mtime < $rs->last_modified()->epoch();
+                      next if defined $rs and $stat->mtime <= $rs->last_modified()->epoch();
                   }
                   eval {
                       load_bug_log(db => $s,
