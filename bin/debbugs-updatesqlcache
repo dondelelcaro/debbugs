@@ -223,7 +223,7 @@ sub update_cache {
 	# association modified
 	push @bugs,
 	    map {$_->{'bug_binpackages.id'}}
-	    $s->resultset('BinAssociations')->
+	    $s->resultset('BinAssociation')->
 	    search_rs({'me.modified' => {'>=',$last_query_time},
 		      },
 		     {columns => [qw(bug_binpackages.id)],
@@ -237,7 +237,7 @@ sub update_cache {
 	# or a source association modified
 	push @bugs,
 	    map {$_->{'bug_srcpackages.id'}}
-	    $s->resultset('SrcAssociations')->
+	    $s->resultset('SrcAssociation')->
 	    search_rs({'me.modified' => {'>=',$last_query_time},
 		      },
 		     {columns => [qw(bug_srcpackages.id)],
