@@ -69,6 +69,7 @@ debbugs-installsql
 use vars qw($DEBUG);
 
 use Debbugs::DB;
+use Debbugs::DB::Util qw(prepare_execute);
 use aliased 'DBIx::Class::DeploymentHandler' => 'DH';
 
 my %options = (debug           => 0,
@@ -137,6 +138,20 @@ if ($options{current_version}) {
 } elsif ($options{install}) {
     $dh->prepare_install if $options{developer_prepare};
     $dh->install unless $options{developer_prepare};
+    ## this is lame, but because the current release of DeploymentHandler does
+    ## not support WHERE or quoted indexes properly (fixed in git), we create
+    ## these indexes manually here.
+    $schema->storage->
+	dbh_do(sub{my ($s,$dbh) = @_;
+		   prepare_execute($dbh,<<SQL);
+CREATE UNIQUE INDEX bug_status_cache_bug_col_suite_col_arch_idx ON
+ bug_status_cache(bug,COALESCE(suite,0),COALESCE(arch,0));
+CREATE UNIQUE INDEX bug_status_cache_bug_suite_idx ON
+ bug_status_cache(bug,suite) WHERE arch is NULL;
+CREATE UNIQUE INDEX bug_status_cache_bug_idx ON
+ bug_status_cache(bug) WHERE arch is NULL AND suite IS NULL;
+SQL
+		   });
 } elsif ($options{upgrade}) {
     $dh->prepare_deploy if $options{developer_prepare};
     $dh->prepare_upgrade() if $options{developer_prepare};

@@ -32,6 +32,7 @@ BEGIN{
 
      @EXPORT = ();
      %EXPORT_TAGS = (select => [qw(select_one)],
+		     execute => [qw(prepare_execute)]
 		    );
      @EXPORT_OK = ();
      Exporter::export_ok_tags(keys %EXPORT_TAGS);
@@ -63,6 +64,25 @@ sub select_one {
     my $results = $sth->fetchall_arrayref([0]);
     $sth->finish();
     return (ref($results) and ref($results->[0]))?$results->[0][0]:undef;
+}
+
+=item prepare_execute
+
+	prepare_execute($dbh,$sql,@bind_vals)
+
+Prepares and executes a statement
+
+=cut
+
+sub prepare_execute {
+    my ($dbh,$sql,@bind_vals) = @_;
+    my $sth = $dbh->
+        prepare_cached($sql,
+                      {dbi_dummy => __FILE__.__LINE__ })
+        or die "Unable to prepare statement: $sql";
+    $sth->execute(@bind_vals) or
+        die "Unable to execute statement: ".$dbh->errstr();
+    $sth->finish();
 }
 
 

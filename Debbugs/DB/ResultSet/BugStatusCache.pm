@@ -54,7 +54,7 @@ sub update_bug_status {
 INSERT INTO bug_status_cache AS bsc
 (bug,suite,arch,status,modified,asof)
 VALUES (?,?,?,?,NOW(),NOW())
-ON CONFLICT (bug,suite,arch) DO
+ON CONFLICT (bug,COALESCE(suite,0),COALESCE(arch,0)) DO
 UPDATE
  SET asof=NOW(),modified=CASE WHEN bsc.status=? THEN bsc.modified ELSE NOW() END
 RETURNING status;
