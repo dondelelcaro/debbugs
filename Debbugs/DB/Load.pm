@@ -457,7 +457,7 @@ sub load_debinfo {
 
 =back
 
-=head Packages
+=head2 Packages
 
 =over
 
@@ -649,7 +649,7 @@ sub load_packages {
 
 =cut
 
-=head Suites
+=head2 Suites
 
 =over
 
