@@ -183,7 +183,9 @@ sub load_bug {
 					  $param{packages},
 					 );
 		 $b->set_related_packages('srcpackages',
-					  [grep {defined $_ and
+					  [map {s/src://;
+                                                $_}
+                                           grep {defined $_ and
 						   $_ =~ /^src:/}
 					   make_list($data->{package})],
 					  $param{packages},
@@ -196,7 +198,9 @@ sub load_bug {
 					  $param{packages},
 					 );
 		 $b->set_related_packages('affects_srcpackages',
-					  [grep {defined $_ and
+					  [map {s/src://;
+                                                $_}
+                                           grep {defined $_ and
 						   $_ =~ /^src:/}
 					   make_list($data->{affects})],
 					  $param{packages},
