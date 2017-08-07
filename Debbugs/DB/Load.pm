@@ -571,8 +571,15 @@ sub load_packages {
     }
     # remove associations for packages not in this suite
     if (@sa_to_del) {
-	$schema->resultset('SrcAssociation')->
-	    search_rs({id => \@sa_to_del})->delete();
+        $it = natatime 1000, @sa_to_del;
+        while (my @v = $it->()) {
+            $schema->
+                txn_do(sub {
+                           $schema->resultset('SrcAssociation')->
+                               search_rs({id => \@v})->
+                               delete();
+                       });
+        }
     }
     # update packages in this suite to have a modification time of now
     $schema->resultset('SrcAssociation')->
@@ -635,8 +642,15 @@ sub load_packages {
 		   scalar @v) if defined $p;
     }
     if (@bin_to_del) {
-	$schema->resultset('BinAssociation')->
-	    search_rs({id => \@bin_to_del})->delete();
+        $it = natatime 1000, @bin_to_del;
+        while (my @v = $it->()) {
+            $schema->
+                txn_do(sub {
+                           $schema->resultset('BinAssociation')->
+                               search_rs({id => \@v})->
+                               delete();
+                       });
+        }
     }
     $schema->resultset('BinAssociation')->
 	search_rs({suite => $suite_id})->
@@ -683,3 +697,7 @@ sub load_suite {
 
 
 __END__
+# Local Variables:
+# indent-tabs-mode: nil
+# cperl-indent-level: 4
+# End:
