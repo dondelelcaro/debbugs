@@ -226,10 +226,10 @@ sub update_cache {
 	    $s->resultset('BinAssociation')->
 	    search_rs({'me.modified' => {'>=',$last_query_time},
 		      },
-		     {columns => [qw(bug_binpackages.id)],
-		      join => {bin_vers =>
+		     {columns => [qw(bug_binpackage.id)],
+		      join => {bin_ver =>
 			      {bin_pkg =>
-			       'bug_binpackages'
+			       'bug_binpackage'
 			      }},
 		      result_class => 'DBIx::Class::ResultClass::HashRefInflator',
 		     },
@@ -240,10 +240,10 @@ sub update_cache {
 	    $s->resultset('SrcAssociation')->
 	    search_rs({'me.modified' => {'>=',$last_query_time},
 		      },
-		     {columns => [qw(bug_srcpackages.id)],
-		      join => {src_vers =>
+		     {columns => [qw(bug_srcpackage.id)],
+		      join => {src_ver =>
 			      {src_pkg =>
-			       'bug_srcpackages'
+			       'bug_srcpackage'
 			      }},
 		      result_class => 'DBIx::Class::ResultClass::HashRefInflator',
 		     },
