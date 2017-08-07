@@ -222,7 +222,7 @@ sub update_cache {
 	# select all bugs which are in packages which have had a binary
 	# association modified
 	push @bugs,
-	    map {$_->{'bug_binpackages.bug'}}
+	    map {$_->{bug_binpackages}{bug}}}
 	    $s->resultset('BinAssociation')->
 	    search_rs({'me.modified' => {'>=',$last_query_time},
 		      },
@@ -236,7 +236,7 @@ sub update_cache {
 		     )->all();
 	# or a source association modified
 	push @bugs,
-	    map {$_->{'bug_srcpackages.bug'}}
+	    map {$_->{bug_srcpackages}{bug}}
 	    $s->resultset('SrcAssociation')->
 	    search_rs({'me.modified' => {'>=',$last_query_time},
 		      },
