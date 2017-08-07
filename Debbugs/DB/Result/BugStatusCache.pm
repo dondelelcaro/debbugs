@@ -64,7 +64,7 @@ Architecture id (matches arch)
 =head2 status
 
   data_type: 'enum'
-  extra: {custom_type_name => "bug_status_type",list => ["pending","forwarded","pending-fixed","fixed","absent","done"]}
+  extra: {custom_type_name => "bug_status_type",list => ["absent","found","fixed","undef"]}
   is_nullable: 0
 
 Status (bug status)
@@ -101,14 +101,7 @@ __PACKAGE__->add_columns(
     data_type => "enum",
     extra => {
       custom_type_name => "bug_status_type",
-      list => [
-        "pending",
-        "forwarded",
-        "pending-fixed",
-        "fixed",
-        "absent",
-        "done",
-      ],
+      list => ["absent", "found", "fixed", "undef"],
     },
     is_nullable => 0,
   },
@@ -207,8 +200,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07046 @ 2017-03-04 10:59:03
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:dgaCogdpUWo99BQhdH68Mg
+# Created by DBIx::Class::Schema::Loader v0.07046 @ 2017-08-07 09:58:56
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:RNAken/j2+82FVCyCTnvQw
 
 sub sqlt_deploy_hook {
     my ($self, $sqlt_table) = @_;
