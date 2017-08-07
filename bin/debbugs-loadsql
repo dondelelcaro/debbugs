@@ -307,7 +307,7 @@ sub add_bugs {
 		}
 		eval {
 		  $s->txn_do(sub {
-			       for my $bug (@bugs) {
+			       for my $bug (@bugs_to_update) {
 				 load_bug(db => $s,
 					  bug => $bug,
 					  tags => \%tags,
