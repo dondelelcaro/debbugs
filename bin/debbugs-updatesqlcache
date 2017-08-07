@@ -227,10 +227,11 @@ sub update_cache {
 	    search_rs({'me.modified' => {'>=',$last_query_time},
 		      },
 		     {columns => [qw(bug_binpackage.id)],
-		      join => {bin_ver =>
+		      join => {bin =>
+			      {bin_vers =>
 			      {bin_pkg =>
 			       'bug_binpackage'
-			      }},
+			      }}},
 		      result_class => 'DBIx::Class::ResultClass::HashRefInflator',
 		     },
 		     )->all();
@@ -241,7 +242,7 @@ sub update_cache {
 	    search_rs({'me.modified' => {'>=',$last_query_time},
 		      },
 		     {columns => [qw(bug_srcpackage.id)],
-		      join => {src_ver =>
+		      join => {source =>
 			      {src_pkg =>
 			       'bug_srcpackage'
 			      }},
