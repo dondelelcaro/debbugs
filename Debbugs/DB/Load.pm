@@ -385,8 +385,12 @@ sub load_bug_log {
 				subject => $subject
 			       });
 	    eval {
-		$m->sent_date(DateTime::Format::Mail->
-			      parse_datetime($entity->head->get('Date',0)));
+		my $date = DateTime::Format::Mail->
+                    parse_datetime($entity->head->get('Date',0));
+                if (abs($date->offset) >= 60 * 60 * 12) {
+                    $date = $date->set_time_zone('UTC');
+                }
+                $m->sent_date($date);
 	    };
 	    my $spam = $entity->head->get('X-Spam-Status',0)//'';
 	    if ($spam=~ /score=([\d\.]+)/) {
