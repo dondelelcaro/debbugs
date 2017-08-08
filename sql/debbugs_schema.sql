@@ -431,7 +431,7 @@ INSERT INTO column_comments VALUES ('src_associations','modified','Time this ent
 CREATE UNIQUE INDEX src_associations_source_suite ON src_associations(source,suite);
 
 
-CREATE TYPE bug_status_type AS ENUM ('pending','forwarded','pending-fixed','fixed','absent','done');
+CREATE TYPE bug_status_type AS ENUM ('absent','found','fixed','undef');
 CREATE TABLE bug_status_cache (
        bug INT NOT NULL REFERENCES bug ON DELETE CASCADE ON UPDATE CASCADE,
        suite INT REFERENCES suite ON DELETE CASCADE ON UPDATE CASCADE,
