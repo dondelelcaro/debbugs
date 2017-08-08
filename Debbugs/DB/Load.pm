@@ -445,17 +445,53 @@ Commands to handle src and package version loading from debinfo files
 =cut
 
 sub load_debinfo {
-    my ($schema,$binname, $binver, $binarch, $srcname, $srcver) = @_;
-    my $sp = $schema->resultset('SrcPkg')->find_or_create({pkg => $srcname});
-    my $sv = $schema->resultset('SrcVer')->find_or_create({src_pkg=>$sp->id(),
-                                                           ver => $srcver});
-    my $arch = $schema->resultset('Arch')->find_or_create({arch => $binarch});
-    my $bp = $schema->resultset('BinPkg')->find_or_create({pkg => $binname});
-    $schema->resultset('BinVer')->find_or_create({bin_pkg_id => $bp->id(),
-                                                  src_ver_id => $sv->id(),
-                                                  arch_id    => $arch->id(),
-                                                  ver        => $binver,
-                                                 });
+    my ($s,$binname, $binver, $binarch, $srcname, $srcver,$ct_date,$cache) = @_;
+    $cache //= {};
+    my $sp;
+    if (not defined $cache->{sp}{$srcname}) {
+        $cache->{sp}{$srcname} =
+            $s->resultset('SrcPkg')->find_or_create({pkg => $srcname});
+    }
+    $sp = $cache->{sp}{$srcname};
+    # update the creation date if the data we have is earlier
+    if (defined $ct_date and
+        (not defined $sp->creation or
+         $ct_date < $sp->creation)) {
+        $sp->creation($ct_date);
+        $sp->last_modified(DateTime->now);
+        $sp->update;
+    }
+    my $sv;
+    if (not defined $cache->{sv}{$srcname}{$srcver}) {
+        $cache->{sv}{$srcname}{$srcver} =
+            $s->resultset('SrcVer')->
+            find_or_create({src_pkg =>$sp->id(),
+                            ver => $srcver});
+    }
+    $sv = $cache->{sv}{$srcname}{$srcver};
+    if (defined $ct_date and
+        (not defined $sv->upload_date() or $ct_date < $sv->upload_date())) {
+        $sv->upload_date($ct_date);
+        $sv->update;
+    }
+    my $arch;
+    if (not defined $cache->{arch}{$binarch}) {
+        $cache->{arch}{$binarch} =
+            $s->resultset('Arch')->
+            find_or_create({arch => $binarch},
+                          {result_class => 'DBIx::Class::ResultClass::HashRefInflator'},
+                          )->{id};
+    }
+    $arch = $cache->{arch}{$binarch};
+    my $bp;
+    if (not defined $cache->{bp}{$binname}) {
+        $cache->{bp}{$binname} =
+            $s->resultset('BinPkg')->
+            get_bin_pkg_id($binname);
+    }
+    $bp = $cache->{bp}{$binname};
+    $s->resultset('BinVer')->
+        get_bin_ver_id($bp,$binver,$arch,$sv->id());
 }
 
 

@@ -376,63 +376,50 @@ sub add_debinfo {
     my @files = @{$argv};
     if (not @files) {
        {
-           if ($opts->{0}) {
-               local $/ = "\0";
-           }
+	   local $/ = "\n";
+           local $/ = "\0" if $opts->{0};
            while (<STDIN>) {
+	       s/\n$// unless $opts->{0};
+	       s/\0$// if $opts->{0};
                push @files, $_;
            }
        }
     }
     return unless @files;
     my $s = db_connect($options);
-    my %arch;
+    my %cache;
     $p->target(scalar @files) if $p;
-    for my $file (@files) {
-        my $fh = IO::File->new($file,'r') or
-            die "Unable to open $file for reading: $!";
-        my $f_stat = stat($file);
-        while (<$fh>) {
-            chomp;
-            next unless length $_;
-            my ($binname, $binver, $binarch, $srcname, $srcver) = split;
-            # if $srcver is not defined, this is probably a broken
-            # .debinfo file [they were causing #686106, see commit
-            # 49c85ab8 in dak.] Basically, $binarch didn't get put into
-            # the file, so we'll fudge it from the filename.
-            if (not defined $srcver) {
-                ($srcname,$srcver) = ($binarch,$srcname);
-                ($binarch) = $file =~ /_([^\.]+)\.debinfo/;
-            }
-            my $sp = $s->resultset('SrcPkg')->find_or_create({pkg => $srcname});
-            # update the creation date if the data we have is earlier
-            my $ct_date = DateTime->from_epoch(epoch => $f_stat->ctime);
-            if ($ct_date < $sp->creation) {
-                $sp->creation($ct_date);
-                $sp->last_modified(DateTime->now);
-                $sp->update;
-            }
-            my $sv = $s->resultset('SrcVer')->find_or_create({src_pkg =>$sp->id(),
-                                                              ver => $srcver});
-            if (not defined $sv->upload_date() or $ct_date < $sv->upload_date()) {
-                $sv->upload_date($ct_date);
-                $sv->update;
-            }
-            my $arch;
-            if (defined $arch{$binarch}) {
-                $arch = $arch{$binarch};
-            } else {
-                $arch = $s->resultset('Arch')->find_or_create({arch => $binarch});
-                $arch{$binarch} = $arch;
-            }
-            my $bp = $s->resultset('BinPkg')->find_or_create({pkg => $binname});
-            $s->resultset('BinVer')->find_or_create({bin_pkg => $bp->id(),
-                                                     src_ver => $sv->id(),
-                                                     arch    => $arch->id(),
-                                                     ver        => $binver,
-                                                    });
-        }
-        $p->update() if $p;
+    my $it = natatime 100, @files;
+    while (my @v = $it->()) {
+	my @debinfos;
+	for my $file (@v) {
+	    my $fh = IO::File->new($file,'r') or
+		die "Unable to open $file for reading: $!";
+	    my $f_stat = stat($file);
+	    my $ct_date = DateTime->from_epoch(epoch => $f_stat->ctime);
+	    while (<$fh>) {
+		chomp;
+		next unless length $_;
+		my ($binname, $binver, $binarch, $srcname, $srcver) = split;
+		# if $srcver is not defined, this is probably a broken
+		# .debinfo file [they were causing #686106, see commit
+		# 49c85ab8 in dak.] Basically, $binarch didn't get put into
+		# the file, so we'll fudge it from the filename.
+		if (not defined $srcver) {
+		    ($srcname,$srcver) = ($binarch,$srcname);
+		    ($binarch) = $file =~ /_([^\.]+)\.debinfo/;
+		}
+		push @debinfos,
+		    [$binname,$binver,$binarch,$srcname,$srcver,$ct_date];
+	    }
+	}
+	$s->txn_do(
+	    sub {
+		for my $di (@debinfos) {
+		    Debbugs::DB::Load::load_debinfo($s,@{$di}[0..5],\%cache);
+		}
+	    });
+	$p->update($p->last_update()+@v) if $p;
     }
     $p->remove() if $p;
 }
