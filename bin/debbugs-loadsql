@@ -387,10 +387,10 @@ sub add_debinfo {
     }
     return unless @files;
     my $s = db_connect($options);
-    my %cache;
     $p->target(scalar @files) if $p;
     my $it = natatime 100, @files;
     while (my @v = $it->()) {
+	my %cache;
 	my @debinfos;
 	for my $file (@v) {
 	    my $fh = IO::File->new($file,'r') or
