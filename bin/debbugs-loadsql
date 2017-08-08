@@ -409,6 +409,10 @@ sub add_debinfo {
 		    ($srcname,$srcver) = ($binarch,$srcname);
 		    ($binarch) = $file =~ /_([^\.]+)\.debinfo/;
 		}
+		if (not defined $srcver) {
+		    print STDERR "malformed debinfo (no srcver): $file\n";
+		    next;
+		}
 		push @debinfos,
 		    [$binname,$binver,$binarch,$srcname,$srcver,$ct_date];
 	    }
