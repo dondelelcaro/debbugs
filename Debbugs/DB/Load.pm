@@ -357,17 +357,19 @@ sub load_bug_log {
         next if defined $msg_id and $msg_id =~ /handler\..+\.ack(?:info)?\@/;
         my $entity = parse_to_mime_entity($record);
         # search for a message with this message id in the database
-        $msg_id = $entity->head->get('Message-Id:');
+        $msg_id = $entity->head->get('Message-Id') //
+            $entity->head->get('Resent-Message-ID') //
+            '';
 	$msg_id =~ s/^\s*\<//;
 	$msg_id =~ s/>\s*$//;
 	# check to see if the subject, to, and from match. if so, it's
         # probably the same message.
-	my $subject = decode_rfc1522($entity->head->get('Subject:'));
-	$subject =~ s/\n(?:(\s)\s*|\s*$)/$1/g;
-	my $to = decode_rfc1522($entity->head->get('To:'));
-	$to =~ s/\n(?:(\s)\s*|\s*$)/$1/g;
-	my $from = decode_rfc1522($entity->head->get('From:'));
-	$from =~ s/\n(?:(\s)\s*|\s*$)/$1/g;
+	my $subject = decode_rfc1522($entity->head->get('Subject')//'');
+	$subject =~ s/\n(?:(\s)\s*|\s*$)//g;
+	my $to = decode_rfc1522($entity->head->get('To')//'');
+	$to =~ s/\n(?:(\s)\s*|\s*$)//g;
+	my $from = decode_rfc1522($entity->head->get('From')//'');
+	$from =~ s/\n(?:(\s)\s*|\s*$)//g;
 	my $m = $s->resultset('Message')->
 	    find({msgid => $msg_id,
 		  from_complete => $from,
@@ -384,16 +386,16 @@ sub load_bug_log {
 			       });
 	    eval {
 		$m->sent_date(DateTime::Format::Mail->
-			      parse_datetime($entity->head->get('Date:',0)));
+			      parse_datetime($entity->head->get('Date',0)));
 	    };
-	    my $spam = $entity->head->get('X-Spam-Status:',0);
+	    my $spam = $entity->head->get('X-Spam-Status',0)//'';
 	    if ($spam=~ /score=([\d\.]+)/) {
 		$m->spam_score($1);
 	    }
 	    my %corr;
 	    @{$corr{from}} = getparsedaddrs($from);
 	    @{$corr{to}} = getparsedaddrs($to);
-	    @{$corr{cc}} = getparsedaddrs($entity->head->get('Cc:'));
+	    @{$corr{cc}} = getparsedaddrs($entity->head->get('Cc'));
 	    # add correspondents if necessary
 	    my @cors;
 	    for my $type (keys %corr) {
@@ -413,7 +415,7 @@ sub load_bug_log {
 		      );
 	}
 	my $recv;
-	if ($entity->head->get('Received:',0)
+	if ($entity->head->get('Received',0)
 	    =~ /via spool by (\S+)/) {
 	    $recv = $s->resultset('Correspondent')->
 		get_correspondent_id($1);
