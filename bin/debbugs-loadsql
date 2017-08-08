@@ -357,10 +357,11 @@ sub add_versions {
             $sp = $src_pkgs{$versions[$i][0]};
             # There's probably something wrong if the source package
             # doesn't exist, but we'll skip it for now
-            next unless defined $sp;
+            last if not defined $sp;
             my $sv = $s->resultset('SrcVer')->find({src_pkg=>$sp,
                                                     ver => $versions[$i][1],
                                                    });
+	    last if not defined $sv;
             if (defined $ancestor_sv and defined $sv and not defined $sv->based_on()) {
                 $sv->update({based_on => $ancestor_sv})
             }
