@@ -479,8 +479,7 @@ sub load_debinfo {
         $cache->{arch}{$binarch} =
             $s->resultset('Arch')->
             find_or_create({arch => $binarch},
-                          {result_class => 'DBIx::Class::ResultClass::HashRefInflator'},
-                          )->{id};
+                          )->id();
     }
     $arch = $cache->{arch}{$binarch};
     my $bp;
