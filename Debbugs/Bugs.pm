@@ -37,6 +37,7 @@ incomplete) to slowest (and most complete).]
 
 use warnings;
 use strict;
+use feature 'state';
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use Exporter qw(import);
 
@@ -152,7 +153,7 @@ bug should not.
 
 =cut
 
-my $_non_search_key_regex = qr/^(bugs|archive|usertags|schema)$/;
+state $_non_search_key_regex = qr/^(bugs|archive|usertags|schema)$/;
 
 my %_get_bugs_common_options =
     (package   => {type => SCALAR|ARRAYREF,
@@ -206,7 +207,7 @@ my %_get_bugs_common_options =
     );
 
 
-my $_get_bugs_options = {%_get_bugs_common_options};
+state $_get_bugs_options = {%_get_bugs_common_options};
 sub get_bugs{
      my %param = validate_with(params => \@_,
 			       spec   => $_get_bugs_options,
@@ -399,7 +400,7 @@ searches.
 =cut
 
 
-my $_get_bugs_by_idx_options =
+state $_get_bugs_by_idx_options =
    {hash_slice(%_get_bugs_common_options,
                (qw(package submitter severity tag archive),
                 qw(owner src maint bugs correspondent),
@@ -487,7 +488,7 @@ searches.
 
 =cut
 
-my $_get_bugs_by_db_options =
+state $_get_bugs_by_db_options =
    {hash_slice(%_get_bugs_common_options,
                (qw(package submitter severity tag archive),
                 qw(owner src maint bugs correspondent),
@@ -618,7 +619,7 @@ searches. [Or at least, that's the idea.]
 
 =cut
 
-my $_get_bugs_flatfile_options =
+state $_get_bugs_flatfile_options =
    {hash_slice(%_get_bugs_common_options,
                map {$_ eq 'dist'?():($_)} keys %_get_bugs_common_options
               )
@@ -827,7 +828,7 @@ sub __handle_pkg_src_and_maint{
      return grep {$packages{$_} >= $package_keys} keys %packages;
 }
 
-my %field_match = (
+state %field_match = (
     'subject' => \&__contains_field_match,
     'tags' => sub {
         my ($field, $values, $status) = @_; 
