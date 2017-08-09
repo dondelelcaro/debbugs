@@ -510,24 +510,24 @@ sub get_bugs_by_db{
 	 $rs = $rs->search({-or => {map 'bin_package.'}})
      }
      if (exists $param{severity}) {
-         $rs = $rs->search({-or => {map {('severity.severity' => $_)}
-				    make_list($param{severity})},
+         $rs = $rs->search({'severity.severity' =>
+			    [make_list($param{severity})],
 			   },
                           {join => 'severity'},
                           );
      }
      for my $key (qw(owner submitter done)) {
          if (exists $param{$key}) {
-             $rs = $rs->search({-or => {map {("${key}.addr" => $_)}
-					make_list($param{$key})},
+             $rs = $rs->search({"${key}.addr" =>
+				[make_list($param{$key})],
 			       },
                               {join => $key},
                               );
          }
      }
      if (exists $param{correspondent}) {
-         $rs = $rs->search({-or => {map {('message_correspondents.addr' => $_)}
-				    make_list($param{correspondent})},
+         $rs = $rs->search({'message_correspondents.addr' =>
+			    [make_list($param{correspondent})],
 			   },
                           {join => {correspondent =>
                                    {bug_messages =>
@@ -535,10 +535,11 @@ sub get_bugs_by_db{
                           );
      }
      if (exists $param{affects}) {
-         $rs = $rs->search({-or => {map {('bin_pkg.pkg' => $_,
-					  'src_pkg.pkg' => $_,
-					 )}
-				    make_list($param{affects}),
+	 my @aff_list = make_list($param{affects});
+         $rs = $rs->search({-or => {'bin_pkg.pkg' =>
+				    [@aff_list],
+				    'src_pkg.pkg' =>
+				    [@aff_list],
 				   },
 			   },
                           {join => [{bug_affects_binpackages => 'bin_pkg'},
@@ -548,17 +549,18 @@ sub get_bugs_by_db{
                           );
      }
      if (exists $param{package}) {
-         $rs = $rs->search({-or => {map {('bin_pkg.pkg' => $_)}
-				    make_list($param{package})},
+         $rs = $rs->search({'bin_pkg.pkg' =>
+			    [make_list($param{package})],
 			   },
                           {join => {bug_binpackages => 'bin_pkg'}});
      }
      if (exists $param{maintainer}) {
-	 $rs = $rs->search({-or => {map {(correspondent => $_ eq '' ? undef : $_,
-					  correspondent2 => $_ eq '' ? undef : $_,
-					 )}
-				    make_list($param{maintainer})
-				   }
+	 my @maint_list =
+	     map {$_ eq '' ? undef : $_}
+	     make_list($param{maintainer});
+	 $rs = $rs->search({-or => {correspondent => [@maint_list],
+				    correspondent2 => [@maint_list],
+				   },
 			   },
 			  {join => {bug_affects_binpackage =>
 				   {bin_pkg =>
