@@ -274,8 +274,8 @@ END
           next if @records > 1 and $spam->is_spam($msg_id);
       my @lines;
       if ($record->{inner_file}) {
-          push @lines, $record->{fh}->getline;
-          push @lines, $record->{fh}->getline;
+          push @lines, scalar $record->{fh}->getline;
+          push @lines, scalar $record->{fh}->getline;
           chomp $lines[0];
           chomp $lines[1];
       } else {
