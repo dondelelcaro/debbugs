@@ -131,6 +131,8 @@ $DEBUG = $options{debug};
 
 my %subcommands =
     ('update' => {function => \&update_cache,
+		  arguments => {'suites|suite=s@' => 0,
+			       },
                },
      'help' => {function => sub {pod2usage({verbose => 2});}}
     );
@@ -193,12 +195,24 @@ sub update_cache {
     # get all of the possible architectures that we might care about
     # select distinct s.codename,a.arch from bin_associations ba join bin_ver bv on ba.bin=bv.id join suite s on ba.suite=s.id join arch a on bv.arch=a.id;
 
-    my @suites =
-	$s->resultset('Suite')->
-	search_rs({active => 1,
-		  },
-		 {result_class => 'DBIx::Class::ResultClass::HashRefInflator'}
-		 )->all();
+    my @suites;
+    if (exists $opts->{suites}) {
+	@suites =
+	    $s->resultset('Suite')->
+	    search_rs({active => 1,
+		       codename => [make_list($opts->{suites})],
+		       suite_name => [make_list($opts->{suites})],
+		      },
+		     {result_class => 'DBIx::Class::ResultClass::HashRefInflator'}
+		     )->all();
+     } else {
+	@suites = 
+	    $s->resultset('Suite')->
+	    search_rs({active => 1,
+		      },
+		     {result_class => 'DBIx::Class::ResultClass::HashRefInflator'}
+		     )->all();
+    }
     my @bugs;
     my $bugs;
     if ($options->{quick}) {
