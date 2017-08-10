@@ -8,7 +8,8 @@ package Debbugs::Log::Spam;
 
 =head1 NAME
 
-Debbugs::Log::Spam -- an interface to debbugs .log.spam files
+Debbugs::Log::Spam -- an interface to debbugs .log.spam files and .log.spam.d
+directories
 
 =head1 SYNOPSIS
 
@@ -18,6 +19,9 @@ my $spam = Debbugs::Log::Spam->new(bug_num => '12345');
 
 =head1 DESCRIPTION
 
+Spam in bugs can be excluded using a .log.spam file and a .log.spam.d directory.
+The file contains message ids, one per line, and the directory contains files
+named after message ids, one per file.
 
 =head1 BUGS
 
@@ -120,7 +124,18 @@ sub _init {
             chomp;
             $self->{spam}{$_} = 1;
         }
-        close ($fh);
+        close ($fh) or
+            croak "Unable to close bug log filehandle: $!";
+    }
+    if (-d $self->{name}.'.d') {
+        opendir(my $d,$self->{name}.'.d') or
+            croak "Unable to open bug log spamdir '$self->{name}.d' for reading: $!";
+        for my $dir (readdir($d)) {
+            next unless $dir =~ m/([^\.].*)_(\w+)$/;
+            $self->{spam}{$1} = 1;
+        }
+        closedir($d) or
+            croak "Unable to close bug log spamdir: $!";
     }
     return $self;
 }
