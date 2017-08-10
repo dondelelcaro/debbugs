@@ -404,9 +404,11 @@ sub load_bug_log {
 	    my @cors;
 	    for my $type (keys %corr) {
 		for my $addr (@{$corr{$type}}) {
+                    my $cor = $s->resultset('Correspondent')->
+                        get_correspondent_id($addr);
+                    next unless defined $cor;
 		    push @cors,
-			{correspondent => $s->resultset('Correspondent')->
-			 get_correspondent_id($addr),
+			{correspondent => $cor,
 			 correspondent_type => $type,
 			};
 		}
@@ -414,7 +416,8 @@ sub load_bug_log {
 	    $m->update();
 	    $s->txn_do(sub {
 			   $m->message_correspondents()->delete();
-			   $m->add_to_message_correspondents(@cors);
+			   $m->add_to_message_correspondents(@cors) if
+                               @cors;
 		       }
 		      );
 	}
