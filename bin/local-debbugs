@@ -548,7 +548,7 @@ sub select_bugs{
 	       elsif (/\s\w+\:/) {
 		    push @bug_selections, $_;
 	       }
-	  }
+	   }
      }
      # Split archive:both into archive:1 and archive:0
      @bug_selections =
@@ -598,6 +598,10 @@ sub select_bugs{
 	 if (defined $bugs and @{$bugs}) {
 	     $bugs{$archived_bugs}{$_} = 1 for @{$bugs};
 	 }
+     }
+     for my $bug (@bugs) {
+	 $bugs{archived}{$bug} = 1;
+	 $bugs{unarchived}{$bug} = 1;
      }
      return \%bugs;
 }
