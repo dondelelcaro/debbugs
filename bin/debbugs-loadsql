@@ -563,7 +563,7 @@ sub add_logs {
                   if ($options{quick}) {
                       my $rs = $s->resultset('Bug')->
 			  search({id=>$bug})->single();
-                      next if defined $rs and
+                      return if defined $rs and
 			  $stat->mtime <= $rs->last_modified()->epoch();
                   }
                   eval {
