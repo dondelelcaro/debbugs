@@ -45,11 +45,8 @@ BEGIN {
      @EXPORT_OK = ();
      Exporter::export_ok_tags(qw(templates));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
-     push @ISA,qw(Safe::Hole::User);
 }
 
-use Safe;
-use Safe::Hole;
 use Text::Template;
 
 use Storable qw(dclone);
@@ -63,7 +60,6 @@ use Data::Dumper;
 
 our %tt_templates;
 our %filled_templates;
-our $safe;
 our $language;
 
 # This function is what is called when someone does include('foo/bar')
@@ -72,7 +68,7 @@ our $language;
 sub include {
      my $template = shift;
      $filled_templates{$template}++;
-     print STDERR "include template $template language $language safe $safe\n" if $DEBUG;
+     print STDERR "include template $template language $language\n" if $DEBUG;
      # Die if we're in a template loop
      die "Template loop with $template" if $filled_templates{$template} > 10;
      my $filled_tmpl = '';
@@ -80,7 +76,6 @@ sub include {
 	  $filled_tmpl = fill_in_template(template  => $template,
 					  variables => {},
 					  language  => $language,
-					  safe      => $safe,
 					 );
      };
      if ($@) {
@@ -126,7 +121,6 @@ sub fill_in_template{
 						       },
 					 },
 			      );
-     #@param{qw(template variables language safe output hole_var no_safe)} = @_;
      if ($DEBUG) {
 	  print STDERR "fill_in_template ";
 	  print STDERR join(" ",map {exists $param{$_}?"$_:$param{$_}":()} keys %param);
@@ -154,41 +148,6 @@ sub fill_in_template{
 	  die "Unable to find template $param{template} with language $param{language}";
      }
 
-#      if (defined $param{safe}) {
-# 	  $safe = $param{safe};
-#      }
-#      else {
-# 	  print STDERR "Created new safe\n" if $DEBUG;
-# 	  $safe = Safe->new() or die "Unable to create safe compartment";
-# 	  $safe->permit_only(':base_core',':base_loop',':base_mem',
-# 			     qw(padsv padav padhv padany),
-# 			     qw(rv2gv refgen srefgen ref),
-# 			     qw(caller require entereval),
-# 			     qw(gmtime time sprintf prtf),
-# 			     qw(sort),
-# 			    );
-# 	  $safe->share('*STDERR');
-# 	  $safe->share('%config');
-# 	  $hole->wrap(\&Debbugs::Text::include,$safe,'&include');
-# 	  my $root = $safe->root();
-# 	  # load variables into the safe
-# 	  for my $key (keys %{$param{variables}||{}}) {
-# 	       print STDERR "Loading $key\n" if $DEBUG;
-# 	       if (ref($param{variables}{$key})) {
-# 		    no strict 'refs';
-# 		    print STDERR $safe->root().'::'.$key,qq(\n) if $DEBUG;
-# 		    *{"${root}::$key"} = $param{variables}{$key};
-# 	       }
-# 	       else {
-# 		    no strict 'refs';
-# 		    ${"${root}::$key"} = $param{variables}{$key};
-# 	       }
-# 	  }
-# 	  for my $key (keys %{exists $param{hole_var}?$param{hole_var}:{}}) {
-# 	       print STDERR "Wraping $key as $param{hole_var}{$key}\n" if $DEBUG;
-# 	       $hole->wrap($param{hole_var}{$key},$safe,$key);
-# 	  }
-#      }
      $language = $param{language};
      my $tt;
      if ($tt_type eq 'FILE' and
@@ -219,8 +178,7 @@ sub fill_in_template{
      if (not defined $tt) {
 	  die "Unable to create Text::Template for $tt_type:$tt_source";
      }
-     my $ret = $tt->fill_in(#SAFE => $safe,
-			    PACKAGE => 'DTT',
+     my $ret = $tt->fill_in(PACKAGE => 'DTT',
 			    HASH => {%{$param{variables}//{}},
 				     (map {my $t = $_; $t =~ s/^\&//; ($t => $param{hole_var}{$_})}
 				      keys %{$param{hole_var}//{}}),
@@ -236,10 +194,7 @@ sub fill_in_template{
      if ($DEBUG) {
 	  no strict 'refs';
 	  no warnings 'uninitialized';
-#	  my $temp = $param{nosafe}?'main':$safe->{Root};
 	  print STDERR "Variables for $param{template}\n";
-#	  print STDERR "Safe $temp\n";
-#	  print STDERR map {"$_: ".*{$_}."\n"} keys %{"${temp}::"};
      }
 
      return $ret;
