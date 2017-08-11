@@ -367,7 +367,6 @@ sub pkg_htmlizebugs {
 			    );
 
 	  my $html = "<li>"; #<a href=\"%s\">#%d: %s</a>\n<br>",
-	       #bug_url($bug), $bug, html_escape($status{subject});
 	  $html .= short_bug_status_html(status  => \%status,
 					 options => $param{options},
 					) . "\n";

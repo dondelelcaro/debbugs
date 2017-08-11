@@ -17,8 +17,6 @@ Debbugs::CGI -- General routines for the cgi scripts
 
 use Debbugs::CGI qw(:url :html);
 
-html_escape(bug_url($ref,mbox=>'yes',mboxstatus=>'yes'));
-
 =head1 DESCRIPTION
 
 This module is a replacement for parts of common.pl; subroutines in
@@ -64,8 +62,8 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (url    => [qw(bug_url bug_links bug_linklist maybelink),
-				qw(set_url_params pkg_url version_url),
+     %EXPORT_TAGS = (url    => [qw(bug_links bug_linklist maybelink),
+				qw(set_url_params version_url),
 				qw(submitterurl mainturl munge_url),
 				qw(package_links bug_links),
 			       ],
@@ -107,44 +105,6 @@ sub set_url_params{
      }
 }
 
-
-=head2 bug_url
-
-     bug_url($ref,mbox=>'yes',mboxstat=>'yes');
-
-Constructs urls which point to a specific
-
-XXX use Params::Validate
-
-=cut
-
-sub bug_url{
-     my $ref = shift;
-     my %params;
-     if (@_ % 2) {
-	  shift;
-	  %params = (%URL_PARAMS,@_);
-     }
-     else {
-	  %params = @_;
-     }
-     carp "bug_url is deprecated, use bug_links instead";
-
-     return munge_url('bugreport.cgi?',%params,bug=>$ref);
-}
-
-sub pkg_url{
-     my %params;
-     if (@_ % 2) {
-	  shift;
-	  %params = (%URL_PARAMS,@_);
-     }
-     else {
-	  %params = @_;
-     }
-     carp "pkg_url is deprecated, use package_links instead";
-     return munge_url('pkgreport.cgi?',%params);
-}
 
 =head2 munge_url
 
@@ -633,8 +593,7 @@ link class C<$class>.
 
 XXX Use L<Params::Validate>; we want to be able to support query
 arguments here too; we should be able to combine bug_links and this
-function into one. [Hell, bug_url should be one function with this one
-too.]
+function into one.
 
 =cut
 
