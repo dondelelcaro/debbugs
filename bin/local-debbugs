@@ -113,16 +113,15 @@ use vars qw($DEBUG);
 
 use User;
 use Config::Simple;
+use File::Basename qw(dirname);
 use File::Temp qw(tempdir);
 use Params::Validate qw(validate_with :types);
 use POSIX 'setsid';
-use Debbugs::Common qw(checkpid lockpid get_hashname);
-use Debbugs::Mail qw(get_addresses);
 use SOAP::Lite;
 use IPC::Run;
 use IO::File;
 use File::Path;
-
+use File::Spec;
 
 my %options = (debug           => 0,
 	       help            => 0,
@@ -130,8 +129,7 @@ my %options = (debug           => 0,
 	       verbose         => 0,
 	       quiet           => 0,
 	       detach          => 1,
-	       cgi_bin         => '/var/lib/debbugs/www/cgi',
-	       css             => '/var/lib/debbugs/www/bugs.css',
+	       git_mode        => -d (dirname(__FILE__).'/../.git') ? 1 : 0,
 	       bug_site        => 'bugs.debian.org',
 	       bug_mirror      => 'bugs-mirror.debian.org',
 	       );
@@ -150,6 +148,21 @@ GetOptions(\%options,
 	   'bug_site|bug-site=s',
 	   'bug_mirror|bug-mirror=s',
 	   'debug|d+','help|h|?','man|m');
+
+if ($options{git_mode}) {
+    my $base_dir = File::Spec->rel2abs(dirname(__FILE__).'/..');
+    $options{cgi_bin} = "$base_dir/cgi" unless defined $options{cgi_bin};
+    $options{css} = "$base_dir/html/bugs.css" unless defined $options{css};
+    $options{template_dir} = "$base_dir/templates";
+    eval "use lib '$base_dir'";
+} else {
+    $options{cgi_bin} = '/var/lib/debbugs/www/cgi';
+    $options{css} = '/var/lib/debbugs/www/bugs.css';
+    $options{template_dir} = "/usr/share/debbugs/templates";
+}
+
+eval "use Debbugs::Common qw(checkpid lockpid get_hashname)";
+eval "use Debbugs::Mail qw(get_addresses)";
 
 pod2usage() if $options{help};
 pod2usage({verbose=>2}) if $options{man};
@@ -188,6 +201,7 @@ if ($options{daemon}) {
      print {$conf} <<"EOF";
 \$gConfigDir = "$options{mirror_location}";
 \$gSpoolDir = "$options{mirror_location}";
+\$gTemplateDir = "$options{template_dir}";
 \$gWebHost = 'localhost:$options{port}';
 \$gPackageSource = '';
 \$gPseudoDescFile = '';
@@ -224,6 +238,7 @@ EOF
 	  package local_debbugs::server;
 	  use IO::File;
 	  use HTTP::Server::Simple;
+	  use File::Basename qw(dirname);
 	  use base qw(HTTP::Server::Simple::CGI HTTP::Server::Simple::CGI::Environment);
 
 	  sub net_server {
@@ -241,6 +256,11 @@ EOF
 	       my ($self,$cgi) = @_;
 
 	       $ENV{DEBBUGS_CONFIG_FILE} = $options{mirror_location}.'/debbugs_config_local';
+	       if (-d dirname(__FILE__).'../Debbugs' and
+		   -d dirname(__FILE__).'../.git'
+		  ) {
+		   $ENV{PERL5LIB} = dirname(__FILE__).'/../';
+	       }
 	       my $base_uri = 'http://'.$cgi->virtual_host;
 	       if ($cgi->virtual_port ne 80) {
 		    $base_uri .= ':'.$cgi->virtual_port;
