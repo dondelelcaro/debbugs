@@ -11,7 +11,11 @@
                 package_links(maintainer => $package->{maintainer}).qq(; );
      if (exists $package->{source} and not $package->{is_source}) {
      	$output .= q(Source for ).package_links(package=>$package->{package}).qq( is ).
-        	    package_links(source => $package->{source}).qq(. );
+        	    package_links(source => $package->{source}).
+		    q{ (<a href="https://tracker.debian.org/pkg/}.html_escape(uri_escape($package->{source})).qq{">PTS</a>, }.
+		    q{<a href="https://buildd.debian.org/}.html_escape(uri_escape($package->{source})).qq{">buildd</a>, }.
+		    q{<a href="https://qa.debian.org/popcon.php?package=}.html_escape(uri_escape($package->{source})).qq{">popcon</a>)}.
+		    qq(. );
      }
  }
  $output;
