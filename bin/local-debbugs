@@ -17,7 +17,7 @@ local-debbugs - use a local mirror of debbugs
 
 =head1 SYNOPSIS
 
- [options]
+ local-debbugs [options]
 
  Options:
   --mirror, -M update local mirror
