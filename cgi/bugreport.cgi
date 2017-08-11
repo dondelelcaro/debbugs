@@ -29,7 +29,7 @@ use Debbugs::Status qw(splitpackages split_status_fields get_bug_status isstrong
 use Scalar::Util qw(looks_like_number);
 
 use Debbugs::Text qw(:templates);
-
+use URI::Escape qw(uri_escape_utf8);
 use List::AllUtils qw(max);
 
 
@@ -454,6 +454,7 @@ print fill_in_template(template => 'cgi/bugreport',
 				     msg           => $msg,
 				     isstrongseverity => \&Debbugs::Status::isstrongseverity,
 				     html_escape   => \&Debbugs::CGI::html_escape,
+                                     uri_escape    => \&URI::Escape::uri_escape_utf8,
 				     looks_like_number => \&Scalar::Util::looks_like_number,
 				     make_list        => \&Debbugs::Common::make_list,
 				    },
