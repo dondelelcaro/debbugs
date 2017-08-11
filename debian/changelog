@@ -59,6 +59,8 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
   * Strip out Mail-Followup-To: (Closes: #798092)
   * Include references from the original message in replies. (Closes: #485697)
     Thanks to Julien Cristau
+  * Use pass-through for rewrites of URLs to hide implementation (Closes:
+    #871784) Thanks to Ridier 'OdyX' Raboud
 
   [ Niels Thykier ]
   * quitcgi() now returns 400/500 status codes instead of 200 (Closes: #584922)
