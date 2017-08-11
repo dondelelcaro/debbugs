@@ -150,11 +150,12 @@ GetOptions(\%options,
 	   'debug|d+','help|h|?','man|m');
 
 if ($options{git_mode}) {
-    my $base_dir = File::Spec->rel2abs(dirname(__FILE__).'/..');
+    my $base_dir = dirname(File::Spec->rel2abs(dirname(__FILE__)));
     $options{cgi_bin} = "$base_dir/cgi" unless defined $options{cgi_bin};
     $options{css} = "$base_dir/html/bugs.css" unless defined $options{css};
     $options{template_dir} = "$base_dir/templates";
-    eval "use lib '$base_dir'";
+    $options{base_dir} = $base_dir;
+    eval "use lib '$options{base_dir}'";
 } else {
     $options{cgi_bin} = '/var/lib/debbugs/www/cgi';
     $options{css} = '/var/lib/debbugs/www/bugs.css';
@@ -256,11 +257,6 @@ EOF
 	       my ($self,$cgi) = @_;
 
 	       $ENV{DEBBUGS_CONFIG_FILE} = $options{mirror_location}.'/debbugs_config_local';
-	       if (-d dirname(__FILE__).'../Debbugs' and
-		   -d dirname(__FILE__).'../.git'
-		  ) {
-		   $ENV{PERL5LIB} = dirname(__FILE__).'/../';
-	       }
 	       my $base_uri = 'http://'.$cgi->virtual_host;
 	       if ($cgi->virtual_port ne 80) {
 		    $base_uri .= ':'.$cgi->virtual_port;
@@ -299,10 +295,13 @@ EOF
 		    redirect($cgi,$base_uri."/cgi-bin/pkgreport.cgi?pkg=$1");
 	       }
 	       elsif ($path =~ m{^/?cgi(?:-bin)?/((?:(?:bug|pkg)report|version)\.cgi)}) {
-		    # dispatch to pkgreport.cgi
-		    #print "HTTP/1.1 200 OK\n";
-		    open(my $fh,'-|',"$options{cgi_bin}/$1") or
-			die "Unable to execute $options{cgi_bin}/$1";
+		   my @exec_options = "$options{cgi_bin}/$1";
+		   if ($options{git_mode}) {
+		       unshift @exec_options,
+			   'perl','-I',$options{base_dir},'-T';
+		   }
+                   open(my $fh,'-|',@exec_options) or
+                       die "Unable to execute $options{cgi_bin}/$1";
 		    my $status;
 		    my $cache = '';
 		    while (<$fh>) {
