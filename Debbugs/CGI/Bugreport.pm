@@ -517,9 +517,7 @@ sub __libravatar_url {
 
 
 __END__
-
-
-
-
-
-
+# Local Variables:
+# cperl-indent-level: 4
+# indent-tabs-mode: nil
+# End:
