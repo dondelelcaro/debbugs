@@ -476,6 +476,7 @@ sub handle_record{
           # this will be cleaned up once it goes out of scope
           my $tempdir = File::Temp->newdir();
           $parser->output_under($tempdir->dirname());
+         $parser->filer->ignore_filename(1);
          my $entity;
          if ($record->{inner_file}) {
              $entity = $parser->parse($record->{fh});
