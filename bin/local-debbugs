@@ -627,3 +627,7 @@ sub select_bugs{
 
 
 __END__
+# Local Variables:
+# cperl-indent-level: 4
+# indent-tabs-mode: nil
+# End:
