@@ -29,7 +29,7 @@ use Debbugs::Status qw(splitpackages split_status_fields get_bug_status isstrong
 use Scalar::Util qw(looks_like_number);
 
 use Debbugs::Text qw(:templates);
-
+use URI::Escape qw(uri_escape_utf8);
 use List::AllUtils qw(max);
 
 
@@ -274,8 +274,8 @@ END
           next if @records > 1 and $spam->is_spam($msg_id);
       my @lines;
       if ($record->{inner_file}) {
-          push @lines, $record->{fh}->getline;
-          push @lines, $record->{fh}->getline;
+          push @lines, scalar $record->{fh}->getline;
+          push @lines, scalar $record->{fh}->getline;
           chomp $lines[0];
           chomp $lines[1];
       } else {
@@ -454,13 +454,13 @@ print fill_in_template(template => 'cgi/bugreport',
 				     msg           => $msg,
 				     isstrongseverity => \&Debbugs::Status::isstrongseverity,
 				     html_escape   => \&Debbugs::CGI::html_escape,
+                                     uri_escape    => \&URI::Escape::uri_escape_utf8,
 				     looks_like_number => \&Scalar::Util::looks_like_number,
 				     make_list        => \&Debbugs::Common::make_list,
 				    },
 		       hole_var  => {'&package_links' => \&Debbugs::CGI::package_links,
 				     '&bug_links'     => \&Debbugs::CGI::bug_links,
 				     '&version_url'   => \&Debbugs::CGI::version_url,
-				     '&bug_url'       => \&Debbugs::CGI::bug_url,
 				     '&strftime'      => \&POSIX::strftime,
 				     '&maybelink'     => \&Debbugs::CGI::maybelink,
 				    },

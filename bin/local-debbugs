@@ -17,7 +17,7 @@ local-debbugs - use a local mirror of debbugs
 
 =head1 SYNOPSIS
 
- [options]
+ local-debbugs [options]
 
  Options:
   --mirror, -M update local mirror
@@ -113,16 +113,15 @@ use vars qw($DEBUG);
 
 use User;
 use Config::Simple;
+use File::Basename qw(dirname);
 use File::Temp qw(tempdir);
 use Params::Validate qw(validate_with :types);
 use POSIX 'setsid';
-use Debbugs::Common qw(checkpid lockpid get_hashname);
-use Debbugs::Mail qw(get_addresses);
 use SOAP::Lite;
 use IPC::Run;
 use IO::File;
 use File::Path;
-
+use File::Spec;
 
 my %options = (debug           => 0,
 	       help            => 0,
@@ -130,8 +129,7 @@ my %options = (debug           => 0,
 	       verbose         => 0,
 	       quiet           => 0,
 	       detach          => 1,
-	       cgi_bin         => '/var/lib/debbugs/www/cgi',
-	       css             => '/var/lib/debbugs/www/bugs.css',
+	       git_mode        => -d (dirname(__FILE__).'/../.git') ? 1 : 0,
 	       bug_site        => 'bugs.debian.org',
 	       bug_mirror      => 'bugs-mirror.debian.org',
 	       );
@@ -150,6 +148,22 @@ GetOptions(\%options,
 	   'bug_site|bug-site=s',
 	   'bug_mirror|bug-mirror=s',
 	   'debug|d+','help|h|?','man|m');
+
+if ($options{git_mode}) {
+    my $base_dir = dirname(File::Spec->rel2abs(dirname(__FILE__)));
+    $options{cgi_bin} = "$base_dir/cgi" unless defined $options{cgi_bin};
+    $options{css} = "$base_dir/html/bugs.css" unless defined $options{css};
+    $options{template_dir} = "$base_dir/templates";
+    $options{base_dir} = $base_dir;
+    eval "use lib '$options{base_dir}'";
+} else {
+    $options{cgi_bin} = '/var/lib/debbugs/www/cgi';
+    $options{css} = '/var/lib/debbugs/www/bugs.css';
+    $options{template_dir} = "/usr/share/debbugs/templates";
+}
+
+eval "use Debbugs::Common qw(checkpid lockpid get_hashname)";
+eval "use Debbugs::Mail qw(get_addresses)";
 
 pod2usage() if $options{help};
 pod2usage({verbose=>2}) if $options{man};
@@ -188,6 +202,7 @@ if ($options{daemon}) {
      print {$conf} <<"EOF";
 \$gConfigDir = "$options{mirror_location}";
 \$gSpoolDir = "$options{mirror_location}";
+\$gTemplateDir = "$options{template_dir}";
 \$gWebHost = 'localhost:$options{port}';
 \$gPackageSource = '';
 \$gPseudoDescFile = '';
@@ -224,6 +239,7 @@ EOF
 	  package local_debbugs::server;
 	  use IO::File;
 	  use HTTP::Server::Simple;
+	  use File::Basename qw(dirname);
 	  use base qw(HTTP::Server::Simple::CGI HTTP::Server::Simple::CGI::Environment);
 
 	  sub net_server {
@@ -279,10 +295,13 @@ EOF
 		    redirect($cgi,$base_uri."/cgi-bin/pkgreport.cgi?pkg=$1");
 	       }
 	       elsif ($path =~ m{^/?cgi(?:-bin)?/((?:(?:bug|pkg)report|version)\.cgi)}) {
-		    # dispatch to pkgreport.cgi
-		    #print "HTTP/1.1 200 OK\n";
-		    open(my $fh,'-|',"$options{cgi_bin}/$1") or
-			die "Unable to execute $options{cgi_bin}/$1";
+		   my @exec_options = "$options{cgi_bin}/$1";
+		   if ($options{git_mode}) {
+		       unshift @exec_options,
+			   'perl','-I',$options{base_dir},'-T';
+		   }
+                   open(my $fh,'-|',@exec_options) or
+                       die "Unable to execute $options{cgi_bin}/$1";
 		    my $status;
 		    my $cache = '';
 		    while (<$fh>) {
@@ -548,7 +567,7 @@ sub select_bugs{
 	       elsif (/\s\w+\:/) {
 		    push @bug_selections, $_;
 	       }
-	  }
+	   }
      }
      # Split archive:both into archive:1 and archive:0
      @bug_selections =
@@ -599,8 +618,16 @@ sub select_bugs{
 	     $bugs{$archived_bugs}{$_} = 1 for @{$bugs};
 	 }
      }
+     for my $bug (@bugs) {
+	 $bugs{archived}{$bug} = 1;
+	 $bugs{unarchived}{$bug} = 1;
+     }
      return \%bugs;
 }
 
 
 __END__
+# Local Variables:
+# cperl-indent-level: 4
+# indent-tabs-mode: nil
+# End:
