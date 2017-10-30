@@ -204,12 +204,12 @@ if ($options{daemon}) {
 \$gSpoolDir = "$options{mirror_location}";
 \$gTemplateDir = "$options{template_dir}";
 \$gWebHost = 'localhost:$options{port}';
-\$gPackageSource = '';
+\$gPackageSource = '$options{mirror_location}/sources';
 \$gPseudoDescFile = '';
 \$gPseudoMaintFile = '';
-\$gMaintainerFile = '';
+\$gMaintainerFile = '$options{mirror_location}/Maintainers';
 \$gMaintainerFileOverride = '';
-\$config{source_maintainer_file} = '';
+\$config{source_maintainer_file} = '$options{mirror_location}/Source_maintainers';
 \$config{source_maintainer_file_override} = '';
 \$gProject = 'Local Debbugs';
 1;
