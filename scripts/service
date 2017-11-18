@@ -518,7 +518,7 @@ eval{
     $temp_transcript = decode("utf8",$temp_transcript,Encode::FB_CROAK);
 };
 my $reply =
-    create_mime_message([From          => "$gMaintainerEmail ($gProject $gBug Tracking System)",
+    create_mime_message([From          => qq("$gProject $gBug Tracking System" <$gMaintainerEmail>),
 			 To            => $replyto,
 			 @maintccs ? (Cc => join(', ',@maintccs)):(),
 			 Subject       => "Processed${error_text}: $header{subject}",
@@ -884,7 +884,7 @@ sub sendtxthelpraw {
     close(D);
     print {$transcript} "Sending $description in separate message.\n";
     &sendmailmessage(<<END.$doc,$replyto);
-From: $gMaintainerEmail ($gProject $gBug Tracking System)
+From: "$gProject $gBug Tracking System" <$gMaintainerEmail>
 To: $replyto
 Subject: $gProject $gBug help: $description
 References: $header{'message-id'}
@@ -912,7 +912,7 @@ sub sendlynxdocraw {
     } else {
         print {$transcript} "Sending $description.\n";
         &sendmailmessage(<<END.$doc,$replyto);
-From: $gMaintainerEmail ($gProject $gBug Tracking System)
+From: "$gProject $gBug Tracking System" <$gMaintainerEmail>
 To: $replyto
 Subject: $gProject $gBugs information: $description
 References: $header{'message-id'}
@@ -949,7 +949,7 @@ sub sendinfo {
     }
     print {$transcript} "Sending $description.\n";
     &sendmailmessage(<<END.$doc,$replyto);
-From: $gMaintainerEmail ($gProject $gBug Tracking System)
+From: "$gProject $gBug Tracking System" <$gMaintainerEmail>
 To: $replyto
 Subject: $gProject $gBugs information: $description
 References: $header{'message-id'}

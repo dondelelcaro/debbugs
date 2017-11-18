@@ -61,6 +61,8 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
     Thanks to Julien Cristau
   * Use pass-through for rewrites of URLs to hide implementation (Closes:
     #871784) Thanks to Ridier 'OdyX' Raboud
+  * Use foo <bar@baz.com> instead of bar@baz.com (foo) for From: (Closes:
+    #881903). Thanks to Michael Stapelberg.
 
   [ Niels Thykier ]
   * quitcgi() now returns 400/500 status codes instead of 200 (Closes: #584922)
