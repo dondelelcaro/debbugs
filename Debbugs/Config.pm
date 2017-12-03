@@ -15,7 +15,7 @@ Debbugs::Config -- Configuration information for debbugs
 
  use Debbugs::Config;
 
-# to get the compatiblity interface
+# to get the compatibility interface
 
  use Debbugs::Config qw(:globals);
 
@@ -171,7 +171,7 @@ set_default(\%config,'html_suffix','.html');
 =item cgi_domain $gCGIDomain
 
 Full path of the web domain where cgi scripts are kept. Defaults to
-the concatentation of L</web_domain> and cgi.
+the concatenation of L</web_domain> and cgi.
 
 =cut
 
@@ -535,7 +535,7 @@ set_default(\%config,'removal_unremovable_tags',
 
 =item removal_distribution_tags
 
-Tags which specifiy distributions to check
+Tags which specify distributions to check
 
 Default: @{$config{distributions}}
 
@@ -617,7 +617,7 @@ This is the name of the default package. If set, bugs assigned to
 packages without a maintainer and bugs missing a Package: psuedoheader
 will be assigned to this package instead.
 
-Defaults to unset, which is the traditional debbugs behavoir
+Defaults to unset, which is the traditional debbugs behavior
 
 =cut
 
@@ -709,7 +709,7 @@ set_default(\%config,'show_severities',join(', ',keys %{$config{severity_display
 
 =item strong_severities
 
-An arrayref of the serious severities which shoud be emphasized
+An arrayref of the serious severities which should be emphasized
 
 Default: [qw(critical grave)]
 

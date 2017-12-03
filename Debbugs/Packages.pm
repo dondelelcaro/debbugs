@@ -135,7 +135,7 @@ versions.
 
 By default, in LIST context, returns a LIST of array refs of source
 package, source version pairs corresponding to the binary package(s),
-arch(s), and verion(s) passed.
+arch(s), and version(s) passed.
 
 In SCALAR context, only the corresponding source packages are
 returned, concatenated with ', ' if necessary.
@@ -274,7 +274,7 @@ sub binary_to_source{
 		push @source,[$maybe_sourcepkg,$_] for keys %{$_sourcetobinary{$maybe_sourcepkg}};
 	    }
 	}
-	# if @source is still empty here, it's probably a non-existant
+	# if @source is still empty here, it's probably a non-existent
 	# source package, so don't return anything.
     }
 

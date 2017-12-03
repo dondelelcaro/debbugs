@@ -111,7 +111,7 @@ encode_headers.
 =over
 
 =item queue_file -- the queue file which will generate this set of
-headers (refered to as $nn in lots of the code)
+headers (referred to as $nn in lots of the code)
 
 =item data -- the data of the bug which this message involves; can be
 undefined if there is no bug involved.

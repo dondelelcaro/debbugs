@@ -46,7 +46,7 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
     shift;
 }
 
-#check for remaing argument, only one...
+#check for remaining argument, only one...
 @ARGV==1 or die;
 $wwwbase= shift(@ARGV);
 

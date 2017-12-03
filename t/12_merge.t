@@ -8,7 +8,7 @@ use strict;
 # Here, we're going to shoot messages through a set of things that can
 # happen.
 
-# First, we're going to send mesages to receive.
+# First, we're going to send messages to receive.
 # To do so, we'll first send a message to submit,
 # then send messages to the newly created bugnumber.
 
@@ -73,7 +73,7 @@ send_message(to => '1@bugs.something',
 			 From => 'foo@bugs.something',
 			 Subject => 'Sending a message to a bug',
 			],
-	     body => <<EOF) or fail('sending message to 1@bugs.someting failed');
+	     body => <<EOF) or fail('sending message to 1@bugs.something failed');
 Package: foo
 Severity: normal
 

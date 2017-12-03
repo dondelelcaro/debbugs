@@ -1078,7 +1078,7 @@ sub bug_archiveable{
      if ($param{ignore_time}) {
 	  return $param{days_until}?0:1;
      }
-     # 6. at least 28 days have passed since the last action has occured or the bug was closed
+     # 6. at least 28 days have passed since the last action has occurred or the bug was closed
      my $age = ceil($max_log_age);
      if ($age > 0 or $min_archive_days > 0) {
 	  print STDERR "Cannot archive $param{bug} because not enough days have passed\n" if $DEBUG;

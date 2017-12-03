@@ -48,7 +48,7 @@ BEGIN{
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
-# First, we're going to send mesages to receive.
+# First, we're going to send messages to receive.
 # To do so, we'll first send a message to submit,
 # then send messages to the newly created bugnumber.
 
@@ -263,7 +263,7 @@ $SIG{CHLD} = sub {};
      $SD_SIZE = num_messages_sent($SD_SIZE,2,$sendmail_dir,'2 messages have been sent properly');
 
 Tests to make sure that at least a certain number of messages have
-been sent since the last time this command was run. Usefull to test to
+been sent since the last time this command was run. Useful to test to
 make sure that mail has been sent.
 
 =cut

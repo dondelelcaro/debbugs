@@ -3,7 +3,7 @@
 use warnings;
 use strict;
 
-# Sanitize environent for taint
+# Sanitize environment for taint
 BEGIN{
     delete @ENV{qw(IFS CDPATH ENV BASH_ENV)};
 }
