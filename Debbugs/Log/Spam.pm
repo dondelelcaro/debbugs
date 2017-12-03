@@ -165,7 +165,7 @@ sub save {
 
 =item is_spam
 
-    next if ($spam_log->is_spam('12456@exmaple.com'));
+    next if ($spam_log->is_spam('12456@example.com'));
 
 Returns 1 if this message id confirms that the message is spam
 

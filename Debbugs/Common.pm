@@ -634,7 +634,7 @@ Otherwise, does a non-blocking lock C<$count> times, waiting C<$wait>
 seconds in between.
 
 In list context, returns the lockfile filehandle, lockfile name, and
-any errors which occured.
+any errors which occurred.
 
 When the lockfile filehandle is undef, locking failed.
 
@@ -952,7 +952,7 @@ Takes at most two options; the first is the actual failure message
 (usually $@ and defaults to $@), the second is the debug level
 (defaults to $DEBUG).
 
-If debug is non-zero, the code at which the failure occured is output.
+If debug is non-zero, the code at which the failure occurred is output.
 
 =cut
 

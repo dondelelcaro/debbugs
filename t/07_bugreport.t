@@ -9,7 +9,7 @@ use strict;
 # Here, we're going to shoot messages through a set of things that can
 # happen.
 
-# First, we're going to send mesages to receive.
+# First, we're going to send messages to receive.
 # To do so, we'll first send a message to submit,
 # then send messages to the newly created bugnumber.
 

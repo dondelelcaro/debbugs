@@ -285,7 +285,7 @@ sub display_entity {
 	 }
 	 # Add links to URLs
 	 # We don't html escape here because we escape above;
-	 # wierd terminators are because of that
+	 # weird terminators are because of that
 	 $body =~ s{((?:ftp|http|https|svn|ftps|rsync)://[\S~-]+?/?) # Url
 		    ((?:\&gt\;)?[)]?(?:'|\&\#39\;|\&quot\;)?[:.\,]?(?:\s|$)) # terminators
 	      }{<a href=\"$1\">$1</a>$2}gox;
@@ -460,7 +460,7 @@ sub handle_record{
 	       $$seen_msg_ids{$msg_id} = 1;
 	  }
 	  return () if defined $param{spam} and $param{spam}->is_spam($msg_id);
-	  # Incomming Mail Message
+	  # Incoming Mail Message
 	  my ($received,$hostname) = record_regex($record,qr/Received: \(at (\S+)\) by (\S+)\;/o);
 	  $output .= qq|<hr><p class="msgreceived"><a name="$msg_number"></a><a name="msg$msg_number"></a><a href="#$msg_number">Message #$msg_number</a> received at |.
 	       html_escape("$received\@$hostname") .

@@ -136,7 +136,7 @@ sub retrieve_libravatar{
         }
         my $aborted = $r->header('Client-Aborted');
         # if we exceeded max size, I'm not sure if we'll be
-        # successfull or not, but regardless, there will be a
+        # successful or not, but regardless, there will be a
         # Client-Aborted header. Stop here if that header is defined.
         die "Client aborted header" if defined $aborted;
         my $type = $r->header('Content-Type');

@@ -65,7 +65,7 @@ sub ParseVersion1Record
 sub ParseVersion2Record
 {
     # I envision the next round of records being totally different in
-    # meaning.  In order to maintain compatability, version tagging will be
+    # meaning.  In order to maintain compatibility, version tagging will be
     # implemented in the next go around and different versions will be sent
     # off to different functions to be parsed and interpreted into a format
     # that the rest of the system will understand.  All data will be saved

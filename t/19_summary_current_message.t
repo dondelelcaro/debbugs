@@ -56,7 +56,7 @@ send_message(to => 'control@bugs.something',
 			 From => 'foo@bugs.something',
 			 Subject => 'Munging a bug',
 			],
-	     body => <<EOF) or fail('sending message to 1@bugs.someting failed');
+	     body => <<EOF) or fail('sending message to 1@bugs.something failed');
 summary 1 0
 thanks
 
@@ -76,7 +76,7 @@ send_message(to => '1@bugs.something',
 			 From => 'foo@bugs.something',
 			 Subject => 'Munging a bug',
 			],
-	     body => <<EOF) or fail('sending message to 1@bugs.someting failed');
+	     body => <<EOF) or fail('sending message to 1@bugs.something failed');
 Control: summary -1 0
 
 This is a new summary.

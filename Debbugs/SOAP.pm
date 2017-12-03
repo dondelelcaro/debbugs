@@ -200,7 +200,7 @@ sub newest_bugs{
      my $bug_log = get_bug_log($bug);
      my $bug_log = get_bug_log($bug,$msg_num);
 
-Retuns a parsed set of the bug log; this is an array of hashes with
+Returns a parsed set of the bug log; this is an array of hashes with
 the following
 
  [{html => '',

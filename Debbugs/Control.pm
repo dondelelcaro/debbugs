@@ -2774,7 +2774,7 @@ sub _summary {
 				 (?:un|force|)merge|user(?:category|tags?|)
 			     )\s+\S}xis) {
 		   if (not length $paragraph) {
-			print {$debug} "Found control/pseudo-headers and skiping them\n";
+			print {$debug} "Found control/pseudo-headers and skipping them\n";
 			$in_pseudoheaders = 1;
 			next;
 		   }
@@ -3080,7 +3080,7 @@ This routine archives a bug
 
 =item bug -- bug number
 
-=item check_archiveable -- check wether a bug is archiveable before
+=item check_archiveable -- check whether a bug is archiveable before
 archiving; defaults to 1
 
 =item archive_unarchived -- whether to archive bugs which have not
@@ -3741,7 +3741,7 @@ Returns true if there are no entries in data, or there are no keys in
 limit; returns false (0) if there are any entries which do not match.
 
 The limit hashref elements can contain an arrayref of scalars to
-match; regexes are also acccepted. At least one of the entries in each
+match; regexes are also accepted. At least one of the entries in each
 element needs to match the corresponding field in all data for the
 limit to succeed.
 
