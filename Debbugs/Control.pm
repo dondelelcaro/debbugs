@@ -379,6 +379,7 @@ sub set_blocks {
     # throw an error if we are setting the blockers and there is a bad
     # blocker
     if (keys %bad_blockers and $mode eq 'set') {
+	__end_control(%info);
 	croak "Unknown blocking bug(s):".join(', ',keys %bad_blockers).
 	    keys %ok_blockers?'':" and no known blocking bug(s)";
     }
@@ -387,6 +388,7 @@ sub set_blocks {
     if (not keys %ok_blockers and $mode ne 'set') {
 	print {$transcript} "No valid blocking bug(s) given; not doing anything\n";
 	if (keys %bad_blockers) {
+	    __end_control(%info);
 	    croak "Unknown blocking bug(s):".join(', ',keys %bad_blockers);
 	}
 	__end_control(%info);
@@ -410,6 +412,7 @@ sub set_blocks {
     @bugs{@bugs} = (1) x @bugs;
     for my $blocker (@change_blockers) {
 	if ($bugs{$blocker}) {
+	    __end_control(%info);
 	    croak "It is nonsensical for a bug to block itself (or a merged partner): $blocker";
 	}
     }
@@ -2070,9 +2073,11 @@ sub set_merged {
 		print {$transcript} "$change->{field} of #$change->{bug} is '$change->{text_orig_value}' not '$change->{text_value}'\n";
 	    }
 	    if ($attempts > 0) {
+		__end_control(%info);
 		croak "Some bugs were altered while attempting to merge";
 	    }
 	    else {
+		__end_control(%info);
 		croak "Did not alter merged bugs";
 	    }
 	}
