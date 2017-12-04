@@ -1,6 +1,6 @@
 # -*- mode: cperl;-*-
 
-use Test::More tests => 35;
+use Test::More;
 
 use warnings;
 use strict;
@@ -132,7 +132,8 @@ my @control_commands =
 		      },
      );
 
-test_control_commands(@control_commands);
+test_control_commands(\%config,
+		      @control_commands);
 
 send_message(to => 'control@bugs.something',
 	     headers => [To   => 'control@bugs.something',
@@ -160,14 +161,9 @@ found -5 1.2-5
 fixed -5 1.2-6
 thanks
 EOF
-	;
-	$SD_SIZE =
-	    num_messages_sent($SD_SIZE,1,
-			      $sendmail_dir,
-			      'control@bugs.something messages appear to have been sent out properly');
 
-
-test_control_commands(forcemerge   => {command => 'forcemerge',
+test_control_commands(\%config,
+		      forcemerge   => {command => 'forcemerge',
 				       value   => '1 2',
 				       status_key => 'mergedwith',
 				       status_value => '2',
@@ -195,43 +191,4 @@ test_control_commands(forcemerge   => {command => 'forcemerge',
 				      },
 		     );
 
-
-sub test_control_commands{
-    my @commands = @_;
-
-    while (my ($command,$control_command) = splice(@commands,0,2)) {
-	# just check to see that control doesn't explode
-	$control_command->{value} = " $control_command->{value}" if length $control_command->{value}
-	    and $control_command->{value} !~ /^\s/;
-	send_message(to => 'control@bugs.something',
-		     headers => [To   => 'control@bugs.something',
-				 From => 'foo@bugs.something',
-				 Subject => "Munging a bug with $command",
-				],
-		     body => <<EOF) or fail 'message to control@bugs.something failed';
-debug 10
-$control_command->{command} $control_command->{value}
-thanks
-EOF
-	;
-	$SD_SIZE =
-	    num_messages_sent($SD_SIZE,1,
-			      $sendmail_dir,
-			      'control@bugs.something messages appear to have been sent out properly');
-	# now we need to check to make sure the control message was processed without errors
-	ok(system('sh','-c','find '.$sendmail_dir.q( -type f | xargs grep -q "Subject: Processed: Munging a bug with $command")) == 0,
-	   'control@bugs.something'. "$command message was parsed without errors");
-	# now we need to check to make sure that the control message actually did anything
-	my $status;
-	$status = read_bug(exists $control_command->{bug}?(bug => $control_command->{bug}):(bug=>1),
-			   exists $control_command->{location}?(location => $control_command->{location}):(),
-			  );
-	is_deeply($status->{$control_command->{status_key}},
-		  $control_command->{status_value},
-		  "bug " .
-		  (exists $control_command->{bug}?$control_command->{bug}:1).
-		  " $command"
-		 )
-	    or fail(Dumper($status));
-    }
-}
+done_testing();

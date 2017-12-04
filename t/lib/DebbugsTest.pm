@@ -42,9 +42,10 @@ BEGIN{
      @EXPORT = ();
      %EXPORT_TAGS = (configuration => [qw(dirsize create_debbugs_configuration send_message)],
 		     mail          => [qw(num_messages_sent)],
+		     control       => [qw(test_control_commands)],
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(configuration mail));
+     Exporter::export_ok_tags(qw(configuration mail control));
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -204,6 +205,80 @@ sub send_message{
 	  system('scripts/processall') == 0 or die "processall failed";
      }
 }
+
+=item test_control_commands
+
+ test_control_commands(\%config,
+                       forcemerge => {command => 'forcemerge',
+                                      value   => '1 2',
+                                      status_key => 'mergedwith',
+                                      status_value => '2',
+                                      expect_error => 0,
+                                     });
+
+Test a set of control commands to see if they will fail or not. Takes
+SCALAR/HASHREF pairs, where the scalar should be unique, and the HASHREF
+contains the following keys:
+
+=over
+
+=item command -- control command to issue
+
+=item value -- value to pass to control command
+
+=item status_key -- bug status key to check
+
+=item status_value -- value of status key
+
+=item expect_error -- whether to expect the control command to error or not
+
+=back
+
+=cut
+
+sub test_control_commands {
+    my ($config,@commands) = @_;
+
+    # now we need to check to make sure that the control message actually did anything
+    # This is an eval because $ENV{DEBBUGS_CONFIG_FILE} isn't set at BEGIN{} time
+    eval "use Debbugs::Status qw(read_bug writebug);";
+    while (my ($command,$control_command) = splice(@commands,0,2)) {
+	# just check to see that control doesn't explode
+	$control_command->{value} = " $control_command->{value}" if length $control_command->{value}
+	    and $control_command->{value} !~ /^\s/;
+	send_message(to => 'control@bugs.something',
+		     headers => [To   => 'control@bugs.something',
+				 From => 'foo@bugs.something',
+				 Subject => "Munging a bug with $command",
+				],
+		     body => <<EOF) or fail 'message to control@bugs.something failed';
+debug 10
+$control_command->{command} $control_command->{value}
+thanks
+EOF
+	;
+	# now we need to check to make sure the control message was processed without errors
+	if (not ($control_command->{expect_error} // 0)) {
+	    ok(system('sh','-c','find '.$config->{sendmail_dir}.
+		      q( -type f | xargs grep -q "Subject: Processed: Munging a bug with $command")
+		     ) == 0,
+	       'control@bugs.something'. "$command message was parsed without errors");
+	}
+	# now we need to check to make sure that the control message actually did anything
+	my $status;
+	$status = read_bug(exists $control_command->{bug}?(bug => $control_command->{bug}):(bug=>1),
+			   exists $control_command->{location}?(location => $control_command->{location}):(),
+			  );
+	is_deeply($status->{$control_command->{status_key}},
+		  $control_command->{status_value},
+		  "bug " .
+		  (exists $control_command->{bug}?$control_command->{bug}:1).
+		  " $command"
+		 )
+	    or fail(Dumper($status));
+    }
+}
+
 
 $SIG{CHLD} = sub {};
 
