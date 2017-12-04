@@ -2298,13 +2298,22 @@ sub __calculate_merge_status{
 	    $merged_bugs{$data->{bug_num}} = 1;
 	    $bugs_to_merge = 1;
 	}
+    }
+    for my $data (@{$data_a}) {
 	# the master_bug is the bug that every other bug is made to
 	# look like. However, if merge is set, tags, fixed and found
 	# are merged.
 	if ($data->{bug_num} == $master_bug) {
-	    for (qw(package forwarded severity blocks blockedby done owner summary outlook affects)) {
+	    for (qw(package forwarded severity done owner summary outlook affects)) {
 		$merge_status{$_} = $data->{$_}
 	    }
+	    # bugs which are in the newly merged set and are also
+	    # blocks/blockedby must be removed before merging
+ 	    for (qw(blocks blockedby)) {
+ 		$merge_status{$_} =
+ 		    join(' ',grep {not exists $merged_bugs{$_}}
+ 			 split / /,$data->{$_});
+ 	    }
 	}
  	if (defined $merge_status) {
  	    next unless $data->{bug_num} == $master_bug;
