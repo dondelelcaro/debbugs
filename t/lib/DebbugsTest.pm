@@ -275,7 +275,7 @@ EOF
 		  (exists $control_command->{bug}?$control_command->{bug}:1).
 		  " $command"
 		 )
-	    or fail(Dumper($status));
+	    or fail(Data::Dumper->Dump([$status],[qw(status)]));
     }
 }
 
