@@ -2089,6 +2089,7 @@ sub set_merged {
 		$param{show_bug_info} and not __internal_request(1);
 	    $bug_info_shown{$change_bug} = 1;
 	    __allow_relocking($param{locks},[keys %data]);
+	    eval {
 	    for my $change (@{$changes->{$change_bug}}) {
 		if ($change->{field} eq 'blockedby' or $change->{field} eq 'blocks') {
 		    my %target_blockedby;
@@ -2124,6 +2125,12 @@ sub set_merged {
 						     keys %append_action_options),
 					 );
 		}
+	    }
+	};
+	    if ($@) {
+		__disallow_relocking($param{locks});
+		__end_control(%info);
+		croak "Failure while trying to adjust bugs, please report this as a bug: $@";
 	    }
 	    __disallow_relocking($param{locks});
 	    my ($data,$n_locks) =
