@@ -312,7 +312,7 @@ if (defined $tryref) {
         $ref= $tryref;
     } else {
         &sendmessage(create_mime_message(
-          [From          =>  qq("$gProject $gBug Tracking System" <$gMaintainer>),
+          [From          =>  qq("$gProject $gBug Tracking System" <$gMaintainerEmail>),
 	   To            => $replyto,
 	   Subject       => "Unknown problem report $gBug#$tryref ($subject)",
 	   'Message-ID'  => "<handler.x.$nn.unknown\@$gEmailDomain>",
@@ -403,7 +403,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
     }
     if ($ref<0) {
 	&sendmessage(create_mime_message(
-          [From          => qq("$gProject $gBug Tracking System" <$gMaintainer>),
+          [From          => qq("$gProject $gBug Tracking System" <$gMaintainerEmail>),
 	   To            => $replyto,
 	   Subject       => "Message with no $gBug number ignored by $receivedat ($subject)",
 	   'Message-ID'  => "<handler.x.$nn.warnignore\@$gEmailDomain>",
@@ -495,7 +495,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	    &htmllog("Reply","sent",$replyto,"You have marked $gBug as forwarded.");
             &sendmessage(create_mime_message(
 	     [@common_headers,
-	      From          => qq("$gProject $gBug Tracking System" <$gMaintainer>),
+	      From          => qq("$gProject $gBug Tracking System" <$gMaintainerEmail>),
               To            => "$replyto",
               Subject       => "$gBug#$ref: marked as forwarded ($data->{subject})",
               "Message-ID"  => "<header.$ref.$nn.ackfwdd\@$gEmailDomain>",
@@ -520,7 +520,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	    &htmllog("Reply","sent",$replyto,"You have taken responsibility.");
             &sendmessage(create_mime_message(
 	     [@common_headers,
-	      From          => qq("$gProject $gBug Tracking System" <$gMaintainer>),
+	      From          => qq("$gProject $gBug Tracking System" <$gMaintainerEmail>),
               To            => $replyto,
               Subject       => "$gBug#$ref: marked as done ($data->{subject})",
               "Message-ID"  => "<handler.$ref.$nn.ackdone\@$gEmailDomain>",
@@ -546,7 +546,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 		"$gBug acknowledged by developer.");
             &sendmessage(create_mime_message(
 	     [@common_headers,
-	      From          => qq("$gProject $gBug Tracking System" <$gMaintainer>),
+	      From          => qq("$gProject $gBug Tracking System" <$gMaintainerEmail>),
               To            => "$data->{originator}",
               Subject       => "$gBug#$ref closed by $markedby ($header{'subject'})",
               "Message-ID"  => "<handler.$ref.$nn.notifdone\@$gEmailDomain>",
@@ -577,7 +577,7 @@ if ($ref<0) { # new bug report
     if ($codeletter eq 'U') { # -submitter
 	&sendmessage(create_mime_message(
           [@common_headers,
-	   From          => qq("$gProject $gBug Tracking System" <$gMaintainer>),
+	   From          => qq("$gProject $gBug Tracking System" <$gMaintainerEmail>),
 	   To            => $replyto,
 	   Subject       => "Message with no $gBug number cannot be sent to submitter! ($subject)",
 	   'Message-ID'  => "<handler.x.$nn.nonumnosub\@$gEmailDomain>",
@@ -617,7 +617,7 @@ if ($ref<0) { # new bug report
 					);
         &sendmessage(create_mime_message(
                        [@common_headers,
-			From          => qq("$gProject $gBug Tracking System" <$gMaintainer>),
+			From          => qq("$gProject $gBug Tracking System" <$gMaintainerEmail>),
                         To            => $replyto,
                         Subject       => "Message with no Package: tag cannot be processed! ($subject)",
                         "Message-ID"  => "<handler.x.$nn.nonumnosub\@$gEmailDomain>",
@@ -989,7 +989,7 @@ if (not exists $header{'x-debbugs-no-ack'} and
 				     );
      &sendmessage(create_mime_message(
 		       [@common_headers,
-			From          => qq("$gProject $gBug Tracking System" <$gMaintainer>),
+			From          => qq("$gProject $gBug Tracking System" <$gMaintainerEmail>),
 			To            => $replyto,
 			Subject       => $t_h{subject},
 			"Message-ID"  => $t_h{messageid},
@@ -1090,7 +1090,7 @@ if (@control_bits) {
     my $error_text = $errors > 0 ? " (with $errors error" . ($errors > 1 ? "s" : "") . ")" : "";
     my $reply =
 	create_mime_message(['X-Loop'      => $gMaintainerEmail,
-			     From          => qq("$gProject $gBug Tracking System" <$gMaintainer>),
+			     From          => qq("$gProject $gBug Tracking System" <$gMaintainerEmail>),
 			     To            => $replyto,
 			     @maintccs ? (Cc => join(', ',@maintccs)):(),
 			     Subject       => "Processed${error_text}: $header{subject}",
