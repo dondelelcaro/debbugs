@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# debbugs-spamscan-log is part of debbugs, and is released
+# debbugs-spam is part of debbugs, and is released
 # under the terms of the GPL version 2, or any later version, at your
 # option. See the file README and COPYING for more information.
 # Copyright 2012 by Don Armstrong <don@donarmstrong.com>.
@@ -13,11 +13,11 @@ use Pod::Usage;
 
 =head1 NAME
 
-debbugs-spamscan-log -- Scan log files for spam and populate nnn.log.spam
+debbugs-spam -- Scan log files for spam and populate nnn.log.spam
 
 =head1 SYNOPSIS
 
-debbugs-spamscan-log [options] bugnumber [[bugnumber2]..]
+debbugs-spam [options] bugnumber [[bugnumber2]..]
 
  Options:
   --spool-dir debbugs spool directory
@@ -52,11 +52,11 @@ Display this manual.
 
 Rebuild the index.db for db-h.
 
- debbugs-spamscan-log;
+ debbugs-spam;
 
 Rebuild the index.db for archive
 
- debbugs-spamscan-log archive;
+ debbugs-spam archive;
 
 
 =cut
