@@ -122,7 +122,11 @@ sub _init {
         binmode($fh,':encoding(UTF-8)');
         while (<$fh>) {
             chomp;
-            $self->{spam}{$_} = 1;
+            if (s/\sham$//) {
+                $self->{spam}{$_} = '0';
+            } else {
+                $self->{spam}{$_} = '1';
+            }
         }
         close ($fh) or
             croak "Unable to close bug log filehandle: $!";
@@ -132,7 +136,10 @@ sub _init {
             croak "Unable to open bug log spamdir '$self->{name}.d' for reading: $!";
         for my $dir (readdir($d)) {
             next unless $dir =~ m/([^\.].*)_(\w+)$/;
-            $self->{spam}{$1} = 1;
+            # .spam overrides .spam.d
+            next if exists $self->{spam}{$1};
+            # set the spam HASH to $dir so we know where this value was set from
+            $self->{spam}{$1} = $dir;
         }
         closedir($d) or
             croak "Unable to close bug log spamdir: $!";
@@ -156,7 +163,16 @@ sub save {
         croak "Unable to open bug log spam '$self->{name}.tmp' for writing: $!";
     binmode($fh,':encoding(UTF-8)');
     for my $msgid (keys %{$self->{spam}}) {
-        print {$fh} $msgid."\n";
+        # was this message set to spam/ham by .d? If so, don't save it
+        if ($self->{spam} ne '0' and
+            $self->{spam} ne '1') {
+            next;
+        }
+        print {$fh} $msgid;
+        if ($self->{spam} eq '0') {
+            print {$fh} ' ham';
+        }
+        print {$fh "\n";
     }
     close($fh) or croak "Unable to write to '$self->{name}.tmp': $!";
     rename($self->{name}.'.tmp',$self->{name});
@@ -169,7 +185,7 @@ sub save {
 
 Returns 1 if this message id confirms that the message is spam
 
-Returns 0 if this message is not spam
+Returns 0 if this message is not known to be spam
 
 =cut
 sub is_spam {
@@ -177,12 +193,34 @@ sub is_spam {
     return 0 if not defined $msgid or not length $msgid;
     $msgid =~ s/^<|>$//;
     if (exists $self->{spam}{$msgid} and
-        $self->{spam}{$msgid}
+        $self->{spam}{$msgid} ne '0'
        ) {
         return 1;
     }
     return 0;
 }
+
+=item is_ham
+
+    next if ($spam_log->is_ham('12456@exmaple.com'));
+
+Returns 1 if this message id confirms that the message is ham
+
+Returns 0 if this message is not known to be ham
+
+=cut
+sub is_ham {
+    my ($self,$msgid) = @_;
+    return 0 if not defined $msgid or not length $msgid;
+    $msgid =~ s/^<|>$//;
+    if (exists $self->{spam}{$msgid} and
+        $self->{spam}{$msgid} eq '0'
+       ) {
+        return 1;
+    }
+    return 0;
+}
+
 
 =item add_spam
 
@@ -197,8 +235,25 @@ You must call C<$self->save()> if you wish the changes to be written out to disk
 sub add_spam {
     my ($self,$msgid) = @_;
     $msgid =~ s/^<|>$//;
-    $self->{spam}{$msgid} = 1;
+    $self->{spam}{$msgid} = '1';
 }
+
+=item add_ham
+
+    $spam_log->add_ham('123456@example.com');
+
+Add a message id to the ham listing.
+
+You must call C<$self->save()> if you wish the changes to be written out to disk.
+
+=cut
+
+sub add_spam {
+    my ($self,$msgid) = @_;
+    $msgid =~ s/^<|>$//;
+    $self->{spam}{$msgid} = '0';
+}
+
 
 1;
 
