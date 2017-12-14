@@ -48,15 +48,34 @@ Display this manual.
 
 =back
 
+=head1 SUBCOMMANDS
+
+=over
+
+=item B<auto-scan>
+
+Automatically scan messages using spamassassin and mark messages as
+spam which hit the threshold, and those that are highly negative as
+ham.
+
+=item B<score>
+
+Output the score of all of the messages in a bug
+
+=item B<mark-spam>
+
+Mark messages as spam if there is a regex match to subject or message
+id
+
+=item B<mark-ham>
+
+Mark messages as ham if there is a regex match to subject or message
+id
+
+=back
+
+
 =head1 EXAMPLES
-
-Rebuild the index.db for db-h.
-
- debbugs-spam;
-
-Rebuild the index.db for archive
-
- debbugs-spam archive;
 
 
 =cut
@@ -67,7 +86,9 @@ use vars qw($DEBUG);
 use Debbugs::Log qw(record_regex);
 use Debbugs::Log::Spam;
 use Debbugs::Config qw(:config);
+use Debbugs::Command qw(:all);
 use IPC::Open3 qw(open3);
+use Carp;
 
 my %options =
     (debug   => 0,
@@ -80,15 +101,28 @@ my %options =
      spamc_opts => [],
     );
 
+handle_main_arguments(\%options,
+                      'quick|q',
+                      'service|s',
+                      'sysconfdir|c',
+                      'spamc=s' => 0,
+                      'spamc_opts|spamc-opts=s@' => 0,
+                      'spool_dir|spool-dir=s',
+                      'debug|d+','help|h|?','man|m');
 
-GetOptions(\%options,
-           'quick|q',
-           'service|s',
-           'sysconfdir|c',
-           'spool_dir|spool-dir=s',
-           'spamc=s',
-           'spamc_opts|spamc-opts=s@',
-           'debug|d+','help|h|?','man|m');
+my %subcommands =
+    ('auto-scan' => {function => \&auto_spamscan,
+                     arguments => {'ham_threshold=s' => -5,
+                                  },
+                    },
+     'score' => {function => \&score_bug,
+                },
+     'mark-spam' => {function => \&mark_spam,
+                    },
+     'mark-ham' => {function => \&mark_ham,
+                   },
+     'help' => {function => sub {pod2usage({verbose => 2});}}
+    );
 
 pod2usage() if $options{help};
 pod2usage({verbose=>2}) if $options{man};
@@ -98,24 +132,183 @@ $DEBUG = $options{debug};
 my @USAGE_ERRORS;
 $options{verbose} = $options{verbose} - $options{quiet};
 
-if (not @ARGV) {
-    push @USAGE_ERRORS,
-        "You must provide a bug number to examine\n";
-}
-
 pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
+
+my ($subcommand) = shift @ARGV;
+if (not defined $subcommand) {
+    $subcommand = 'help';
+    print STDERR "You must provide a subcommand; displaying usage.\n";
+    pod2usage();
+} elsif (not exists $subcommands{$subcommand}) {
+    print STDERR "$subcommand is not a valid subcommand; displaying usage.\n";
+    pod2usage();
+}
 
 if (exists $options{spool_dir} and defined $options{spool_dir}) {
     $config{spool_dir} = $options{spool_dir};
 }
-chdir($config{spool_dir}) or die "chdir $config{spool_dir} failed: $!";
+if ($subcommand ne 'help') {
+    chdir($config{spool_dir}) or die "chdir $config{spool_dir} failed: $!";
+}
+my $opts =
+    handle_subcommand_arguments(\@ARGV,$subcommands{$subcommand}{arguments});
+$subcommands{$subcommand}{function}->(\%options,$opts,\%config,\@ARGV);
 
-for my $bug_num (@ARGV) {
+
+sub mark_ham {
+    mark_it('ham',@_);
+}
+
+sub mark_spam {
+    mark_it('spam',@_);
+}
+
+sub mark_it {
+    my ($spam_ham,$options,$opts,$config,$argv) = @_;
+    my $regex = shift @{$argv};
+    for my $bug_num (@{$argv}) {
+        my $spam = Debbugs::Log::Spam->new(bug_num => $bug_num) or
+            die "Unable to open bug log spam for $bug_num";
+        foreachmsg(sub {
+                       my ($bn,$rec,$mid) = @_;
+                       my $body = $rec->{text};
+                       my ($subject) = $body =~ /^Subject: *(.+)$/mi;
+                       my $is_match = 0;
+                       if ($subject =~ /\Q$regex\E/) {
+                           $is_match = 1;
+                       }
+                       if ($mid =~ /\Q$regex\E/) {
+                           $is_match = 1;
+                       }
+                       if ($spam_ham eq 'spam') {
+                           $spam->add_spam($mid);
+                       } else {
+                           $spam->add_ham($mid);
+                       }
+                   },
+                   $bug_num
+                  );
+    }
+}
+
+
+sub score_bug {
+    my ($options,$opts,$config,$argv) = @_;
+    for my $bug_num (@{$argv}) {
+        my @bug_score =
+            spam_score_bug($bug_num,
+                           $opts->{spamc},
+                           $opts->{spamc_opts});
+        print "$_->{score} $_->{message_id} $_->{subject}\n"
+            foreach @bug_score;
+    }
+}
+
+sub auto_spamscan {
+    my ($options,$opts,$config,$argv) = @_;
+
+    for my $bug_num (@{$argv}) {
+        my $spam = Debbugs::Log::Spam->new(bug_num => $bug_num) or
+            die "Unable to open bug log spam for $bug_num";
+        foreachmsg(sub {
+                       my ($bn,$rec,$mid) = @_;
+                       if ($spam->is_spam($mid)) {
+                           print STDERR "already spam\n" if $DEBUG;
+                           return;
+                       }
+                       if ($spam->is_ham($mid)) {
+                           print STDERR "already ham\n" if $DEBUG;
+                           return;
+                       }
+                       my ($score,$is_spam,$report,$threshold) =
+                           spam_score($rec,
+                                      $options->{spamc},
+                                      $options->{spamc_opts},
+                                     );
+                       if ($is_spam) {
+                           print STDERR "it's spam ($score)\n" if $DEBUG;
+                           $spam->add_spam($mid);
+                       } elsif ($score < $options->{ham_threshold}) {
+                           print STDERR "it's really ham ($score)\n" if $DEBUG;
+                           $spam->add_ham($mid);
+                       }
+                       else {
+                           print STDERR "it's ham ($score)\n" if $DEBUG;
+                       }
+                   },
+                   $bug_num,
+                  );
+        $spam->save();
+    }
+}
+
+sub spam_score_bug {
+    my ($bug,$spamc,$spamc_opts) = @_;
+
+    my @records;
+    foreachmsg(sub {
+                   my ($bn,$rec,$mid) = @_;
+                   my $score =
+                       spam_score($rec,$spamc,$spamc_opts);
+                   push @records,
+                      {message_id => $mid,
+                       score => $score,
+                       subject => ($rec->{text} =~ /^Subject: *(.+)/i)[0],
+                      };
+               },
+               $bug
+              );
+    return @records;
+}
+
+sub spam_score {
+    my ($record,$spamc,$spamc_opts) = @_;
+    my ($score,$threshold,$report);
+    my $is_spam = 0;
+    eval {
+        my ($spamc_in,$spamc_out);
+        my $old_sig = $SIG{"PIPE"};
+        $SIG{"PIPE"} = sub {
+            die "SIGPIPE in child for some reason";
+        };
+        my $childpid =
+            open3($spamc_in,$spamc_out,0,
+                  $spamc,'-E',@{$spamc_opts}) or
+                      die "Unable to fork spamc: $!";
+        if (not $childpid) {
+            die "Unable to fork spamc";
+        }
+        print {$spamc} $record->{text};
+        close($spamc) or die "Unable to close spamc: $!";
+        waitpid($childpid,0);
+        if ($DEBUG) {
+            print STDERR "[$?;".($? >> 8)."] ";
+            print STDERR map {s/\n//; $_ } <$spamc_out>;
+            print STDERR " ";
+        }
+        close($spamc_out);
+        $SIG{"PIPE"} = $old_sig;
+        if ($? >> 8) {
+            $is_spam = 1;
+        }
+        my ($first_line,@report) = <$spamc_out>;
+        if (defined $first_line) {
+            chomp $first_line;
+            ($score,$threshold) = $first_line =~ m{^(-?[\d\.]+)/(-?[\d\.]+)$};
+            $report = join('',@report);
+        }
+    };
+    if ($@) {
+        carp "processing of message failed [$@]\n";
+        return undef;
+    }
+    return wantarray?($score,$is_spam,$report):$score;
+}
+
+sub foreachmsg {
+    my ($sub,$bug_num) = @_;
     my $log = Debbugs::Log->new(bug_num => $bug_num) or
         die "Unable to open bug log for $bug_num";
-    my $spam = Debbugs::Log::Spam->new(bug_num => $bug_num) or
-        die "Unable to open bug log spam for $bug_num";
-
     my %seen_msgids;
     while (my $record = $log->read_record()) {
         next if $record->{type} eq 'html';
@@ -133,51 +326,8 @@ for my $bug_num (@ARGV) {
             next;
         }
         $seen_msgids{$msg_id}=1;
-        if ($spam->is_spam($msg_id)) {
-            print STDERR "already spam\n" if $DEBUG;
-            next;
-        }
-        my $is_spam;
-        eval {
-            my ($spamc,$child_out);
-            my $old_sig = $SIG{"PIPE"};
-            $SIG{"PIPE"} = sub {
-                die "SIGPIPE in child for some reason";
-            };
-            my $childpid =
-                open3($spamc,$child_out,0,
-                      $options{spamc},'-E',@{$options{spamc_opts}}) or
-                          die "Unable to fork spamc: $!";
-            if (not $childpid) {
-                die "Unable to fork spamc";
-            }
-            print {$spamc} $record->{text};
-            close($spamc) or die "Unable to close spamc: $!";
-            waitpid($childpid,0);
-            if ($DEBUG) {
-                print STDERR "[$?;".($? >> 8)."] ";
-                print STDERR map {s/\n//; $_ } <$child_out>;
-                print STDERR " ";
-            }
-            close($child_out);
-            $SIG{"PIPE"} = $old_sig;
-            if ($? >> 8) {
-                $is_spam = 1;
-            }
-        };
-        if ($@) {
-            print STDERR "processing of $msg_id failed [$@]\n";
-        } else {
-            if ($is_spam) {
-                print STDERR "it's spam\n" if $DEBUG;
-                $spam->add_spam($msg_id);
-            }
-            else {
-                print STDERR "it's ham\n" if $DEBUG;
-            }
-        }
+        $sub->($bug_num,$record,$msg_id);
     }
-    $spam->save();
 }
 
 
