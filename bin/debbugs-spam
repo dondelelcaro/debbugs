@@ -62,6 +62,12 @@ ham.
 
 Output the score of all of the messages in a bug
 
+=over
+
+=item B<--skip-seen> Skip messages which have previously been classified
+
+=back
+
 =item B<mark-spam>
 
 Mark messages as spam if there is a regex match to subject or message
@@ -116,6 +122,8 @@ my %subcommands =
                                   },
                     },
      'score' => {function => \&score_bug,
+                 arguments => {'skip_seen|skip-seen!' => 0
+                              },
                 },
      'mark-spam' => {function => \&mark_spam,
                     },
@@ -198,7 +206,9 @@ sub score_bug {
         my @bug_score =
             spam_score_bug($bug_num,
                            $options->{spamc},
-                           $options->{spamc_opts});
+                           $options->{spamc_opts},
+                           $opts->{skip_seen},
+                          );
         print "$_->{score} $_->{message_id} $_->{subject}\n"
             foreach @bug_score;
     }
@@ -243,12 +253,25 @@ sub auto_spamscan {
 }
 
 sub spam_score_bug {
-    my ($bug,$spamc,$spamc_opts) = @_;
+    my ($bug,$spamc,$spamc_opts,$skip_seen) = @_;
 
+    my $spam;
+    if ($skip_seen) {
+        $spam = Debbugs::Log::Spam->new(bug_num => $bug) or
+            die "Unable to open bug log spam for $bug";
+    }
     my @records;
     foreachmsg(sub {
                    my ($bn,$rec,$mid) = @_;
-                   my $score =
+                   my $score;
+                   if ($skip_seen) {
+                       if ($spam->is_spam($mid)) {
+                           $score = 999;
+                       } elsif ($spam->is_ham($mid)) {
+                           $score = -999;
+                       }
+                   }
+                   $score //=
                        spam_score($rec,$spamc,$spamc_opts);
                    my ($subject) = $rec->{text} =~ /^Subject: *(.+)$/mi;
                    push @records,
