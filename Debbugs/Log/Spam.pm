@@ -164,12 +164,12 @@ sub save {
     binmode($fh,':encoding(UTF-8)');
     for my $msgid (keys %{$self->{spam}}) {
         # was this message set to spam/ham by .d? If so, don't save it
-        if ($self->{spam} ne '0' and
-            $self->{spam} ne '1') {
+        if ($self->{spam}{$msgid} ne '0' and
+            $self->{spam}{$msgid} ne '1') {
             next;
         }
         print {$fh} $msgid;
-        if ($self->{spam} eq '0') {
+        if ($self->{spam}{$msgid} eq '0') {
             print {$fh} ' ham';
         }
         print {$fh} "\n";
