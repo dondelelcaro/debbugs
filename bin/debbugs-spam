@@ -250,10 +250,11 @@ sub spam_score_bug {
                    my ($bn,$rec,$mid) = @_;
                    my $score =
                        spam_score($rec,$spamc,$spamc_opts);
+                   my ($subject) = $rec->{text} =~ /^Subject: *(.+)$/mi;
                    push @records,
                       {message_id => $mid,
                        score => $score,
-                       subject => ($rec->{text} =~ /^Subject: *(.+)/i)[0],
+                       subject => $subject,
                       };
                },
                $bug
