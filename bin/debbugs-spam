@@ -197,8 +197,8 @@ sub score_bug {
     for my $bug_num (@{$argv}) {
         my @bug_score =
             spam_score_bug($bug_num,
-                           $opts->{spamc},
-                           $opts->{spamc_opts});
+                           $options->{spamc},
+                           $options->{spamc_opts});
         print "$_->{score} $_->{message_id} $_->{subject}\n"
             foreach @bug_score;
     }
