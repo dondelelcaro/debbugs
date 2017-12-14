@@ -149,7 +149,7 @@ sub _init {
 
 =item save
 
-$self->save();
+C<$spam_log->save();>
 
 Saves changes to the bug log spam file.
 
@@ -172,7 +172,7 @@ sub save {
         if ($self->{spam} eq '0') {
             print {$fh} ' ham';
         }
-        print {$fh "\n";
+        print {$fh} "\n";
     }
     close($fh) or croak "Unable to write to '$self->{name}.tmp': $!";
     rename($self->{name}.'.tmp',$self->{name});
@@ -181,7 +181,7 @@ sub save {
 
 =item is_spam
 
-    next if ($spam_log->is_spam('12456@exmaple.com'));
+C<next if ($spam_log->is_spam('12456@exmaple.com'));>
 
 Returns 1 if this message id confirms that the message is spam
 
@@ -228,7 +228,7 @@ sub is_ham {
 
 Add a message id to the spam listing.
 
-You must call C<$self->save()> if you wish the changes to be written out to disk.
+You must call C<$spam_log->save()> if you wish the changes to be written out to disk.
 
 =cut
 
@@ -244,15 +244,25 @@ sub add_spam {
 
 Add a message id to the ham listing.
 
-You must call C<$self->save()> if you wish the changes to be written out to disk.
+You must call C<$spam_log->save()> if you wish the changes to be written out to disk.
 
 =cut
 
-sub add_spam {
+sub add_ham {
     my ($self,$msgid) = @_;
     $msgid =~ s/^<|>$//;
     $self->{spam}{$msgid} = '0';
 }
+
+=item remove_message
+
+     $spam_log->remove_message('123456@example.com');
+
+Remove a message from the spam/ham listing.
+
+You must call C<$spam_log->save()> if you wish the changes to be written out to disk.
+
+=cut
 
 
 1;
