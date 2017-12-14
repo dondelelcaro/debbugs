@@ -192,10 +192,13 @@ sub mark_it {
                        if ($mid =~ /\Q$regex\E/) {
                            $is_match = 1;
                        }
-                       if ($spam_ham eq 'spam') {
-                           $spam->add_spam($mid);
-                       } else {
-                           $spam->add_ham($mid);
+                       if ($is_match) {
+                           print STDERR "it's a match" if $DEBUG;
+                           if ($spam_ham eq 'spam') {
+                               $spam->add_spam($mid);
+                           } else {
+                               $spam->add_ham($mid);
+                           }
                        }
                    },
                    $bug_num
