@@ -118,8 +118,9 @@ handle_main_arguments(\%options,
 
 my %subcommands =
     ('auto-scan' => {function => \&auto_spamscan,
-                     arguments => {'ham_threshold=s' => -5,
+                     arguments => {'ham_threshold|ham-threshold=s' => 0,
                                   },
+                     defaults => {ham_threshold => -5},
                     },
      'score' => {function => \&score_bug,
                  arguments => {'skip_seen|skip-seen!' => 0
@@ -159,7 +160,10 @@ if ($subcommand ne 'help') {
     chdir($config{spool_dir}) or die "chdir $config{spool_dir} failed: $!";
 }
 my $opts =
-    handle_subcommand_arguments(\@ARGV,$subcommands{$subcommand}{arguments});
+    handle_subcommand_arguments(\@ARGV,
+                                $subcommands{$subcommand}{arguments},
+                                $subcommands{$subcommand}{defaults},
+                               );
 $subcommands{$subcommand}{function}->(\%options,$opts,\%config,\@ARGV);
 
 
@@ -238,7 +242,7 @@ sub auto_spamscan {
                        if ($is_spam) {
                            print STDERR "it's spam ($score)\n" if $DEBUG;
                            $spam->add_spam($mid);
-                       } elsif ($score < $options->{ham_threshold}) {
+                       } elsif ($score < $opts->{ham_threshold}) {
                            print STDERR "it's really ham ($score)\n" if $DEBUG;
                            $spam->add_ham($mid);
                        }
