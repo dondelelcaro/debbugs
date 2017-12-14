@@ -278,25 +278,25 @@ sub spam_score {
         if (not $childpid) {
             die "Unable to fork spamc";
         }
-        print {$spamc} $record->{text};
-        close($spamc) or die "Unable to close spamc: $!";
+        print {$spamc_in} $record->{text};
+        close($spamc_in) or die "Unable to close spamc_in: $!";
         waitpid($childpid,0);
-        if ($DEBUG) {
-            print STDERR "[$?;".($? >> 8)."] ";
-            print STDERR map {s/\n//; $_ } <$spamc_out>;
-            print STDERR " ";
-        }
-        close($spamc_out);
-        $SIG{"PIPE"} = $old_sig;
         if ($? >> 8) {
             $is_spam = 1;
         }
         my ($first_line,@report) = <$spamc_out>;
+        if ($DEBUG) {
+            print STDERR "[$?;".($? >> 8)."] ";
+            print STDERR $first_line,@report;
+            print STDERR " ";
+        }
         if (defined $first_line) {
             chomp $first_line;
             ($score,$threshold) = $first_line =~ m{^(-?[\d\.]+)/(-?[\d\.]+)$};
             $report = join('',@report);
         }
+        close($spamc_out);
+        $SIG{"PIPE"} = $old_sig;
     };
     if ($@) {
         carp "processing of message failed [$@]\n";
