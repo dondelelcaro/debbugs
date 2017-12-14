@@ -43,6 +43,7 @@ BEGIN{
 }
 
 use Getopt::Long qw(:config no_ignore_case);
+use Pod::Usage qw(pod2usage);
 
 =head1 Command processing (:commands)
 
