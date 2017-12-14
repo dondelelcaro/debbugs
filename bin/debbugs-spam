@@ -344,17 +344,18 @@ sub foreachmsg {
         my ($msg_id) = record_regex($record,
                                     qr/^Message-Id:\s+<(.+)>/mi);
         next unless defined $msg_id;
+        print STDERR "examining $msg_id: " if $DEBUG;
         if ($msg_id =~ /$config{email_domain}$/) {
-            print STDERR "skipping $msg_id\n" if $DEBUG;
+            print STDERR "skipping\n" if $DEBUG;
             next;
         }
-        print STDERR "examining $msg_id: " if $DEBUG;
         if ($seen_msgids{$msg_id}) {
             print STDERR "already seen\n" if $DEBUG;
             next;
         }
         $seen_msgids{$msg_id}=1;
         $sub->($bug_num,$record,$msg_id);
+        print STDERR "\n" if $DEBUG;
     }
 }
 
