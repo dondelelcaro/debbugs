@@ -200,14 +200,15 @@ for my $suite (@{$suites}) {
 
 	# debian-installer is really a section rather than a component
 	# (ugh).
-	$component =~ s[/.*][];
+	my $viscomponent = $component;
+	$viscomponent =~ s[/.*][];
 
 	my $sources = (grep { -f $_ } glob "$componentdir/source/Sources.*")[0];
 	if (not defined $sources) {
 	    print STDERR "No sources matching $componentdir/source/Sources.*\n" if $DEBUG;
 	    next;
 	}
-	read_packages($db,$db2,$sources, $component,'source',$suite);
+	read_packages($db,$db2,$sources, $viscomponent,'source',$suite);
 
 	for my $arch (readdir $COMPONENT) {
 	    next unless $arch =~ s/^binary-//;
@@ -218,7 +219,7 @@ for my $suite (@{$suites}) {
 		print STDERR "No binary packages matching $archdir/Packages.*\n" if $DEBUG;
 		next;
 	    }
-	    read_packages($db,$db2,$packages, $component,$arch,$suite);
+	    read_packages($db,$db2,$packages, $viscomponent,$arch,$suite);
 	}
 
 	closedir $COMPONENT or
