@@ -200,6 +200,10 @@ sub __fallback_convert_to_utf8 {
      }
      # lets assume everything that doesn't have a charset is utf8
      $charset //= 'utf8';
+     ## if the charset is unknown, assume it's UTF-8
+     if ($charset =~ /unknown/i) {
+	 $charset = 'utf8';
+     }
      my $result;
      eval {
 	 $result = decode($charset,$data,0);
