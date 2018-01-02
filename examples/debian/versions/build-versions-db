@@ -191,25 +191,34 @@ for my $suite (@{$suites}) {
 		       'non-free', 'non-free/debian-installer',
 		      ) {
 	my $componentdir = "$suitedir/$component";
-	next unless -d $componentdir;
+	if (not -d $componentdir) {
+	    print STDERR "No directory $suitedir/$component\n" if $DEBUG;
+	    next;
+	}
 	my $COMPONENT;
 	opendir $COMPONENT, $componentdir or die "opendir $componentdir: $!";
 
 	# debian-installer is really a section rather than a component
 	# (ugh).
-	(my $viscomponent = $component) =~ s[/.*][];
+	$component =~ s[/.*][];
 
-	my $sources = (grep { -f $_ } glob "$suitedir/$component/source/Sources.*")[0];
-	next unless defined $sources;
-	read_packages($db,$db2,$sources, $viscomponent,'source',$suite);
+	my $sources = (grep { -f $_ } glob "$componentdir/source/Sources.*")[0];
+	if (not defined $sources) {
+	    print STDERR "No sources matching $componentdir/source/Sources.*\n" if $DEBUG;
+	    next;
+	}
+	read_packages($db,$db2,$sources, $component,'source',$suite);
 
 	for my $arch (readdir $COMPONENT) {
 	    next unless $arch =~ s/^binary-//;
 	    my $archdir = "$componentdir/binary-$arch";
 
 	    my $packages = (grep { -f $_ } glob("$archdir/Packages.*"))[0];
-	    next unless defined $packages;
-	    read_packages($db,$db2,$packages, $viscomponent,$arch,$suite);
+	    if (not defined $packages) {
+		print STDERR "No binary packages matching $archdir/Packages.*\n" if $DEBUG;
+		next;
+	    }
+	    read_packages($db,$db2,$packages, $component,$arch,$suite);
 	}
 
 	closedir $COMPONENT or
