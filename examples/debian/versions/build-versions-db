@@ -206,10 +206,9 @@ for my $suite (@{$suites}) {
 	my $sources = (grep { -f $_ } glob "$componentdir/source/Sources.*")[0];
 	if (not defined $sources) {
 	    print STDERR "No sources matching $componentdir/source/Sources.*\n" if $DEBUG;
-	    next;
+	} else {
+	    read_packages($db,$db2,$sources, $viscomponent,'source',$suite);
 	}
-	read_packages($db,$db2,$sources, $viscomponent,'source',$suite);
-
 	for my $arch (readdir $COMPONENT) {
 	    next unless $arch =~ s/^binary-//;
 	    my $archdir = "$componentdir/binary-$arch";
