@@ -86,6 +86,10 @@ sub handle_subcommand_arguments {
     return $subopt;
 }
 
+=back
+
+=cut
+
 
 1;
 
