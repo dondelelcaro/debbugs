@@ -350,12 +350,14 @@ sub pkg_htmlizebugs {
 	  push @{$exclude{$key}}, split /\s*,\s*/, $value;
      }
 
+     my $binary_to_source_cache = {};
      foreach my $bug (@bugs) {
 	  my %status = %{get_bug_status(bug=>$bug,
 					(exists $param{dist}?(dist => $param{dist}):()),
 					bugusertags => $param{bugusertags},
 					(exists $param{version}?(version => $param{version}):()),
 					(exists $param{arch}?(arch => $param{arch}):(arch => $config{default_architectures})),
+					binary_to_source_cache => $binary_to_source_cache,
 				       )};
 	  next unless %status;
 	  next if bug_filter(bug => $bug,

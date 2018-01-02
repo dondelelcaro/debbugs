@@ -1220,6 +1220,9 @@ sub get_bug_status {
 					  indicatesource => {type => BOOLEAN,
 							     default => 1,
 							    },
+					  binary_to_source_cache => {type => HASHREF,
+								     optional => 1,
+								    },
 					 },
 			      );
      my %status;
@@ -1254,6 +1257,8 @@ sub get_bug_status {
 
      $status{source} = binary_to_source(binary=>[split /\s*,\s*/, $status{package}],
 					source_only => 1,
+					exists $param{binary_to_source_cache}?
+					(cache =>$param{binary_to_source_cache}):(),
 				       );
 
      $status{"package"} = 'unknown' if ($status{"package"} eq '');
