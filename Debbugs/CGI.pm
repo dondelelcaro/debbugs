@@ -820,23 +820,6 @@ sub option_form{
 	  # we'll add extra comands here once I figure out what they
 	  # should be
      }
-     # add in a few utility routines
-     $variables->{output_select_options} = sub {
-	  my ($options,$value) = @_;
-	  my @options = @{$options};
-	  my $output = '';
-	  while (my ($o_value,$name) = splice @options,0,2) {
-	       my $selected = '';
-	       if (defined $value and $o_value eq $value) {
-		    $selected = ' selected';
-	       }
-	       $output .= q(<option value=").html_escape($o_value).qq("$selected>).
-		   html_escape($name).qq(</option>\n);
-	  }
-	  return $output;
-     };
-     $variables->{make_list} = sub { make_list(@_);
-     };
      # now at this point, we're ready to create the template
      return Debbugs::Text::fill_in_template(template=>$param{template},
 					    (exists $param{language}?(language=>$param{language}):()),
