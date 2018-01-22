@@ -1,0 +1,9 @@
+
+Your message had a Version: pseudo-header with an invalid package
+version:
+
+<: $version :>
+
+please either use found or fixed to the control server with a correct
+version, or reply to this report indicating the correct version so the
+maintainer (or someone else) can correct it for you.

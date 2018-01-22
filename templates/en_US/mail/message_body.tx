@@ -1,0 +1,3 @@
+: include "mail/header.tx"
+<: $body :>
+: include "mail/footer.tx"

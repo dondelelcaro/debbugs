@@ -1,0 +1,29 @@
+<: include "html/pre_title.tx":>.$config.project) .$config.bug report logs by <: $tag :><:include "html/post_title.tx":>
+</head>
+<body>
+    <h1>.$config.project .$config.bug report logs by .$tag</h1> 
+    .$note
+    <form>
+        <input type="hidden" name="skip" value=".$param.skip">
+        <input type="hidden" name="max_results" value=".$param.max_results">
+        <input type="hidden" name="indexon" value=".$param.indexon">
+        <input type="hidden" name="repeatmerged" value=".$param.repeatmerged">
+        <input type="hidden" name="archive" value=".$param.archive">
+        <input type="hidden" name="sortby" value=".$param.sortby">
+        : if (defined $param.first) {
+        <input type="hidden" name="first" value="<: $param.first :>">
+        : } else {
+        <p>
+            : if ($param.skip> 0) {
+	        <input type="submit" name="prev" value="Prev">
+            : }
+            : if (keys %count > ($param.skip + $param.max_results)) {
+	        <input type="submit" name="next" value="Next">
+            : }
+        </p>
+        : }
+        <: $result :>
+        <hr/>
+        <: include "html/html_tail.tx" :>
+</body>
+</html>

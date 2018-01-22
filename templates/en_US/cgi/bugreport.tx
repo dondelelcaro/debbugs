@@ -1,0 +1,48 @@
+<: include "html/pre_title.tx" :>#<: $bug_num :> - <: $status.subject :> - <: $config.project :> <: $config.bug :> report logs<: include "html/post_title.tx" :>
+<script type="text/javascript">
+<!--
+function toggle_infmessages()
+{
+        allDivs=document.getElementsByTagName("div");
+        for (var i = 0 ; i < allDivs.length ; i++ )
+       {
+                if (allDivs[i].className == "infmessage")
+                {
+                        allDivs[i].style.display=(allDivs[i].style.display == 'none' | allDivs[i].style.display == '') ? 'block' : 'none';
+                }
+       }
+}
+-->
+</script>
+</head>
+<body>
+<h1><: $config.project :> <: $config.bug :> report logs - 
+<a href="mailto:<: $bug_num :>@<: $config.email_domain :>">#<: $bug_num :></a><br>
+<: $status.subject :></h1>
+<div class="versiongraph"><: raw($version_graph) :></div>
+<: include "cgi/bugreport_pkginfo.tx" :>
+<: include "cgi/bugreport_buginfo.tx" :>
+: if looks_like_number($msg) {
+<p><a href="<: bug_links(bug => $bug_num, links_only => 1) :>">Full log</a></p>
+: } else {
+: if ! $status.archived {
+<p><a href="mailto:<: $bug_num :>@<: $config.email_domain :>">Reply</a>
+or <a href="mailto:<: $bug_num :>-subscribe@<: $config.email_domain :>">subscribe</a>
+to this bug.</p>
+: }
+<script>
+ document.write("<p><a href=\"javascript:toggle_infmessages();\">Toggle useless messages</a></p>")
+</script>
+<div class="msgreceived"><p>View this report as an
+<a href="<: bug_links("bug",$bug_num,"links_only",1,"options",{"mbox","yes"}) :>">mbox folder</a>,
+<a href="<: bug_links("bug",$bug_num,"links_only",1,"options",{"mbox","yes"}) :>">status mbox</a>,
+<a href="<: bug_links("bug",$bug_num,"links_only",1,"options",{"mbox","yes"}) :>">maintainer mbox</a>
+</p></div>
+: }
+<: raw($log) :>
+<hr>
+<p class="msgreceived">Send a report that <a href="<: $config.cgi_domain :>/bugspam.cgi?bug=<: $bug_num :>">this bug log contains spam</a>.</p>
+<hr>
+<: include "html/html_tail.tx" :>
+</body>
+</html>

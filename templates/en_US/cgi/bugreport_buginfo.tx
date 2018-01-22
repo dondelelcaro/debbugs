@@ -1,0 +1,54 @@
+<div class="buginfo">
+    <p>Reported by: <: raw(package_links(submitter=>$status.originator )) :></p>
+    <p>Date: <: $status.date_text :></p>
+    : if defined($status.owner) && $status.owner.length() {
+    <p>Owned by: <: raw(package_links("owner",$status.owner)) :></p>
+    : }
+    <p>Severity: <: if $status.severity { :><em class="severity"><: } :><: $status.severity :>
+        <: if $status.severity { :></em><: } :></p>
+    <p><: if $status.tags_array { :>Tags: <: $status.tags_array.join(' ') :></p> <: } :>
+    : if $status.mergedwith_array.count > 0 {
+    <p>Merged with <: bug_links(bug=>$status.mergedwith_array).join(",\n") :></p>
+    : }
+    : if $status.found_versions.count {
+    <p>Found in
+        version<:- if $status.found_versions.count > 1 { -:>s<: } -:>
+        <: $status.found_versions.join(', ') :></p>
+    : }
+    : if $status.fixed_versions.count {
+    <p>Fixed in 
+        version<:- if $status.fixed_versions.count > 1 { -:>s<: } -:>
+        <: $status.fixed_versions.join(', ') :></p>
+    : }
+    <: if $status.done.length() { :>
+    <p><strong>Done:</strong> <: $status.done :></p>
+    <: } :>
+    <: if $status.blockedby_array.count { :>
+    <p>Fix blocked by
+        : for $status.blockedby_array -> $bug {
+        <: bug_links("bug",$bug.bug_num) :>: <: $bug.subject :><: if !$~bug.is_last { :>,
+        <:  } else {  :>.<: } :>
+        : }
+    </p>
+    <: } :>
+    : if $status.blocks_array.count {
+    <p>Blocking fix for
+        : for $status.blocks_array -> $bug {
+        <: bug_links("bug",$bug.bug_num) :>: <: $bug.subject :><:if ! $~bug.is_last { :>,
+        <:  } else {  :>.<: } :>
+        : }
+    </p>
+    : }
+    : if $status.archived {
+    <p>Bug is archived. No further changes may be made.<p>
+    : }
+    : if defined $status.forwarded and $status.forwarded.length() {
+    <p>Forwarded to <: split($status.forwarded,',\s+').map(maybelink).join(', ') :></p>
+    : }
+    : if defined $status.summary and $status.summary.length() {
+    <p>Summary: <: $status.summary :></p>
+    : }
+    : if defined $status.outlook and $status.outlook.length() {
+    <p>Summary: <: $status.outlook :></p>
+    : }
+</div>
