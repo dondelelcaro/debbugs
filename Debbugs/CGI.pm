@@ -575,7 +575,7 @@ sub emailfromrfc822{
      return $addr;
 }
 
-sub mainturl { package_links(maint => $_[0], links_only => 1); }
+sub mainturl { package_links(maintainer => $_[0], links_only => 1); }
 sub submitterurl { package_links(submitter => $_[0], links_only => 1); }
 sub htmlize_maintlinks {
     my ($prefixfunc, $maints) = @_;
