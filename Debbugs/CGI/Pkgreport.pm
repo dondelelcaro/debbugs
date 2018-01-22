@@ -103,7 +103,7 @@ sub generate_package_info{
 	  print {$output} '<p>';
 	  print {$output} (($maint =~ /,/)? "Maintainer for $showpkg is "
 			   : "Maintainers for $showpkg are ") .
-				package_links(maint => $maint);
+				package_links(maintainer => $maint);
 	  print {$output} ".</p>\n";
      }
      else {
