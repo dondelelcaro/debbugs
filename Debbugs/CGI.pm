@@ -34,28 +34,7 @@ use strict;
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use Exporter qw(import);
 
-use Debbugs::URI;
-use HTML::Entities;
-use Debbugs::Common qw(getparsedaddrs make_list);
-use Params::Validate qw(validate_with :types);
-
-use Debbugs::Config qw(:config);
-use Debbugs::Status qw(splitpackages isstrongseverity);
-use Debbugs::User qw();
-
-use Mail::Address;
-use POSIX qw(ceil);
-use Storable qw(dclone);
-
-use List::AllUtils qw(max);
-use File::stat;
-use Digest::MD5 qw(md5_hex);
-use Carp;
-
-use Debbugs::Text qw(fill_in_template);
-
 our %URL_PARAMS = ();
-
 
 BEGIN{
      ($VERSION) = q$Revision: 1.3 $ =~ /^Revision:\s+([^\s+])/;
@@ -83,6 +62,26 @@ BEGIN{
      Exporter::export_ok_tags(keys %EXPORT_TAGS);
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
+
+use Debbugs::URI;
+use HTML::Entities;
+use Debbugs::Common qw(getparsedaddrs make_list);
+use Params::Validate qw(validate_with :types);
+
+use Debbugs::Config qw(:config);
+use Debbugs::Status qw(splitpackages isstrongseverity);
+use Debbugs::User qw();
+
+use Mail::Address;
+use POSIX qw(ceil);
+use Storable qw(dclone);
+
+use List::AllUtils qw(max);
+use File::stat;
+use Digest::MD5 qw(md5_hex);
+use Carp;
+
+use Debbugs::Text qw(fill_in_template);
 
 
 
