@@ -132,7 +132,7 @@ sub __text_xslate_functions_text {
 sub __html_template_prefilter {
     my $text = shift;
     $text =~ s/^\s+:/:/mg;
-    $text =~ s/((?:^:[^\n]*\n)?)\s+(<:-)/$1$2/mg;
+    $text =~ s/((?:^:[^\n]*\n)?)\s*(<:-)/$1$2/mg;
     $text =~ s/(-:>)\s+(^:|)/$1.(length($2)?"\n$2":'')/emg;
     return $text;
 }
