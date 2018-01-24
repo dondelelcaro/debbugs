@@ -2,5 +2,5 @@
 <HEAD><TITLE>Error</TITLE></HEAD>
 <BODY>
 An error occurred.
-Error was: .$msg
+Error was: <: $msg :>
 </BODY></HTML>
