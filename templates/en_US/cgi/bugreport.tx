@@ -34,9 +34,9 @@ to this bug.</p>
  document.write("<p><a href=\"javascript:toggle_infmessages();\">Toggle useless messages</a></p>")
 </script>
 <div class="msgreceived"><p>View this report as an
-<a href="<: bug_links("bug",$bug_num,"links_only",1,"options",{"mbox","yes"}) :>">mbox folder</a>,
-<a href="<: bug_links("bug",$bug_num,"links_only",1,"options",{"mbox","yes"}) :>">status mbox</a>,
-<a href="<: bug_links("bug",$bug_num,"links_only",1,"options",{"mbox","yes"}) :>">maintainer mbox</a>
+<a href="<: bug_links("bug",$bug_num,links_only=>1,options=>{mbox=>"yes"}) :>">mbox</a>,
+<a href="<: bug_links("bug",$bug_num,links_only=>1,options=>{mbox=>"yes",mboxstatus => "yes"}) :>">status mbox</a>, or
+<a href="<: bug_links("bug",$bug_num,links_only=>1,options=>{mbox=>"yes",mboxmaint => "yes"}) :>">maintainer mbox</a>
 </p></div>
 : }
 <: raw($log) :>
