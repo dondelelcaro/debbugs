@@ -53,24 +53,11 @@ a:link:hover, a:visited:hover {
     color: #d81e1e;
 }
 
-.link {
+.link, .link abbr, .link abbr:hover {
     color: #1b56ce;
     font-weight: bold;
     text-decoration: underline;
 }
-
-.link abbr {
-    color: #1b56ce;
-    font-weight: bold;
-    text-decoration: underline;
-}
-
-.link abbr:hover {
-    color: #1b56ce;
-    font-weight: bold;
-    text-decoration: underline;
-}
-
 
 .link span:hover {
     color: #d81e1e;
@@ -138,16 +125,7 @@ div.headers {
     overflow: auto;
  }
 
-div.header {
-    font-family: sans-serif;
-    font-size: 95%;
-    color: #3c3c3c;
-    padding: 0px;
-    line-height: 120%;
-    margin: 0px;
-}
-
-div.headers p {
+div.header, div.headers p {
     font-family: sans-serif;
     font-size: 95%;
     color: #3c3c3c;
@@ -186,17 +164,12 @@ pre.mime {
     color: #686868;
 }
 
-.msgreceived p {
+.msgreceived p, p.msgreceived {
     width: 120ch;
     margin-top: 0px;
     margin-bottom: 0px;
 }
 
-p.msgreceived {
-    width: 120ch;
-    margin-top: 0px;
-    margin-bottom: 0px;
-}
 
 .buginfo p
 { 
