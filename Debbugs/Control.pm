@@ -2791,7 +2791,8 @@ sub _summary {
 				 \#|reopen|close|(?:not|)(?:fixed|found)|clone|
 				 debug|(?:not|)forwarded|priority|
 				 (?:un|)block|limit|(?:un|)archive|
-				 reassign|retitle|affects|wrongpackage
+				 reassign|retitle|affects|package|
+				 outlook|
 				 (?:un|force|)merge|user(?:category|tags?|)
 			     )\s+\S}xis) {
 		   if (not length $paragraph) {
