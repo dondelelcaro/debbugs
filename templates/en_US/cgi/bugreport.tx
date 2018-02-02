@@ -16,9 +16,10 @@ function toggle_infmessages()
 </script>
 </head>
 <body>
-<h1><: $config.project :> <: $config.bug :> report logs - 
-<a href="mailto:<: $bug_num :>@<: $config.email_domain :>">#<: $bug_num :></a><br>
-<: $status.subject :></h1>
+    <div class="debbugs_install"><: $config.project :> <: $config.bug :> report logs</div>
+    <h1 class="bug_header"><a class="bug_email" href="mailto:<: $bug_num :>@<: $config.email_domain :>">#<: $bug_num :></a>
+        <span class="bug_subject"><: $status.subject :></span>
+    </h1>
 <div class="versiongraph"><: raw($version_graph) :></div>
 <: include "cgi/bugreport_pkginfo.tx" :>
 <: include "cgi/bugreport_buginfo.tx" :>
