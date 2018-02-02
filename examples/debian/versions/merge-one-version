@@ -23,13 +23,15 @@ unless (-d "$root/$pkghash") {
     mkdir "$root/$pkghash" or die "can't mkdir $root/$pkghash";
 }
 my $outfile = "$root/$pkghash/$pkg";
-if (open PREV, "< $outfile") {
-    $tree->load(*PREV);
-    close PREV;
+my $PREV;
+if (open($PREV, "< $outfile")) {
+    $tree->load($PREV);
+    close($PREV);
 }
 
 $tree->load(*STDIN);
 
-open OUT, "> $outfile" or die "can't open $outfile for writing: $!\n";
-$tree->save(*OUT);
-close OUT or die "can't close $outfile: $!\n";
+my $OUT;
+open($OUT, "> $outfile") or die "can't open $outfile for writing: $!\n";
+$tree->save($OUT);
+close($OUT) or die "can't close $outfile: $!\n";
