@@ -154,6 +154,10 @@ sub convert_to_utf8 {
     if ($charset eq 'RAW') {
         croak("Charset must not be raw when calling convert_to_utf8");
     }
+    ## if the charset is unknown or unknown 8 bit, assume that it's UTF-8.
+    if ($charset =~ /unknown/i) {
+	$charset = 'UTF-8'
+    }
     my $iconv_converter;
     eval {
         $iconv_converter = Text::Iconv->new($charset,"UTF-8") or
