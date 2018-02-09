@@ -195,6 +195,8 @@ my %subcommands =
                  },
      'logs' => {function => \&add_logs,
                },
+     'bugs_and_logs' => {function => \&add_bugs_and_logs,
+			},
      'packages' => {function => \&add_packages,
 		    arguments => {'ftpdists=s' => 1,
 				  'suites=s@' => 0,
@@ -292,18 +294,10 @@ sub add_bugs {
 		my @bugs = @_;
 		my @bugs_to_update;
 		if ($options{quick}) {
-		  for my $bug (@bugs) {
-		    my $stat = stat(getbugcomponent($bug,'summary',$initialdir));
-		    if (not defined $stat) {
-                      print STDERR "Unable to stat $bug $!\n";
-                      next;
-		    }
-		    my $rs = $s->resultset('Bug')->search({id=>$bug})->single();
-		    next if defined $rs and $stat->mtime <= $rs->last_modified()->epoch();
-		    push @bugs_to_update, $bug;
-                  }
+		    @bugs_to_update =
+			bugs_to_update($s,$initialdir,@bugs);
 		} else {
-		  @bugs_to_update = @bugs;
+		    @bugs_to_update = @bugs;
 		}
 		eval {
 		  $s->txn_do(sub {
@@ -576,6 +570,81 @@ sub add_logs {
               });
 }
 
+sub add_bugs_and_logs {
+    my ($options,$opts,$p,$config,$argv) = @_;
+
+    chdir($config->{spool_dir}) or
+        die "chdir $config->{spool_dir} failed: $!";
+
+    my $verbose = $options->{debug};
+
+    my $initialdir = "db-h";
+
+    if (defined $argv->[0] and $argv->[0] eq "archive") {
+        $initialdir = "archive";
+    }
+    my $s = db_connect($options);
+
+    my %tags;
+    my %severities;
+    my %queue;
+
+    walk_bugs([(@{$argv}?@{$argv} : $initialdir)],
+              $p,
+              'summary',
+              $verbose,
+              sub {
+                  my @bugs = @_;
+		  my @bugs_to_update;
+		  if ($options{quick}) {
+		      @bugs_to_update =
+			  bugs_to_update($s,$initialdir,@bugs);
+		  } else {
+		      @bugs_to_update = @bugs;
+		  }
+		  eval {
+		      $s->txn_do(sub {
+				     for my $bug (@bugs_to_update) {
+					 load_bug(db => $s,
+						  bug => $bug,
+						  tags => \%tags,
+						  severities => \%severities,
+						  queue => \%queue);
+				     }
+				 });
+		  };
+		  if ($@) {
+		      die "failure while trying to load bug: $@";
+		  }
+		  for my $bug (@bugs) {
+		      my $stat = stat(getbugcomponent($bug,'log',$initialdir));
+		      if (not defined $stat) {
+			  print STDERR "Unable to stat $bug $!\n";
+			  next;
+		      }
+		      if ($options{quick}) {
+			  my $rs = $s->resultset('Bug')->
+			      search({id=>$bug})->single();
+			  return if defined $rs and
+			      $stat->mtime <= $rs->last_modified()->epoch();
+		      }
+		      eval {
+			  load_bug_log(db => $s,
+				       bug => $bug);
+		      };
+		      if ($@) {
+			  die "failure while trying to load bug log $bug\n$@";
+		      }
+		  }
+              },
+	      50
+	     );
+    handle_load_bug_queue(db=>$s,
+			  queue => \%queue,
+			 );
+
+}
+
 sub add_packages {
     my ($options,$opts,$p,$config,$argv) = @_;
 
@@ -756,6 +825,22 @@ sub walk_bugs {
     $p->remove() if $p;
 }
 
+
+sub bugs_to_update {
+    my ($s,$initialdir,@bugs) = @_;
+    my @bugs_to_update;
+    for my $bug (@bugs) {
+	my $stat = stat(getbugcomponent($bug,'summary',$initialdir));
+	if (not defined $stat) {
+	    print STDERR "Unable to stat $bug $!\n";
+	    next;
+	}
+	my $rs = $s->resultset('Bug')->search({id=>$bug})->single();
+	next if defined $rs and $stat->mtime <= $rs->last_modified()->epoch();
+	push @bugs_to_update, $bug;
+    }
+    @bugs_to_update;
+}
 
 
 __END__
