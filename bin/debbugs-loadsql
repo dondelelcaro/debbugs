@@ -267,8 +267,6 @@ sub add_bugs {
     my $s = db_connect($options);
 
 
-    my $time = 0;
-    my $start_time = time;
     my %tags;
     my %severities;
     my %queue;
@@ -538,10 +536,6 @@ sub add_logs {
         $initialdir = "archive";
     }
     my $s = db_connect($options);
-
-
-    my $time = 0;
-    my $start_time = time;
 
     walk_bugs([(@{$argv}?@{$argv} : $initialdir)],
               $p,
