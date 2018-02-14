@@ -127,6 +127,7 @@ sub get_status {
 	      @bugs = @{$bugs[0]};
      }
      my %status;
+     my %binary_to_source_cache;
      for my $bug (@bugs) {
 	  my $bug_status;
 	  if (ref($bug)) {
@@ -134,11 +135,14 @@ sub get_status {
 	       next unless defined $param{bug};
 	       $bug = $param{bug};
 	       $bug_status = get_bug_status(map {(exists $param{$_})?($_,$param{$_}):()}
-					    qw(bug dist arch bugusertags sourceversions version indicatesource)
+					    qw(bug dist arch bugusertags sourceversions version indicatesource),
+					    binary_to_source_cache => \%binary_to_source_cache,
 					   );
 	  }
 	  else {
-	       $bug_status = get_bug_status(bug => $bug);
+	      $bug_status = get_bug_status(bug => $bug,
+					   binary_to_source_cache => \%binary_to_source_cache,
+					  );
 	  }
 	  if (defined $bug_status and keys %{$bug_status} > 0) {
 	       $status{$bug}  = $bug_status;
