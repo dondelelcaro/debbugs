@@ -348,6 +348,9 @@ sub spam_score {
     my ($score,$threshold,$report);
     my $is_spam = 0;
     eval {
+        $report = '';
+        $score = 0;
+        $threshold = 5;
         my ($spamc_in,$spamc_out);
         my $old_sig = $SIG{"PIPE"};
         $SIG{"PIPE"} = sub {
@@ -355,7 +358,7 @@ sub spam_score {
         };
         my $childpid =
             open3($spamc_in,$spamc_out,0,
-                  $spamc,'-E',@{$spamc_opts}) or
+                  $spamc,'-E','--headers',@{$spamc_opts}) or
                       die "Unable to fork spamc: $!";
         if (not $childpid) {
             die "Unable to fork spamc";
@@ -363,19 +366,24 @@ sub spam_score {
         print {$spamc_in} $record->{text};
         close($spamc_in) or die "Unable to close spamc_in: $!";
         waitpid($childpid,0);
-        if ($? >> 8) {
+        my $exit_code = $? >> 8;
+        if ($exit_code) {
             $is_spam = 1;
         }
-        my ($first_line,@report) = <$spamc_out>;
-        if ($DEBUG) {
-            print STDERR "[$?;".($? >> 8)."] ";
-            print STDERR $first_line,@report;
-            print STDERR " ";
+        while (<$spamc_out>) {
+            if (/^X-Spam/) {
+                $report .= $_;
+                if (/^X-Spam-Status: (Yes|No), score=([\d\.]+) required=([\d\.]+)/) {
+                    $threshold = $3;
+                    $score = $2;
+                }
+            }
+            if (/^\s*$/) {
+                last;
+            }
         }
-        if (defined $first_line) {
-            chomp $first_line;
-            ($score,$threshold) = $first_line =~ m{^(-?[\d\.]+)/(-?[\d\.]+)$};
-            $report = join('',@report);
+        if ($DEBUG) {
+            print STDERR "[$exit_code] [$score/$threshold]\n$report\n";
         }
         close($spamc_out);
         $SIG{"PIPE"} = $old_sig;
