@@ -373,7 +373,7 @@ sub spam_score {
         while (<$spamc_out>) {
             if (/^X-Spam/) {
                 $report .= $_;
-                if (/^X-Spam-Status: (Yes|No), score=([\d\.]+) required=([\d\.]+)/) {
+                if (/^X-Spam-Status: (Yes|No), score=(-?[\d\.]+) required=(-?[\d\.]+)/) {
                     $threshold = $3;
                     $score = $2;
                 }
