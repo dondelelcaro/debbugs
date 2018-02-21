@@ -202,10 +202,10 @@ sub mark_it {
                        my $body = $rec->{text};
                        my ($subject) = $body =~ /^Subject: *(.+)$/mi;
                        my $is_match = 0;
-                       if ($subject =~ /\Q$regex\E/) {
+                       if ($subject =~ /$regex/) {
                            $is_match = 1;
                        }
-                       if ($mid =~ /\Q$regex\E/) {
+                       if ($mid =~ /$regex/) {
                            $is_match = 1;
                        }
                        if ($is_match) {
