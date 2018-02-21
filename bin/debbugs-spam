@@ -144,7 +144,7 @@ my %subcommands =
                     },
      'mark-ham' => {function => \&mark_ham,
                    },
-     'learn' => {fuction => \&learn,
+     'learn' => {function => \&learn,
                 },
      'help' => {function => sub {pod2usage({verbose => 2});}}
     );
