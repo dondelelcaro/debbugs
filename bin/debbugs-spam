@@ -78,11 +78,25 @@ id
 Mark messages as ham if there is a regex match to subject or message
 id
 
+=item B<learn>
+
+Learn from messages which are ham/spam
+
 =back
 
 
 =head1 EXAMPLES
 
+Start spamd:
+
+  /usr/sbin/spamd --socketpath=/home/debbugs/spamd_socket \
+      --nouser-config --cf='include /home/debbugs/.spamassassin/user_prefs' \
+      --cf='allow_user_rules 1' --allow-tell;
+
+Then score bugs:
+
+  debbugs-spam --spamc-opts '-U' --spamc-opts '/home/debbugs/spamd_socket' \
+      score 859123;
 
 =cut
 
@@ -130,6 +144,8 @@ my %subcommands =
                     },
      'mark-ham' => {function => \&mark_ham,
                    },
+     'learn' => {fuction => \&learn,
+                },
      'help' => {function => sub {pod2usage({verbose => 2});}}
     );
 
@@ -204,6 +220,40 @@ sub mark_it {
                    $bug_num
                   );
         $spam->save();
+    }
+}
+
+sub learn {
+    my ($options,$opts,$config,$argv) = @_;
+    for my $bug_num (@{$argv}) {
+        my $spam = Debbugs::Log::Spam->new(bug_num => $bug_num) or
+            die "Unable to open bug log spam for $bug_num";
+        foreachmsg(sub {
+                       my ($bn,$rec,$mid) = @_;
+                       my $score;
+                       if ($spam->is_spam($mid)) {
+                           $score //=
+                               spam_score($rec,$options->{spamc},
+                                          [@{$options->{spamc_opts}},
+                                           '-L','spam'
+                                          ]
+                                         );
+                           print STDERR "learning spam" if $DEBUG;
+                       } elsif ($spam->is_ham($mid)) {
+                           $score //=
+                               spam_score($rec,$options->{spamc},
+                                          [@{$options->{spamc_opts}},
+                                           '-L','ham'
+                                          ]
+                                         );
+                           print STDERR "learning ham" if $DEBUG;
+                       } else {
+                           print STDERR "not learning" if $DEBUG;
+                       }
+                       print STDERR " from $mid" if $DEBUG;
+                   },
+                   $bug_num
+                  );
     }
 }
 
