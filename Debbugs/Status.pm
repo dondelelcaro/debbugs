@@ -227,15 +227,19 @@ sub read_bug{
 
     my %data;
     my @lines;
-    my $version = 2;
+    my $version;
     local $_;
 
     while (<$status_fh>) {
         chomp;
         push @lines, $_;
-        $version = $1 if /^Format-Version: ([0-9]+)/i;
+	if (not defined $version and
+	    /^Format-Version: ([0-9]+)/i
+	   ) {
+	    $version = $1;
+	}
     }
-
+    $version = 2 if not defined $version;
     # Version 3 is the latest format version currently supported.
     if ($version > 3) {
 	 warn "Unsupported status version '$version'";
