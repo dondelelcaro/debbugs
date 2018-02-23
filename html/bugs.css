@@ -1,7 +1,7 @@
 html {
     color: #000; 
     background: #fefefe;
-    font-family: serif;
+    font-family: sans-serif;
     margin: 0;
     border: 0;
     padding: 0;
@@ -108,7 +108,25 @@ pre.wrapping {
     border-top: 1ex;
 }
 
-a.bugtitle {
+/* debbugs install header */
+
+div.debbugs_install {
+    font-size: 80%;
+    margin: 0px;
+    padding: 0px;
+    border: solid 1px;
+    background: #eee;
+}
+
+/* bugreport bug title */
+
+h1.bug_title {
+    padding: 0px;
+    margin: 0px;
+    border: solid;
+}
+
+a.bug_title {
     font-weight: bold;
     font-size: 110%;
 }
@@ -176,14 +194,37 @@ pre.mime {
     margin-bottom: 0px;
 }
 
+/* bug info CSS; this is the CSS which displays the per-bug information on each
+   of the bugreport.cgi pages */
 
-.buginfo p
+.buginfo
 { 
   font-family: sans-serif;
   font-size: 110%;
   margin-bottom: 0px
 }
 
+.buginfo ul {
+    padding: 0;
+    margin: 0;
+}
+
+.buginfo li {
+    list-style-type: none;
+    display: table-row;
+}
+
+.buginfo .value {
+    display: table-cell;
+    padding-left: 2px;
+}
+
+.buginfo .key {
+    display: table-cell;
+    padding-right: 2px;
+    border-right: 2px solid;
+    padding-left: auto;
+}
 .buginfo p + p
 { 
   margin: 0;
@@ -207,10 +248,9 @@ pre.mime {
 }
 
 
-.versiongraph
+div.versiongraph
 {
-  float: right
-  
+    float: right;
 }
 
 pre.tags {
@@ -251,9 +291,9 @@ a.options:link, a.options:visited {
     border-bottom: #3c3c3c 1px dotted;
 }
 
-li {
-    list-style-type: square;
-}
+/* li { */
+/*     list-style-type: square; */
+/* } */
 
 .shortbugstatus
 { 
