@@ -245,7 +245,7 @@ sub read_bug{
 	 return undef;
     }
 
-    my %namemap = reverse %fields;
+    state $namemap = {reverse %fields};
     for my $line (@lines) {
         if ($line =~ /(\S+?): (.*)/) {
             my ($name, $value) = (lc $1, $2);
@@ -253,7 +253,7 @@ sub read_bug{
 	    # or \n in the fields of status. Kill them off here.
 	    # [Eventually, this should be superfluous.]
 	    $value =~ s/[\r\n]//g;
-	    $data{$namemap{$name}} = $value if exists $namemap{$name};
+	    $data{$namemap->{$name}} = $value if exists $namemap->{$name};
         }
     }
     for my $field (keys %fields) {
