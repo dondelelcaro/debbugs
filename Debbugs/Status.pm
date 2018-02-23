@@ -33,6 +33,8 @@ status of a particular bug
 use warnings;
 use strict;
 
+use feature 'state';
+
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use Exporter qw(import);
 
@@ -164,27 +166,27 @@ sub read_bug{
     if (@_ == 1) {
 	 unshift @_, 'bug';
     }
+    state $spec =
+       {bug => {type => SCALAR,
+		optional => 1,
+		# something really stupid passes negative bugnumbers
+		regex    => qr/^-?\d+/,
+	       },
+	location => {type => SCALAR|UNDEF,
+		     optional => 1,
+		    },
+	summary  => {type => SCALAR,
+		     optional => 1,
+		    },
+	lock     => {type => BOOLEAN,
+		     optional => 1,
+		    },
+	locks    => {type => HASHREF,
+		     optional => 1,
+		    },
+       };
     my %param = validate_with(params => \@_,
-			      spec   => {bug => {type => SCALAR,
-						 optional => 1,
-						 # something really
-						 # stupid passes
-						 # negative bugnumbers
-						 regex    => qr/^-?\d+/,
-						},
-					 location => {type => SCALAR|UNDEF,
-						      optional => 1,
-						     },
-					 summary  => {type => SCALAR,
-						      optional => 1,
-						     },
-					 lock     => {type => BOOLEAN,
-						      optional => 1,
-						     },
-					 locks    => {type => HASHREF,
-						      optional => 1,
-						     },
-					},
+			      spec   => $spec,
 			     );
     die "One of bug or summary must be passed to read_bug"
 	 if not exists $param{bug} and not exists $param{summary};
@@ -1192,38 +1194,40 @@ sub get_bug_status {
      if (@_ == 1) {
 	  unshift @_, 'bug';
      }
+     state $spec =
+	{bug       => {type => SCALAR,
+		       regex => qr/^\d+$/,
+		      },
+	 status    => {type => HASHREF,
+		       optional => 1,
+		      },
+	 bug_index => {type => OBJECT,
+		       optional => 1,
+		      },
+	 version   => {type => SCALAR|ARRAYREF,
+		       optional => 1,
+		      },
+	 dist       => {type => SCALAR|ARRAYREF,
+			optional => 1,
+		       },
+	 arch       => {type => SCALAR|ARRAYREF,
+			optional => 1,
+		       },
+	 bugusertags   => {type => HASHREF,
+			   optional => 1,
+			  },
+	 sourceversions => {type => ARRAYREF,
+			    optional => 1,
+			   },
+	 indicatesource => {type => BOOLEAN,
+			    default => 1,
+			   },
+	 binary_to_source_cache => {type => HASHREF,
+				    optional => 1,
+				   },
+	};
      my %param = validate_with(params => \@_,
-			       spec   => {bug       => {type => SCALAR,
-							regex => qr/^\d+$/,
-						       },
-					  status    => {type => HASHREF,
-						        optional => 1,
-						       },
-					  bug_index => {type => OBJECT,
-							optional => 1,
-						       },
-					  version   => {type => SCALAR|ARRAYREF,
-							optional => 1,
-						       },
-					  dist       => {type => SCALAR|ARRAYREF,
-							 optional => 1,
-							},
-					  arch       => {type => SCALAR|ARRAYREF,
-							 optional => 1,
-							},
-					  bugusertags   => {type => HASHREF,
-							    optional => 1,
-							   },
-					  sourceversions => {type => ARRAYREF,
-							     optional => 1,
-							    },
-					  indicatesource => {type => BOOLEAN,
-							     default => 1,
-							    },
-					  binary_to_source_cache => {type => HASHREF,
-								     optional => 1,
-								    },
-					 },
+			       spec   => $spec,
 			      );
      my %status;
 
