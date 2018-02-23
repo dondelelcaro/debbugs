@@ -34,6 +34,8 @@ use strict;
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use Exporter qw(import);
 
+use feature qw(state);
+
 our %URL_PARAMS = ();
 
 BEGIN{
@@ -64,6 +66,7 @@ BEGIN{
 }
 
 use Debbugs::URI;
+use URI::Escape;
 use HTML::Entities;
 use Debbugs::Common qw(getparsedaddrs make_list);
 use Params::Validate qw(validate_with :types);
@@ -326,65 +329,100 @@ our @package_search_key_order = (package   => 'in package',
 				 bugs          => 'in bug',
 				);
 our %package_search_keys = @package_search_key_order;
-
+our %package_links_invalid_options =
+    map {($_,1)} (keys %package_search_keys,
+		  qw(msg att));
 
 sub package_links {
+     state $spec =
+	{(map { ($_,{type => SCALAR|ARRAYREF,
+		     optional => 1,
+		    });
+	    } keys %package_search_keys,
+	  ## these are aliases for package
+	  ## search keys
+	  source => {type => SCALAR|ARRAYREF,
+		     optional => 1,
+		    },
+	  maintainer => {type => SCALAR|ARRAYREF,
+			 optional => 1,
+			},
+	 ),
+	 links_only => {type => BOOLEAN,
+			default => 0,
+		       },
+	 class => {type => SCALAR,
+		   default => '',
+		  },
+	 separator => {type => SCALAR,
+		       default => ', ',
+		      },
+	 options => {type => HASHREF,
+		     default => {},
+		    },
+	};
      my %param = validate_with(params => \@_,
-			       spec   => {(map { ($_,{type => SCALAR|ARRAYREF,
-						      optional => 1,
-						     });
-					    } keys %package_search_keys,
-					  ),
-					  links_only => {type => BOOLEAN,
-							 default => 0,
-							},
-					  class => {type => SCALAR,
-						    default => '',
-						   },
-					  separator => {type => SCALAR,
-							default => ', ',
-						       },
-					  options => {type => HASHREF,
-						      default => {},
-						     },
-					 },
-			       normalize_keys =>
-			       sub {
-				    my ($key) = @_;
-				    my %map = (source => 'src',
-					       maintainer => 'maint',
-					       pkg        => 'package',
-					      );
-				    return $map{$key} if exists $map{$key};
-				    return $key;
-			       }
+			       spec   => $spec,
 			      );
      my %options = %{$param{options}};
-     for ((keys %package_search_keys,qw(msg att))) {
-	  delete $options{$_} if exists $options{$_};
+     for (grep {$package_links_invalid_options{$_}} keys %options) {
+	 delete $options{$_};
      }
+     ## remove aliases for source and maintainer
+     if (exists $param{source}) {
+	 $param{src} = [exists $param{src}?make_list($param{src}):(),
+			make_list($param{source}),
+		       ];
+	 delete $param{source};
+     }
+     if (exists $param{maintainer}) {
+	 $param{maint} = [exists $param{maint}?make_list($param{maint}):(),
+			  make_list($param{maintainer}),
+			 ];
+	 delete $param{maintainer};
+     }
+     my $has_options = keys %options;
      my @links = ();
      for my $type (qw(src package)) {
-	  push @links, map {my $t_type = $type;
-			    if ($_ =~ s/^src://) {
-				$t_type = 'src';
-			    }
-			    (munge_url('pkgreport.cgi?',
-				       %options,
-				       $t_type => $_,
-				      ),
-			     ($t_type eq 'src'?'src:':'').$_);
-		       } make_list($param{$type}) if exists $param{$type};
+	 next unless exists $param{$type};
+	 for my $target (make_list($param{$type})) {
+	     my $t_type = $type;
+	     if ($target =~ s/^src://) {
+		 $t_type = 'source';
+	     } elsif ($t_type eq 'source') {
+		 $target = 'src:'.$target;
+	     }
+	     if ($has_options) {
+		 push @links,
+		     munge_url('pkgreport.cgi?',
+			       %options,
+			       $t_type => $target,
+			      );
+	     } else {
+		 push @links,
+		     ('pkgreport.cgi?'.$t_type.'='.uri_escape_utf8($target),
+		      $target);
+	     }
+	 }
      }
      for my $type (qw(maint owner submitter correspondent)) {
-	  push @links, map {my $addr = getparsedaddrs($_);
-			    $addr = defined $addr?$addr->address:'';
-			    (munge_url('pkgreport.cgi?',
-				       %options,
-				       $type => $addr,
-				      ),
-			     $_);
-		       } make_list($param{$type}) if exists $param{$type};
+	 next unless exists $param{$type};
+	 for my $target (make_list($param{$type})) {
+	     my $addr = getparsedaddrs($target);
+	     $addr = defined $addr?$addr->address:'';
+	     if ($has_options) {
+		 push @links,
+		     (munge_url('pkgreport.cgi?',
+				%options,
+				$type => $target),
+		      $target);
+	     } else {
+		 push @links,
+		     ('pkgreport.cgi?'.
+		      $type.'='.uri_escape_utf8($target),
+		      $target);
+	     }
+	 }
      }
      my @return = ();
      my ($link,$link_name);
@@ -454,13 +492,19 @@ sub bug_links {
      for (qw(bug)) {
 	  delete $options{$_} if exists $options{$_};
      }
+     my $has_options = keys %options;
      my @links;
-     push @links, map {(munge_url('bugreport.cgi?',
-				  %options,
-				  bug => $_,
-				 ),
-			$_);
-		  } make_list($param{bug}) if exists $param{bug};
+     if ($has_options) {
+	 push @links, map {(munge_url('bugreport.cgi?',
+				      %options,
+				      bug => $_,
+				     ),
+			    $_);
+		       } make_list($param{bug}) if exists $param{bug};
+     } else {
+	 push @links, map {'bugreport.cgi?bug='.uri_escape_utf8($_)}
+	     make_list($param{bug}) if exists $param{bug};
+     }
      my @return;
      my ($link,$link_name);
      my $class = '';
