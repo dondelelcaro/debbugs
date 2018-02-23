@@ -9,11 +9,17 @@ html {
 }
 
 body {
-    color: #000; 
-    background: #fefefe;
-    margin: 10px;
+/*     color: #000; 
+    background: #fefefe; */
+    margin: 0px;
     border: 0;
     padding: 0;
+}
+
+/* this is the main container for content outside of the header and footer */
+.body {
+    margin-left: 0.5em;
+    margin-right: 0.5em;
 }
 
 h1, h2, h3 {

@@ -17,7 +17,8 @@ function toggle_infmessages()
 </head>
 <body>
     <div class="debbugs_install"><: $config.project :> <: $config.bug :> report logs</div>
-    <h1 class="bug_header"><a class="bug_email" href="mailto:<: $bug_num :>@<: $config.email_domain :>">#<: $bug_num :></a>
+    <div class="body">
+    <h1 class="bug_title"><a class="bug_email" href="mailto:<: $bug_num :>@<: $config.email_domain :>">#<: $bug_num :></a>
         <span class="bug_subject"><: $status.subject :></span>
     </h1>
 <div class="versiongraph"><: raw($version_graph) :></div>
@@ -43,6 +44,7 @@ to this <: $config.bug :>.</span>
 <script>
  document.write("<span class=\"uselessmessages\"><a href=\"javascript:toggle_infmessages();\">Toggle useless messages</a></span>")
 </script>
+    </div>
 <hr>
 <p class="msgreceived">Send a report that <a href="<: $config.cgi_domain :>/bugspam.cgi?bug=<: $bug_num :>">this bug log contains spam</a>.</p>
 <hr>
