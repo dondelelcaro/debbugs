@@ -3,7 +3,7 @@ sudo: required
 before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y devscripts
-  - dch -r
+  - dch -r -m ''
   - mk-build-deps -s sudo -i debian/control
 script:
   - make; make test
