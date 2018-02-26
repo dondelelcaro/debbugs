@@ -127,7 +127,7 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
   * Fix broken link in changed forwarded-to address (closes: #782740)
   * Fix package links in reassigned message (closes: #767327)
 
- --
+ -- Don Armstrong <don@debian.org>  Mon, 26 Feb 2018 11:31:48 -0800
 
 debbugs (2.4.2~exp1) experimental; urgency=low
 
