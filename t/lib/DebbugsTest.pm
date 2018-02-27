@@ -32,6 +32,7 @@ use File::Basename qw(dirname basename);
 use IPC::Open3;
 use IO::Handle;
 use Test::More;
+use Test::PostgreSQL;
 
 use Params::Validate qw(validate_with :types);
 
@@ -42,9 +43,10 @@ BEGIN{
      @EXPORT = ();
      %EXPORT_TAGS = (configuration => [qw(dirsize create_debbugs_configuration send_message)],
 		     mail          => [qw(num_messages_sent)],
+		     database => [qw(create_postgresql_database update_postgresql_database)]
 		    );
      @EXPORT_OK = ();
-     Exporter::export_ok_tags(qw(configuration mail));
+     Exporter::export_ok_tags(keys %EXPORT_TAGS);
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
@@ -276,6 +278,100 @@ sub num_messages_sent {
     ok($cur_size-$prev_size >= $num_messages, $test_name);
     return $cur_size;
 }
+
+=head2 create_postgresql_database
+
+C<my $pgsql = create_postgresql_database();>
+
+Create a postgresql database for testing; when the L<Test::PostgreSQL> object it
+returns is destroyed (or goes out of scope) the database will be removed.
+
+=cut
+
+sub create_postgresql_database {
+    my $pgsql = Test::PostgreSQL->new(use_socket => 1) or
+	return undef;
+    my $installsql =
+	File::Spec->rel2abs(dirname(__FILE__).'/../..').
+	    '/bin/debbugs-installsql';
+    # create the debversion extension
+    print STDERR $pgsql->dsn;
+    print STDERR "\n";
+    my $dbh = DBI->connect($pgsql->dsn);
+    $dbh->do(<<END) or die "Unable to create extension";
+CREATE EXTENSION IF NOT EXISTS debversion;
+END
+    # create the schema for the bug tracking system
+    my $dep_dir = File::Temp::tempdir(CLEANUP=>1);
+    system($installsql,
+	   '--dsn',$pgsql->dsn,
+	   '--install',
+	   '--deployment-dir',$dep_dir);
+
+    initialize_postgresql_database($pgsql,@_);
+    return $pgsql;
+}
+
+=item iniitalize_postgresql_database
+
+C<initialize_postgresql_database();>
+
+Initialize postgresql database by calling debbugs-loadsql appropriately.
+
+=cut
+
+sub initialize_postgresql_database {
+    my ($pgsql,@options) = @_;
+    my $loadsql =
+	File::Spec->rel2abs(dirname(__FILE__).'/../..').
+	    '/bin/debbugs-loadsql';
+
+    my $ftpdists =
+	File::Spec->rel2abs(dirname(__FILE__).'/../debian/dist');
+    my $debinfo_dir =
+	File::Spec->rel2abs(dirname(__FILE__).'/../debian/debinfo');
+    my %loadsql_commands =
+	(configuration => [],
+	 suites => ['--ftpdists',$ftpdists],
+	 debinfo => ['--debinfo-dir',$debinfo_dir],
+	 packages => ['--ftpdists',$ftpdists],
+	 maintainers => [],
+	);
+    for my $command (keys %loadsql_commands) {
+	system($loadsql,$command,
+	       '--dsn',$pgsql->dsn,
+	       @options,
+	       @{$loadsql_commands{$command}}) == 0 or
+		   die "Unable to load $command";
+    }
+}
+
+
+=item update_postgresql_database
+
+C<update_postgresql_database();>
+
+Update the postgresql database by calling debbugs-loadsql appropriately.
+
+=cut
+sub update_postgresql_database {
+    my ($pgsql,@options) = @_;
+    my $loadsql =
+	File::Spec->rel2abs(dirname(__FILE__).'/../..').
+	    '/bin/debbugs-loadsql';
+
+    my %loadsql_commands =
+	(bugs_and_logs => [],
+	);
+    for my $command (keys %loadsql_commands) {
+	system($loadsql,$command,
+	       '--dsn',$pgsql->dsn,
+	       @options,
+	       @{$loadsql_commands{$command}}) == 0 or
+		   die "Unable to load $command";
+    }
+}
+
 
 
 1;

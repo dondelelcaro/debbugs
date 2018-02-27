@@ -16,7 +16,8 @@ Build-Depends-Indep: libparams-validate-perl,
  libfile-libmagic-perl, libgravatar-url-perl, libwww-perl, imagemagick,
  libdbix-class-perl, libdatetime-format-pg-perl,
  libdatetime-format-mail-perl,
- libtext-template-perl, graphviz, libtext-iconv-perl, libnet-server-perl
+ libtext-template-perl, graphviz, libtext-iconv-perl, libnet-server-perl,
+ libtest-postgresql-perl
 Homepage: http://wiki.debian.org/Teams/Debbugs
 
 Package: debbugs
