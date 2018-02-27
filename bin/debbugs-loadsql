@@ -163,6 +163,7 @@ Getopt::Long::Configure('pass_through');
 GetOptions(\%options,
            'quick|q',
            'service|s=s',
+	   'dsn=s',
            'sysconfdir|c=s',
            'progress!',
            'spool_dir|spool-dir=s',
@@ -746,7 +747,8 @@ sub db_connect {
     my ($options) = @_;
     # connect to the database; figure out how to handle errors
     # properly here.
-    my $s = Debbugs::DB->connect($options->{service}) or
+    my $s = Debbugs::DB->connect($options->{dsn} //
+				 $options->{service}) or
         die "Unable to connect to database: ";
 }
 
