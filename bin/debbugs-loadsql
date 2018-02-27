@@ -439,12 +439,12 @@ sub add_maintainers {
     my ($options,$opts,$p,$config,$argv) = @_;
 
     my $s = db_connect($options);
-    my $maintainers = getsourcemaintainers();
+    my $maintainers = getsourcemaintainers() // {};
     $p->target(2) if $p;
     ## get all of the maintainers, and add the missing ones
     my $maints = $s->resultset('Maintainer')->
 	get_maintainers(values %{$maintainers});
-    $p->update();
+    $p->update() if $p;
     my @svs = $s->resultset('SrcVer')->
 	search({maintainer => undef
 	       },
