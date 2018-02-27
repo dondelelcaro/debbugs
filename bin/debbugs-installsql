@@ -83,6 +83,7 @@ my %options = (debug           => 0,
 
 GetOptions(\%options,
            'service|s=s',
+	   'dsn=s',
            'sysconfdir|c=s',
            'install',
            'install_version_storage|install-version-storage',
@@ -120,8 +121,14 @@ if (exists $options{sysconfdir}) {
     }
 }
 
+if (not exists $options{dsn} or
+    not defined $options{dsn} or
+    not length $options{dsn}) {
+    $options{dsn} = 'dbi:Pg:service='.$options{service};
+}
 
-my $schema = Debbugs::DB->connect('dbi:Pg:service='.$options{service}) or
+
+my $schema = Debbugs::DB->connect($options{dsn}) or
     die "Unable to connect to database";
 
 
