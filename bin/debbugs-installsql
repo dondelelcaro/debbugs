@@ -75,7 +75,6 @@ use aliased 'DBIx::Class::DeploymentHandler' => 'DH';
 my %options = (debug           => 0,
 	       help            => 0,
 	       man             => 0,
-               developer_prepare => 0,
                overwrite_deployment => 0,
                service         => 'debbugs',
                deployment_dir  => '/usr/share/debbugs/sqldeployment',
@@ -89,7 +88,6 @@ GetOptions(\%options,
            'install_version_storage|install-version-storage',
            'upgrade',
            'current_version|current-version',
-           'developer_prepare|developer-prepare',
            'overwrite_deployment|overwrite-deployment|force_overwrite|force-overwrite',
            'deployment_dir|deployment-dir=s',
 	   'debug|d+','help|h|?','man|m');
@@ -143,8 +141,8 @@ if ($options{current_version}) {
     print "The current database version is: ".$dh->database_version."\n";
     exit 0;
 } elsif ($options{install}) {
-    $dh->prepare_install if $options{developer_prepare};
-    $dh->install unless $options{developer_prepare};
+    $dh->prepare_install;
+    $dh->install;
     ## this is lame, but because the current release of DeploymentHandler does
     ## not support WHERE or quoted indexes properly (fixed in git), we create
     ## these indexes manually here.
@@ -160,12 +158,12 @@ CREATE UNIQUE INDEX bug_status_cache_bug_idx ON
 SQL
 		   });
 } elsif ($options{upgrade}) {
-    $dh->prepare_deploy if $options{developer_prepare};
-    $dh->prepare_upgrade() if $options{developer_prepare};
-    $dh->upgrade unless $options{developer_prepare};
+    $dh->prepare_deploy;
+    $dh->prepare_upgrade;
+    $dh->upgrade;
 } elsif ($options{install_version_storage}) {
-    $dh->prepare_version_storage_install if $options{developer_prepare};
-    $dh->install_version_storage unless $options{developer_prepare};
+    $dh->prepare_version_storage_install;
+    $dh->install_version_storage;
 }
 
 
