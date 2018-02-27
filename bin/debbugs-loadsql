@@ -142,6 +142,7 @@ use DateTime;
 use File::stat;
 use File::Basename;
 use File::Spec;
+use File::Find;
 use IO::Dir;
 use IO::File;
 use IO::Uncompress::AnyUncompress;
@@ -184,7 +185,9 @@ my %subcommands =
      'versions' => {function => \&add_versions,
                    },
      'debinfo' => {function => \&add_debinfo,
-                   arguments => {'0|null' => 0},
+                   arguments => {'0|null' => 0,
+				 'debinfo_dir|debinfo-dir=s' => 0,
+				},
                   },
      'maintainers' => {function => \&add_maintainers,
                       },
@@ -369,6 +372,15 @@ sub add_debinfo {
     my ($options,$opts,$p,$config,$argv) = @_;
 
     my @files = @{$argv};
+    if (exists $opts->{debinfo_dir} and not @files) {
+	find(sub {
+		 if (-f $_ and /\.debinfo$/) {
+		     push @files, $File::Find::name;
+		 }
+	     },
+	     $opts->{debinfo_dir}
+	    );
+    }
     if (not @files) {
        {
 	   local $/ = "\n";
