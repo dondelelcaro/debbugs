@@ -207,8 +207,6 @@ sub send_message{
      }
 }
 
-$SIG{CHLD} = sub {};
-
 {
      package DebbugsTest::HTTPServer;
      use base qw(HTTP::Server::Simple::CGI HTTP::Server::Simple::CGI::Environment);
