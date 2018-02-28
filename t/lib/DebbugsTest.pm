@@ -293,8 +293,6 @@ sub create_postgresql_database {
 	File::Spec->rel2abs(dirname(__FILE__).'/../..').
 	    '/bin/debbugs-installsql';
     # create the debversion extension
-    print STDERR $pgsql->dsn;
-    print STDERR "\n";
     my $dbh = DBI->connect($pgsql->dsn);
     $dbh->do(<<END) or die "Unable to create extension";
 CREATE EXTENSION IF NOT EXISTS debversion;
