@@ -1,0 +1,262 @@
+#!/usr/bin/perl
+# fake_ftpdist generates a fake Debian apt archive for testing
+# and is released under the terms of the GNU GPL version 3, or any
+# later version, at your option. See the file README and COPYING for
+# more information.
+# Copyright 2018 by Don Armstrong <don@donarmstrong.com>.
+
+
+use warnings;
+use strict;
+
+use Getopt::Long;
+use Pod::Usage;
+
+=head1 NAME
+
+fake_ftpdist - generates a fake Debian apt archive for testing from a real apt archive
+
+=head1 SYNOPSIS
+
+fake_ftpdist [options]
+
+Options:
+--debug, -d debugging level (Default 0)
+--help, -h display this help
+--man, -m display manual
+
+=head1 OPTIONS
+
+=over
+
+=item B<--debug, -d>
+
+Debug verbosity. (Default 0)
+
+=item B<--help, -h>
+
+Display brief usage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+=head1 EXAMPLES
+
+C<fake_ftpdist --ftpdist /srv/ftp.debian.org/ftp/dists>
+
+=cut
+
+use Debbugs::Common qw(open_compressed_file);
+use IO::Dir;
+use File::Basename;
+
+use vars qw($DEBUG);
+
+my %options = (debug           => 0,
+               help            => 0,
+               man             => 0,
+              );
+
+GetOptions(\%options,
+           'ftpdist=s',
+           'progress',
+           'debug|d+','help|h|?','man|m');
+
+pod2usage() if $options{help};
+pod2usage({verbose=>2}) if $options{man};
+
+$DEBUG = $options{debug};
+
+my @USAGE_ERRORS;
+
+if ($options{progress}) {
+    eval "use Term::ProgressBar";
+    push @USAGE_ERRORS, "You asked for a progress bar, but Term::ProgressBar isn't installed" if $@;
+}
+
+if (not defined $options{ftpdist}) {
+    push @USAGE_ERRORS, "You must provide an --ftpdist option";
+}
+
+pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
+
+my $prog_bar;
+if ($options{progress}) {
+    $prog_bar = eval "Term::ProgressBar->new({count => 1,ETA=>q(linear)})";
+    warn "Unable to initialize progress bar: $@" if not $prog_bar;
+}
+
+my $dist_dir = IO::Dir->new($options{ftpdist}) or
+    die "Unable to open directory $options{ftpdist}: $!";
+my @dist_names =
+	grep { $_ !~ /^\./ and
+               -d $options{ftpdist}.'/'.$_ and
+               not -l $options{ftpdist}.'/'.$_
+           } $dist_dir->read;
+my %s_p;
+my %s_di;
+while (my $dist = shift @dist_names) {
+	my $dist_dir = $options{ftpdist}.'/'.$dist;
+	my ($dist_info,$package_files) =
+	    read_release_file($dist_dir.'/Release');
+        $s_di{$dist_info->{Codename}} = $dist_info;
+	$s_p{$dist_info->{Codename}} = $package_files;
+}
+my $tot = 0;
+for my $suite (keys %s_p) {
+	for my $component (keys %{$s_p{$suite}}) {
+	    $tot += scalar keys %{$s_p{$suite}{$component}};
+	}
+}
+$prog_bar->target($tot) if $prog_bar;
+use Data::Printer;
+p %s_di;
+my $i = 0;
+my $avg_pkgs = 0;
+my $tot_suites = scalar keys %s_p;
+my $done_suites=0;
+my $completed_pkgs=0;
+# parse packages files
+for my $suite (keys %s_p) {
+    my $suite_has_packages = 0;
+    for my $component (keys %{$s_p{$suite}}) {
+        my @archs = keys %{$s_p{$suite}{$component}};
+        if (grep {$_ eq 'source'} @archs) {
+            @archs = ('source',grep {$_ ne 'source'} @archs);
+        }
+        for my $arch (@archs) {
+            # we only need a few architectures
+            if ($arch !~ /(all|source|amd64|i386)/) {
+                $prog_bar->update(++$i);
+                next;
+            }
+            my $pfh =  open_compressed_file($s_p{$suite}{$component}{$arch}) or
+                die "Unable to open $s_p{$suite}{$component}{$arch} for reading: $!";
+            local $_;
+            local $/ = '';      # paragraph mode
+            my @pkgs;
+            while (<$pfh>) {
+                my %pkg;
+                for my $field (qw(Package Source)) {
+                    /^\Q$field\E: (.*)/m;
+                    $pkg{$field} = $1;
+                }
+                next unless defined $pkg{Package};
+                # skip packages which we aren't actually interested in
+                next unless interesting_package(\%pkg);
+                $pkg{paragraph} = $_;
+                push @pkgs,\%pkg;
+            }
+            if (@pkgs) {
+                $suite_has_packages = 1;
+                output_packages($suite,$component,$arch,\@pkgs);
+            }
+            $prog_bar->update(++$i);
+        }
+    }
+    build_release($suite,$s_di{$suite}) if $suite_has_packages;
+}
+$prog_bar->remove() if $prog_bar;
+
+sub build_release {
+    my ($suite,$dist_info) = @_;
+
+    my $release_file;
+    my $apt_ftparchive;
+    open($apt_ftparchive,
+         '-|',
+         'apt-ftparchive','release',
+         $suite,
+         (map {exists $dist_info->{$_}?
+                   ('-o=APT::FTPArchive::Release::'.$_.'='.
+                    $dist_info->{$_}):()}
+            qw(Description Origin Suite Version Codename Components Date)
+         )) or
+             die "Unable to run apt-ftparchive: $!";
+    local $/;
+    my ($rf_temp) = <$apt_ftparchive>;
+    close($apt_ftparchive) or
+        die "apt-ftparchive failed: $!";
+    open($release_file,'>',"$suite/Release") or
+        die "Unable to open file $suite/Release: $!";
+    print {$release_file} $rf_temp or
+        die "Unable to print to release file: $!";
+    close($release_file) or
+        die "Unable to close release file: $!";
+}
+    
+sub output_packages {
+    my ($suite,$component,$arch,$pkgs) = @_;
+    mkdir_if_ne($suite);
+    mkdir_if_ne("$suite/$component");
+    mkdir_if_ne("$suite/$component/$arch");
+    my $packages;
+    open($packages,">:encoding(UTF-8)","$suite/$component/$arch/Packages");
+    for my $pkg (@{$pkgs}) {
+        # replace all e-mail address looking things with foo@example.com
+        $pkg->{paragraph} =~
+            s/(<\S+\@)\S+(>)/${1}example.com${2}/g;
+        print {$packages} $pkg->{paragraph};
+    }
+    close($packages);
+}
+
+
+sub mkdir_if_ne {
+    if (! -d $_[0]) {
+        mkdir $_[0] or die "unable to mkdir $_[0]";
+    }
+}
+
+sub interesting_package {
+    my ($pkg) = @_;
+    # currently, we only want debbugs, packages containing libc, or source of
+    # glibc. Add more packages here if there are interesting cases we need to
+    # debug
+    if ($pkg->{Package} eq 'debbugs' or
+        ($pkg->{Source} // $pkg->{Package}) eq 'glibc'
+       ) {
+        return 1;
+    }
+    return 0;
+}
+
+
+sub read_release_file {
+    my ($file) = @_;
+    # parse release
+    my $rfh =  open_compressed_file($file) or
+	die "Unable to open $file for reading: $!";
+    my %dist_info;
+    my $in_sha1;
+    my %p_f;
+    while (<$rfh>) {
+	chomp;
+	if (s/^(\S+):\s*//) {
+	    if ($1 eq 'SHA1'or $1 eq 'SHA256') {
+		$in_sha1 = 1;
+		next;
+	    }
+	    $dist_info{$1} = $_;
+	} elsif ($in_sha1) {
+	    s/^\s//;
+	    my ($sha,$size,$f) = split /\s+/,$_;
+	    next unless $f =~ /(?:Packages|Sources)(?:\.gz|\.xz)$/;
+	    next unless $f =~ m{^([^/]+)/([^/]+)/([^/]+)$};
+	    my ($component,$arch,$package_source) = ($1,$2,$3);
+	    next if exists $p_f{$component}{$arch};
+	    $p_f{$component}{$arch} = File::Spec->catfile(dirname($file),$f);
+	}
+    }
+    return (\%dist_info,\%p_f);
+}
+
+
+__END__
+# Local Variables:
+# indent-tabs-mode: nil
+# cperl-indent-level: 4
+# End:

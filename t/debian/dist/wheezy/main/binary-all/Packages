@@ -1,0 +1,18 @@
+Package: debbugs
+Version: 2.4.1
+Installed-Size: 488
+Maintainer: Debbugs developers <debian-debbugs@example.com>
+Architecture: all
+Depends: perl5 | perl, exim | mail-transport-agent, libmailtools-perl, ed, libmime-perl, libio-stringy-perl
+Recommends: httpd, links | lynx
+Description: The bug tracking system based on the active Debian BTS
+Description-md5: f27637c129aeefe7d091491a0728fdd7
+Tag: devel::bugtracker, suite::debian, works-with::bugs
+Section: misc
+Priority: optional
+Filename: pool/main/d/debbugs/debbugs_2.4.1_all.deb
+Size: 85030
+MD5sum: 9ee71a369b44f2603fde74b98754a48b
+SHA1: 1215d3ab02089024935154a79190056d7d7126bb
+SHA256: 9204897a95f9108e3548435f343a945b3ee35fd636a16b278ba7adb56380395e
+

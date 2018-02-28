@@ -1,0 +1,333 @@
+Package: debbugs
+Version: 2.4.1.1
+Installed-Size: 375
+Maintainer: Debbugs developers <debian-debbugs@example.com>
+Architecture: all
+Depends: perl5 | perl, exim | mail-transport-agent, libmailtools-perl, ed, libmime-perl, libio-stringy-perl
+Recommends: httpd, links | lynx
+Description: The bug tracking system based on the active Debian BTS
+Description-md5: f27637c129aeefe7d091491a0728fdd7
+Tag: devel::bugtracker, suite::debian, works-with::bugs
+Section: misc
+Priority: optional
+Filename: pool/main/d/debbugs/debbugs_2.4.1.1_all.deb
+Size: 72792
+MD5sum: 4ffd74f1763054bd9976532d860b2fb3
+SHA256: e3554f2dffece78ad25ce5a5c39055097bd0e010e543722b568b4363e1ebc3ab
+
+Package: glibc-doc
+Source: glibc
+Version: 2.25-2
+Installed-Size: 3267
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Suggests: glibc-doc-reference
+Description: GNU C Library: Documentation
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: ec34f59d4398ff8ca003177c6585bf0a
+Tag: devel::doc, devel::lang:c, devel::library, made-of::html, made-of::info,
+ role::documentation, suite::gnu
+Section: doc
+Priority: optional
+Filename: pool/main/g/glibc/glibc-doc_2.25-2_all.deb
+Size: 2622148
+MD5sum: 2f308748077d9a170a8d92dcc54d0524
+SHA256: 921d6c41d304c9d00bf2619f79abfe70eddf57d5baa26d2a9fb7efa4b03e4b45
+
+Package: glibc-doc
+Source: glibc
+Version: 2.25-3
+Installed-Size: 3272
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Suggests: glibc-doc-reference
+Description: GNU C Library: Documentation
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: ec34f59d4398ff8ca003177c6585bf0a
+Tag: devel::doc, devel::lang:c, devel::library, made-of::html, made-of::info,
+ role::documentation, suite::gnu
+Section: doc
+Priority: optional
+Filename: pool/main/g/glibc/glibc-doc_2.25-3_all.deb
+Size: 2623764
+MD5sum: 23bbc6bd66c4be9875e79ac5e0780261
+SHA256: 7987220db4f988d7208a5ec0497354b142dc9f65666132b613e4907d90c4c932
+
+Package: glibc-doc
+Source: glibc
+Version: 2.26-5
+Installed-Size: 3450
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Suggests: glibc-doc-reference
+Description: GNU C Library: Documentation
+Multi-Arch: foreign
+Homepage: https://www.gnu.org/software/libc/libc.html
+Description-md5: ec34f59d4398ff8ca003177c6585bf0a
+Tag: devel::doc, devel::lang:c, devel::library, made-of::html, made-of::info,
+ role::documentation, suite::gnu
+Section: doc
+Priority: optional
+Filename: pool/main/g/glibc/glibc-doc_2.26-5_all.deb
+Size: 2718036
+MD5sum: 55bf7f6c076e9b7e02f0bd9c0804d071
+SHA256: 6241fc07db91fc67409e9261041c6a233c8366e76ff86c33d787f05b47e2da50
+
+Package: glibc-doc
+Source: glibc
+Version: 2.26-6
+Installed-Size: 3450
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Suggests: glibc-doc-reference
+Description: GNU C Library: Documentation
+Multi-Arch: foreign
+Homepage: https://www.gnu.org/software/libc/libc.html
+Description-md5: ec34f59d4398ff8ca003177c6585bf0a
+Tag: devel::doc, devel::lang:c, devel::library, made-of::html, made-of::info,
+ role::documentation, suite::gnu
+Section: doc
+Priority: optional
+Filename: pool/main/g/glibc/glibc-doc_2.26-6_all.deb
+Size: 2718348
+MD5sum: 8dc4e7f3c870cc8aa716081d117a83d0
+SHA256: 056bbef174f214bf72f6d8960ea5f45eaff5fe1f07314bb176cc164a6968b029
+
+Package: glibc-source
+Source: glibc
+Version: 2.25-2
+Installed-Size: 22832
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: eglibc-source
+Recommends: xz-utils
+Conflicts: eglibc-source
+Description: GNU C Library: sources
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 1892ef83f2f36db0d236ccc041158b32
+Section: devel
+Priority: optional
+Filename: pool/main/g/glibc/glibc-source_2.25-2_all.deb
+Size: 15770596
+MD5sum: 7f2b2ebb0ec95ce59e9391483d1ccac6
+SHA256: fd30fcbced5a291930958f0940b4e9c96f3350a09ea6c3ecf6fedf38fc1cad4c
+
+Package: glibc-source
+Source: glibc
+Version: 2.25-3
+Installed-Size: 22907
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: eglibc-source
+Recommends: xz-utils
+Conflicts: eglibc-source
+Description: GNU C Library: sources
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 1892ef83f2f36db0d236ccc041158b32
+Section: devel
+Priority: optional
+Filename: pool/main/g/glibc/glibc-source_2.25-3_all.deb
+Size: 15780392
+MD5sum: 7f039db3970cd16a8f508599f785da18
+SHA256: 04db138856cb7b3611459739ce865718d041c7cc00c768e7c17c66edf37b115f
+
+Package: glibc-source
+Source: glibc
+Version: 2.26-5
+Installed-Size: 23608
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: eglibc-source
+Recommends: xz-utils
+Conflicts: eglibc-source
+Description: GNU C Library: sources
+Multi-Arch: foreign
+Homepage: https://www.gnu.org/software/libc/libc.html
+Description-md5: 1892ef83f2f36db0d236ccc041158b32
+Section: devel
+Priority: optional
+Filename: pool/main/g/glibc/glibc-source_2.26-5_all.deb
+Size: 16743212
+MD5sum: 1e6dfd3122ba088b79b225ae9f100e29
+SHA256: 9682cf4c3474241f22430c4f3a11654ea6c86d7830ad2913595beb1cf65d8e0f
+
+Package: glibc-source
+Source: glibc
+Version: 2.26-6
+Installed-Size: 23617
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: eglibc-source
+Recommends: xz-utils
+Conflicts: eglibc-source
+Description: GNU C Library: sources
+Multi-Arch: foreign
+Homepage: https://www.gnu.org/software/libc/libc.html
+Description-md5: 1892ef83f2f36db0d236ccc041158b32
+Section: devel
+Priority: optional
+Filename: pool/main/g/glibc/glibc-source_2.26-6_all.deb
+Size: 16751148
+MD5sum: 91b4c801180c25763bd723d4feb66ed9
+SHA256: 795f515d4b56c3d12c603c479c91dfffe615174cdad54bdc10280fb6b720b8b2
+
+Package: libc-l10n
+Source: glibc
+Version: 2.25-2
+Installed-Size: 4283
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: locales (<< 2.21-1)
+Breaks: locales (<< 2.21-1)
+Description: GNU C Library: localization files
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 53ecaa40591ab16906ffe57e37f97283
+Section: localization
+Priority: standard
+Filename: pool/main/g/glibc/libc-l10n_2.25-2_all.deb
+Size: 843808
+MD5sum: c8d893235ec67363ee438a56c4d6183c
+SHA256: 08e9ccc91941ebc6f038e4235e4e8998d31ad9e45fd4e42b1623e20a1402172a
+
+Package: libc-l10n
+Source: glibc
+Version: 2.25-3
+Installed-Size: 4284
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: locales (<< 2.21-1)
+Breaks: locales (<< 2.21-1)
+Description: GNU C Library: localization files
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 53ecaa40591ab16906ffe57e37f97283
+Section: localization
+Priority: standard
+Filename: pool/main/g/glibc/libc-l10n_2.25-3_all.deb
+Size: 844036
+MD5sum: 48c4f8f61af2bd223f091b8a15c04353
+SHA256: ed5c81054cf9dda6edd1e4d3de6fdff8223ecb9e1ce05033dd4c02a977e5af3c
+
+Package: libc-l10n
+Source: glibc
+Version: 2.26-5
+Installed-Size: 4297
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: locales (<< 2.21-1)
+Breaks: locales (<< 2.21-1)
+Description: GNU C Library: localization files
+Multi-Arch: foreign
+Homepage: https://www.gnu.org/software/libc/libc.html
+Description-md5: 53ecaa40591ab16906ffe57e37f97283
+Section: localization
+Priority: standard
+Filename: pool/main/g/glibc/libc-l10n_2.26-5_all.deb
+Size: 852224
+MD5sum: e3e13250036a4bbd5d1b28046982fd79
+SHA256: 1a7bdff61a8b87a7c648d0a510e96a0361f9ac7f44ae67dc34339b6c7205be59
+
+Package: libc-l10n
+Source: glibc
+Version: 2.26-6
+Installed-Size: 4297
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: locales (<< 2.21-1)
+Breaks: locales (<< 2.21-1)
+Description: GNU C Library: localization files
+Multi-Arch: foreign
+Homepage: https://www.gnu.org/software/libc/libc.html
+Description-md5: 53ecaa40591ab16906ffe57e37f97283
+Section: localization
+Priority: standard
+Filename: pool/main/g/glibc/libc-l10n_2.26-6_all.deb
+Size: 852576
+MD5sum: 23c0f64ce63138c5e543fb2159458daa
+SHA256: ca36f20626a95726b075d085d6abaa094b13248b3bccc2aa69c60d82a90d024c
+
+Package: locales
+Source: glibc
+Version: 2.25-2
+Installed-Size: 9249
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: manpages-fr-extra (<< 20141022)
+Depends: libc-bin (>> 2.25), libc-l10n (>> 2.25), debconf (>= 0.5) | debconf-2.0
+Description: GNU C Library: National Language (locale) data [support]
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 68ccf846a4935e541c4a717fc0a1f3e3
+Tag: admin::configuring, devel::i18n, implemented-in::c, role::app-data,
+ role::program, scope::utility, suite::gnu
+Section: localization
+Priority: standard
+Filename: pool/main/g/glibc/locales_2.25-2_all.deb
+Size: 3286612
+MD5sum: f082be9db9f93c7baa1046bca94be7b5
+SHA256: d3bea38bfc7eee9fff32ccba4d95163595c53c55c6bafbf191fe944870c06cc3
+
+Package: locales
+Source: glibc
+Version: 2.25-3
+Installed-Size: 9250
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: manpages-fr-extra (<< 20141022)
+Depends: libc-bin (>> 2.25), libc-l10n (>> 2.25), debconf (>= 0.5) | debconf-2.0
+Description: GNU C Library: National Language (locale) data [support]
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 68ccf846a4935e541c4a717fc0a1f3e3
+Tag: admin::configuring, devel::i18n, implemented-in::c, role::app-data,
+ role::program, scope::utility, suite::gnu
+Section: localization
+Priority: standard
+Filename: pool/main/g/glibc/locales_2.25-3_all.deb
+Size: 3288244
+MD5sum: 9ca7e6f5ff6f9d0eaff849fb9454824d
+SHA256: cb3421839628d2a809d891d209e5d0446718c17b1ef90c986a768d04e725d81b
+
+Package: locales
+Source: glibc
+Version: 2.26-5
+Installed-Size: 9340
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: manpages-fr-extra (<< 20141022)
+Depends: libc-bin (>> 2.26), libc-l10n (>> 2.26), debconf (>= 0.5) | debconf-2.0
+Description: GNU C Library: National Language (locale) data [support]
+Homepage: https://www.gnu.org/software/libc/libc.html
+Description-md5: 68ccf846a4935e541c4a717fc0a1f3e3
+Tag: admin::configuring, devel::i18n, implemented-in::c, role::app-data,
+ role::program, scope::utility, suite::gnu
+Section: localization
+Priority: standard
+Filename: pool/main/g/glibc/locales_2.26-5_all.deb
+Size: 3310980
+MD5sum: 71bfdffeb6af282de13e5a69b990edca
+SHA256: 31a4f0d97529e845239ab64857b992f01901753b9ee982aeca950d26a92c285f
+
+Package: locales
+Source: glibc
+Version: 2.26-6
+Installed-Size: 9340
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: manpages-fr-extra (<< 20141022)
+Depends: libc-bin (>> 2.26), libc-l10n (>> 2.26), debconf (>= 0.5) | debconf-2.0
+Description: GNU C Library: National Language (locale) data [support]
+Homepage: https://www.gnu.org/software/libc/libc.html
+Description-md5: 68ccf846a4935e541c4a717fc0a1f3e3
+Tag: admin::configuring, devel::i18n, implemented-in::c, role::app-data,
+ role::program, scope::utility, suite::gnu
+Section: localization
+Priority: standard
+Filename: pool/main/g/glibc/locales_2.26-6_all.deb
+Size: 3308444
+MD5sum: 6f7692df64caaaef16f2e97d9b8e35f6
+SHA256: b6cb47373fc3800ba49eb0fb5981f421e8ba6ae7cc9d503be015cd4a89490b1a
+

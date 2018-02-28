@@ -1,0 +1,346 @@
+Package: glibc-doc
+Source: glibc
+Version: 2.24-11+deb9u1
+Installed-Size: 3132
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Suggests: glibc-doc-reference
+Description: GNU C Library: Documentation
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: ec34f59d4398ff8ca003177c6585bf0a
+Tag: devel::doc, devel::lang:c, devel::library, made-of::html, made-of::info,
+ role::documentation, suite::gnu
+Section: doc
+Priority: optional
+Filename: pool/main/g/glibc/glibc-doc_2.24-11+deb9u1_all.deb
+Size: 2549354
+MD5sum: 5ba666c8872cc81fdcbd519a6f1b05db
+SHA256: afd872babf33bdd46ae9c93c1a744278159664febabf537a5e35b36263615de1
+
+Package: glibc-source
+Source: glibc
+Version: 2.24-11+deb9u1
+Installed-Size: 22197
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: eglibc-source
+Recommends: xz-utils
+Conflicts: eglibc-source
+Description: GNU C Library: sources
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 1892ef83f2f36db0d236ccc041158b32
+Section: devel
+Priority: optional
+Filename: pool/main/g/glibc/glibc-source_2.24-11+deb9u1_all.deb
+Size: 15322582
+MD5sum: 6787f07e28d1dc28c6afd0390b7a359a
+SHA256: 6cfb0cf39f8260a8ad52e99cf32d5214339001adeb47f6011f956588def691cc
+
+Package: libc-bin
+Source: glibc
+Version: 2.24-11+deb9u1
+Essential: yes
+Installed-Size: 3365
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: amd64
+Depends: libc6 (>> 2.24), libc6 (<< 2.25)
+Recommends: manpages
+Description: GNU C Library: Binaries
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 7625903821514b57277d1bae69ec3c1a
+Tag: role::shared-lib
+Section: libs
+Priority: required
+Filename: pool/main/g/glibc/libc-bin_2.24-11+deb9u1_amd64.deb
+Size: 777528
+MD5sum: 555cf06e45d701c66a2bae4d2d0e28d5
+SHA256: 1908a1b6092a0681e914bc02d5b52bceebb48d8e40203f97ae8cedf80694fd6f
+
+Package: libc-dev-bin
+Source: glibc
+Version: 2.24-11+deb9u1
+Installed-Size: 377
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: amd64
+Depends: libc6 (>> 2.24), libc6 (<< 2.25)
+Recommends: manpages, manpages-dev
+Description: GNU C Library: Development binaries
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: ca28cf36e463805ec57f3815849e28a2
+Tag: devel::code-generator, devel::i18n, devel::profiler, devel::rpc,
+ devel::testing-qa, implemented-in::c, interface::commandline,
+ role::program, scope::utility, suite::gnu, works-with::file,
+ works-with::software:running
+Section: libdevel
+Priority: optional
+Filename: pool/main/g/glibc/libc-dev-bin_2.24-11+deb9u1_amd64.deb
+Size: 258670
+MD5sum: c0a969539d9ccbb7746bf0af9d1be5ce
+SHA256: 29298cf593ff111a91affdd7c84108a298307a450c85644773650522f7be32d0
+
+Package: libc-l10n
+Source: glibc
+Version: 2.24-11+deb9u1
+Installed-Size: 4210
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: locales (<< 2.21-1)
+Breaks: locales (<< 2.21-1)
+Description: GNU C Library: localization files
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 53ecaa40591ab16906ffe57e37f97283
+Section: localization
+Priority: standard
+Filename: pool/main/g/glibc/libc-l10n_2.24-11+deb9u1_all.deb
+Size: 819636
+MD5sum: c324c30311323d91a66da24931758102
+SHA256: c7a557785e1e1bab791ce37e1d8c993bccc89039acb838b50658d933c3dc2f4d
+
+Package: libc6
+Source: glibc
+Version: 2.24-11+deb9u1
+Installed-Size: 10684
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: amd64
+Replaces: libc6-amd64
+Depends: libgcc1
+Suggests: glibc-doc, debconf | debconf-2.0, libc-l10n, locales
+Breaks: hurd (<< 1:0.5.git20140203-1), libtirpc1 (<< 0.2.3), locales (<< 2.24), locales-all (<< 2.24), lsb-core (<= 3.2-27), nscd (<< 2.24)
+Description: GNU C Library: Shared libraries
+Multi-Arch: same
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: fc3001b0b90a1c8e6690b283a619d57f
+Tag: role::shared-lib
+Section: libs
+Priority: required
+Filename: pool/main/g/glibc/libc6_2.24-11+deb9u1_amd64.deb
+Size: 2695142
+MD5sum: 8d00fd2b21e47b34ce2a741cd3803548
+SHA256: b3f7278d80d5d0dc428fe92309bbc0e0a1ed665548a9f660663c1e1151335ae9
+
+Package: libc6-dbg
+Source: glibc
+Version: 2.24-11+deb9u1
+Installed-Size: 14234
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: amd64
+Provides: libc-dbg
+Depends: libc6 (= 2.24-11+deb9u1)
+Description: GNU C Library: detached debugging symbols
+Multi-Arch: same
+Homepage: http://www.gnu.org/software/libc/libc.html
+Build-Ids: 024ccf84042931060e11f2e2946d903fb350e42e 0425091d8b069a12a75c5ec97279be6f5b6513ec 043278fcd845c0239471d7d7c958466bfd4194ec 0470b5fd587e8bfe2b4a5a538b6e73fda96a4a20 048e54c404603bc2221c31f4af5af41a77f5f433 04c69da65f8c5530d596ab7dee7e36bea13ff040 069bbad2d418df45c039a9e9082b48313131471d 08bcf61527778918287143eadf0b43eefba65045 09aea08cd064c3334fcb029d99ee1192b5de9acd 0b2aac4d94929eaa4c730c6154daebac701d9ccc 0bda0b53542f93a70f493fe56f94fe6f2ac4a57c 0c7489ad11ae4e6bb44d16e4a21a9c4b37e53529 0dd73926fb043fd8a5e8e8912d09718de50c8257 0df0f95f3c6d1fa9315ddc74d29d4f9baf976745 0e409654b3d03518352e29d188e31827bfcec0ef 0f27f3eab74cc6c8163a5670c1ec72facb2e9ca4 0fa459763e3294e037aeea0c3d4b3bb88b52af7a 108a5e9e3741935244b20a9afaab7e61913394d4 10e8e928fa68b5fd059cf17ee930aa3da75ba72d 141059cbbfcfa0786d964726f8296b070daa58e0 147be00216dd2af70d25d1bc44a28860201017cb 162737c5e39e543495cc39db7bfd7deea05b557f 1651e9babd50eca0e7c19da802fc662efef75f1a 172d816030ac888ee2bcd66a6a713b0de3e06d2a 18205199d237585b14e328e1090104e6a12c81e0 18c4aa006b9594c1af8ae96f964fd91de32ab9f4 1987765286949d63f11b15b0633e046fa8c64760 19aa1783f41468394a89351feb1d533cfca9a276 19c0092e43642bf94c146cc0ffff64916a666f16 19fbc324700f013fda1fd3446993e9c7d515b43a 1d317943bbfa3ccbe67f09d045686d9105ae04f6 1e70b8f3a6d4022a03bfb4f9123061908859fa93 1f8bbd45efd498f52135c7f5b4f856577d5a4997 21a5fa3093596779741805fd9b116f6ab52dba0e 256a15bd3dec5fd9770061b12f89dc02a709fe79 299975bb3d5082603e31553e5f46d7a78a9154e2 29b6ac7103f7f1a6c250997db2b950553f9dedbc 29da25193c366380bf4a973860d15fb3859c4f52 2a31e4990fd9d9a409401457fa99c38dae4c58e9 2b6f5416f66e18ac228c4728af47c990b001f267 2d40f73059b9aba764e24344d67bbce2cb475acf 2dc53f6688039286d62110d29070f2e7585ce28b 2e8ecd279400fddf2c848126ee6af20747059be5 2f901c01d7afd1bc27ed7a4f8c5b8f3cd58e4288 2fa2f9284c08402001f2d382eefb6a4102a9c60c 303d300d1214e71bc72e40a87abfcdb996580a2c 30dfb9d80dde97029c4873cbd5a40b1c1b4633e8 32b99e6e8a7e854caeab145a99f8d55cbd2cbec9 32f6d88293ec5c1978ad9cb34757bfb8a9aabff4 3578f38db8b60a31ef5c7f0fd7e84cb9c1955c57 35dcd60214bf9f2cf2862bc6f8d5bbede33f31f4 35e2985f7c021236d845081bff5bead668aaaaaf 36575719ec2f3c106525b3d745e1b89fdaa191fd 37951afcededa79fa0bf36d5e87907a5787be79f 37d9ddfd463116cfc070df7d1d32a9063374f821 391bd8fae548feb07ff22cd61af73f8573ce2c1f 39b05b951f4cab1afd08b0e7616c9984c347ebfc 3c07176b0af1ce57ac9c957a8797cb871c41af24 3ce0eea9a4b6c0687e15ff8e14dd4d2657c4cca4 3e40958bac344565ed6cbf86cd18389a2beec501 3e9bf0ab0ab49495040d89a1bf5f1174a1e47fd9 3e9c5a523011779026d20f500884fcbd620ba4e4 3ec3ccb53c0192c0d63800e4ffe38b7d5d11e5f8 3f04ae988e4372435058a503f031399c95838f75 411e2a03c8e0a962911940b99f183be56f9578b6 418cdd8d718737a3428818fb5ac35c43f56b73da 42ddb14ce65a9ebf9bd21336d663d8985d6af12f 42fa5c9aa7451d07b99bd571d58a53b02cb77711 436eda990b24080c11278ff13403a459fa87274f 44499f5aebb7e5cd68beeccb6987b783ee7c811d 4616929747e3f357b8f3a22dc88f270220385232 463ae4f9da5930c1b99d3a860805ecda0bf0b698 470a5a60f9a287cdbd4f7fbaf546cd327810f8ff 47241d44c260fc085fd39e7fdf146566009707d5 47e20305fe27ea9ae2d5ba62e1cb1d26bbe3f393 49452faeab466c0552aaadd50fc457c64dcb44e7 4adbde35a6ecf17a868ffa53ba3773982fd48465 4b1d7ac67e392439d6a5bd33470ab673a43c213e 4c60cd1cf33ba6f9e87b19dfc4f15da2ae5d4356 4caa361f626c90d85ba851e505eb6af31e694cb4 4e6ce309296641de051c3874d8fa9bb7c41717e9 4f31f546b91bc49559bb9c042cb0f2b35db55e60 4f3d7dadf9f833eb8695d9ed3e24b5ecaa4bc157 4f9b4705e645ac00fd62a8793ebb09750fbe4f66 50d89641bdf8a215a7e1a22c5aada6a36fcb4be6 51bacb51e66513af1be03abfb12a5c7dbddabb61 52cf6e85c79eb277b7790609c30a6895c8daaced 542b9315db0adb0380b5aeba9a3a1f77015854aa 55c8df02cfbfdc4c0d3e60b4c08908f0b756bf59 56b22cca3d165c14bdcb4149495d4b7f2716c438 56c241fe1cc532712f27a270e592993a1ff99500 582f7ea3910f1a00753e9cab3500f2b1e3835815 58ab128465250cefd3523f021a4c10dd176b0131 59a4ddfa2d04260f7469a47ecbdda64a74679313 5a34fd693cf8bc2912efaabc7e37b80473f3e693 5b011af5617b37290fa877e2fee67007bc9de089 5c26ff9c347a232e77f43b38d57fed998bf0f707 5c48a91f79941da26fc00a36971fbffdbd0b66dc 5c5c74dbfe4bdcbeeb7e15a345e851a669bec331 5ec0c91fbcf3e2dbabce4501942b0237d1bf2d12 608a65553a09a86720e2dd90c1d638fd976cbec4 62f823c9ee441242f19c233db5680a3931c192be 63aeea2dd298dc8a50bb3c007f9779b096f2b187 6408061f41dd9262f7a09ffab30ff58b39640d3e 64b281827802d038b80c08f4b7ae7096aa91926f 64dff9ac15efe4cba1d0ec564e01ae518eb95a54 6523479f85a24a28855f17e42c47b881dc62ac5f 66c145c3b2e35abf27da2e6a5fc36c781b2af98b 68be3b8e6bdbd254f9e5035a1a6c30dbf6f5c10d 68bf6a302bf2ed9a60d1ca24d1e1e6176a950ea5 6912309984dcab4c724f4f2614490fb2731df71f 69ac13e5852ca558cee0f6b828123d4c9387ab6e 69c6098b5be629c46e89cc6eade60d3c118b5aae 6a5d98612129b8186f21e800afdfaaa627082f46 6a6149e2895aaf9dc2462ceee319ce4fa430b155 6ab16a8321d4cb9498469000cfffcf58e0785cb3 6c8802859f5d8be6d784e09ce85ef64c4fe460dd 6d51136c9c03d67378a63f15fa6438f88fcd55e5 6d8d8ce535de998d409adb97f85258a312e1a165 6dcc0dde95388c7243f1a1f8d3108354a1b3eb22 6f150f33b150d6a81e26a425dd47d713d00f2d29 6f9a93a51f755a6646df3eb38a5959d6bed55d4b 702f73e771490a8d7371bb68d8fc33407b01863f 72527e34badceec93024b6b9b0c255f2253cb3b8 7254eaabeca539be44d9315b8fcc58200e8d77e1 73153b1ed4cb39c36bae5c875bb1cf982c60b986 739ea256defe200a7041a7abc088f48a7ed691ef 7557661e5df67111a1a9e4864952304eb8be8367 75849ff6a186588a5c62f778bc353b4b3b5eba4d 76d500c5867e5be64d0f031c37c4efb4490f78fc 781f12ce244ff22d89be21804feae65cad3693e5 79450f6e36287865d093ea209b85a222209925ff 794560c8d243639733f747b240961ddd7feca046 7d604ba1c4cf361483fd566eda9e49dbcc4e3b86 8012bdab6995be808fa8adbf6ab37a9c62dd91c5 80317cbfeb29be1ab630875daee01c645bd92e3f 8158198b8ed58ff75ed16e2364a491316a237ce7 8541712e75edca5c0304409f72f015e1723471c4 8547e88f3e2fae4661446c9af3f18fe38b85eda6 854ddd0a626b80bf2d397a1fc1048558ad1fc7b7 85c095939e82585bff14bd369e70f697b77e2124 865b21651303fd630ba82bf991ab4b16a261c03b 87861f69b0de053fdae50782c259a95b4d7b3006 8994f8a538994fb8a9b6059c21402f9f6658a9c6 8a4f3ccf96bd6c0c3239eecc525628a5cbe6c2d8 8bf9690d0963e10003829ede000302c0fec9a750 8c8161ebe4930eab2275d0841d8180f6539ecba3 8cdaa4ac029b087ede290683c309443053c5c3ad 8cfb71694c19b419f6ae3ceb0bc600862793a6f4 8d8e1f926f2ea96f7b61d7003f790253a6d50d02 8dd441091be438c3cc6d9528fc393e1d08de213d 8e4712535c370f898efe0347cbb0c5740f3baf14 8ea820e0a552ddcec10b06e5b371d16c7f68db63 906daf56a91191a8a9e05221ecec2da169f13efc 908da949f802fd0bae9bf24875c2950b8cb94171 90b84823edfc2ab2e39e58fd251f832c747cf09f 90da054e12ea1a53ee0cbb5bb5e65f7069aeee44 90ee1c354d537ec0592a4ae2578ec3614c6059da 924f1e2fff372e6f644b8beabb850151640b37fc 942929b8bb746f6c5990550b7a871793d0bcb480 942b0a4de37d5f54cf7a72f79a6a4eeeeb246b62 9661efd3c208d8df7ca94d5b82521685baa7cf41 97887534abb142a486640a76e8a73233d283f82b 97a8ea1ad98616921d201496f9d0aede44ae255c 97e336f0265789c81eb4b78d8535e78627a0cc7b 98196ba3d6f827c2d789f565210e63751d339880 98720fc2303dfb292d56391067e16e7e083efe06 9938d4586b08d57513dfd4d375435a9e09c02649 999c660968d6ed830bd3580fb771d292a475dc7b 9bb1c73e9b028264146d6ba14cde5fc8461ac39c 9c5d50ad538552ddca573d578508baadddbf5558 9d9f801a7c0ccbdbce8262f14c1a97662de9a141 a0a016146f9cbe36c829b8243daca9afb5f11e38 a14652b0b88e59d59ac584b8fa6d46e9092ad298 a17814fe1720368d315f939264ac9a07b53a8a65 a17ce09dc8c1e575f88e15db2d0e2b7046f0ce15 a29187bc8e891c41142b0561a2e985e120882c81 a37220d203f2372eb941fc04b8fe510390cb23d4 a3bb1952362422c46027e58e96f744951cd8b480 a3bb2a75daecaa8a345f4ffaaaf11564fa9212d3 a491448e4cc775c92b2a1e20cfa64f521e31c244 a590274ed2e7bea2062f7439810bc9e4d5c99cc8 a66eae769416b917edb1f1ac21aad1bd93bbca85 a862d6e83d0adb247a4f33818853479e237592f2 a8fb3323405ca680d325b8af769fb68e16776b05 a900f7b791e9c5e8345d0bb37ca4b33bcc36fb06 a94ab6ea87b8987b49cbdaac1d0b7d0e12d169b5 a9ec530e10c11c2200b45eb24ffb48e17a7df4ff aaf110f954c63c0c7a204e74f0d77c0db2313695 ab2e48a4af842ddbe8f527220fe2bddaefd44c03 ad31067d1b2878970e88808d2afb92d05b453f53 af112bc2351e4f6b6c90bbab4ab00ffee3474c5a af5c63f9a185566210fccf6263b2f63b1e8385d5 b0b74312664decb7c237840f7b2386dfb60761a7 b0bfaa9a93a76d3b3cd0b9257cbdfc687010c51c b246a8e3e18f0f79ff0ea7cdaf12cc2bd7e32f18 b5c962fd6443fe3338bd13eac4e8f95bcfa3a1d7 b60b1090b7bae7e10cbb4bb80d71c616ec0fc53b b699b66f6dc9652bad08b5c271a48720fee67875 b7362e7f772ead2fe20f8cf69a04dded8a8bfc97 b76123cb634f3cc5000c6e1d975f8fa75cee8d6a b76815ca81edf9363f11b1ee1d2e3fb9ec926247 b77dff94adba0aedd54559cd8041ce609ec5b9a5 b7a5abd36b880706055da5adc6f7c223acb1ab19 b861d254ea7c6989c06cfbd9281a1a1cd2a88c8d ba206109903c5e6825d79f62c110077519ffe1e6 bb3efe1adca8fccb3a853bb5bdc638c8f132bcf9 bb7bfc44407c2e579b0091aec808bbc45ee11f82 bc15a00e856267e0a393dbb54c23c2bbcd0afba5 be98527f72296d9cc9adb25fd5dc23309538e54c bff409a2a2bdceafefdec768f261adead4da5fbf c0cfe2fbf7c2700df5299865a4bb0348cdfb26cf c0d2e18480f006947e4c840442f387ea69523246 c1435d469beea1a3614e7105bef92420750da66e c2427fec98278df1aa59cb1488dccf66d7d992ac c25cc3384ed35ad26e1d73bf1f187f57c2dab31c c265b6ec162f7678f91477dd6e5042b9f3b73fad c3bc1ac05fd0c9875299523b4cac1382cc834fd3 c47f4bf95f7c2be677611eec3c8ff761b96dcc66 c608ec505186617c8e1df831f804862e35f5b8bd c69631f700bf725b4d425b770de9ec58ccac405d c75a491050922439171abd46f37ed52c51fbc0de c816d523ed85ba94533000f49f3f51109991d115 c9280ff076fe01f07c7de39f40217270ff0c5d10 ca4e0ceab91f14a2834e61616217ba6d50e2a4e8 ca962a66cc09a23eeb771529554f3d5099c03536 caa59aedc097bfe42288fde5c06e315feeb616f9 cad724b139a42af07cfd4d5118497bf629f7af0c cb74ee04e0ff292388c51e53a7c676cc6613e2d6 cb9068ee320d21031990689d0360600e76725b2f cbec155f241511a409b11f25324f43b7b5cfdf6d ccddb50585b66f207bb06afa46350ca7ee5e619b d16e9a997d56ccd335e0d2cf0f241e04562ff407 d3387cc694510d0ce28812e0fa46a8f9f714976d d4f5a6fb42da92a82cd552bf5bf3ed8f3c80d288 d62cac542fa9ededf1e507c06436a823b74a3c6c d7e679c9dfd43f528cf096a123ebd384ced99f5d d8d90b6bfee77702de171f420397f390df7369d8 dab0dbe4bdac8f6a045f79ff1fbd94a0b0f29982 dc205da07acd046030ad127106930ea5d0af4a70 dd179c08683f8f1141ce2079e9d6201e2f3d4cf5 df2003331469ed7a0d539ffc8307883ed0678fc4 df4484c8b79e01083143cb1e533b713e5a4c38a3 e02eaa21c26a1fb38a2f7c1f926dac7487a5faa9 e07571eb7d065bad99b7489826e1c58a0a689d4c e1976445d94220e05ed28c8292d4ce79f8c4eee5 e3b226cf69f27859d0f644377adb361a62d6330a e3f275e0518c156c703898d21e24173a24b16bec e4a71adb14a62f49af2567151a712b2e914930d1 e5961dc14e3ca3e2ebebed5f4aa6c0ddfe7eb95b e644d3d5a5d7ba673b864b9d1f5a1c4f1b056754 e672e974ba4ca8be62b8acb70c55be41593a0674 e7f00277299f481ebe02fa680c71bb2ababa327f e93e0839cedbdeffaad21ab92484c03a614e77e8 e95517671ae042422ac45dfdfce4dfbcbed0eedd e9b88003e2d520e91ed5404dfb3995bfe72df85b ec8715e6237ff1b725d56d24c23c3fa22a4d0cec ec9553094100a01c415cdbdd571619cfec006304 ed32417e9844fdb1708fce102526af2cae919e74 ef304ea142be74542219c21be143f38e61164260 f19839e2491c4c9d124194f3991242505dfab370 f3dbaad3416ddf1becc012629e5bb7e0387cf747 f790ff354a09d847cb96f95827dbb2a28718ab0b f9c2d4030363e6625401576bac7d2c4df5782450 faa43f5be9f360a983e728d55f86fab2967f89cf fb53ae0ebfb450532d2c6cb8c8e105bae674764e fbaaa9df1bf30553e6000f4847860e92d0d335cf fd1d44647593be4780cf25cbdd8ac2d8d484743e fd4e3e2e561edca5e3df63714ca3d5de4a4ed366 fde8708f40527d31212c954422b7927fc76dfd97 fe41526a83999f2fe9d0f8aadcd61d03a92cbb70 fedb9b0bcaa1a3c31a2968625004405aca974f64 ff385bb4d4394c439ab088c3e27e1e35d7e4fafd ffcff93945e56b22835d7f76b334892560c793a4 ffde6de16a620257d3a1aaa157806c4ece248cbf fffdfaa40fc97be8241150856702daf4e32cf26b
+Description-md5: bbc98343da14bf76d4a45c2181fd8902
+Tag: role::debug-symbols
+Section: debug
+Priority: extra
+Filename: pool/main/g/glibc/libc6-dbg_2.24-11+deb9u1_amd64.deb
+Size: 9201434
+MD5sum: f66b2f373ac3fedcd546cc18f6ccf189
+SHA256: 563e5bbf1af4839620498be37d1ae9af81db8a75ca9fb1d4196e67c61569edf6
+
+Package: libc6-dev
+Source: glibc
+Version: 2.24-11+deb9u1
+Installed-Size: 15630
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: amd64
+Provides: libc-dev
+Depends: libc6 (= 2.24-11+deb9u1), libc-dev-bin (= 2.24-11+deb9u1), linux-libc-dev (>= 4.9.30-1)
+Suggests: glibc-doc, manpages-dev
+Conflicts: libc0.1-dev, libc0.3-dev, libc6.1-dev
+Breaks: binutils (<< 2.26), binutils-gold (<< 2.20.1-11), cmake (<< 2.8.4+dfsg.1-5), gcc-4.4 (<< 4.4.6-4), gcc-4.5 (<< 4.5.3-2), gcc-4.6 (<< 4.6.0-12), libhwloc-dev (<< 1.2-3), libjna-java (<< 3.2.7-4), liblouis-dev (<< 2.3.0-2), liblouisxml-dev (<< 2.4.0-2), make (<< 3.81-8.1), pkg-config (<< 0.26-1)
+Description: GNU C Library: Development Libraries and Header Files
+Multi-Arch: same
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 1bbdc717d9acdb44db940928d570e749
+Build-Essential: yes
+Tag: devel::lang:c, devel::library, implemented-in::c, role::devel-lib,
+ suite::gnu
+Section: libdevel
+Priority: optional
+Filename: pool/main/g/glibc/libc6-dev_2.24-11+deb9u1_amd64.deb
+Size: 2365076
+MD5sum: d1dbbd620f447a015acfda48c4a6a403
+SHA256: 0e10342da1da5f5497a38bd4f3e1f33b20dc83e75d2f3e0809fa6febfb01f6bc
+
+Package: libc6-dev-i386
+Source: glibc
+Version: 2.24-11+deb9u1
+Installed-Size: 8957
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: amd64
+Provides: lib32c-dev
+Depends: libc6-i386 (= 2.24-11+deb9u1), libc6-dev (= 2.24-11+deb9u1)
+Recommends: gcc-multilib
+Description: GNU C Library: 32-bit development libraries for AMD64
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 50cf6ae98f9a3cdef9c53b186287325f
+Tag: role::shared-lib
+Section: libdevel
+Priority: optional
+Filename: pool/main/g/glibc/libc6-dev-i386_2.24-11+deb9u1_amd64.deb
+Size: 1651470
+MD5sum: ce3f3b38be82cfe78a543969349566b8
+SHA256: e3d6cec074fee029bc4c75b24f1592c74c0700c27ccb791237e6b6b3c2f7fb4e
+
+Package: libc6-dev-x32
+Source: glibc
+Version: 2.24-11+deb9u1
+Installed-Size: 10364
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: amd64
+Depends: libc6-x32 (= 2.24-11+deb9u1), libc6-dev-i386 (= 2.24-11+deb9u1), libc6-dev (= 2.24-11+deb9u1)
+Description: GNU C Library: X32 ABI Development Libraries for AMD64
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 0859bbe63e876c4ed2ca05543b5d535f
+Tag: devel::library, role::devel-lib
+Section: libdevel
+Priority: optional
+Filename: pool/main/g/glibc/libc6-dev-x32_2.24-11+deb9u1_amd64.deb
+Size: 1939632
+MD5sum: 8b0daad465115ae1033bddb0afc63f37
+SHA256: 5fcf4f7e24b4a99b0a8124aac2d8962b4ca41761c599d39bbbdaa2c8c492840e
+
+Package: libc6-i386
+Source: glibc
+Version: 2.24-11+deb9u1
+Installed-Size: 11250
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: amd64
+Replaces: libc6-dev-i386
+Depends: libc6 (= 2.24-11+deb9u1)
+Description: GNU C Library: 32-bit shared libraries for AMD64
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 126bea51eae6ba3832096d4d56bfd9d2
+Tag: role::shared-lib
+Section: libs
+Priority: optional
+Filename: pool/main/g/glibc/libc6-i386_2.24-11+deb9u1_amd64.deb
+Size: 2595228
+MD5sum: e4288da45bcc62751f1972a17775263b
+SHA256: 59c3f283b04a0b3af302a48c54223ab09e0b47be5f27481eddf782028d23be23
+
+Package: libc6-pic
+Source: glibc
+Version: 2.24-11+deb9u1
+Installed-Size: 8506
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: amd64
+Provides: glibc-pic, libc-pic
+Depends: libc6 (= 2.24-11+deb9u1)
+Conflicts: libc-pic
+Description: GNU C Library: PIC archive library
+Multi-Arch: same
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: f7532ae2bb48ede897a6da638f062d2e
+Tag: devel::lang:c, devel::library, implemented-in::c, role::app-data,
+ suite::gnu
+Section: libdevel
+Priority: optional
+Filename: pool/main/g/glibc/libc6-pic_2.24-11+deb9u1_amd64.deb
+Size: 1583944
+MD5sum: d33e00458029fba67311a4d3f88845b1
+SHA256: 983f8956ac3934335b042f3d5f238680bebf4c51dde1c9faeef38ac1ef3bf60a
+
+Package: libc6-x32
+Source: glibc
+Version: 2.24-11+deb9u1
+Installed-Size: 11856
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: amd64
+Depends: libc6 (= 2.24-11+deb9u1)
+Description: GNU C Library: X32 ABI Shared libraries for AMD64
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 010abf82e546e9de191aa54ef585d592
+Tag: role::shared-lib
+Section: libs
+Priority: optional
+Filename: pool/main/g/glibc/libc6-x32_2.24-11+deb9u1_amd64.deb
+Size: 2818582
+MD5sum: e8a011bc00dc1723f9883d93dd615751
+SHA256: 0a46481c373dc4908bc06b2fb9e749f9bd1b549d8520ac1cbeac7a633bb949aa
+
+Package: locales
+Source: glibc
+Version: 2.24-11+deb9u1
+Installed-Size: 9244
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: manpages-fr-extra (<< 20141022)
+Depends: libc-bin (>> 2.24), libc-l10n (>> 2.24), debconf (>= 0.5) | debconf-2.0
+Description: GNU C Library: National Language (locale) data [support]
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 68ccf846a4935e541c4a717fc0a1f3e3
+Tag: admin::configuring, devel::i18n, implemented-in::c, role::app-data,
+ role::program, scope::utility, suite::gnu
+Section: localization
+Priority: standard
+Filename: pool/main/g/glibc/locales_2.24-11+deb9u1_all.deb
+Size: 3289604
+MD5sum: e658500611b74241e1e5bc7dede5c79d
+SHA256: 9e71394892dcb0c053e26398a5f0dc330b4cecbf02b8b44a931361d91bc590db
+
+Package: locales-all
+Source: glibc
+Version: 2.24-11+deb9u1
+Installed-Size: 126707
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: amd64
+Depends: libc-l10n (>> 2.24)
+Breaks: locales (<< 2.13-17)
+Description: GNU C Library: Precompiled locale data
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: c360552536cba624a24a347b513939dd
+Section: localization
+Priority: extra
+Filename: pool/main/g/glibc/locales-all_2.24-11+deb9u1_amd64.deb
+Size: 3605464
+MD5sum: fba2e28419ac6b72a3b36a41e9d46e67
+SHA256: bd77225bd269c79dea6ba1217d9c47dd6f54659b5e50f4cf08cb149571557adf
+
+Package: multiarch-support
+Source: glibc
+Version: 2.24-11+deb9u1
+Installed-Size: 220
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: amd64
+Depends: libc6 (>= 2.3.6-2)
+Description: Transitional package to ensure multiarch compatibility
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: f70fd4ad370040691119c10d77aec677
+Tag: role::shared-lib
+Section: libs
+Priority: required
+Filename: pool/main/g/glibc/multiarch-support_2.24-11+deb9u1_amd64.deb
+Size: 199636
+MD5sum: ac06773b8cc78c4882ec2d342fe10d50
+SHA256: 95e6934b5a108d8bff27d105cafcde193fee78d78520c7b6d4c50e337b9a2be7
+
+Package: nscd
+Source: glibc
+Version: 2.24-11+deb9u1
+Installed-Size: 405
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: amd64
+Depends: lsb-base (>= 3.0-6), libaudit1 (>= 1:2.2.1), libc6 (>> 2.24), libc6 (<< 2.25), libcap2 (>= 1:2.10), libselinux1 (>= 2.0.82), init-system-helpers (>= 1.18~)
+Description: GNU C Library: Name Service Cache Daemon
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: e8172254ec0df735a3e44c0f557100bc
+Tag: interface::daemon, network::server, protocol::dns, role::program,
+ suite::gnu, use::proxying
+Section: admin
+Priority: optional
+Filename: pool/main/g/glibc/nscd_2.24-11+deb9u1_amd64.deb
+Size: 266610
+MD5sum: 5bbdf0b946b43e7598d2e033d2852cb8
+SHA256: f5bafeadb0ad292eb19307a5b315e6ca883d116f3027e66a3f6e6c30e0547b1f
+

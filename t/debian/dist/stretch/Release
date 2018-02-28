@@ -1,0 +1,27 @@
+Codename: stretch
+Components: main contrib non-free
+Date: Sat, 09 Dec 2017 09:16:24 UTC
+Description: Debian 9.3 Released 09 December 2017
+Origin: Debian
+Suite: stable
+Version: 9.3
+MD5Sum:
+ fdf372bf3d7c06d68f0757fd97185a67             2710 main/binary-all/Packages
+ 635debee37000e59a92fb6d1c08f22de            23612 main/binary-amd64/Packages
+ 2a28c9b3a9bd6176f3ab23bb5b4bcee4            24738 main/binary-i386/Packages
+ 52c3a8af40d7892bf8b5c6e144cd6bdd            22663 main/source/Packages
+SHA1:
+ a6fc33cd831576d273e1d84c0660068c2378cd37             2710 main/binary-all/Packages
+ 9837ffc4deedc9b41c16f4ca27b8426080109c6e            23612 main/binary-amd64/Packages
+ d95b1e8cf058caaed6ebba145dae93eb0638fb72            24738 main/binary-i386/Packages
+ b2a20e391056b9eb3290b182461901f32dcd2d18            22663 main/source/Packages
+SHA256:
+ e7b4d68ba8cac12b1e27ce4884c97d848efaff94ecda701bfcd7e55d630ea4c2             2710 main/binary-all/Packages
+ dcfaa4253ed250ea37f338f43e20983717ddfd15470acd7521b233dc04f5a53a            23612 main/binary-amd64/Packages
+ 6150f213539d169f70c6ebb498f3a448b5ec704a2caeaeafb9f099c2f64a0f7d            24738 main/binary-i386/Packages
+ 727f2ab988149597642d544ea1f8a1a984d35d36dc74444607c30f76398464f1            22663 main/source/Packages
+SHA512:
+ 8098b6bf10c13a8790e6e7ffe20964cf1b768c1426a192f1f64a4fe92121a843e63c62dbd3d04e775ac093d93edbd462db104ba328fbdf8d764d72c27cf9f6bb             2710 main/binary-all/Packages
+ 8c5e951ae07e2eba31478081e5c32e7da6fc67768b03a73096b91161f2c853d026f6ead8244d8afb880b0136dbe70d4674e2136dfeac238d9f3ba3e46e016687            23612 main/binary-amd64/Packages
+ 1799d0014b5248b089be00a864375b3df96cc91424bb52fef0be763b314fb5d79351dc2ed5fed62f6655d9b0af6cbc42beb191ae89e7a845376e84c33d3ea3fa            24738 main/binary-i386/Packages
+ 6c31d3d6c2bd15d7d9e64fb9fc1f5715e5658fa04913b6234150ad0d64625dee38377b3fd8178ba10133e9334316b74f6f73c75a3ec234e6cb34a5ba6792319a            22663 main/source/Packages

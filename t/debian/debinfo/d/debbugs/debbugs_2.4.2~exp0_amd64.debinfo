@@ -1,0 +1,4 @@
+debbugs-web 2.4.2~exp0 all debbugs 2.4.2~exp0
+debbugs 2.4.2~exp0 all debbugs 2.4.2~exp0
+debbugs-local 2.4.2~exp0 all debbugs 2.4.2~exp0
+libdebbugs-perl 2.4.2~exp0 all debbugs 2.4.2~exp0

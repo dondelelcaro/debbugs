@@ -1,0 +1,1574 @@
+Package: debbugs
+Binary: debbugs
+Version: 2.4.1.1
+Maintainer: Debbugs developers <debian-debbugs@example.com>
+Uploaders: Don Armstrong <don@example.com>
+Build-Depends-Indep: debhelper
+Architecture: all
+Standards-Version: 3.2.1
+Format: 1.0
+Files:
+ e63e13457a4552585e0170996eb5a83c 1426 debbugs_2.4.1.1.dsc
+ 953ddc56307c68b6c08ca5d47fe6f933 113074 debbugs_2.4.1.1.tar.gz
+Checksums-Sha256:
+ 9aa3574c121376217f047956229102702affd9a1c9f382e2417b658e014d9a36 1426 debbugs_2.4.1.1.dsc
+ fa75dab52e4af5001a65839eb905105d40df4da137ade61183f1a426de79dfc8 113074 debbugs_2.4.1.1.tar.gz
+Package-List: 
+ debbugs deb misc optional arch=all
+Directory: pool/main/d/debbugs
+Priority: source
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-i686, libc6-xen, libc0.1-i686, libc0.3-i686, libc0.3-xen, libc6.1-alphaev67, libc6-loongson2f, libnss-dns-udeb, libnss-files-udeb
+Version: 2.19-12
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>
+Build-Depends: gettext, dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 7.4.3), rdfind, symlinks, netbase, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.3-2) [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386], gnumach-dev (>= 2:1.4-2~) [hurd-i386], kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.21), g++-4.8 (>= 4.8.3-8), g++-4.8-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el powerpc ppc64 s390x sparc sparc64 x32]
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 3.9.5
+Format: 3.0 (quilt)
+Files:
+ ebaa52c52fd63f9286fb66f2d65929b3 8186 glibc_2.19-12.dsc
+ 64d4b33ed4f830f501d92925e9e36a05 12387008 glibc_2.19.orig.tar.xz
+ f3a58a03f06380beec47f198856259e8 1002160 glibc_2.19-12.debian.tar.xz
+Vcs-Browser: http://svn.debian.org/wsvn/pkg-glibc/glibc-package/
+Vcs-Svn: svn://svn.debian.org/pkg-glibc/glibc-package/
+Checksums-Sha256:
+ f5ea25756ddcce1332db439c572d1b86573ef83401fb2886f9a8c70245414e7c 8186 glibc_2.19-12.dsc
+ 746e52bb4fc9b2f30bcd33d415172a40ab56c5fff6c494052d31b0795593cc60 12387008 glibc_2.19.orig.tar.xz
+ 8b659936556451284df961dc2075f583a522f949c9670067dfe011c6b71905bf 1002160 glibc_2.19-12.debian.tar.xz
+Homepage: http://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc0.1 deb libs required arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-i686 deb libs extra arch=kfreebsd-i386 profile=!stage1
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs required arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug extra arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-i686 deb libs extra arch=hurd-i386 profile=!stage1
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer extra arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs extra arch=hurd-i386 profile=!stage1
+ libc6 deb libs required arch=amd64,arm,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug extra arch=amd64,arm,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-i686 deb libs extra arch=i386 profile=!stage1
+ libc6-loongson2f deb libs extra arch=mipsel profile=!stage1
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer extra arch=amd64,arm,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs extra arch=i386 profile=!stage1
+ libc6.1 deb libs required arch=alpha profile=!stage1
+ libc6.1-alphaev67 deb libs extra arch=alpha profile=!stage1
+ libc6.1-dbg deb debug extra arch=alpha profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha
+ libc6.1-pic deb libdevel optional arch=alpha profile=!stage1
+ libc6.1-udeb udeb debian-installer extra arch=alpha profile=!stage1
+ libnss-dns-udeb udeb debian-installer extra arch=any profile=!stage1
+ libnss-files-udeb udeb debian-installer extra arch=any profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization extra arch=any profile=!stage1
+ multiarch-support deb libs required arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Extra-Source-Only: yes
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-i686, libc6-xen, libc0.1-i686, libc0.3-i686, libc0.3-xen, libc6.1-alphaev67, libc6-loongson2f, libnss-dns-udeb, libnss-files-udeb
+Version: 2.19-18
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>
+Build-Depends: gettext, dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 9.20141010), rdfind, symlinks, netbase, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.4-2) [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386], gnumach-dev (>= 2:1.4+git20141109-1) [hurd-i386], kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.21), g++-4.8 (>= 4.8.3-8), g++-4.8-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el powerpc ppc64 s390x sparc sparc64 x32]
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 3.9.5
+Format: 3.0 (quilt)
+Files:
+ aa67186f341d1366993aaec80fe7773e 8208 glibc_2.19-18.dsc
+ 64d4b33ed4f830f501d92925e9e36a05 12387008 glibc_2.19.orig.tar.xz
+ e635b3cfc99dfa89c2f659aefbb7571e 1030448 glibc_2.19-18.debian.tar.xz
+Vcs-Browser: http://svn.debian.org/wsvn/pkg-glibc/glibc-package/
+Vcs-Svn: svn://svn.debian.org/pkg-glibc/glibc-package/
+Checksums-Sha256:
+ bd53c829359b4fe33c08a33bbad6da5b2e4dbf72b74fb8033c6d7e9db7581ddd 8208 glibc_2.19-18.dsc
+ 746e52bb4fc9b2f30bcd33d415172a40ab56c5fff6c494052d31b0795593cc60 12387008 glibc_2.19.orig.tar.xz
+ 67c9731e7cf933ba4ac35e6d8302acd36cbae3fb19d79ab53e7ec1ef7caf50ab 1030448 glibc_2.19-18.debian.tar.xz
+Homepage: http://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc0.1 deb libs required arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-i686 deb libs extra arch=kfreebsd-i386 profile=!stage1
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs required arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug extra arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-i686 deb libs extra arch=hurd-i386 profile=!stage1
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer extra arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs extra arch=hurd-i386 profile=!stage1
+ libc6 deb libs required arch=amd64,arm,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug extra arch=amd64,arm,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-i686 deb libs extra arch=i386 profile=!stage1
+ libc6-loongson2f deb libs extra arch=mipsel profile=!stage1
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer extra arch=amd64,arm,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs extra arch=i386 profile=!stage1
+ libc6.1 deb libs required arch=alpha profile=!stage1
+ libc6.1-alphaev67 deb libs extra arch=alpha profile=!stage1
+ libc6.1-dbg deb debug extra arch=alpha profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha
+ libc6.1-pic deb libdevel optional arch=alpha profile=!stage1
+ libc6.1-udeb udeb debian-installer extra arch=alpha profile=!stage1
+ libnss-dns-udeb udeb debian-installer extra arch=any profile=!stage1
+ libnss-files-udeb udeb debian-installer extra arch=any profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization extra arch=any profile=!stage1
+ multiarch-support deb libs required arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Extra-Source-Only: yes
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, libc-l10n, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-xen, libc0.3-xen, libc6.1-alphaev67, libc0.1-i686, libc0.3-i686, libc6-i686
+Version: 2.23-1
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>, Samuel Thibault <sthibault@example.com>
+Build-Depends: gettext, dpkg (>= 1.18.7), dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 9.20141010), rdfind, symlinks, netbase, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.5-3) [hurd-i386], gnumach-dev (>= 2:1.4+git20141109~) [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] | hurd-headers-dev [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] <!stage1> | libihash-dev [hurd-i386] <!stage1>, kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.21), g++-5, g++-5-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el powerpc ppc64 s390x sparc sparc64 x32], g++-5 (>= 5.3.1-17) [hurd-i386 i386 kfreebsd-i386], libc-bin (>= 2.23) <cross>
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 3.9.8
+Format: 3.0 (quilt)
+Files:
+ ec536e01b3340012c5a5f3684e3dee4f 8256 glibc_2.23-1.dsc
+ 7945832c8f9ddfec9841582ad9109f36 13849968 glibc_2.23.orig.tar.xz
+ 14fcf1030eeeddf7a6ba4e74ac898ea1 1194192 glibc_2.23-1.debian.tar.xz
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-glibc/glibc.git
+Vcs-Git: https://anonscm.debian.org/git/pkg-glibc/glibc.git
+Checksums-Sha256:
+ 52e8cc2f2505dee657fe51173e4dfa199b7782268f38129a56a67e7bca6d8f64 8256 glibc_2.23-1.dsc
+ bf6c528eeebefcacc295270068b79330c1fb2b22458ff66285b4175d23442c96 13849968 glibc_2.23.orig.tar.xz
+ 6a7081e71dd9c8ca618f2880369f19f96c5a9433b0f2e192332bc9e11285fda8 1194192 glibc_2.23-1.debian.tar.xz
+Homepage: http://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1 essential=yes
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc-l10n deb localization standard arch=all profile=!stage1
+ libc0.1 deb libs required arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-i686 deb oldlibs extra arch=kfreebsd-i386
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs required arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug extra arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-i686 deb oldlibs extra arch=hurd-i386
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer extra arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs extra arch=hurd-i386 profile=!stage1
+ libc6 deb libs required arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug extra arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-i686 deb oldlibs extra arch=i386
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer extra arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs extra arch=i386 profile=!stage1
+ libc6.1 deb libs required arch=alpha profile=!stage1
+ libc6.1-alphaev67 deb libs extra arch=alpha profile=!stage1
+ libc6.1-dbg deb debug extra arch=alpha profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha
+ libc6.1-pic deb libdevel optional arch=alpha profile=!stage1
+ libc6.1-udeb udeb debian-installer extra arch=alpha profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization extra arch=any profile=!stage1
+ multiarch-support deb libs required arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Extra-Source-Only: yes
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, libc-l10n, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-xen, libc0.3-xen, libc6.1-alphaev67, libc0.1-i686, libc0.3-i686, libc6-i686
+Version: 2.23-2
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>, Samuel Thibault <sthibault@example.com>
+Build-Depends: gettext, dpkg (>= 1.18.7), dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 9.20141010), rdfind, symlinks, netbase, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.5-3) [hurd-i386], gnumach-dev (>= 2:1.4+git20141109~) [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] | hurd-headers-dev [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] <!stage1> | libihash-dev [hurd-i386] <!stage1>, kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.21), g++-5, g++-5-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el powerpc ppc64 s390x sparc sparc64 x32], g++-5 (>= 5.3.1-17) [hurd-i386 i386 kfreebsd-i386], libc-bin (>= 2.23) <cross>
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 3.9.8
+Format: 3.0 (quilt)
+Files:
+ d56ef4daa37606e0173965c2e1212493 8256 glibc_2.23-2.dsc
+ 7945832c8f9ddfec9841582ad9109f36 13849968 glibc_2.23.orig.tar.xz
+ e3d85fe12d618d8660a564100c2ed914 1194564 glibc_2.23-2.debian.tar.xz
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-glibc/glibc.git
+Vcs-Git: https://anonscm.debian.org/git/pkg-glibc/glibc.git
+Checksums-Sha256:
+ 2fb0ffac338e79715624e72980d9bdc5aa582ccc577b3bbdf53564a6ab5c278d 8256 glibc_2.23-2.dsc
+ bf6c528eeebefcacc295270068b79330c1fb2b22458ff66285b4175d23442c96 13849968 glibc_2.23.orig.tar.xz
+ 4d5404e002798cebbbfbd6a459c4f47af8844432287149a7bc81cc594696f380 1194564 glibc_2.23-2.debian.tar.xz
+Homepage: http://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1 essential=yes
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc-l10n deb localization standard arch=all profile=!stage1
+ libc0.1 deb libs required arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-i686 deb oldlibs extra arch=kfreebsd-i386
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs required arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug extra arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-i686 deb oldlibs extra arch=hurd-i386
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer extra arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs extra arch=hurd-i386 profile=!stage1
+ libc6 deb libs required arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug extra arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-i686 deb oldlibs extra arch=i386
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer extra arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs extra arch=i386 profile=!stage1
+ libc6.1 deb libs required arch=alpha profile=!stage1
+ libc6.1-alphaev67 deb libs extra arch=alpha profile=!stage1
+ libc6.1-dbg deb debug extra arch=alpha profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha
+ libc6.1-pic deb libdevel optional arch=alpha profile=!stage1
+ libc6.1-udeb udeb debian-installer extra arch=alpha profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization extra arch=any profile=!stage1
+ multiarch-support deb libs required arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Extra-Source-Only: yes
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, libc-l10n, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-xen, libc0.3-xen, libc6.1-alphaev67, libc0.1-i686, libc0.3-i686, libc6-i686
+Version: 2.24-5
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>, Samuel Thibault <sthibault@example.com>
+Build-Depends: gettext, dpkg (>= 1.18.7), dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 9.20160709), rdfind, symlinks, netbase, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.5-3) [hurd-i386], gnumach-dev (>= 2:1.4+git20141109~) [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] | hurd-headers-dev [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] <!stage1> | libihash-dev [hurd-i386] <!stage1>, kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.21), g++-6, g++-6-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el powerpc ppc64 s390x sparc sparc64 x32], g++-6 (>= 6.1.1-1~) [hurd-i386 i386 kfreebsd-i386], libc-bin (>= 2.24) <cross>
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 3.9.8
+Format: 3.0 (quilt)
+Files:
+ 39938f9725f93f5f282f49c56b2d6547 8297 glibc_2.24-5.dsc
+ 8f474d3df178e862b9ef80e97feaa6ea 13921912 glibc_2.24.orig.tar.xz
+ efe754b5a93e5e25e8320af2c82bf7f4 916828 glibc_2.24-5.debian.tar.xz
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-glibc/glibc.git
+Vcs-Git: https://anonscm.debian.org/git/pkg-glibc/glibc.git
+Checksums-Sha256:
+ 70d73cd4dd9a73e11d7048d1f3b41557fef20805c641789d7135e01956ea61b7 8297 glibc_2.24-5.dsc
+ ed71e8afd2b270f7947a2cea2457a31e1ca4fac08e2731d80edd7ec1730ec84f 13921912 glibc_2.24.orig.tar.xz
+ 731f995050ea975f2ffef525dfb722334e9613a49f5e6dc4fc2b3a0de75745cd 916828 glibc_2.24-5.debian.tar.xz
+Homepage: http://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1 essential=yes
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc-l10n deb localization standard arch=all profile=!stage1
+ libc0.1 deb libs required arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-i686 deb oldlibs extra arch=kfreebsd-i386
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs required arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug extra arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-i686 deb oldlibs extra arch=hurd-i386
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer extra arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs extra arch=hurd-i386 profile=!stage1
+ libc6 deb libs required arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug extra arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-i686 deb oldlibs extra arch=i386
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer extra arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs extra arch=i386 profile=!stage1
+ libc6.1 deb libs required arch=alpha profile=!stage1
+ libc6.1-alphaev67 deb libs extra arch=alpha profile=!stage1
+ libc6.1-dbg deb debug extra arch=alpha profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha
+ libc6.1-pic deb libdevel optional arch=alpha profile=!stage1
+ libc6.1-udeb udeb debian-installer extra arch=alpha profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization extra arch=any profile=!stage1
+ multiarch-support deb libs required arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Testsuite-Triggers: binutils, fakeroot, gcc-6, linux-libc-dev
+Extra-Source-Only: yes
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, libc-l10n, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-xen, libc0.3-xen, libc6.1-alphaev67, libc0.1-i686, libc0.3-i686, libc6-i686
+Version: 2.24-10
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>, Samuel Thibault <sthibault@example.com>
+Build-Depends: gettext, dpkg (>= 1.18.7), dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 9.20160709), rdfind, symlinks, netbase, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.5-3) [hurd-i386], gnumach-dev (>= 2:1.8+git20170102-1~) [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] | hurd-headers-dev [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] <!stage1> | libihash-dev [hurd-i386] <!stage1>, kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.21), g++-6, g++-6-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el powerpc ppc64 s390x sparc sparc64 x32], g++-6 (>= 6.1.1-1~) [hurd-i386 i386 kfreebsd-i386], libc-bin (>= 2.24) <cross>
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 3.9.8
+Format: 3.0 (quilt)
+Files:
+ b80caff1e8720ad61f91fc6a8e41323b 8355 glibc_2.24-10.dsc
+ 8f474d3df178e862b9ef80e97feaa6ea 13921912 glibc_2.24.orig.tar.xz
+ 3c2c5463073ac38e76c0bb4383abee8e 987372 glibc_2.24-10.debian.tar.xz
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-glibc/glibc.git
+Vcs-Git: https://anonscm.debian.org/git/pkg-glibc/glibc.git
+Checksums-Sha256:
+ bc3eecc0bc562837941133cd3a71f3055c13d43cd49fd326bd0575fcf6b09625 8355 glibc_2.24-10.dsc
+ ed71e8afd2b270f7947a2cea2457a31e1ca4fac08e2731d80edd7ec1730ec84f 13921912 glibc_2.24.orig.tar.xz
+ 4b3789ce164d3b7fb7d01cdfb967a84bcbf4369c4570e201dff37432c8e2dd67 987372 glibc_2.24-10.debian.tar.xz
+Homepage: http://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1 essential=yes
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc-l10n deb localization standard arch=all profile=!stage1
+ libc0.1 deb libs required arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-i686 deb oldlibs extra arch=kfreebsd-i386
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs required arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug extra arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-i686 deb oldlibs extra arch=hurd-i386
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer extra arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs extra arch=hurd-i386 profile=!stage1
+ libc6 deb libs required arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug extra arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-i686 deb oldlibs extra arch=i386
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer extra arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs extra arch=i386 profile=!stage1
+ libc6.1 deb libs required arch=alpha profile=!stage1
+ libc6.1-alphaev67 deb libs extra arch=alpha profile=!stage1
+ libc6.1-dbg deb debug extra arch=alpha profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha
+ libc6.1-pic deb libdevel optional arch=alpha profile=!stage1
+ libc6.1-udeb udeb debian-installer extra arch=alpha profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization extra arch=any profile=!stage1
+ multiarch-support deb libs required arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Testsuite-Triggers: binutils, fakeroot, gcc-6, linux-libc-dev
+Extra-Source-Only: yes
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, libc-l10n, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-xen, libc0.3-xen, libc6.1-alphaev67, libc0.1-i686, libc0.3-i686, libc6-i686
+Version: 2.24-11+deb9u2
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>, Samuel Thibault <sthibault@example.com>
+Build-Depends: gettext, dpkg (>= 1.18.7), dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 9.20160709), rdfind, symlinks, netbase, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.5-3) [hurd-i386], gnumach-dev (>= 2:1.8+git20170102-1~) [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] | hurd-headers-dev [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] <!stage1> | libihash-dev [hurd-i386] <!stage1>, kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.21), g++-6, g++-6-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el powerpc ppc64 s390x sparc sparc64 x32], g++-6 (>= 6.1.1-1~) [hurd-i386 i386 kfreebsd-i386], libc-bin (>= 2.24) <cross>
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 3.9.8
+Format: 3.0 (quilt)
+Files:
+ 06ddbb41ab1502098409e46679a684de 8386 glibc_2.24-11+deb9u2.dsc
+ 8f474d3df178e862b9ef80e97feaa6ea 13921912 glibc_2.24.orig.tar.xz
+ de55368a8fd2f3d8cbfc671d2b19fd39 1036536 glibc_2.24-11+deb9u2.debian.tar.xz
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-glibc/glibc.git
+Vcs-Git: https://anonscm.debian.org/git/pkg-glibc/glibc.git
+Checksums-Sha256:
+ 4a94543fc552ab167cd13a875c1bdb1f9a3eab7276f4127d675e3b5b55e38bbe 8386 glibc_2.24-11+deb9u2.dsc
+ ed71e8afd2b270f7947a2cea2457a31e1ca4fac08e2731d80edd7ec1730ec84f 13921912 glibc_2.24.orig.tar.xz
+ 3fd74dcaf4fa82e4e5d56fa998c1955eae003d5e56c44ee3ceccb811d3d1ca74 1036536 glibc_2.24-11+deb9u2.debian.tar.xz
+Homepage: http://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1 essential=yes
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc-l10n deb localization standard arch=all profile=!stage1
+ libc0.1 deb libs required arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-i686 deb oldlibs extra arch=kfreebsd-i386
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs required arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug extra arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-i686 deb oldlibs extra arch=hurd-i386
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer extra arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs extra arch=hurd-i386 profile=!stage1
+ libc6 deb libs required arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug extra arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-i686 deb oldlibs extra arch=i386
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer extra arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs extra arch=i386 profile=!stage1
+ libc6.1 deb libs required arch=alpha profile=!stage1
+ libc6.1-alphaev67 deb libs extra arch=alpha profile=!stage1
+ libc6.1-dbg deb debug extra arch=alpha profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha
+ libc6.1-pic deb libdevel optional arch=alpha profile=!stage1
+ libc6.1-udeb udeb debian-installer extra arch=alpha profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization extra arch=any profile=!stage1
+ multiarch-support deb libs required arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Testsuite-Triggers: binutils, fakeroot, gcc-6, linux-libc-dev
+Extra-Source-Only: yes
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, libc-l10n, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-xen, libc0.3-xen, libc6.1-alphaev67, libc0.1-i686, libc0.3-i686, libc6-i686
+Version: 2.24-12
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>, Samuel Thibault <sthibault@example.com>
+Build-Depends: gettext, dpkg (>= 1.18.7), dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 9.20160709), rdfind, symlinks, netbase, gperf, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.5-3) [hurd-i386], gnumach-dev (>= 2:1.8+git20170102-1~) [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] | hurd-headers-dev [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] <!stage1> | libihash-dev [hurd-i386] <!stage1>, kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.21), g++-6, g++-6-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el powerpc ppc64 s390x sparc sparc64 x32], g++-6 (>= 6.1.1-1~) [hurd-i386 i386 kfreebsd-i386], libc-bin (>= 2.24) <cross>
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 3.9.8
+Format: 3.0 (quilt)
+Files:
+ 545613e1363d322780af23f6ead24f8d 8365 glibc_2.24-12.dsc
+ 8f474d3df178e862b9ef80e97feaa6ea 13921912 glibc_2.24.orig.tar.xz
+ 06f15fe7852ff927df161485c890206a 1028888 glibc_2.24-12.debian.tar.xz
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-glibc/glibc.git
+Vcs-Git: https://anonscm.debian.org/git/pkg-glibc/glibc.git
+Checksums-Sha256:
+ a03c6e6f9dbb6a83d4cda71fbcfaf90690e74a553b59639c387519c8f97f8bfb 8365 glibc_2.24-12.dsc
+ ed71e8afd2b270f7947a2cea2457a31e1ca4fac08e2731d80edd7ec1730ec84f 13921912 glibc_2.24.orig.tar.xz
+ aeafb5396520596e7d91b9d6e61c51030883c0f27d6c0fa436596b30a9961d5a 1028888 glibc_2.24-12.debian.tar.xz
+Homepage: http://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1 essential=yes
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc-l10n deb localization standard arch=all profile=!stage1
+ libc0.1 deb libs required arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-i686 deb oldlibs extra arch=kfreebsd-i386
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs required arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug extra arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-i686 deb oldlibs extra arch=hurd-i386
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer extra arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs extra arch=hurd-i386 profile=!stage1
+ libc6 deb libs required arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug extra arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-i686 deb oldlibs extra arch=i386
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer extra arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs extra arch=i386 profile=!stage1
+ libc6.1 deb libs required arch=alpha profile=!stage1
+ libc6.1-alphaev67 deb libs extra arch=alpha profile=!stage1
+ libc6.1-dbg deb debug extra arch=alpha profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha
+ libc6.1-pic deb libdevel optional arch=alpha profile=!stage1
+ libc6.1-udeb udeb debian-installer extra arch=alpha profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization extra arch=any profile=!stage1
+ multiarch-support deb libs required arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Testsuite-Triggers: binutils, fakeroot, gcc-6, linux-libc-dev
+Extra-Source-Only: yes
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, libc-l10n, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-xen, libc0.3-xen, libc6.1-alphaev67, libc0.1-i686, libc0.3-i686, libc6-i686
+Version: 2.24-14
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>, Samuel Thibault <sthibault@example.com>
+Build-Depends: gettext, dpkg (>= 1.18.7), dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 9.20160709), rdfind, symlinks, netbase, gperf, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.5-3) [hurd-i386], gnumach-dev (>= 2:1.8+git20170102-1~) [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] | hurd-headers-dev [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] <!stage1> | libihash-dev [hurd-i386] <!stage1>, kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.21), g++-6, g++-6-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el powerpc ppc64 s390x sparc sparc64 x32], g++-6 (>= 6.1.1-1~) [hurd-i386 i386 kfreebsd-i386], libc-bin (>= 2.24) <cross>
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 3.9.8
+Format: 3.0 (quilt)
+Files:
+ 5b1fc4f3e1945ecbfa47ecbb54fcd508 8365 glibc_2.24-14.dsc
+ 8f474d3df178e862b9ef80e97feaa6ea 13921912 glibc_2.24.orig.tar.xz
+ a53963d189c0a262e2e1e87582e4d4f1 1034268 glibc_2.24-14.debian.tar.xz
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-glibc/glibc.git
+Vcs-Git: https://anonscm.debian.org/git/pkg-glibc/glibc.git
+Checksums-Sha256:
+ 0cf0e4e07d95135a243a1ec62a5988fd2c789d5108d7520ac132691aca3d2e8b 8365 glibc_2.24-14.dsc
+ ed71e8afd2b270f7947a2cea2457a31e1ca4fac08e2731d80edd7ec1730ec84f 13921912 glibc_2.24.orig.tar.xz
+ 1108d4a9f64beba45eaab9863b3ce22f6d708ad5ab23ce29a82e3a35487ff52d 1034268 glibc_2.24-14.debian.tar.xz
+Homepage: http://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1 essential=yes
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc-l10n deb localization standard arch=all profile=!stage1
+ libc0.1 deb libs required arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-i686 deb oldlibs extra arch=kfreebsd-i386
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer extra arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs required arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug extra arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-i686 deb oldlibs extra arch=hurd-i386
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer extra arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs extra arch=hurd-i386 profile=!stage1
+ libc6 deb libs required arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug extra arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-i686 deb oldlibs extra arch=i386
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer extra arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs extra arch=i386 profile=!stage1
+ libc6.1 deb libs required arch=alpha profile=!stage1
+ libc6.1-alphaev67 deb libs extra arch=alpha profile=!stage1
+ libc6.1-dbg deb debug extra arch=alpha profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha
+ libc6.1-pic deb libdevel optional arch=alpha profile=!stage1
+ libc6.1-udeb udeb debian-installer extra arch=alpha profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization extra arch=any profile=!stage1
+ multiarch-support deb libs required arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Testsuite-Triggers: binutils, fakeroot, gcc-6, linux-libc-dev
+Extra-Source-Only: yes
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, libc-l10n, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-xen, libc0.3-xen, libc6.1-alphaev67
+Version: 2.24-17
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>, Samuel Thibault <sthibault@example.com>
+Build-Depends: gettext, dpkg (>= 1.18.7), dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 9.20160709), rdfind, symlinks, netbase, gperf, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.5-3) [hurd-i386], gnumach-dev (>= 2:1.8+git20170102-1~) [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] | hurd-headers-dev [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] <!stage1> | libihash-dev [hurd-i386] <!stage1>, kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.21), g++-6, g++-6-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el powerpc ppc64 s390x sparc sparc64 x32], g++-6 (>= 6.1.1-1~) [hurd-i386 i386 kfreebsd-i386], libc-bin (>= 2.24) <cross>
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 3.9.8
+Format: 3.0 (quilt)
+Files:
+ b41e283269f3f642eed2fadc09037704 8226 glibc_2.24-17.dsc
+ 8f474d3df178e862b9ef80e97feaa6ea 13921912 glibc_2.24.orig.tar.xz
+ 9b7fa8a93e89729add1591d0482900ed 1036004 glibc_2.24-17.debian.tar.xz
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-glibc/glibc.git
+Vcs-Git: https://anonscm.debian.org/git/pkg-glibc/glibc.git
+Checksums-Sha256:
+ 8f8db58051f431525439dae692242124befba9cfab64b406ec8964818ba46a43 8226 glibc_2.24-17.dsc
+ ed71e8afd2b270f7947a2cea2457a31e1ca4fac08e2731d80edd7ec1730ec84f 13921912 glibc_2.24.orig.tar.xz
+ a66991c3d29bb30e57ef8eaeb1732b3694689cb8d4eb999ccb018076a02c5940 1036004 glibc_2.24-17.debian.tar.xz
+Homepage: http://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1 essential=yes
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc-l10n deb localization standard arch=all profile=!stage1
+ libc0.1 deb libs required arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs required arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug optional arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer optional arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs optional arch=hurd-i386 profile=!stage1
+ libc6 deb libs required arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs optional arch=i386 profile=!stage1
+ libc6.1 deb libs required arch=alpha profile=!stage1
+ libc6.1-alphaev67 deb libs optional arch=alpha profile=!stage1
+ libc6.1-dbg deb debug optional arch=alpha profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha
+ libc6.1-pic deb libdevel optional arch=alpha profile=!stage1
+ libc6.1-udeb udeb debian-installer optional arch=alpha profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization optional arch=any profile=!stage1
+ multiarch-support deb oldlibs optional arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Testsuite-Triggers: binutils, fakeroot, gcc-6, linux-libc-dev
+Extra-Source-Only: yes
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, libc-l10n, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-xen, libc0.3-xen, libc6.1-alphaev67
+Version: 2.25-2
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>, Samuel Thibault <sthibault@example.com>
+Build-Depends: gettext, dpkg (>= 1.18.7), dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 10), rdfind, symlinks, netbase, gperf, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.5-3) [hurd-i386], gnumach-dev (>= 2:1.8+git20170102-1~) [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] | hurd-headers-dev [hurd-i386], hurd-dev (>= 1:0.5.git20140320~) [hurd-i386] <!stage1> | libihash-dev [hurd-i386] <!stage1>, kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.21), g++-6, g++-6-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el powerpc ppc64 s390x sparc sparc64 x32], g++-6 (>= 6.1.1-1~) [hurd-i386 i386 kfreebsd-i386], python3:native <!nocheck>, libc-bin (>= 2.25) <cross>
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 4.0.1
+Format: 3.0 (quilt)
+Files:
+ 4f63ff0ce09f590cf7c6fe8b9f8bd11c 8241 glibc_2.25-2.dsc
+ b232097ee2bb2f449f1793421875c0da 14343292 glibc_2.25.orig.tar.xz
+ 81dd3024415eda2e8a1baca488d80256 1023664 glibc_2.25-2.debian.tar.xz
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-glibc/glibc.git
+Vcs-Git: https://anonscm.debian.org/git/pkg-glibc/glibc.git
+Checksums-Sha256:
+ 15925528a7b7a8a73f84c72c997ccfba803b9fdcb20a4ade28a90255aa66ed57 8241 glibc_2.25-2.dsc
+ a3dfad3d13c32dc5992031a4305cf96a7bac9ec7ec8b6b4a6ca04203f1de14e5 14343292 glibc_2.25.orig.tar.xz
+ bff3dcaaea9b6ff0decde168515fbe49e761f6fd28394b0ce1d5aa2f431e1348 1023664 glibc_2.25-2.debian.tar.xz
+Homepage: http://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1 essential=yes
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc-l10n deb localization standard arch=all profile=!stage1
+ libc0.1 deb libs required arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs required arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug optional arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer optional arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs optional arch=hurd-i386 profile=!stage1
+ libc6 deb libs required arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs optional arch=i386 profile=!stage1
+ libc6.1 deb libs required arch=alpha profile=!stage1
+ libc6.1-alphaev67 deb libs optional arch=alpha profile=!stage1
+ libc6.1-dbg deb debug optional arch=alpha profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha
+ libc6.1-pic deb libdevel optional arch=alpha profile=!stage1
+ libc6.1-udeb udeb debian-installer optional arch=alpha profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization optional arch=any profile=!stage1
+ multiarch-support deb oldlibs optional arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Testsuite-Triggers: binutils, fakeroot, gcc-6, linux-libc-dev
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, libc-l10n, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-xen, libc0.3-xen, libc6.1-alphaev67
+Version: 2.25-3
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>, Samuel Thibault <sthibault@example.com>
+Build-Depends: gettext, dpkg (>= 1.18.7), dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 10), rdfind, symlinks, netbase, gperf, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.5-3) [hurd-i386], gnumach-dev (>= 2:1.8+git20170102-1~) [hurd-i386], hurd-dev (>= 1:0.9.git20171119~) [hurd-i386] | hurd-headers-dev [hurd-i386], hurd-dev (>= 1:0.9.git20171119~) [hurd-i386] <!stage1> | libihash-dev [hurd-i386] <!stage1>, kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.21), g++-6, g++-6-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el powerpc ppc64 s390x sparc sparc64 x32], g++-6 (>= 6.1.1-1~) [hurd-i386 i386 kfreebsd-i386], python3:native <!nocheck>, libc-bin (>= 2.25) <cross>
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 4.0.1
+Format: 3.0 (quilt)
+Files:
+ 3b3f24fb097fab7fb76f330f52c55d28 8788 glibc_2.25-3.dsc
+ b232097ee2bb2f449f1793421875c0da 14343292 glibc_2.25.orig.tar.xz
+ 87916b29d45ad65fb206d95656a2dccd 1038528 glibc_2.25-3.debian.tar.xz
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-glibc/glibc.git
+Vcs-Git: https://anonscm.debian.org/git/pkg-glibc/glibc.git
+Checksums-Sha256:
+ 2e201c23c968b7fad1e431c789bf0bb80675f7a2f2ea6032edb29c3ceadd114f 8788 glibc_2.25-3.dsc
+ a3dfad3d13c32dc5992031a4305cf96a7bac9ec7ec8b6b4a6ca04203f1de14e5 14343292 glibc_2.25.orig.tar.xz
+ 307057c235aef50baaa464a8ef4fab71158434fa88bbeaed38581aee69f58bad 1038528 glibc_2.25-3.debian.tar.xz
+Homepage: http://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1 essential=yes
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc-l10n deb localization standard arch=all profile=!stage1
+ libc0.1 deb libs required arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs required arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug optional arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer optional arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs optional arch=hurd-i386 profile=!stage1
+ libc6 deb libs required arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el,mipsr6,mipsr6el,mips64r6,mips64r6el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el,mipsr6,mipsr6el,mips64r6,mips64r6el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs optional arch=i386 profile=!stage1
+ libc6.1 deb libs required arch=alpha,ia64 profile=!stage1
+ libc6.1-alphaev67 deb libs optional arch=alpha profile=!stage1
+ libc6.1-dbg deb debug optional arch=alpha,ia64 profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha,ia64
+ libc6.1-pic deb libdevel optional arch=alpha,ia64 profile=!stage1
+ libc6.1-udeb udeb debian-installer optional arch=alpha,ia64 profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization optional arch=any profile=!stage1
+ multiarch-support deb oldlibs optional arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Testsuite-Triggers: binutils, fakeroot, gcc-6, linux-libc-dev
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, libc-l10n, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-xen, libc0.3-xen, libc6.1-alphaev67
+Version: 2.25-5
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>, Samuel Thibault <sthibault@example.com>
+Build-Depends: gettext, dpkg (>= 1.18.7), dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 10), rdfind, symlinks, netbase, gperf, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.5-3) [hurd-i386], gnumach-dev (>= 2:1.8+git20170102-1~) [hurd-i386], hurd-dev (>= 1:0.9.git20171119-2~) [hurd-i386] | hurd-headers-dev [hurd-i386], hurd-dev (>= 1:0.9.git20171119-2~) [hurd-i386] <!stage1> | libihash-dev [hurd-i386] <!stage1>, kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.21), g++-6, g++-6-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el powerpc ppc64 s390x sparc sparc64 x32], g++-6 (>= 6.1.1-1~) [hurd-i386 i386 kfreebsd-i386], python3:native <!nocheck>, libc-bin (>= 2.25) <cross>
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 4.0.1
+Format: 3.0 (quilt)
+Files:
+ f0949daa70de46e96736556f49bc47a6 8792 glibc_2.25-5.dsc
+ b232097ee2bb2f449f1793421875c0da 14343292 glibc_2.25.orig.tar.xz
+ 4e6270a810751dc8b608800c017ef061 1040564 glibc_2.25-5.debian.tar.xz
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-glibc/glibc.git
+Vcs-Git: https://anonscm.debian.org/git/pkg-glibc/glibc.git
+Checksums-Sha256:
+ a738d2987ed3ba53305141d7bcc969f062e8575958be69d9adc8601e8a011946 8792 glibc_2.25-5.dsc
+ a3dfad3d13c32dc5992031a4305cf96a7bac9ec7ec8b6b4a6ca04203f1de14e5 14343292 glibc_2.25.orig.tar.xz
+ 44d12cadc6810901e2ea3f9830c5b4a3bae9b6973fa036bce5199fcead99e5e3 1040564 glibc_2.25-5.debian.tar.xz
+Homepage: http://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1 essential=yes
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc-l10n deb localization standard arch=all profile=!stage1
+ libc0.1 deb libs required arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs required arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug optional arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer optional arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs optional arch=hurd-i386 profile=!stage1
+ libc6 deb libs required arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el,mipsr6,mipsr6el,mips64r6,mips64r6el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el,mipsr6,mipsr6el,mips64r6,mips64r6el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs optional arch=i386 profile=!stage1
+ libc6.1 deb libs required arch=alpha,ia64 profile=!stage1
+ libc6.1-alphaev67 deb libs optional arch=alpha profile=!stage1
+ libc6.1-dbg deb debug optional arch=alpha,ia64 profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha,ia64
+ libc6.1-pic deb libdevel optional arch=alpha,ia64 profile=!stage1
+ libc6.1-udeb udeb debian-installer optional arch=alpha,ia64 profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization optional arch=any profile=!stage1
+ multiarch-support deb oldlibs optional arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Testsuite-Triggers: binutils, fakeroot, gcc-6, linux-libc-dev
+Extra-Source-Only: yes
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, libc-l10n, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-xen, libc0.3-xen, libc6.1-alphaev67
+Version: 2.26-2
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>, Samuel Thibault <sthibault@example.com>
+Build-Depends: gettext, dpkg (>= 1.18.7), dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 10), rdfind, symlinks, netbase, gperf, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.5-3) [hurd-i386], gnumach-dev (>= 2:1.8+git20170102-1~) [hurd-i386], hurd-dev (>= 1:0.9.git20171119-2~) [hurd-i386] | hurd-headers-dev [hurd-i386], hurd-dev (>= 1:0.9.git20171119-2~) [hurd-i386] <!stage1> | libihash-dev [hurd-i386] <!stage1>, kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.25), g++-7, g++-7-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el mipsr6 mipsr6el mipsn32r6 mipsn32r6el mips64r6 mips64r6el powerpc ppc64 s390x sparc sparc64 x32], python3:native <!nocheck>, libc-bin (>= 2.26) <cross>
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 4.1.3
+Format: 3.0 (quilt)
+Files:
+ dea3a4df1d36495a76864d97a0c9ca64 8799 glibc_2.26-2.dsc
+ 666ae66c12aeedd26a3a4c550ee79eaf 15270760 glibc_2.26.orig.tar.xz
+ d3559db7177c6190067d08ca15c1fb7b 1083192 glibc_2.26-2.debian.tar.xz
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-glibc/glibc.git
+Vcs-Git: https://anonscm.debian.org/git/pkg-glibc/glibc.git
+Checksums-Sha256:
+ 987ff6baaece869273d5467c4b7808d574db1ed1451364f306d5820f706d766f 8799 glibc_2.26-2.dsc
+ 38afc835050aa0850fbe15b10a7b18b7c1c70dc5a2fdf980762f3ad49e771870 15270760 glibc_2.26.orig.tar.xz
+ 73a464cbc9f875e6fa25ee0ca9d422b5754f50cfa96f19a906be2efa14e4e96f 1083192 glibc_2.26-2.debian.tar.xz
+Homepage: https://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1 essential=yes
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc-l10n deb localization standard arch=all profile=!stage1
+ libc0.1 deb libs required arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs required arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug optional arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer optional arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs optional arch=hurd-i386 profile=!stage1
+ libc6 deb libs required arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el,mipsr6,mipsr6el,mips64r6,mips64r6el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el,mipsr6,mipsr6el,mips64r6,mips64r6el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs optional arch=i386 profile=!stage1
+ libc6.1 deb libs required arch=alpha,ia64 profile=!stage1
+ libc6.1-alphaev67 deb libs optional arch=alpha profile=!stage1
+ libc6.1-dbg deb debug optional arch=alpha,ia64 profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha,ia64
+ libc6.1-pic deb libdevel optional arch=alpha,ia64 profile=!stage1
+ libc6.1-udeb udeb debian-installer optional arch=alpha,ia64 profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization optional arch=any profile=!stage1
+ multiarch-support deb oldlibs optional arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Testsuite-Triggers: binutils, fakeroot, gcc-7, linux-libc-dev
+Extra-Source-Only: yes
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, libc-l10n, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-xen, libc0.3-xen, libc6.1-alphaev67
+Version: 2.26-3
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>, Samuel Thibault <sthibault@example.com>
+Build-Depends: gettext, dpkg (>= 1.18.7), dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 10), rdfind, symlinks, netbase, gperf, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.5-3) [hurd-i386], gnumach-dev (>= 2:1.8+git20170102-1~) [hurd-i386], hurd-dev (>= 1:0.9.git20171119-4~) [hurd-i386] | hurd-headers-dev [hurd-i386], hurd-dev (>= 1:0.9.git20171119-4~) [hurd-i386] <!stage1> | libihash-dev [hurd-i386] <!stage1>, kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.25), g++-7, g++-7-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el mipsr6 mipsr6el mipsn32r6 mipsn32r6el mips64r6 mips64r6el powerpc ppc64 s390x sparc sparc64 x32], python3:native <!nocheck>, libc-bin (>= 2.26) <cross>
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 4.1.3
+Format: 3.0 (quilt)
+Files:
+ d4d6441f7584d568f2ab2376a1a32a42 8799 glibc_2.26-3.dsc
+ 666ae66c12aeedd26a3a4c550ee79eaf 15270760 glibc_2.26.orig.tar.xz
+ afd4649012a78934d0b2a0007edfd227 1084048 glibc_2.26-3.debian.tar.xz
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-glibc/glibc.git
+Vcs-Git: https://anonscm.debian.org/git/pkg-glibc/glibc.git
+Checksums-Sha256:
+ 808448e6db4f67f32ec0fc472aa7e8b5c9b68e8e7711b075d8ae21f503be6fcc 8799 glibc_2.26-3.dsc
+ 38afc835050aa0850fbe15b10a7b18b7c1c70dc5a2fdf980762f3ad49e771870 15270760 glibc_2.26.orig.tar.xz
+ bc665c3275412dffae842eb6c6b19e1122dba3f8b0ca1087992ce782194478b5 1084048 glibc_2.26-3.debian.tar.xz
+Homepage: https://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1 essential=yes
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc-l10n deb localization standard arch=all profile=!stage1
+ libc0.1 deb libs required arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs required arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug optional arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer optional arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs optional arch=hurd-i386 profile=!stage1
+ libc6 deb libs required arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el,mipsr6,mipsr6el,mips64r6,mips64r6el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el,mipsr6,mipsr6el,mips64r6,mips64r6el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs optional arch=i386 profile=!stage1
+ libc6.1 deb libs required arch=alpha,ia64 profile=!stage1
+ libc6.1-alphaev67 deb libs optional arch=alpha profile=!stage1
+ libc6.1-dbg deb debug optional arch=alpha,ia64 profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha,ia64
+ libc6.1-pic deb libdevel optional arch=alpha,ia64 profile=!stage1
+ libc6.1-udeb udeb debian-installer optional arch=alpha,ia64 profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization optional arch=any profile=!stage1
+ multiarch-support deb oldlibs optional arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Testsuite-Triggers: binutils, fakeroot, gcc-7, linux-libc-dev
+Extra-Source-Only: yes
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, libc-l10n, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-xen, libc0.3-xen, libc6.1-alphaev67
+Version: 2.26-4
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>, Samuel Thibault <sthibault@example.com>
+Build-Depends: gettext, dpkg (>= 1.18.7), dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 10), rdfind, symlinks, netbase, gperf, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.5-3) [hurd-i386], gnumach-dev (>= 2:1.8+git20170102-1~) [hurd-i386], hurd-dev (>= 1:0.9.git20171119-4~) [hurd-i386] | hurd-headers-dev [hurd-i386], hurd-dev (>= 1:0.9.git20171119-4~) [hurd-i386] <!stage1> | libihash-dev [hurd-i386] <!stage1>, kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.25), g++-7, g++-7-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el mipsr6 mipsr6el mipsn32r6 mipsn32r6el mips64r6 mips64r6el powerpc ppc64 s390x sparc sparc64 x32], python3:native <!nocheck>, libc-bin (>= 2.26) <cross>
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 4.1.3
+Format: 3.0 (quilt)
+Files:
+ ed248ea28063231f6e91d3e9c11bd8f8 8799 glibc_2.26-4.dsc
+ 666ae66c12aeedd26a3a4c550ee79eaf 15270760 glibc_2.26.orig.tar.xz
+ 58545c1d54be18720cfce62d0a085571 1085352 glibc_2.26-4.debian.tar.xz
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-glibc/glibc.git
+Vcs-Git: https://anonscm.debian.org/git/pkg-glibc/glibc.git
+Checksums-Sha256:
+ 4b551de8b7ecc553a6464e022c63b8118d8879a16305ba562dc5153dad2f148c 8799 glibc_2.26-4.dsc
+ 38afc835050aa0850fbe15b10a7b18b7c1c70dc5a2fdf980762f3ad49e771870 15270760 glibc_2.26.orig.tar.xz
+ 3e3385262c977489a5bd4f141233afb5d8bd06b9efcf07bb5547b7ffb5350b2d 1085352 glibc_2.26-4.debian.tar.xz
+Homepage: https://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1 essential=yes
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc-l10n deb localization standard arch=all profile=!stage1
+ libc0.1 deb libs required arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs required arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug optional arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer optional arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs optional arch=hurd-i386 profile=!stage1
+ libc6 deb libs required arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el,mipsr6,mipsr6el,mips64r6,mips64r6el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el,mipsr6,mipsr6el,mips64r6,mips64r6el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs optional arch=i386 profile=!stage1
+ libc6.1 deb libs required arch=alpha,ia64 profile=!stage1
+ libc6.1-alphaev67 deb libs optional arch=alpha profile=!stage1
+ libc6.1-dbg deb debug optional arch=alpha,ia64 profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha,ia64
+ libc6.1-pic deb libdevel optional arch=alpha,ia64 profile=!stage1
+ libc6.1-udeb udeb debian-installer optional arch=alpha,ia64 profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization optional arch=any profile=!stage1
+ multiarch-support deb oldlibs optional arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Testsuite-Triggers: binutils, fakeroot, gcc-7, linux-libc-dev
+Extra-Source-Only: yes
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, libc-l10n, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-xen, libc0.3-xen, libc6.1-alphaev67
+Version: 2.26-5
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>, Samuel Thibault <sthibault@example.com>
+Build-Depends: gettext, dpkg (>= 1.18.7), dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 10), rdfind, symlinks, netbase, gperf, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.5-3) [hurd-i386], gnumach-dev (>= 2:1.8+git20170102-1~) [hurd-i386], hurd-dev (>= 1:0.9.git20171119-4~) [hurd-i386] | hurd-headers-dev [hurd-i386], hurd-dev (>= 1:0.9.git20171119-4~) [hurd-i386] <!stage1> | libihash-dev [hurd-i386] <!stage1>, kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.25), g++-7, g++-7 (>= 7.2.0-20) [amd64 i386 x32], g++-7-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el mipsr6 mipsr6el mipsn32r6 mipsn32r6el mips64r6 mips64r6el powerpc ppc64 s390x sparc sparc64 x32], python3:native <!nocheck>, libc-bin (>= 2.26) <cross>
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 4.1.3
+Format: 3.0 (quilt)
+Files:
+ 3a00a95454e71e935cb5ae5ba52dd280 8837 glibc_2.26-5.dsc
+ 666ae66c12aeedd26a3a4c550ee79eaf 15270760 glibc_2.26.orig.tar.xz
+ 0d373403e5c0ab36c0902758bf79a093 1095052 glibc_2.26-5.debian.tar.xz
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-glibc/glibc.git
+Vcs-Git: https://anonscm.debian.org/git/pkg-glibc/glibc.git
+Checksums-Sha256:
+ 2f0917c1f6d459c68d2e51fdd0bf232757ca4d5ebbdcaa9ed53331e03b6ed43c 8837 glibc_2.26-5.dsc
+ 38afc835050aa0850fbe15b10a7b18b7c1c70dc5a2fdf980762f3ad49e771870 15270760 glibc_2.26.orig.tar.xz
+ cdfadebc9d96610f9ba7abf3e04c37c10f0b6d135f76cb3e2a923e6830f39856 1095052 glibc_2.26-5.debian.tar.xz
+Homepage: https://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1 essential=yes
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc-l10n deb localization standard arch=all profile=!stage1
+ libc0.1 deb libs optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs optional arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug optional arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer optional arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs optional arch=hurd-i386 profile=!stage1
+ libc6 deb libs optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el,mipsr6,mipsr6el,mips64r6,mips64r6el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el,mipsr6,mipsr6el,mips64r6,mips64r6el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs optional arch=i386 profile=!stage1
+ libc6.1 deb libs optional arch=alpha,ia64 profile=!stage1
+ libc6.1-alphaev67 deb libs optional arch=alpha profile=!stage1
+ libc6.1-dbg deb debug optional arch=alpha,ia64 profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha,ia64
+ libc6.1-pic deb libdevel optional arch=alpha,ia64 profile=!stage1
+ libc6.1-udeb udeb debian-installer optional arch=alpha,ia64 profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization optional arch=any profile=!stage1
+ multiarch-support deb oldlibs optional arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Testsuite-Triggers: binutils, fakeroot, gcc-7, linux-libc-dev
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+
+Package: glibc
+Binary: libc-bin, libc-dev-bin, libc-l10n, glibc-doc, glibc-source, locales, locales-all, nscd, multiarch-support, libc6, libc6-dev, libc6-dbg, libc6-pic, libc6-udeb, libc6.1, libc6.1-dev, libc6.1-dbg, libc6.1-pic, libc6.1-udeb, libc0.3, libc0.3-dev, libc0.3-dbg, libc0.3-pic, libc0.3-udeb, libc0.1, libc0.1-dev, libc0.1-dbg, libc0.1-pic, libc0.1-udeb, libc6-i386, libc6-dev-i386, libc6-sparc, libc6-dev-sparc, libc6-sparc64, libc6-dev-sparc64, libc6-s390, libc6-dev-s390, libc6-amd64, libc6-dev-amd64, libc6-powerpc, libc6-dev-powerpc, libc6-ppc64, libc6-dev-ppc64, libc6-mips32, libc6-dev-mips32, libc6-mipsn32, libc6-dev-mipsn32, libc6-mips64, libc6-dev-mips64, libc0.1-i386, libc0.1-dev-i386, libc6-x32, libc6-dev-x32, libc6-xen, libc0.3-xen, libc6.1-alphaev67
+Version: 2.26-6
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Uploaders: Clint Adams <clint@example.com>, Aurelien Jarno <aurel32@example.com>, Adam Conrad <adconrad@example.com>, Samuel Thibault <sthibault@example.com>
+Build-Depends: gettext, dpkg (>= 1.18.7), dpkg-dev (>= 1.17.14), xz-utils, file, quilt, autoconf, gawk, debhelper (>= 10), rdfind, symlinks, netbase, gperf, linux-libc-dev (>= 3.9) [linux-any], libaudit-dev [linux-any], libcap-dev [linux-any], libselinux-dev [linux-any], mig (>= 1.5-3) [hurd-i386], gnumach-dev (>= 2:1.8+git20170102-1~) [hurd-i386], hurd-dev (>= 1:0.9.git20171119-4~) [hurd-i386] | hurd-headers-dev [hurd-i386], hurd-dev (>= 1:0.9.git20171119-4~) [hurd-i386] <!stage1> | libihash-dev [hurd-i386] <!stage1>, kfreebsd-kernel-headers [kfreebsd-any], binutils (>= 2.25), g++-7, g++-7 (>= 7.2.0-20) [amd64 i386 x32], g++-7-multilib [amd64 i386 kfreebsd-amd64 mips mipsel mipsn32 mipsn32el mips64 mips64el mipsr6 mipsr6el mipsn32r6 mipsn32r6el mips64r6 mips64r6el powerpc ppc64 s390x sparc sparc64 x32], python3:native <!nocheck>, libc-bin (>= 2.26) <cross>
+Build-Depends-Indep: perl, po-debconf (>= 1.0)
+Architecture: any all
+Standards-Version: 4.1.3
+Format: 3.0 (quilt)
+Files:
+ 6f2cb30975ae11af841ff3cc71b57e22 8837 glibc_2.26-6.dsc
+ 666ae66c12aeedd26a3a4c550ee79eaf 15270760 glibc_2.26.orig.tar.xz
+ fa2735d6b788c436deffe3224d62123b 1095568 glibc_2.26-6.debian.tar.xz
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-glibc/glibc.git
+Vcs-Git: https://anonscm.debian.org/git/pkg-glibc/glibc.git
+Checksums-Sha256:
+ c6030c9c664ae69f5919db52d138f334b6b876eccb2dc8ae564658ab4839ed2a 8837 glibc_2.26-6.dsc
+ 38afc835050aa0850fbe15b10a7b18b7c1c70dc5a2fdf980762f3ad49e771870 15270760 glibc_2.26.orig.tar.xz
+ 8a0dfd5f6a1e25ecd143c74abecb4604c089f1ca4aac7efaf2988d7945eef9ec 1095568 glibc_2.26-6.debian.tar.xz
+Homepage: https://www.gnu.org/software/libc/libc.html
+Package-List: 
+ glibc-doc deb doc optional arch=all profile=!stage1
+ glibc-source deb devel optional arch=all profile=!stage1
+ libc-bin deb libs required arch=any profile=!stage1 essential=yes
+ libc-dev-bin deb libdevel optional arch=any profile=!stage1
+ libc-l10n deb localization standard arch=all profile=!stage1
+ libc0.1 deb libs optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dbg deb debug optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-dev deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386
+ libc0.1-dev-i386 deb libdevel optional arch=kfreebsd-amd64 profile=!nobiarch
+ libc0.1-i386 deb libs optional arch=kfreebsd-amd64 profile=!stage1,!nobiarch
+ libc0.1-pic deb libdevel optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.1-udeb udeb debian-installer optional arch=kfreebsd-amd64,kfreebsd-i386 profile=!stage1
+ libc0.3 deb libs optional arch=hurd-i386 profile=!stage1
+ libc0.3-dbg deb debug optional arch=hurd-i386 profile=!stage1
+ libc0.3-dev deb libdevel optional arch=hurd-i386
+ libc0.3-pic deb libdevel optional arch=hurd-i386 profile=!stage1
+ libc0.3-udeb udeb debian-installer optional arch=hurd-i386 profile=!stage1
+ libc0.3-xen deb libs optional arch=hurd-i386 profile=!stage1
+ libc6 deb libs optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-amd64 deb libs optional arch=i386,x32 profile=!stage1,!nobiarch
+ libc6-dbg deb debug optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-dev deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32
+ libc6-dev-amd64 deb libdevel optional arch=i386,x32 profile=!nobiarch
+ libc6-dev-i386 deb libdevel optional arch=amd64,x32 profile=!nobiarch
+ libc6-dev-mips32 deb libdevel optional arch=mipsn32,mipsn32el,mips64,mips64el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el profile=!nobiarch
+ libc6-dev-mips64 deb libdevel optional arch=mips,mipsel,mipsn32,mipsn32el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el profile=!nobiarch
+ libc6-dev-mipsn32 deb libdevel optional arch=mips,mipsel,mips64,mips64el,mipsr6,mipsr6el,mips64r6,mips64r6el profile=!nobiarch
+ libc6-dev-powerpc deb libdevel optional arch=ppc64 profile=!nobiarch
+ libc6-dev-ppc64 deb libdevel optional arch=powerpc profile=!nobiarch
+ libc6-dev-s390 deb libdevel optional arch=s390x profile=!nobiarch
+ libc6-dev-sparc deb libdevel optional arch=sparc64 profile=!nobiarch
+ libc6-dev-sparc64 deb libdevel optional arch=sparc profile=!nobiarch
+ libc6-dev-x32 deb libdevel optional arch=amd64,i386 profile=!nobiarch
+ libc6-i386 deb libs optional arch=amd64,x32 profile=!stage1,!nobiarch
+ libc6-mips32 deb libs optional arch=mipsn32,mipsn32el,mips64,mips64el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el profile=!stage1,!nobiarch
+ libc6-mips64 deb libs optional arch=mips,mipsel,mipsn32,mipsn32el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el profile=!stage1,!nobiarch
+ libc6-mipsn32 deb libs optional arch=mips,mipsel,mips64,mips64el,mipsr6,mipsr6el,mips64r6,mips64r6el profile=!stage1,!nobiarch
+ libc6-pic deb libdevel optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-powerpc deb libs optional arch=ppc64 profile=!stage1,!nobiarch
+ libc6-ppc64 deb libs optional arch=powerpc profile=!stage1,!nobiarch
+ libc6-s390 deb libs optional arch=s390x profile=!stage1,!nobiarch
+ libc6-sparc deb libs optional arch=sparc64 profile=!stage1,!nobiarch
+ libc6-sparc64 deb libs optional arch=sparc profile=!stage1,!nobiarch
+ libc6-udeb udeb debian-installer optional arch=amd64,arm64,armel,armhf,hppa,i386,m68k,mips,mipsel,mipsn32,mipsn32el,mips64,mips64el,mipsr6,mipsr6el,mipsn32r6,mipsn32r6el,mips64r6,mips64r6el,nios2,powerpc,powerpcspe,ppc64,ppc64el,sparc,sparc64,s390x,sh3,sh4,x32 profile=!stage1
+ libc6-x32 deb libs optional arch=amd64,i386 profile=!stage1,!nobiarch
+ libc6-xen deb libs optional arch=i386 profile=!stage1
+ libc6.1 deb libs optional arch=alpha,ia64 profile=!stage1
+ libc6.1-alphaev67 deb libs optional arch=alpha profile=!stage1
+ libc6.1-dbg deb debug optional arch=alpha,ia64 profile=!stage1
+ libc6.1-dev deb libdevel optional arch=alpha,ia64
+ libc6.1-pic deb libdevel optional arch=alpha,ia64 profile=!stage1
+ libc6.1-udeb udeb debian-installer optional arch=alpha,ia64 profile=!stage1
+ locales deb localization standard arch=all profile=!stage1
+ locales-all deb localization optional arch=any profile=!stage1
+ multiarch-support deb oldlibs optional arch=any profile=!stage1
+ nscd deb admin optional arch=any profile=!stage1
+Testsuite: autopkgtest
+Testsuite-Triggers: binutils, fakeroot, gcc-7, linux-libc-dev
+Directory: pool/main/g/glibc
+Priority: optional
+Section: misc
+

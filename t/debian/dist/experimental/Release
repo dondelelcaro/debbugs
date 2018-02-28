@@ -1,0 +1,38 @@
+Codename: experimental
+Components: main contrib non-free
+Date: Tue, 27 Feb 2018 14:38:19 UTC
+Description: Experimental packages - not released; use at your own risk.
+Origin: Debian
+Suite: experimental
+MD5Sum:
+ 1384e8bf0b82cf33d6ab2e1bdf05a4c1             3431 main/binary-all/Packages
+ 0f014211e0e1b2bf60509cf8c9697b62            24959 main/binary-amd64/Packages
+ a9d062384d85459786cb50e00afb4744            21686 main/binary-hurd-i386/Packages
+ 83d558a7b69bf7d9b879f2b4c3409a88            26480 main/binary-i386/Packages
+ 1384e8bf0b82cf33d6ab2e1bdf05a4c1             3431 main/binary-kfreebsd-amd64/Packages
+ 1384e8bf0b82cf33d6ab2e1bdf05a4c1             3431 main/binary-kfreebsd-i386/Packages
+ b80219a581421f015cf6cb33d0816840             9344 main/source/Packages
+SHA1:
+ cc2570f45b93f4cd2da9640eef75cf16756e062e             3431 main/binary-all/Packages
+ f5ead04a1e2840c0cadd5eb08890a90d57464b90            24959 main/binary-amd64/Packages
+ b468837af7af82aa6a3058021bf24443a51b584b            21686 main/binary-hurd-i386/Packages
+ 9d260821b268a1806485cc4340a0569351c495de            26480 main/binary-i386/Packages
+ cc2570f45b93f4cd2da9640eef75cf16756e062e             3431 main/binary-kfreebsd-amd64/Packages
+ cc2570f45b93f4cd2da9640eef75cf16756e062e             3431 main/binary-kfreebsd-i386/Packages
+ 03ae49e0b23e5ac2269df0ff94dfa823647768dc             9344 main/source/Packages
+SHA256:
+ 729368578e111d8b0e28fe23b5df4f4c5e08311496b3df86aa2b650f12280714             3431 main/binary-all/Packages
+ 7591ffe83416e3c6748f062e0668a19b12aa0a15dc7541b9b903e2b4bbee5a26            24959 main/binary-amd64/Packages
+ 786cd78bad28fe63cd7efac8ba604db51135c693f70b673e62296dc1ce69df67            21686 main/binary-hurd-i386/Packages
+ 882b0868fc46d9bbd4b8f6bbddb92ec809b48c4ae6ab77f22ebdfc9a461b87fb            26480 main/binary-i386/Packages
+ 729368578e111d8b0e28fe23b5df4f4c5e08311496b3df86aa2b650f12280714             3431 main/binary-kfreebsd-amd64/Packages
+ 729368578e111d8b0e28fe23b5df4f4c5e08311496b3df86aa2b650f12280714             3431 main/binary-kfreebsd-i386/Packages
+ d9d7bb8fc072abc923042f64fbd3ede27166033814ff0cf260376533362d2439             9344 main/source/Packages
+SHA512:
+ d34835c9736c7f1649169deb0e6737d504a7390f381d809e03bc9f99cab425b837eb590e407a7f14f32fab360a3f0fcb3fc6224b5f2fd8c44f3c0c942a259cc2             3431 main/binary-all/Packages
+ a61ad3fef4eefea1462e6d70808db0dad85bb487d29f142b0ed843994d6d41f9d74bb73f3aa4bdb8e756b8efabce34c9a7958e979d9469746404090128e93eb5            24959 main/binary-amd64/Packages
+ e806963f95ddb6807591bbd19a3ad83b7e762f36af921ec0ca5ef87bf01d0cf3a2eef0ba45bbe1d6bea5e8b464012d66e0bc66416d4874a0a92364a71a2e81d8            21686 main/binary-hurd-i386/Packages
+ 3ec3142e8189e4e28a049dfe8fe2841e8d961240bed62cad297c03f64e882053d962ab6a6e8bda1493eb2fc61e253c41d5f1de1f2b9e291fce7120f3bc780292            26480 main/binary-i386/Packages
+ d34835c9736c7f1649169deb0e6737d504a7390f381d809e03bc9f99cab425b837eb590e407a7f14f32fab360a3f0fcb3fc6224b5f2fd8c44f3c0c942a259cc2             3431 main/binary-kfreebsd-amd64/Packages
+ d34835c9736c7f1649169deb0e6737d504a7390f381d809e03bc9f99cab425b837eb590e407a7f14f32fab360a3f0fcb3fc6224b5f2fd8c44f3c0c942a259cc2             3431 main/binary-kfreebsd-i386/Packages
+ 214a20ccff9909792454efe919adf02711ce40ad09fa2928157b0595436475e4b18bf0109729e946c20a098b35108e8e533fd65c996218b13acfaa9535bc4a57             9344 main/source/Packages

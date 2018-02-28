@@ -1,0 +1,27 @@
+Codename: jessie
+Components: main contrib non-free
+Date: Sat, 09 Dec 2017 10:25:48 UTC
+Description: Debian 8.10 Released 09 December 2017
+Origin: Debian
+Suite: oldstable
+Version: 8.10
+MD5Sum:
+ 9494243e25efd287fd16a9662bcc7c6e             3036 main/binary-all/Packages
+ 57d356cafc33851ad22b13f2e6c430eb            14883 main/binary-amd64/Packages
+ 2ea3ceb22422a1a060026877b91b9ac9            15184 main/binary-i386/Packages
+ f05d267fc652972500803f52d59b15bd            47224 main/source/Packages
+SHA1:
+ bea489beefd00505422d44c1014bf658c50ff21b             3036 main/binary-all/Packages
+ da29e6cca9d71c421f9fd8f10a1e8043736c584a            14883 main/binary-amd64/Packages
+ 7c9438251128d9550c00d60336aa496fbb867893            15184 main/binary-i386/Packages
+ 99b94a1786ff86fba9c715f548eb0d0f06652cea            47224 main/source/Packages
+SHA256:
+ 5758e3ad5c22af1e3fe0c6ff3115e4e079f02277b84039504a3a43c87458e9aa             3036 main/binary-all/Packages
+ 549ffacf89d1dc8b9ecb4c5ec2515a8fc0c364c769cedfe497211f7ef2051b78            14883 main/binary-amd64/Packages
+ 9d1ccce684c9b76f08639bcb5ac014e615a95c6a4ffe8172c7c17cacef1550d8            15184 main/binary-i386/Packages
+ 3d7bde5c88a83e66c322bdd138eda89394cee1c9e304e309ce7dd9a1aeaa65a5            47224 main/source/Packages
+SHA512:
+ 3c2a35299b19493b9c6d6be0bb33276dd6b77c20f8a733c932310c30a4dea7cdff649a8eb29c17db7493ed5cbb8d9b61f79738704833089356c3542c18176979             3036 main/binary-all/Packages
+ c33bf20c637df816c38b5023202e5e5e6b4f919f84c00366dd40383006e1165f1238cf7d9e8c846542bd65b1bc6e73b4ac36df35f294a3fe63173ffc9389ff57            14883 main/binary-amd64/Packages
+ 73de62630faf3b172dd0fb55b556e5e62da1afd01108491713c274a67bd0d7ab5e6105379805f46dcfb4d2515ce496a968590cfa1fb4792babb74834499bbbf6            15184 main/binary-i386/Packages
+ 2ff8fbacf1d6383fc601380a353864e23ba7bfb02b3bfa702e928d2b8fff940f2771a40c3147a372b4e0ab744efb7823035d32a66f9cd0382113bdfc43250f9c            47224 main/source/Packages

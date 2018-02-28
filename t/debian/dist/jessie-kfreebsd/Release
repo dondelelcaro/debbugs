@@ -1,0 +1,26 @@
+Codename: jessie-kfreebsd
+Components: main contrib non-free
+Date: Tue, 27 Feb 2018 14:38:19 UTC
+Description: Debian 8 (kfreebsd)
+Origin: Debian
+Suite: oldstable-kfreebsd
+MD5Sum:
+ 558971df12f8fe8202cf6dbad44ebed9             2988 main/binary-all/Packages
+ d6b5c9b5d3aa90bd938289724c060ab7            12030 main/binary-kfreebsd-amd64/Packages
+ 8dac11272788930c4f24ceefda128527            11241 main/binary-kfreebsd-i386/Packages
+ c93bf9a6902734e2156e3715e52f723d            38988 main/source/Packages
+SHA1:
+ edc6f00829cdebc233487b6ebc90c93187c963e3             2988 main/binary-all/Packages
+ 6add1b291f5e757cf2e572b3c6473a6c7fd64c7b            12030 main/binary-kfreebsd-amd64/Packages
+ 6fe0628e042329d574b3806a46b14c582b89ab51            11241 main/binary-kfreebsd-i386/Packages
+ 81d44b7fcec2793c18291c2a4a2584cd3c506731            38988 main/source/Packages
+SHA256:
+ 0058bf4b66283dfc35fb21e6eee6ecdba8dc4973d538a47edcd006b92c5a1834             2988 main/binary-all/Packages
+ 7ee7c8e23d625d4bd811d74ce575d23d6564a433ee8fb9db65db698ffa387dce            12030 main/binary-kfreebsd-amd64/Packages
+ 583f7a367786499cb4a250b2f0ac0f450d5e04f93437fed22c073e1bd85619e6            11241 main/binary-kfreebsd-i386/Packages
+ 3930d5f7b4b431868a7fc2107ebc2740ff6694ea7b6e2bbfdf936fcd206eebff            38988 main/source/Packages
+SHA512:
+ 3a5358b03fd1098d0efb2790e3db61904547e1cda54789b8270435efa8613f456a3c39586afd146e748ece2495942a8544d9f20f33548d43b6b27a9a4edf84fd             2988 main/binary-all/Packages
+ 6135198938e1d8431fae4ec925bfa4d26993ed435f21faf0dc4e2ba0f567b510b9ccf6ae520ab9cd177c4fd4b904f9c01771a99359f39bf124568006cbbb9a55            12030 main/binary-kfreebsd-amd64/Packages
+ bb1532ed41605ac9ae6d6ff43589451c63fa5730ce251e2748f7f3c7eefdd846cedde287c465bf3ee6d81cd28bf718720876f9cf552a86f838e56efe4d730f44            11241 main/binary-kfreebsd-i386/Packages
+ 86e21effb0159e55ea5ec9b645ef5c0d725fe4ab81dd8cad4bb0610af858364f7ead16bb546c5e6be4c45ee7ec35bc7c2e0e31d6ec5aa28e819e382b17acc7ef            38988 main/source/Packages

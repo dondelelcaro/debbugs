@@ -1,0 +1,14 @@
+Codename: stretch-backports
+Components: main contrib non-free
+Date: Tue, 27 Feb 2018 14:38:19 UTC
+Description: Backports for the Stretch distribution
+Origin: Debian Backports
+Suite: stretch-backports
+MD5Sum:
+ b25230aa788041e3621a07c3def95ec6             7573 main/source/Packages
+SHA1:
+ c7f9c977f80357612790e6bf8a13eb3a261d760e             7573 main/source/Packages
+SHA256:
+ 8e6770b3b9c278fd94bd22919025be0b752a305a68a830248ee235fcac9db1e5             7573 main/source/Packages
+SHA512:
+ ecbe442089d7383c405ce840fc3f002ee9949576ae28b2907450e7d36533f9564482f6d32933c220ba58fc7e5e03c29554e0336111e32f6b0dd3030319b7b0f3             7573 main/source/Packages
