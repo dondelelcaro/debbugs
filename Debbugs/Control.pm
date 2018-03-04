@@ -364,7 +364,7 @@ sub set_blocks {
 	next if $ok_blockers{$blocker} or $bad_blockers{$blocker};
 	my $data = read_bug(bug=>$blocker,
 			   );
-	if (defined $data and not $data->{archive}) {
+	if (defined $data and not $data->{archived}) {
 	    $data = split_status_fields($data);
 	    $ok_blockers{$blocker} = 1;
 	    my @merged_bugs;
