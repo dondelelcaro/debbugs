@@ -380,8 +380,8 @@ sub set_blocks {
     # blocker
     if (keys %bad_blockers and $mode eq 'set') {
 	__end_control(%info);
-	croak "Unknown blocking bug(s):".join(', ',keys %bad_blockers).
-	    keys %ok_blockers?'':" and no known blocking bug(s)";
+	croak "Unknown/archived blocking bug(s):".join(', ',keys %bad_blockers).
+	    keys %ok_blockers?'':" and no good blocking bug(s)";
     }
     # if there are no ok blockers and we are not setting the blockers,
     # there's an error.
@@ -389,7 +389,7 @@ sub set_blocks {
 	print {$transcript} "No valid blocking bug(s) given; not doing anything\n";
 	if (keys %bad_blockers) {
 	    __end_control(%info);
-	    croak "Unknown blocking bug(s):".join(', ',keys %bad_blockers);
+	    croak "Unknown/archived blocking bug(s):".join(', ',keys %bad_blockers);
 	}
 	__end_control(%info);
 	return;
