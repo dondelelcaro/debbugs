@@ -65,6 +65,7 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
     #881903). Thanks to Michael Stapelberg.
   * Add rel="canonical" links to bug pages (Closes: #890338). Thanks to Chris
     Lamb.
+  * Fix blocks/blockedby of archived bugs (Closes: #892060). Thanks to Laurent Bigonville.
 
   [ Niels Thykier ]
   * quitcgi() now returns 400/500 status codes instead of 200 (Closes: #584922)
@@ -122,7 +123,6 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
     + usr/share/man/man3/Debbugs::Status.3pm.gz
   * Raise Standards to 3.9.4 (after fixing several lintian issues).
   * Pass param bug=<NNN> to bugreport.html call in bugreport.cgi.
-  * Fix blocks/blockedby of archived bugs (Closes: #892060)
 
   [Frank Lichtenheld]
   * Fix broken link in changed forwarded-to address (closes: #782740)
