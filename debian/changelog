@@ -66,6 +66,8 @@ debbugs (2.6.0~exp1) UNRELEASED; urgency=low
   * Add rel="canonical" links to bug pages (Closes: #890338). Thanks to Chris
     Lamb.
   * Fix blocks/blockedby of archived bugs (Closes: #892060). Thanks to Laurent Bigonville.
+  * Provide informative error message when unarchive fails because the bug is
+    not archived. (Closes: #892135). Thanks to Dan Jacobson.
 
   [ Niels Thykier ]
   * quitcgi() now returns 400/500 status codes instead of 200 (Closes: #584922)

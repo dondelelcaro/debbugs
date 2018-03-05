@@ -3246,6 +3246,15 @@ sub bug_unarchive {
      my @bugs = @{$info{bugs}};
      my $action = "$config{bug} unarchived.";
      my @files_to_remove;
+     ## error out if we're unarchiving unarchived bugs
+     for my $data (@{$info{data}}) {
+	 if (not defined $data->{archived} or
+	     not $data->{archived}
+	    ) {
+	     __end_control(%info);
+	     croak("Bug $data->{bug_num} was not archived; not unarchiving it.");
+	 }
+     }
      for my $bug (@bugs) {
 	  print {$debug} "$param{bug} removing $bug\n";
 	  my $dir = get_hashname($bug);
