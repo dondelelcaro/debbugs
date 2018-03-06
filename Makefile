@@ -13,8 +13,7 @@ examples_dir	:= $(doc_dir)/examples
 
 scripts_in	= $(foreach script, $(filter-out scripts/config% scripts/errorlib scripts/text, $(wildcard scripts/*)),$(patsubst scripts/%,%,$(script)))
 htmls_in	:= $(wildcard html/*.html.in)
-cgis		:= $(wildcard cgi/*.cgi cgi/*.pl)
-
+cgis		:= $(wildcard cgi/*.cgi)
 
 install_exec	:= install -m755 -p
 install_data	:= install -m644 -p
@@ -83,7 +82,6 @@ $(var_dir)/spool/db-h $(scripts_dir) $(examples_dir) $(man8_dir); \
 
 	# install the CGIs
 	for cgi in $(cgis); do $(install_exec) $$cgi $(var_dir)/www/cgi; done
-	$(install_exec) cgi/bugs-fetch2.pl $(var_dir)/www/cgi/bugs-fetch2.pl
 
 	# install debbugsconfig
 	$(install_exec) debian/debbugsconfig $(sbin_dir)
