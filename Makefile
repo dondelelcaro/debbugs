@@ -44,7 +44,7 @@ clean:
 
 install: install_mostfiles
 	# install basic debbugs documentation
-	$(install_data) COPYING UPGRADE README.md debian/README.mail $(doc_dir)
+	$(install_data) COPYING UPGRADE.md README.md debian/README.mail $(doc_dir)
 	$(MAKE) -f Makefile.perl install DESTDIR=$(DESTDIR)
 
 install_mostfiles:
