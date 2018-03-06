@@ -5,7 +5,6 @@ sbin_dir	:= $(DESTDIR)/usr/sbin
 etc_dir		:= $(DESTDIR)/etc/debbugs
 var_dir		:= $(DESTDIR)/var/lib/debbugs
 scripts_dir	:= $(DESTDIR)/usr/lib/debbugs
-perl_dir	:= $(DESTDIR)/usr/share/perl5/Debbugs
 doc_dir		:= $(DESTDIR)/usr/share/doc/debbugs
 templates_dir	:= $(DESTDIR)/usr/share/debbugs/templates
 man_dir		:= $(DESTDIR)/usr/share/man
@@ -16,9 +15,6 @@ scripts_in	= $(foreach script, $(filter-out scripts/config% scripts/errorlib scr
 htmls_in	:= $(wildcard html/*.html.in)
 cgis		:= $(wildcard cgi/*.cgi cgi/*.pl)
 
-# We use the Makefile.PL to install these; not totally decided if we
-# should switch entirely to this model.
-#perls		:= $(shell find Debbugs -type f -iname '*.pm')
 
 install_exec	:= install -m755 -p
 install_data	:= install -m644 -p
@@ -88,11 +84,6 @@ $(var_dir)/spool/db-h $(scripts_dir) $(examples_dir) $(man8_dir); \
 	# install the CGIs
 	for cgi in $(cgis); do $(install_exec) $$cgi $(var_dir)/www/cgi; done
 	$(install_exec) cgi/bugs-fetch2.pl $(var_dir)/www/cgi/bugs-fetch2.pl
-
-#	# install Perl modules
-#	for perl in $(perls); do $(install_data) $$perl $(perl_dir); done
-	# Make documentation for the perl modules
-
 
 	# install debbugsconfig
 	$(install_exec) debian/debbugsconfig $(sbin_dir)
