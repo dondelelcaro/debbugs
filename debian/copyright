@@ -14,7 +14,7 @@ Former developers have been:
 	Darren Benham <gecko@debian.org>
 
 The sources can be obtained by:
-	bzr get http://bugs.debian.org/debbugs-source/mainline
+	git clone https://salsa.debian.org/debbugs-team/debbugs.git
 
 Copyright 1994-1997 Ian Jackson
 Copyright 1997,2003 nCipher Corporation Limited
