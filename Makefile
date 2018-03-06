@@ -55,12 +55,6 @@ $(var_dir)/www/css \
 $(var_dir)/spool/lock $(var_dir)/spool/archive $(var_dir)/spool/incoming \
 $(var_dir)/spool/db-h $(scripts_dir) $(examples_dir) $(man8_dir); \
           do test -d $$dir || $(install_exec) -d $$dir; done
-# we shouldn't ship db-h spool directories
-	# make db-h spool dirs if they don't exist
-#	cd $(var_dir)/spool/db-h; \
-#	  for dir in $(shell seq -w 00 99); \
-#	    do test -d $$dir || $(install_exec) -d $$dir; done
-
 
 	# install the scripts
 	$(foreach script,$(scripts_in), $(install_exec) scripts/$(script) $(scripts_dir);)
