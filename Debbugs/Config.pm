@@ -76,7 +76,7 @@ BEGIN {
 				 qw($gTemplateDir),
 				 qw($gDefaultPackage),
 				 qw($gSpamMaxThreads $gSpamSpamsPerThread $gSpamKeepRunning $gSpamScan $gSpamCrossassassinDb),
-                                 qw($gDebbugsDb),
+                                 qw($gDatabase),
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
@@ -1063,7 +1063,7 @@ set_default(\%config,'libravatar_blacklist',[]);
 
 =over
 
-=item debbugs_db
+=item database
 
 Name of debbugs PostgreSQL database service. If you wish to not use a service
 file, provide a full DBD::Pg compliant data-source, for example:
@@ -1071,7 +1071,9 @@ C<"dbi:Pg:dbname=dbname">
 
 =back
 
-set_default(\%config,'debbugs_db',undef);
+=cut
+
+set_default(\%config,'database',undef);
 
 =head2 Text Fields
 
