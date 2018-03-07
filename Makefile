@@ -27,6 +27,7 @@ all: build
 build:
 	$(PERL) Makefile.PL
 	$(MAKE) -f Makefile.perl
+	$(MAKE) -C html/logo
 
 test:
 	LC_ALL=$(UTF8_LOCALE) $(PERL) -MTest::Harness -I. -e 'runtests(glob(q(t/*.t)))'
@@ -73,6 +74,7 @@ $(var_dir)/spool/db-h $(scripts_dir) $(examples_dir) $(man8_dir); \
 	$(foreach html, $(htmls_in), $(install_data) $(html) $(etc_dir)/html;)
 	$(install_data) html/htaccess $(var_dir)/www/db/.htaccess
 	$(install_data) html/bugs.css $(var_dir)/www/css/bugs.css
+	$(install_data) html/logo/debbugs_logo_icon.png $(var_dir)/www/favicon.png
 
 	# install the CGIs
 	for cgi in $(cgis); do $(install_exec) $$cgi $(var_dir)/www/cgi; done
