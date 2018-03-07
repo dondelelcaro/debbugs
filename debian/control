@@ -16,7 +16,7 @@ Build-Depends-Indep: libparams-validate-perl,
 # used by Debbugs::Libravatar and libravatar.cgi
  libfile-libmagic-perl, libgravatar-url-perl, libwww-perl, imagemagick,
  libtext-template-perl, graphviz, libtext-iconv-perl, libnet-server-perl,
- # used to make the logo
+# used to make the logo
  inkscape
 Homepage: https://salsa.debian.org/debbugs-team
 Testsuite: autopkgtest-pkg-perl
