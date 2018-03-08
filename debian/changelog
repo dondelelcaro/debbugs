@@ -1,4 +1,4 @@
-debbugs (2.6.0~exp1) unstable; urgency=medium
+debbugs (2.6.0) unstable; urgency=medium
 
   [ Don Armstrong ]
   * Hack around elinks css bug (closes: #593804)
