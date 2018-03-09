@@ -1,4 +1,11 @@
-debbugs (2.6.0~exp1) unstable; urgency=medium
+debbugs (3.0.0~alpha.1) unstable; urgency=medium
+
+  * Use Text::Xslate instead of Text::Template; Text::Xslate is significantly
+    faster.
+
+ -- Don Armstrong <don@debian.org>  Fri, 09 Mar 2018 11:17:10 -0800
+
+debbugs (2.6.0) unstable; urgency=medium
 
   [ Don Armstrong ]
   * Hack around elinks css bug (closes: #593804)
