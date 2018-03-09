@@ -502,7 +502,8 @@ sub bug_links {
 			    $_);
 		       } make_list($param{bug}) if exists $param{bug};
      } else {
-	 push @links, map {'bugreport.cgi?bug='.uri_escape_utf8($_)}
+	 push @links, map {('bugreport.cgi?bug='.uri_escape_utf8($_),
+			    $_)}
 	     make_list($param{bug}) if exists $param{bug};
      }
      my @return;
