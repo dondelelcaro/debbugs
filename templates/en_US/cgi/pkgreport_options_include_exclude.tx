@@ -1,0 +1,5 @@
+<input type="hidden" name="_fo_concatenate_into_<:  $incexc :>_fo_<: $incexc :>key_fo_<: $incexc :>value" value="1">
+: for $param[$incexc] -> $field {
+    : include "cgi/pkgreport_options_include_exclude_key.tx" {key1 => split($field,':',2).0, key2 => split($field,':',2).1 };
+: }
+: include "cgi/pkgreport_options_include_exclude_key.tx";

@@ -1,12 +1,14 @@
 #! /usr/bin/perl -w
 
-use vars qw($gVersionPackagesDir);
-require '/etc/debbugs/config';
-my $root = $gVersionPackagesDir;
 
+use warnings;
 use strict;
+
+use Debbugs::Config qw(:config);
 use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
+my $root = $config{version_packages_dir};
+
 
 unless (-d $root) {
     mkdir $root or die "can't mkdir $root: $!\n";

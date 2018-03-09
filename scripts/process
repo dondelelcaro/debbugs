@@ -34,6 +34,7 @@ use Debbugs::Control qw(append_action_to_log);
 use Debbugs::Control::Service qw(valid_control control_line);
 use Debbugs::Recipients qw(determine_recipients);
 use Encode qw(encode_utf8 decode);
+use List::AllUtils qw(first uniqnum);
 
 =head1 NAME
 
@@ -1273,20 +1274,15 @@ sub fill_template{
      my $variables = {config => \%config,
 		      defined($ref)?(ref    => $ref):(),
 		      defined($data)?(data  => $data):(),
-		      refs => [map {exists $clonebugs{$_}?$clonebugs{$_}:$_} keys %bug_affected],
+		      refs => [sort
+			       uniqnum(defined($ref)?($ref):(),
+				       map {exists $clonebugs{$_}?$clonebugs{$_}:$_}
+				       keys %bug_affected)],
 		      %{$extra_var},
 		     };
-     my $hole_var = {'&bugurl' =>
-		     sub{"$_[0]: ".
-			      $config{cgi_domain}.'/'.
-				   Debbugs::CGI::bug_links(bug=>$_[0],
-							   links_only => 1,
-							  );
-		    }
-		    };
      return fill_in_template(template => $template,
 			     variables => $variables,
-			     hole_var  => $hole_var,
+			     output_type => 'text',
 			    );
 }
 

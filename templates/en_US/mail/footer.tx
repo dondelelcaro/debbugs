@@ -1,0 +1,6 @@
+-- 
+: for $refs -> $bug {
+<: bugurl($bug) :>
+: }
+<:$config.project:> <: $config.ubug :> Tracking System
+Contact <: $config.maintainer_email :> with problems

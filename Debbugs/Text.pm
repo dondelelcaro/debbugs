@@ -47,7 +47,7 @@ BEGIN {
      $EXPORT_TAGS{all} = [@EXPORT_OK];
 }
 
-use Text::Template;
+use Text::Xslate qw(html_builder);
 
 use Storable qw(dclone);
 
@@ -58,34 +58,84 @@ use Carp;
 use IO::File;
 use Data::Dumper;
 
+### for %text_xslate_functions
+use POSIX;
+use Debbugs::CGI qw(html_escape);
+use Scalar::Util;
+use Debbugs::Common qw(make_list);
+use Debbugs::Status;
+
 our %tt_templates;
 our %filled_templates;
 our $language;
 
-# This function is what is called when someone does include('foo/bar')
-# {include('foo/bar')}
 
-sub include {
-     my $template = shift;
-     $filled_templates{$template}++;
-     print STDERR "include template $template language $language\n" if $DEBUG;
-     # Die if we're in a template loop
-     die "Template loop with $template" if $filled_templates{$template} > 10;
-     my $filled_tmpl = '';
-     eval {
-	  $filled_tmpl = fill_in_template(template  => $template,
-					  variables => {},
-					  language  => $language,
-					 );
-     };
-     if ($@) {
-	  print STDERR "failed to fill template $template: $@";
-     }
-     print STDERR "failed to fill template $template\n" if $filled_tmpl eq '' and $DEBUG;
-     print STDERR "template $template '$filled_tmpl'\n" if $DEBUG;
-     $filled_templates{$template}--;
-     return $filled_tmpl;
-};
+sub __output_select_options {
+    my ($options,$value) = @_;
+    my @options = @{$options};
+    my $output = '';
+    while (@options) {
+	my ($o_value) = shift @options;
+	if (ref($o_value)) {
+	    for (@{$o_value}) {
+		unshift @options,
+		    ($_,$_);
+	    }
+	    next;
+	}
+	my $name = shift @options;
+	my $selected = '';
+	if (defined $value and $o_value eq $value) {
+	    $selected = ' selected';
+	}
+	$output .= q(<option value=").html_escape($o_value).qq("$selected>).
+	    html_escape($name).qq(</option>\n);
+    }
+    return $output;
+}
+
+sub __text_xslate_functions {
+    return
+	{gm_strftime => sub {POSIX::strftime($_[0],gmtime)},
+	 package_links => html_builder(\&Debbugs::CGI::package_links),
+	 bug_links => html_builder(\&Debbugs::CGI::bug_links),
+	 looks_like_number => \&Scalar::Util::looks_like_number,
+	 isstrongseverity => \&Debbugs::Status::isstrongseverity,
+	 secs_to_english => \&Debbugs::Common::secs_to_english,
+	 maybelink => \&Debbugs::CGI::maybelink,
+	 # add in a few utility routines
+	 duplicate_array =>  sub {
+	     my @r = map {($_,$_)} make_list(@{$_[0]});
+	     return @r;
+	 },
+	 output_select_options => html_builder(\&__output_select_options),
+	 make_list => \&make_list,
+	};
+}
+sub __text_xslate_functions_text {
+    return
+       {bugurl =>
+	sub{
+	    return "$_[0]: ".
+		$config{cgi_domain}.'/'.
+		Debbugs::CGI::bug_links(bug=>$_[0],
+					links_only => 1,
+				       );
+	},
+       };
+}
+
+
+
+### this function removes leading spaces from line-start code strings and spaces
+### before <:- and spaces after -:>
+sub __html_template_prefilter {
+    my $text = shift;
+    $text =~ s/^\s+:/:/mg;
+    $text =~ s/((?:^:[^\n]*\n)?)\s*(<:-)/$1$2/mg;
+    $text =~ s/(-:>)\s+(^:|)/$1.(length($2)?"\n$2":'')/emg;
+    return $text;
+}
 
 
 =head2 fill_in_template
@@ -95,15 +145,14 @@ sub include {
                             language  => '..'
                            );
 
-Reads a template from disk (if it hasn't already been read in) and
-fills the template in.
+Reads a template from disk (if it hasn't already been read in) andf
+ills the template in.
 
 =cut
 
-
 sub fill_in_template{
      my %param = validate_with(params => \@_,
-			       spec   => {template => SCALAR|HANDLE|SCALARREF,
+			       spec   => {template => SCALAR,
 					  variables => {type => HASHREF,
 						        default => {},
 						       },
@@ -113,106 +162,59 @@ sub fill_in_template{
 					  output    => {type => HANDLE,
 							optional => 1,
 						       },
-					  safe      => {type => OBJECT|UNDEF,
-							optional => 1,
-						       },
 					  hole_var  => {type => HASHREF,
 							optional => 1,
 						       },
+					  output_type => {type => SCALAR,
+							  default => 'html',
+							 },
 					 },
 			      );
-     if ($DEBUG) {
-	  print STDERR "fill_in_template ";
-	  print STDERR join(" ",map {exists $param{$_}?"$_:$param{$_}":()} keys %param);
-	  print STDERR "\n";
-     }
-
      # Get the text
-     my $tt_type = '';
-     my $tt_source;
-     if (ref($param{template}) eq 'GLOB' or
-	 ref(\$param{template}) eq 'GLOB') {
-	  $tt_type = 'FILE_HANDLE';
-	  $tt_source = $param{template};
-	  binmode($tt_source,":encoding(UTF-8)");
-     }
-     elsif (ref($param{template}) eq 'SCALAR') {
-	  $tt_type = 'STRING';
-	  $tt_source = ${$param{template}};
-     }
-     else {
-	  $tt_type = 'FILE';
-	  $tt_source = _locate_text($param{template},$param{language});
-     }
-     if (not defined $tt_source) {
-	  die "Unable to find template $param{template} with language $param{language}";
-     }
-
-     $language = $param{language};
+     my $output_type = $param{output_type};
+     my $language = $param{language};
+     my $template = $param{template};
+     $template .= '.tx' unless $template =~ /\.tx$/;
      my $tt;
-     if ($tt_type eq 'FILE' and
-	 defined $tt_templates{$tt_source} and
-	 ($tt_templates{$tt_source}{mtime} + 60) < time and
-	 (stat $tt_source)[9] <= $tt_templates{$tt_source}{mtime}
+     if (not exists $tt_templates{$output_type}{$language} or
+	 not defined $tt_templates{$output_type}{$language}
 	) {
-	  $tt = $tt_templates{$tt_source}{template};
+	 $tt_templates{$output_type}{$language} =
+	     Text::Xslate->new(# cache in template_cache or temp directory
+			       cache_dir => $config{template_cache} //
+			       File::Temp::tempdir(CLEANUP => 1),
+			       # default to the language, but fallback to en_US
+			       path => [$config{template_dir}.'/'.$language.'/',
+					$config{template_dir}.'/en_US/',
+				       ],
+			       suffix => '.tx',
+			       ## use html or text specific functions
+			       function =>
+			       ($output_type eq 'html' ? __text_xslate_functions() :
+				__text_xslate_functions_text()),
+			       syntax => 'Kolon',
+			       module => ['Text::Xslate::Bridge::Star',
+					  'Debbugs::Text::XslateBridge',
+					 ],
+			       type   => $output_type,
+			       ## use the html-specific pre_process_handler
+			       $output_type eq 'html'?
+			       (pre_process_handler => \&__html_template_prefilter):(),
+			      )
+		 or die "Unable to create Text::Xslate";
      }
-     else {
-	 my $passed_source = $tt_source;
-	 my $passed_type = $tt_type;
-	  if ($tt_type eq 'FILE') {
-	       $tt_templates{$tt_source}{mtime} =
-		    (stat $tt_source)[9];
-	       $passed_source = IO::File->new($tt_source,'r');
-	       binmode($passed_source,":encoding(UTF-8)");
-	       $passed_type = 'FILEHANDLE';
-	  }
-	  $tt = Text::Template->new(TYPE => $passed_type,
-				    SOURCE => $passed_source,
-				    UNTAINT => 1,
-				   );
-	  if ($tt_type eq 'FILE') {
-	       $tt_templates{$tt_source}{template} = $tt;
-	  }
+     $tt = $tt_templates{$output_type}{$language};
+     my $ret =
+	 $tt->render($template,
+		    {time => time,
+		     %{$param{variables}//{}},
+		     config  => \%config,
+		    });
+     if (exists $param{output}) {
+	 print {$param{output}} $ret;
+	 return '';
      }
-     if (not defined $tt) {
-	  die "Unable to create Text::Template for $tt_type:$tt_source";
-     }
-     my $ret = $tt->fill_in(PACKAGE => 'DTT',
-			    HASH => {%{$param{variables}//{}},
-				     (map {my $t = $_; $t =~ s/^\&//; ($t => $param{hole_var}{$_})}
-				      keys %{$param{hole_var}//{}}),
-				     include => \&Debbugs::Text::include,
-				     config  => \%config,
-				    },
-			    defined $param{output}?(OUTPUT=>$param{output}):(),
-			   );
-     if (not defined $ret) {
-	  print STDERR $Text::Template::ERROR;
-	  return '';
-     }
-     if ($DEBUG) {
-	  no strict 'refs';
-	  no warnings 'uninitialized';
-	  print STDERR "Variables for $param{template}\n";
-     }
-
      return $ret;
-}
-
-sub _locate_text{
-     my ($template,$language) = @_;
-     $template =~ s/\.tmpl$//g;
-     # if a language doesn't exist, use the en_US template
-     if (not -e $config{template_dir}.'/'.$language.'/'.$template.'.tmpl') {
-	  $language = 'en_US';
-     }
-     my $loc = $config{template_dir}.'/'.$language.'/'.$template.'.tmpl';
-     if (not -e $loc) {
-	  print STDERR "Unable to locate template $loc\n";
-	  return undef;
-     }
-     return $loc;
 }
 
 1;

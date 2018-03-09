@@ -1,0 +1,21 @@
+<address><: $config.maintainer :>
+    &lt;<a href="mailto:<: $config.maintainer_email :>"><: $config.maintainer_email :></a>&gt;.
+    Last modified:
+    <!--timestamp--><: defined $last_modified ? $last_modified : gm_strftime('%c') :><!--end timestamp-->; 
+    Machine Name:
+    <!--machinename--><: $config.machine_name ||'Unknown' :><!--machinename-->
+    <p>
+        <a href="<: $config.web_domain :>/"><: $config.project :> <: $config.bug :> tracking system</a>
+    </p>
+    <p>
+        Debbugs is free software and licensed under the terms of the
+        GNU Public License version 2. The current version can be
+        obtained from <a href="https://bugs.debian.org/debbugs-source/">https://bugs.debian.org/debbugs-source/</a>.
+    </p>
+    <p>
+        Copyright © 1999 Darren O. Benham,
+        1997,2003 nCipher Corporation Ltd,
+        1994-97 Ian Jackson,
+        2005-2017 Don Armstrong, and many other contributors.
+    </p>
+</address>

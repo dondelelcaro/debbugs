@@ -1,0 +1,3 @@
+
+Your message has been sent to the package maintainer(s):
+<: $maintaddrs.join("\n") :>

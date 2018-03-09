@@ -1,0 +1,6 @@
+<HTML>
+<HEAD><TITLE>Error</TITLE></HEAD>
+<BODY>
+An error occurred.
+Error was: <: $msg :>
+</BODY></HTML>

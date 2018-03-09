@@ -1,0 +1,136 @@
+<script type="text/javascript">
+<!--
+toggle_extra_status_visible();
+function pagemain() {
+	toggle(1);
+//	toggle(2);
+	enable(1);
+}
+
+var visible_extra_status = 0;
+
+function toggle_extra_status_visible() {
+  all_divs = document.getElementsByTagName("div");
+  for (var i = 0; i < all_divs.length; i++) {
+      if (all_divs[i].className == "shortbugstatusextra") {
+         if (all_divs[i].style.position == 'absolute' ) {
+	    all_divs[i].style.position = "static";
+      	    all_divs[i].style.display = "block";
+	    all_divs[i].style.zIndex = 0;
+	    all_divs[i].style.border = 0;
+	    var subspans = all_divs[i].getElementsByTagName("span");
+	    for (var j = 0; j < subspans.length; j++) {
+   	    	subspans[j].style.display = "inline";
+	    }
+         }
+	 else {
+	    all_divs[i].style.position = "absolute";
+      	    all_divs[i].style.display = "none"
+	    all_divs[i].style.zIndex = 2;
+	    all_divs[i].style.border = "#000 1px solid";
+	    var subspans = all_divs[i].getElementsByTagName("span");
+	    for (var j = 0; j < subspans.length; j++) {
+   	    	subspans[j].style.display = "block";
+	    }
+         }
+      }
+  }
+}
+
+function extra_status_visible(id) {
+  var m = document.getElementById("status_mask");
+  if (visible_extra_status) {
+     var t = document.getElementById("extra_status_"+visible_extra_status);
+     t.style.display = "none";
+     if (m) {
+        m.style.display = "none";
+     }
+     if (visible_extra_status == id) {
+     	visible_extra_status = 0;
+        return;
+     }
+     visible_extra_status = 0;
+  }
+  var e = document.getElementById("extra_status_"+id);
+  if (e) {
+     e.style.display = "block";
+     visible_extra_status = id;
+     if (m) {
+        m.onclick = function() { extra_status_visible(id); };
+        m.style.display = "block";
+     }
+  }
+}
+
+function setCookie(name, value, expires, path, domain, secure) {
+  var curCookie = name + "=" + escape(value) +
+      ((expires) ? "; expires=" + expires.toGMTString() : "") +
+      ((path) ? "; path=" + path : "") +
+      ((domain) ? "; domain=" + domain : "") +
+      ((secure) ? "; secure" : "");
+  document.cookie = curCookie;
+}
+
+function save_cat_cookies() {
+  var cat = document.categories.categorisation.value;
+  var exp = new Date();
+  exp.setTime(exp.getTime() + 10 * 365 * 24 * 60 * 60 * 1000);
+  var oldexp = new Date();
+  oldexp.setTime(oldexp.getTime() - 1 * 365 * 24 * 60 * 60 * 1000);
+  var lev;
+  var done = 0;
+
+  var u = document.getElementById("users");
+  if (u != null) { u = u.value; }
+  if (u == "") { u = null; }
+  if (u != null) {
+      setCookie("cat" + cat + "_users", u, exp, "/");
+  } else {
+      setCookie("cat" + cat + "_users", "", oldexp, "/");
+  }
+
+  var bits = new Array("nam", "pri", "ttl", "ord");
+  for (var i = 0; i < 4; i++) {
+      for (var j = 0; j < bits.length; j++) {
+          var e = document.getElementById(bits[j] + i);
+	  if (e) e = e.value;
+	  if (e == null) { e = ""; }
+	  if (j == 0 && e == "") { done = 1; }
+	  if (done || e == "") {
+              setCookie("cat" + cat + "_" + bits[j] + i, "", oldexp, "/");
+	  } else {
+              setCookie("cat" + cat + "_" + bits[j] + i, e, exp, "/");
+	  }
+      }
+  }
+}
+
+function toggle(i) {
+        var a = document.getElementById("a_" + i);
+        if (a) {
+             if (a.style.display == "none") {
+                     a.style.display = "";
+             } else {
+                     a.style.display = "none";
+             }
+        }
+}
+
+function enable(x) {
+    for (var i = 1; ; i++) {
+        var a = document.getElementById("b_" + x + "_" + i);
+        if (a == null) break;
+        var ischecked = a.checked;
+        for (var j = 1; ; j++) {
+            var b = document.getElementById("b_" + x + "_"+ i + "_" + j);
+            if (b == null) break;
+            if (ischecked) {
+                b.disabled = false;
+            } else {
+                b.disabled = true;
+            }
+        }
+    }
+}
+-->
+</script>

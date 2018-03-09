@@ -1,0 +1,89 @@
+<div class="buginfo">
+    <ul>
+        <li><span class="key">Reported by</span>
+            <span class="value"><: package_links(submitter=>$status.originator) :></span>
+        </li>
+        <li><span class="key">Date</span>
+            <span class="value"><: $status.date_text :></span>
+        </li>
+        : if defined($status.owner) && $status.owner.length() {
+        <li><span class="key">Owned by</span>
+            <span class="value"><: package_links("owner",$status.owner) :></span>
+        </li>
+        : }
+        <li><span class="key">Severity</span>
+            <span class="value">
+                <:- if $status.severity { :><em class="severity"><: } -:>
+                <:- $status.severity -:>
+                <:- if $status.severity { :></em><: } -:>
+            </span>
+        </li>
+        : if $status.tags_array {
+        <li><span class="key">Tags</span>
+            <span class="value"><: $status.tags_array.join(' ') :></span>
+        </li>
+        : }
+        : if $status.mergedwith_array.count > 0 {
+        <li><span class="key">Merged with</span>
+            <span class="value"><: bug_links(bug=>$status.mergedwith_array).join(",\n") :></span>
+        </li>
+        : }
+        : if $status.found_versions.count {
+        <li><span class="key">Found in
+            version<:- if $status.found_versions.count > 1 { -:>s<: } -:></span>
+            <span class="value"><: $status.found_versions.join(', ') :></span>
+        </li>
+        : }
+        : if $status.fixed_versions.count {
+        <li><span class="key">Fixed in 
+            version<: if $status.fixed_versions.count > 1 { :>s<: } :></span>
+            <span class="value"><: $status.fixed_versions.join(', ') :></span>
+        </li>
+        : }
+        <: if $status.done.length() { :>
+        <li><span class="key">Done</span>
+            <span class="value"><: $status.done :></span>
+        </li>
+        : }
+        : if $status.blockedby_array.count {
+        <li><span class="key">Fix blocked by</span>
+            <span class="value">
+                : for $status.blockedby_array -> $bug {
+                <: bug_links("bug",$bug.bug_num) :>: <: $bug.subject -:>
+                <:- if !$~bug.is_last { :>, <:  } else {  :>.<: } :>
+                : }
+            </span>
+        </li>
+        : }
+        : if $status.blocks_array.count {
+        <li><span class="key">Blocking fix for</span>
+            <span class="value" 
+                  : for $status.blocks_array -> $bug {
+                  <: bug_links("bug",$bug.bug_num) :>: <: $bug.subject -:>
+                  <:- if ! $~bug.is_last { :>, <:  } else {  :>.<: } :>
+                  : }
+            </span>
+        </li>
+        : }
+        : if $status.archived {
+        <li><span class="key">Bug is</span>
+            <span class="value">Archived</span>
+        </li>
+        : }
+        : if defined $status.forwarded and $status.forwarded.length() {
+        <li><span class="key">Forwarded to</span>
+            <span class="value"><: split($status.forwarded,',\s+').map(maybelink).join(', ') :></span>
+        </li>
+        : }
+        : if defined $status.summary and $status.summary.length() {
+        <li><span class="key">Summary</span>
+            <span class="value"><: $status.summary :></span>
+        </li>
+        : }
+        : if defined $status.outlook and $status.outlook.length() {
+        <li><span class="key">Outlook</span>
+            <span class="value"><: $status.outlook :></span>
+        </li>
+        : }
+    </ul>
+</div>

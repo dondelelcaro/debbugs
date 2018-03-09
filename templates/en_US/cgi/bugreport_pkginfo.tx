@@ -1,0 +1,27 @@
+: macro link_to_package -> ($packages) {
+: for $packages.values() -> $pkg {
+: if $pkg.is_source {
+<:- package_links(source => $pkg.source,class=>"submitter"); -:>
+: } else {
+<:- package_links(package => $pkg.package,class=>"submitter"); -:>
+: }
+: if $~pkg.is_last {
+;
+: } else {
+,
+: } } }
+<div class="pkginfo">
+    <p>Package<: if ($package.keys.count > 1) {:>s<: } :>
+    <: link_to_package($package) :>
+: for $package.values() -> $pkg { 
+<p>Maintainer for <: package_links($pkg.is_source ? "source": "package",$pkg.is_source ? $pkg.source : $pkg.package ) :> is <: package_links(maintainer => $pkg.maintainer) :>;
+<: if defined($pkg.source) && not $pkg.is_source { :>
+Source for <: package_links(package => $pkg.package) :> is
+<: package_links(source => $pkg.source) :>.
+<: } :></p>
+: }
+: if $affects.keys.size > 0 {
+<p>Affects: <: link_to_package($affects) :>
+</p>
+: }
+</div>

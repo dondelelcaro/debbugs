@@ -1,0 +1,52 @@
+<: include "html/pre_title.tx" :>#<: $bug_num :> - <: $status.subject :> - <: $config.project :> <: $config.bug :> report logs<: include "html/post_title.tx" :>
+<link rel="canonical" href="<: bug_links(bug=>$bug_num) :>">
+<script type="text/javascript">
+<!--
+function toggle_infmessages()
+{
+        allDivs=document.getElementsByTagName("div");
+        for (var i = 0 ; i < allDivs.length ; i++ )
+       {
+                if (allDivs[i].className == "infmessage")
+                {
+                        allDivs[i].style.display=(allDivs[i].style.display == 'none' | allDivs[i].style.display == '') ? 'block' : 'none';
+                }
+       }
+}
+-->
+</script>
+</head>
+<body>
+    <div class="debbugs_install"><: $config.project :> <: $config.bug :> report logs</div>
+    <h1 class="bug_header"><a class="bug_email" href="mailto:<: $bug_num :>@<: $config.email_domain :>">#<: $bug_num :></a>
+        <span class="bug_subject"><: $status.subject :></span>
+    </h1>
+<div class="versiongraph"><: raw($version_graph) :></div>
+<: include "cgi/bugreport_pkginfo.tx" :>
+<: include "cgi/bugreport_buginfo.tx" :>
+<div class="bugreport_operations">
+: if looks_like_number($msg) {
+    <span><a href="<: bug_links(bug => $bug_num, links_only => 1) :>">Full log</a></span>
+: } else {
+: if ! $status.archived {
+<span><a href="mailto:<: $bug_num :>@<: $config.email_domain :>">Reply</a>
+or <a href="mailto:<: $bug_num :>-subscribe@<: $config.email_domain :>">subscribe</a>
+to this <: $config.bug :>.</span>
+: }
+<span>View this <: $config.bug :> as an
+<a href="<: bug_links("bug",$bug_num,links_only=>1,options=>{mbox=>"yes"}) :>">mbox</a>,
+<a href="<: bug_links("bug",$bug_num,links_only=>1,options=>{mbox=>"yes",mboxstatus => "yes"}) :>">status mbox</a>, or
+<a href="<: bug_links("bug",$bug_num,links_only=>1,options=>{mbox=>"yes",mboxmaint => "yes"}) :>">maintainer mbox</a>
+</span>
+</div>
+: }
+<: raw($log) :>
+<script>
+ document.write("<span class=\"uselessmessages\"><a href=\"javascript:toggle_infmessages();\">Toggle useless messages</a></span>")
+</script>
+<hr>
+<p class="msgreceived">Send a report that <a href="<: $config.cgi_domain :>/bugspam.cgi?bug=<: $bug_num :>">this bug log contains spam</a>.</p>
+<hr>
+<: include "html/html_tail.tx" :>
+</body>
+</html>

@@ -33,6 +33,8 @@ status of a particular bug
 use warnings;
 use strict;
 
+use feature 'state';
+
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use Exporter qw(import);
 
@@ -164,27 +166,27 @@ sub read_bug{
     if (@_ == 1) {
 	 unshift @_, 'bug';
     }
+    state $spec =
+       {bug => {type => SCALAR,
+		optional => 1,
+		# something really stupid passes negative bugnumbers
+		regex    => qr/^-?\d+/,
+	       },
+	location => {type => SCALAR|UNDEF,
+		     optional => 1,
+		    },
+	summary  => {type => SCALAR,
+		     optional => 1,
+		    },
+	lock     => {type => BOOLEAN,
+		     optional => 1,
+		    },
+	locks    => {type => HASHREF,
+		     optional => 1,
+		    },
+       };
     my %param = validate_with(params => \@_,
-			      spec   => {bug => {type => SCALAR,
-						 optional => 1,
-						 # something really
-						 # stupid passes
-						 # negative bugnumbers
-						 regex    => qr/^-?\d+/,
-						},
-					 location => {type => SCALAR|UNDEF,
-						      optional => 1,
-						     },
-					 summary  => {type => SCALAR,
-						      optional => 1,
-						     },
-					 lock     => {type => BOOLEAN,
-						      optional => 1,
-						     },
-					 locks    => {type => HASHREF,
-						      optional => 1,
-						     },
-					},
+			      spec   => $spec,
 			     );
     die "One of bug or summary must be passed to read_bug"
 	 if not exists $param{bug} and not exists $param{summary};
@@ -225,15 +227,19 @@ sub read_bug{
 
     my %data;
     my @lines;
-    my $version = 2;
+    my $version;
     local $_;
 
     while (<$status_fh>) {
         chomp;
         push @lines, $_;
-        $version = $1 if /^Format-Version: ([0-9]+)/i;
+	if (not defined $version and
+	    /^Format-Version: ([0-9]+)/i
+	   ) {
+	    $version = $1;
+	}
     }
-
+    $version = 2 if not defined $version;
     # Version 3 is the latest format version currently supported.
     if ($version > 3) {
 	 warn "Unsupported status version '$version'";
@@ -243,7 +249,7 @@ sub read_bug{
 	 return undef;
     }
 
-    my %namemap = reverse %fields;
+    state $namemap = {reverse %fields};
     for my $line (@lines) {
         if ($line =~ /(\S+?): (.*)/) {
             my ($name, $value) = (lc $1, $2);
@@ -251,7 +257,7 @@ sub read_bug{
 	    # or \n in the fields of status. Kill them off here.
 	    # [Eventually, this should be superfluous.]
 	    $value =~ s/[\r\n]//g;
-	    $data{$namemap{$name}} = $value if exists $namemap{$name};
+	    $data{$namemap->{$name}} = $value if exists $namemap->{$name};
         }
     }
     for my $field (keys %fields) {
@@ -1192,38 +1198,40 @@ sub get_bug_status {
      if (@_ == 1) {
 	  unshift @_, 'bug';
      }
+     state $spec =
+	{bug       => {type => SCALAR,
+		       regex => qr/^\d+$/,
+		      },
+	 status    => {type => HASHREF,
+		       optional => 1,
+		      },
+	 bug_index => {type => OBJECT,
+		       optional => 1,
+		      },
+	 version   => {type => SCALAR|ARRAYREF,
+		       optional => 1,
+		      },
+	 dist       => {type => SCALAR|ARRAYREF,
+			optional => 1,
+		       },
+	 arch       => {type => SCALAR|ARRAYREF,
+			optional => 1,
+		       },
+	 bugusertags   => {type => HASHREF,
+			   optional => 1,
+			  },
+	 sourceversions => {type => ARRAYREF,
+			    optional => 1,
+			   },
+	 indicatesource => {type => BOOLEAN,
+			    default => 1,
+			   },
+	 binary_to_source_cache => {type => HASHREF,
+				    optional => 1,
+				   },
+	};
      my %param = validate_with(params => \@_,
-			       spec   => {bug       => {type => SCALAR,
-							regex => qr/^\d+$/,
-						       },
-					  status    => {type => HASHREF,
-						        optional => 1,
-						       },
-					  bug_index => {type => OBJECT,
-							optional => 1,
-						       },
-					  version   => {type => SCALAR|ARRAYREF,
-							optional => 1,
-						       },
-					  dist       => {type => SCALAR|ARRAYREF,
-							 optional => 1,
-							},
-					  arch       => {type => SCALAR|ARRAYREF,
-							 optional => 1,
-							},
-					  bugusertags   => {type => HASHREF,
-							    optional => 1,
-							   },
-					  sourceversions => {type => ARRAYREF,
-							     optional => 1,
-							    },
-					  indicatesource => {type => BOOLEAN,
-							     default => 1,
-							    },
-					  binary_to_source_cache => {type => HASHREF,
-								     optional => 1,
-								    },
-					 },
+			       spec   => $spec,
 			      );
      my %status;
 
