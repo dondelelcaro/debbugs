@@ -3,6 +3,8 @@ sudo: required
 before_install:
   - >
     sh -c 'for key in "067E3C456BAE240ACEE88F6FEF0F382A1A7B6500" \
+     "A1BD8E9D78F7FE5C3E65D8AF8B48AD6246925553" \
+     "126C0D24BD8A2942CC7DF8AC7638D0442B90D010" \
      "E1CF20DDFFE4B89E802658F1E0B11894F66AEC98"; do \
      gpg --recv-keys $key; \
      gpg --armor --export $key|sudo apt-key add -; \
