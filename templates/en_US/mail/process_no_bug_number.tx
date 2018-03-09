@@ -13,7 +13,7 @@ there is no need to apologise or mail anyone asking for an explanation.
 
 -or-
 
-: include('mail/serious_mail_misconfiguration')
+: include('mail/serious_mail_misconfiguration.tx')
 
 Your message was dated <: $date :> and had
 message-id <: $messageid :>

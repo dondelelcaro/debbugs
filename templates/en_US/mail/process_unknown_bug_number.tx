@@ -17,4 +17,4 @@ It has been filed (under junk) but otherwise ignored.
 Please consult your records to find the correct <: $config.bug :> report
 number, or contact <: $config.maintainer_email :> for assistance.
 
-.include('mail/serious_mail_misconfiguration')
+: include('mail/serious_mail_misconfiguration.tx')
