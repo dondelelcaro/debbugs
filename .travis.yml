@@ -1,7 +1,12 @@
 dist: trusty
 sudo: required
 before_install:
-  - gpg --recv-keys 'E1CF20DDFFE4B89E802658F1E0B11894F66AEC98'
+  - >
+    for key in '067E3C456BAE240ACEE88F6FEF0F382A1A7B6500'
+     'E1CF20DDFFE4B89E802658F1E0B11894F66AEC98'; do
+     gpg --recv-keys $key;
+     gpg --armor --export $key|sudo apt-key add -;
+    done;
   - gpg --armor --export 'E1CF20DDFFE4B89E802658F1E0B11894F66AEC98'|sudo apt-key add -
   - sudo add-apt-repository 'deb http://deb.debian.org/debian/ stable main non-free contrib'
   - sudo apt-get -qq update
