@@ -394,10 +394,11 @@ sub package_links {
 	     }
 	     if ($has_options) {
 		 push @links,
-		     munge_url('pkgreport.cgi?',
+		     (munge_url('pkgreport.cgi?',
 			       %options,
 			       $t_type => $target,
-			      );
+			       ),
+		      $target);
 	     } else {
 		 push @links,
 		     ('pkgreport.cgi?'.$t_type.'='.uri_escape_utf8($target),
