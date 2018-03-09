@@ -12,12 +12,12 @@ before_install:
   - gpg --armor --export 'E1CF20DDFFE4B89E802658F1E0B11894F66AEC98'|sudo apt-key add -
   - sudo add-apt-repository 'deb http://deb.debian.org/debian/ stable main non-free contrib'
   - sudo apt-get -qq update
-  - sudo apt-get -o DPkg::options=--force-overwrite dist-upgrade
-  - sudo apt-get install -o DPkg::options=--force-overwrite -y devscripts equivs
+  - sudo apt-get -o DPkg::Options::=--force-overwrite dist-upgrade
+  - sudo apt-get install -o DPkg::Options::=--force-overwrite -y devscripts equivs
   - dch -r -m ''
   - >
     mk-build-deps -s sudo --install
-    --tool "apt-get -o DPkg::options=--force-overwrite -o Debug::pkgProblemResolver=yes --no-install-recommends"
+    --tool "apt-get -o DPkg::Options::=--force-overwrite -o Debug::pkgProblemResolver=yes --no-install-recommends"
      debian/control
 script:
   - make; make test
