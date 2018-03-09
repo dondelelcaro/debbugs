@@ -1,16 +1,11 @@
 dist: trusty
+services:
+  - docker
 sudo: required
 before_install:
-  - sudo add-apt-repository 'deb http://deb.debian.org/debian/ stable main non-free contrib'
-  - sudo apt-get -qq update
-  - sudo apt-get install -y devscripts equivs
-  - dch -r -m ''
-  - >
-    mk-build-deps -s sudo --install
-    --tool "apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends"
-     debian/control
+  - docker build -t debbugs/travis -f .travis/Dockerfile .
 script:
-  - make; make test
+  - docker run debbugs/travis sh -c 'cd /debbugs/; make; make test'
 notifications:
   irc:
     channels:
