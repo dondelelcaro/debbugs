@@ -4,7 +4,10 @@ before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y devscripts equivs
   - dch -r -m ''
-  - mk-build-deps -s sudo -i debian/control
+  - >
+    mk-build-deps -s sudo --install
+    --tool "apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends"
+     debian/control
 script:
   - make; make test
 notifications:
