@@ -4,9 +4,8 @@ services:
 sudo: required
 before_install:
   - docker build -t debbugs/travis -f .travis/Dockerfile .
-  - docker run debbugs/travis sh -c 'cd /debbugs/; make; make test'
 script:
-  - make; make test
+  - docker run debbugs/travis sh -c 'cd /debbugs/; make; make test'
 notifications:
   irc:
     channels:
