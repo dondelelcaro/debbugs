@@ -48,7 +48,8 @@ Depends:
  ${perl:Depends}, libmailtools-perl, ed, libmime-tools-perl,
  libio-stringy-perl, libmldbm-perl, liburi-perl, libsoap-lite-perl,
  libcgi-simple-perl, libparams-validate-perl, libtext-xslate-perl,
- libmail-rfc822-address-perl, liblist-moreutils-perl,
+ libmail-rfc822-address-perl, liblist-allutils-perl,
+ graphviz, libtext-iconv-perl, libuser-perl,
 # used by Debbugs::Libravatar and libravatar.cgi
  libfile-libmagic-perl, libgravatar-url-perl, libwww-perl, imagemagick
 Section: perl
