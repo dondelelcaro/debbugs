@@ -49,7 +49,8 @@ use File::Copy qw(copy);
 use Encode qw(decode encode is_utf8);
 
 use Storable qw(dclone);
-use List::AllUtils qw(min max);
+use List::AllUtils qw(min max uniq);
+use DateTime::Format::Pg;
 
 use Carp qw(croak);
 
@@ -1248,6 +1249,9 @@ sub get_bug_status {
 					  indicatesource => {type => BOOLEAN,
 							     default => 1,
 							    },
+					  schema => {type => OBJECT,
+                                                     optional => 1,
+						    },
 					 },
 			      );
      my %status;
@@ -1260,7 +1264,64 @@ sub get_bug_status {
 	  return \%status;
      }
      if (defined $param{status}) {
-	  %status = %{$param{status}};
+	 %status = %{$param{status}};
+     }
+     elsif (defined $param{schema}) {
+	 my $b = $param{schema}->resultset('Bug')->
+	     search_rs({'me.id' => $param{bug}},
+		      {prefetch => [{'bug_tags'=>'tag'},
+				    'severity',
+				   {'bug_binpackages'=> 'bin_pkg'},
+				   {'bug_srcpackages'=> 'src_pkg'},
+				   {'bug_user_tags'=>{'user_tag'=>'correspondent'}},
+				   {owner => 'correspondent_full_names'},
+				   {submitter => 'correspondent_full_names'},
+                                    'bug_merged_bugs',
+                                    'bug_mergeds_merged',
+                                    'bug_blocks_blocks',
+                                    'bug_blocks_bugs',
+                                   {'bug_vers' => ['src_pkg','src_ver']},
+				   ],
+		       '+columns' => [qw(subject log_modified creation last_modified)],
+		       collapse => 1,
+		       result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+		      })->first();
+	 $status{keywords} =
+	     join(' ',map {$_->{tag}{tag}} @{$b->{bug_tags}});
+	 $status{tags} = $status{keywords};
+	 $status{subject} = $b->{subject};
+	 $status{bug_num} = $b->{id};
+	 $status{severity} = $b->{severity}{severity};
+	 $status{package} =
+	     join(' ',
+		  (map {$_->{bin_pkg}{pkg}} @{$b->{bug_binpackages}//[]}),
+		  (map {$_->{src_pkg}{pkg}} @{$b->{bug_srcpackages}//[]}));
+         $status{originator} = $b->{submitter_full};
+	 $status{log_modified} =
+	     DateTime::Format::Pg->parse_datetime($b->{log_modified})->epoch;
+	 $status{date} =
+	     DateTime::Format::Pg->parse_datetime($b->{creation})->epoch;
+	 $status{last_modified} =
+	     DateTime::Format::Pg->parse_datetime($b->{last_modified})->epoch;
+         $status{blocks} =
+             join(' ',
+                  uniq(sort(map {$_->{block}}
+                            @{$b->{bug_blocks_block}},
+                           )));
+         $status{blockedby} =
+             join(' ',
+                  uniq(sort(map {$_->{bug}}
+                            @{$b->{bug_blocks_bug}},
+                           )));
+         $status{mergedwith} =
+             join(' ',uniq(sort(map {$_->{bug},$_->{merged}}
+                                @{$b->{bug_merged_bugs}},
+                                @{$b->{bug_mergeds_merged}},
+                               )));
+         $status{fixed_versions} =
+             [map {$_->{found}?():$_->{ver_string}} @{$b->{bug_vers}}];
+         $status{found_versions} =
+             [map {$_->{found}?$_->{ver_string}:()} @{$b->{bug_vers}}];
      }
      else {
 	  my $location = getbuglocation($param{bug}, 'summary');

@@ -301,6 +301,9 @@ sub pkg_htmlizebugs {
 					  dist     => {type => SCALAR,
 						       optional => 1,
 						      },
+					  schema   => {type => OBJECT,
+						       optional => 1,
+						      },
 					 }
 			      );
      my @bugs = @{$param{bugs}};
@@ -351,10 +354,10 @@ sub pkg_htmlizebugs {
      }
 
      foreach my $bug (@bugs) {
-	  my %status = %{get_bug_status(bug=>$bug,
-					(exists $param{dist}?(dist => $param{dist}):()),
-					bugusertags => $param{bugusertags},
-					(exists $param{version}?(version => $param{version}):()),
+	 my %status = %{get_bug_status(bug=>$bug,
+				       (map {exists $param{$_}?($_,$param{$_}):()}
+					qw(dist version schema bugusertags)
+				       ),
 					(exists $param{arch}?(arch => $param{arch}):(arch => $config{default_architectures})),
 				       )};
 	  next unless %status;
