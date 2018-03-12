@@ -830,7 +830,7 @@ sub __handle_pkg_src_and_maint{
      return grep {$packages{$_} >= $package_keys} keys %packages;
 }
 
-state %field_match = (
+state $field_match = {
     'subject' => \&__contains_field_match,
     'tags' => sub {
         my ($field, $values, $status) = @_; 
@@ -846,14 +846,14 @@ state %field_match = (
     'originator' => \&__contains_field_match,
     'forwarded' => \&__contains_field_match,
     'owner' => \&__contains_field_match,
-);
+};
 
 sub __bug_matches {
     my ($hash, $status) = @_;
     foreach my $key( keys( %$hash ) ) {
         my $value = $hash->{$key};
-	next unless exists $field_match{$key};
-	my $sub = $field_match{$key};
+	next unless exists $field_match->{$key};
+	my $sub = $field_match->{$key};
 	if (not defined $sub) {
 	    die "No defined subroutine for key: $key";
 	}
