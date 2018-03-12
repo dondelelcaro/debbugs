@@ -143,8 +143,8 @@ sub generate_package_info{
 	       push @references, sprintf "to the <a href=\"%s\">%s package page</a>",
 		    html_escape("$config{package_pages}/$package"), html_escape("$package");
 	  }
-	  if (defined $config{subscription_domain} and
-	      length $config{subscription_domain}) {
+	  if (defined $config{package_tracking_domain} and
+	      length $config{package_tracking_domain}) {
 	       my $ptslink = $param{binary} ? $srcforpkg : $package;
 	       # the pts only wants the source, and doesn't care about src: (#566089)
 	       $ptslink =~ s/^src://;
