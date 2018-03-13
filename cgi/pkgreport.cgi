@@ -39,6 +39,14 @@ use Debbugs::CGI::Pkgreport qw(:all);
 
 use Debbugs::Text qw(:templates);
 
+use Debbugs::DB;
+
+my $s;
+if (defined $config{database}) {
+    $s = Debbugs::DB->connect($config{database}) or
+        die "Unable to connect to DB";
+}
+
 use CGI::Simple;
 my $q = new CGI::Simple;
 
@@ -379,6 +387,7 @@ my $title = $gBugs.' '.join(' and ', map {/ or /?"($_)":$_} @title);
 		  grep {$_ ne 'newest'}
 		  keys %package_search_keys, 'archive'),
 		 usertags => \%ut,
+		 defined $s?(schema => $s):(),
 		);
 
 # shove in bugs which affect this package if there is a package or a
@@ -392,6 +401,7 @@ if (not exists $param{affects} and not exists $param{noaffects} and
 			  grep {$_ ne 'newest'}
 			  keys %package_search_keys, 'archive'),
 			 usertags => \%ut,
+                         defined $s?(schema => $s):(),
 			);
 }
 
@@ -436,6 +446,7 @@ my $result = pkg_htmlizebugs(bugs => \@bugs,
 			     exclude => $exclude,
 			     this => $this,
 			     options => \%param,
+                             defined $s?(schema => $s):(),
 			     (exists $param{dist})?(dist    => $param{dist}):(),
 			    );
 
