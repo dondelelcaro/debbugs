@@ -399,11 +399,12 @@ sub add_debinfo {
     while (my @v = $it->()) {
 	my %cache;
 	my @debinfos;
-	for my $file (@v) {
+FILE:	for my $file (@v) {
 	    my $fh = IO::File->new($file,'r') or
 		die "Unable to open $file for reading: $!";
 	    my $f_stat = stat($file);
 	    my $ct_date = DateTime->from_epoch(epoch => $f_stat->ctime);
+	    my @file_debinfos;
 	    while (<$fh>) {
 		chomp;
 		next unless length $_;
@@ -414,15 +415,28 @@ sub add_debinfo {
 		# the file, so we'll fudge it from the filename.
 		if (not defined $srcver) {
 		    ($srcname,$srcver) = ($binarch,$srcname);
-		    ($binarch) = $file =~ /_([^\.]+)\.debinfo/;
+		    ($binarch) = $file =~ /_([a-z0-9-]+)\.debinfo/;
 		}
-		if (not defined $srcver) {
-		    print STDERR "malformed debinfo (no srcver): $file\n";
-		    next;
+		# It turns out that there are debinfo files which are horribly
+		# screwed up, and have junk in them. We need to discard them
+		# completely
+		if (not defined $srcname or
+		    not defined $srcver or
+		    not defined $binname or
+		    not defined $binver or
+		    $srcname !~ /^$config{package_name_re}$/o or
+		    $binname !~ /^$config{package_name_re}$/o or
+		    $srcver !~ /^$config{package_version_re}$/o or
+		    $binver !~ /^$config{package_version_re}$/o
+		   ) {
+		    print STDERR "malformed debinfo: $file\n";
+		    next FILE;
 		}
-		push @debinfos,
+		push @file_debinfos,
 		    [$binname,$binver,$binarch,$srcname,$srcver,$ct_date];
 	    }
+	    push @debinfos,
+		@file_debinfos;
 	}
 	$s->txn_do(
 	    sub {
