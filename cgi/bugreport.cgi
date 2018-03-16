@@ -24,6 +24,7 @@ use Debbugs::CGI qw(:url :html :util :cache :usertags);
 use Debbugs::CGI::Bugreport qw(:all);
 use Debbugs::Common qw(buglog getmaintainers make_list bug_status);
 use Debbugs::Packages qw(getpkgsrc);
+use Debbugs::DB;
 use Debbugs::Status qw(splitpackages split_status_fields get_bug_status isstrongseverity);
 
 use Scalar::Util qw(looks_like_number);
@@ -32,6 +33,11 @@ use Debbugs::Text qw(:templates);
 use URI::Escape qw(uri_escape_utf8);
 use List::AllUtils qw(max);
 
+my $s;
+if (defined $config{database}) {
+    $s = Debbugs::DB->connect($config{database}) or
+        die "Unable to connect to database";
+}
 
 use CGI::Simple;
 my $q = new CGI::Simple;
@@ -188,6 +194,7 @@ my %status;
 if ($need_status) {
     %status = %{split_status_fields(get_bug_status(bug=>$ref,
 						   bugusertags => \%bugusertags,
+                                                   defined $s?(schema => $s):(),
 						  ))}
 }
 

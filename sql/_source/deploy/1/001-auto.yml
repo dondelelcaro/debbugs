@@ -1,0 +1,3071 @@
+---
+schema:
+  procedures: {}
+  tables:
+    arch:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - arch
+          match_type: ''
+          name: arch_arch_key
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+      fields:
+        arch:
+          data_type: text
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: arch
+          order: 2
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+      indices: []
+      name: arch
+      options: []
+      order: 1
+    bin_associations:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - bin
+          match_type: ''
+          name: bin_associations_fk_bin
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: bin_ver
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - suite
+          match_type: ''
+          name: bin_associations_fk_suite
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: suite
+          type: FOREIGN KEY
+      fields:
+        bin:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: bin
+          order: 3
+          size:
+            - 0
+        created:
+          data_type: timestamp with time zone
+          default_value: !!perl/ref
+            =: current_timestamp
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: created
+          order: 4
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        modified:
+          data_type: timestamp with time zone
+          default_value: !!perl/ref
+            =: current_timestamp
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: modified
+          order: 5
+          size:
+            - 0
+        suite:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: suite
+          order: 2
+          size:
+            - 0
+      indices:
+        - fields:
+            - bin
+          name: bin_associations_idx_bin
+          options: []
+          type: NORMAL
+        - fields:
+            - suite
+          name: bin_associations_idx_suite
+          options: []
+          type: NORMAL
+      name: bin_associations
+      options: []
+      order: 29
+    bin_pkg:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - pkg
+          match_type: ''
+          name: bin_pkg_pkg_key
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+      fields:
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        pkg:
+          data_type: text
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: pkg
+          order: 2
+          size:
+            - 0
+      indices: []
+      name: bin_pkg
+      options: []
+      order: 2
+    bin_ver:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - arch
+          match_type: ''
+          name: bin_ver_fk_arch
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: arch
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - bin_pkg
+          match_type: ''
+          name: bin_ver_fk_bin_pkg
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: bin_pkg
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - src_ver
+          match_type: ''
+          name: bin_ver_fk_src_ver
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: src_ver
+          type: FOREIGN KEY
+      fields:
+        arch:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: arch
+          order: 4
+          size:
+            - 0
+        bin_pkg:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: bin_pkg
+          order: 2
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        src_ver:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: src_ver
+          order: 3
+          size:
+            - 0
+        ver:
+          data_type: debversion
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: ver
+          order: 5
+          size:
+            - 0
+      indices:
+        - fields:
+            - arch
+          name: bin_ver_idx_arch
+          options: []
+          type: NORMAL
+        - fields:
+            - bin_pkg
+          name: bin_ver_idx_bin_pkg
+          options: []
+          type: NORMAL
+        - fields:
+            - src_ver
+          name: bin_ver_idx_src_ver
+          options: []
+          type: NORMAL
+      name: bin_ver
+      options: []
+      order: 27
+    binary_versions:
+      constraints: []
+      fields:
+        arch:
+          data_type: text
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: arch
+          order: 4
+          size:
+            - 0
+        bin_pkg:
+          data_type: text
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: bin_pkg
+          order: 3
+          size:
+            - 0
+        bin_ver:
+          data_type: debversion
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: bin_ver
+          order: 5
+          size:
+            - 0
+        src_pkg:
+          data_type: text
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: src_pkg
+          order: 1
+          size:
+            - 0
+        src_pkg_based_on:
+          data_type: text
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: src_pkg_based_on
+          order: 7
+          size:
+            - 0
+        src_ver:
+          data_type: debversion
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: src_ver
+          order: 2
+          size:
+            - 0
+        src_ver_based_on:
+          data_type: debversion
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: src_ver_based_on
+          order: 6
+          size:
+            - 0
+      indices: []
+      name: binary_versions
+      options: []
+      order: 3
+    bug:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - done
+          match_type: ''
+          name: bug_fk_done
+          on_delete: NO ACTION
+          on_update: NO ACTION
+          options: []
+          reference_fields:
+            - id
+          reference_table: correspondent
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - owner
+          match_type: ''
+          name: bug_fk_owner
+          on_delete: NO ACTION
+          on_update: NO ACTION
+          options: []
+          reference_fields:
+            - id
+          reference_table: correspondent
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - severity
+          match_type: ''
+          name: bug_fk_severity
+          on_delete: NO ACTION
+          on_update: NO ACTION
+          options: []
+          reference_fields:
+            - id
+          reference_table: severity
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - submitter
+          match_type: ''
+          name: bug_fk_submitter
+          on_delete: NO ACTION
+          on_update: NO ACTION
+          options: []
+          reference_fields:
+            - id
+          reference_table: correspondent
+          type: FOREIGN KEY
+      fields:
+        archived:
+          data_type: boolean
+          default_value: !!perl/ref
+            =: false
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: archived
+          order: 5
+          size:
+            - 0
+        creation:
+          data_type: timestamp with time zone
+          default_value: !!perl/ref
+            =: current_timestamp
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: creation
+          order: 2
+          size:
+            - 0
+        done:
+          data_type: integer
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: done
+          order: 12
+          size:
+            - 0
+        done_full:
+          data_type: text
+          default_value: ''
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: done_full
+          order: 13
+          size:
+            - 0
+        forwarded:
+          data_type: text
+          default_value: ''
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: forwarded
+          order: 7
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        last_modified:
+          data_type: timestamp with time zone
+          default_value: !!perl/ref
+            =: current_timestamp
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: last_modified
+          order: 4
+          size:
+            - 0
+        log_modified:
+          data_type: timestamp with time zone
+          default_value: !!perl/ref
+            =: current_timestamp
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: log_modified
+          order: 3
+          size:
+            - 0
+        outlook:
+          data_type: text
+          default_value: ''
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: outlook
+          order: 9
+          size:
+            - 0
+        owner:
+          data_type: integer
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: owner
+          order: 14
+          size:
+            - 0
+        owner_full:
+          data_type: text
+          default_value: ''
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: owner_full
+          order: 15
+          size:
+            - 0
+        severity:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: severity
+          order: 11
+          size:
+            - 0
+        subject:
+          data_type: text
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: subject
+          order: 10
+          size:
+            - 0
+        submitter:
+          data_type: integer
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: submitter
+          order: 16
+          size:
+            - 0
+        submitter_full:
+          data_type: text
+          default_value: ''
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: submitter_full
+          order: 17
+          size:
+            - 0
+        summary:
+          data_type: text
+          default_value: ''
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: summary
+          order: 8
+          size:
+            - 0
+        unarchived:
+          data_type: timestamp with time zone
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: unarchived
+          order: 6
+          size:
+            - 0
+        unknown_packages:
+          data_type: text
+          default_value: ''
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: unknown_packages
+          order: 18
+          size:
+            - 0
+      indices:
+        - fields:
+            - done
+          name: bug_idx_done
+          options: []
+          type: NORMAL
+        - fields:
+            - owner
+          name: bug_idx_owner
+          options: []
+          type: NORMAL
+        - fields:
+            - severity
+          name: bug_idx_severity
+          options: []
+          type: NORMAL
+        - fields:
+            - submitter
+          name: bug_idx_submitter
+          options: []
+          type: NORMAL
+      name: bug
+      options: []
+      order: 16
+    bug_binpackage:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - bug
+            - bin_pkg
+          match_type: ''
+          name: bug_binpackage_id_pkg
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+        - deferrable: 0
+          expression: ''
+          fields:
+            - bin_pkg
+          match_type: ''
+          name: bug_binpackage_fk_bin_pkg
+          on_delete: NO ACTION
+          on_update: NO ACTION
+          options: []
+          reference_fields:
+            - id
+          reference_table: bin_pkg
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - bug
+          match_type: ''
+          name: bug_binpackage_fk_bug
+          on_delete: NO ACTION
+          on_update: NO ACTION
+          options: []
+          reference_fields:
+            - id
+          reference_table: bug
+          type: FOREIGN KEY
+      fields:
+        bin_pkg:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: bin_pkg
+          order: 3
+          size:
+            - 0
+        bug:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: bug
+          order: 2
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+      indices:
+        - fields:
+            - bin_pkg
+          name: bug_binpackage_idx_bin_pkg
+          options: []
+          type: NORMAL
+        - fields:
+            - bug
+          name: bug_binpackage_idx_bug
+          options: []
+          type: NORMAL
+      name: bug_binpackage
+      options: []
+      order: 21
+    bug_blocks:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - bug
+            - blocks
+          match_type: ''
+          name: bug_blocks_bug_id_blocks_idx
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+        - deferrable: 0
+          expression: ''
+          fields:
+            - blocks
+          match_type: ''
+          name: bug_blocks_fk_blocks
+          on_delete: NO ACTION
+          on_update: NO ACTION
+          options: []
+          reference_fields:
+            - id
+          reference_table: bug
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - bug
+          match_type: ''
+          name: bug_blocks_fk_bug
+          on_delete: NO ACTION
+          on_update: NO ACTION
+          options: []
+          reference_fields:
+            - id
+          reference_table: bug
+          type: FOREIGN KEY
+      fields:
+        blocks:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: blocks
+          order: 3
+          size:
+            - 0
+        bug:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: bug
+          order: 2
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+      indices:
+        - fields:
+            - blocks
+          name: bug_blocks_idx_blocks
+          options: []
+          type: NORMAL
+        - fields:
+            - bug
+          name: bug_blocks_idx_bug
+          options: []
+          type: NORMAL
+      name: bug_blocks
+      options: []
+      order: 18
+    bug_merged:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - bug
+            - merged
+          match_type: ''
+          name: bug_merged_bug_id_merged_idx
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+        - deferrable: 0
+          expression: ''
+          fields:
+            - bug
+          match_type: ''
+          name: bug_merged_fk_bug
+          on_delete: NO ACTION
+          on_update: NO ACTION
+          options: []
+          reference_fields:
+            - id
+          reference_table: bug
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - merged
+          match_type: ''
+          name: bug_merged_fk_merged
+          on_delete: NO ACTION
+          on_update: NO ACTION
+          options: []
+          reference_fields:
+            - id
+          reference_table: bug
+          type: FOREIGN KEY
+      fields:
+        bug:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: bug
+          order: 2
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        merged:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: merged
+          order: 3
+          size:
+            - 0
+      indices:
+        - fields:
+            - bug
+          name: bug_merged_idx_bug
+          options: []
+          type: NORMAL
+        - fields:
+            - merged
+          name: bug_merged_idx_merged
+          options: []
+          type: NORMAL
+      name: bug_merged
+      options: []
+      order: 19
+    bug_message:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - bug
+            - message
+          match_type: ''
+          name: bug_message_bug_message_idx
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+        - deferrable: 0
+          expression: ''
+          fields:
+            - bug
+          match_type: ''
+          name: bug_message_fk_bug
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: bug
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - message
+          match_type: ''
+          name: bug_message_fk_message
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: message
+          type: FOREIGN KEY
+      fields:
+        bug:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: bug
+          order: 2
+          size:
+            - 0
+        bug_log_offset:
+          data_type: integer
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: bug_log_offset
+          order: 5
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        message:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: message
+          order: 3
+          size:
+            - 0
+        message_number:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: message_number
+          order: 4
+          size:
+            - 0
+        offset_valid:
+          data_type: timestamp with time zone
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: offset_valid
+          order: 6
+          size:
+            - 0
+      indices:
+        - fields:
+            - bug
+          name: bug_message_idx_bug
+          options: []
+          type: NORMAL
+        - fields:
+            - message
+          name: bug_message_idx_message
+          options: []
+          type: NORMAL
+      name: bug_message
+      options: []
+      order: 22
+    bug_package:
+      constraints: []
+      fields:
+        bug:
+          data_type: integer
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: bug
+          order: 1
+          size:
+            - 0
+        package:
+          data_type: text
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: package
+          order: 4
+          size:
+            - 0
+        pkg_id:
+          data_type: integer
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: pkg_id
+          order: 2
+          size:
+            - 0
+        pkg_type:
+          data_type: text
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: pkg_type
+          order: 3
+          size:
+            - 0
+      indices: []
+      name: bug_package
+      options: []
+      order: 4
+    bug_srcpackage:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - bug
+            - src_pkg
+          match_type: ''
+          name: bug_srcpackage_id_pkg
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+        - deferrable: 0
+          expression: ''
+          fields:
+            - bug
+          match_type: ''
+          name: bug_srcpackage_fk_bug
+          on_delete: NO ACTION
+          on_update: NO ACTION
+          options: []
+          reference_fields:
+            - id
+          reference_table: bug
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - src_pkg
+          match_type: ''
+          name: bug_srcpackage_fk_src_pkg
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: src_pkg
+          type: FOREIGN KEY
+      fields:
+        bug:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: bug
+          order: 2
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        src_pkg:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: src_pkg
+          order: 3
+          size:
+            - 0
+      indices:
+        - fields:
+            - bug
+          name: bug_srcpackage_idx_bug
+          options: []
+          type: NORMAL
+        - fields:
+            - src_pkg
+          name: bug_srcpackage_idx_src_pkg
+          options: []
+          type: NORMAL
+      name: bug_srcpackage
+      options: []
+      order: 23
+    bug_status_cache:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - bug
+            - suite
+            - arch
+          match_type: ''
+          name: bug_status_cache_bug_suite_arch_idx
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+        - deferrable: 0
+          expression: ''
+          fields:
+            - arch
+          match_type: ''
+          name: bug_status_cache_fk_arch
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: arch
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - bug
+          match_type: ''
+          name: bug_status_cache_fk_bug
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: bug
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - suite
+          match_type: ''
+          name: bug_status_cache_fk_suite
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: suite
+          type: FOREIGN KEY
+      fields:
+        arch:
+          data_type: integer
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 1
+          name: arch
+          order: 4
+          size:
+            - 0
+        asof:
+          data_type: timestamp with time zone
+          default_value: !!perl/ref
+            =: current_timestamp
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: asof
+          order: 7
+          size:
+            - 0
+        bug:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: bug
+          order: 2
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        modified:
+          data_type: timestamp with time zone
+          default_value: !!perl/ref
+            =: current_timestamp
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: modified
+          order: 6
+          size:
+            - 0
+        status:
+          data_type: enum
+          default_value: ~
+          extra:
+            custom_type_name: bug_status_type
+            list:
+              - pending
+              - forwarded
+              - pending-fixed
+              - fixed
+              - absent
+              - done
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: status
+          order: 5
+          size:
+            - 0
+        suite:
+          data_type: integer
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 1
+          name: suite
+          order: 3
+          size:
+            - 0
+      indices:
+        - fields:
+            - arch
+          name: bug_status_cache_idx_arch
+          options: []
+          type: NORMAL
+        - fields:
+            - bug
+          name: bug_status_cache_idx_bug
+          options: []
+          type: NORMAL
+        - fields:
+            - suite
+          name: bug_status_cache_idx_suite
+          options: []
+          type: NORMAL
+      name: bug_status_cache
+      options: []
+      order: 25
+    bug_tag:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - bug
+            - tag
+          match_type: ''
+          name: bug_tag_bug_tag
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+        - deferrable: 0
+          expression: ''
+          fields:
+            - bug
+          match_type: ''
+          name: bug_tag_fk_bug
+          on_delete: NO ACTION
+          on_update: NO ACTION
+          options: []
+          reference_fields:
+            - id
+          reference_table: bug
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - tag
+          match_type: ''
+          name: bug_tag_fk_tag
+          on_delete: NO ACTION
+          on_update: NO ACTION
+          options: []
+          reference_fields:
+            - id
+          reference_table: tag
+          type: FOREIGN KEY
+      fields:
+        bug:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: bug
+          order: 2
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        tag:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: tag
+          order: 3
+          size:
+            - 0
+      indices:
+        - fields:
+            - bug
+          name: bug_tag_idx_bug
+          options: []
+          type: NORMAL
+        - fields:
+            - tag
+          name: bug_tag_idx_tag
+          options: []
+          type: NORMAL
+      name: bug_tag
+      options: []
+      order: 24
+    bug_ver:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - bug
+            - ver_string
+            - found
+          match_type: ''
+          name: bug_ver_bug_ver_string_found_idx
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+        - deferrable: 0
+          expression: ''
+          fields:
+            - bug
+          match_type: ''
+          name: bug_ver_fk_bug
+          on_delete: RESTRICT
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: bug
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - src_pkg
+          match_type: ''
+          name: bug_ver_fk_src_pkg
+          on_delete: SET NULL
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: src_pkg
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - src_ver
+          match_type: ''
+          name: bug_ver_fk_src_ver
+          on_delete: SET NULL
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: src_ver
+          type: FOREIGN KEY
+      fields:
+        bug:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: bug
+          order: 2
+          size:
+            - 0
+        creation:
+          data_type: timestamp with time zone
+          default_value: !!perl/ref
+            =: current_timestamp
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: creation
+          order: 7
+          size:
+            - 0
+        found:
+          data_type: boolean
+          default_value: !!perl/ref
+            =: true
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: found
+          order: 6
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        last_modified:
+          data_type: timestamp with time zone
+          default_value: !!perl/ref
+            =: current_timestamp
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: last_modified
+          order: 8
+          size:
+            - 0
+        src_pkg:
+          data_type: integer
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: src_pkg
+          order: 4
+          size:
+            - 0
+        src_ver:
+          data_type: integer
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: src_ver
+          order: 5
+          size:
+            - 0
+        ver_string:
+          data_type: text
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 1
+          name: ver_string
+          order: 3
+          size:
+            - 0
+      indices:
+        - fields:
+            - bug
+          name: bug_ver_idx_bug
+          options: []
+          type: NORMAL
+        - fields:
+            - src_pkg
+          name: bug_ver_idx_src_pkg
+          options: []
+          type: NORMAL
+        - fields:
+            - src_ver
+          name: bug_ver_idx_src_ver
+          options: []
+          type: NORMAL
+      name: bug_ver
+      options: []
+      order: 28
+    column_comments:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - table_name
+            - column_name
+          match_type: ''
+          name: column_comments_table_name_column_name_idx
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+      fields:
+        column_name:
+          data_type: text
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: column_name
+          order: 2
+          size:
+            - 0
+        comment_text:
+          data_type: text
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: comment_text
+          order: 3
+          size:
+            - 0
+        table_name:
+          data_type: text
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: table_name
+          order: 1
+          size:
+            - 0
+      indices: []
+      name: column_comments
+      options: []
+      order: 5
+    correspondent:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - addr
+          match_type: ''
+          name: correspondent_addr_idx
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+      fields:
+        addr:
+          data_type: text
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: addr
+          order: 2
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+      indices: []
+      name: correspondent
+      options: []
+      order: 6
+    correspondent_full_name:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - correspondent
+            - full_name
+          match_type: ''
+          name: correspondent_full_name_correspondent_full_name_idx
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+        - deferrable: 0
+          expression: ''
+          fields:
+            - correspondent
+          match_type: ''
+          name: correspondent_full_name_fk_correspondent
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: correspondent
+          type: FOREIGN KEY
+      fields:
+        correspondent:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: correspondent
+          order: 2
+          size:
+            - 0
+        full_name:
+          data_type: text
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: full_name
+          order: 3
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        last_seen:
+          data_type: timestamp
+          default_value: !!perl/ref
+            =: current_timestamp
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: last_seen
+          order: 4
+          size:
+            - 0
+      indices:
+        - fields:
+            - correspondent
+          name: correspondent_full_name_idx_correspondent
+          options: []
+          type: NORMAL
+      name: correspondent_full_name
+      options: []
+      order: 13
+    maintainer:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - name
+          match_type: ''
+          name: maintainer_name_idx
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+        - deferrable: 0
+          expression: ''
+          fields:
+            - correspondent
+          match_type: ''
+          name: maintainer_fk_correspondent
+          on_delete: NO ACTION
+          on_update: NO ACTION
+          options: []
+          reference_fields:
+            - id
+          reference_table: correspondent
+          type: FOREIGN KEY
+      fields:
+        correspondent:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: correspondent
+          order: 3
+          size:
+            - 0
+        created:
+          data_type: timestamp with time zone
+          default_value: !!perl/ref
+            =: current_timestamp
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: created
+          order: 4
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        modified:
+          data_type: timestamp with time zone
+          default_value: !!perl/ref
+            =: current_timestamp
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: modified
+          order: 5
+          size:
+            - 0
+        name:
+          data_type: text
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: name
+          order: 2
+          size:
+            - 0
+      indices:
+        - fields:
+            - correspondent
+          name: maintainer_idx_correspondent
+          options: []
+          type: NORMAL
+      name: maintainer
+      options: []
+      order: 14
+    message:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+      fields:
+        from_addr:
+          data_type: text
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: from_addr
+          order: 4
+          size:
+            - 0
+        from_complete:
+          data_type: text
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: from_complete
+          order: 3
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        is_spam:
+          data_type: boolean
+          default_value: !!perl/ref
+            =: false
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: is_spam
+          order: 11
+          size:
+            - 0
+        msgid:
+          data_type: text
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: msgid
+          order: 2
+          size:
+            - 0
+        refs:
+          data_type: text
+          default_value: ''
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: refs
+          order: 9
+          size:
+            - 0
+        sent_date:
+          data_type: timestamp with time zone
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: sent_date
+          order: 8
+          size:
+            - 0
+        spam_score:
+          data_type: double precision
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: spam_score
+          order: 10
+          size:
+            - 0
+        subject:
+          data_type: text
+          default_value: ''
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: subject
+          order: 7
+          size:
+            - 0
+        to_addr:
+          data_type: text
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: to_addr
+          order: 6
+          size:
+            - 0
+        to_complete:
+          data_type: text
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: to_complete
+          order: 5
+          size:
+            - 0
+      indices: []
+      name: message
+      options: []
+      order: 7
+    message_correspondent:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - message
+            - correspondent
+            - correspondent_type
+          match_type: ''
+          name: message_correspondent_message_correspondent_correspondent_t_idx
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+        - deferrable: 0
+          expression: ''
+          fields:
+            - correspondent
+          match_type: ''
+          name: message_correspondent_fk_correspondent
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: correspondent
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - message
+          match_type: ''
+          name: message_correspondent_fk_message
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: message
+          type: FOREIGN KEY
+      fields:
+        correspondent:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: correspondent
+          order: 3
+          size:
+            - 0
+        correspondent_type:
+          data_type: enum
+          default_value: to
+          extra:
+            custom_type_name: message_correspondent_type
+            list:
+              - to
+              - from
+              - envfrom
+              - cc
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: correspondent_type
+          order: 4
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        message:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: message
+          order: 2
+          size:
+            - 0
+      indices:
+        - fields:
+            - correspondent
+          name: message_correspondent_idx_correspondent
+          options: []
+          type: NORMAL
+        - fields:
+            - message
+          name: message_correspondent_idx_message
+          options: []
+          type: NORMAL
+      name: message_correspondent
+      options: []
+      order: 17
+    message_refs:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - message
+            - refs
+          match_type: ''
+          name: message_refs_message_refs_idx
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+        - deferrable: 0
+          expression: ''
+          fields:
+            - message
+          match_type: ''
+          name: message_refs_fk_message
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: message
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - refs
+          match_type: ''
+          name: message_refs_fk_refs
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: message
+          type: FOREIGN KEY
+      fields:
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        inferred:
+          data_type: boolean
+          default_value: !!perl/ref
+            =: false
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: inferred
+          order: 4
+          size:
+            - 0
+        message:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: message
+          order: 2
+          size:
+            - 0
+        primary_ref:
+          data_type: boolean
+          default_value: !!perl/ref
+            =: false
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: primary_ref
+          order: 5
+          size:
+            - 0
+        refs:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: refs
+          order: 3
+          size:
+            - 0
+      indices:
+        - fields:
+            - message
+          name: message_refs_idx_message
+          options: []
+          type: NORMAL
+        - fields:
+            - refs
+          name: message_refs_idx_refs
+          options: []
+          type: NORMAL
+      name: message_refs
+      options: []
+      order: 15
+    severity:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - severity
+          match_type: ''
+          name: severity_severity_idx
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+      fields:
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        obsolete:
+          data_type: boolean
+          default_value: !!perl/ref
+            =: false
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: obsolete
+          order: 5
+          size:
+            - 0
+        ordering:
+          data_type: integer
+          default_value: 5
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: ordering
+          order: 3
+          size:
+            - 0
+        severity:
+          data_type: text
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: severity
+          order: 2
+          size:
+            - 0
+        strong:
+          data_type: boolean
+          default_value: !!perl/ref
+            =: false
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: strong
+          order: 4
+          size:
+            - 0
+      indices: []
+      name: severity
+      options: []
+      order: 8
+    src_associations:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - source
+          match_type: ''
+          name: src_associations_fk_source
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: src_ver
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - suite
+          match_type: ''
+          name: src_associations_fk_suite
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: suite
+          type: FOREIGN KEY
+      fields:
+        created:
+          data_type: timestamp with time zone
+          default_value: !!perl/ref
+            =: current_timestamp
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: created
+          order: 4
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        modified:
+          data_type: timestamp with time zone
+          default_value: !!perl/ref
+            =: current_timestamp
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: modified
+          order: 5
+          size:
+            - 0
+        source:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: source
+          order: 3
+          size:
+            - 0
+        suite:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: suite
+          order: 2
+          size:
+            - 0
+      indices:
+        - fields:
+            - source
+          name: src_associations_idx_source
+          options: []
+          type: NORMAL
+        - fields:
+            - suite
+          name: src_associations_idx_suite
+          options: []
+          type: NORMAL
+      name: src_associations
+      options: []
+      order: 26
+    src_pkg:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - pkg
+            - disabled
+          match_type: ''
+          name: src_pkg_pkg_disabled
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+        - deferrable: 0
+          expression: ''
+          fields:
+            - alias_of
+          match_type: ''
+          name: src_pkg_fk_alias_of
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: src_pkg
+          type: FOREIGN KEY
+      fields:
+        alias_of:
+          data_type: integer
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: alias_of
+          order: 4
+          size:
+            - 0
+        creation:
+          data_type: timestamp with time zone
+          default_value: !!perl/ref
+            =: current_timestamp
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: creation
+          order: 5
+          size:
+            - 0
+        disabled:
+          data_type: timestamp with time zone
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 1
+          name: disabled
+          order: 6
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        last_modified:
+          data_type: timestamp with time zone
+          default_value: !!perl/ref
+            =: current_timestamp
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: last_modified
+          order: 7
+          size:
+            - 0
+        obsolete:
+          data_type: boolean
+          default_value: !!perl/ref
+            =: false
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: obsolete
+          order: 8
+          size:
+            - 0
+        pkg:
+          data_type: text
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: pkg
+          order: 2
+          size:
+            - 0
+        pseduopkg:
+          data_type: boolean
+          default_value: !!perl/ref
+            =: false
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: pseduopkg
+          order: 3
+          size:
+            - 0
+      indices:
+        - fields:
+            - alias_of
+          name: src_pkg_idx_alias_of
+          options: []
+          type: NORMAL
+      name: src_pkg
+      options: []
+      order: 9
+    src_ver:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - src_pkg
+            - ver
+          match_type: ''
+          name: src_ver_src_pkg_id_ver
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+        - deferrable: 0
+          expression: ''
+          fields:
+            - based_on
+          match_type: ''
+          name: src_ver_fk_based_on
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: src_ver
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - maintainer
+          match_type: ''
+          name: src_ver_fk_maintainer
+          on_delete: SET NULL
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: maintainer
+          type: FOREIGN KEY
+        - deferrable: 0
+          expression: ''
+          fields:
+            - src_pkg
+          match_type: ''
+          name: src_ver_fk_src_pkg
+          on_delete: CASCADE
+          on_update: CASCADE
+          options: []
+          reference_fields:
+            - id
+          reference_table: src_pkg
+          type: FOREIGN KEY
+      fields:
+        based_on:
+          data_type: integer
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: based_on
+          order: 6
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        maintainer:
+          data_type: integer
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: maintainer
+          order: 4
+          size:
+            - 0
+        src_pkg:
+          data_type: integer
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: src_pkg
+          order: 2
+          size:
+            - 0
+        upload_date:
+          data_type: timestamp with time zone
+          default_value: !!perl/ref
+            =: current_timestamp
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: upload_date
+          order: 5
+          size:
+            - 0
+        ver:
+          data_type: debversion
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: ver
+          order: 3
+          size:
+            - 0
+      indices:
+        - fields:
+            - based_on
+          name: src_ver_idx_based_on
+          options: []
+          type: NORMAL
+        - fields:
+            - maintainer
+          name: src_ver_idx_maintainer
+          options: []
+          type: NORMAL
+        - fields:
+            - src_pkg
+          name: src_ver_idx_src_pkg
+          options: []
+          type: NORMAL
+      name: src_ver
+      options: []
+      order: 20
+    suite:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - suite_name
+          match_type: ''
+          name: suite_suite_name_key
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+      fields:
+        active:
+          data_type: boolean
+          default_value: !!perl/ref
+            =: true
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: active
+          order: 5
+          size:
+            - 0
+        codename:
+          data_type: text
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: codename
+          order: 4
+          size:
+            - 0
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        suite_name:
+          data_type: text
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: suite_name
+          order: 2
+          size:
+            - 0
+        version:
+          data_type: text
+          default_value: ~
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: version
+          order: 3
+          size:
+            - 0
+      indices: []
+      name: suite
+      options: []
+      order: 10
+    table_comments:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - table_name
+          match_type: ''
+          name: table_comments_table_name_key
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+      fields:
+        comment_text:
+          data_type: text
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 0
+          name: comment_text
+          order: 2
+          size:
+            - 0
+        table_name:
+          data_type: text
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: table_name
+          order: 1
+          size:
+            - 0
+      indices: []
+      name: table_comments
+      options: []
+      order: 11
+    tag:
+      constraints:
+        - deferrable: 1
+          expression: ''
+          fields:
+            - id
+          match_type: ''
+          name: ''
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: PRIMARY KEY
+        - deferrable: 1
+          expression: ''
+          fields:
+            - tag
+          match_type: ''
+          name: tag_tag_key
+          on_delete: ''
+          on_update: ''
+          options: []
+          reference_fields: []
+          reference_table: ''
+          type: UNIQUE
+      fields:
+        id:
+          data_type: integer
+          default_value: ~
+          is_auto_increment: 1
+          is_nullable: 0
+          is_primary_key: 1
+          is_unique: 0
+          name: id
+          order: 1
+          size:
+            - 0
+        obsolete:
+          data_type: boolean
+          default_value: !!perl/ref
+            =: false
+          is_nullable: 1
+          is_primary_key: 0
+          is_unique: 0
+          name: obsolete
+          order: 3
+          size:
+            - 0
+        tag:
+          data_type: text
+          default_value: ~
+          is_nullable: 0
+          is_primary_key: 0
+          is_unique: 1
+          name: tag
+          order: 2
+          size:
+            - 0
+      indices: []
+      name: tag
+      options: []
+      order: 12
+  triggers: {}
+  views: {}
+translator:
+  add_drop_table: 0
+  filename: ~
+  no_comments: 0
+  parser_args:
+    sources:
+      - Arch
+      - BinAssociation
+      - BinPkg
+      - BinVer
+      - BinaryVersion
+      - Bug
+      - BugBinpackage
+      - BugBlock
+      - BugMerged
+      - BugMessage
+      - BugPackage
+      - BugSrcpackage
+      - BugStatusCache
+      - BugTag
+      - BugVer
+      - ColumnComment
+      - Correspondent
+      - CorrespondentFullName
+      - Maintainer
+      - Message
+      - MessageCorrespondent
+      - MessageRef
+      - Severity
+      - SrcAssociation
+      - SrcPkg
+      - SrcVer
+      - Suite
+      - TableComment
+      - Tag
+  parser_type: SQL::Translator::Parser::DBIx::Class
+  producer_args: {}
+  producer_type: SQL::Translator::Producer::YAML
+  show_warnings: 0
+  trace: 0
+  version: 0.11018

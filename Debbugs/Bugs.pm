@@ -37,6 +37,7 @@ incomplete) to slowest (and most complete).]
 
 use warnings;
 use strict;
+use feature 'state';
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use Exporter qw(import);
 
@@ -55,7 +56,7 @@ use Params::Validate qw(validate_with :types);
 use IO::File;
 use Debbugs::Status qw(splitpackages get_bug_status);
 use Debbugs::Packages qw(getsrcpkgs getpkgsrc);
-use Debbugs::Common qw(getparsedaddrs package_maintainer getmaintainers make_list);
+use Debbugs::Common qw(getparsedaddrs package_maintainer getmaintainers make_list hash_slice);
 use Fcntl qw(O_RDONLY);
 use MLDBM qw(DB_File Storable);
 use List::AllUtils qw(first);
@@ -152,55 +153,65 @@ bug should not.
 
 =cut
 
+state $_non_search_key_regex = qr/^(bugs|archive|usertags|schema)$/;
+
+my %_get_bugs_common_options =
+    (package   => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     src       => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     maint     => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     submitter => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     severity  => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     status    => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     tag       => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     owner     => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     dist      => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     correspondent => {type => SCALAR|ARRAYREF,
+                       optional => 1,
+                      },
+     affects   => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     function  => {type => CODEREF,
+                   optional => 1,
+                  },
+     bugs      => {type => SCALAR|ARRAYREF,
+                   optional => 1,
+                  },
+     archive   => {type => BOOLEAN|SCALAR,
+                   default => 0,
+                  },
+     usertags  => {type => HASHREF,
+                   optional => 1,
+                  },
+     schema => {type     => OBJECT,
+                optional => 1,
+               },
+    );
+
+
+state $_get_bugs_options = {%_get_bugs_common_options};
 sub get_bugs{
      my %param = validate_with(params => \@_,
-			       spec   => {package   => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  src       => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  maint     => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  submitter => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  severity  => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  status    => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  tag       => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  owner     => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  dist      => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  correspondent => {type => SCALAR|ARRAYREF,
-							    optional => 1,
-							   },
-					  affects   => {type => SCALAR|ARRAYREF,
-							optional => 1,
-						       },
-					  function  => {type => CODEREF,
-							optional => 1,
-						       },
-					  bugs      => {type => SCALAR|ARRAYREF,
-							optional => 1,
-						       },
-					  archive   => {type => BOOLEAN|SCALAR,
-							default => 0,
-						       },
-					  usertags  => {type => HASHREF,
-							optional => 1,
-						       },
-					 },
-			      );
+			       spec   => $_get_bugs_options,
+                              );
 
      # Normalize options
      my %options = %param;
@@ -213,7 +224,7 @@ sub get_bugs{
 	  return keys %bugs;
      }
      # A configuration option will set an array that we'll use here instead.
-     for my $routine (qw(Debbugs::Bugs::get_bugs_by_idx Debbugs::Bugs::get_bugs_flatfile)) {
+     for my $routine (qw(Debbugs::Bugs::get_bugs_by_db Debbugs::Bugs::get_bugs_by_idx Debbugs::Bugs::get_bugs_flatfile)) {
 	  my ($package) = $routine =~ m/^(.+)\:\:/;
 	  eval "use $package;";
 	  if ($@) {
@@ -388,45 +399,17 @@ searches.
 
 =cut
 
+
+state $_get_bugs_by_idx_options =
+   {hash_slice(%_get_bugs_common_options,
+               (qw(package submitter severity tag archive),
+                qw(owner src maint bugs correspondent),
+                qw(affects usertags))
+              )
+   };
 sub get_bugs_by_idx{
      my %param = validate_with(params => \@_,
-			       spec   => {package   => {type => SCALAR|ARRAYREF,
-							optional => 1,
-						       },
-					  submitter => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  severity  => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  tag       => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  archive   => {type => BOOLEAN,
-							default => 0,
-						       },
-					  owner     => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  src       => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  maint     => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  bugs      => {type => SCALAR|ARRAYREF,
-							optional => 1,
-						       },
-					  correspondent => {type => SCALAR|ARRAYREF,
-							    optional => 1,
-							   },
-					  affects => {type => SCALAR|ARRAYREF,
-						      optional => 1,
-						     },
-					  usertags  => {type => HASHREF,
-							optional => 1,
-						       },
-					 },
+			       spec   => $_get_bugs_by_idx_options
 			      );
      my %bugs = ();
 
@@ -450,11 +433,11 @@ sub get_bugs_by_idx{
 	  delete @param{qw(maint src)};
 	  $param{package} = [@packages];
      }
-     my $keys = grep {$_ !~ /^(archive|usertags|bugs)$/} keys(%param);
+     my $keys = grep {$_ !~ $_non_search_key_regex} keys(%param);
      die "Need at least 1 key to search by" unless $keys;
      my $arc = $param{archive} ? '-arc':'';
      my %idx;
-     for my $key (grep {$_ !~ /^(archive|usertags|bugs)$/} keys %param) {
+     for my $key (grep {$_ !~ $_non_search_key_regex} keys %param) {
 	  my $index = $key;
 	  $index = 'submitter-email' if $key eq 'submitter';
 	  $index = "$config{spool_dir}/by-${index}${arc}.idx";
@@ -497,6 +480,140 @@ sub get_bugs_by_idx{
 }
 
 
+=head2 get_bugs_by_db
+
+This routine uses the database to try to speed up
+searches.
+
+
+=cut
+
+state $_get_bugs_by_db_options =
+   {hash_slice(%_get_bugs_common_options,
+               (qw(package submitter severity tag archive),
+                qw(owner src maint bugs correspondent),
+                qw(affects usertags))
+              ),
+    schema => {type     => OBJECT,
+              },
+   };
+sub get_bugs_by_db{
+     my %param = validate_with(params => \@_,
+			       spec   => $_get_bugs_by_db_options,
+                              );
+     my %bugs = ();
+
+     my $keys = grep {$_ !~ $_non_search_key_regex} keys(%param);
+     die "Need at least 1 key to search by" unless $keys;
+     my $rs = $param{schema}->resultset('Bug');
+     if (exists $param{package}) {
+	 $rs = $rs->search({-or => {map 'bin_package.'}})
+     }
+     if (exists $param{severity}) {
+         $rs = $rs->search({'severity.severity' =>
+			    [make_list($param{severity})],
+			   },
+                          {join => 'severity'},
+                          );
+     }
+     for my $key (qw(owner submitter done)) {
+         if (exists $param{$key}) {
+             $rs = $rs->search({"${key}.addr" =>
+				[make_list($param{$key})],
+			       },
+                              {join => $key},
+                              );
+         }
+     }
+     if (exists $param{correspondent}) {
+         $rs = $rs->search({'message_correspondents.addr' =>
+			    [make_list($param{correspondent})],
+			   },
+                          {join => {correspondent =>
+                                   {bug_messages =>
+                                   {message => 'message_correspondents'}}}},
+                          );
+     }
+     if (exists $param{affects}) {
+	 my @aff_list = make_list($param{affects});
+         $rs = $rs->search({-or => {'bin_pkg.pkg' =>
+				    [@aff_list],
+				    'src_pkg.pkg' =>
+				    [@aff_list],
+				   },
+			   },
+                          {join => [{bug_affects_binpackages => 'bin_pkg'},
+                                   {bug_affects_srcpackages => 'src_pkg'},
+                                   ],
+                          },
+                          );
+     }
+     if (exists $param{package}) {
+         $rs = $rs->search({'bin_pkg.pkg' =>
+			    [make_list($param{package})],
+			   },
+                          {join => {bug_binpackages => 'bin_pkg'}});
+     }
+     if (exists $param{maintainer}) {
+	 my @maint_list =
+	     map {$_ eq '' ? undef : $_}
+	     make_list($param{maintainer});
+	 $rs = $rs->search({-or => {correspondent => [@maint_list],
+				    correspondent2 => [@maint_list],
+				   },
+			   },
+			  {join => {bug_affects_binpackage =>
+				   {bin_pkg =>
+				   {bin_ver =>
+				   {src_ver =>
+				   {maintainer => 'correspondent'}
+				   }}},
+				   {bug_affects_srcpackage =>
+				   {src_pkg =>
+				   {src_ver =>
+				   {maintainer => 'correspondent'}
+				   }}}}
+			  }
+			  );
+     }
+     if (exists $param{src}) {
+         $rs = $rs->search({-or => {map {('src_pkg.pkg' => $_)}
+				    make_list($param{src})},
+			   },
+                          {join => {bug_srcpackages => 'src_pkg'}});
+     }
+     # tags are very odd, because we must handle usertags.
+     if (exists $param{tag}) {
+         # bugs from usertags which matter
+         my %bugs_matching_usertags;
+         for my $bug (make_list(grep {defined $_ }
+				@{$param{usertags}}{make_list($param{tag})})) {
+             $bugs_matching_usertags{$bug} = 1;
+         }
+         # we want all bugs which either match the tag name given in
+         # param, or have a usertag set which matches one of the tag
+         # names given in param.
+         $rs = $rs->search({-or => {map {('tag.tag' => $_)}
+				    make_list($param{tag}),
+				    map {('me.id' => $_)}
+				    keys %bugs_matching_usertags
+				   },
+			   },
+                          {join => {bug_tags => 'tag'}});
+     }
+     if (exists $param{bugs}) {
+         $rs = $rs->search({-or => {map {('me.id' => $_)}
+				    make_list($param{bugs})}
+			   });
+     }
+     # handle archive
+     if (defined $param{archive} and $param{archive} ne 'both') {
+         $rs = $rs->search({'me.archived' => $param{archive}});
+     }
+     return $rs->get_column('id')->all();
+}
+
+
 =head2 get_bugs_flatfile
 
 This is the fallback search routine. It should be able to complete all
@@ -504,55 +621,15 @@ searches. [Or at least, that's the idea.]
 
 =cut
 
+state $_get_bugs_flatfile_options =
+   {hash_slice(%_get_bugs_common_options,
+               map {$_ eq 'dist'?():($_)} keys %_get_bugs_common_options
+              )
+   };
+
 sub get_bugs_flatfile{
      my %param = validate_with(params => \@_,
-			       spec   => {package   => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  src       => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  maint     => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  submitter => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  severity  => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  status    => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
-					  tag       => {type => SCALAR|ARRAYREF,
-						        optional => 1,
-						       },
- 					  owner     => {type => SCALAR|ARRAYREF,
- 						        optional => 1,
- 						       },
-					  correspondent => {type => SCALAR|ARRAYREF,
-							    optional => 1,
-							   },
-					  affects   => {type => SCALAR|ARRAYREF,
-							optional => 1,
-						       },
-# not yet supported
-# 					  dist      => {type => SCALAR|ARRAYREF,
-# 						        optional => 1,
-# 						       },
-					  bugs      => {type => SCALAR|ARRAYREF,
-							optional => 1,
-						       },
-					  archive   => {type => BOOLEAN,
-							default => 1,
-						       },
-					  usertags  => {type => HASHREF,
-							optional => 1,
-						       },
-					  function  => {type => CODEREF,
-							optional => 1,
-						       },
-					 },
+			       spec   => $_get_bugs_flatfile_options
 			      );
      my $flatfile;
      if ($param{archive}) {
@@ -753,7 +830,7 @@ sub __handle_pkg_src_and_maint{
      return grep {$packages{$_} >= $package_keys} keys %packages;
 }
 
-my %field_match = (
+state $field_match = {
     'subject' => \&__contains_field_match,
     'tags' => sub {
         my ($field, $values, $status) = @_; 
@@ -769,14 +846,14 @@ my %field_match = (
     'originator' => \&__contains_field_match,
     'forwarded' => \&__contains_field_match,
     'owner' => \&__contains_field_match,
-);
+};
 
 sub __bug_matches {
     my ($hash, $status) = @_;
     foreach my $key( keys( %$hash ) ) {
         my $value = $hash->{$key};
-	next unless exists $field_match{$key};
-	my $sub = $field_match{$key};
+	next unless exists $field_match->{$key};
+	my $sub = $field_match->{$key};
 	if (not defined $sub) {
 	    die "No defined subroutine for key: $key";
 	}

@@ -1,0 +1,868 @@
+#! /usr/bin/perl
+# debbugs-loadsql is part of debbugs, and is released
+# under the terms of the GPL version 2, or any later version, at your
+# option. See the file README and COPYING for more information.
+# Copyright 2012 by Don Armstrong <don@donarmstrong.com>.
+
+
+use warnings;
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case);
+use Pod::Usage;
+
+=head1 NAME
+
+debbugs-loadsql -- load debbugs sql database
+
+=head1 SYNOPSIS
+
+debbugs-loadsql [options] [subcommand]
+
+ Subcommands:
+  bugs help versions configuration
+  suites logs packages debinfo
+ Options:
+  --quick, -q only load changed things
+  --progress Show progress bar
+  --service, -s service name
+  --sysconfdir, -c postgresql service config dir
+  --spool-dir debbugs spool directory
+  --debug, -d debugging level (Default 0)
+  --help, -h display this help
+  --man, -m display manual
+
+=head1 SUBCOMMANDS
+
+=head2 help
+
+Display this manual
+
+=head2 bugs
+
+Add bugs (subject, number, etc) to the database
+
+   --preload create all bugs first, then add information
+
+=head2 versions
+
+Add version descendant information (which version is based on which version) to
+the database
+
+=head2 maintainers
+
+Add source maintainers to the BTS
+
+=head2 configuration
+
+Add debbugs configuration information (tags, severity, etc)
+
+=head2 suites
+
+Add suite information from ftp distribution
+
+  --ftpdists location of FTP mirror
+
+=head2 logs
+
+Add bug logs
+
+=head2 packages
+
+Add package information from the ftp archive
+
+  --ftpdists location of FTP mirror
+  --suites Suite to operate on
+
+=head2 debinfo
+
+Add package information from a debinfo file
+
+  --null -0 names of debinfo files are null separated
+
+=head1 OPTIONS
+
+=over
+
+=item B<--quick, -q>
+
+Only load changed bugs
+
+=item B<--progress>
+
+Show progress bar (requires Term::ProgressBar)
+
+=item B<--service,-s>
+
+Postgreql service to use; defaults to debbugs
+
+=item B<--sysconfdir,-c>
+
+System configuration directory to use; if not set, defaults to the
+postgresql default. [Operates by setting PGSYSCONFDIR]
+
+=item B<--spool-dir>
+
+Debbugs spool directory; defaults to the value configured in the
+debbugs configuration file.
+
+=item B<--verbose>
+
+Output more information about what is happening. Probably not useful
+if you also set --progress.
+
+=item B<--debug, -d>
+
+Debug verbosity.
+
+=item B<--help, -h>
+
+Display brief useage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+
+=cut
+
+
+use vars qw($DEBUG);
+
+use Debbugs::Common (qw(checkpid lockpid get_hashname getparsedaddrs getbugcomponent make_list getsourcemaintainers),
+		     qw(hash_slice open_compressed_file),);
+use Debbugs::Config qw(:config);
+use Debbugs::Status qw(read_bug split_status_fields);
+use Debbugs::Log;
+use Debbugs::DB;
+use Debbugs::DB::Load qw(:load_bug :load_package :load_suite);
+use DateTime;
+use File::stat;
+use File::Basename;
+use File::Spec;
+use File::Find;
+use IO::Dir;
+use IO::File;
+use IO::Uncompress::AnyUncompress;
+use Encode qw(decode_utf8);
+use List::MoreUtils qw(natatime);
+
+my %options =
+    (debug           => 0,
+     help            => 0,
+     man             => 0,
+     verbose         => 0,
+     quiet           => 0,
+     quick           => 0,
+     service         => $config{debbugs_db},
+     progress        => 0,
+    );
+
+Getopt::Long::Configure('pass_through');
+GetOptions(\%options,
+           'quick|q',
+           'service|s=s',
+	   'dsn=s',
+           'sysconfdir|c=s',
+           'progress!',
+           'spool_dir|spool-dir=s',
+           'verbose|v+',
+           'quiet+',
+           'debug|d+','help|h|?','man|m');
+Getopt::Long::Configure('default');
+
+pod2usage() if $options{help};
+pod2usage({verbose=>2}) if $options{man};
+
+$DEBUG = $options{debug};
+
+my %subcommands =
+    ('bugs' => {function => \&add_bugs,
+		arguments => {'preload' => 0},
+               },
+     'versions' => {function => \&add_versions,
+                   },
+     'debinfo' => {function => \&add_debinfo,
+                   arguments => {'0|null' => 0,
+				 'debinfo_dir|debinfo-dir=s' => 0,
+				},
+                  },
+     'maintainers' => {function => \&add_maintainers,
+                      },
+     'configuration' => {function => \&add_configuration,
+                        },
+     'suites' => {function => \&add_suite,
+		  arguments => {'ftpdists=s' => 1,
+			       },
+                 },
+     'logs' => {function => \&add_logs,
+               },
+     'bugs_and_logs' => {function => \&add_bugs_and_logs,
+			},
+     'packages' => {function => \&add_packages,
+		    arguments => {'ftpdists=s' => 1,
+				  'suites=s@' => 0,
+				 },
+		   },
+     'help' => {function => sub {pod2usage({verbose => 2});}}
+    );
+
+my @USAGE_ERRORS;
+$options{verbose} = $options{verbose} - $options{quiet};
+
+if ($options{progress}) {
+    eval "use Term::ProgressBar";
+    push @USAGE_ERRORS, "You asked for a progress bar, but Term::ProgressBar isn't installed" if $@;
+}
+
+
+pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
+
+if (exists $options{sysconfdir}) {
+    if (not defined $options{sysconfdir} or not length $options{sysconfdir}) {
+        delete $ENV{PGSYSCONFDIR};
+    } else {
+        $ENV{PGSYSCONFDIR} = $options{sysconfdir};
+    }
+}
+
+if (exists $options{spool_dir} and defined $options{spool_dir}) {
+    $config{spool_dir} = $options{spool_dir};
+}
+
+my $prog_bar;
+if ($options{progress}) {
+    $prog_bar = eval "Term::ProgressBar->new({count => 1,ETA=>q(linear)})";
+    warn "Unable to initialize progress bar: $@" if not $prog_bar;
+}
+
+
+my ($subcommand) = shift @ARGV;
+if (not defined $subcommand) {
+    $subcommand = 'help';
+    print STDERR "You must provide a subcommand; displaying usage.\n";
+    pod2usage();
+} elsif (not exists $subcommands{$subcommand}) {
+    print STDERR "$subcommand is not a valid subcommand; displaying usage.\n";
+    pod2usage();
+}
+
+binmode(STDOUT,':encoding(UTF-8)');
+binmode(STDERR,':encoding(UTF-8)');
+
+my $opts =
+    handle_subcommand_arguments(\@ARGV,$subcommands{$subcommand}{arguments});
+$subcommands{$subcommand}{function}->(\%options,$opts,$prog_bar,\%config,\@ARGV);
+
+sub add_bugs {
+    my ($options,$opts,$p,$config,$argv) = @_;
+    chdir($config->{spool_dir}) or
+        die "chdir $config->{spool_dir} failed: $!";
+
+    my $verbose = $options->{debug};
+
+    my $initialdir = "db-h";
+
+    if (defined $argv->[0] and $argv->[0] eq "archive") {
+        $initialdir = "archive";
+    }
+    my $s = db_connect($options);
+
+
+    my %tags;
+    my %severities;
+    my %queue;
+
+    if ($opts->{preload}) {
+	my @bugs;
+	walk_bugs([(@{$argv}?@{$argv} : $initialdir)],
+		  undef,
+		  'summary',
+		  undef,
+		  sub {
+		    push @bugs,@_;
+		  },
+		  10000
+		 );
+	$s->resultset('Bug')->quick_insert_bugs(@bugs);
+    }
+    walk_bugs([(@{$argv}?@{$argv} : $initialdir)],
+              $p,
+              'summary',
+              $verbose,
+              sub {
+		my @bugs = @_;
+		my @bugs_to_update;
+		if ($options{quick}) {
+		    @bugs_to_update =
+			bugs_to_update($s,$initialdir,@bugs);
+		} else {
+		    @bugs_to_update = @bugs;
+		}
+		eval {
+		  $s->txn_do(sub {
+			       for my $bug (@bugs_to_update) {
+				 load_bug(db => $s,
+					  bug => $bug,
+					  tags => \%tags,
+					  severities => \%severities,
+					  queue => \%queue);
+			       }
+			     });
+		};
+		if ($@) {
+		  die "failure while trying to load bug: $@";
+		}
+              },
+	      50
+             );
+    handle_load_bug_queue(db => $s,
+                          queue => \%queue);
+}
+
+sub add_versions {
+    my ($options,$opts,$p,$config,$argv) = @_;
+
+    my $s = db_connect($options);
+
+    my @files = @{$argv};
+    $p->target(scalar @files) if $p;
+    for my $file (@files) {
+        my $fh = IO::File->new($file,'r') or
+            die "Unable to open $file for reading: $!";
+        my @versions;
+        my %src_pkgs;
+        while (<$fh>) {
+            chomp;
+            next unless length $_;
+            if (/(\w[-+0-9a-z.]+) \(([^\(\) \t]+)\)/) {
+                push @versions, [$1,$2];
+            }
+        }
+        close($fh);
+        my $ancestor_sv;
+        for my $i (reverse 0..($#versions)) {
+            my $sp;
+            if (not defined $src_pkgs{$versions[$i][0]}) {
+                $src_pkgs{$versions[$i][0]} =
+                    $s->resultset('SrcPkg')->
+		    get_src_pkg_id($versions[$i][0]);
+            }
+            $sp = $src_pkgs{$versions[$i][0]};
+            # There's probably something wrong if the source package
+            # doesn't exist, but we'll skip it for now
+            last if not defined $sp;
+            my $sv = $s->resultset('SrcVer')->find({src_pkg=>$sp,
+                                                    ver => $versions[$i][1],
+                                                   });
+	    last if not defined $sv;
+            if (defined $ancestor_sv and defined $sv and not defined $sv->based_on()) {
+                $sv->update({based_on => $ancestor_sv})
+            }
+            $ancestor_sv = $sv->id();
+        }
+        $p->update() if $p;
+    }
+    $p->remove() if $p;
+}
+
+sub add_debinfo {
+    my ($options,$opts,$p,$config,$argv) = @_;
+
+    my @files = @{$argv};
+    if (exists $opts->{debinfo_dir} and not @files) {
+	find(sub {
+		 if (-f $_ and /\.debinfo$/) {
+		     push @files, $File::Find::name;
+		 }
+	     },
+	     $opts->{debinfo_dir}
+	    );
+    }
+    if (not @files) {
+       {
+	   local $/ = "\n";
+           local $/ = "\0" if $opts->{0};
+           while (<STDIN>) {
+	       s/\n$// unless $opts->{0};
+	       s/\0$// if $opts->{0};
+               push @files, $_;
+           }
+       }
+    }
+    return unless @files;
+    my $s = db_connect($options);
+    $p->target(scalar @files) if $p;
+    my $it = natatime 100, @files;
+    while (my @v = $it->()) {
+	my %cache;
+	my @debinfos;
+FILE:	for my $file (@v) {
+	    my $fh = IO::File->new($file,'r') or
+		die "Unable to open $file for reading: $!";
+	    my $f_stat = stat($file);
+	    my $ct_date = DateTime->from_epoch(epoch => $f_stat->ctime);
+	    my @file_debinfos;
+	    while (<$fh>) {
+		chomp;
+		next unless length $_;
+		my ($binname, $binver, $binarch, $srcname, $srcver) = split;
+		# if $srcver is not defined, this is probably a broken
+		# .debinfo file [they were causing #686106, see commit
+		# 49c85ab8 in dak.] Basically, $binarch didn't get put into
+		# the file, so we'll fudge it from the filename.
+		if (not defined $srcver) {
+		    ($srcname,$srcver) = ($binarch,$srcname);
+		    ($binarch) = $file =~ /_([a-z0-9-]+)\.debinfo/;
+		}
+		# It turns out that there are debinfo files which are horribly
+		# screwed up, and have junk in them. We need to discard them
+		# completely
+		if (not defined $srcname or
+		    not defined $srcver or
+		    not defined $binname or
+		    not defined $binver or
+		    $srcname !~ /^$config{package_name_re}$/o or
+		    $binname !~ /^$config{package_name_re}$/o or
+		    $srcver !~ /^$config{package_version_re}$/o or
+		    $binver !~ /^$config{package_version_re}$/o
+		   ) {
+		    print STDERR "malformed debinfo: $file\n";
+		    next FILE;
+		}
+		push @file_debinfos,
+		    [$binname,$binver,$binarch,$srcname,$srcver,$ct_date];
+	    }
+	    push @debinfos,
+		@file_debinfos;
+	}
+	$s->txn_do(
+	    sub {
+		for my $di (@debinfos) {
+		    Debbugs::DB::Load::load_debinfo($s,@{$di}[0..5],\%cache);
+		}
+	    });
+	$p->update($p->last_update()+@v) if $p;
+    }
+    $p->remove() if $p;
+}
+
+sub add_maintainers {
+    my ($options,$opts,$p,$config,$argv) = @_;
+
+    my $s = db_connect($options);
+    my $maintainers = getsourcemaintainers() // {};
+    $p->target(2) if $p;
+    ## get all of the maintainers, and add the missing ones
+    my $maints = $s->resultset('Maintainer')->
+	get_maintainers(values %{$maintainers});
+    $p->update() if $p;
+    my @svs = $s->resultset('SrcVer')->
+	search({maintainer => undef
+	       },
+	      {join => 'src_pkg',
+	       group_by => 'me.src_pkg, src_pkg.pkg',
+	       result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+	       columns => [qw(me.src_pkg src_pkg.pkg)],
+	      }
+	      )->all();
+    $p->target(2+@svs) if $p;
+    $p->update() if $p;
+    for my $sv (@svs) {
+	if (exists $maintainers->{$sv->{src_pkg}{pkg}}) {
+	    my $pkg = $sv->{src_pkg}{pkg};
+	    my $maint = $maints->
+	       {$maintainers->{$pkg}};
+	    $s->txn_do(sub {$s->resultset('SrcVer')->
+				search({maintainer => undef,
+					'src_pkg.pkg' => $pkg
+				       },
+				      {join => 'src_pkg'}
+				      )->update({maintainer => $maint})
+				  });
+	}
+	$p->update() if $p;
+    }
+    $p->remove() if $p;
+}
+
+sub add_configuration {
+    my ($options,$opts,$p,$config,$argv) = @_;
+
+    my $s = db_connect($options);
+
+    # tags
+    # add all tags
+    my %tags;
+    for my $tag (@{$config{tags}}) {
+	$tags{$tag} = 1;
+	$s->resultset('Tag')->find_or_create({tag => $tag});
+    }
+    # mark obsolete tags
+    for my $tag ($s->resultset('Tag')->search_rs()->all()) {
+	next if exists $tags{$tag->tag};
+	$tag->obsolete(1);
+	$tag->update;
+    }
+
+    # severities
+    my %sev_names;
+    my $order = -1;
+    for my $sev_name (($config{default_severity},@{$config{severity_list}})) {
+        # add all severitites
+        my $sev = $s->resultset('Severity')->find_or_create({severity => $sev_name});
+        # mark strong severities
+        if (grep {$_ eq $sev_name} @{$config{strong_severities}}) {
+            $sev->strong(1);
+        }
+        $sev->ordering($order);
+        $sev->update();
+        $order++;
+        $sev_names{$sev_name} = 1;
+    }
+    # mark obsolete severities
+    for my $sev ($s->resultset('Severity')->search_rs()->all()) {
+        next if exists $sev_names{$sev->severity()};
+        $sev->obsolete(1);
+        $sev->update();
+    }
+}
+
+sub add_suite {
+    my ($options,$opts,$p,$config,$argv) = @_;
+    # suites
+
+    my $s = db_connect($options);
+    my $dist_dir = IO::Dir->new($opts->{ftpdists});
+    my @dist_names =
+	grep { $_ !~ /^\./ and
+	       -d $opts->{ftpdists}.'/'.$_ and
+	       not -l $opts->{ftpdists}.'/'.$_
+	   } $dist_dir->read;
+    while (my $dist = shift @dist_names) {
+	my $dist_dir = $opts->{ftpdists}.'/'.$dist;
+	my ($dist_info,$package_files) =
+	    read_release_file($dist_dir.'/Release');
+	load_suite($s,$dist_info);
+    }
+}
+
+sub add_logs {
+    my ($options,$opts,$p,$config,$argv) = @_;
+
+    chdir($config->{spool_dir}) or
+        die "chdir $config->{spool_dir} failed: $!";
+
+    my $verbose = $options->{debug};
+
+    my $initialdir = "db-h";
+
+    if (defined $argv->[0] and $argv->[0] eq "archive") {
+        $initialdir = "archive";
+    }
+    my $s = db_connect($options);
+
+    walk_bugs([(@{$argv}?@{$argv} : $initialdir)],
+              $p,
+              'log',
+              $verbose,
+              sub {
+                  my $bug = shift;
+		  my $stat = stat(getbugcomponent($bug,'log',$initialdir));
+                  if (not defined $stat) {
+                      print STDERR "Unable to stat $bug $!\n";
+                      next;
+                  }
+                  if ($options{quick}) {
+                      my $rs = $s->resultset('Bug')->
+			  search({id=>$bug})->single();
+                      return if defined $rs and
+			  $stat->mtime <= $rs->last_modified()->epoch();
+                  }
+                  eval {
+                      load_bug_log(db => $s,
+                                   bug => $bug);
+                  };
+                  if ($@) {
+                      die "failure while trying to load bug log $bug\n$@";
+                  }
+              });
+}
+
+sub add_bugs_and_logs {
+    my ($options,$opts,$p,$config,$argv) = @_;
+
+    chdir($config->{spool_dir}) or
+        die "chdir $config->{spool_dir} failed: $!";
+
+    my $verbose = $options->{debug};
+
+    my $initialdir = "db-h";
+
+    if (defined $argv->[0] and $argv->[0] eq "archive") {
+        $initialdir = "archive";
+    }
+    my $s = db_connect($options);
+
+    my %tags;
+    my %severities;
+    my %queue;
+
+    walk_bugs([(@{$argv}?@{$argv} : $initialdir)],
+              $p,
+              'summary',
+              $verbose,
+              sub {
+                  my @bugs = @_;
+		  my @bugs_to_update;
+		  if ($options{quick}) {
+		      @bugs_to_update =
+			  bugs_to_update($s,$initialdir,@bugs);
+		  } else {
+		      @bugs_to_update = @bugs;
+		  }
+		  eval {
+		      $s->txn_do(sub {
+				     for my $bug (@bugs_to_update) {
+					 load_bug(db => $s,
+						  bug => $bug,
+						  tags => \%tags,
+						  severities => \%severities,
+						  queue => \%queue);
+				     }
+				 });
+		  };
+		  if ($@) {
+		      die "failure while trying to load bug: $@";
+		  }
+		  for my $bug (@bugs) {
+		      my $stat = stat(getbugcomponent($bug,'log',$initialdir));
+		      if (not defined $stat) {
+			  print STDERR "Unable to stat $bug $!\n";
+			  next;
+		      }
+		      if ($options{quick}) {
+			  my $rs = $s->resultset('Bug')->
+			      search({id=>$bug})->single();
+			  return if defined $rs and
+			      $stat->mtime <= $rs->last_modified()->epoch();
+		      }
+		      eval {
+			  load_bug_log(db => $s,
+				       bug => $bug);
+		      };
+		      if ($@) {
+			  die "failure while trying to load bug log $bug\n$@";
+		      }
+		  }
+              },
+	      50
+	     );
+    handle_load_bug_queue(db=>$s,
+			  queue => \%queue,
+			 );
+
+}
+
+sub add_packages {
+    my ($options,$opts,$p,$config,$argv) = @_;
+
+    my $dist_dir = IO::Dir->new($opts->{ftpdists});
+    my @dist_names =
+	grep { $_ !~ /^\./ and
+	       -d $opts->{ftpdists}.'/'.$_ and
+	       not -l $opts->{ftpdists}.'/'.$_
+	   } $dist_dir->read;
+    my %s_p;
+    while (my $dist = shift @dist_names) {
+	my $dist_dir = $opts->{ftpdists}.'/'.$dist;
+	my ($dist_info,$package_files) =
+	    read_release_file($dist_dir.'/Release');
+	$s_p{$dist_info->{Codename}} = $package_files;
+    }
+    my $tot = 0;
+    for my $suite (keys %s_p) {
+	for my $component (keys %{$s_p{$suite}}) {
+	    $tot += scalar keys %{$s_p{$suite}{$component}};
+	}
+    }
+    $p->target($tot) if $p;
+    my $i = 0;
+    my $avg_pkgs = 0;
+    my $tot_suites = scalar keys %s_p;
+    my $done_suites=0;
+    my $completed_pkgs=0;
+    # parse packages files
+    for my $suite (keys %s_p) {
+	my @pkgs;
+	for my $component (keys %{$s_p{$suite}}) {
+	    my @archs = keys %{$s_p{$suite}{$component}};
+	    if (grep {$_ eq 'source'} @archs) {
+		@archs = ('source',grep {$_ ne 'source'} @archs);
+	    }
+	    for my $arch (@archs) {
+		my $pfh =  open_compressed_file($s_p{$suite}{$component}{$arch}) or
+		    die "Unable to open $s_p{$suite}{$component}{$arch} for reading: $!";
+		local $_;
+		local $/ = '';	# paragraph mode
+		while (<$pfh>) {
+		    my %pkg;
+		    for my $field (qw(Package Maintainer Version Source)) {
+			/^\Q$field\E: (.*)/m;
+			$pkg{$field} = $1;
+		    }
+		    next unless defined $pkg{Package} and
+			defined $pkg{Version};
+		    push @pkgs,[$arch,$component,\%pkg];
+		}
+	    }
+	}
+	my $s = db_connect($options);
+	if ($avg_pkgs==0) {
+	    $avg_pkgs = @pkgs;
+	}
+        $p->target($avg_pkgs*($tot_suites-$done_suites-1)+
+		   $completed_pkgs+@pkgs) if $p;
+	load_packages($s,
+		      $suite,
+		      \@pkgs,
+		      $p);
+	$avg_pkgs=($avg_pkgs*$done_suites + @pkgs)/($done_suites+1);
+	$completed_pkgs += @pkgs;
+	$done_suites++;
+    }
+    $p->remove() if $p;
+}
+
+sub handle_subcommand_arguments {
+    my ($argv,$args) = @_;
+    my $subopt = {};
+    Getopt::Long::GetOptionsFromArray($argv,
+                              $subopt,
+                              keys %{$args},
+                             );
+    my @usage_errors;
+    for my $arg  (keys %{$args}) {
+        next unless $args->{$arg};
+        my $r_arg = $arg; # real argument name
+        $r_arg =~ s/[=\|].+//g;
+        if (not defined $subopt->{$r_arg}) {
+            push @usage_errors, "You must give a $r_arg option";
+        }
+    }
+    pod2usage(join("\n",@usage_errors)) if @usage_errors;
+    return $subopt;
+}
+
+sub get_lock{
+    my ($subcommand,$config,$options) = @_;
+    if (not lockpid($config->{spool_dir}.'/lock/debbugs-loadsql-$subcommand')) {
+        if ($options->{quick}) {
+            # If this is a quick run, just exit
+            print STDERR "Another debbugs-loadsql is running; stopping\n" if $options->{verbose};
+            exit 0;
+        }
+        print STDERR "Another debbugs-loadsql is running; stopping\n";
+        exit 1;
+    }
+}
+
+sub db_connect {
+    my ($options) = @_;
+    # connect to the database; figure out how to handle errors
+    # properly here.
+    my $s = Debbugs::DB->connect($options->{dsn} //
+				 $options->{service}) or
+        die "Unable to connect to database: ";
+}
+
+sub read_release_file {
+    my ($file) = @_;
+    # parse release
+    my $rfh =  open_compressed_file($file) or
+	die "Unable to open $file for reading: $!";
+    my %dist_info;
+    my $in_sha1;
+    my %p_f;
+    while (<$rfh>) {
+	chomp;
+	if (s/^(\S+):\s*//) {
+	    if ($1 eq 'SHA1'or $1 eq 'SHA256') {
+		$in_sha1 = 1;
+		next;
+	    }
+	    $dist_info{$1} = $_;
+	} elsif ($in_sha1) {
+	    s/^\s//;
+	    my ($sha,$size,$f) = split /\s+/,$_;
+	    next unless $f =~ /(?:Packages|Sources)(?:\.gz|\.xz)$/;
+	    next unless $f =~ m{^([^/]+)/([^/]+)/([^/]+)$};
+	    my ($component,$arch,$package_source) = ($1,$2,$3);
+	    $arch =~ s/binary-//;
+	    next if exists $p_f{$component}{$arch};
+	    $p_f{$component}{$arch} = File::Spec->catfile(dirname($file),$f);
+	}
+    }
+    return (\%dist_info,\%p_f);
+}
+
+sub walk_bugs {
+    my ($dirs,$p,$what,$verbose,$sub,$n) = @_;
+    my @dirs = @{$dirs};
+    my $tot_dirs = @dirs;
+    my $done_dirs = 0;
+    my $avg_subfiles = 0;
+    my $completed_files = 0;
+    $n //= 1;
+    while (my $dir = shift @dirs) {
+        printf "Doing dir %s ...\n", $dir if $verbose;
+
+        opendir(DIR, "$dir/.") or die "opendir $dir: $!";
+        my @subdirs = readdir(DIR);
+        closedir(DIR);
+
+        my @list = map { m/^(\d+)\.$what$/?($1):() } @subdirs;
+        $tot_dirs -= @dirs;
+        push @dirs, map { m/^(\d+)$/ && -d "$dir/$1"?("$dir/$1"):() } @subdirs;
+        $tot_dirs += @dirs;
+        if ($avg_subfiles == 0) {
+            $avg_subfiles = @list;
+        }
+
+        $p->target($avg_subfiles*($tot_dirs-$done_dirs)+$completed_files+@list) if $p;
+        $avg_subfiles = ($avg_subfiles * $done_dirs + @list) / ($done_dirs+1);
+        $done_dirs += 1;
+
+	my $it = natatime $n,@list;
+	while (my @bugs = $it->()) {
+	  $sub->(@bugs);
+	  $completed_files += scalar @bugs;
+	  $p->update($completed_files) if $p;
+	  print "Up to $completed_files bugs...\n"
+	    if ($completed_files % 100 == 0 && $verbose);
+        }
+    }
+    $p->remove() if $p;
+}
+
+
+sub bugs_to_update {
+    my ($s,$initialdir,@bugs) = @_;
+    my @bugs_to_update;
+    for my $bug (@bugs) {
+	my $stat = stat(getbugcomponent($bug,'summary',$initialdir));
+	if (not defined $stat) {
+	    print STDERR "Unable to stat $bug $!\n";
+	    next;
+	}
+	my $rs = $s->resultset('Bug')->search({id=>$bug})->single();
+	next if defined $rs and $stat->mtime <= $rs->last_modified()->epoch();
+	push @bugs_to_update, $bug;
+    }
+    @bugs_to_update;
+}
+
+
+__END__

@@ -40,6 +40,7 @@ BEGIN{
      @EXPORT = ();
      %EXPORT_TAGS = (util   => [qw(getbugcomponent getbuglocation getlocationpath get_hashname),
 				qw(appendfile overwritefile buglog getparsedaddrs getmaintainers),
+                                qw(getsourcemaintainers getsourcemaintainers_reverse),
 				qw(bug_status),
 				qw(getmaintainers_reverse),
 				qw(getpseudodesc),
@@ -333,6 +334,36 @@ sub getmaintainers_reverse{
      return $_maintainer_rev;
 }
 
+=head2 getsourcemaintainers
+
+     my $maintainer = getsourcemaintainers()->{debbugs}
+
+Returns a hashref of src_package => maintainer pairs.
+
+=cut
+
+our $_source_maintainer = undef;
+our $_source_maintainer_rev = undef;
+sub getsourcemaintainers {
+    return $_source_maintainer if defined $_source_maintainer;
+    package_maintainer(rehash => 1);
+    return $_source_maintainer;
+}
+
+=head2 getsourcemaintainers_reverse
+
+     my @src_packages = @{getsourcemaintainers_reverse->{'don@debian.org'}||[]};
+
+Returns a hashref of maintainer => [qw(list of source packages)] pairs.
+
+=cut
+
+sub getsourcemaintainers_reverse{
+     return $_source_maintainer_rev if defined $_source_maintainer_rev;
+     package_maintainer(rehash => 1);
+     return $_source_maintainer_rev;
+}
+
 =head2 package_maintainer
 
      my @s = package_maintainer(source => [qw(foo bar baz)],
@@ -358,8 +389,6 @@ files; defaults to 0
 
 =cut
 
-our $_source_maintainer = undef;
-our $_source_maintainer_rev = undef;
 sub package_maintainer {
     my %param = validate_with(params => \@_,
 			      spec   => {source => {type => SCALAR|ARRAYREF,

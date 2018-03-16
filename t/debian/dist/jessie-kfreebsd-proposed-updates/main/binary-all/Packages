@@ -1,0 +1,64 @@
+Package: glibc-doc
+Source: glibc
+Version: 2.19-18+deb8u6~kbsd8u1
+Installed-Size: 2223
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Suggests: glibc-doc-reference
+Description: GNU C Library: Documentation
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: ec34f59d4398ff8ca003177c6585bf0a
+Tag: devel::doc, devel::lang:c, devel::library, made-of::html, made-of::info,
+ role::documentation, suite::gnu
+Section: doc
+Priority: optional
+Filename: pool/main/g/glibc/glibc-doc_2.19-18+deb8u6~kbsd8u1_all.deb
+Size: 2269414
+MD5sum: b9ba2ec30dab61d4251b62a2464f2f4c
+SHA1: 156817949f4297a0ca8f8ae798397c479a781907
+SHA256: b3ecf00a9432b5c5ddf56b4a77a5672a733eb3b63d921f560783e56caededa41
+
+Package: glibc-source
+Source: glibc
+Version: 2.19-18+deb8u6~kbsd8u1
+Installed-Size: 23807
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: eglibc-source
+Recommends: xz-utils
+Conflicts: eglibc-source
+Description: GNU C Library: sources
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 1892ef83f2f36db0d236ccc041158b32
+Section: devel
+Priority: optional
+Filename: pool/main/g/glibc/glibc-source_2.19-18+deb8u6~kbsd8u1_all.deb
+Size: 14103940
+MD5sum: e8e61304521e9b339dcebbe6925111cb
+SHA1: 82393dfd6a7631a83d5248229f038576e2106a22
+SHA256: da71c30883654f16653607b2c7ffc8aa5bac5c4e5331bdbf135aab85d7112f02
+
+Package: locales
+Source: glibc
+Version: 2.19-18+deb8u6~kbsd8u1
+Installed-Size: 15863
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: base-config, lliurex-belocs-locales-data, manpages-fr-extra (<< 20141022)
+Depends: libc-bin (>> 2.19), debconf (>= 0.5) | debconf-2.0
+Conflicts: base-config, belocs-locales-bin, belocs-locales-data
+Description: GNU C Library: National Language (locale) data [support]
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: d7f25783f5b76a6d73e0035b0184c983
+Tag: admin::configuring, devel::i18n, implemented-in::c, role::app-data,
+ role::program, scope::utility, suite::gnu
+Section: localization
+Priority: standard
+Filename: pool/main/g/glibc/locales_2.19-18+deb8u6~kbsd8u1_all.deb
+Size: 3951702
+MD5sum: cb67a26bcf1ec5b3ddf66cd48417068f
+SHA1: 368b77ac728363149fbd0ca8e5c3cc463d4842fd
+SHA256: 52f803a7a8fc2154a49ef625406a385243eb6dfdf6e5bd1147d32204f0d76e0e
+

@@ -1,0 +1,82 @@
+Package: debbugs
+Version: 2.4.1.1
+Installed-Size: 375
+Maintainer: Debbugs developers <debian-debbugs@example.com>
+Architecture: all
+Depends: perl5 | perl, exim | mail-transport-agent, libmailtools-perl, ed, libmime-perl, libio-stringy-perl
+Recommends: httpd, links | lynx
+Description: The bug tracking system based on the active Debian BTS
+Description-md5: f27637c129aeefe7d091491a0728fdd7
+Tag: devel::bugtracker, suite::debian, works-with::bugs
+Section: misc
+Priority: optional
+Filename: pool/main/d/debbugs/debbugs_2.4.1.1_all.deb
+Size: 72792
+MD5sum: 4ffd74f1763054bd9976532d860b2fb3
+SHA1: 4cc5fee4bc4d5744e4fd59658af5d4995b14b307
+SHA256: e3554f2dffece78ad25ce5a5c39055097bd0e010e543722b568b4363e1ebc3ab
+
+Package: glibc-doc
+Source: glibc
+Version: 2.19-18
+Installed-Size: 2220
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Suggests: glibc-doc-reference
+Description: GNU C Library: Documentation
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: ec34f59d4398ff8ca003177c6585bf0a
+Tag: devel::doc, devel::lang:c, devel::library, made-of::html, made-of::info,
+ role::documentation, suite::gnu
+Section: doc
+Priority: optional
+Filename: pool/main/g/glibc/glibc-doc_2.19-18_all.deb
+Size: 2265778
+MD5sum: 06f1c25e2c92ff0feb52cc106ebf285e
+SHA1: c4c52fa6ffe4300bbd49aa7a3de5a3aa111953bf
+SHA256: 3504ec10a2db9145e03ca34be82e4eaa3025d5ab2e1acd5bf43868b7bf894b4e
+
+Package: glibc-source
+Source: glibc
+Version: 2.19-18
+Installed-Size: 23576
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: eglibc-source
+Recommends: xz-utils
+Conflicts: eglibc-source
+Description: GNU C Library: sources
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 1892ef83f2f36db0d236ccc041158b32
+Section: devel
+Priority: optional
+Filename: pool/main/g/glibc/glibc-source_2.19-18_all.deb
+Size: 13976784
+MD5sum: b1b6f738733e2197c8fc3bf9bc86964d
+SHA1: 630551bf4ae003b34a6e2f67245291c1da29dc79
+SHA256: c755cb53c1beca3b2677d8872cf2f6887c1efd7b541058edd1f51a2ba5143d6a
+
+Package: locales
+Source: glibc
+Version: 2.19-18
+Installed-Size: 15878
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: base-config, lliurex-belocs-locales-data, manpages-fr-extra (<< 20141022)
+Depends: libc-bin (>> 2.19), debconf (>= 0.5) | debconf-2.0
+Conflicts: base-config, belocs-locales-bin, belocs-locales-data
+Description: GNU C Library: National Language (locale) data [support]
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: d7f25783f5b76a6d73e0035b0184c983
+Tag: admin::configuring, devel::i18n, implemented-in::c, role::app-data,
+ role::program, scope::utility, suite::gnu
+Section: localization
+Priority: standard
+Filename: pool/main/g/glibc/locales_2.19-18_all.deb
+Size: 3923992
+MD5sum: bab3eac8578f2e3b6529bd64d63cba3e
+SHA1: 43b6bcf3d137d7a549d87fb905ee480b7c14fc5f
+SHA256: f7b5a6bcb9d8a4938754488cee3d3ef3d08f7cc6d9f6adfe1a7430957c4a2eea
+

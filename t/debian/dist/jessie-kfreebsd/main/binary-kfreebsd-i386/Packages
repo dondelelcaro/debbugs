@@ -1,0 +1,305 @@
+Package: debbugs
+Version: 2.4.1.1
+Installed-Size: 375
+Maintainer: Debbugs developers <debian-debbugs@example.com>
+Architecture: all
+Depends: perl5 | perl, exim | mail-transport-agent, libmailtools-perl, ed, libmime-perl, libio-stringy-perl
+Recommends: httpd, links | lynx
+Description: The bug tracking system based on the active Debian BTS
+Description-md5: f27637c129aeefe7d091491a0728fdd7
+Tag: devel::bugtracker, suite::debian, works-with::bugs
+Section: misc
+Priority: optional
+Filename: pool/main/d/debbugs/debbugs_2.4.1.1_all.deb
+Size: 72792
+MD5sum: 4ffd74f1763054bd9976532d860b2fb3
+SHA1: 4cc5fee4bc4d5744e4fd59658af5d4995b14b307
+SHA256: e3554f2dffece78ad25ce5a5c39055097bd0e010e543722b568b4363e1ebc3ab
+
+Package: glibc-doc
+Source: glibc
+Version: 2.19-18
+Installed-Size: 2220
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Suggests: glibc-doc-reference
+Description: GNU C Library: Documentation
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: ec34f59d4398ff8ca003177c6585bf0a
+Tag: devel::doc, devel::lang:c, devel::library, made-of::html, made-of::info,
+ role::documentation, suite::gnu
+Section: doc
+Priority: optional
+Filename: pool/main/g/glibc/glibc-doc_2.19-18_all.deb
+Size: 2265778
+MD5sum: 06f1c25e2c92ff0feb52cc106ebf285e
+SHA1: c4c52fa6ffe4300bbd49aa7a3de5a3aa111953bf
+SHA256: 3504ec10a2db9145e03ca34be82e4eaa3025d5ab2e1acd5bf43868b7bf894b4e
+
+Package: glibc-source
+Source: glibc
+Version: 2.19-18
+Installed-Size: 23576
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: eglibc-source
+Recommends: xz-utils
+Conflicts: eglibc-source
+Description: GNU C Library: sources
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 1892ef83f2f36db0d236ccc041158b32
+Section: devel
+Priority: optional
+Filename: pool/main/g/glibc/glibc-source_2.19-18_all.deb
+Size: 13976784
+MD5sum: b1b6f738733e2197c8fc3bf9bc86964d
+SHA1: 630551bf4ae003b34a6e2f67245291c1da29dc79
+SHA256: c755cb53c1beca3b2677d8872cf2f6887c1efd7b541058edd1f51a2ba5143d6a
+
+Package: libc-bin
+Source: glibc
+Version: 2.19-18
+Essential: yes
+Installed-Size: 3019
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Replaces: libc0.1, libc0.3, libc6, libc6.1
+Depends: libc0.1 (>> 2.19), libc0.1 (<< 2.20)
+Breaks: libc0.1 (<< 2.10), libc0.3 (<< 2.10), libc6 (<< 2.10), libc6.1 (<< 2.10)
+Description: GNU C Library: Binaries
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 7625903821514b57277d1bae69ec3c1a
+Tag: devel::code-generator, devel::packaging, devel::profiler,
+ implemented-in::c, interface::commandline, role::program,
+ scope::utility, suite::gnu, use::TODO, works-with::TODO,
+ works-with::software:running, works-with::text, works-with::unicode
+Section: libs
+Priority: required
+Filename: pool/main/g/glibc/libc-bin_2.19-18_kfreebsd-i386.deb
+Size: 1206760
+MD5sum: 82c06960c9d53576d71c7fb4c340da4a
+SHA1: 22a76e9b930220bf71f7eca0bb88fb4d13c02ec8
+SHA256: 81654d1b6669dbe599376465d08b02a4c80c0379696e19f91e69841c6bb3d5ed
+
+Package: libc-dev-bin
+Source: glibc
+Version: 2.19-18
+Installed-Size: 341
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Replaces: libc0.1-dev, libc0.3-dev, libc6-dev, libc6.1-dev
+Depends: libc0.1 (>> 2.19), libc0.1 (<< 2.20)
+Recommends: manpages-dev
+Description: GNU C Library: Development binaries
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: ca28cf36e463805ec57f3815849e28a2
+Tag: devel::code-generator, devel::i18n, devel::profiler, devel::rpc,
+ devel::testing-qa, implemented-in::c, interface::commandline,
+ role::program, suite::gnu, works-with::file,
+ works-with::software:running
+Section: libdevel
+Priority: optional
+Filename: pool/main/g/glibc/libc-dev-bin_2.19-18_kfreebsd-i386.deb
+Size: 233326
+MD5sum: 2c123e0a78706a10e2da2773050bc08d
+SHA1: c30fe1bece4279b9f34db84ab2d564f76fe5d177
+SHA256: 8ac4b5addd5953a80270729e0c36b69598a7c275762e3e2c962168d0aa5999d0
+
+Package: libc0.1
+Source: glibc
+Version: 2.19-18
+Installed-Size: 8823
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Replaces: libc0.1-i386
+Depends: libgcc1
+Recommends: libc0.1-i686
+Suggests: glibc-doc, debconf | debconf-2.0, locales
+Conflicts: prelink (<= 0.0.20090311-1), tzdata (<< 2007k-1), tzdata-etch
+Breaks: hurd (<< 1:0.5.git20140203-1), libtirpc1 (<< 0.2.3), locales (<< 2.19), locales-all (<< 2.19), nscd (<< 2.19)
+Description: GNU C Library: Shared libraries
+Multi-Arch: same
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: fc3001b0b90a1c8e6690b283a619d57f
+Tag: implemented-in::c, role::shared-lib
+Section: libs
+Priority: required
+Filename: pool/main/g/glibc/libc0.1_2.19-18_kfreebsd-i386.deb
+Size: 3909894
+MD5sum: 7eb6da18a2c79c650592b315234fbf47
+SHA1: afe0d5732d65216072ce7022ce621296b5a4daf4
+SHA256: 1e23b99d64daaefe85d3c483e543c8570a7a642fd81bdef4ab9b127efd624e11
+
+Package: libc0.1-dbg
+Source: glibc
+Version: 2.19-18
+Installed-Size: 25850
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Provides: libc-dbg
+Depends: libc0.1 (= 2.19-18)
+Description: GNU C Library: detached debugging symbols
+Multi-Arch: same
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: bbc98343da14bf76d4a45c2181fd8902
+Tag: role::debug-symbols, suite::gnu
+Section: debug
+Priority: extra
+Filename: pool/main/g/glibc/libc0.1-dbg_2.19-18_kfreebsd-i386.deb
+Size: 5318510
+MD5sum: 23c7b2e0c521ef665b7a9423d5122721
+SHA1: b5cbb76b4be1075f4d71529e1770a535debe8668
+SHA256: dfe661baa8e95f1cb551f82f3e6680b4e5dbfd0f39e51ac54294194dc94ba858
+
+Package: libc0.1-dev
+Source: glibc
+Version: 2.19-18
+Installed-Size: 7901
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Provides: libc-dev, libc6-dev
+Depends: libc0.1 (= 2.19-18), libc-dev-bin (= 2.19-18), kfreebsd-kernel-headers (>= 0.11)
+Suggests: glibc-doc, manpages-dev
+Conflicts: libc0.3-dev, libc6-dev, libc6.1-dev
+Breaks: binutils (<< 2.20.1-1), binutils-gold (<< 2.20.1-11), cmake (<< 2.8.4+dfsg.1-5), gcc-4.4 (<< 4.4.6-4), gcc-4.5 (<< 4.5.3-2), gcc-4.6 (<< 4.6.0-12), libhwloc-dev (<< 1.2-3), libjna-java (<< 3.2.7-4), liblouis-dev (<< 2.3.0-2), liblouisxml-dev (<< 2.4.0-2), make (<< 3.81-8.1), pkg-config (<< 0.26-1)
+Description: GNU C Library: Development Libraries and Header Files
+Multi-Arch: same
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 1bbdc717d9acdb44db940928d570e749
+Tag: devel::library, role::devel-lib
+Section: libdevel
+Priority: optional
+Filename: pool/main/g/glibc/libc0.1-dev_2.19-18_kfreebsd-i386.deb
+Size: 1603258
+MD5sum: e3a3b0d90de39184900a068a41c2850a
+SHA1: e1051635153597af657a582e97edae361ed92e8b
+SHA256: 9608ee782b9cbcd49d9a16dbfc2a6de73ad0a3da63fb64df99fecf123191457b
+
+Package: libc0.1-i686
+Source: glibc
+Version: 2.19-18
+Installed-Size: 2798
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Pre-Depends: libc0.1 (= 2.19-18)
+Description: GNU C Library: Shared libraries [i686 optimized]
+Multi-Arch: same
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 74fd763b7914c9a207fa6744837006e0
+Tag: role::shared-lib
+Section: libs
+Priority: extra
+Filename: pool/main/g/glibc/libc0.1-i686_2.19-18_kfreebsd-i386.deb
+Size: 1077240
+MD5sum: ac4d90e8f1f5a3dd0204e1e24562375d
+SHA1: dadd69f9fe8f94850f845803d56b621a4066b779
+SHA256: b34b3b1f2c07d653c2f816564da18548d92748dc230bf5efc7fff665a6fc8b22
+
+Package: libc0.1-pic
+Source: glibc
+Version: 2.19-18
+Installed-Size: 5899
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Provides: glibc-pic, libc-pic
+Depends: libc0.1 (= 2.19-18)
+Conflicts: libc-pic
+Description: GNU C Library: PIC archive library
+Multi-Arch: same
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: f7532ae2bb48ede897a6da638f062d2e
+Tag: devel::library, role::devel-lib
+Section: libdevel
+Priority: optional
+Filename: pool/main/g/glibc/libc0.1-pic_2.19-18_kfreebsd-i386.deb
+Size: 1177410
+MD5sum: 4649544bab62016206f560e245c1966e
+SHA1: f701463256285e4a47ce3520598861a596674345
+SHA256: 37f603d4cacb6c5906e6a0ea6e00f2d3180e66fbdf7f2e2ee223e3739c1f6041
+
+Package: locales
+Source: glibc
+Version: 2.19-18
+Installed-Size: 15878
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: base-config, lliurex-belocs-locales-data, manpages-fr-extra (<< 20141022)
+Depends: libc-bin (>> 2.19), debconf (>= 0.5) | debconf-2.0
+Conflicts: base-config, belocs-locales-bin, belocs-locales-data
+Description: GNU C Library: National Language (locale) data [support]
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: d7f25783f5b76a6d73e0035b0184c983
+Tag: admin::configuring, devel::i18n, implemented-in::c, role::app-data,
+ role::program, scope::utility, suite::gnu
+Section: localization
+Priority: standard
+Filename: pool/main/g/glibc/locales_2.19-18_all.deb
+Size: 3923992
+MD5sum: bab3eac8578f2e3b6529bd64d63cba3e
+SHA1: 43b6bcf3d137d7a549d87fb905ee480b7c14fc5f
+SHA256: f7b5a6bcb9d8a4938754488cee3d3ef3d08f7cc6d9f6adfe1a7430957c4a2eea
+
+Package: locales-all
+Source: glibc
+Version: 2.19-18
+Installed-Size: 114900
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Provides: locales
+Breaks: locales (<< 2.13-17)
+Description: GNU C Library: Precompiled locale data
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: c360552536cba624a24a347b513939dd
+Section: localization
+Priority: extra
+Filename: pool/main/g/glibc/locales-all_2.19-18_kfreebsd-i386.deb
+Size: 3219184
+MD5sum: c4037f7c910437a4d5a4402a7b740261
+SHA1: e1812ce48d7be05a0c3ed26e3af1975e8214f25e
+SHA256: ece35f17f0cbe1ae669b08c496d1a0b9a1b71d7d9fc3111aa97ca97a5b38aa6f
+
+Package: multiarch-support
+Source: glibc
+Version: 2.19-18
+Installed-Size: 195
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Depends: libc0.1 (>= 2.13-5)
+Description: Transitional package to ensure multiarch compatibility
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: f70fd4ad370040691119c10d77aec677
+Section: libs
+Priority: required
+Filename: pool/main/g/glibc/multiarch-support_2.19-18_kfreebsd-i386.deb
+Size: 178856
+MD5sum: 41fcb9f8d82fbd4e452806b696c069f9
+SHA1: 6399b6a8d1af4080827d82dae94b0a4615fb1d8d
+SHA256: 7a1e2a8896398f40006397a20538f6828b7b5f8767b757d776d189f866d91b20
+
+Package: nscd
+Source: glibc
+Version: 2.19-18
+Installed-Size: 332
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Depends: libc0.1 (>> 2.19), libc0.1 (<< 2.20)
+Description: GNU C Library: Name Service Cache Daemon
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: e8172254ec0df735a3e44c0f557100bc
+Tag: interface::daemon, network::server, protocol::dns, role::program,
+ suite::gnu, use::proxying
+Section: admin
+Priority: optional
+Filename: pool/main/g/glibc/nscd_2.19-18_kfreebsd-i386.deb
+Size: 233582
+MD5sum: 65c5e823eeefcb1668c50b90c9a56df7
+SHA1: bb9588955feeffb3281f73bdd3bb94093db05c4c
+SHA256: ff122e6d1306b168739e45bef3bf149e36eb654b0962b7f96c849d18c25bc7dd
+

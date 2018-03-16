@@ -1,0 +1,26 @@
+Codename: buster
+Components: main contrib non-free
+Date: Tue, 27 Feb 2018 14:38:19 UTC
+Description: Debian x.y Testing distribution - Not Released
+Origin: Debian
+Suite: testing
+MD5Sum:
+ 867bf49dce666b5964a84e035d0d0fbe             2650 main/binary-all/Packages
+ b34ec78b587d215df89b7f5307eb51f1            23664 main/binary-amd64/Packages
+ 0c1bb7c8c7ca76da7d1329bff0919755            25148 main/binary-i386/Packages
+ e0c2b9ccc6c11da8e121c0bad7126677            85588 main/source/Packages
+SHA1:
+ 867f074ce754b861c610886c158179a3a6bf0ca7             2650 main/binary-all/Packages
+ 0b54bd2ce86a03a68edf6d8d3e7fe236604514d0            23664 main/binary-amd64/Packages
+ 2b906e9aa01c743aece3448abb79d12772b18e18            25148 main/binary-i386/Packages
+ 54ce3914bcdf9e47c8e9cbc319fd6d8fd77808a7            85588 main/source/Packages
+SHA256:
+ 2badd2e619f2ab07db93f514935e0c1ddd9202d8689c3ca129754b159b655165             2650 main/binary-all/Packages
+ 43c8eaf41f0b16a56fe57344dacf0e0fcf7afaaaae87e890bfaa50ee719c357c            23664 main/binary-amd64/Packages
+ 86f4ff859495225e5b122b00094112aabf6313f8f097f7b381a7838bfc3e212e            25148 main/binary-i386/Packages
+ 0a3ead7a857da185e7b4f456a8f1ec12ec9b588ec167a1f0f0013c488da94c2f            85588 main/source/Packages
+SHA512:
+ 930f0341e27b1e612df96c7b0e6c403f22f5d066a4b1b634a88d3ebd11b937f23361559419c2fb0a423dfa9f7cf1674b43a864f2041b5e930bdc188bb9130058             2650 main/binary-all/Packages
+ 0e9db5722dbaad1bb3f70c500049fa56387235158ef6ee26df0f191e7af5f30f469ae9b966257b777267bd4e8bcb2b732b0fb7b7162e68d0f2849070feb23e0c            23664 main/binary-amd64/Packages
+ 313989bf5e36143c42c5aa8b54cb91ea1b77e567b552f5415a2a5882bc4594d088c598fb1d1235ab22d158c4c885b1a15a3d9e3ac748d6593c1512fdff1e42b3            25148 main/binary-i386/Packages
+ a805622de2713a9749c2662eaea43b83a2decbdbeb5aada41324786f2f343f94c9b8d683839ea614a52191578c2a0d6c0f201cef08b2d40e439c82391f75a8cd            85588 main/source/Packages

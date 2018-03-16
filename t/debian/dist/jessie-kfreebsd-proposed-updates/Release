@@ -1,0 +1,26 @@
+Codename: jessie-kfreebsd-proposed-updates
+Components: main contrib non-free
+Date: Tue, 27 Feb 2018 14:38:19 UTC
+Description: Proposed Updates for Debian 8 (kfreebsd) - Not Released
+Origin: Debian
+Suite: oldstable-kfreebsd-proposed-updates
+MD5Sum:
+ c1119927feeb90e60518052ced008e4c             2371 main/binary-all/Packages
+ 3269d29a7dc8119a188495bb7797b13d            11848 main/binary-kfreebsd-amd64/Packages
+ 50c9d074e5ae20969f35e033fa8e9cd5            10999 main/binary-kfreebsd-i386/Packages
+ d3699e0d5565f8d15884aeab098cb82a             7721 main/source/Packages
+SHA1:
+ e5a6bd0095f32fe78daac047fe87e6b5336a6520             2371 main/binary-all/Packages
+ 22f1704fea491122403f782aff752027b0aea07f            11848 main/binary-kfreebsd-amd64/Packages
+ 5ffcd375ffad746471a9ce0e65c6d98ed7bac649            10999 main/binary-kfreebsd-i386/Packages
+ 10453a1924a307809c62977e3d5ffa53573fc669             7721 main/source/Packages
+SHA256:
+ e775d3157ab5597eee75d0302d314e2bd4f0249b074da4a30df164c7f55e6196             2371 main/binary-all/Packages
+ 821edb345fc353c971a01ffa48d14f0345f1dc0865760b7073dca067822e0544            11848 main/binary-kfreebsd-amd64/Packages
+ 0e7c57d07da94ab43bf6087e6715803c83b0435f01c97df532afcb3afc011ec7            10999 main/binary-kfreebsd-i386/Packages
+ 74b91a12a93b369ab5a90dd2b52ac2f615867ff1a23bb8173b87d9f08e115525             7721 main/source/Packages
+SHA512:
+ 05d66335599ffc463342151f8a44738ee0973dc47b30f2db7ea1233f1912648e2865dd589f56b5697e9cd8796a700d221bdf55bb460bb9e9c1328fa76f095e25             2371 main/binary-all/Packages
+ 89cc5137dd1cae6dd170674a31307d1f1508d6929105a6b5486a4d9bda345c3c3fae397f5a1b60546133a15ae65e2f09789e684762878617545da554055a6f93            11848 main/binary-kfreebsd-amd64/Packages
+ d40c522af8b6e7a1eb4fc3c109c33981417891311420ece852b723aa600b26d62cc6494a8243b52c74d9db5c47f9c21a96151a77b7d98de17c0b68d508be9c39            10999 main/binary-kfreebsd-i386/Packages
+ c394289f8234dac8f47a81c308e5acc79185e961ff7235026c69f5ce438444a265bfe78f8a2e7cc2becad8a0828bec36d9cd775de9b76a78cc17baa25f79c8bc             7721 main/source/Packages

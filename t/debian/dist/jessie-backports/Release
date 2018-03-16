@@ -1,0 +1,14 @@
+Codename: jessie-backports
+Components: main contrib non-free
+Date: Tue, 27 Feb 2018 14:38:19 UTC
+Description: Backports for the Jessie Distribution
+Origin: Debian Backports
+Suite: jessie-backports
+MD5Sum:
+ d0aa1664130e70a3015deb07cb136eb7            30723 main/source/Packages
+SHA1:
+ 243b06dd09c94af4748110084bb1b179d712da98            30723 main/source/Packages
+SHA256:
+ 00959f5e9681cc737cbcd0f3b48e1b546e4ce6f531e98a0bba1b388f16d1f609            30723 main/source/Packages
+SHA512:
+ a8c771a175b58e07a8b6ad1a0eca1039f38c00593bb54c4738bb137a42f1a8342674dafb55c25a5c0c8da32084cf53c722d32e88ec5799692ec57cb6692c40ed            30723 main/source/Packages

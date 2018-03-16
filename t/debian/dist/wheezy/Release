@@ -1,0 +1,35 @@
+Codename: wheezy
+Components: main contrib non-free
+Date: Sat, 17 Jun 2017 08:55:32 UTC
+Description: Debian 7.11 Released 04 June 2016
+Origin: Debian
+Suite: oldoldstable
+Version: 7.11
+MD5Sum:
+ 2c99d66406a9c64b8439566444a9f9ee              703 main/binary-all/Packages
+ 2c99d66406a9c64b8439566444a9f9ee              703 main/binary-amd64/Packages
+ 2c99d66406a9c64b8439566444a9f9ee              703 main/binary-i386/Packages
+ 2c99d66406a9c64b8439566444a9f9ee              703 main/binary-kfreebsd-amd64/Packages
+ 2c99d66406a9c64b8439566444a9f9ee              703 main/binary-kfreebsd-i386/Packages
+ 051e4178d56ca3efe05e8c7cd6da3a6d              813 main/source/Packages
+SHA1:
+ cc9b611bf311570cfe706b5f8580b253e84907bc              703 main/binary-all/Packages
+ cc9b611bf311570cfe706b5f8580b253e84907bc              703 main/binary-amd64/Packages
+ cc9b611bf311570cfe706b5f8580b253e84907bc              703 main/binary-i386/Packages
+ cc9b611bf311570cfe706b5f8580b253e84907bc              703 main/binary-kfreebsd-amd64/Packages
+ cc9b611bf311570cfe706b5f8580b253e84907bc              703 main/binary-kfreebsd-i386/Packages
+ 51529224c52683e3f923a7c72851fadbd976ba39              813 main/source/Packages
+SHA256:
+ 0b31d433a8588e980206b2bfc8686264573fe4b11854085b0c5fcbc604061691              703 main/binary-all/Packages
+ 0b31d433a8588e980206b2bfc8686264573fe4b11854085b0c5fcbc604061691              703 main/binary-amd64/Packages
+ 0b31d433a8588e980206b2bfc8686264573fe4b11854085b0c5fcbc604061691              703 main/binary-i386/Packages
+ 0b31d433a8588e980206b2bfc8686264573fe4b11854085b0c5fcbc604061691              703 main/binary-kfreebsd-amd64/Packages
+ 0b31d433a8588e980206b2bfc8686264573fe4b11854085b0c5fcbc604061691              703 main/binary-kfreebsd-i386/Packages
+ c04fd1acd8f666e11bf7eb124bc24052b4194262a79ef33248f95b6dcf4e6308              813 main/source/Packages
+SHA512:
+ 0fbc32fcca7a828a1d89228d3861844d6522dc7538ef36f54949ba41e00f13ab4a4c726d9e7447efc885fc20140d33f3e2e75a84df3bee3f649e06407119346f              703 main/binary-all/Packages
+ 0fbc32fcca7a828a1d89228d3861844d6522dc7538ef36f54949ba41e00f13ab4a4c726d9e7447efc885fc20140d33f3e2e75a84df3bee3f649e06407119346f              703 main/binary-amd64/Packages
+ 0fbc32fcca7a828a1d89228d3861844d6522dc7538ef36f54949ba41e00f13ab4a4c726d9e7447efc885fc20140d33f3e2e75a84df3bee3f649e06407119346f              703 main/binary-i386/Packages
+ 0fbc32fcca7a828a1d89228d3861844d6522dc7538ef36f54949ba41e00f13ab4a4c726d9e7447efc885fc20140d33f3e2e75a84df3bee3f649e06407119346f              703 main/binary-kfreebsd-amd64/Packages
+ 0fbc32fcca7a828a1d89228d3861844d6522dc7538ef36f54949ba41e00f13ab4a4c726d9e7447efc885fc20140d33f3e2e75a84df3bee3f649e06407119346f              703 main/binary-kfreebsd-i386/Packages
+ 562af03d13046d6427d44a5598b439256d85b1fd99ed6595a01fef3f1735ec3130e966a7fa0b5c3d0d266ee3254d9e9f844b19b985382e00f333a2d2ef23d879              813 main/source/Packages

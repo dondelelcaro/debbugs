@@ -51,7 +51,8 @@ use File::Copy qw(copy);
 use Encode qw(decode encode is_utf8);
 
 use Storable qw(dclone);
-use List::AllUtils qw(min max);
+use List::AllUtils qw(min max uniq);
+use DateTime::Format::Pg;
 
 use Carp qw(croak);
 
@@ -193,6 +194,7 @@ sub read_bug{
     my $status;
     my $log;
     my $location;
+    my $report;
     if (not defined $param{summary}) {
 	 my $lref;
 	 ($lref,$location) = @param{qw(bug location)};
@@ -202,13 +204,16 @@ sub read_bug{
 	 }
 	 $status = getbugcomponent($lref, 'summary', $location);
 	 $log    = getbugcomponent($lref, 'log'    , $location);
+	 $report    = getbugcomponent($lref, 'report'    , $location);
 	 return undef unless defined $status;
 	 return undef if not -e $status;
     }
     else {
 	 $status = $param{summary};
 	 $log = $status;
+	 $report = $status;
 	 $log =~ s/\.summary$/.log/;
+	 $report =~ s/\.summary$/.report/;
 	 ($location) = $status =~ m/(db-h|db|archive)/;
          ($param{bug}) = $status =~ m/(\d+)\.summary$/;
     }
@@ -283,7 +288,12 @@ sub read_bug{
     my $status_modified = (stat($status))[9];
     # Add log last modified time
     $data{log_modified} = (stat($log))[9] // (stat("${log}.gz"))[9];
+    my $report_modified = (stat($report))[9] // $data{log_modified};
     $data{last_modified} = max($status_modified,$data{log_modified});
+    # if the date isn't set (ancient bug), use the smallest of any of the modified
+    if (not defined $data{date} or not length($data{date})) {
+        $data{date} = min($report_modified,$status_modified,$data{log_modified});
+    }
     $data{location} = $location;
     $data{archived} = (defined($location) and ($location eq 'archive'))?1:0;
     $data{bug_num} = $param{bug};
@@ -320,23 +330,42 @@ our $ditch_empty = sub{
     return grep {length $_} map {split $splitter} @t;
 };
 
-my $ditch_empty_space = sub {return &{$ditch_empty}(' ',@_)};
+our $sort_and_unique = sub {
+    my @v;
+    my %u;
+    my $all_numeric = 1;
+    for my $v (@_) {
+        if ($all_numeric and $v =~ /\D/) {
+            $all_numeric = 0;
+        }
+        next if exists $u{$v};
+        $u{$v} = 1;
+        push @v, $v;
+    }
+    if ($all_numeric) {
+        return sort {$a <=> $b} @v;
+    } else {
+        return sort @v;
+    }
+};
+
+my $ditch_space_unique_and_sort = sub {return &{$sort_and_unique}(&{$ditch_empty}(' ',@_))};
 my %split_fields =
     (package        => \&splitpackages,
      affects        => \&splitpackages,
      # Ideally we won't have to split source, but because some consumers of
      # get_bug_status cannot handle arrayref, we will split it here.
      source         => \&splitpackages,
-     blocks         => $ditch_empty_space,
-     blockedby      => $ditch_empty_space,
+     blocks         => $ditch_space_unique_and_sort,
+     blockedby      => $ditch_space_unique_and_sort,
      # this isn't strictly correct, but we'll split both of them for
      # the time being until we ditch all use of keywords everywhere
      # from the code
-     keywords       => $ditch_empty_space,
-     tags           => $ditch_empty_space,
-     found_versions => $ditch_empty_space,
-     fixed_versions => $ditch_empty_space,
-     mergedwith     => $ditch_empty_space,
+     keywords       => $ditch_space_unique_and_sort,
+     tags           => $ditch_space_unique_and_sort,
+     found_versions => $ditch_space_unique_and_sort,
+     fixed_versions => $ditch_space_unique_and_sort,
+     mergedwith     => $ditch_space_unique_and_sort,
     );
 
 sub split_status_fields {
@@ -1229,6 +1258,9 @@ sub get_bug_status {
 	 binary_to_source_cache => {type => HASHREF,
 				    optional => 1,
 				   },
+	 schema => {type => OBJECT,
+		    optional => 1,
+		   },
 	};
      my %param = validate_with(params => \@_,
 			       spec   => $spec,
@@ -1243,7 +1275,64 @@ sub get_bug_status {
 	  return \%status;
      }
      if (defined $param{status}) {
-	  %status = %{$param{status}};
+	 %status = %{$param{status}};
+     }
+     elsif (defined $param{schema}) {
+	 my $b = $param{schema}->resultset('Bug')->
+	     search_rs({'me.id' => $param{bug}},
+		      {prefetch => [{'bug_tags'=>'tag'},
+				    'severity',
+				   {'bug_binpackages'=> 'bin_pkg'},
+				   {'bug_srcpackages'=> 'src_pkg'},
+				   {'bug_user_tags'=>{'user_tag'=>'correspondent'}},
+				   {owner => 'correspondent_full_names'},
+				   {submitter => 'correspondent_full_names'},
+                                    'bug_merged_bugs',
+                                    'bug_mergeds_merged',
+                                    'bug_blocks_blocks',
+                                    'bug_blocks_bugs',
+                                   {'bug_vers' => ['src_pkg','src_ver']},
+				   ],
+		       '+columns' => [qw(subject log_modified creation last_modified)],
+		       collapse => 1,
+		       result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+		      })->first();
+	 $status{keywords} =
+	     join(' ',map {$_->{tag}{tag}} @{$b->{bug_tags}});
+	 $status{tags} = $status{keywords};
+	 $status{subject} = $b->{subject};
+	 $status{bug_num} = $b->{id};
+	 $status{severity} = $b->{severity}{severity};
+	 $status{package} =
+	     join(' ',
+		  (map {$_->{bin_pkg}{pkg}} @{$b->{bug_binpackages}//[]}),
+		  (map {$_->{src_pkg}{pkg}} @{$b->{bug_srcpackages}//[]}));
+         $status{originator} = $b->{submitter_full};
+	 $status{log_modified} =
+	     DateTime::Format::Pg->parse_datetime($b->{log_modified})->epoch;
+	 $status{date} =
+	     DateTime::Format::Pg->parse_datetime($b->{creation})->epoch;
+	 $status{last_modified} =
+	     DateTime::Format::Pg->parse_datetime($b->{last_modified})->epoch;
+         $status{blocks} =
+             join(' ',
+                  uniq(sort(map {$_->{block}}
+                            @{$b->{bug_blocks_block}},
+                           )));
+         $status{blockedby} =
+             join(' ',
+                  uniq(sort(map {$_->{bug}}
+                            @{$b->{bug_blocks_bug}},
+                           )));
+         $status{mergedwith} =
+             join(' ',uniq(sort(map {$_->{bug},$_->{merged}}
+                                @{$b->{bug_merged_bugs}},
+                                @{$b->{bug_mergeds_merged}},
+                               )));
+         $status{fixed_versions} =
+             [map {$_->{found}?():$_->{ver_string}} @{$b->{bug_vers}}];
+         $status{found_versions} =
+             [map {$_->{found}?$_->{ver_string}:()} @{$b->{bug_vers}}];
      }
      else {
 	  my $location = getbuglocation($param{bug}, 'summary');

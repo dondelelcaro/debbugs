@@ -1,0 +1,26 @@
+Codename: stretch-proposed-updates
+Components: main contrib non-free
+Date: Tue, 27 Feb 2018 14:38:19 UTC
+Description: Proposed Updates for Debian 9 - Not Released
+Origin: Debian
+Suite: proposed-updates
+MD5Sum:
+ c9ad18f985392d2f525e2a55d688969b             2710 main/binary-all/Packages
+ 20f3916ca627a72b2c09123249bdf9d2            23637 main/binary-amd64/Packages
+ f740d79a36e6a2f70c5355fa8b810b4d            24763 main/binary-i386/Packages
+ 9aaad349dc8b6f149fd44339aac0a6e2             7552 main/source/Packages
+SHA1:
+ 1ec45f87afb09d1390b3acd220bf69546b4f22a1             2710 main/binary-all/Packages
+ 7a6afe817c831f9fbd7672bbdffe570fb2eaf456            23637 main/binary-amd64/Packages
+ 391fd583ff291fd98ccebd749df0cbfcd50941d6            24763 main/binary-i386/Packages
+ fe4a225caa93c107ff5da23879e370f460a13ffb             7552 main/source/Packages
+SHA256:
+ 9b206a4bb2f3fbd212af9438f60d11639bc4ad4d6627459e407bc6d05088ccd1             2710 main/binary-all/Packages
+ f0daeffa7922c9ca13e425d7f54a1415402e55b2605caa8452d51b0e3d13f9bf            23637 main/binary-amd64/Packages
+ 259220e3da992f6221190bbf5eaa6baa6fcd0b0086fb9bbd1c274a399551ef20            24763 main/binary-i386/Packages
+ 8321d3ecd8bf050cd4c47f5abc2a8e41d0985f7382a34bf9f398e06f2a33655f             7552 main/source/Packages
+SHA512:
+ 630bf531d287fe8960a8e25d213c664e4361e8bd4af294131e302ec69363e87b81f405c22d0035b2e56c6e0b2031a4aa6a53091fe23a8c25f4529f1af53887e0             2710 main/binary-all/Packages
+ 52ba3dc046e62a12ad367f60b8aa98ad4346f86787718310ae08545d05e694cffb63e52b43f2f521ec8ea4f24a5a22ed54997f3a1a3fc0f9e259deac5f683de7            23637 main/binary-amd64/Packages
+ a1d0963ecac72e73db159531b20aee5a2add4f9c7bc95c9d9396f032db4399c89bd972c91af20e51a857428ff2c4e85042a9f2afba07906007311c6d7cd08a75            24763 main/binary-i386/Packages
+ 9a9a95d3e7b2e2dabf917786bdbf2c9c93ccb997157e034c4bb3596f6af5244847187bdbc0a48648cee8e63fc77b38b803ecbdfe4d250d8c0010b5a34c941fa1             7552 main/source/Packages

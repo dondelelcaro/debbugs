@@ -1,0 +1,153 @@
+#! /usr/bin/perl
+# debbugs-loadsql-versions is part of debbugs, and is released
+# under the terms of the GPL version 2, or any later version, at your
+# option. See the file README and COPYING for more information.
+# Copyright 2012 by Don Armstrong <don@donarmstrong.com>.
+
+
+use warnings;
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case);
+use Pod::Usage;
+
+=head1 NAME
+
+debbugs-loadsql-versions -- load debbugs sql versions database
+
+=head1 SYNOPSIS
+
+debbugs-loadsql-versions [options]
+
+ Options:
+  --service, -s service name
+  --sysconfdir, -c postgresql service config dir
+  --debug, -d debugging level (Default 0)
+  --help, -h display this help
+  --man, -m display manual
+
+=head1 OPTIONS
+
+=over
+
+=item B<--quick, -q>
+
+Only load changed bugs
+
+=item B<--service,-s>
+
+Postgreql service to use; defaults to debbugs
+
+=item B<--sysconfdir,-c>
+
+System configuration directory to use; if not set, defaults to the
+postgresql default. [Operates by setting PGSYSCONFDIR]
+
+=item B<--debug, -d>
+
+Debug verbosity.
+
+=item B<--help, -h>
+
+Display brief useage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+
+=cut
+
+
+use vars qw($DEBUG);
+
+use Debbugs::Common qw(checkpid lockpid get_hashname getparsedaddrs getbugcomponent make_list);
+use Debbugs::Config qw(:config);
+use Debbugs::Status qw(read_bug split_status_fields);
+use Debbugs::Log;
+use Debbugs::DB;
+use DateTime;
+use File::stat;
+
+
+my %options = (debug           => 0,
+	       help            => 0,
+	       man             => 0,
+	       verbose         => 0,
+	       quiet           => 0,
+	       quick           => 0,
+	       service         => 'debbugs',
+	      );
+
+
+GetOptions(\%options,
+	   'quick|q',
+	   'service|s',
+	   'sysconfdir|c',
+	   'spool_dir|spool-dir=s',
+	   'debug|d+','help|h|?','man|m');
+
+pod2usage() if $options{help};
+pod2usage({verbose=>2}) if $options{man};
+
+$DEBUG = $options{debug};
+
+my @USAGE_ERRORS;
+$options{verbose} = $options{verbose} - $options{quiet};
+
+pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
+
+if (exists $options{sysconfdir}) {
+    if (not defined $options{sysconfdir} or not length $options{sysconfdir}) {
+	delete $ENV{PGSYSCONFDIR};
+    } else {
+	$ENV{PGSYSCONFDIR} = $options{sysconfdir};
+    }
+}
+
+my $verbose = $options{debug};
+
+# connect to the database; figure out how to handle errors properly
+# here.
+my $s = Debbugs::DB->connect('dbi:Pg:service='.$options{service}) or
+    die "Unable to connect to database: ";
+
+my @files = @ARGV;
+for my $file (@files) {
+    my $fh = IO::File->new($file,'r') or
+	die "Unable to open $file for reading: $!";
+    my @versions;
+    my %src_pkgs;
+    while (<$fh>) {
+	chomp;
+	next unless length $_;
+	if (/(\w[-+0-9a-z.]+) \(([^\(\) \t]+)\)/) {
+	    push @versions, [$1,$2];
+	}
+    }
+    close($fh);
+    my $ancestor_sv;
+    for my $i (reverse 0..($#versions)) {
+        my $sp;
+        if (not defined $src_pkgs{$versions[$i][0]}) {
+            $src_pkgs{$versions[$i][0]} =
+                $s->resultset('SrcPkg')->find({pkg => $versions[$i][0]});
+        }
+        $sp = $src_pkgs{$versions[$i][0]};
+        # There's probably something wrong if the source package
+        # doesn't exist, but we'll skip it for now
+	next unless defined $sp;
+	my $sv = $s->resultset('SrcVer')->find({src_pkg_id=>$sp->id(),
+						ver => $versions[$i][1],
+					       });
+	if (defined $ancestor_sv and defined $sv and not defined $sv->based_on()) {
+	    $sv->update({based_on => $ancestor_sv->id()})
+	}
+	$ancestor_sv = $sv;
+    }
+}
+
+
+__END__

@@ -143,8 +143,8 @@ sub generate_package_info{
 	       push @references, sprintf "to the <a href=\"%s\">%s package page</a>",
 		    html_escape("$config{package_pages}/$package"), html_escape("$package");
 	  }
-	  if (defined $config{subscription_domain} and
-	      length $config{subscription_domain}) {
+	  if (defined $config{package_tracking_domain} and
+	      length $config{package_tracking_domain}) {
 	       my $ptslink = $param{binary} ? $srcforpkg : $package;
 	       # the pts only wants the source, and doesn't care about src: (#566089)
 	       $ptslink =~ s/^src://;
@@ -301,6 +301,9 @@ sub pkg_htmlizebugs {
 					  dist     => {type => SCALAR,
 						       optional => 1,
 						      },
+					  schema   => {type => OBJECT,
+						       optional => 1,
+						      },
 					 }
 			      );
      my @bugs = @{$param{bugs}};
@@ -352,10 +355,10 @@ sub pkg_htmlizebugs {
 
      my $binary_to_source_cache = {};
      foreach my $bug (@bugs) {
-	  my %status = %{get_bug_status(bug=>$bug,
-					(exists $param{dist}?(dist => $param{dist}):()),
-					bugusertags => $param{bugusertags},
-					(exists $param{version}?(version => $param{version}):()),
+	 my %status = %{get_bug_status(bug=>$bug,
+				       (map {exists $param{$_}?($_,$param{$_}):()}
+					qw(dist version schema bugusertags)
+				       ),
 					(exists $param{arch}?(arch => $param{arch}):(arch => $config{default_architectures})),
 					binary_to_source_cache => $binary_to_source_cache,
 				       )};

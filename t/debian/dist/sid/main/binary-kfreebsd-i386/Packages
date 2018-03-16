@@ -1,0 +1,288 @@
+Package: debbugs
+Version: 2.4.1.1
+Installed-Size: 375
+Maintainer: Debbugs developers <debian-debbugs@example.com>
+Architecture: all
+Depends: perl5 | perl, exim | mail-transport-agent, libmailtools-perl, ed, libmime-perl, libio-stringy-perl
+Recommends: httpd, links | lynx
+Description: The bug tracking system based on the active Debian BTS
+Description-md5: f27637c129aeefe7d091491a0728fdd7
+Tag: devel::bugtracker, suite::debian, works-with::bugs
+Section: misc
+Priority: optional
+Filename: pool/main/d/debbugs/debbugs_2.4.1.1_all.deb
+Size: 72792
+MD5sum: 4ffd74f1763054bd9976532d860b2fb3
+SHA256: e3554f2dffece78ad25ce5a5c39055097bd0e010e543722b568b4363e1ebc3ab
+
+Package: glibc-doc
+Source: glibc
+Version: 2.25-3
+Installed-Size: 3272
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Suggests: glibc-doc-reference
+Description: GNU C Library: Documentation
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: ec34f59d4398ff8ca003177c6585bf0a
+Tag: devel::doc, devel::lang:c, devel::library, made-of::html, made-of::info,
+ role::documentation, suite::gnu
+Section: doc
+Priority: optional
+Filename: pool/main/g/glibc/glibc-doc_2.25-3_all.deb
+Size: 2623764
+MD5sum: 23bbc6bd66c4be9875e79ac5e0780261
+SHA256: 7987220db4f988d7208a5ec0497354b142dc9f65666132b613e4907d90c4c932
+
+Package: glibc-source
+Source: glibc
+Version: 2.25-3
+Installed-Size: 22907
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: eglibc-source
+Recommends: xz-utils
+Conflicts: eglibc-source
+Description: GNU C Library: sources
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 1892ef83f2f36db0d236ccc041158b32
+Section: devel
+Priority: optional
+Filename: pool/main/g/glibc/glibc-source_2.25-3_all.deb
+Size: 15780392
+MD5sum: 7f039db3970cd16a8f508599f785da18
+SHA256: 04db138856cb7b3611459739ce865718d041c7cc00c768e7c17c66edf37b115f
+
+Package: libc-bin
+Source: glibc
+Version: 2.25-3
+Essential: yes
+Installed-Size: 3178
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Depends: libc0.1 (>> 2.25), libc0.1 (<< 2.26)
+Recommends: manpages
+Description: GNU C Library: Binaries
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 7625903821514b57277d1bae69ec3c1a
+Tag: role::shared-lib
+Section: libs
+Priority: required
+Filename: pool/main/g/glibc/libc-bin_2.25-3_kfreebsd-i386.deb
+Size: 749492
+MD5sum: a3c6a18bf4313a38459ffe5e6781b474
+SHA256: 97e0ef4177a95710fa51c834e06f03477433f102b135adba51cee19418ed596a
+
+Package: libc-dev-bin
+Source: glibc
+Version: 2.25-3
+Installed-Size: 391
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Depends: libc0.1 (>> 2.25), libc0.1 (<< 2.26)
+Recommends: manpages, manpages-dev
+Description: GNU C Library: Development binaries
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: ca28cf36e463805ec57f3815849e28a2
+Tag: devel::code-generator, devel::i18n, devel::profiler, devel::rpc,
+ devel::testing-qa, implemented-in::c, interface::commandline,
+ role::program, scope::utility, suite::gnu, works-with::file,
+ works-with::software:running
+Section: libdevel
+Priority: optional
+Filename: pool/main/g/glibc/libc-dev-bin_2.25-3_kfreebsd-i386.deb
+Size: 263636
+MD5sum: a12134b8132e27dcc76645f4195ccd18
+SHA256: d12ba74f1d00063938aa1bba41aef5201ab2c3ecdc6c8e82afb4b481920f0e67
+
+Package: libc-l10n
+Source: glibc
+Version: 2.25-3
+Installed-Size: 4284
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: locales (<< 2.21-1)
+Breaks: locales (<< 2.21-1)
+Description: GNU C Library: localization files
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 53ecaa40591ab16906ffe57e37f97283
+Section: localization
+Priority: standard
+Filename: pool/main/g/glibc/libc-l10n_2.25-3_all.deb
+Size: 844036
+MD5sum: 48c4f8f61af2bd223f091b8a15c04353
+SHA256: ed5c81054cf9dda6edd1e4d3de6fdff8223ecb9e1ce05033dd4c02a977e5af3c
+
+Package: libc0.1
+Source: glibc
+Version: 2.25-3
+Installed-Size: 9308
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Replaces: libc0.1-i386, libc0.1-i686
+Provides: libc0.1-i686
+Depends: libgcc1
+Suggests: glibc-doc, debconf | debconf-2.0, libc-l10n, locales
+Conflicts: openrc (<< 0.27-2~)
+Breaks: hurd (<< 1:0.5.git20140203-1), libtirpc1 (<< 0.2.3), locales (<< 2.25), locales-all (<< 2.25), nscd (<< 2.25)
+Description: GNU C Library: Shared libraries
+Multi-Arch: same
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: fc3001b0b90a1c8e6690b283a619d57f
+Tag: role::shared-lib
+Section: libs
+Priority: optional
+Filename: pool/main/g/glibc/libc0.1_2.25-3_kfreebsd-i386.deb
+Size: 2414580
+MD5sum: a493243d3c098be26ba59db4e369192e
+SHA256: 97c52f68c24e541b0f85f53e014e8d45d27b22814d8c7029e58fd57a0f1a05f9
+
+Package: libc0.1-dbg
+Source: glibc
+Version: 2.25-3
+Installed-Size: 12554
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Provides: libc-dbg
+Depends: libc0.1 (= 2.25-3)
+Description: GNU C Library: detached debugging symbols
+Multi-Arch: same
+Homepage: http://www.gnu.org/software/libc/libc.html
+Build-Ids: 019230ed672a6c90919708d8720ae19c4db93cb6 01938bbc918c58d7095f155c354f5049291a05d4 0289748b4dade264cee7ca82a24bd565daeb1dd1 0316a3d10a338c965483918f4649a5910ff98e4e 04a1e100d13b66463f07b44e9b037d9becf7e8a3 04b2b3bd99747133c250ceb68b62ebef19e337df 05710d34ae8a060e9e973a7a1d35fe63fd3b67f5 06216b4b8bbda583e7e69905980b844d091aa354 0707151ba52c1ab1b0906f9a9bc6c074dd5ebec8 08f033daef1b0037c4d9badb9462524e5e703556 093866c5cb50d015f31bd3542e7b09a22a690153 0a091021c6f61cb20e8b47fadeb441f87588433c 0a57372fadf9e05b1d7920f0d74523ac7b71a105 0b6a7b03915ccfbc01441591825a2867137dc501 0b717fcff9be36e574e752892e76917d6ccc4687 0bd8e1171899c95feb511fd2d7d1cb1d0f219ea5 0c633e55c5c84694f06e17edd4edf5d663bc1872 0ec62181a20914d1ac62db5a0438a91988120863 0ec8be96ae09547b094c128d66fb850fae64d4aa 0f26db4e91c0a1a67dc7e0479a876836894a1bc5 114006867dd9c89b2d4eeffe92cab64c062391aa 115045250b2e2fe218b0563b7bd491b3f8cae001 122dd586cd65efaf3ed5c9ab78b7b790d2468fe2 12b4d408825afb19981cb9d619abc27aab9852fd 12be8c8d34aee224460ff19034844b1071ad2f17 136bcf26893326f1181d4bfd28f1291cf7aac150 14f9719884c33bba4dbd6a29dc3f32e5d3eab226 15099d5528cd5398a8ab9237856cd1c2933d9d1a 152ea0a66326c2159554eadc305e3bd13d4fa476 15a6a5d75b6e86a481c57b1a850b634b0c42d3ee 17c0e8d6b633ec4197c784ae807372fcf519376d 1983d32f762caaa883b9c3e68af2c4e05420ce0b 1a29658db871f4c3135e56bb703ca1bec69400ef 1b82c373c4c54f633ec63533f29f7e935f7c924d 1b96c97276320aa7cf6894a926c1dc0c484e5675 1c2ac4e45cd67a2a530a1ee401548b74879959f6 1cecb8627c5ce5014429ea95b05039ce2f6fb4d3 1e1cd5748b718437fb0de48a50a74ec588afa369 201469fc1442a4a777ff2ec0b2e6581e00aa14cd 2079c2eed25946194353707e1061d35eb80495e3 20d6a46825ad5fd3f47a17e9555d0f6d32db6724 20e2ae9d15a269ff6221c159e51371ebe97b1e06 216714b98b5067b6c9a45aca8bfccb222980a31d 227dd7a8fca51c47ce13d39d486bb3eefc75738f 230b09b2751f6d48c7153777f4db4de93ba49476 2392cb7a6a011dc6a54c97ac802955b6f38567ce 23cacdc24033ce257f4908d9a03d5d7b757e64d1 24760f8197d2acac3a84e2e087ba0fddbce4677b 24a9c1e95072b86164c54e07bb422a6299d34af8 258c3a52c4a38cc4283ed8fad0a01345dedab6fd 25b2a5bb98f59cc208cf87726cfeb4b178bc9488 25bb1370db1926cfbe324ff45883c2037cf4742b 25c3f94604fec041f0f5096bb566100a0df7d873 26113297c4304d4e5f468f1eb77fc6794e6d0de3 277b8bcf73a4e4a4002a156d733fb3b78e0121c2 29d03dd24d02ab88c6c5ecdd3877d5bce9b102e7 2ae228d1dcb6d2dee43055443b52577c93438117 2db7978d26436ef8fc7d42e79b419f3ae40fd1c0 2e1f8c0b5ca6f90b72f6162fc82a8de3b5174954 2f0437aaf4a8ba8cd7b85527c5e47e771a8fe036 2fcc709bbecd2348efab1bbe62352ccef214a77c 2feada0a35df6a770fec9adee80db96aeaa39a90 30122585342e4e41a6d49d05e5026e4827bbacdd 302c60bf303789918fe8c4ac70e147c6ef4aa32c 31525eb4959d50beeaae9a7566def76daf8b1b8f 31f193554403b851aaba0078f0c127ce3655679f 324633d214ef032ab8dddafea787a18b0b5b87ac 327990f540af0441a0f94c45956cb1c22835989a 335a2ad2af905d0096b1ba82cf787776514e39d4 341a8d02e34118875156f8a676467192f5bf637d 35a993476c82fd3452910a2498ed0743d7189525 364ea542acada0cf5c93de7b5fda2aef7f244694 38293e93435201686517b953df7638edd80c1e21 38a71c4859676ab0430d002dfd8e9d95e952ccbf 38b655b28d6dcd852600fcad357dde651bd34b69 39fdde9eeceb586b20f6931be573335cf7aeac6d 3b89cb15ee13200981a81e52a53340da7fa0b4c0 3bc742dc27467908108c974c480e8a47c3a41b26 3c1808e339532a203f28042db3e650188f6d1acd 3d14c8570140cbf526d796cb56167d1ba00d4162 3d21fa31bfc683f038717fcc0dea14304ba5a428 3e9a244768591e98efe5d8f5054551a3e8710f34 3fb0ee856af48065226e016cc97381434f4b6928 402aaa7ef235c1136b6776abb611163968e0c7ea 419359f34e5649b7fe1747c5d4e5d4c9e44d8a40 42a86002e4a230664819164c1346e2eec53f1ba4 42f6e685ab70fc1e4774416a0ec7830d0f38aad0 44d14525f883a1e0dd837de25e2b3a9f0c972e8c 453b9683557bb30db8e8c4b049d31ff1002f844a 46150a99d2a0056258c5f02e8d1a83d18b0da522 46c55d24578d3804e3830a9e6d1169d6e81f1af3 49f44c0cd9856b7ca973fbf830a26387483b3f28 4a26922f57352e436e8b87d896f9a43ad02863c1 4beb18910656bc108282744cc7e2bb82a79419ea 4cb0481227841ddd7e7117e9d3fed897dbc8549a 4d2b19250e6a3c5e8c8038ed46596840442ae3bf 4d882b2d908f4dbdf5448235cbee71234fc20925 521bff5acf371d49b355ec57d5635bed258b9191 5297eb835bc5e2eb64df6ef2805799f53c27857d 52c4c1a7a09d7e1a4bf9f62340a6ecab927d21e5 5391673cef20939adcffc792316dbb200e60bdc4 559973e661dbac206920bdcf26be55d647a12dbf 56e581ddc2c9e3a2f3305fd406c0d74248c1cf47 56ee410f7ecf27290b441bdf978d5df2e1915f27 5707cb64276ce611976eea0b6c3b2619e0b1b795 57c1e7c03b2691837bfef64d2ca701ec6631ac7a 586bd92f20b0a0367c5991a88f941d819de9191d 5923da88b13d7d726a63c8dd51f78ffe0dd3a9d7 594168ae50fc8b4210fa25a25b7103176e9bec3a 59b3d27d417940104534558c9bdfe787ccb06bd2 5b432220e7ec18e27ecda5177b6aafc83b88a1cc 5c7f26d71ed549f2fd31e6cbfcad653ff3cdc378 5d15af93dbe77fc8e2a787892b8e10ac865e85ed 605f62006e24a39859c4773a62ab82f699f1947d 606045d596421b283b0e213722e1beb9567367fd 60eaf0f1850a460ca3ac80eebea140da454473eb 6251fe92d32df3e6f4f42ce7c911b4c2b931033f 64cca1ca81dc95a1eef2aff500fc8e08a2a37330 64d0373e335076baac165c521c1089cb811ddf24 66860206c4383cab488b24cb6146b39d570f7936 66b72c4d151851149933b613a08ccc86bdbd4461 6803a793ace8dfe3afb3ecd3ffb90b51afd058c0 6bbcaac1a8f4f1fbce8eba5ed22003a342ccff8d 6cc92703af8dda04edc42386106a8134eb5ce9ad 6d437d8d61d9dafe9a0cbdb94e6568e01ca25612 6eaf4b034e39c5ff67bd9a3050b6d6e5abc2230f 6f6f310d8a12b89c0a92b2edd8919a9fbe6d8aea 72bba3c1006a175882e1ed845f16d731e712a094 735263644918eb08563b6109a09ea28644795b2c 73863c743981a297f90ce21125b7fbcae82976bc 74ebcae9f6972e9e12dab1c0882454e200315ffd 764a48c488ec4f7935332ab656427ea8eeb13985 76ae73e3aa732125d3d588122591a456ed3e9970 76c2738ed9f16e9e5a1e054a1e20338036aae0ab 77048a0f8630e9ce323f10f44e2e8f917fc91117 77ada9c141d90f39a1a4dc3aa4eef01f8ec3b2a9 77eb30063e8b98064591ad89421b4f97595a5a32 785a3467e430556056091fbcd7aaf4dd5a9b325b 79250aa4a1a069cec5a6a22d7adda69c9e92c02c 7ac909d38d5fcee42508331fdcc262819242fb86 7ad59dd8d1c1bf2d4d83eb6aa54d55f26bd43ff6 7ca1ba28a4708346e2068adf9ff46ab4c32ede81 7ef323d308897aeb690a5fb733ce7a5259a6d309 818606f2d516ac2f818b82bcecbe543a5decd85a 824556cd574754604b8b168e965f12a86963d39c 82653f4b9dba49f71395671c0a9eea0d4c166431 82b6a35dc979fbba2410b4c099592bca1bb83111 83168358febc8406abc17556bead37225e27663e 8416b00bf66a9fd0984d20f4967b54cd90ccbafc 843e92a22e465268e4fba6efabe7474a7e0bd592 84b12af01820ffb8fb6612c361672bc9e10061b9 853843e922c8430a13bf5da217abe75e20d6e2fd 873eeb3da9e9ec54d6656172c7a1cd8685cbe1db 888fab42e4a73cec2188d8d59f6955dd6e742928 8bb3c0424622b140247dc69e59cdd69be3f66891 8bdfe271ecd6067a706b64dcfcca10ad90fffa8e 8c158da0cfb2333b7cc9472526f6b2487d9dc027 8c65338742a6a514d5842bbb239412e6cff80c3d 8cd34817618864ad763fecd0f5c92198a03fcbcc 8d32376dc3f790ee24021368a30497030e7a2c1b 8e1d40acce75d70c40f27463b44f8a24c0338070 8e4066f5fe6b7c902a9c494f57d7424b8ad2bf72 8eeb6fd7a2be5ce7b5c24cbaf22738e54c606011 8f74ef528d9893d4e5e3e6852429450e5de26ade 8fe9767d57610fd2a19bcccf57801acfa403d491 8ff0c8d1c9b3300c5c76dc2896296d8d16c4a9b8 9011b965afa4088647b9c5ca491ae0b63b06764f 906523778a29cdd69fb68c79e1c9d97f8f9a55c7 9094d146fa9774e1b80aabc317f7e4b05a856bcc 910c5a9fc8c383bbecc7f4256ab5445d3560ec9b 91cdde10e3a2b53cbceffb1a12858298e87a045b 93d6801bf7306d7349cfdc706afd7a40183a9565 9702a0a077c032bc0e1156bdb365abcda6571d76 9756cbe0641831a78714333e6ff72f49109f0f2d 976c274ff8870c7603ad2f579c317225727272a7 9839ec40c0197be05ac06bea580222cb5218a292 98aba27029504843ea44242c492c21559e9ac884 9902d57166eee954f9907091a4450b2e6edd0c3c 9a559f99136d482ca1c239d66b74ba069efeaf5c 9ab0704fee47d3dc1f5b1ebed77ba61152139e63 9af8505fd7064f5da16820488943bc4569103538 9b585a304ceca01ea24339bb3f29589793454cfa 9db81ddab48cf33b5c942e3bb91d8078dfee42cc a060bc243d903a21dc120a182d84874a157e283d a0babd473ee86fcf237e107af9e205357cd7b34d a147c201f155717475239b26274418e852821976 a3669b79e58149249579cab32864388d84302a46 a4252dabddb95308b2044b138a599c3f75776d15 a7c2bc1e697a6333cc0612b92b4f9a6b706ce819 a99ef03bf0acacea4f6c9dab010959447d91c779 aa338599545270b792396405f9dca4c0f62b3e57 aa93514b640b597cef2078421634de50e2b806ef aac821e4fd779d655bac775cdadca042ddb73832 ab230f66aec356d328cc1fe2c5dad758df325c4f abd4e42d0ce98035f29fd3a460ead796eca885b5 abf4a023d62b541df454dc67013d864e9e909250 acce4ffb6c364557cd4b2b6ea673707e4141cd27 adcf5ef13116579a06963291ba5e3e85582e7758 aef6bfad9e10680ea1fd2e2cc674cbdf9b6dae26 afc8bb8e1f88d47dcd50b35791da34d234e8f8c1 b161cf8d5ef76b53e0304435888a0d02b4ec87bc b32ac00d351ff12ec967a3f3cbdedba15f36bcd9 b42aa22bbaefd83e6c47fb95a730d5a1b063dc7b b4a1a7cca8838a076a48865a822427322b629f82 b67127025d5b3effb94167b443abbf42b1ddf717 b75be267a290e394fc3344004f10d68a2ac2d756 b7ed52db6ceba4e346a69d12bd9f4c64a9f3ad4a b902f1f7db221811633e013c61b1b5f1a0c994c5 b9b92a62e5aae0da9d3f9891dd4f94491e313672 ba8f92319841bf0f5a4cbe7b250b44943d4b10d3 bb3ebace38879d478bf82c080bdd1612cb40e581 bb4e0e7d05e4ee57ae1790c13d154055ccef0a2c bc7dea23890c41dec2d37ed83bc2d48ca43ab135 bce80b13a554889a74b98fec3d304eefedd63910 bd63387fa45bec34a8268ad7f55fe1920576cd87 be961a048415cbd96ced6775f6d4144f220af343 bf1b018cc7a792afeeacc4ceaf6fc635bdb7027d bf2838b0c056b89d44e8a5819e22c69dda32b498 bff8fc90939a42a42d73e482ff7cc0cdbfc1c6cb c064bad47d9693d166c0bb776f7bd7331e38804f c0eb15e105b7ffabac390a735a05db4260587988 c2b2791e41fd58cc297bfd6b9e32228f66ad9e39 c2d64b69de7d027d1519cd20b15b1d033a3025fa c389a99c4b2b77b54f185529f3b7580d2c28871e c3f149a14bbb6c7e844c5896b2d1958f782078e9 c48d3bc9655909761850f801fdfd8657dd612ddd c53046b4f87af7356d4540dbf78acea98b75f645 c6db0b56154ab7bc76af50875ee11bc9e419607a c7685bb05d2b5678f77005826f63f75ad57eb415 c76aed3115a23b14f17115c88fae172473691a70 c8787b51a0ee38e0d45cd0133bec53d9ad92ce80 ca4ef05259f3d428128d6cd802364def38affa99 ce78e58335600778e80e50f5ac6fe34f150d66e6 d1c840b2ae06d2f01af5fb18c88a7d7ba9fc75ef d3fbf09a4aba52297b4f209b45d1b3d95ada4b74 d9006bdd0d29e0f276569310bfb0bd33484e714c da4bb9e21db51cfbc1afa13ea734b6615c1f22a1 dcdb1db6a92ccaf2f04d09f41cc7a5958f562e21 dd25ae807b5dbb7281e2c212411315f5bf55b226 dd55bde7b493dccb7f6d265f4c88a61c1fbc0aef e09125c4406d2f6db0f68db59f3c9853dd4535fc e1da6520cdc0c87729ecb3e04a9155584dc9e330 e2be368b103213e4782920c06d66e01936c4b4e3 e343dda9b5326f036d9fcbfd03c69513b9a0983d e5f4cb4cf8b5886c004e4974660cd4db042800eb e64fdb8196c8453101c9cf09cfc0f438749c8fe1 e67a6f0083cd4303e2f5fe2b3d755431eb96e2d8 e6fc9fd63f88a9e43f43c94ff57e9c1863aba6d6 e743886bfc02e0e26f162e0dac942e82d96be118 e8350fb18ecc630602a8c8c20a4d8df731be5028 e85385e302d7af46700d423ecb04b90688528b3f e985bdffeb016a825cfecae11adc55304f568f62 ea5b35a849f498313efea275271917ba59eed8a2 ed7133d73b2c174b833d673ebe7ae541f9b9f0f3 eee1c04a003a2f13c7c9e812bf63c4c3399cfcc9 ef3c7b234ff77c70985b86cfa988c4d126b5d142 ef6c78c57a450e9a6e5527d6f8e66ab618016c0d f07bbaff5ad035033dc6ff0d4e54caac8a33bacf f113f0e0a788c879cf4fb6e576ee81645005733e f22da8ea29cda909b364f791f0c87066c29e6959 f2f037a95493275385fa0b41ed254544370484ff f3beaa4dfa92134549a714bef5f449601a82155e f42ceecbc98f7a8ab00fadec18f00c32fb3dc06a f4431dc2c1d50e450a694924495dd0015a4941eb f4899a2d76a218fab33d36658528c1c5177fa940 f48f3135f8b9fa4445c2bb512f24cabbdd35853c f4cc9be4ebda82e46ae2b318ccff7c915b1677f0 f503b2a65779f0ffa9fa7ea2212b08e4b754c3c3 f592ecb8eaa0953e95ec424b548bec09ae942d34 f5d512a317b1e7c31f0663ef35aa2bfd498a0639 f8db5be7be447ec2729a9a8d856025b0b6563695 fd828cc819d66677e6ad5d00eb3757107e8a3968 fd833e42aaaf59ef97a9cb007bdd4d2afa2c2f73 fe41368e5e2b6faf39880e928c29f60b64e534ea feaf4540e3d9238fd5e803b116dd04735b81fb75
+Description-md5: bbc98343da14bf76d4a45c2181fd8902
+Tag: role::debug-symbols
+Section: debug
+Priority: optional
+Filename: pool/main/g/glibc/libc0.1-dbg_2.25-3_kfreebsd-i386.deb
+Size: 8174664
+MD5sum: 5d0025229608acdbcc52772a2cf00fff
+SHA256: ca9078ceb0146b5113d022d1ab1f4dd64951be574d2163fbd1a969cde3af3ad5
+
+Package: libc0.1-dev
+Source: glibc
+Version: 2.25-3
+Installed-Size: 10626
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Replaces: kfreebsd-kernel-headers (<< 10.3~4)
+Provides: libc-dev, libc6-dev
+Depends: libc0.1 (= 2.25-3), libc-dev-bin (= 2.25-3), kfreebsd-kernel-headers (>= 0.11)
+Suggests: glibc-doc, manpages-dev
+Conflicts: libc0.3-dev, libc6-dev, libc6.1-dev
+Breaks: binutils (<< 2.26), binutils-gold (<< 2.20.1-11), cmake (<< 2.8.4+dfsg.1-5), gcc-4.4 (<< 4.4.6-4), gcc-4.5 (<< 4.5.3-2), gcc-4.6 (<< 4.6.0-12), kfreebsd-kernel-headers (<< 10.3~4), libhwloc-dev (<< 1.2-3), libjna-java (<< 3.2.7-4), liblouis-dev (<< 2.3.0-2), liblouisxml-dev (<< 2.4.0-2), make (<< 3.81-8.1), pkg-config (<< 0.26-1)
+Description: GNU C Library: Development Libraries and Header Files
+Multi-Arch: same
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 1bbdc717d9acdb44db940928d570e749
+Tag: devel::library, role::devel-lib
+Section: libdevel
+Priority: optional
+Filename: pool/main/g/glibc/libc0.1-dev_2.25-3_kfreebsd-i386.deb
+Size: 1896556
+MD5sum: 4839c3b200103fdb8870ef80739ed5be
+SHA256: 99b0113a6d0ea4150f558aa9cfe8b2de3eee29878eb2f123237cc0a17fd9f69d
+
+Package: libc0.1-pic
+Source: glibc
+Version: 2.25-3
+Installed-Size: 6322
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Provides: glibc-pic, libc-pic
+Depends: libc0.1 (= 2.25-3)
+Conflicts: libc-pic
+Description: GNU C Library: PIC archive library
+Multi-Arch: same
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: f7532ae2bb48ede897a6da638f062d2e
+Tag: devel::library, role::devel-lib
+Section: libdevel
+Priority: optional
+Filename: pool/main/g/glibc/libc0.1-pic_2.25-3_kfreebsd-i386.deb
+Size: 1327224
+MD5sum: cae6420092f59f5b618e007f9e8c1140
+SHA256: fd50d794199323dd32f8a7b1f561a341cd13c8cbd77269881d8b6230ea5f11d5
+
+Package: locales
+Source: glibc
+Version: 2.25-3
+Installed-Size: 9250
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: manpages-fr-extra (<< 20141022)
+Depends: libc-bin (>> 2.25), libc-l10n (>> 2.25), debconf (>= 0.5) | debconf-2.0
+Description: GNU C Library: National Language (locale) data [support]
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 68ccf846a4935e541c4a717fc0a1f3e3
+Tag: admin::configuring, devel::i18n, implemented-in::c, role::app-data,
+ role::program, scope::utility, suite::gnu
+Section: localization
+Priority: standard
+Filename: pool/main/g/glibc/locales_2.25-3_all.deb
+Size: 3288244
+MD5sum: 9ca7e6f5ff6f9d0eaff849fb9454824d
+SHA256: cb3421839628d2a809d891d209e5d0446718c17b1ef90c986a768d04e725d81b
+
+Package: locales-all
+Source: glibc
+Version: 2.25-3
+Installed-Size: 126726
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Depends: libc-l10n (>> 2.25)
+Breaks: locales (<< 2.13-17)
+Description: GNU C Library: Precompiled locale data
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: c360552536cba624a24a347b513939dd
+Section: localization
+Priority: optional
+Filename: pool/main/g/glibc/locales-all_2.25-3_kfreebsd-i386.deb
+Size: 3591324
+MD5sum: 63470d565465a4df6471d48c9982f891
+SHA256: 50b25a2894f82cd6ecb54e7ec47a74489dffb187249bb48a4f5d817f0aee83be
+
+Package: multiarch-support
+Source: glibc
+Version: 2.25-3
+Installed-Size: 224
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Depends: libc0.1 (>= 2.13-5)
+Description: Transitional package to ensure multiarch compatibility
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: f70fd4ad370040691119c10d77aec677
+Tag: role::shared-lib
+Section: oldlibs
+Priority: optional
+Filename: pool/main/g/glibc/multiarch-support_2.25-3_kfreebsd-i386.deb
+Size: 204128
+MD5sum: 8e115982456e478062c89f6362c8f1d0
+SHA256: 6b4c1981db72d225e95ffdf7cbb8687e7d2daffd744917b339aab187b5c7ea65
+
+Package: nscd
+Source: glibc
+Version: 2.25-3
+Installed-Size: 379
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: kfreebsd-i386
+Depends: lsb-base (>= 3.0-6), libc0.1 (>> 2.25), libc0.1 (<< 2.26)
+Description: GNU C Library: Name Service Cache Daemon
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: e8172254ec0df735a3e44c0f557100bc
+Tag: interface::daemon, network::server, protocol::dns, role::program,
+ suite::gnu, use::proxying
+Section: admin
+Priority: optional
+Filename: pool/main/g/glibc/nscd_2.25-3_kfreebsd-i386.deb
+Size: 264628
+MD5sum: f7d317f620a748e6d52bf3db39ddd324
+SHA256: 240b221049831fe303ba3c9f120ebe7cfba85f4393e026afe57a4c98219fda0c
+

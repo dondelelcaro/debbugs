@@ -1,0 +1,79 @@
+Package: glibc-doc
+Source: glibc
+Version: 2.24-11+deb9u3
+Installed-Size: 3138
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Suggests: glibc-doc-reference
+Description: GNU C Library: Documentation
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: ec34f59d4398ff8ca003177c6585bf0a
+Tag: devel::doc, devel::lang:c, devel::library, made-of::html, made-of::info,
+ role::documentation, suite::gnu
+Section: doc
+Priority: optional
+Filename: pool/main/g/glibc/glibc-doc_2.24-11+deb9u3_all.deb
+Size: 2553098
+MD5sum: c46e97d110005b29cfaaa89ecf67f8fc
+SHA256: a4c4df18fc3c4bf9d2cfd9f4c322c93cc11335dcf9a8f10392b05790e5675b1f
+
+Package: glibc-source
+Source: glibc
+Version: 2.24-11+deb9u3
+Installed-Size: 22560
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: eglibc-source
+Recommends: xz-utils
+Conflicts: eglibc-source
+Description: GNU C Library: sources
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 1892ef83f2f36db0d236ccc041158b32
+Section: devel
+Priority: optional
+Filename: pool/main/g/glibc/glibc-source_2.24-11+deb9u3_all.deb
+Size: 15393260
+MD5sum: 895893ca725025c992f68689bdbf230a
+SHA256: acca83e205ea683eb8d126489a2dc3a63a7c19f63978e354cd5fca3e7c513360
+
+Package: libc-l10n
+Source: glibc
+Version: 2.24-11+deb9u3
+Installed-Size: 4210
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: locales (<< 2.21-1)
+Breaks: locales (<< 2.21-1)
+Description: GNU C Library: localization files
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 53ecaa40591ab16906ffe57e37f97283
+Section: localization
+Priority: standard
+Filename: pool/main/g/glibc/libc-l10n_2.24-11+deb9u3_all.deb
+Size: 819858
+MD5sum: 307ace15f0bccae3093ad5a03671c74d
+SHA256: 5de29dd83d378d89352f58ccaaf1613783208c42d409885de22463fa50e614a1
+
+Package: locales
+Source: glibc
+Version: 2.24-11+deb9u3
+Installed-Size: 9245
+Maintainer: GNU Libc Maintainers <debian-glibc@example.com>
+Architecture: all
+Replaces: manpages-fr-extra (<< 20141022)
+Depends: libc-bin (>> 2.24), libc-l10n (>> 2.24), debconf (>= 0.5) | debconf-2.0
+Description: GNU C Library: National Language (locale) data [support]
+Homepage: http://www.gnu.org/software/libc/libc.html
+Description-md5: 68ccf846a4935e541c4a717fc0a1f3e3
+Tag: admin::configuring, devel::i18n, implemented-in::c, role::app-data,
+ role::program, scope::utility, suite::gnu
+Section: localization
+Priority: standard
+Filename: pool/main/g/glibc/locales_2.24-11+deb9u3_all.deb
+Size: 3287368
+MD5sum: a0985470584256dfc949b562bb26838a
+SHA256: e112db9d631fb86d7b998801e0c906dc29e28cc9b3ace96d9a4c370b7dd1ca0f
+

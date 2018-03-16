@@ -1,0 +1,22 @@
+Package: debbugs
+Binary: debbugs
+Version: 2.4.1
+Maintainer: Debbugs developers <debian-debbugs@example.com>
+Uploaders: Josip Rodin <jrodin@example.com>, Colin Watson <cjwatson@example.com>
+Build-Depends-Indep: debhelper
+Architecture: all
+Standards-Version: 3.2.1
+Format: 1.0
+Files:
+ be53b401dee7439bbb1a958aa9536023 651 debbugs_2.4.1.dsc
+ 9ea18f80dd547609304640c7ec0b15f3 112166 debbugs_2.4.1.tar.gz
+Checksums-Sha1:
+ 4e2016f8ae27ba268559a9c5039419326c66e10d 651 debbugs_2.4.1.dsc
+ f95678cf4f47af19f6cfb25d841c0d53fdfe3a8d 112166 debbugs_2.4.1.tar.gz
+Checksums-Sha256:
+ 9dfacc671b690f8f45b174786455662e1ffd040eca820fe77cb406db344d86e5 651 debbugs_2.4.1.dsc
+ a72733d6a8c67fffab63cf002f418b36d199a7e77e95309e69cd5ce2e89127f0 112166 debbugs_2.4.1.tar.gz
+Directory: pool/main/d/debbugs
+Priority: source
+Section: misc
+

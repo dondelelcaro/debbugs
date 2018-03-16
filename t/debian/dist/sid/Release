@@ -1,0 +1,38 @@
+Codename: sid
+Components: main contrib non-free
+Date: Tue, 27 Feb 2018 14:38:19 UTC
+Description: Debian x.y Unstable - Not Released
+Origin: Debian
+Suite: unstable
+MD5Sum:
+ d704998c2af390e2ae8633aaacd91d56            11252 main/binary-all/Packages
+ 09260af30e15faf326c5ef8c39050f2a            24324 main/binary-amd64/Packages
+ c772d8117b248443f7674d0cd6153ced            21225 main/binary-hurd-i386/Packages
+ 9d3890b9e37cc1c2b06412ef88536cf7            25808 main/binary-i386/Packages
+ d8ef26e49dbc4ec876507de9b89d5e1d            22734 main/binary-kfreebsd-amd64/Packages
+ 7faac31800e958b3668cf252054d6183            21457 main/binary-kfreebsd-i386/Packages
+ 7140ed2a46d423913809f80b00cb640d           138812 main/source/Packages
+SHA1:
+ e4393464d5e0143fae7dc7c7e6494c8ad84443e2            11252 main/binary-all/Packages
+ 3706b5da6865cfd214d8eab1f35d94e0185ced7e            24324 main/binary-amd64/Packages
+ ec07f6314c5c5787f9cc813aa16a6466493d9548            21225 main/binary-hurd-i386/Packages
+ 03e6d59970e988348587a20b546b87e115221c9c            25808 main/binary-i386/Packages
+ aff83fa27b6e2fc482b8d4993c3a53e97f0499bd            22734 main/binary-kfreebsd-amd64/Packages
+ 0892bb1d2b90f69cdce04b5eff864e845c70edf9            21457 main/binary-kfreebsd-i386/Packages
+ bd9f95b9541d55e18650e2c6be31449441d3a5c5           138812 main/source/Packages
+SHA256:
+ 9cee41b73b6fb3850ed0a7a4c27e894eeb9b872841a0172e54581b42851cc54a            11252 main/binary-all/Packages
+ 61e976c04c7a8aca54a4663b7e7e74d7f6e51851301e26317a56a61edbfff909            24324 main/binary-amd64/Packages
+ 6282cd373d7c3795f4e06263a710cb1dcbb63534e0286e42850adb901c6db1c0            21225 main/binary-hurd-i386/Packages
+ 0f106794a2f6c58f98e1652925c85641d9b684cb40162ab6a486cd250f66047c            25808 main/binary-i386/Packages
+ 7218f498e7b3a4b131479ee759f00cac1b0a465e0da57a159e28aabf0d32b7dd            22734 main/binary-kfreebsd-amd64/Packages
+ 72d9070e03b706cec2e9268dbc5495c0b9c362888dcdd6f0c81d2cb6337b9997            21457 main/binary-kfreebsd-i386/Packages
+ eabf848fa6e13b43661acec51353cfe8c747f713022d78b1ce9394d969ad557c           138812 main/source/Packages
+SHA512:
+ 84aa6d02c53c1edd1d7491db9654afc740da7c0cba2d1467cf615929eaa0d2f5818b36d37653a98b09aa7e70906a90267f7e586f58fd1190e7f4b319df9c2aa2            11252 main/binary-all/Packages
+ 4235a8447f923e3b2ce774404df1f980bb8917b3332e18546180e5dd862a1d64e287d93695df3b7d0ee8d74a791407885d038028d20b9a3c6a149c28f800cf9d            24324 main/binary-amd64/Packages
+ f6064d360e390a0315965ef3d578d3332d2f1bc02d339a0c1a0bc65e4cd56fa29a4a07eb7a4107c80aac499f071fc04e7b6b677313d4c23c53e5cd3da1322e5b            21225 main/binary-hurd-i386/Packages
+ f3e1f64fe148c05b0eeaafab66e0c25eee8d7eb3bfd75dbdf1f381f28224813e4624a699cf8ab8d41f8eb773fe1fdc0981f79ed2ab3ae47c3e6f727a02878382            25808 main/binary-i386/Packages
+ 74bedd5ea919a1aad32b84160bb815eb8bd53023f3596fe01eba125f5d770de7b7535220086c669c3646b67af9a468fadf1370317d59a799a64b4fc4d6765bab            22734 main/binary-kfreebsd-amd64/Packages
+ 3c31353dac492329716659c86b9af9436874e903d238850f4b18c8fa294b85b1e363bfdeb30a4d24b8b8a57b3db543d8f6914c8349d66cf7608504e0b6dc0ef6            21457 main/binary-kfreebsd-i386/Packages
+ 90ed9f752618b2a0cd2d71a4b123a82aac2da5efcaaedaab9f0005cb2cf68fed7de5149b5555bd66b932a52d65ddf196dbc771efbad3fd803462bffb14a3e18c           138812 main/source/Packages

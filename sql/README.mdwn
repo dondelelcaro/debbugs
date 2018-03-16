@@ -1,0 +1,17 @@
+# Developer specific instructions #
+## Upgrading Schema ##
+
+To make changes to the database schema:
+
+1. Make whatever changes are appropriate to the SQL directly in the
+   debbugs_schema.sql file, and make corresponding changes to the
+   database (or dump the entire database and otherwise make the
+   changes).
+    + If you add non-unique indexes, you will need to add an sqlt_deploy_hook
+      (or edit an exist one) to add the index
+2. Run `./sql/dbicdump_command.sh` to update the DBIx::Class classes which are
+   under Debbugs::DB if you made changes to the database directly
+3. Increment the version of Debbugs::DB;
+
+Steps 1 and 2 can alternatively be performed by changing the
+DBIx::Class classes directly if that is desired.

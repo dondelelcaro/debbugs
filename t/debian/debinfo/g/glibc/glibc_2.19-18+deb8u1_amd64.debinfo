@@ -1,0 +1,16 @@
+multiarch-support 2.19-18+deb8u1 amd64 glibc 2.19-18+deb8u1
+libc-dev-bin 2.19-18+deb8u1 amd64 glibc 2.19-18+deb8u1
+libc-bin 2.19-18+deb8u1 amd64 glibc 2.19-18+deb8u1
+libc6-udeb 2.19-18+deb8u1 amd64 glibc 2.19-18+deb8u1
+libc6-x32 2.19-18+deb8u1 amd64 glibc 2.19-18+deb8u1
+libc6-dev-i386 2.19-18+deb8u1 amd64 glibc 2.19-18+deb8u1
+libc6-pic 2.19-18+deb8u1 amd64 glibc 2.19-18+deb8u1
+libnss-files-udeb 2.19-18+deb8u1 amd64 glibc 2.19-18+deb8u1
+libc6-dev 2.19-18+deb8u1 amd64 glibc 2.19-18+deb8u1
+locales-all 2.19-18+deb8u1 amd64 glibc 2.19-18+deb8u1
+libc6 2.19-18+deb8u1 amd64 glibc 2.19-18+deb8u1
+libc6-dev-x32 2.19-18+deb8u1 amd64 glibc 2.19-18+deb8u1
+libnss-dns-udeb 2.19-18+deb8u1 amd64 glibc 2.19-18+deb8u1
+libc6-dbg 2.19-18+deb8u1 amd64 glibc 2.19-18+deb8u1
+nscd 2.19-18+deb8u1 amd64 glibc 2.19-18+deb8u1
+libc6-i386 2.19-18+deb8u1 amd64 glibc 2.19-18+deb8u1

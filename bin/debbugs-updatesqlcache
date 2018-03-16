@@ -1,0 +1,406 @@
+#! /usr/bin/perl
+# debbugs-updatesqlcache is part of debbugs, and is released
+# under the terms of the GPL version 2, or any later version, at your
+# option. See the file README and COPYING for more information.
+# Copyright 2016 by Don Armstrong <don@donarmstrong.com>.
+
+
+use warnings;
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case);
+use Pod::Usage;
+
+=head1 NAME
+
+debbugs-updatesqlcache -- Update Debbugs SQL Cache
+
+=head1 SYNOPSIS
+
+debbugs-updatesqlcache [options]
+
+ Options:
+  --quick, -q only load changed bugs
+  --progress Show progress bar
+  --service, -s service name
+  --sysconfdir, -c postgresql service config dir
+  --spool-dir debbugs spool directory
+  --debug, -d debugging level (Default 0)
+  --help, -h display this help
+  --man, -m display manual
+
+=head1 SUBCOMMANDS
+
+=head2 help
+
+Display this manual
+
+=head2 update
+
+Update SQL cache
+
+=head1 OPTIONS
+
+=over
+
+=item B<--quick, -q>
+
+Only update things which may have changed
+
+=item B<--progress>
+
+Show progress bar (requires Term::ProgressBar)
+
+=item B<--service,-s>
+
+Postgreql service to use; defaults to debbugs
+
+=item B<--sysconfdir,-c>
+
+System configuration directory to use; if not set, defaults to the
+postgresql default. [Operates by setting PGSYSCONFDIR]
+
+=item B<--spool-dir>
+
+Debbugs spool directory; defaults to the value configured in the
+debbugs configuration file.
+
+=item B<--verbose>
+
+Output more information about what is happening. Probably not useful
+if you also set --progress.
+
+=item B<--debug, -d>
+
+Debug verbosity.
+
+=item B<--help, -h>
+
+Display brief useage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+
+=cut
+
+
+use vars qw($DEBUG);
+
+use Debbugs::Common qw(checkpid lockpid get_hashname getparsedaddrs getbugcomponent make_list getsourcemaintainers);
+use Debbugs::Config qw(:config);
+use Debbugs::Status qw(bug_presence read_bug);
+use Debbugs::DB;
+use DateTime;
+use File::stat;
+use List::MoreUtils qw(natatime uniq);
+use POSIX qw(ceil);
+
+my %options =
+    (debug           => 0,
+     help            => 0,
+     man             => 0,
+     verbose         => 0,
+     quiet           => 0,
+     quick           => 0,
+     archived        => 0,
+     service         => $config{debbugs_db},
+     progress        => 0,
+    );
+
+Getopt::Long::Configure('pass_through');
+GetOptions(\%options,
+           'quick|q!',
+           'service|s=s',
+           'sysconfdir|c=s',
+           'progress!',
+	   'archived+',
+           'spool_dir|spool-dir=s',
+           'verbose|v+',
+           'quiet+',
+           'debug|d+','help|h|?','man|m');
+Getopt::Long::Configure('default');
+
+pod2usage() if $options{help};
+pod2usage({verbose=>2}) if $options{man};
+
+$DEBUG = $options{debug};
+
+my %subcommands =
+    ('update' => {function => \&update_cache,
+		  arguments => {'suites|suite=s@' => 0,
+			       },
+               },
+     'help' => {function => sub {pod2usage({verbose => 2});}}
+    );
+
+my @USAGE_ERRORS;
+$options{verbose} = $options{verbose} - $options{quiet};
+
+if ($options{progress}) {
+    eval "use Term::ProgressBar";
+    push @USAGE_ERRORS, "You asked for a progress bar, but Term::ProgressBar isn't installed" if $@;
+}
+
+
+pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
+
+if (exists $options{sysconfdir}) {
+    if (not defined $options{sysconfdir} or not length $options{sysconfdir}) {
+        delete $ENV{PGSYSCONFDIR};
+    } else {
+        $ENV{PGSYSCONFDIR} = $options{sysconfdir};
+    }
+}
+
+if (exists $options{spool_dir} and defined $options{spool_dir}) {
+    $config{spool_dir} = $options{spool_dir};
+}
+
+my $prog_bar;
+if ($options{progress}) {
+    $prog_bar = eval "Term::ProgressBar->new({count => 1,ETA=>q(linear)})";
+    warn "Unable to initialize progress bar: $@" if not $prog_bar;
+}
+
+
+my ($subcommand) = shift @ARGV;
+if (not defined $subcommand) {
+    $subcommand = 'help';
+    print STDERR "You must provide a subcommand; displaying usage.\n";
+    pod2usage();
+} elsif (not exists $subcommands{$subcommand}) {
+    print STDERR "$subcommand is not a valid subcommand; displaying usage.\n";
+    pod2usage();
+}
+
+my $opts =
+    handle_subcommand_arguments(\@ARGV,$subcommands{$subcommand}{arguments});
+$subcommands{$subcommand}{function}->(\%options,$opts,$prog_bar,\%config,\@ARGV);
+
+sub update_cache {
+    my ($options,$opts,$p,$config,$argv) = @_;
+
+    my $verbose = $options->{debug};
+    # select bugs to update
+
+    # basically, if this is a quick run, we want any bug which has
+    # been modified or any bug which belongs to a package which has a
+    # new version; otherwise, walk every bug
+    my $s = db_connect($options);
+
+    # get all of the possible architectures that we might care about
+    # select distinct s.codename,a.arch from bin_associations ba join bin_ver bv on ba.bin=bv.id join suite s on ba.suite=s.id join arch a on bv.arch=a.id;
+
+    my @suites;
+    if (exists $opts->{suites}) {
+	@suites =
+	    $s->resultset('Suite')->
+	    search_rs({active => 1,
+		       -or => {codename => [make_list($opts->{suites})],
+			       suite_name => [make_list($opts->{suites})],
+			      },
+		      },
+		     {result_class => 'DBIx::Class::ResultClass::HashRefInflator'}
+		     )->all();
+     } else {
+	@suites = 
+	    $s->resultset('Suite')->
+	    search_rs({active => 1,
+		      },
+		     {result_class => 'DBIx::Class::ResultClass::HashRefInflator'}
+		     )->all();
+    }
+    my @bugs;
+    my $bugs;
+    if ($options->{quick}) {
+	# identify the last time that we ran this query
+	my $last_query_time =
+	    $s->resultset('BugStatusCache')->
+	    search_rs(undef,
+		     {rows => 1,
+		      order_by => { -desc => 'asof' },
+		      columns => [qw(asof)],
+		     }
+		     )->first();
+	my $dtf = $s->storage->datetime_parser;
+	if (defined $last_query_time) {
+	    $last_query_time = $last_query_time->asof();
+	} else {
+	    $last_query_time = DateTime->from_epoch(0);
+	}
+        # select last status update
+	$last_query_time = $dtf->format_datetime($last_query_time);
+	# select all bugs which are in packages which have had a binary
+	# association modified
+	push @bugs,
+	    map {$_->{bug_binpackages}{bug}}
+	    $s->resultset('BinAssociation')->
+	    search_rs({'me.modified' => {'>=',$last_query_time},
+		      },
+		     {columns => [qw(bug_binpackages.bug)],
+		      join => {bin =>
+			      {bin_pkg =>
+			       'bug_binpackages'
+			      }},
+		      result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+		     },
+		     )->all();
+	# or a source association modified
+	push @bugs,
+	    map {$_->{bug_srcpackages}{bug}}
+	    $s->resultset('SrcAssociation')->
+	    search_rs({'me.modified' => {'>=',$last_query_time},
+		      },
+		     {columns => [qw(bug_srcpackages.bug)],
+		      join => {source =>
+			      {src_pkg =>
+			       'bug_srcpackages'
+			      }},
+		      result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+		     },
+		     )->all();
+	# or bugs which have been modified since we last ran
+	push @bugs,
+	    map {$_->{id}}
+	    $s->resultset('Bug')->
+	    search_rs({-or => {'me.log_modified' => {'>=',$last_query_time},
+			       'me.last_modified' => {'>=',$last_query_time},
+			      },
+		       archived => ! $options->{archived},
+		      },
+		     {columns => [qw(id)],
+		      result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+		     },
+		     )->all();
+	@bugs = uniq(@bugs);
+
+    } else {
+	## or just select all of them
+	push @bugs,
+	    map {$_->{id}}
+	    $s->resultset('Bug')->
+	    search_rs({archived => ! $options->{archived}},
+		     {columns => [qw(id)],
+		      result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+		     },
+		     )->all();
+    }
+    my $update_bug =
+	sub {
+	    my @b = @_;
+	    for my $bug (@b) {
+		my $status = read_bug(bug => $bug);
+		next unless defined $status;
+		for my $suite (@suites) {
+		    my $presence =
+			bug_presence(bug => $bug,
+				     status => $status,
+				     dist => $suite->{suite_name},
+				    );
+		    $s->resultset('BugStatusCache')->
+			update_bug_status($bug,
+					  $suite->{id},
+					  undef,
+					  $presence,
+					 );
+		}
+	    }
+	};
+    my $it = natatime 500,@bugs;
+    my $page = 0;
+    my $last_page = ceil(@bugs / 500);
+    $p->target($last_page) if defined $p;
+    while (my @b_sub = $it->()) {
+	$s->txn_do($update_bug,
+		   @b_sub);
+	$page++;
+	$p->update($page) if defined $p;
+    }
+    $p->remove() if $p;
+}
+
+
+sub handle_subcommand_arguments {
+    my ($argv,$args) = @_;
+    my $subopt = {};
+    Getopt::Long::GetOptionsFromArray($argv,
+                              $subopt,
+                              keys %{$args},
+                             );
+    my @usage_errors;
+    for my $arg  (keys %{$args}) {
+        next unless $args->{$arg};
+        my $r_arg = $arg; # real argument name
+        $r_arg =~ s/[=\|].+//g;
+        if (not defined $subopt->{$r_arg}) {
+            push @usage_errors, "You must give a $r_arg option";
+        }
+    }
+    pod2usage(join("\n",@usage_errors)) if @usage_errors;
+    return $subopt;
+}
+
+sub get_lock{
+    my ($subcommand,$config,$options) = @_;
+    if (not lockpid($config->{spool_dir}.'/lock/debbugs-updatesqlcache-$subcommand')) {
+        if ($options->{quick}) {
+            # If this is a quick run, just exit
+            print STDERR "Another debbugs-updatesqlcache is running; stopping\n" if $options->{verbose};
+            exit 0;
+        }
+        print STDERR "Another debbugs-updatesqlcache is running; stopping\n";
+        exit 1;
+    }
+}
+
+sub db_connect {
+    my ($options) = @_;
+    # connect to the database; figure out how to handle errors
+    # properly here.
+    my $s = Debbugs::DB->connect('dbi:Pg:service='.$options->{service}) or
+        die "Unable to connect to database: ";
+}
+
+sub walk_bugs {
+    my ($dirs,$p,$what,$verbose,$sub) = @_;
+    my @dirs = @{$dirs};
+    my $tot_dirs = @dirs;
+    my $done_dirs = 0;
+    my $avg_subfiles = 0;
+    my $completed_files = 0;
+    while (my $dir = shift @dirs) {
+        printf "Doing dir %s ...\n", $dir if $verbose;
+
+        opendir(DIR, "$dir/.") or die "opendir $dir: $!";
+        my @subdirs = readdir(DIR);
+        closedir(DIR);
+
+        my @list = map { m/^(\d+)\.$what$/?($1):() } @subdirs;
+        $tot_dirs -= @dirs;
+        push @dirs, map { m/^(\d+)$/ && -d "$dir/$1"?("$dir/$1"):() } @subdirs;
+        $tot_dirs += @dirs;
+        if ($avg_subfiles == 0) {
+            $avg_subfiles = @list;
+        }
+
+        $p->target($avg_subfiles*($tot_dirs-$done_dirs)+$completed_files+@list) if $p;
+        $avg_subfiles = ($avg_subfiles * $done_dirs + @list) / ($done_dirs+1);
+        $done_dirs += 1;
+
+        for my $bug (@list) {
+            $completed_files++;
+            $p->update($completed_files) if $p;
+            print "Up to $completed_files bugs...\n" if ($completed_files % 100 == 0 && $verbose);
+            $sub->($bug);
+        }
+    }
+    $p->remove() if $p;
+}
+
+
+
+__END__
