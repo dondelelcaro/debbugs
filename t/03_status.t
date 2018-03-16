@@ -26,7 +26,7 @@ is_deeply($temp[0]{blocks},[qw(1 2 3)],
 is_deeply($temp[0]{blockedby},[],
 	  'split_status_fields handles empty fields properly',
 	 );
-is_deeply($temp[0]{tags},[qw(foo bar baz)],
+is_deeply($temp[0]{tags},[qw(bar baz foo)],
 	  'split_status_fields splits tags properly',
 	 );
 my $temp = Debbugs::Status::split_status_fields($data);
