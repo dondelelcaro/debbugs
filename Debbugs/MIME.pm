@@ -90,7 +90,7 @@ sub getmailbody
     return undef;
 }
 
-=item parse_to_mime_entity
+=head2 parse_to_mime_entity
 
      $entity = parse_to_mime_entity($record);
 
