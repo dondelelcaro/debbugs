@@ -26,7 +26,7 @@ use base 'DBIx::Class::ResultSet';
 
 use Debbugs::DB::Util qw(select_one);
 
-use List::MoreUtils qw(natatime);
+use List::AllUtils qw(natatime);
 
 
 =over

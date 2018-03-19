@@ -96,7 +96,7 @@ use Debbugs::Status qw(bug_presence read_bug);
 use Debbugs::DB;
 use DateTime;
 use File::stat;
-use List::MoreUtils qw(natatime uniq);
+use List::AllUtils qw(natatime uniq);
 use POSIX qw(ceil);
 
 my %options =

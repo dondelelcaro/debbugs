@@ -42,7 +42,7 @@ BEGIN{
 }
 
 use Params::Validate qw(validate_with :types);
-use List::MoreUtils qw(natatime);
+use List::AllUtils qw(natatime);
 
 use Debbugs::Status qw(read_bug split_status_fields);
 use Debbugs::DB;

@@ -518,7 +518,7 @@ __PACKAGE__->belongs_to(
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:iaipVETTaokcFNrICfIEAw
 
 use Carp;
-use List::MoreUtils qw(uniq);
+use List::AllUtils qw(uniq);
 
 __PACKAGE__->many_to_many(tags => 'bug_tags','tag');
 __PACKAGE__->many_to_many(user_tags => 'bug_user_tags','user_tag');

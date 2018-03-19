@@ -147,7 +147,7 @@ use IO::Dir;
 use IO::File;
 use IO::Uncompress::AnyUncompress;
 use Encode qw(decode_utf8);
-use List::MoreUtils qw(natatime);
+use List::AllUtils qw(natatime);
 
 my %options =
     (debug           => 0,
