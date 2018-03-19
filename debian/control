@@ -18,6 +18,7 @@ Build-Depends-Indep: libparams-validate-perl,
  libdbix-class-timestamp-perl,
  libdatetime-format-mail-perl,
  postgresql,
+ postgresql-9.6-debversion|postgresql-10-debversion,
  libtext-xslate-perl, graphviz, libtext-iconv-perl, libnet-server-perl,
 # used to make the logo
  inkscape
@@ -32,7 +33,8 @@ Depends:
  exim4 | mail-transport-agent,
  libdebbugs-perl
 Recommends: debbugs-web (>= 2.6~)
-Suggests: spamassassin (>= 3.0), libcgi-alert-perl, postgresql
+Suggests: spamassassin (>= 3.0), libcgi-alert-perl, postgresql,
+ postgresql-9.6-debversion|postgresql-10-debversion
 Description: bug tracking system based on the active Debian BTS
  Debian has a bug tracking system which files details of bugs reported by
  users and developers. Each bug is given a number, and is kept on file until
