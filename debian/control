@@ -16,6 +16,7 @@ Build-Depends-Indep: libparams-validate-perl,
  libfile-libmagic-perl, libgravatar-url-perl, libwww-perl, imagemagick,
  libdbix-class-perl, libdatetime-format-pg-perl, libtest-postgresql-perl,
  libdbix-class-timestamp-perl,
+ libdbix-class-deploymenthandler-perl,
  libdatetime-format-mail-perl,
  libaliased-perl,
  postgresql,
@@ -59,6 +60,7 @@ Depends:
  libfile-libmagic-perl, libgravatar-url-perl, libwww-perl, imagemagick
  # used by the database
  libdbix-class-timestamp-perl,
+ libdbix-class-deploymenthandler-perl,
  libaliased-perl,
  libdatetime-format-mail-perl, libdbix-class-perl, libdatetime-format-pg-perl
 Section: perl
