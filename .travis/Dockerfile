@@ -6,10 +6,10 @@ RUN apt-get -qq update; \
 COPY debian/control debian/control
 COPY debian/changelog debian/changelog
 RUN dch -r -m '';
-RUN apt-get -qq update; \
+RUN apt-get -qq update && \
  mk-build-deps --install \
  --tool 'apt-get -y -o Debug:pkgProblemResolver=yes --no-install-recommends' \
- debian/control; \
- rm -rf /var/lib/apt/lists/*; \
+ debian/control && \
+ rm -rf /var/lib/apt/lists/* && \
  apt-get clean;
 COPY . debbugs
