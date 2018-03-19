@@ -16,6 +16,8 @@ RUN echo '\nPackage: *\nPin: release a=unstable\nPin-Priority: 1\n\n'\
  >> /etc/apt/preferences
 RUN echo '\nPackage: *\nPin: release a=stretch-backports\nPin-Priority: 500\n\n'\
  >> /etc/apt/preferences
+# work around slim image interacting with missing documentation
+RUN for a in $(seq 1 7); do mkdir -p /usr/share/man/man$a; done;
 RUN apt-get -qq update && \
  mk-build-deps --install \
  --tool 'apt-get -y -o Debug:pkgProblemResolver=yes --no-install-recommends' \
