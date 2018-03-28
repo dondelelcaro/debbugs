@@ -1,88 +1,186 @@
 #!/usr/bin/perl
-# $Id: processall.in,v 1.13 2005/10/06 03:46:13 ajt Exp $
-#
-# Usage: processall
-#
+# processall dispatches incomming messages to process or service
+# and is released under the terms of the GNU GPL version 3, or any
+# later version, at your option. See the file README and COPYING for
+# more information.
+# Copyright 2018 by Don Armstrong <don@donarmstrong.com>.
+
+
+use warnings;
+use strict;
+
+use Getopt::Long;
+use Pod::Usage;
+use Debbugs::Config qw(:config);
+use Debbugs::Common qw(:lock);
+use Filesys::Notify::Simple;
+use File::Path;
+
+=head1 NAME
+
+processall - dispatches incomming messages to process or service
+
+=head1 SYNOPSIS
+
+processall [options]
+
+Options:
+--debug, -d debugging level (Default 0)
+--help, -h display this help
+--man, -m display manual
+
+=head1 OPTIONS
+
+=over
+
+=item B<--debug, -d>
+
+Debug verbosity. (Default 0)
+
+=item B<--help, -h>
+
+Display brief usage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+=head1 EXAMPLES
+
+C<processall>
+
+=cut
+
 # Uses up: incoming/I<code><bugnum>.nn
 # Temps:   incoming/[GP].nn
 # Creates: incoming/E.nn
 # Stop:    stop
 
-use warnings;
-use strict;
 
+use vars qw($DEBUG);
 
-use Debbugs::Config qw(:globals);
-use Debbugs::Common qw(:lock);
+my %options = (debug           => 0,
+               help            => 0,
+               man             => 0,
+              );
 
-my $lib_path = $gLibPath;
+GetOptions(\%options,
+           'debug|d+','help|h|?','man|m');
 
-use File::Path;
+pod2usage() if $options{help};
+pod2usage({verbose=>2}) if $options{man};
 
-chdir( $gSpoolDir ) || die "chdir spool: $!\n";
+$DEBUG = $options{debug};
 
-#open(DEBUG,">&4");
+my @USAGE_ERRORS;
+if (@ARGV) {
+    push @USAGE_ERRORS,"This script takes no arguments";
+}
+
+pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
+
+my $lib_path = $config{lib_path};
+
+chdir( $config{spool_dir} ) or
+    die "Unable to chdir to spool ($config{spool_dir}): $!\n";
+
+if (not lockpid('processall.pid')) {
+    print STDERR "Another processall is running";
+    exit 1;
+}
 
 umask(002);
 
-$|=1;
-my %fudged;
-my @ids;
+process_new_incoming();
+# my $watcher = Filesys::Notify::Simple->new(['incomming']) or
+#     die "Unable to create new filesystem watcher";
+# 
+# $watcher->
+#     wait(\&process_new_incoming);
 
+my %fudged;
+
+my $nf = 0;
 my $ndone = 0;
-&filelock('incoming-cleaner');
-for (;;) {
+
+sub process_new_incoming {
     if (-f 'stop') {
         print(STDERR "stop file created\n") || die $!;
-        last;
+        return;
     }
-    if (!@ids) {
-        opendir(DIR,"incoming") || die $!;
-        while ( defined( $_= readdir(DIR) )) { push(@ids,$_) if s/^I//; }
-        last unless @ids;
-        @ids= sort(@ids);
+    my $dir;
+    opendir($dir,"incoming") or die $!;
+    my @ids =
+	map {s/^I//?$_:() } readdir($dir);
+    closedir($dir) or
+	die $!;
+    stat($config{maintainer_file}) or
+	die "Unable to stat Maintainer File '$config{maintainer_file}': $!";
+    foreach my $id (@ids) {
+	eval {
+	    handle_incoming_message($id) and
+		$ndone++;
+	};
+	if ($@) {
+	    die "$@";
+	}
     }
-    stat("$gMaintainerFile") || die "stat $gMaintainerFile: $!\n";
-    my $nf= @ids;
-    my $id= shift(@ids);
+}
+
+sub handle_incoming_message {
+    my $id = (@_);
     unless (rename("incoming/I$id","incoming/G$id")) {
         if ($fudged{$id}) {
             die "$id already fudged once! $!\n";
         }
         $fudged{$id}= 1;
-        next;
+        return 0;
     }
     my $c;
+    my $handler;
     if ($id =~ m/^[RC]/) {
-	 print(STDOUT "[$nf] $id service ...") || die $!;
-        defined($c=fork) || die $!;
-        if (!$c) { exec("$lib_path/service",$id); die "unable to execute $lib_path/service: $!"; }
+	$handler = "service";
     } elsif ($id =~ m/^[BMQFDUL]/) {
-        print(STDOUT "[$nf] $id process ...") || die $!;
-        defined($c=fork) || die $!;
-        if (!$c) { exec("$lib_path/process",$id); die "unable to execute $lib_path/process: $!"; }
+	$handler = "process"
     } else {
-        die "bad name $id";
+       die "Invalid incomming ID type $id";
+   }
+    $nf++;
+    print(STDOUT "[$nf] $id $handler ...") or
+	die $!;
+    my $exit = system("$lib_path/$handler",$id);
+    if ($? == -1) {
+	print STDOUT "failed to execute $lib_path/$handler: $!\n";
     }
-    my $cc=waitpid($c,0); $cc == $c || die "$cc $c $!";
-    my $status=$?;
-    if ($status) {
-        print(STDERR "$id: process failed ($status $!) - now in [PG]$id\n") || die $!;
+    elsif ($? & 127) {
+	printf STDOUT "child died with signal %d, %s coredump\n",
+	    ($? & 127), ($? & 128) ? 'with' : 'without';
+    } else {
+	printf STDOUT "$id: process failed (%d)\n", $? >> 8;
     }
-    print(STDOUT " done\n") || die $!;
-    rmtree("$gSpoolDir/mime.tmp",0,1);
-    $ndone++;
+    print(STDOUT " done\n") or die $!;
+    rmtree("$config{spool_dir}/mime.tmp",0,1);
+    return 1;
 }
 
 
 system("$lib_path/gen-indices",'--quick') == 0 or print STDERR "gen-indices failed\n";
 
-if (@gPostProcessall) {
-    system @gPostProcessall == 0 or print STDERR "\@gPostProcessall failed: ".join(' ',@gPostProcessall)."\n";
+if (@{$config{post_processall}//[]}) {
+    system @{$config{post_processall}} == 0 or
+	print STDERR "\@gPostProcessall failed: ".join(' ',@{$config{post_processall}})."\n";
 }
 
 
 
-&unfilelock;
-
 exit(0);
+
+
+
+__END__
+# Local Variables:
+# indent-tabs-mode: nil
+# cperl-indent-level: 4
+# End:
