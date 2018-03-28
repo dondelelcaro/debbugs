@@ -11,6 +11,29 @@ BEGIN{
      }
 }
 
+# if we're running out of git, we want to use the git base directory as the
+# first INC directory. If you're not running out of git, don't do that.
+use File::Basename qw(dirname);
+use Cwd qw(abs_path);
+our $debbugs_dir;
+BEGIN {
+    $debbugs_dir =
+	abs_path(dirname(abs_path(__FILE__)) . '/../');
+    # clear the taint; we'll assume that the absolute path to __FILE__ is the
+    # right path if there's a .git directory there
+    ($debbugs_dir) = $debbugs_dir =~ /([[:print:]]+)/;
+    if (defined $debbugs_dir and
+	-d $debbugs_dir . '/.git/') {
+    } else {
+	undef $debbugs_dir;
+    }
+    # if the first directory in @INC is not an absolute directory, assume that
+    # someone has overridden us via -I.
+    if ($INC[0] !~ /^\//) {
+    }
+}
+use if defined $debbugs_dir, lib => $debbugs_dir;
+
 
 use CGI::Simple;
 
