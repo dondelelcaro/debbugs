@@ -74,6 +74,8 @@ use Mail::Address;
 use Cwd qw(cwd);
 use Storable qw(dclone);
 use Time::HiRes qw(usleep);
+use File::Path qw(mkpath);
+use File::Basename qw(dirname);
 
 use Params::Validate qw(validate_with :types);
 
@@ -792,6 +794,7 @@ sub lockpid {
 	  unlink $pidfile or
 	       die "Unable to unlink stale pidfile $pidfile $!";
      }
+     mkpath(dirname($pidfile));
      my $pidfh = IO::File->new($pidfile,O_CREAT|O_EXCL|O_WRONLY) or
 	  die "Unable to open $pidfile for writing: $!";
      print {$pidfh} $$ or die "Unable to write to $pidfile $!";
