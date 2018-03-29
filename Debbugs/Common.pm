@@ -73,6 +73,8 @@ use Mail::Address;
 use Cwd qw(cwd);
 use Storable qw(dclone);
 use Time::HiRes qw(usleep);
+use MLDBM qw(DB_File Storable);
+$MLDBM::DumpMeth='portable';
 
 use Params::Validate qw(validate_with :types);
 
@@ -395,32 +397,58 @@ sub package_maintainer {
 	not defined $_source_maintainer_rev) {
 	$_source_maintainer = {};
 	$_source_maintainer_rev = {};
-	for my $fn (@config{('source_maintainer_file',
-			     'source_maintainer_file_override',
-			     'pseudo_maint_file')}) {
-	    next unless defined $fn and length $fn;
-	    if (not -e $fn) {
-		warn "Missing source maintainer file '$fn'";
-		next;
+	if (-e $config{spool_dir}.'/source_maintainers.idx' and
+	    -e $config{spool_dir}.'/source_maintainers_reverse.idx'
+	   ) {
+	    tie %{$_source_maintainer},
+		MLDBM => $config{spool_dir}.'/source_maintainers.idx',
+		O_RDONLY or
+		die "Unable to tie source maintainers: $!";
+	    tie %{$_source_maintainer_rev},
+		MLDBM => $config{spool_dir}.'/source_maintainers_reverse.idx',
+		O_RDONLY or
+		die "Unable to tie source maintainers reverse: $!";
+	} else {
+	    for my $fn (@config{('source_maintainer_file',
+				 'source_maintainer_file_override',
+				 'pseudo_maint_file')}) {
+		next unless defined $fn and length $fn;
+		if (not -e $fn) {
+		    warn "Missing source maintainer file '$fn'";
+		    next;
+		}
+		__add_to_hash($fn,$_source_maintainer,
+			      $_source_maintainer_rev);
 	    }
-	    __add_to_hash($fn,$_source_maintainer,
-			  $_source_maintainer_rev);
 	}
     }
     if (not defined $_maintainer or
 	not defined $_maintainer_rev) {
 	$_maintainer = {};
 	$_maintainer_rev = {};
-	for my $fn (@config{('maintainer_file',
-			     'maintainer_file_override',
-			     'pseudo_maint_file')}) {
-	    next unless defined $fn and length $fn;
-	    if (not -e $fn) {
-		warn "Missing maintainer file '$fn'";
-		next;
-	    }
-	    __add_to_hash($fn,$_maintainer,
+	if (-e $config{spool_dir}.'/maintainers.idx' and
+	    -e $config{spool_dir}.'/maintainers_reverse.idx'
+	   ) {
+	    tie %{$_maintainer},
+		MLDBM => $config{spool_dir}.'/binary_maintainers.idx',
+		O_RDONLY or
+		die "Unable to tie binary maintainers: $!";
+	    tie %{$_maintainer_rev},
+		MLDBM => $config{spool_dir}.'/binary_maintainers_reverse.idx',
+		O_RDONLY or
+		die "Unable to binary maintainers reverse: $!";
+	} else {
+	    for my $fn (@config{('maintainer_file',
+				 'maintainer_file_override',
+				 'pseudo_maint_file')}) {
+		next unless defined $fn and length $fn;
+		if (not -e $fn) {
+		    warn "Missing maintainer file '$fn'";
+		    next;
+		}
+		__add_to_hash($fn,$_maintainer,
 			      $_maintainer_rev);
+	    }
 	}
     }
     my @return;

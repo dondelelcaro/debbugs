@@ -1,0 +1,169 @@
+#!/usr/bin/perl
+# maintainer-indices generates Maintainer.idx and Source.idx files
+# and is released under the terms of the GNU GPL version 3, or any
+# later version, at your option. See the file README and COPYING for
+# more information.
+# Copyright 2018 by Don Armstrong <don@donarmstrong.com>.
+
+
+use warnings;
+use strict;
+
+use Getopt::Long;
+use Pod::Usage;
+
+=head1 NAME
+
+maintainer-indices - generates Maintainer.idx and Source.idx files
+
+=head1 SYNOPSIS
+
+maintainer-indices [options]
+
+Options:
+--debug, -d debugging level (Default 0)
+--help, -h display this help
+--man, -m display manual
+
+=head1 OPTIONS
+
+=over
+
+=item B<--debug, -d>
+
+Debug verbosity. (Default 0)
+
+=item B<--help, -h>
+
+Display brief usage information.
+
+=item B<--man, -m>
+
+Display this manual.
+
+=back
+
+=head1 EXAMPLES
+
+C<maintainer-indices>
+
+=cut
+
+
+use vars qw($DEBUG);
+use File::Copy;
+use MLDBM qw(DB_File Storable);
+$MLDBM::DumpMeth='portable';
+use Fcntl;
+
+use Debbugs::Config qw(:config);
+use Debbugs::Common qw(lockpid getparsedaddrs);
+
+my %options = (debug           => 0,
+               help            => 0,
+               man             => 0,
+              );
+
+GetOptions(\%options,
+           'debug|d+','help|h|?','man|m');
+
+pod2usage() if $options{help};
+pod2usage({verbose=>2}) if $options{man};
+
+$DEBUG = $options{debug};
+
+my @USAGE_ERRORS;
+
+pod2usage(join("\n",@USAGE_ERRORS)) if @USAGE_ERRORS;
+
+
+my $indexes =
+   {source => {index => $config{spool_dir}.'/'.'source_maintainers.idx',
+               index_reverse => $config{spool_dir}.'/'.'source_maintainers_reverse.idx',
+               files =>
+               [@config{('source_maintainer_file',
+                         'source_maintainer_file_override',
+                         'pseudo_maint_file')}],
+              },
+    binary => {index => $config{spool_dir}.'/'.'binary_maintainers.idx',
+               index_reverse => $config{spool_dir}.'/'.'binary_maintainers_reverse.idx',
+               files =>
+               [@config{('maintainer_file',
+                         'maintainer_file_override',
+                         'pseudo_maint_file')}],
+              },
+   };
+
+if (not lockpid($config{spool_dir}.'/lock/maintainer-indices')) {
+    print STDERR "Another maintainer-indices is running; stopping\n";
+    exit 1;
+}
+
+# tie new maint/source maint indexes for forward and reverse
+for my $idx (keys %{$indexes}) {
+    for my $fr ('','_reverse') {
+        tie %{$indexes->{$idx}{"tie$fr"}},
+            MLDBM => $indexes->{$idx}{"index$fr"}.'-new',
+             O_CREAT|O_TRUNC|O_RDWR, 0644 or
+                 die qq(Unable to tie $indexes->{$idx}{"index$fr"}-new: $!);
+    }
+}
+for my $idx (keys %{$indexes}) {
+    for my $fn (@{$indexes->{$idx}{files}}) {
+        next unless defined $fn and length $fn;
+        if (not -e $fn) {
+            warn "Missing $idx maintainer file '$fn'";
+            next;
+	    }
+	    add_to_index($fn,$indexes->{$idx}{tie},
+                     $indexes->{$idx}{tie_reverse}
+                    );
+    }
+}
+
+for my $idx (keys %{$indexes}) {
+    for my $fr ('','_reverse') {
+        move($indexes->{$idx}{"index$fr"}.'-new',
+             $indexes->{$idx}{"index$fr"}
+            );
+    }
+}
+
+
+sub add_to_index {
+    my ($fn,$forward,$reverse,$type) = @_;
+    $type //= 'address';
+    my $fh;
+    open($fh,'<',$fn) or
+        die "Unable to open $fn for reading: $!";
+    binmode($fh,':encoding(UTF-8)') or
+        die "Unable to set UTF-8 encoding: $!";
+    while (<$fh>) {
+        chomp;
+        next unless m/^(\S+)\s+(\S.*\S)\s*$/;
+        my ($key,$value) = ($1,$2);
+        $key = lc($key);
+        $forward->{$key} = $value;
+        my @values = $value;
+        if ($type eq 'address') {
+            @values = map {lc($_->address)}
+                getparsedaddrs($value);
+        }
+        for my $m (@values) {
+            # this is to work around a bug in tied hashes.
+            my $r = $reverse->{$m} // [];
+            push @{$r},$key;
+            $reverse->{$m} = $r;
+        }
+    }
+    close($fh) or
+        die "Unable to close $fn filehandle: $!";
+}
+
+
+
+__END__
+# Local Variables:
+# indent-tabs-mode: nil
+# cperl-indent-level: 4
+# End:
