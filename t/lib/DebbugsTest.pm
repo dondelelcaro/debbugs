@@ -122,6 +122,9 @@ END
      }
      system('mkdir','-p',"$spool_dir/incoming");
      system('mkdir','-p',"$spool_dir/lock");
+     # generate the maintainers index files
+     system('scripts/maintainer-indices') == 0
+	 or die "Unable to generate maintainer index files";
      eval '
 END{
      if ($ENV{DEBUG}) {
