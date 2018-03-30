@@ -2,6 +2,7 @@
 DROP TABLE bug_status_cache CASCADE;
 DROP VIEW bug_package CASCADE;
 DROP VIEW binary_versions CASCADE;
+DROP VIEW bug_status CASCADE;
 DROP TABLE bug_tag CASCADE;
 DROP TABLE tag CASCADE;
 DROP TABLE bug_user_tag CASCADE;
@@ -546,3 +547,46 @@ INSERT INTO column_comments VALUES ('bug_message','message_number','Message numb
 INSERT INTO column_comments VALUES ('bug_message','bug_log_offset','Byte offset in the bug log');
 INSERT INTO column_comments VALUES ('bug_message','offset_valid','Time offset was valid');
 
+CREATE VIEW bug_status --(id,bug_num,tags,subject,
+--        severity,package,originator,log_modified,date,
+--        last_modified, blocks, blockedby, mergedwith,
+--        fixed_versions,found_versions)
+       AS
+       SELECT b.id AS id,
+       b.id AS bug_num,
+       string_agg(t.tag,',') AS tags,
+       b.subject AS subject,
+       (SELECT s.severity FROM severity s WHERE s.id=b.severity) AS severity,
+       (SELECT string_agg(package.package,',' ORDER BY package)
+        FROM (SELECT bp.pkg AS package
+	             FROM bug_binpackage bbp
+                     JOIN bin_pkg bp ON bbp.bin_pkg=bp.id
+                     WHERE bbp.bug=b.id
+	      UNION
+	      SELECT CONCAT('src:',sp.pkg) AS package
+	      	     FROM bug_srcpackage bsp
+	      	     JOIN src_pkg sp ON bsp.src_pkg=sp.id
+                     WHERE bsp.bug=b.id) AS package
+        ) AS package,
+	b.submitter_full AS originator,
+	b.log_modified AS log_modified,
+	b.creation AS date,
+	b.last_modified AS last_modified,
+	string_agg(bb.blocks::text,' ' ORDER BY bb.blocks) AS blocks,
+	string_agg(bbb.bug::text,' ' ORDER BY bbb.bug) AS blockedby,
+	(SELECT string_agg(bug.bug::text,' ' ORDER BY bug.bug)
+	 FROM (SELECT b.id AS bug
+			  UNION
+		   SELECT bm.merged AS bug FROM bug_merged bm WHERE bm.bug=b.id
+		   	  UNION
+		   SELECT bm.bug AS bug FROM bug_merged bm WHERE bm.merged=b.id) AS bug) AS merged,
+	(SELECT string_agg(bv.ver_string,' ') FROM bug_ver bv WHERE bv.bug=b.id AND bv.found IS TRUE)
+		AS found_versions,
+	(SELECT string_agg(bv.ver_string,' ') FROM bug_ver bv WHERE bv.bug=b.id AND bv.found IS TRUE)
+		AS fixed_versions
+	FROM bug b
+	LEFT JOIN bug_tag bt ON bt.bug=b.id
+	LEFT JOIN tag t ON bt.tag=t.id
+	LEFT JOIN bug_blocks bb ON bb.bug=b.id
+	LEFT JOIN bug_blocks bbb ON bbb.blocks=b.id
+	GROUP BY b.id;
