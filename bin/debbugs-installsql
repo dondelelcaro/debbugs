@@ -134,7 +134,7 @@ my $dh = DH->new({schema => $schema,
                   force_overwrite => $options{overwrite_deployment},
                   script_directory => $options{deployment_dir},
                   databases => 'PostgreSQL',
-		  sql_translator_args => {producer_args=> {postgres_version => 9}},
+		  sql_translator_args => {producer_args=> {postgres_version => 8.1}},
                  });
 
 if ($options{current_version}) {
