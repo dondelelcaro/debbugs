@@ -23,6 +23,7 @@ None known.
 
 use warnings;
 use strict;
+use v5.10;
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 
@@ -252,18 +253,19 @@ sub load_bug {
     # because these bugs reference other bugs which might not exist
     # yet, we can't handle them until we've loaded all bugs. queue
     # them up.
-    for my $merge_block (qw(merged block)) {
-        my $data_key = $merge_block;
-        $data_key .= 'with' if $merge_block eq 'merged';
-        if (@{$data->{$data_key}||[]}) {
-            my $count = $s->resultset('Bug')->search({id => [@{$data->{$data_key}}]})->count();
-            if ($count == @{$data->{$data_key}}) {
+    for my $merge_block (qw(mergedwith blocks)) {
+        if (@{$data->{$merge_block}||[]}) {
+            my $count = $s->resultset('Bug')->
+                search({id => [@{$data->{$merge_block}}]})->
+                count();
+            # if all of the bugs exist, immediately fix the merge/blocks
+            if ($count == @{$data->{$merge_block}}) {
                 handle_load_bug_queue(db=>$s,
                                       queue => {$merge_block,
-                                               {$data->{bug_num},[@{$data->{$data_key}}]}
+                                               {$data->{bug_num},[@{$data->{$merge_block}}]}
                                                });
             } else {
-                $queue->{$merge_block}{$data->{bug_num}} = [@{$data->{$data_key}}];
+                $queue->{$merge_block}{$data->{bug_num}} = [@{$data->{$merge_block}}];
             }
         }
     }
@@ -296,26 +298,32 @@ sub handle_load_bug_queue{
     my $s = $param{db};
     my $queue = $param{queue};
     my %queue_types =
-	(merged => {set => 'BugMerged',
-		    columns => [qw(bug merged)],
-		    bug => 'bug',
-		   },
+	(mergedwith => {set => 'BugMerged',
+                        columns => [qw(bug merged)],
+                        bug => 'bug',
+                       },
 	 blocks => {set => 'BugBlock',
-		    columns => [qw(bug blocks)],
-		    bug => 'bug',
-		   },
+                    columns => [qw(bug blocks)],
+                    bug => 'bug',
+                   },
 	);
     for my $queue_type (keys %queue_types) {
-	for my $bug (%{$queue->{$queue_type}}) {
-	    my $qt = $queue_types{$queue_type};
-	    $s->txn_do(sub {
-			   $s->resultset($qt->{set})->search({$qt->{bug},$bug})->delete();
-			   $s->populate($qt->{set},[[@{$qt->{columns}}],
-                                                    map {[$bug,$_]} @{$queue->{$queue_type}{$bug}}]) if
-			       @{$queue->{$queue_type}{$bug}//[]};
+        my $qt = $queue_types{$queue_type};
+        my @bugs = keys %{$queue->{$queue_type}};
+        my @entries;
+        for my $bug (@bugs) {
+            push @entries,
+                map {[$bug,$_]}
+                @{$queue->{$queue_type}{$bug}};
+        }
+        $s->txn_do(sub {
+                       $s->resultset($qt->{set})->
+                           search({$qt->{bug}=>\@bugs})->delete();
+                       $s->resultset($qt->{set})->
+                           populate([[@{$qt->{columns}}],
+                                     @entries]) if @entries;
 		       }
-		      );
-	}
+                  );
     }
 }
 
