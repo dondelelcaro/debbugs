@@ -208,7 +208,8 @@ sub send_message{
      # now we should run processall to see if the message gets processed
      if ($param{run_processall}) {
 	  system('scripts/processall') == 0 or die "processall failed";
-     }
+      }
+     return 1;
 }
 
 =item test_control_commands
