@@ -5,13 +5,6 @@ use Test::More;
 use warnings;
 use strict;
 
-# Here, we're going to shoot messages through a set of things that can
-# happen.
-
-# First, we're going to send mesages to receive.
-# To do so, we'll first send a message to submit,
-# then send messages to the newly created bugnumber.
-
 use IO::File;
 use File::Temp qw(tempdir);
 use Cwd qw(getcwd);
@@ -28,19 +21,36 @@ our $tests_run = 0;
 my %config = create_debbugs_configuration();
 
 
-# create a bug
-send_message(to=>'submit@bugs.something',
-	     headers => [To   => 'submit@bugs.something',
-			 From => 'foo@bugs.something',
-			 Subject => 'Submitting a bug',
-			],
-	     body => <<EOF) or fail('Unable to send message');
+# create 4 bugs
+for (1..4) {
+    send_message(to=>'submit@bugs.something',
+		 headers => [To   => 'submit@bugs.something',
+			     From => 'foo@bugs.something',
+			     Subject => 'Submitting a bug '.$_,
+			    ],
+		 run_processall => 0,
+		 body => <<EOF) or fail('Unable to send message');
 Package: foo
 Severity: normal
 
-This is a silly bug
+This is a silly bug $_
 EOF
 
+}
+send_message(to => 'control@bugs.something',
+	     headers => [To   => 'control@bugs.something',
+			 From => 'foo@bugs.something',
+			 Subject => "Munging bugs with blocks",
+			],
+	     body => <<'EOF') or fail 'message to control@bugs.something failed';
+block 1 by 2
+block 3 by 1
+block 4 by 1
+thanks
+EOF
+
+
+## create the database
 my $pgsql = create_postgresql_database();
 update_postgresql_database($pgsql);
 
@@ -56,8 +66,19 @@ ok($s = Debbugs::DB->connect($pgsql->dsn),
 $tests_run++;
 
 ok($s->resultset('Bug')->search({id => 1})->single->subject eq
-   'Submitting a bug',
+   'Submitting a bug 1',
    "Correct bug title");
 $tests_run++;
+
+my @blocking_bugs =
+    map {$_->{blocks}}
+    $s->resultset('Bug')->search({id => 1})->single->
+    bug_blocks_bugs(undef,
+		   {columns => [qw(blocks)],
+		    result_class=>'DBIx::Class::ResultClass::HashRefInflator',
+		   })->all;
+$tests_run++;
+is_deeply([sort @blocking_bugs],
+	  [3,4],"Blocking bugs of 1 inserted correctly");
 
 done_testing($tests_run);
