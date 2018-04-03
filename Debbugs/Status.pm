@@ -1365,7 +1365,7 @@ sub get_bug_statuses {
 	     elsif (defined $param{status} and
 		    $param{status}{bug_num} == $bug
 		   ) {
-		 $statuses{$bug} = {$param{status}};
+		 $statuses{$bug} = {%{$param{status}}};
 	     } else {
 		 my $location = getbuglocation($bug, 'summary');
 		 next if not defined $location or not length $location;
