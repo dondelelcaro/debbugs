@@ -1404,7 +1404,7 @@ sub get_bug_statuses {
 	 $status->{"pending"} = 'fixed'	    if ($tags{fixed});
 
 
-	 my $presence = bug_presence(status => \%status,
+	 my $presence = bug_presence(status => $status,
 				     bug => $bug,
 				     map{(exists $param{$_})?($_,$param{$_}):()}
 				     qw(sourceversions arch dist version found fixed package)
