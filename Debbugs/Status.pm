@@ -63,6 +63,7 @@ BEGIN{
      @EXPORT = ();
      %EXPORT_TAGS = (status => [qw(splitpackages get_bug_status buggy bug_archiveable),
 				qw(isstrongseverity bug_presence split_status_fields),
+				qw(get_bug_statuses),
 			       ],
 		     read   => [qw(readbug read_bug lockreadbug lockreadbugmerge),
 				qw(lock_read_all_merged_bugs),
@@ -1269,117 +1270,154 @@ sub get_bug_status {
 
      if (defined $param{bug_index} and
 	 exists $param{bug_index}{$param{bug}}) {
-	  %status = %{ $param{bug_index}{$param{bug}} };
-	  $status{pending} = $status{ status };
-	  $status{id} = $param{bug};
-	  return \%status;
+	 %status = %{ $param{bug_index}{$param{bug}} };
+	 $status{pending} = $status{ status };
+	 $status{id} = $param{bug};
+	 return \%status;
      }
-     if (defined $param{status}) {
-	 %status = %{$param{status}};
+     my $statuses = get_bug_statuses(@_);
+     if (exists $statuses->{$param{bug}}) {
+	 return $statuses->{$param{bug}};
+     } else {
+	return {};
      }
-     elsif (defined $param{schema}) {
-	 my $b = $param{schema}->resultset('Bug')->
-	     search_rs({'me.id' => $param{bug}},
-		      {prefetch => [{'bug_tags'=>'tag'},
-				    'severity',
-				   {'bug_binpackages'=> 'bin_pkg'},
-				   {'bug_srcpackages'=> 'src_pkg'},
-				   {'bug_user_tags'=>{'user_tag'=>'correspondent'}},
-				   {owner => 'correspondent_full_names'},
-				   {submitter => 'correspondent_full_names'},
-                                    'bug_merged_bugs',
-                                    'bug_mergeds_merged',
-                                    'bug_blocks_blocks',
-                                    'bug_blocks_bugs',
-                                   {'bug_vers' => ['src_pkg','src_ver']},
-				   ],
-		       '+columns' => [qw(subject log_modified creation last_modified)],
-		       collapse => 1,
-		       result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-		      })->first();
-	 $status{keywords} =
-	     join(' ',map {$_->{tag}{tag}} @{$b->{bug_tags}});
-	 $status{tags} = $status{keywords};
-	 $status{subject} = $b->{subject};
-	 $status{bug_num} = $b->{id};
-	 $status{severity} = $b->{severity}{severity};
-	 $status{package} =
-	     join(' ',
-		  (map {$_->{bin_pkg}{pkg}} @{$b->{bug_binpackages}//[]}),
-		  (map {$_->{src_pkg}{pkg}} @{$b->{bug_srcpackages}//[]}));
-         $status{originator} = $b->{submitter_full};
-	 $status{log_modified} =
-	     DateTime::Format::Pg->parse_datetime($b->{log_modified})->epoch;
-	 $status{date} =
-	     DateTime::Format::Pg->parse_datetime($b->{creation})->epoch;
-	 $status{last_modified} =
-	     DateTime::Format::Pg->parse_datetime($b->{last_modified})->epoch;
-         $status{blocks} =
-             join(' ',
-                  uniq(sort(map {$_->{block}}
-                            @{$b->{bug_blocks_block}},
-                           )));
-         $status{blockedby} =
-             join(' ',
-                  uniq(sort(map {$_->{bug}}
-                            @{$b->{bug_blocks_bug}},
-                           )));
-         $status{mergedwith} =
-             join(' ',uniq(sort(map {$_->{bug},$_->{merged}}
-                                @{$b->{bug_merged_bugs}},
-                                @{$b->{bug_mergeds_merged}},
-                               )));
-         $status{fixed_versions} =
-             [map {$_->{found}?():$_->{ver_string}} @{$b->{bug_vers}}];
-         $status{found_versions} =
-             [map {$_->{found}?$_->{ver_string}:()} @{$b->{bug_vers}}];
+}
+
+sub get_bug_statuses {
+     state $spec =
+	{bug       => {type => SCALAR|ARRAYREF,
+		      },
+	 status    => {type => HASHREF,
+		       optional => 1,
+		      },
+	 bug_index => {type => OBJECT,
+		       optional => 1,
+		      },
+	 version   => {type => SCALAR|ARRAYREF,
+		       optional => 1,
+		      },
+	 dist       => {type => SCALAR|ARRAYREF,
+			optional => 1,
+		       },
+	 arch       => {type => SCALAR|ARRAYREF,
+			optional => 1,
+		       },
+	 bugusertags   => {type => HASHREF,
+			   optional => 1,
+			  },
+	 sourceversions => {type => ARRAYREF,
+			    optional => 1,
+			   },
+	 indicatesource => {type => BOOLEAN,
+			    default => 1,
+			   },
+	 binary_to_source_cache => {type => HASHREF,
+				    optional => 1,
+				   },
+	 schema => {type => OBJECT,
+		    optional => 1,
+		   },
+	};
+     my %param = validate_with(params => \@_,
+			       spec   => $spec,
+			      );
+     my %status;
+     my %statuses;
+     if (defined $param{schema}) {
+	 my @bug_statuses =
+	     $param{schema}->resultset('BugStatus')->
+	     search_rs({id => [make_list($param{bug})]},
+		       {result_class => 'DBIx::Class::ResultClass::HashRefInflator'})->
+			   all();
+	 for my $bug_status (@bug_statuses) {
+	     $statuses{$bug_status->{bug_num}} =
+		 $bug_status;
+	     for my $field (qw(blocks blockedby done),
+			    qw(fixed_versions found_versions),
+			    qw(tags)
+			   ) {
+		 $bug_status->{$field} //='';
+	     }
+	     $bug_status->{keywords} =
+		 $bug_status->{tags};
+	     $bug_status->{log_modified} =
+		 DateTime::Format::Pg->
+		     parse_datetime($bug_status->{log_modified})->
+		     epoch;
+	     $bug_status->{date} =
+		 DateTime::Format::Pg->
+		     parse_datetime($bug_status->{date})->
+		     epoch;
+	     $bug_status->{last_modified} =
+		 DateTime::Format::Pg->
+		     parse_datetime($bug_status->{last_modified})->
+		     epoch;
+	 }
+     } else {
+	 for my $bug (make_list($param{bug})) {
+	     if (defined $param{bug_index} and
+		 exists $param{bug_index}{$bug}) {
+		 my %status = %{$param{bug_index}{$bug}};
+		 $status{pending} = $status{status};
+		 $status{id} = $param{bug};
+		 $statuses{$bug} = \%status;
+	     }
+	     elsif (defined $param{status} and
+		    $param{status}{bug_num} == $bug
+		   ) {
+		 $statuses{$bug} = {$param{status}};
+	     } else {
+		 my $location = getbuglocation($bug, 'summary');
+		 next if not defined $location or not length $location;
+		 my %status = %{ readbug( $bug, $location ) };
+		 $statuses{$bug} = \%status;
+	     }
+	 }
      }
-     else {
-	  my $location = getbuglocation($param{bug}, 'summary');
-	  return {} if not defined $location or not length $location;
-	  %status = %{ readbug( $param{bug}, $location ) };
+     for my $bug (keys %statuses) {
+	 my $status = $statuses{$bug};
+	 $status->{id} = $bug;
+
+	 if (defined $param{bugusertags}{$param{bug}}) {
+	     $status->{keywords} = "" unless defined $status->{keywords};
+	     $status->{keywords} .= " " unless $status->{keywords} eq "";
+	     $status->{keywords} .= join(" ", @{$param{bugusertags}{$param{bug}}});
+	 }
+	 $status->{tags} = $status->{keywords};
+	 my %tags = map { $_ => 1 } split ' ', $status->{tags};
+
+	 $status->{package} = '' if not defined $status->{package};
+	 $status->{"package"} =~ s/\s*$//;
+
+	 $status->{source} = binary_to_source(binary=>[split /\s*,\s*/, $status->{package}],
+					      source_only => 1,
+					      exists $param{binary_to_source_cache}?
+					      (cache =>$param{binary_to_source_cache}):(),
+					     );
+
+	 $status->{"package"} = 'unknown' if ($status->{"package"} eq '');
+	 $status->{"severity"} = 'normal' if (not defined $status->{severity} or $status->{"severity"} eq '');
+
+	 $status->{"pending"} = 'pending';
+	 $status->{"pending"} = 'forwarded'	    if (length($status->{"forwarded"}));
+	 $status->{"pending"} = 'pending-fixed'    if ($tags{pending});
+	 $status->{"pending"} = 'fixed'	    if ($tags{fixed});
+
+
+	 my $presence = bug_presence(status => \%status,
+				     bug => $bug,
+				     map{(exists $param{$_})?($_,$param{$_}):()}
+				     qw(sourceversions arch dist version found fixed package)
+				    );
+	 if (defined $presence) {
+	     if ($presence eq 'fixed') {
+		 $status->{pending} = 'done';
+	     } elsif ($presence eq 'absent') {
+		 $status->{pending} = 'absent';
+	     }
+	 }
      }
-     $status{id} = $param{bug};
-
-     if (defined $param{bugusertags}{$param{bug}}) {
-	  $status{keywords} = "" unless defined $status{keywords};
-	  $status{keywords} .= " " unless $status{keywords} eq "";
-	  $status{keywords} .= join(" ", @{$param{bugusertags}{$param{bug}}});
-     }
-     $status{tags} = $status{keywords};
-     my %tags = map { $_ => 1 } split ' ', $status{tags};
-
-     $status{package} = '' if not defined $status{package};
-     $status{"package"} =~ s/\s*$//;
-
-     $status{source} = binary_to_source(binary=>[split /\s*,\s*/, $status{package}],
-					source_only => 1,
-					exists $param{binary_to_source_cache}?
-					(cache =>$param{binary_to_source_cache}):(),
-				       );
-
-     $status{"package"} = 'unknown' if ($status{"package"} eq '');
-     $status{"severity"} = 'normal' if (not defined $status{severity} or $status{"severity"} eq '');
-
-     $status{"pending"} = 'pending';
-     $status{"pending"} = 'forwarded'	    if (length($status{"forwarded"}));
-     $status{"pending"} = 'pending-fixed'    if ($tags{pending});
-     $status{"pending"} = 'fixed'	    if ($tags{fixed});
-
-
-     my $presence = bug_presence(status => \%status,
-				 map{(exists $param{$_})?($_,$param{$_}):()}
-				 qw(bug sourceversions arch dist version found fixed package)
-				);
-     if (defined $presence) {
-	  if ($presence eq 'fixed') {
-	       $status{pending} = 'done';
-	  }
-	  elsif ($presence eq 'absent') {
-	       $status{pending} = 'absent';
-	  }
-     }
-     return \%status;
+     return \%statuses;
 }
 
 =head2 bug_presence
