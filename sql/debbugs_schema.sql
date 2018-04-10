@@ -576,11 +576,9 @@ CREATE VIEW bug_status --(id,bug_num,tags,subject,
 	string_agg(bb.blocks::text,' ' ORDER BY bb.blocks) AS blocks,
 	string_agg(bbb.bug::text,' ' ORDER BY bbb.bug) AS blockedby,
 	(SELECT string_agg(bug.bug::text,' ' ORDER BY bug.bug)
-	 FROM (SELECT b.id AS bug
-			  UNION
-		   SELECT bm.merged AS bug FROM bug_merged bm WHERE bm.bug=b.id
+	 FROM (SELECT bm.merged AS bug FROM bug_merged bm WHERE bm.bug=b.id
 		   	  UNION
-		   SELECT bm.bug AS bug FROM bug_merged bm WHERE bm.merged=b.id) AS bug) AS merged,
+	 SELECT bm.bug AS bug FROM bug_merged bm WHERE bm.merged=b.id) AS bug) AS mergedwith,
 	(SELECT string_agg(bv.ver_string,' ') FROM bug_ver bv WHERE bv.bug=b.id AND bv.found IS TRUE)
 		AS found_versions,
 	(SELECT string_agg(bv.ver_string,' ') FROM bug_ver bv WHERE bv.bug=b.id AND bv.found IS FALSE)
