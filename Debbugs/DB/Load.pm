@@ -254,19 +254,21 @@ sub load_bug {
     # yet, we can't handle them until we've loaded all bugs. queue
     # them up.
     for my $merge_block (qw(mergedwith blocks)) {
-        if (@{$data->{$merge_block}||[]}) {
-            my $count = $s->resultset('Bug')->
+        my $count = 0;
+        if (@{$data->{$merge_block}}) {
+            $count =
+                $s->resultset('Bug')->
                 search({id => [@{$data->{$merge_block}}]})->
                 count();
-            # if all of the bugs exist, immediately fix the merge/blocks
-            if ($count == @{$data->{$merge_block}}) {
-                handle_load_bug_queue(db=>$s,
-                                      queue => {$merge_block,
-                                               {$data->{bug_num},[@{$data->{$merge_block}}]}
-                                               });
-            } else {
-                $queue->{$merge_block}{$data->{bug_num}} = [@{$data->{$merge_block}}];
-            }
+        }
+        # if all of the bugs exist, immediately fix the merge/blocks
+        if ($count == @{$data->{$merge_block}}) {
+            handle_load_bug_queue(db=>$s,
+                                  queue => {$merge_block,
+                                           {$data->{bug_num},[@{$data->{$merge_block}}]}
+                                           });
+        } else {
+            $queue->{$merge_block}{$data->{bug_num}} = [@{$data->{$merge_block}}];
         }
     }
 
@@ -310,6 +312,7 @@ sub handle_load_bug_queue{
     for my $queue_type (keys %queue_types) {
         my $qt = $queue_types{$queue_type};
         my @bugs = keys %{$queue->{$queue_type}};
+        next unless @bugs;
         my @entries;
         for my $bug (@bugs) {
             push @entries,
