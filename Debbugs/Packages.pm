@@ -169,7 +169,19 @@ binary_to_source.
 # the two global variables below are used to tie the source maps; we
 # probably should be retying them in long lived processes.
 our %_binarytosource;
+sub _tie_binarytosource {
+    if (not tied %_binarytosource) {
+	tie %_binarytosource, MLDBM => $config{binary_source_map}, O_RDONLY or
+	    die "Unable to open $config{binary_source_map} for reading";
+    }
+}
 our %_sourcetobinary;
+sub _tie_sourcetobinary {
+    if (not tied %_sourcetobinary) {
+	tie %_sourcetobinary, MLDBM => $config{source_binary_map}, O_RDONLY or
+	    die "Unable to open $config{source_binary_map} for reading";
+    }
+}
 sub binary_to_source{
     my %param = validate_with(params => \@_,
 			      spec   => {binary => {type => SCALAR|ARRAYREF,
@@ -270,10 +282,7 @@ sub binary_to_source{
 	    @{$param{cache}{$cache_key}};
     }
     for my $binary (@binaries) {
-	if (not tied %_binarytosource) {
-	    tie %_binarytosource, MLDBM => $config{binary_source_map}, O_RDONLY or
-		die "Unable to open $config{binary_source_map} for reading";
-	}
+	_tie_binarytosource;
 	# avoid autovivification
 	my $bin = $_binarytosource{$binary};
 	next unless defined $bin;
@@ -316,11 +325,7 @@ sub binary_to_source{
 	# if any the packages we've been given are a valid source
 	# package name, and there's no binary of the same name (we got
 	# here, so there isn't), return it.
-
-	if (not tied %_sourcetobinary) {
-	    tie %_sourcetobinary, MLDBM => $config{source_binary_map}, O_RDONLY or
-		die "Unable top open $gSourceBinaryMap for reading";
-	}
+	_tie_sourcetobinary();
 	for my $maybe_sourcepkg (@binaries) {
 	    if (exists $_sourcetobinary{$maybe_sourcepkg}) {
 		push @source,[$maybe_sourcepkg,$_] for keys %{$_sourcetobinary{$maybe_sourcepkg}};
@@ -374,14 +379,7 @@ returned, without the architecture.
 
 sub sourcetobinary {
     my ($srcname, $srcver) = @_;
-
-    if (not tied %_sourcetobinary) {
-	tie %_sourcetobinary, MLDBM => $config{source_binary_map}, O_RDONLY or
-	    die "Unable top open $config{source_binary_map} for reading";
-    }
-
-
-
+    _tie_sourcetobinary;
     # avoid autovivification
     my $source = $_sourcetobinary{$srcname};
     return () unless defined $source;
