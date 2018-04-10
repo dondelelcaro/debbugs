@@ -102,10 +102,8 @@ if (not lockpid($config{spool_dir}.'/lock/maintainer-indices')) {
 # tie new maint/source maint indexes for forward and reverse
 for my $idx (keys %{$indexes}) {
     for my $fr ('','_reverse') {
-        tie %{$indexes->{$idx}{"tie$fr"}},
-            MLDBM => $indexes->{$idx}{"index$fr"}.'-new',
-             O_CREAT|O_TRUNC|O_RDWR, 0644 or
-                 die qq(Unable to tie $indexes->{$idx}{"index$fr"}-new: $!);
+        $indexes->{$idx}{"tie$fr"} =
+            create_index_file($indexes->{$idx}{"index$fr"}.'-new');
     }
 }
 for my $idx (keys %{$indexes}) {
@@ -127,6 +125,16 @@ for my $idx (keys %{$indexes}) {
              $indexes->{$idx}{"index$fr"}
             );
     }
+}
+
+sub create_index_file {
+    my ($idx_fn) = @_;
+    my $idx = {};
+    tie %{$idx},
+        MLDBM => $idx_fn,
+        O_CREAT|O_TRUNC|O_RDWR, 0644 or
+        die qq(Unable to tie $idx_fn: $!);
+    return $idx;
 }
 
 
