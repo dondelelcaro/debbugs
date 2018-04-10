@@ -131,7 +131,9 @@ Display this manual.
 
 use vars qw($DEBUG);
 
-use Debbugs::Common (qw(checkpid lockpid get_hashname getparsedaddrs getbugcomponent make_list getsourcemaintainers),
+use Debbugs::Common (qw(checkpid lockpid get_hashname getparsedaddrs),
+		     qw(getbugcomponent make_list getsourcemaintainers),
+		     qw(walk_bugs),
 		     qw(hash_slice open_compressed_file),);
 use Debbugs::Config qw(:config);
 use Debbugs::Status qw(read_bug split_status_fields);
@@ -180,7 +182,9 @@ $DEBUG = $options{debug};
 
 my %subcommands =
     ('bugs' => {function => \&add_bugs,
-		arguments => {'preload' => 0},
+		arguments => {'preload' => 0,
+			      'bugs=s@' => 0,
+			     },
                },
      'versions' => {function => \&add_versions,
                    },
@@ -263,11 +267,14 @@ sub add_bugs {
 
     my $verbose = $options->{debug};
 
-    my $initialdir = "db-h";
-
-    if (defined $argv->[0] and $argv->[0] eq "archive") {
-        $initialdir = "archive";
+    my @dirs;
+    if (@{$argv}) {
+	@dirs = @{$argv};
+    } elsif (not defined $opts->{bugs}) {
+	@dirs = "db-h"
     }
+    $opts->{bugs} //= [];
+
     my $s = db_connect($options);
 
 
@@ -277,27 +284,26 @@ sub add_bugs {
 
     if ($opts->{preload}) {
 	my @bugs;
-	walk_bugs([(@{$argv}?@{$argv} : $initialdir)],
-		  undef,
-		  'summary',
-		  undef,
-		  sub {
-		    push @bugs,@_;
+	walk_bugs(dirs => [@dirs],
+		  bugs => $opts->{bugs},
+		  callback => sub {
+		      push @bugs,@_;
 		  },
-		  10000
+		  bugs_per_call => 10000
 		 );
 	$s->resultset('Bug')->quick_insert_bugs(@bugs);
     }
-    walk_bugs([(@{$argv}?@{$argv} : $initialdir)],
-              $p,
-              'summary',
-              $verbose,
-              sub {
+    walk_bugs(dirs => [@dirs],
+	      bugs => $opts->{bugs},
+              progress_bar => $p,
+              $verbose?(logging=>\*STDERR):(),
+              callback =>
+	      sub {
 		my @bugs = @_;
 		my @bugs_to_update;
 		if ($options{quick}) {
 		    @bugs_to_update =
-			bugs_to_update($s,$initialdir,@bugs);
+			bugs_to_update($s,@bugs);
 		} else {
 		    @bugs_to_update = @bugs;
 		}
@@ -316,7 +322,7 @@ sub add_bugs {
 		  die "failure while trying to load bug: $@";
 		}
               },
-	      50
+	      bugs_per_call => 50
              );
     handle_load_bug_queue(db => $s,
                           queue => \%queue);
@@ -564,11 +570,12 @@ sub add_logs {
     }
     my $s = db_connect($options);
 
-    walk_bugs([(@{$argv}?@{$argv} : $initialdir)],
-              $p,
-              'log',
-              $verbose,
-              sub {
+    walk_bugs(dirs => [(@{$argv}?@{$argv} : $initialdir)],
+              progress_bar => $p,
+              bug_file => 'log',
+              $verbose?(logging => \*STDERR):(),
+              callback =>
+	      sub {
                   my $bug = shift;
 		  my $stat = stat(getbugcomponent($bug,'log',$initialdir));
                   if (not defined $stat) {
@@ -610,16 +617,16 @@ sub add_bugs_and_logs {
     my %severities;
     my %queue;
 
-    walk_bugs([(@{$argv}?@{$argv} : $initialdir)],
-              $p,
-              'summary',
-              $verbose,
-              sub {
+    walk_bugs(dirs => [(@{$argv}?@{$argv} : $initialdir)],
+              progress_bar => $p,
+              $verbose?(logging => \*STDERR):(),
+              callback =>
+	      sub {
                   my @bugs = @_;
 		  my @bugs_to_update;
 		  if ($options{quick}) {
 		      @bugs_to_update =
-			  bugs_to_update($s,$initialdir,@bugs);
+			  bugs_to_update($s,@bugs);
 		  } else {
 		      @bugs_to_update = @bugs;
 		  }
@@ -658,7 +665,7 @@ sub add_bugs_and_logs {
 		      }
 		  }
               },
-	      50
+	      bugs_per_call => 50,
 	     );
     handle_load_bug_queue(db=>$s,
 			  queue => \%queue,
@@ -808,51 +815,12 @@ sub read_release_file {
     return (\%dist_info,\%p_f);
 }
 
-sub walk_bugs {
-    my ($dirs,$p,$what,$verbose,$sub,$n) = @_;
-    my @dirs = @{$dirs};
-    my $tot_dirs = @dirs;
-    my $done_dirs = 0;
-    my $avg_subfiles = 0;
-    my $completed_files = 0;
-    $n //= 1;
-    while (my $dir = shift @dirs) {
-        printf "Doing dir %s ...\n", $dir if $verbose;
-
-        opendir(DIR, "$dir/.") or die "opendir $dir: $!";
-        my @subdirs = readdir(DIR);
-        closedir(DIR);
-
-        my @list = map { m/^(\d+)\.$what$/?($1):() } @subdirs;
-        $tot_dirs -= @dirs;
-        push @dirs, map { m/^(\d+)$/ && -d "$dir/$1"?("$dir/$1"):() } @subdirs;
-        $tot_dirs += @dirs;
-        if ($avg_subfiles == 0) {
-            $avg_subfiles = @list;
-        }
-
-        $p->target($avg_subfiles*($tot_dirs-$done_dirs)+$completed_files+@list) if $p;
-        $avg_subfiles = ($avg_subfiles * $done_dirs + @list) / ($done_dirs+1);
-        $done_dirs += 1;
-
-	my $it = natatime $n,@list;
-	while (my @bugs = $it->()) {
-	  $sub->(@bugs);
-	  $completed_files += scalar @bugs;
-	  $p->update($completed_files) if $p;
-	  print "Up to $completed_files bugs...\n"
-	    if ($completed_files % 100 == 0 && $verbose);
-        }
-    }
-    $p->remove() if $p;
-}
-
 
 sub bugs_to_update {
-    my ($s,$initialdir,@bugs) = @_;
+    my ($s,@bugs) = @_;
     my @bugs_to_update;
     for my $bug (@bugs) {
-	my $stat = stat(getbugcomponent($bug,'summary',$initialdir));
+	my $stat = stat(getbugcomponent($bug,'summary',getbuglocation($bug,'summary')));
 	if (not defined $stat) {
 	    print STDERR "Unable to stat $bug $!\n";
 	    next;

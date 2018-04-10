@@ -32,6 +32,7 @@ use warnings;
 use strict;
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use Exporter qw(import);
+use v5.10;
 
 BEGIN{
      $VERSION = 1.00;
@@ -47,6 +48,7 @@ BEGIN{
 				qw(package_maintainer),
 				qw(sort_versions),
 				qw(open_compressed_file),
+				qw(walk_bugs),
 			       ],
 		     misc   => [qw(make_list globify_scalar english_join checkpid),
 				qw(cleanup_eval_fail),
@@ -78,6 +80,7 @@ use File::Path qw(mkpath);
 use File::Basename qw(dirname);
 use MLDBM qw(DB_File Storable);
 $MLDBM::DumpMeth='portable';
+use List::AllUtils qw(natatime);
 
 use Params::Validate qw(validate_with :types);
 
@@ -280,6 +283,117 @@ sub open_compressed_file {
     return $fh;
 }
 
+=head2 walk_bugs
+
+Walk through directories of bugs, calling a subroutine with a list of bugs
+found.
+
+C<walk_bugs(callback => sub {print map {qq($_\n)} @_},dirs => [qw(db-h)];>
+
+=over
+
+=item callback -- CODEREF of a subroutine to call with a list of bugs
+
+=item dirs -- ARRAYREF of directories to get bugs from. Like C<[qw(db-h archive)]>.
+
+=item bugs -- ARRAYREF of bugs to walk through. If both C<dirs> and C<bugs> are
+provided, both are walked through.
+
+=item bugs_per_call -- maximum number of bugs to provide to callback
+
+=item progress_bar -- optional L<Term::ProgressBar>
+
+=item bug_file -- bug file to look for (generally C<summary>)
+
+=item logging -- optional filehandle to output logging information
+
+=back
+
+=cut
+
+sub walk_bugs {
+    state $spec =
+       {dirs => {type => ARRAYREF,
+		 default => [],
+		},
+	bugs => {type => ARRAYREF,
+		 default => [],
+		},
+	progress_bar => {type => OBJECT|UNDEF,
+			 optional => 1,
+			},
+	bug_file => {type => SCALAR,
+		     default => 'summary',
+		    },
+	logging => {type => HANDLE,
+		    optional => 1,
+		   },
+	callback => {type => CODEREF,
+		    },
+	bugs_per_call => {type => SCALAR,
+			  default => 1,
+			 },
+       };
+    my %param = validate_with(params => \@_,
+			      spec => $spec
+			     );
+    my @dirs = @{$param{dirs}};
+    my @initial_bugs = ();
+    if (@{$param{bugs}}) {
+	unshift @dirs,'';
+	@initial_bugs = @{$param{bugs}};
+    }
+    my $tot_dirs = @dirs;
+    my $done_dirs = 0;
+    my $avg_subfiles = 0;
+    my $completed_files = 0;
+    my $dir;
+    while ($dir = shift @dirs or defined $dir) {
+	my @list;
+	my @subdirs;
+	if (not length $dir and @initial_bugs) {
+	    push @list,@initial_bugs;
+	    @initial_bugs = ();
+	} else {
+	    printf {$param{verbose}} "Doing dir %s ...\n", $dir
+		if defined $param{verbose};
+	    opendir(my $DIR, "$dir/.") or
+		die "opendir $dir: $!";
+	    @subdirs = readdir($DIR) or
+		die "Unable to readdir $dir: $!";
+	    closedir($DIR) or
+		die "Unable to closedir $dir: $!";
+
+	    @list = map { m/^(\d+)\.$param{bug_file}$/?($1):() } @subdirs;
+	}
+        $tot_dirs -= @dirs;
+        push @dirs, map { m/^(\d+)$/ && -d "$dir/$1"?("$dir/$1"):() } @subdirs;
+        $tot_dirs += @dirs;
+	if ($param{progress_bar}) {
+	    if ($avg_subfiles == 0) {
+		$avg_subfiles = @list;
+	    }
+	    $param{progress_bar}->
+		target($avg_subfiles*($tot_dirs-$done_dirs)+$completed_files+@list);
+	    $avg_subfiles = ($avg_subfiles * $done_dirs + @list) / ($done_dirs+1);
+	    $done_dirs += 1;
+	}
+
+	my $it = natatime $param{bugs_per_call},@list;
+	while (my @bugs = $it->()) {
+	    $param{callback}->(@bugs);
+	    $completed_files += scalar @bugs;
+	    if ($param{progress_bar}) {
+		$param{progress_bar}->update($completed_files) if $param{progress_bar};
+	    }
+	    if ($completed_files % 100 == 0 and
+		defined $param{verbose}) {
+		print {$param{verbose}} "Up to $completed_files bugs...\n"
+	    }
+        }
+    }
+    $param{progress_bar}->remove() if $param{progress_bar};
+}
 
 
 =head2 getparsedaddrs
