@@ -68,6 +68,13 @@ debbugs-installsql
 
 use vars qw($DEBUG);
 
+# if we're running out of git, we want to use the git base directory as the
+# first INC directory. If you're not running out of git, or someone has given a
+# non-absolute INC, don't do that.
+use FindBin;
+use if (-d $FindBin::Bin.'/../.git/' && $INC[0] =~ m#^/#),
+    lib => $FindBin::Bin.'/../';
+
 use Debbugs::DB;
 use Debbugs::DB::Util qw(prepare_execute);
 use aliased 'DBIx::Class::DeploymentHandler' => 'DH';

@@ -131,6 +131,13 @@ Display this manual.
 
 use vars qw($DEBUG);
 
+# if we're running out of git, we want to use the git base directory as the
+# first INC directory. If you're not running out of git, or someone has given a
+# non-absolute INC, don't do that.
+use FindBin;
+use if (-d $FindBin::Bin.'/../.git/' && $INC[0] =~ m#^/#),
+    lib => $FindBin::Bin.'/../';
+
 use Debbugs::Common (qw(checkpid lockpid get_hashname getparsedaddrs),
 		     qw(getbugcomponent make_list getsourcemaintainers),
 		     qw(walk_bugs),
