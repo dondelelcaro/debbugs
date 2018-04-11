@@ -173,6 +173,14 @@ Individual who submitted this bug; empty if there is no submitter
 
 Package name if the package is not known
 
+=head2 unknown_affects
+
+  data_type: 'text'
+  default_value: (empty string)
+  is_nullable: 0
+
+Package name if the affected package is not known
+
 =cut
 
 __PACKAGE__->add_columns(
@@ -226,6 +234,8 @@ __PACKAGE__->add_columns(
   "submitter_full",
   { data_type => "text", default_value => "", is_nullable => 0 },
   "unknown_packages",
+  { data_type => "text", default_value => "", is_nullable => 0 },
+  "unknown_affects",
   { data_type => "text", default_value => "", is_nullable => 0 },
 );
 
@@ -514,8 +524,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07045 @ 2016-09-24 14:51:07
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:iaipVETTaokcFNrICfIEAw
+# Created by DBIx::Class::Schema::Loader v0.07048 @ 2018-04-11 13:06:55
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:qxkLXbv8JGoV9reebbOUEw
 
 use Carp;
 use List::AllUtils qw(uniq);

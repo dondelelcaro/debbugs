@@ -113,7 +113,8 @@ CREATE TABLE bug (
        -- submitter would ideally be NOT NULL, but there are some ancient bugs which do not have submitters
        submitter INT REFERENCES correspondent(id),
        submitter_full TEXT NOT NULL DEFAULT '',
-       unknown_packages TEXT NOT NULL DEfAULT ''
+       unknown_packages TEXT NOT NULL DEFAULT '',
+       unknown_affects TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX bug_idx_owner ON bug(owner);
 CREATE INDEX bug_idx_submitter ON bug(submitter);
@@ -139,6 +140,7 @@ INSERT INTO column_comments VALUES ('bug','done','Individual who did the -done; 
 INSERT INTO column_comments VALUES ('bug','owner','Individual who owns this bug; empty if no one owns it');
 INSERT INTO column_comments VALUES ('bug','submitter','Individual who submitted this bug; empty if there is no submitter');
 INSERT INTO column_comments VALUES ('bug','unknown_packages','Package name if the package is not known');
+INSERT INTO column_comments VALUES ('bug','unknown_affects','Package name if the affected package is not known');
 
 
 
