@@ -45,6 +45,11 @@ environmental variable (which this option overrides).
 
 Deployment directory (defaults to /usr/share/debbugs/sqldeployment)
 
+=item B<--drop>
+
+Drop tables before trying to create them. (Useful for --install, primarily).
+Defaults to not drop tables for safety.
+
 =item B<--debug, -d>
 
 Debug verbosity. (Default 0)
@@ -83,6 +88,7 @@ my %options = (debug           => 0,
 	       help            => 0,
 	       man             => 0,
                overwrite_deployment => 0,
+	       drop            => 0,
                service         => 'debbugs',
                deployment_dir  => '/usr/share/debbugs/sqldeployment',
               );
@@ -94,6 +100,7 @@ GetOptions(\%options,
            'install',
            'install_version_storage|install-version-storage',
            'upgrade',
+	   'drop',
            'current_version|current-version',
            'overwrite_deployment|overwrite-deployment|force_overwrite|force-overwrite',
            'deployment_dir|deployment-dir=s',
@@ -141,7 +148,9 @@ my $dh = DH->new({schema => $schema,
                   force_overwrite => $options{overwrite_deployment},
                   script_directory => $options{deployment_dir},
                   databases => 'PostgreSQL',
-		  sql_translator_args => {producer_args=> {postgres_version => 8.1}},
+		  sql_translator_args => {producer_args => {postgres_version => 8.1},
+					  add_drop_table => $options{drop},
+					 },
                  });
 
 if ($options{current_version}) {
