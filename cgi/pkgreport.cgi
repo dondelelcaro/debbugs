@@ -52,7 +52,7 @@ use Debbugs::User;
 use Debbugs::Common qw(getparsedaddrs make_list getmaintainers getpseudodesc);
 
 use Debbugs::Bugs qw(get_bugs bug_filter newest_bug);
-use Debbugs::Packages qw(getsrcpkgs getpkgsrc get_versions);
+use Debbugs::Packages qw(source_to_binary binary_to_source get_versions);
 
 use Debbugs::Status qw(splitpackages);
 
@@ -326,27 +326,38 @@ my %strings = ();
 my @bugs;
 
 # addusers for source and binary packages being searched for
-my $pkgsrc = getpkgsrc();
-my $srcpkg = getsrcpkgs();
-for my $package (# For binary packages, add the binary package
-		 # and corresponding source package
-		 make_list($param{package}||[]),
-		 (map {defined $pkgsrc->{$_}?($pkgsrc->{$_}):()}
-		  make_list($param{package}||[]),
-		 ),
-		 # For source packages, add the source package
-		 # and corresponding binary packages
-		 make_list($param{src}||[]),
-		 (map {defined $srcpkg->{$_}?($srcpkg->{$_}):()}
-		  make_list($param{src}||[]),
-		 ),
-		) {
-     next unless defined $package;
-     add_user($package.'@'.$config{usertag_package_domain},
-	      \%ut,\%bugusertags,\%seen_users,\%cats,\%hidden)
-	  if defined $config{usertag_package_domain};
+if (defined $config{usertag_package_domain}) {
+    my @possible_packages;
+    if (exists $param{packages} and
+	defined $param{packages}
+       ) {
+	# For binary packages, add the binary package and corresponding source package
+	push @possible_packages,
+	    make_list($param{package});
+	push @possible_packages,
+	    binary_to_source(source_only => 1,
+			     binary=>$param{package},
+			     @schema_arg,
+			    );
+    }
+    if (exists $param{src} and
+	defined $param{src}
+       ) {
+	# For source packages, add the source package and corresponding binary packages
+	push @possible_packages,
+	    make_list($param{src});
+	push @possible_packages,
+	    source_to_binary(binary_only => 1,
+			     source => $param{src},
+			     @schema_arg,
+			    );
+    }
+    for my $package (@possible_packages) {
+	next unless defined $package and length $package;
+	add_user($package.'@'.$config{usertag_package_domain},
+		 \%ut,\%bugusertags,\%seen_users,\%cats,\%hidden);
+    }
 }
-
 
 # walk through the keys and make the right get_bugs query.
 
