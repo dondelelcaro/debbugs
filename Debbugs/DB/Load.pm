@@ -177,36 +177,45 @@ sub load_bug {
     my $b = $s->resultset('Bug')->update_or_create($bug) or
         die "Unable to update or create bug $bug->{id}";
     $s->txn_do(sub {
-		 $b->set_related_packages('binpackages',
-					  [grep {defined $_ and
-						   length $_ and $_ !~ /^src:/}
-					   make_list($data->{package})],
-					  $param{packages},
-					 );
-		 $b->set_related_packages('srcpackages',
-					  [map {s/src://;
-                                                $_}
-                                           grep {defined $_ and
-						   $_ =~ /^src:/}
-					   make_list($data->{package})],
-					  $param{packages},
-					 );
-		 $b->set_related_packages('affects_binpackages',
-					  [grep {defined $_ and
-						   length $_ and $_ !~ /^src:/}
-					   make_list($data->{affects})
-					  ],
-					  $param{packages},
-					 );
-		 $b->set_related_packages('affects_srcpackages',
-					  [map {s/src://;
-                                                $_}
-                                           grep {defined $_ and
-						   $_ =~ /^src:/}
-					   make_list($data->{affects})],
-					  $param{packages},
-					 );
-		 for my $ff (qw(found fixed)) {
+                   my @unknown_packages;
+                   my @unknown_affects_packages;
+                   push @unknown_packages,
+                       $b->set_related_packages('binpackages',
+                                                [grep {defined $_ and
+                                                           length $_ and $_ !~ /^src:/}
+                                                 make_list($data->{package})],
+                                                $param{packages},
+                                               );
+                   push @unknown_packages,
+                       $b->set_related_packages('srcpackages',
+                                                [map {s/src://;
+                                                      $_}
+                                                 grep {defined $_ and
+                                                           $_ =~ /^src:/}
+                                                 make_list($data->{package})],
+                                                $param{packages},
+                                               );
+                   push @unknown_affects_packages,
+                       $b->set_related_packages('affects_binpackages',
+                                                [grep {defined $_ and
+                                                           length $_ and $_ !~ /^src:/}
+                                                 make_list($data->{affects})
+                                                ],
+                                                $param{packages},
+                                               );
+                   push @unknown_affects_packages,
+                       $b->set_related_packages('affects_srcpackages',
+                                                [map {s/src://;
+                                                      $_}
+                                                 grep {defined $_ and
+                                                           $_ =~ /^src:/}
+                                                 make_list($data->{affects})],
+                                                $param{packages},
+                                               );
+                   $b->unknown_packages(join(', ',@unknown_packages));
+                   $b->unknown_affects(join(', ',@unknown_affects_packages));
+                   $b->update();
+                   for my $ff (qw(found fixed)) {
 		       my @elements = $s->resultset('BugVer')->search({bug => $data->{bug_num},
 								       found  => $ff eq 'found'?1:0,
 								      });
@@ -506,7 +515,7 @@ sub load_debinfo {
     if (not defined $cache->{bp}{$binname}) {
         $cache->{bp}{$binname} =
             $s->resultset('BinPkg')->
-            get_bin_pkg_id($binname);
+            get_or_create_bin_pkg_id($binname);
     }
     $bp = $cache->{bp}{$binname};
     $s->resultset('BinVer')->
@@ -616,7 +625,7 @@ sub load_packages {
 	    sub {
 		for my $svm (@_) {
 		    my $s_id = $schema->resultset('SrcPkg')->
-			get_src_pkg_id($svm->[0]);
+			get_or_create_src_pkg_id($svm->[0]);
 		    my $sv_id = $schema->resultset('SrcVer')->
 			get_src_ver_id($s_id,$svm->[1],$maints->{$svm->[2]});
 		    $schema->resultset('SrcAssociation')->
@@ -683,11 +692,11 @@ sub load_packages {
 	sub {
 	    for my $bvm (@_) {
 		my $s_id = $schema->resultset('SrcPkg')->
-		    get_src_pkg_id($bvm->{source});
+		    get_or_create_src_pkg_id($bvm->{source});
 		my $sv_id = $schema->resultset('SrcVer')->
 		    get_src_ver_id($s_id,$bvm->{src_ver},$maints->{$bvm->{maint}});
 		my $b_id = $schema->resultset('BinPkg')->
-		    get_bin_pkg_id($bvm->{bin});
+		    get_or_create_bin_pkg_id($bvm->{bin});
 		my $bv_id = $schema->resultset('BinVer')->
 		    get_bin_ver_id($b_id,$bvm->{bin_ver},
 				   $archs->{$bvm->{arch}},$sv_id);

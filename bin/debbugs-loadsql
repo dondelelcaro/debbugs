@@ -361,7 +361,7 @@ sub add_versions {
             if (not defined $src_pkgs{$versions[$i][0]}) {
                 $src_pkgs{$versions[$i][0]} =
                     $s->resultset('SrcPkg')->
-		    get_src_pkg_id($versions[$i][0]);
+		    get_or_create_src_pkg_id($versions[$i][0]);
             }
             $sp = $src_pkgs{$versions[$i][0]};
             # There's probably something wrong if the source package

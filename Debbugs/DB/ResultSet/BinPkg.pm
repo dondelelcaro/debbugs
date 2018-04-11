@@ -46,6 +46,18 @@ sub get_bin_pkg_id {
     return $self->result_source->schema->storage->
 	dbh_do(sub {
 		   my ($s,$dbh,$bin_pkg) = @_;
+		   return select_one($dbh,<<'SQL',$bin_pkg);
+SELECT id FROM bin_pkg where pkg = ?;
+SQL
+	       },
+	       $pkg
+	      );
+}
+sub get_or_create_bin_pkg_id {
+    my ($self,$pkg) = @_;
+    return $self->result_source->schema->storage->
+	dbh_do(sub {
+		   my ($s,$dbh,$bin_pkg) = @_;
 		   return select_one($dbh,<<'SQL',$bin_pkg,$bin_pkg);
 WITH ins AS (
 INSERT INTO bin_pkg (pkg)

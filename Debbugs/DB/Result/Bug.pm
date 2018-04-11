@@ -556,21 +556,47 @@ sub sqlt_deploy_hook {
     }
 }
 
+=head1 Utility Functions
+
+=cut
+
+=head2 set_related_packages
+
+ $b->set_related_packages($relationship,
+			  \@packages,
+			  $package_cache ,
+			 );
+
+Set bug-related packages.
+
+=cut
+
 sub set_related_packages {
     my ($self,$relationship,$pkgs,$pkg_cache) = @_;
 
+    my @unset_packages;
     my @pkg_ids;
     if ($relationship =~ /binpackages/) {
         for my $pkg (@{$pkgs}) {
-            push @pkg_ids,
+	    my $pkg_id =
               $self->result_source->schema->resultset('BinPkg')->
               get_bin_pkg_id($pkg);
+	    if (not defined $pkg_id) {
+		push @unset_packages,$pkg;
+	    } else {
+	       push @pkg_ids, $pkg_id;
+	    }
         }
     } elsif ($relationship =~ /srcpackages/) {
         for my $pkg (@{$pkgs}) {
-            push @pkg_ids,
+	    my $pkg_id =
               $self->result_source->schema->resultset('SrcPkg')->
               get_src_pkg_id($pkg);
+	    if (defined $pkg_id) {
+		push @unset_packages,$pkg;
+	    } else {
+		push @pkg_ids,$pkg_id;
+	    }
         }
     } else {
         croak "Unsupported relationship $relationship";
@@ -587,6 +613,7 @@ sub set_related_packages {
     } else {
         croak "Unsupported relationship $relationship";
     }
+    return @unset_packages
 }
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 1;

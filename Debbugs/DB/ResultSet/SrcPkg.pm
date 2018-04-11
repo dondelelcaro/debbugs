@@ -61,6 +61,19 @@ sub get_src_pkg_id {
     my ($self,$source) = @_;
     return $self->result_source->schema->storage->
 	dbh_do(sub {
+		   my ($s,$dbh,$src_pkg) = @_;
+		   return select_one($dbh,<<'SQL',$src_pkg);
+SELECT id FROM src_pkg where pkg = ?;
+SQL
+	       },
+	       $source
+	      );
+}
+
+sub get_or_create_src_pkg_id {
+    my ($self,$source) = @_;
+    return $self->result_source->schema->storage->
+	dbh_do(sub {
 		   my ($s,$dbh,$source) = @_;
 		   return select_one($dbh,<<'SQL',$source,$source);
 WITH ins AS (
