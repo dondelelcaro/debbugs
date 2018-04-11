@@ -503,6 +503,7 @@ sub get_bugs_by_db{
                               );
      my %bugs = ();
 
+     my $s = $param{schema};
      my $keys = grep {$_ !~ $_non_search_key_regex} keys(%param);
      die "Need at least 1 key to search by" unless $keys;
      my $rs = $param{schema}->resultset('Bug');
@@ -540,6 +541,8 @@ sub get_bugs_by_db{
 				    [@aff_list],
 				    'src_pkg.pkg' =>
 				    [@aff_list],
+				    'me.unknown_affects' =>
+				    [@aff_list]
 				   },
 			   },
                           {join => [{bug_affects_binpackages => 'bin_pkg'},
@@ -554,33 +557,73 @@ sub get_bugs_by_db{
 			   },
                           {join => {bug_binpackages => 'bin_pkg'}});
      }
-     if (exists $param{maintainer}) {
+     if (exists $param{maint}) {
 	 my @maint_list =
 	     map {$_ eq '' ? undef : $_}
-	     make_list($param{maintainer});
-	 $rs = $rs->search({-or => {correspondent => [@maint_list],
-				    correspondent2 => [@maint_list],
+	     make_list($param{maint});
+	 my $bin_pkgs_rs =
+	     $s->resultset('BinPkg')->
+	     search({'correspondent.addr' => [@maint_list]},
+		   {join => {bin_vers =>
+			    {src_ver =>
+			    {maintainer => 'correspondent'}}},
+		    columns => ['id'],
+		    group_by => ['me.id'],
+		   },
+		   );
+	 my $src_pkgs_rs =
+	     $s->resultset('SrcPkg')->
+	     search({'correspondent.addr' => [@maint_list]},
+		   {join => {src_vers =>
+			    {maintainer => 'correspondent'}},
+		    columns => ['id'],
+		    group_by => ['me.id'],
+		   },
+		   );
+	 $rs = $rs->search({-or => {'bug_binpackages.bin_pkg' =>
+				   { -in => $bin_pkgs_rs->get_column('id')->as_query},
+				    'bug_srcpackages.src_pkg' => 
+				   { -in => $bin_pkgs_rs->get_column('id')->as_query},
 				   },
 			   },
-			  {join => {bug_affects_binpackage =>
-				   {bin_pkg =>
-				   {bin_ver =>
-				   {src_ver =>
-				   {maintainer => 'correspondent'}
-				   }}},
-				   {bug_affects_srcpackage =>
-				   {src_pkg =>
-				   {src_ver =>
-				   {maintainer => 'correspondent'}
-				   }}}}
-			  }
+			  {join => ['bug_binpackages',
+				    'bug_srcpackages',
+				   ]}
 			  );
      }
      if (exists $param{src}) {
-         $rs = $rs->search({-or => {map {('src_pkg.pkg' => $_)}
-				    make_list($param{src})},
+	 # identify all of the srcpackages and binpackages that match first
+	 my $src_pkgs_rs =
+	 $s->resultset('SrcPkg')->
+	     search({-or => [map {('me.pkg' => $_,
+				  )}
+			     make_list($param{src})],
+		     columns => ['id'],
+		     group_by => ['me.id'],
+		    },
+		   );
+	 my $bin_pkgs_rs =
+	 $s->resultset('BinPkg')->
+	     search({-or => [map {('src_pkg.pkg' => $_,
+				  )}
+			     make_list($param{src})],
+		     },
+		   {join => {bin_vers => {src_ver => 'src_pkg'}},
+		    columns => ['id'],
+		    group_by => ['me.id'],
+		   });
+         $rs = $rs->search({-or => {'bug_binpackages.bin_pkg' =>
+				   { -in => $bin_pkgs_rs->get_column('id')->as_query},
+				    'bug_srcpackages.src_pkg' => 
+				   { -in => $bin_pkgs_rs->get_column('id')->as_query},
+				    'me.unknown_package' =>
+				    [make_list($param{src})],
+				   },
 			   },
-                          {join => {bug_srcpackages => 'src_pkg'}});
+			  {join => ['bug_binpackages',
+				    'bug_srcpackages',
+				   ]}
+			  );
      }
      # tags are very odd, because we must handle usertags.
      if (exists $param{tag}) {
