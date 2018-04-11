@@ -443,7 +443,10 @@ CREATE TABLE bug_status_cache (
        modified TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
        asof TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
-CREATE UNIQUE INDEX bug_status_cache_bug_suite_arch_idx ON bug_status_cache(bug,suite,arch);
+CREATE UNIQUE INDEX bug_status_cache_bug_suite_arch_idx ON
+       bug_status_cache(bug,suite,arch);
+CREATE UNIQUE INDEX bug_status_cache_bug_col_suite_col_arch_idx ON
+       bug_status_cache(bug,COALESCE(suite,0),COALESCE(arch,0));
 CREATE INDEX bug_status_cache_idx_bug ON bug_status_cache(bug);
 CREATE INDEX bug_status_cache_idx_status ON bug_status_cache(status);
 CREATE INDEX bug_status_cache_idx_arch ON bug_status_cache(arch);
