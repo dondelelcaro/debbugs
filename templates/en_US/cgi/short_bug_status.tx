@@ -10,19 +10,19 @@
       <abbr title="<: $tag :>"><: $config.tags_single_letter[$tag] :></abbr><:- } -:>
       : }
           <:- if $status.tags_array.size() == 0 { -:>&nbsp;&nbsp;<: } :>|
-          <:- if $status.mergedwith_array.count > 0 { -:>
+          <:- if $status.mergedwith_array.size() > 0 { -:>
           <abbr title="merged">=</abbr>
           <:- } -:>
-          <:- if $status.fixed_versions.count > 0 { -:>
+          <:- if $status.fixed_versions.size() > 0 { -:>
           <abbr title="fixed versions">☺</abbr>
           <:- } -:>
-          <:- if $status.fixed_versions.count > 0 { -:>
+          <:- if $status.fixed_versions.size() > 0 { -:>
           <abbr title="fixed versions">☺</abbr>
           <:- } -:>
-          <:- if $status.blockedby_array.count > 0 { -:>
+          <:- if $status.blockedby_array.size() > 0 { -:>
           <abbr title="blocked by">♙</abbr>
           <:- } -:>
-          <:- if $status.blocks_array.count > 0 { -:>
+          <:- if $status.blocks_array.size() > 0 { -:>
           <abbr title="blocks">♔</abbr>
           <:- } -:>
           <:- if length($status.forwarded) { -:>
