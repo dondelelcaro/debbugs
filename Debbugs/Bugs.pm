@@ -527,12 +527,21 @@ sub get_bugs_by_db{
          }
      }
      if (exists $param{correspondent}) {
-         $rs = $rs->search({'message_correspondents.addr' =>
-			    [make_list($param{correspondent})],
+	 my $message_rs =
+	     $s->resultset('Message')->
+	     search({'correspondent.addr' =>
+		     [make_list($param{correspondent})],
+		    },
+		   {join => {message_correspondents => 'correspondent'},
+		    columns => ['id'],
+		    group_by => ['me.id'],
+		   },
+		   );
+         $rs = $rs->search({'bug_messages.message' =>
+			   {-in => $message_rs->get_column('id')->as_query()},
 			   },
-                          {join => {correspondent =>
-                                   {bug_messages =>
-                                   {message => 'message_correspondents'}}}},
+                          {join => 'bug_messages',
+			  },
                           );
      }
      if (exists $param{affects}) {
