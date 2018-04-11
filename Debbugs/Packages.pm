@@ -229,18 +229,21 @@ sub binary_to_source{
 	if ($param{source_only}) {
 	    @source = map {$_->[0]} @source;
 	    my $src_rs = $param{schema}->resultset('SrcPkg')->
-		search_rs({'binpkg.pkg' => [@binaries],
+		search_rs({'bin_pkg.pkg' => [@binaries],
 			   @versions?('bin_vers.ver'    => [@versions]):(),
 			   @archs?('arch.arch' => [@archs]):(),
 			  },
 			 {join => {'src_vers'=>
 				  {'bin_vers'=> ['arch','bin_pkg']}
 				  },
+			  columns => [qw(pkg)],
+			  order_by => [qw(pkg)],
+			  result_class => 'DBIx::Class::ResultClass::HashRefInflator',
 			  distinct => 1,
 			 },
 			 );
 	    push @source,
-		map {$_->pkg} $src_rs->all;
+		map {$_->{pkg}} $src_rs->all;
 	    if ($param{scalar_only}) {
 		return join(',',@source);
 	    }
@@ -255,21 +258,28 @@ sub binary_to_source{
 		     {join => ['src_pkg',
 			      {'bin_vers' => ['arch','binpkg']},
 			      ],
+		      columns => ['src_pkg.pkg','src_ver.ver'],
+		      result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+		      order_by => ['src_pkg.pkg','src_ver.ver'],
 		      distinct => 1,
 		     },
 		     );
 	push @source,
-	    map {[$_->get_column('src_pkg.pkg'),
-		  $_->get_column('src_ver.ver'),
+	    map {[$_->{src_pkg}{pkg},
+		  $_->{src_ver}{ver},
 		 ]} $src_rs->all;
 	if (not @source and not @versions and not @archs) {
 	    $src_rs = $param{schema}->resultset('SrcPkg')->
 		search_rs({pkg => [@binaries]},
-			 {distinct => 1},
+			 {join => ['src_vers'],
+			  columns => ['src_pkg.pkg','src_vers.ver'],
+			  distinct => 1,
+			 },
 			 );
 	    push @source,
-		map {[$_->pkg,
-		     ]} $src_rs->all;
+	    map {[$_->{src_pkg}{pkg},
+		  $_->{src_vers}{ver},
+		 ]} $src_rs->all;
 	}
 	return @source;
     }
