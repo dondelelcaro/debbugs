@@ -81,6 +81,9 @@ sub generate_package_info{
 						    },
 					 bugs    => {type => ARRAYREF,
 						    },
+					 schema => {type => OBJECT,
+						    optional => 1,
+						   },
 					},
 			      );
 
@@ -91,19 +94,24 @@ sub generate_package_info{
 
      my %pkgsrc = %{getpkgsrc()};
      my $srcforpkg = $package;
-     if ($param{binary} and exists $pkgsrc{$package}
-	 and defined $pkgsrc{$package}) {
-	  $srcforpkg = $pkgsrc{$package};
+     if ($param{binary}) {
+	 $srcforpkg =
+	     binary_to_source(source_only => 1,
+			      scalar_only => 1,
+			      binary => $package,
+			      exists $param{schema}?(schema => $param{schema}):(),
+			     );
      }
 
      my $showpkg = html_escape($package);
-     my $maintainers = getmaintainers();
-     my $maint = $maintainers->{$srcforpkg};
-     if (defined $maint) {
+     my @maint = package_maintainer($param{binary}?'binary':'source',
+				    $package
+				   );
+     if (@maint) {
 	  print {$output} '<p>';
-	  print {$output} (($maint =~ /,/)? "Maintainer for $showpkg is "
+	  print {$output} (@maint > 1? "Maintainer for $showpkg is "
 			   : "Maintainers for $showpkg are ") .
-				package_links(maintainer => $maint);
+				package_links(maintainer => \@maint);
 	  print {$output} ".</p>\n";
      }
      else {
@@ -131,13 +139,6 @@ sub generate_package_info{
 	  push @references, "to the <a href=\"$config{web_domain}/pseudo-packages$config{html_suffix}\">".
 	       "list of other pseudo-packages</a>";
      }
-     elsif (not defined $maint and not @{$param{bugs}}) {
-	# don't bother printing out this information, because it's
-	# already present above.
-     	#  print {$output} "<p>There is no record of the " . html_escape($package) .
-     	#       ($param{binary} ? " package" : " source package") .
-     	# 	    ", and no bugs have been filed against it.</p>";
-     }
      else {
 	  if ($package and defined $config{package_pages} and length $config{package_pages}) {
 	       push @references, sprintf "to the <a href=\"%s\">%s package page</a>",
@@ -163,7 +164,7 @@ sub generate_package_info{
 	  $references[$#references] = "or $references[$#references]" if @references > 1;
 	  print {$output} "<p>You might like to refer ", join(", ", @references), ".</p>\n";
      }
-     if (defined $maint) {
+     if (@maint) {
 	  print {$output} "<p>If you find a bug not listed here, please\n";
 	  printf {$output} "<a href=\"%s\">report it</a>.</p>\n",
 	       html_escape("$config{web_domain}/Reporting$config{html_suffix}");
