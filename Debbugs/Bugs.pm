@@ -506,10 +506,7 @@ sub get_bugs_by_db{
      my $s = $param{schema};
      my $keys = grep {$_ !~ $_non_search_key_regex} keys(%param);
      die "Need at least 1 key to search by" unless $keys;
-     my $rs = $param{schema}->resultset('Bug');
-     if (exists $param{package}) {
-	 $rs = $rs->search({-or => {map 'bin_package.'}})
-     }
+     my $rs = $s->resultset('Bug');
      if (exists $param{severity}) {
          $rs = $rs->search({'severity.severity' =>
 			    [make_list($param{severity})],
@@ -561,8 +558,10 @@ sub get_bugs_by_db{
                           );
      }
      if (exists $param{package}) {
-         $rs = $rs->search({'bin_pkg.pkg' =>
-			    [make_list($param{package})],
+         $rs = $rs->search({-or => {'bin_pkg.pkg' =>
+				    [make_list($param{package})],
+				    'me.unknown.package' =>
+				    [make_list($param{package})]},
 			   },
                           {join => {bug_binpackages => 'bin_pkg'}});
      }
