@@ -355,28 +355,29 @@ sub pkg_htmlizebugs {
      }
 
      my $binary_to_source_cache = {};
-     foreach my $bug (@bugs) {
-	 my %status = %{get_bug_status(bug=>$bug,
-				       (map {exists $param{$_}?($_,$param{$_}):()}
-					qw(dist version schema bugusertags)
-				       ),
-					(exists $param{arch}?(arch => $param{arch}):(arch => $config{default_architectures})),
-					binary_to_source_cache => $binary_to_source_cache,
-				       )};
-	  next unless %status;
-	  next if bug_filter(bug => $bug,
-			     status => \%status,
-			     repeat_merged => $param{repeatmerged},
-			     seen_merged => \%seenmerged,
-			     (keys %include ? (include => \%include):()),
-			     (keys %exclude ? (exclude => \%exclude):()),
-			    );
+     my $statuses =
+	 get_bug_statuses(bug => \@bugs,
+			  (map {exists $param{$_}?($_,$param{$_}):()}
+			   qw(dist version schema bugusertags)
+			  ),
+			  (exists $param{arch}?(arch => $param{arch}):(arch => $config{default_architectures})),
+			  binary_to_source_cache => $binary_to_source_cache,
+			 );
+     for my $bug (keys %{$statuses}) {
+	 next unless %{$statuses->{$bug}};
+	 next if bug_filter(bug => $bug,
+			    status => $statuses->{$bug},
+			    repeat_merged => $param{repeatmerged},
+			    seen_merged => \%seenmerged,
+			    (keys %include ? (include => \%include):()),
+			    (keys %exclude ? (exclude => \%exclude):()),
+			   );
 
-	  my $html = "<li>"; #<a href=\"%s\">#%d: %s</a>\n<br>",
-	  $html .= short_bug_status_html(status  => \%status,
-					 options => $param{options},
-					) . "\n";
-	  push @status, [ $bug, \%status, $html ];
+	 my $html = "<li>";	#<a href=\"%s\">#%d: %s</a>\n<br>",
+	 $html .= short_bug_status_html(status  => $statuses->{$bug},
+					options => $param{options},
+				       ) . "\n";
+	 push @status, [ $bug, $statuses->{$bug}, $html ];
      }
      if ($param{bug_order} eq 'age') {
 	  # MWHAHAHAHA
