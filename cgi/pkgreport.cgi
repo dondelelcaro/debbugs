@@ -65,9 +65,11 @@ use Debbugs::Text qw(:templates);
 use Debbugs::DB;
 
 my $s;
+my @schema_arg = ();
 if (defined $config{database}) {
     $s = Debbugs::DB->connect($config{database}) or
         die "Unable to connect to DB";
+    @schema_arg = ('schema',$s);
 }
 
 use CGI::Simple;
@@ -410,7 +412,7 @@ my $title = $gBugs.' '.join(' and ', map {/ or /?"($_)":$_} @title);
 		  grep {$_ ne 'newest'}
 		  keys %package_search_keys, 'archive'),
 		 usertags => \%ut,
-		 defined $s?(schema => $s):(),
+		 @schema_arg,
 		);
 
 # shove in bugs which affect this package if there is a package or a
@@ -424,7 +426,7 @@ if (not exists $param{affects} and not exists $param{noaffects} and
 			  grep {$_ ne 'newest'}
 			  keys %package_search_keys, 'archive'),
 			 usertags => \%ut,
-                         defined $s?(schema => $s):(),
+			 @schema_arg,
 			);
 }
 
@@ -469,7 +471,7 @@ my $result = pkg_htmlizebugs(bugs => \@bugs,
 			     exclude => $exclude,
 			     this => $this,
 			     options => \%param,
-                             defined $s?(schema => $s):(),
+                             @schema_arg,
 			     (exists $param{dist})?(dist    => $param{dist}):(),
 			    );
 
@@ -504,6 +506,7 @@ for my $package (make_list($param{package}||[])) {
 				 package => $package,
 				 options => \%param,
 				 bugs    => \@bugs,
+				 @schema_arg,
 				);
 }
 for my $package (make_list($param{src}||[])) {
@@ -511,6 +514,7 @@ for my $package (make_list($param{src}||[])) {
 				 package => $package,
 				 options => \%param,
 				 bugs    => \@bugs,
+				 @schema_arg,
 				);
 }
 
