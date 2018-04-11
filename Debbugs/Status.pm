@@ -1333,8 +1333,7 @@ sub get_bug_statuses {
 	     $statuses{$bug_status->{bug_num}} =
 		 $bug_status;
 	     for my $field (qw(blocks blockedby done),
-			    qw(fixed_versions found_versions),
-			    qw(tags)
+			    qw(tags mergedwith)
 			   ) {
 		 $bug_status->{$field} //='';
 	     }
@@ -1352,6 +1351,19 @@ sub get_bug_statuses {
 		 DateTime::Format::Pg->
 		     parse_datetime($bug_status->{last_modified})->
 		     epoch;
+	     $bug_status->{location} = $bug_status->{archived}?'archive':'db-h';
+	     for my $field (qw(found_versions fixed_versions found_date fixed_date)) {
+		 $bug_status->{$field} = [split ' ', $bug_status->{$field} // ''];
+	     }
+	     for my $field (qw(found fixed)) {
+		 # create the found/fixed hashes which indicate when a
+		 # particular version was marked found or marked fixed.
+		 @{$bug_status->{$field}}{@{$bug_status->{"${field}_versions"}}} =
+		     (('') x (@{$bug_status->{"${field}_versions"}} -
+			      @{$bug_status->{"${field}_date"}}),
+		      @{$bug_status->{"${field}_date"}});
+	     }
+	     $bug_status->{id} = $bug_status->{bug_num};
 	 }
      } else {
 	 for my $bug (make_list($param{bug})) {
@@ -1376,7 +1388,6 @@ sub get_bug_statuses {
      }
      for my $bug (keys %statuses) {
 	 my $status = $statuses{$bug};
-	 $status->{id} = $bug;
 
 	 if (defined $param{bugusertags}{$param{bug}}) {
 	     $status->{keywords} = "" unless defined $status->{keywords};
