@@ -25,7 +25,8 @@ BEGIN {
      @EXPORT = ();
      %EXPORT_TAGS = (versions => [qw(getversions get_versions make_source_versions)],
 		     mapping  => [qw(getpkgsrc getpkgcomponent getsrcpkgs),
-				  qw(binary_to_source sourcetobinary makesourceversions)
+				  qw(binary_to_source sourcetobinary makesourceversions),
+				  qw(source_to_binary),
 				 ],
 		    );
      @EXPORT_OK = ();
@@ -39,7 +40,7 @@ use Storable qw(dclone);
 use Params::Validate qw(validate_with :types);
 use Debbugs::Common qw(make_list globify_scalar sort_versions);
 
-use List::AllUtils qw(min max);
+use List::AllUtils qw(min max uniq);
 
 use IO::File;
 
@@ -365,6 +366,232 @@ sub binary_to_source{
     $param{cache}{$cache_key} = \@result;
     return $param{scalar_only} ? $result[0] : @result;
 }
+
+=head2 source_to_binary
+
+     source_to_binary(package => 'foo',
+                      version => '1.2.3',
+                      arch    => 'i386');
+
+
+Turn a source package (at optional version) into a single (or set) of all binary
+packages (optionally) with associated versions.
+
+By default, in LIST context, returns a LIST of array refs of binary package,
+binary version, architecture triples corresponding to the source package(s) and
+verion(s) passed.
+
+In SCALAR context, only the corresponding binary packages are returned,
+concatenated with ', ' if necessary.
+
+If no binaries can be found, returns undef in scalar context, or the
+empty list in list context.
+
+=over
+
+=item source -- source package name(s) as a SCALAR or ARRAYREF
+
+=item version -- binary package version(s) as a SCALAR or ARRAYREF;
+optional, defaults to all versions.
+
+=item arch -- binary package architecture(s) as a SCALAR or ARRAYREF;
+optional, defaults to all architectures.
+
+=item binary_only -- return only the source name (forced on if in SCALAR
+context), defaults to false. [If in LIST context, returns a list of binary
+names.]
+
+=item scalar_only -- return a scalar only (forced true if in SCALAR
+context, also causes binary_only to be true), defaults to false.
+
+=item cache -- optional HASHREF to be used to cache results of
+binary_to_source.
+
+=back
+
+=cut
+
+# the two global variables below are used to tie the source maps; we
+# probably should be retying them in long lived processes.
+sub source_to_binary{
+    my %param = validate_with(params => \@_,
+			      spec   => {source => {type => SCALAR|ARRAYREF,
+						    },
+					 version => {type => SCALAR|ARRAYREF,
+						     optional => 1,
+						    },
+					 binary_only => {default => 0,
+							},
+					 scalar_only => {default => 0,
+							},
+					 cache => {type => HASHREF,
+						   default => {},
+						  },
+					 schema => {type => OBJECT,
+						    optional => 1,
+						   },
+					},
+			     );
+    if (not defined $config{source_binary_map} and
+	not defined $param{schema}
+       ) {
+	return ();
+    }
+
+    if ($param{scalar_only} or not wantarray) {
+	$param{binary_only} = 1;
+	$param{scalar_only} = 1;
+    }
+
+    my @binaries;
+    my @sources = sort grep {defined $_}
+	make_list(exists $param{source}?$param{source}:[]);
+    my @versions = sort grep {defined $_}
+	make_list(exists $param{version}?$param{version}:[]);
+    return () unless @sources;
+
+    # any src:foo is source package foo with unspecified version
+    @sources = map {s/^src://; $_} @sources;
+    if ($param{schema}) {
+	if ($param{binary_only}) {
+	    my $bin_rs = $param{schema}->resultset('BinPkg')->
+		search_rs({'src_pkg.pkg' => [@sources],
+			   @versions?('src_ver.ver'    => [@versions]):(),
+			  },
+			 {join => {'bin_vers'=>
+				  {'src_ver'=> 'src_pkg'}
+				  },
+			  columns => [qw(pkg)],
+			  order_by => [qw(pkg)],
+			  result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+			  distinct => 1,
+			 },
+			 );
+	    push @binaries,
+		map {$_->{pkg}} $bin_rs->all;
+	    if ($param{scalar_only}) {
+		return join(', ',@binaries);
+	    }
+	    return @binaries;
+
+	}
+	my $src_rs = $param{schema}->resultset('BinVer')->
+	    search_rs({'src_pkg.pkg' => [@sources],
+		       @versions?('src_ver.ver' => [@versions]):(),
+		      },
+		     {join => ['bin_pkg',
+			       'arch',
+			      {'src_ver' => ['src_pkg']},
+			      ],
+		      columns => ['src_pkg.pkg','src_ver.ver','arch.arch'],
+		      order_by => ['src_pkg.pkg','src_ver.ver','arch.arch'],
+		      result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+		      distinct => 1,
+		     },
+		     );
+	push @binaries,
+	    map {[$_->{src_pkg}{pkg},
+		  $_->{src_ver}{ver},
+		  $_->{arch}{arch},
+		 ]}
+	    $src_rs->all;
+	if (not @binaries and not @versions) {
+	    $src_rs = $param{schema}->resultset('BinPkg')->
+		search_rs({pkg => [@sources]},
+			 {join => {'bin_vers' =>
+				   ['arch',
+				   {'src_ver'=>'src_pkg'}],
+				   },
+			  distinct => 1,
+			  result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+			  columns => ['src_pkg.pkg','src_ver.ver','arch.arch'],
+			  order_by => ['src_pkg.pkg','src_ver.ver','arch.arch'],
+			 },
+			 );
+	    push @binaries,
+		map {[$_->{src_pkg}{pkg},
+		      $_->{src_ver}{ver},
+		      $_->{arch}{arch},
+		     ]} $src_rs->all;
+	}
+	return @binaries;
+    }
+    my $cache_key = join("\1",
+			 join("\0",@sources),
+			 join("\0",@versions),
+			 join("\0",@param{qw(binary_only scalar_only)}));
+    if (exists $param{cache}{$cache_key}) {
+	return $param{scalar_only} ? $param{cache}{$cache_key}[0]:
+	    @{$param{cache}{$cache_key}};
+    }
+    my @return;
+    my %binaries;
+    if ($param{binary_only}) {
+	for my $source (@sources) {
+	    _tie_sourcetobinary;
+	    # avoid autovivification
+	    my $src = $_sourcetobinary{$source};
+	    if (not defined $src) {
+		next if @versions;
+		_tie_binarytosource;
+		if (exists $_binarytosource{$source}) {
+		    $binaries{$source} = 1;
+		}
+		next;
+	    }
+	    my @src_vers = @versions;
+	    if (not @versions) {
+		@src_vers = keys %{$src};
+	    }
+	    for my $ver (@src_vers) {
+		$binaries{$_->[0]} = 1
+		    foreach @{$src->{$ver}//[]};
+	    }
+	}
+	# return if we have any results.
+	@return = sort keys %binaries;
+	if ($param{scalar_only}) {
+	    @return = join(', ',@return);
+	}
+	goto RETURN_RESULT;
+    }
+    for my $source (@sources) {
+	_tie_sourcetobinary;
+	my $src = $_sourcetobinary{$source};
+	# there isn't a source package, so return this as a binary packages if a
+	# version hasn't been specified
+	if (not defined $src) {
+	    next if @versions;
+	    _tie_binarytosource;
+	    if (exists $_binarytosource{$source}) {
+		my $bin = $_binarytosource{$source};
+		for my $ver (keys %{$bin}) {
+		    for my $arch (keys %{$bin->{$ver}}) {
+			$binaries{$bin}{$ver}{$arch} = 1;
+		    }
+		}
+	    }
+	    next;
+	}
+	for my $bin_ver_archs (values %{$src}) {
+	    for my $bva (@{$bin_ver_archs}) {
+		$binaries{$bva->[0]}{$bva->[1]}{$bva->[2]} = 1;
+	    }
+	}
+    }
+    for my $bin (sort keys %binaries) {
+	for my $ver (sort keys %{$binaries{$bin}}) {
+	    for my $arch (sort keys %{$binaries{$bin}{$ver}}) {
+		push @return,
+		    [$bin,$ver,$arch];
+	    }
+	}
+    }
+RETURN_RESULT:
+    $param{cache}{$cache_key} = \@return;
+    return $param{scalar_only} ? $return[0] : @return;
+}
+
 
 =head2 sourcetobinary
 
