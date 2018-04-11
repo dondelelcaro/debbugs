@@ -1010,16 +1010,16 @@ sub bug_archiveable{
      # If we just are checking if the bug can be archived, we'll not even bother
      # checking the versioning information if the bug has been -done for less than 28 days.
      my $log_file = getbugcomponent($param{bug},'log');
-     if (not defined $log_file) {
+     if (not defined $log_file or not -e $log_file) {
 	  print STDERR "Cannot archive $param{bug} because the log doesn't exist\n" if $DEBUG;
 	  return $cannot_archive;
      }
-     my $max_log_age = max(map {$config{remove_age} - -M $_}
-			   $log_file, map {my $log = getbugcomponent($_,'log');
+     my @log_files = $log_file, (map {my $log = getbugcomponent($_,'log');
 					   defined $log ? ($log) : ();
 				      }
-			   split / /, $status->{mergedwith}
-		       );
+			   split / /, $status->{mergedwith});
+     my $max_log_age = max(map {-e $_?($config{remove_age} - -M _):0}
+			   @log_files);
      if (not $param{days_until} and not $param{ignore_time}
 	 and $max_log_age > 0
 	) {
