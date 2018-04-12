@@ -140,6 +140,7 @@ use if (-d $FindBin::Bin.'/../.git/' && $INC[0] =~ m#^/#),
 
 use Debbugs::Common (qw(checkpid lockpid get_hashname getparsedaddrs),
 		     qw(getbugcomponent make_list getsourcemaintainers),
+		     qw(getbuglocation),
 		     qw(walk_bugs),
 		     qw(hash_slice open_compressed_file),);
 use Debbugs::Config qw(:config);
