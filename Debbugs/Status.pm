@@ -1371,7 +1371,7 @@ sub get_bug_statuses {
 		 exists $param{bug_index}{$bug}) {
 		 my %status = %{$param{bug_index}{$bug}};
 		 $status{pending} = $status{status};
-		 $status{id} = $param{bug};
+		 $status{id} = $bug;
 		 $statuses{$bug} = \%status;
 	     }
 	     elsif (defined $param{status} and
@@ -1382,6 +1382,7 @@ sub get_bug_statuses {
 		 my $location = getbuglocation($bug, 'summary');
 		 next if not defined $location or not length $location;
 		 my %status = %{ readbug( $bug, $location ) };
+		 $status{id} = $bug;
 		 $statuses{$bug} = \%status;
 	     }
 	 }
