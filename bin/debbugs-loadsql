@@ -437,12 +437,13 @@ FILE:	for my $file (@v) {
 		    not defined $srcver or
 		    not defined $binname or
 		    not defined $binver or
+		    not defined $binarch or
 		    $srcname !~ /^$config{package_name_re}$/o or
 		    $binname !~ /^$config{package_name_re}$/o or
 		    $srcver !~ /^$config{package_version_re}$/o or
 		    $binver !~ /^$config{package_version_re}$/o
 		   ) {
-		    print STDERR "malformed debinfo: $file\n";
+		    print STDERR "malformed debinfo: $file\n$_\n";
 		    next FILE;
 		}
 		push @file_debinfos,
