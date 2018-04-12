@@ -328,8 +328,8 @@ my @bugs;
 # addusers for source and binary packages being searched for
 if (defined $config{usertag_package_domain}) {
     my @possible_packages;
-    if (exists $param{packages} and
-	defined $param{packages}
+    if (exists $param{package} and
+	defined $param{package}
        ) {
 	# For binary packages, add the binary package and corresponding source package
 	push @possible_packages,
