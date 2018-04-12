@@ -36,6 +36,12 @@ schema revisions.
 1. Insert configuration `debbugs-loadsql configuration`
 2. Add suites `debbugs-loadsql suites --ftpdist /srv/ftp.debian.org/dists`
 3. Add packages `debbugs-loadsql packages --progress --ftpdist /srv/ftp.debian.org/dists`
+4. Add debinfo
+   find /srv/bugs.debian.org/versions/archive/ftp-master -type f -iname '*.debinfo' -print0 \
+   debbugs-loadsql --progress debinfo --null;
+5. Add versions
+   find /srv/bugs.debian.org/versions/archive/ftp-master -type f -iname '*.versions' -print0 \
+   debbugs-loadsql --progress debinfo --null;
 4. Add bugs `debbugs-loadsql bugs --progress --preload`
 5. Add bug logs `debbugs-loadsql logs --progress`
 6. Add maintainers `debbugs-loadsql maintainers`
