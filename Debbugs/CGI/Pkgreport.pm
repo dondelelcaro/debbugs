@@ -363,7 +363,7 @@ sub pkg_htmlizebugs {
 			  (exists $param{arch}?(arch => $param{arch}):(arch => $config{default_architectures})),
 			  binary_to_source_cache => $binary_to_source_cache,
 			 );
-     for my $bug (keys %{$statuses}) {
+     for my $bug (sort {$a <=> $b} keys %{$statuses}) {
 	 next unless %{$statuses->{$bug}};
 	 next if bug_filter(bug => $bug,
 			    status => $statuses->{$bug},
