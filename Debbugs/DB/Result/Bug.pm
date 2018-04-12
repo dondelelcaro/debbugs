@@ -592,7 +592,7 @@ sub set_related_packages {
 	    my $pkg_id =
               $self->result_source->schema->resultset('SrcPkg')->
               get_src_pkg_id($pkg);
-	    if (defined $pkg_id) {
+	    if (not defined $pkg_id) {
 		push @unset_packages,$pkg;
 	    } else {
 		push @pkg_ids,$pkg_id;
