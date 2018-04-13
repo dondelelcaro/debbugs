@@ -37,7 +37,7 @@ use Digest::MD5 qw(md5_hex);
 use Debbugs::Mail qw(get_addresses :reply);
 use Debbugs::MIME qw(decode_rfc1522 create_mime_message parse_to_mime_entity);
 use Debbugs::CGI qw(:url :html :util);
-use Debbugs::Common qw(globify_scalar english_join);
+use Debbugs::Common qw(globify_scalar english_join hash_slice);
 use Debbugs::UTF8;
 use Debbugs::Config qw(:config);
 use Debbugs::Log qw(:read);
@@ -226,9 +226,7 @@ sub display_entity {
                                output => $output,
                                attachments => $attachments,
                                terse => $param{terse},
-                               exists $param{msg}?(msg=>$param{msg}):(),
-                               exists $param{att}?(att=>$param{att}):(),
-                               exists $param{avatars}?(avatars=>$param{avatars}):(),
+                               hash_slice(%param,qw(msg att avatars)),
                               );
             if ($raw_output) {
                 return $raw_output;
@@ -249,9 +247,7 @@ sub display_entity {
 			   output => $output,
 			   attachments => $attachments,
 			   terse => $param{terse},
-			   exists $param{msg}?(msg=>$param{msg}):(),
-			   exists $param{att}?(att=>$param{att}):(),
-                           exists $param{avatars}?(avatars=>$param{avatars}):(),
+                           hash_slice(%param,qw(msg att avatars)),
 			  );
 	    # print {$output} "\n";
 	}
@@ -348,10 +344,8 @@ sub handle_email_message{
                         output => $output_fh,
                         attachments => \@attachments,
                         terse       => $param{terse},
-                        exists $param{msg}?(msg=>$param{msg}):(),
-                        exists $param{att}?(att=>$param{att}):(),
-                        exists $param{trim_headers}?(trim_headers=>$param{trim_headers}):(),
-                        exists $param{avatars}?(avatars=>$param{avatars}):(),
+                        hash_slice(%param,qw(msg att trim_headers avatars),
+                                  ),
                        );
      return $raw_output?$output:decode_utf8($output);
 }

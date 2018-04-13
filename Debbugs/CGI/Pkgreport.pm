@@ -99,7 +99,7 @@ sub generate_package_info{
 	     binary_to_source(source_only => 1,
 			      scalar_only => 1,
 			      binary => $package,
-			      exists $param{schema}?(schema => $param{schema}):(),
+			      hash_slice(%param,qw(schema)),
 			     );
      }
 
@@ -357,8 +357,8 @@ sub pkg_htmlizebugs {
      my $binary_to_source_cache = {};
      my $statuses =
 	 get_bug_statuses(bug => \@bugs,
-			  (map {exists $param{$_}?($_,$param{$_}):()}
-			   qw(dist version schema bugusertags)
+			  hash_slice(%param,
+			   qw(dist version schema bugusertags),
 			  ),
 			  (exists $param{arch}?(arch => $param{arch}):(arch => $config{default_architectures})),
 			  binary_to_source_cache => $binary_to_source_cache,
