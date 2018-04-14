@@ -119,7 +119,15 @@ sub generate_package_info{
 	       "This means that this package no longer exists (or never existed). ".
 		   "Please do not report new bugs against this package. </p>\n";
      }
-     my @pkgs = getsrcpkgs($srcforpkg);
+     my @pkgs = source_to_binary(source => $srcforpkg,
+				 hash_slice(%param,qw(schema)),
+				 binary_only => 1,
+				 # if there are distributions, only bother to
+				 # show packages which are currently in a
+				 # distribution.
+				 @{$config{distributions}//[]} ?
+				 (dist => [@{$config{distributions}}]) : (),
+				);
      @pkgs = grep( !/^\Q$package\E$/, @pkgs );
      if ( @pkgs ) {
 	  @pkgs = sort @pkgs;

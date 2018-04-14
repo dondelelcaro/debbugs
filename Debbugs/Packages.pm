@@ -404,8 +404,8 @@ empty list in list context.
 =item version -- binary package version(s) as a SCALAR or ARRAYREF;
 optional, defaults to all versions.
 
-=item arch -- binary package architecture(s) as a SCALAR or ARRAYREF;
-optional, defaults to all architectures.
+=item dist -- list of distributions to return corresponding binary packages for
+as a SCALAR or ARRAYREF.
 
 =item binary_only -- return only the source name (forced on if in SCALAR
 context), defaults to false. [If in LIST context, returns a list of binary
@@ -430,6 +430,9 @@ sub source_to_binary{
 					 version => {type => SCALAR|ARRAYREF,
 						     optional => 1,
 						    },
+					 dist => {type => SCALAR|ARRAYREF,
+						  optional => 1,
+						 },
 					 binary_only => {default => 0,
 							},
 					 scalar_only => {default => 0,
@@ -477,6 +480,18 @@ sub source_to_binary{
 			  distinct => 1,
 			 },
 			 );
+	    if (exists $param{dist}) {
+		$bin_rs = $bin_rs->
+		    search({-or =>
+			   {'suite.codename' => [make_list($param{dist})],
+			    'suite.suite_name' => [make_list($param{dist})],
+			   }},
+			   {join => {'bin_vers' =>
+				    {'bin_associations' =>
+				     'suite'
+				    }},
+			    });
+	    }
 	    push @binaries,
 		map {$_->{pkg}} $bin_rs->all;
 	    if ($param{scalar_only}) {
