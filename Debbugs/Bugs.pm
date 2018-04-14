@@ -577,7 +577,7 @@ sub get_bugs_by_db{
      if (exists $param{package}) {
          $rs = $rs->search({-or => {'bin_pkg.pkg' =>
 				    [make_list($param{package})],
-				    'me.unknown.package' =>
+				    'me.unknown_packages' =>
 				    [make_list($param{package})]},
 			   },
                           {join => {bug_binpackages => 'bin_pkg'}});
@@ -641,7 +641,7 @@ sub get_bugs_by_db{
 				   { -in => $bin_pkgs_rs->get_column('id')->as_query},
 				    'bug_srcpackages.src_pkg' => 
 				   { -in => $bin_pkgs_rs->get_column('id')->as_query},
-				    'me.unknown_package' =>
+				    'me.unknown_packages' =>
 				    [make_list($param{src})],
 				   },
 			   },
