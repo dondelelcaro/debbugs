@@ -93,7 +93,7 @@ our %param = cgi_parameters(query => $q,
 			    single => [qw(ordering archive repeatmerged),
 				       qw(bug-rev pend-rev sev-rev),
 				       qw(maxdays mindays version),
-				       qw(data which dist newest),
+				       qw(data which dist),
 				       qw(noaffects),
 				      ],
 			    default => $default_params,
@@ -372,7 +372,6 @@ while (my ($key,$value) = splice @temp, 0, 2) {
      my @entries = ();
      for my $entry (make_list($param{$key})) {
 	  # we'll handle newest below
-	  next if $key eq 'newest';
 	  my $extra = '';
 	  if (exists $param{dist} and ($key eq 'package' or $key eq 'src')) {
 	       my %versions = get_versions(package => $entry,
@@ -381,6 +380,7 @@ while (my ($key,$value) = splice @temp, 0, 2) {
 					   ($key eq 'src'?(arch => q(source)):()),
 					   no_source_arch => 1,
 					   return_archs => 1,
+					   @schema_arg,
 					  );
 	       my $verdesc;
 	       if (keys %versions > 1) {
@@ -404,15 +404,11 @@ while (my ($key,$value) = splice @temp, 0, 2) {
 	       push @entries, $entry.$extra;
 	  }
      }
-     push @title,$value.' '.join(' or ', @entries) if @entries;
-}
-if (defined $param{newest}) {
-     my $newest_bug = newest_bug();
-     @bugs = ($newest_bug - $param{newest} + 1) .. $newest_bug;
-     push @title, 'in '.@bugs.' newest reports';
-     $param{bugs} = [exists $param{bugs}?make_list($param{bugs}):(),
-		     @bugs,
-		    ];
+     if ($key eq 'newest') {
+	 push @title, 'in '.join(' or ',@entries).' newest reports';
+     } else {
+	 push @title,$value.' '.join(' or ', @entries) if @entries;
+     }
 }
 
 my $title = $gBugs.' '.join(' and ', map {/ or /?"($_)":$_} @title);
@@ -420,7 +416,6 @@ my $title = $gBugs.' '.join(' and ', map {/ or /?"($_)":$_} @title);
 
 #yeah for magick!
 @bugs = get_bugs((map {exists $param{$_}?($_,$param{$_}):()}
-		  grep {$_ ne 'newest'}
 		  keys %package_search_keys, 'archive'),
 		 usertags => \%ut,
 		 @schema_arg,
