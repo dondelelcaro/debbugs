@@ -59,7 +59,7 @@ use Debbugs::Packages qw(getsrcpkgs getpkgsrc);
 use Debbugs::Common qw(getparsedaddrs package_maintainer getmaintainers make_list hash_slice);
 use Fcntl qw(O_RDONLY);
 use MLDBM qw(DB_File Storable);
-use List::AllUtils qw(first);
+use List::AllUtils qw(first max);
 use Carp;
 
 =head2 get_bugs
@@ -201,6 +201,9 @@ my %_get_bugs_common_options =
      usertags  => {type => HASHREF,
                    optional => 1,
                   },
+     newest    => {type => SCALAR|ARRAYREF,
+		   optional => 1,
+		  },
      schema => {type     => OBJECT,
                 optional => 1,
                },
@@ -404,7 +407,7 @@ state $_get_bugs_by_idx_options =
    {hash_slice(%_get_bugs_common_options,
                (qw(package submitter severity tag archive),
                 qw(owner src maint bugs correspondent),
-                qw(affects usertags))
+                qw(affects usertags newest))
               )
    };
 sub get_bugs_by_idx{
@@ -420,7 +423,13 @@ sub get_bugs_by_idx{
 	       die "Can't handle empty maint (unmaintained packages) in get_bugs_by_idx";
 	  }
      }
-
+     if ($param{newest}) {
+	 my $newest_bug = newest_bug();
+	 my @bugs = ($newest_bug - max(make_list($param{newest})) + 1) .. $newest_bug;
+	 $param{bugs} = [exists $param{bugs}?make_list($param{bugs}):(),
+			 @bugs,
+			];
+     }
      # We handle src packages, maint and maintenc by mapping to the
      # appropriate binary packages, then removing all packages which
      # don't match all queries
@@ -492,7 +501,7 @@ state $_get_bugs_by_db_options =
    {hash_slice(%_get_bugs_common_options,
                (qw(package submitter severity tag archive),
                 qw(owner src maint bugs correspondent),
-                qw(affects usertags))
+                qw(affects usertags newest))
               ),
     schema => {type     => OBJECT,
               },
@@ -522,6 +531,14 @@ sub get_bugs_by_db{
                               {join => $key},
                               );
          }
+     }
+     if (exists $param{newest}) {
+	 $rs =
+	     $rs->search({},
+			{order_by => {-desc => 'me.creation'},
+			 rows => max(make_list($param{newest})),
+			},
+			);
      }
      if (exists $param{correspondent}) {
 	 my $message_rs =
@@ -683,6 +700,13 @@ sub get_bugs_flatfile{
 			       spec   => $_get_bugs_flatfile_options
 			      );
      my $flatfile;
+     if ($param{newest}) {
+	 my $newest_bug = newest_bug();
+	 my @bugs = ($newest_bug - max(make_list($param{newest})) + 1) .. $newest_bug;
+	 $param{bugs} = [exists $param{bugs}?make_list($param{bugs}):(),
+			 @bugs,
+			];
+     }
      if ($param{archive}) {
 	  $flatfile = IO::File->new("$config{spool_dir}/index.archive", 'r')
 	       or die "Unable to open $config{spool_dir}/index.archive for reading: $!";
