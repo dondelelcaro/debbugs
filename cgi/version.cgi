@@ -42,7 +42,7 @@ use CGI::Simple;
 use Debbugs::Config qw(:config);
 
 our $VERSION=1;
-
+use Debbugs::DB;
 use Debbugs::CGI qw(htmlize_packagelinks html_escape cgi_parameters munge_url :cache);
 use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
@@ -52,6 +52,12 @@ use File::Temp qw(tempdir);
 use IO::File;
 use IO::Handle;
 
+my @schema_arg = ();
+if (defined $config{database}) {
+    $s = Debbugs::DB->connect($config{database}) or
+        die "Unable to connect to DB";
+    @schema_arg = ('schema',$s);
+}
 
 my %img_types = (svg => 'image/svg+xml',
 		 png => 'image/png',
@@ -141,6 +147,7 @@ for my $dist (@{$config{distributions}}) {
      $versions{$dist} = [get_versions(package => [split /\s*,\s*/, $cgi_var{package}],
 				      dist => $dist,
 				      source => 1,
+				      @schema_arg,
 				     )];
      # make version_to_dist
      foreach my $version (@{$versions{$dist}}){

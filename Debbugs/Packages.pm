@@ -39,7 +39,7 @@ use MLDBM qw(DB_File Storable);
 use Storable qw(dclone);
 use Params::Validate qw(validate_with :types);
 use Debbugs::Common qw(make_list globify_scalar sort_versions);
-
+use DateTime::Format::Pg;
 use List::AllUtils qw(min max uniq);
 
 use IO::File;
@@ -737,8 +737,129 @@ sub get_versions{
 					   largest_source_version_only => {type => BOOLEAN,
 								       default => 1,
 									  },
+					   schema => {type => OBJECT,
+						      optional => 1,
+						     },
 					  },
-			       );
+			      );
+     if (defined $param{schema}) {
+	 my @src_packages;
+	 my @bin_packages;
+	 for my $pkg (make_list($param{package})) {
+	     if ($pkg =~ /^src:(.+)/) {
+		 push @src_packages,
+		     $1;
+	     } else {
+		push @bin_packages,$pkg;
+	     }
+	 }
+
+	 my $s = $param{schema};
+	 use Data::Printer;
+	 p @src_packages;
+	 my %return;
+	 if (@src_packages) {
+	     my $src_rs = $s->resultset('SrcVer')->
+		 search({'src_pkg.pkg'=>[@src_packages],
+			 -or => {'suite.codename' => [make_list($param{dist})],
+				 'suite.suite_name' => [make_list($param{dist})],
+				}
+			},
+		       {join => ['src_pkg',
+				{
+				 src_associations=>'suite'},
+				],
+			'+select' => [qw(src_pkg.pkg),
+				      qw(suite.codename),
+				      qw(src_associations.modified),
+				      q(CONCAT(src_pkg.pkg,'/',me.ver))],
+			'+as' => ['src_pkg_name','codename',
+				  'modified_time',
+				  qw(src_pkg_ver)],
+			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+			order_by => {-desc => 'me.ver'},
+		       },
+		       );
+	     my %completed_dists;
+	     for my $src ($src_rs->all()) {
+		 my $val = 'source';
+		 if ($param{time}) {
+		     $val = DateTime::Format::Pg->
+			 parse_datetime($src->{modified_time})->
+			 epoch();
+		 }
+		 if ($param{largest_source_version_only}) {
+		     next if $completed_dists{$src->{codename}};
+		     $completed_dists{$src->{codename}} = 1;
+		 }
+		 if ($param{source}) {
+		     $return{$src->{src_pkg_ver}} = $val;
+		 } else {
+		     $return{$src->{ver}} = $val;
+		 }
+	     }
+	 }
+	 if (@bin_packages) {
+	     my $bin_rs = $s->resultset('BinVer')->
+		 search({'bin_pkg.pkg' => [@bin_packages],
+			 -or => {'suite.codename' => [make_list($param{dist})],
+				 'suite.suite_name' => [make_list($param{dist})],
+				},
+			},
+		       {join => ['bin_pkg',
+				{
+				 'src_ver'=>'src_pkg'},
+				{
+				 bin_associations => 'suite'},
+				 'arch',
+				],
+			'+select' => [qw(bin_pkg.pkg arch.arch suite.codename),
+				      qw(bin_associations.modified),
+				      qw(src_pkg.pkg),q(CONCAT(src_pkg.pkg,'/',me.ver)),
+				     ],
+			'+as' => ['bin_pkg','arch','codename',
+				  'modified_time',
+				  'src_pkg_name','src_pkg_ver'],
+			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+			order_by => {-desc => 'src_ver.ver'},
+		       });
+	     if (exists $param{arch}) {
+		 $bin_rs =
+		     $bin_rs->search({'arch.arch' => [make_list($param{arch})]},
+				    {
+				     join => 'arch'}
+				    );
+	     }
+	     my %completed_dists;
+	     for my $bin ($bin_rs->all()) {
+		 my $key = $bin->{ver};
+		 if ($param{source}) {
+		     $key = $bin->{src_pkg_ver};
+		 }
+		 my $val = $bin->{arch};
+		 if ($param{time}) {
+		     $val = DateTime::Format::Pg->
+			 parse_datetime($bin->{modified_time})->
+			 epoch();
+		 }
+		 if ($param{largest_source_version_only}) {
+		     if ($completed_dists{$bin->{codename}} and not
+			 exists $return{$key}) {
+			 next;
+		     }
+		     $completed_dists{$bin->{codename}} = 1;
+		 }
+		 push @{$return{$key}},
+		     $val;
+	     }
+	 }
+	 if ($param{return_archs}) {
+	     if ($param{time} or $param{return_archs}) {
+		 return wantarray?%return :\%return;
+	     }
+	     return wantarray?keys %return :[keys %return];
+	 }
+     }
      my $versions;
      if ($param{time}) {
 	  return () if not defined $gVersionTimeIndex;
@@ -872,6 +993,9 @@ sub make_source_versions {
 					 warnings => {type => SCALARREF|HANDLE,
 						      optional => 1,
 						     },
+					 schema => {type => OBJECT,
+						    optional => 1,
+						   },
 					},
 			     );
     my ($warnings) = globify_scalar(exists $param{warnings}?$param{warnings}:undef);
