@@ -1321,6 +1321,10 @@ sub get_bug_statuses {
      my %param = validate_with(params => \@_,
 			       spec   => $spec,
 			      );
+     my $bin_to_src_cache = {};
+     if (defined $param{binary_to_source_cache}) {
+	 $bin_to_src_cache = $param{binary_to_source_cache};
+     }
      my %status;
      my %statuses;
      if (defined $param{schema}) {
@@ -1391,8 +1395,9 @@ sub get_bug_statuses {
 
 	 $status->{source} = binary_to_source(binary=>[split /\s*,\s*/, $status->{package}],
 					      source_only => 1,
-					      exists $param{binary_to_source_cache}?
-					      (cache =>$param{binary_to_source_cache}):(),
+					      cache => $bin_to_src_cache,
+					      defined $param{schema}?
+					      (schema => $param{schema}):(),
 					     );
 
 	 $status->{"package"} = 'unknown' if ($status->{"package"} eq '');
