@@ -560,6 +560,7 @@ sub get_bugs_by_db{
      }
      if (exists $param{affects}) {
 	 my @aff_list = make_list($param{affects});
+	 s/^src:// foreach @aff_list;
          $rs = $rs->search({-or => {'bin_pkg.pkg' =>
 				    [@aff_list],
 				    'src_pkg.pkg' =>
@@ -608,7 +609,7 @@ sub get_bugs_by_db{
 	 $rs = $rs->search({-or => {'bug_binpackages.bin_pkg' =>
 				   { -in => $bin_pkgs_rs->get_column('id')->as_query},
 				    'bug_srcpackages.src_pkg' => 
-				   { -in => $bin_pkgs_rs->get_column('id')->as_query},
+				   { -in => $src_pkgs_rs->get_column('id')->as_query},
 				   },
 			   },
 			  {join => ['bug_binpackages',
@@ -623,7 +624,8 @@ sub get_bugs_by_db{
 	     search({-or => [map {('me.pkg' => $_,
 				  )}
 			     make_list($param{src})],
-		     columns => ['id'],
+		    },
+		   { columns => ['id'],
 		     group_by => ['me.id'],
 		    },
 		   );
@@ -639,8 +641,8 @@ sub get_bugs_by_db{
 		   });
          $rs = $rs->search({-or => {'bug_binpackages.bin_pkg' =>
 				   { -in => $bin_pkgs_rs->get_column('id')->as_query},
-				    'bug_srcpackages.src_pkg' => 
-				   { -in => $bin_pkgs_rs->get_column('id')->as_query},
+				    'bug_srcpackages.src_pkg' =>
+				   { -in => $src_pkgs_rs->get_column('id')->as_query},
 				    'me.unknown_packages' =>
 				    [make_list($param{src})],
 				   },

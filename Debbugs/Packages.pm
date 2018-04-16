@@ -221,6 +221,15 @@ sub binary_to_source{
     my @archs = grep {defined $_} make_list(exists $param{arch}?$param{arch}:[]);
     return () unless @binaries;
 
+    my $cache_key = join("\1",
+			 join("\0",@binaries),
+			 join("\0",@versions),
+			 join("\0",@archs),
+			 join("\0",@param{qw(source_only scalar_only)}));
+    if (exists $param{cache}{$cache_key}) {
+	return $param{scalar_only} ? $param{cache}{$cache_key}[0]:
+	    @{$param{cache}{$cache_key}};
+    }
     # any src:foo is source package foo with unspecified version
     @source = map {/^src:(.+)$/?
 		       [$1,'']:()} @binaries;
@@ -245,10 +254,10 @@ sub binary_to_source{
 	    push @source,
 		map {$_->{pkg}} $src_rs->all;
 	    if ($param{scalar_only}) {
-		return join(',',@source);
+		@source = join(',',@source);
 	    }
-	    return @source;
-
+	    $param{cache}{$cache_key} = \@source;
+	    return $param{scalar_only}?$source[0]:@source;
 	}
 	my $src_rs = $param{schema}->resultset('SrcVer')->
 	    search_rs({'bin_pkg.pkg' => [@binaries],
@@ -281,16 +290,8 @@ sub binary_to_source{
 		  $_->{src_vers}{ver},
 		 ]} $src_rs->all;
 	}
-	return @source;
-    }
-    my $cache_key = join("\1",
-			 join("\0",@binaries),
-			 join("\0",@versions),
-			 join("\0",@archs),
-			 join("\0",@param{qw(source_only scalar_only)}));
-    if (exists $param{cache}{$cache_key}) {
-	return $param{scalar_only} ? $param{cache}{$cache_key}[0]:
-	    @{$param{cache}{$cache_key}};
+	$param{cache}{$cache_key} = \@source;
+	return $param{scalar_only}?$source[0]:@source;
     }
     for my $binary (@binaries) {
 	_tie_binarytosource;
