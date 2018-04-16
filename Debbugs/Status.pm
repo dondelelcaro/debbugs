@@ -1339,18 +1339,6 @@ sub get_bug_statuses {
 	     }
 	     $bug_status->{keywords} =
 		 $bug_status->{tags};
-	     $bug_status->{log_modified} =
-		 DateTime::Format::Pg->
-		     parse_datetime($bug_status->{log_modified})->
-		     epoch;
-	     $bug_status->{date} =
-		 DateTime::Format::Pg->
-		     parse_datetime($bug_status->{date})->
-		     epoch;
-	     $bug_status->{last_modified} =
-		 DateTime::Format::Pg->
-		     parse_datetime($bug_status->{last_modified})->
-		     epoch;
 	     $bug_status->{location} = $bug_status->{archived}?'archive':'db-h';
 	     for my $field (qw(found_versions fixed_versions found_date fixed_date)) {
 		 $bug_status->{$field} = [split ' ', $bug_status->{$field} // ''];
