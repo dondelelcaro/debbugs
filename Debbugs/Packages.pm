@@ -755,8 +755,6 @@ sub get_versions{
 	 }
 
 	 my $s = $param{schema};
-	 use Data::Printer;
-	 p @src_packages;
 	 my %return;
 	 if (@src_packages) {
 	     my $src_rs = $s->resultset('SrcVer')->
