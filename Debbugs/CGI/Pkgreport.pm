@@ -105,7 +105,8 @@ sub generate_package_info{
 
      my $showpkg = html_escape($package);
      my @maint = package_maintainer($param{binary}?'binary':'source',
-				    $package
+				    $package,
+				    hash_slice(%param,qw(schema)),
 				   );
      if (@maint) {
 	  print {$output} '<p>';

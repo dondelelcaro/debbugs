@@ -497,11 +497,14 @@ maintainers for, defaults to the empty arrayref.
 maintainers for; automatically returns source package maintainer if
 the package name starts with 'src:', defaults to the empty arrayref.
 
-=item reverse -- whether to return the source/binary packages a
-maintainer maintains instead
+=item maintainer -- scalar or arrayref of maintainers to return source packages
+for. If given, binary and source cannot be given.
 
 =item rehash -- whether to reread the maintainer and source maintainer
 files; defaults to 0
+
+=item schema -- Debbugs::DB schema. If set, uses the database for maintainer
+information.
 
 =back
 
@@ -524,6 +527,9 @@ sub package_maintainer {
 					 reverse => {type => BOOLEAN,
 						     default => 0,
 						    },
+					 schema => {type => OBJECT,
+						    optional => 1,
+						   }
 					},
 			     );
     my @binary = make_list($param{binary});
@@ -531,6 +537,53 @@ sub package_maintainer {
     my @maintainers = make_list($param{maintainer});
     if ((@binary or @source) and @maintainers) {
 	croak "It is nonsensical to pass both maintainers and source or binary";
+    }
+    if (@binary) {
+	@source = grep {/^src:/} @binary;
+	@binary = grep {!/^src:/} @binary;
+    }
+    # remove leading src: from source package names
+    s/^src:// foreach @source;
+    if ($param{schema}) {
+	my $s = $param{schema};
+	if (@maintainers) {
+	    my $m_rs = $s->resultset('SrcPkg')->
+		search({'correspondent.addr' => [@maintainers]},
+		      {join => {src_vers =>
+			       {maintainer =>
+				'correspondent'},
+			       },
+		       columns => ['pkg'],
+		       group_by => [qw(me.pkg)],
+		       });
+	    return $m_rs->get_column('pkg')->all();
+	} elsif (@binary or @source) {
+	    my $rs = $s->resultset('Maintainer');
+	    if (@binary) {
+		$rs =
+		    $rs->search({'bin_pkg.pkg' => [@binary]},
+			       {join => {src_vers =>
+					{bin_vers => 'bin_pkg'},
+					},
+				columns => ['name'],
+				group_by => [qw(me.name)],
+			       }
+			       );
+	    }
+	    if (@source) {
+		$rs =
+		    $rs->search({'src_pkg.pkg' => [@source]},
+			       {join => {src_vers =>
+					 'src_pkg',
+					},
+				columns => ['name'],
+				group_by => [qw(me.name)],
+			       }
+			       );
+	    }
+	    return $rs->get_column('name')->all();
+	}
+	return ();
     }
     if ($param{rehash}) {
 	$_source_maintainer = undef;
@@ -598,7 +651,7 @@ sub package_maintainer {
     }
     my @return;
     for my $binary (@binary) {
-	if (not $param{reverse} and $binary =~ /^src:/) {
+	if ($binary =~ /^src:/) {
 	    push @source,$binary;
 	    next;
 	}
