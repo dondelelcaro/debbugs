@@ -349,6 +349,7 @@ if (defined $config{usertag_package_domain}) {
 	push @possible_packages,
 	    source_to_binary(binary_only => 1,
 			     source => $param{src},
+			     dist => [@{$config{distributions}}],
 			     @schema_arg,
 			    );
     }
