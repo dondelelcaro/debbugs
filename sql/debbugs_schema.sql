@@ -1,4 +1,4 @@
-
+-- -*- mode: sql; sql-product: postgres; -*-
 DROP TABLE bug_status_cache CASCADE;
 DROP VIEW bug_package CASCADE;
 DROP VIEW binary_versions CASCADE;
