@@ -1140,6 +1140,8 @@ before. This appears to be a bug in the underlying modules.
 
 =cut
 
+our $_NULL_HANDLE;
+
 sub globify_scalar {
      my ($scalar) = @_;
      my $handle;
@@ -1164,8 +1166,15 @@ sub globify_scalar {
 	  else {
 	       carp "Given a non-scalar reference, non-glob to globify_scalar; returning /dev/null handle";
 	  }
+      }
+     if (not defined $_NULL_HANDLE or
+	 not $_NULL_HANDLE->opened()
+	) {
+	 $_NULL_HANDLE =
+	     IO::File->new('/dev/null','>:encoding(UTF-8)') or
+		 die "Unable to open /dev/null for writing: $!";
      }
-     return IO::File->new('/dev/null','>:encoding(UTF-8)');
+     return $_NULL_HANDLE;
 }
 
 =head2 cleanup_eval_fail()
