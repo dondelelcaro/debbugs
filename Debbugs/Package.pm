@@ -21,26 +21,77 @@ Debbugs::Package -- OO interface to packages
 
 =cut
 
-use warnings;
-use strict;
-
 use Mouse;
+use strictures 2;
+use v5.10; # for state
+use namespace::autoclean;
 
-use Debbugs::Version;
+use List::AllUtils  qw(uniq pairmap);
+use Debbugs::Config qw(:config);
+use Debbugs::Version::Source;
+use Debbugs::Version::Binary;
 
 extends 'Debbugs::OOBase';
 
 has name => (is => 'ro', isa => 'Str',
-	     lazy => 1,
 	     required => 1,
-	     builder => '_build_name',
 	    );
 
-has type => (is => 'ro', isa => 'Str',
+has type => (is => 'bare', isa => 'Str',
 	     lazy => 1,
 	     builder => '_build_type',
 	     clearer => '_clear_type',
+	     reader => '_type',
+	     writer => '_set_type',
 	    );
+
+sub _build_type {
+    my $self = shift;
+    if ($self->name !~ /^src:/) {
+	return 'binary';
+    }
+}
+
+sub qualified_name {
+    my $self = shift;
+    return
+	# src: if source, nothing if binary
+	($self->_type eq 'source' ? 'src:':'') .
+	$self->name;
+}
+
+sub url {
+    my $self = shift;
+    return $config{web_domain}.'/'.$self->qualified_name;
+}
+
+around BUILDARGS => sub {
+    my $orig = shift;
+    my $class = shift;
+    my %args;
+    if (@_==1 and ref($_[0]) eq 'HASH') {
+	%args = %{$_[0]};
+    } else {
+        %args = @_;
+    }
+    $args{name} //= '(unknown)';
+    if ($args{name} =~ /src:(.+)/) {
+	$args{name} = $1;
+	$args{type} = 'source';
+    } else {
+	$args{type} = 'binary' unless
+	    defined $args{type};
+    }
+    return $class->$orig(%args);
+};
+
+sub is_source {
+    return $_[0]->_type eq 'source'
+}
+
+sub is_binary {
+    return $_[0]->_type eq 'binary'
+}
 
 has valid => (is => 'ro', isa => 'Bool',
 	      lazy => 1,
@@ -48,10 +99,472 @@ has valid => (is => 'ro', isa => 'Bool',
 	      writer => '_set_valid',
 	     );
 
-has 'sources' => (is => 'ro',isa => 'Array');
-has 'dists' => (is => 'ro',isa => 'Array');
+sub _build_valid {
+    my $self = shift;
+    if ($self->_valid_versioninfo > 0) {
+	return 1;
+    }
+    return 0;
+}
 
-has 'versions' => (is => 'ro',isa => 'Array');
+# this contains source name, source version, binary name, binary version, arch,
+# and dist which have been selected from the database. It is used to build
+# versions and anything else which are known as required.
+has 'valid_version_info' =>
+    (is => 'bare', isa => 'ArrayRef',
+     traits => ['Array'],
+     lazy => 1,
+     builder => '_build_valid_versioninfo',
+     predicate => '_has_valid_versioninfo',
+     clearer => '_clear_valid_versioninfo',
+     handles => {'_get_valid_versioninfo' => 'get',
+		 '_grep_valid_versioninfo' => 'grep',
+		 '_valid_versioninfo' => 'elements',
+		},
+    );
+
+sub _build_valid_versioninfo {
+    my $self = shift;
+    my $pkgs = $self->_get_valid_version_info_from_db;
+    for my $invalid_version (@{$pkgs->{$self->qualified_name}->{invalid_versions}}) {
+        $self->_mark_invalid_version($invalid_version,1);
+    }
+    return $pkgs->{$self->qualified_name}->{valid_version_info} // [];
+}
+
+state $common_dists = [@{$config{distributions}}];
+sub _get_valid_version_info_from_db {
+    my $self;
+    if ((@_ % 2) == 1 and
+	blessed($_[0])) {
+	$self = shift;
+    }
+    my %args = @_;
+    my @packages;
+    my $s; # schema
+    if (defined $self) {
+	if ($self->has_schema) {
+	    $s = $self->schema;
+	} else {
+	    $s = $args{schema};
+	}
+	@packages = $self->qualified_name;
+    } else {
+	$s = $args{schema};
+	@packages = @{$args{packages}};
+    }
+    if (not defined $s) {
+	confess("get_info_from_db not implemented without schema");
+    }
+    my %src_packages;
+    my %src_ver_packages;
+    my %bin_packages;
+    my %bin_ver_packages;
+    # split packages into src/ver, bin/ver, src, and bin so we can select them
+    # from the database
+    local $_;
+    for my $pkg (@packages) {
+        if (ref($pkg)) {
+            if ($pkg->[0] =~ /^src:(.+)$/) {
+                for my $ver (@{$pkg}[1..$#{$pkg}]) {
+                    $src_ver_packages{$1}{$ver} = 0;
+                }
+            } else {
+                for my $ver (@{$pkg}[1..$#{$pkg}]) {
+                    $bin_ver_packages{$pkg->[0]}{$ver} = 0;
+                }
+            }
+        } elsif ($pkg =~ /^src:(.+)$/) {
+            $src_packages{$1} = 0;
+        } else {
+            $bin_packages{$pkg} = 0;
+        }
+    }
+    # calculate searches for packages where we want specific versions. We
+    # calculate this here so add_result_to_package can stomp over
+    # %src_ver_packages and %bin_ver_packages
+    my @src_ver_search;
+    for my $sp (keys %src_ver_packages) {
+        push @src_ver_search,
+            (-and => {'src_pkg.pkg' => $sp,
+                      'me.ver' => [keys %{$src_ver_packages{$sp}}],
+                     },
+             );
+    }
+
+    my @bin_ver_search;
+    for my $sp (keys %bin_ver_packages) {
+        push @bin_ver_search,
+            (-and => {'bin_pkg.pkg' => $sp,
+                      'me.ver' => [keys %{$bin_ver_packages{$sp}}],
+                     },
+             );
+    }
+    my $packages = {};
+    sub _default_pkg_info {
+        return {name => $_[0],
+                type => $_[1]//'source',
+                valid => $_[2]//1,
+                valid_version_info => [],
+                invalid_versions => {},
+               };
+    }
+    sub add_result_to_package {
+	my ($pkgs,$rs,$svp,$bvp,$sp,$bp) = @_;
+	while (my $pkg = $rs->next) {
+	    my $n = 'src:'.$pkg->{src_pkg};
+	    if (not exists $pkgs->{$n}) {
+                $pkgs->{$n} =
+                    _default_pkg_info($pkg->{src_pkg});
+            }
+            push @{$pkgs->{$n}{valid_version_info}},
+               {%$pkg};
+	    $n = $pkg->{bin_pkg};
+            if (not exists $pkgs->{$n}) {
+                $pkgs->{$n} =
+                    _default_pkg_info($pkg->{bin_pkg},'binary');
+            }
+            push @{$pkgs->{$n}{valid_version_info}},
+		   {%$pkg};
+            # this is a package with a valid src_ver
+            $svp->{$pkg->{src_pkg}}{$pkg->{src_ver}}++;
+            $sp->{$pkg->{src_pkg}}++;
+            # this is a package with a valid bin_ver
+            $bvp->{$pkg->{bin_pkg}}{$pkg->{bin_ver}}++;
+            $bp->{$pkg->{bin_pkg}}++;
+	}
+    }
+    my $src_rs = $s->resultset('SrcVer')->
+        search({-or => [-and => {'src_pkg.pkg' => [keys %src_packages],
+                                 -or => {'suite.codename' => $common_dists,
+                                         'suite.suite_name' => $common_dists,
+                                        },
+                                },
+                        @src_ver_search,
+                       ],
+               },
+              {join => ['src_pkg',
+		       {'src_associations' => 'suite'},
+		       {'bin_vers' => ['bin_pkg','arch']},
+			'maintainer',
+                       ],
+               'select' => [qw(src_pkg.pkg),
+			    qw(suite.codename),
+			    qw(suite.suite_name),
+			    qw(src_associations.modified),
+                            qw(me.ver),
+			    q(CONCAT(src_pkg.pkg,'/',me.ver)),
+			    qw(bin_vers.ver bin_pkg.pkg arch.arch),
+			    qw(maintainer.name),
+			   ],
+               'as' => [qw(src_pkg codename suite_name),
+			qw(modified_time src_ver src_pkg_ver),
+			qw(bin_ver bin_pkg arch maintainer),
+		       ],
+               result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+               order_by => {-desc => 'me.ver'}
+              },
+              );
+    add_result_to_package($packages,$src_rs,
+                          \%src_ver_packages,
+                          \%bin_ver_packages,
+                          \%src_packages,
+                          \%bin_packages,
+                         );
+    my $bin_rs = $s->resultset('BinVer')->
+       search({-or => [-and => {'bin_pkg.pkg' => [keys %bin_packages],
+                                 -or => {'suite.codename' => $common_dists,
+                                         'suite.suite_name' => $common_dists,
+                                        },
+                                },
+                        @bin_ver_search,
+                       ],
+               },
+              {join => ['bin_pkg',
+		       {'src_ver' => [{'src_associations' => 'suite'},
+				      'src_pkg',
+				      'maintainer',
+				     ]},
+			'arch',
+                       ],
+               'select' => [qw(src_pkg.pkg),
+			    qw(suite.codename),
+			    qw(suite.suite_name),
+			    qw(src_associations.modified),
+                            qw(src_ver.ver),
+			    q(CONCAT(src_pkg.pkg,'/',src_ver.ver)),
+			    qw(me.ver bin_pkg.pkg arch.arch),
+			    qw(maintainer.name),
+			    ],
+               'as' => [qw(src_pkg codename suite_name),
+			qw(modified_time src_ver src_pkg_ver),
+			qw(bin_ver bin_pkg arch maintainer),
+		       ],
+               result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+               order_by => {-desc => 'me.ver'}
+              },
+              );
+    add_result_to_package($packages,$bin_rs,
+                          \%src_ver_packages,
+                          \%bin_ver_packages,
+                          \%src_packages,
+                          \%bin_packages,
+                         );
+    for my $sp (keys %src_ver_packages) {
+        if (not exists $packages->{'src:'.$sp}) {
+            $packages->{'src:'.$sp} =
+                _default_pkg_info($sp,'source',0);
+        }
+        for my $sv (keys %{$src_ver_packages{$sp}}) {
+            $packages->{'src:'.$sp}{invalid_versions}{$sv} = 1;
+        }
+    }
+    for my $bp (keys %bin_ver_packages) {
+        if (not exists $packages->{$bp}) {
+            $packages->{$bp} =
+                _default_pkg_info($bp,'binary',0);
+        }
+        for my $bv (keys %{$bin_ver_packages{$bp}}) {
+            $packages->{$bp}{invalid_versions}{$bv} = 1;
+        }
+    }
+    for my $sp (keys %src_packages) {
+        next if $src_packages{$sp} > 0;
+        $packages->{'src:'.$sp} =
+            _default_pkg_info($sp,'source',0);
+    }
+    for my $bp (keys %bin_packages) {
+        next if $bin_packages{$bp} > 0;
+        $packages->{$bp} =
+            _default_pkg_info($bp,'binary',0);
+    }
+    return $packages;
+}
+
+has 'source_version_to_info' =>
+    (is => 'bare', isa => 'HashRef',
+     traits => ['Hash'],
+     lazy => 1,
+     builder => '_build_source_version_to_info',
+     handles => {_get_source_version_to_info => 'get',
+		},
+    );
+
+sub _build_source_version_to_info {
+    my $self = shift;
+    my $info = {};
+    my $i = 0;
+    for my $v ($self->_valid_versioninfo) {
+	push @{$info->{$v->{src_ver}}}, $i;
+	$i++;
+    }
+    return $info;
+}
+
+has 'binary_version_to_info' =>
+    (is => 'bare', isa => 'HashRef',
+     traits => ['Hash'],
+     lazy => 1,
+     builder => '_build_binary_version_to_info',
+     handles => {_get_binary_version_to_info => 'get',
+		},
+    );
+
+sub _build_binary_version_to_info {
+    my $self = shift;
+    my $info = {};
+    my $i = 0;
+    for my $v ($self->_valid_versioninfo) {
+	push @{$info->{$v->{bin_ver}}}, $i;
+	$i++;
+    }
+    return $info;
+}
+
+has 'dist_to_info' =>
+    (is => 'bare', isa => 'HashRef',
+     traits => ['Hash'],
+     lazy => 1,
+     builder => '_build_dist_to_info',
+     handles => {_get_dist_to_info => 'get',
+		},
+    );
+sub _build_dist_to_info {
+    my $self = shift;
+    my $info = {};
+    my $i = 0;
+    for my $v ($self->_valid_versioninfo) {
+	push @{$info->{$v->{dist}}}, $i;
+	$i++;
+    }
+    return $info;
+}
+
+# this is a hashref of versions that we know are invalid
+has 'invalid_versions' =>
+    (is => 'bare',isa => 'HashRef[Bool]',
+     lazy => 1,
+     default => sub {{}},
+     clearer => '_clear_invalid_versions',
+     traits => ['Hash'],
+     handles => {_invalid_version => 'exists',
+                 _mark_invalid_version => 'set',
+                },
+    );
+
+has 'binaries' => (is => 'ro',
+		   isa => 'Debbugs::Collection::Package',
+		   lazy => 1,
+		   builder => '_build_binaries',
+		   predicate => '_has_binaries',
+		  );
+
+sub _build_binaries {
+    my $self = shift;
+    if ($self->is_binary) {
+	return $self->package_collection->limit($self);
+    }
+    # OK, walk through the valid_versions for this package
+    my @binaries =
+	uniq map {$_->{bin_pkg}} $self->_valid_versioninfo;
+    return $self->package_collection->limit(@binaries);
+}
+
+has 'sources' => (is => 'ro',
+		  isa => 'Debbugs::Collection::Package',
+		  lazy => 1,
+		  builder => '_build_sources',
+		  predicate => '_has_sources',
+		 );
+
+sub _build_sources {
+    my $self = shift;
+    if ($self->is_source) {
+	return $self->package_collection->limit($self);
+    }
+    # OK, walk through the valid_versions for this package
+    my @sources =
+	uniq map {'src:'.$_->{src_pkg_name}} $self->_valid_versioninfo;
+    return $self->package_collection->limit(@sources);
+}
+
+has 'versions' => (is => 'bare',
+		   isa => 'HashRef[Debbugs::Version]',
+                   traits => ['Hash'],
+		   handles => {_exists_version => 'exists',
+			       _get_version => 'get',
+                               _set_version => 'set',
+			      },
+                   lazy => 1,
+                   builder => '_build_versions',
+		  );
+
+sub _build_versions {
+    my $self = shift;
+    return {};
+}
+
+sub _add_version {
+    my $self = shift;
+    my @set;
+    for my $v (@_) {
+        push @set,
+            $v->version,$v;
+    }
+    $self->_set_version(@set);
+}
+
+sub get_source_version_distribution {
+    my $self = shift;
+
+    my %src_pkg_vers = @_;
+    for my $dist (@_) {
+        my @ver_loc =
+            grep {defined $_}
+            $self->_get_dist_to_info($dist);
+        for my $v ($self->
+                   _get_valid_versioninfo(@ver_loc)) {
+            $src_pkg_vers{$v->{src_pkg_ver}} = 1;
+        }
+    }
+    return $self->package_collection->
+        get_source_versions(keys %src_pkg_vers)->members;
+}
+
+# returns the source version(s) corresponding to the version of *this* package; the
+# version passed may be binary or source, depending.
+sub get_source_version {
+    my $self = shift;
+    if ($self->is_source) {
+        return $self->get_version(@_);
+    }
+    my %src_pkg_vers;
+    for my $ver (@_) {
+        my %archs;
+        if (ref $ver) {
+            my @archs;
+            ($ver,@archs) = @{$ver};
+            @archs{@archs} = (1) x @archs;
+        }
+        my @ver_loc =
+            @{$self->_get_binary_version_to_info($ver)//[]};
+        next unless @ver_loc;
+        my @vers = map {$self->
+                            _get_valid_versioninfo($_)}
+            @ver_loc;
+        for my $v (@vers) {
+            if (keys %archs) {
+                next unless exists $archs{$v->{arch}};
+            }
+            $src_pkg_vers{$v->{src_pkg_ver}} = 1;
+        }
+    }
+    return $self->package_collection->
+        get_source_versions(keys %src_pkg_vers)->members;
+}
+
+sub get_version {
+    my $self = shift;
+    my @ret;
+    for my $v (@_) {
+	if ($self->_exists_version($v)) {
+	    push @ret,$self->_get_version($v);
+	} else {
+	    push @ret,
+		$self->_create_version($v);
+	}
+    }
+    return @ret;
+}
+
+sub _create_version {
+    my $self = shift;
+    my @versions;
+    if ($self->is_source) {
+	for my $v (@_) {
+	    push @versions,
+		$v,
+		Debbugs::Version::Source->
+		    new(package => $self,
+			version => $v,
+			package_collection => $self->package_collection,
+                        $self->has_schema?(schema => $self->schema):(),
+		       );
+	}
+    } else {
+	for my $v (@_) {
+	    push @versions,
+		$v,
+		Debbugs::Version::Binary->
+		    new(package => $self,
+			version => $v,
+			package_collection => $self->package_collection,
+                        $self->has_schema?(schema => $self->schema):(),
+		       );
+	}
+    }
+    $self->_set_version(@versions);
+}
 
 # gets used to retrieve packages
 has 'package_collection' => (is => 'ro',
@@ -61,69 +574,9 @@ has 'package_collection' => (is => 'ro',
 			    );
 
 sub _build_package_collection {
-    return Debbugs::Collection::Package->new();
-}
-
-sub populate {
     my $self = shift;
-
-    my @binaries = $self->binaries;
-    my @sources = $self->sources;
-    my $s = $self->schema;
-    carp "No schema" unless $self->schema;
-
-    my $src_rs = $s->resultset('SrcVer')->
-	search({'src_pkg.pkg'=>[$self->sources],
-		-or => {'suite.codename' => [make_list($param{dist})],
-			'suite.suite_name' => [make_list($param{dist})],
-		       }
-	       },
-	      {join => ['src_pkg',
-		       {
-			src_associations=>'suite'},
-		       ],
-	       '+select' => [qw(src_pkg.pkg),
-			     qw(suite.codename),
-			     qw(src_associations.modified),
-			     q(CONCAT(src_pkg.pkg,'/',me.ver))],
-	       '+as' => ['src_pkg_name','codename',
-			 'modified_time',
-			 qw(src_pkg_ver)],
-	       result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-	       order_by => {-desc => 'me.ver'},
-	      },
-	      );
-    
+    return Debbugs::Collection::Package->new($self->has_schema?(schema => $self->schema):());
 }
-
-sub packages {
-    my $self = shift;
-    $self->populate() unless $self->initialized;
-}
-
-sub versions {
-    my $self = shift;
-    $self->populate() unless $self->initialized;
-}
-
-
-package Debbugs::Package::Version;
-
-use base qw(Class::Accessor);
-__PACKAGE__->mk_ro_accessors(qw(schema ));
-
-sub version {
-}
-
-sub type {
-
-}
-
-sub 
-
-package Debbugs::Package::Package;
-
-package Debbugs::Package::Maintainer;
 
 
 1;

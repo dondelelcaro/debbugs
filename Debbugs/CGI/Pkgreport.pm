@@ -33,6 +33,11 @@ use Exporter qw(import);
 use IO::Scalar;
 use Params::Validate qw(validate_with :types);
 
+use Debbugs::Collection::Bug;
+
+use Carp;
+use List::AllUtils qw(apply);
+
 use Debbugs::Config qw(:config :globals);
 use Debbugs::CGI qw(:url :html :util);
 use Debbugs::Common qw(:misc :util :date);
@@ -210,52 +215,14 @@ display below
 
 sub short_bug_status_html {
      my %param = validate_with(params => \@_,
-			       spec   => {status => {type => HASHREF,
-						    },
-					  options => {type => HASHREF,
-						      default => {},
-						     },
-					  bug_options => {type => HASHREF,
-							  default => {},
-							 },
-					  snippet => {type => SCALAR,
-						      default => '',
-						     },
+			       spec   => {bug => {type => OBJECT,
+						  isa => 'Debbugs::Bug',
+						 },
 					 },
 			      );
 
-     my %status = %{$param{status}};
-
-     $status{tags_array} = [sort(split(/\s+/, $status{tags}))];
-     $status{date_text} = strftime('%a, %e %b %Y %T UTC', gmtime($status{date}));
-     $status{mergedwith_array} = [split(/ /,$status{mergedwith})];
-
-     my @blockedby= split(/ /, $status{blockedby});
-     $status{blockedby_array} = [];
-     if (@blockedby && $status{"pending"} ne 'fixed' && ! length($status{done})) {
-	  for my $b (@blockedby) {
-	       my %s = %{get_bug_status($b)};
-	       next if (defined $s{pending} and $s{pending} eq 'fixed') or (defined $s{done} and length $s{done});
-	       push @{$status{blockedby_array}},{bug_num => $b, subject => $s{subject}, status => \%s};
-	  }
-     }
-
-     my @blocks= split(/ /, $status{blocks});
-     $status{blocks_array} = [];
-     if (@blocks && $status{"pending"} ne 'fixed' && ! length($status{done})) {
-	  for my $b (@blocks) {
-	       my %s = %{get_bug_status($b)};
-	       next if (defined $s{pending} and $s{pending} eq 'fixed') or (defined $s{done} and length $s{done});
-	       push @{$status{blocks_array}}, {bug_num => $b, subject => $s{subject}, status => \%s};
-	  }
-     }
-     my $days = bug_archiveable(bug => $status{id},
-				status => \%status,
-				days_until => 1,
-			       );
-     $status{archive_days} = $days;
      return fill_in_template(template => 'cgi/short_bug_status',
-			     variables => {status => \%status,
+			     variables => {bug => $param{bug},
 					   isstrongseverity => \&Debbugs::Status::isstrongseverity,
 					   html_escape   => \&Debbugs::CGI::html_escape,
 					   looks_like_number => \&Scalar::Util::looks_like_number,
@@ -273,7 +240,7 @@ sub short_bug_status_html {
 
 sub pkg_htmlizebugs {
      my %param = validate_with(params => \@_,
-			       spec   => {bugs => {type => ARRAYREF,
+			       spec   => {bugs => {type => OBJECT,
 						  },
 					  names => {type => ARRAYREF,
 						   },
@@ -316,23 +283,15 @@ sub pkg_htmlizebugs {
 						      },
 					 }
 			      );
-     my @bugs = @{$param{bugs}};
-
-     my @status = ();
+     my $bugs = $param{bugs};
      my %count;
      my $header = '';
      my $footer = "<h2 class=\"outstanding\">Summary</h2>\n";
 
-     if (@bugs == 0) {
+     if ($bugs->count == 0) {
 	  return "<HR><H2>No reports found!</H2></HR>\n";
      }
 
-     if ( $param{bug_rev} ) {
-	  @bugs = sort {$b<=>$a} @bugs;
-     }
-     else {
-	  @bugs = sort {$a<=>$b} @bugs;
-     }
      my %seenmerged;
 
      my %common = (
@@ -363,52 +322,50 @@ sub pkg_htmlizebugs {
 	  push @{$exclude{$key}}, split /\s*,\s*/, $value;
      }
 
-     my $binary_to_source_cache = {};
-     my $statuses =
-	 get_bug_statuses(bug => \@bugs,
-			  hash_slice(%param,
-			   qw(dist version schema bugusertags),
-			  ),
-			  (exists $param{arch}?(arch => $param{arch}):(arch => $config{default_architectures})),
-			  binary_to_source_cache => $binary_to_source_cache,
-			 );
-     for my $bug (sort {$a <=> $b} keys %{$statuses}) {
-	 next unless %{$statuses->{$bug}};
-	 next if bug_filter(bug => $bug,
-			    status => $statuses->{$bug},
-			    repeat_merged => $param{repeatmerged},
-			    seen_merged => \%seenmerged,
-			    (keys %include ? (include => \%include):()),
-			    (keys %exclude ? (exclude => \%exclude):()),
-			   );
-
-	 my $html = "<li>";	#<a href=\"%s\">#%d: %s</a>\n<br>",
-	 $html .= short_bug_status_html(status  => $statuses->{$bug},
-					options => $param{options},
-				       ) . "\n";
-	 push @status, [ $bug, $statuses->{$bug}, $html ];
+     my $sorter = sub {$_[0]->id <=> $_[1]->id};
+     if ($param{bug_rev}) {
+	 $sorter = sub {$_[1]->id <=> $_[0]->id}
      }
-     if ($param{bug_order} eq 'age') {
-	  # MWHAHAHAHA
-	  @status = sort {$a->[1]{log_modified} <=> $b->[1]{log_modified}} @status;
+     elsif ($param{bug_order} eq 'age') {
+	 $sorter = sub {$_[0]->modified->epoch <=> $_[1]->modified->epoch};
      }
      elsif ($param{bug_order} eq 'agerev') {
-	  @status = sort {$b->[1]{log_modified} <=> $a->[1]{log_modified}} @status;
+	 $sorter = sub {$_[1]->modified->epoch <=> $_[0]->modified->epoch};
      }
+     my @status;
+     for my $bug ($bugs->sort($sorter)) {
+	 next if
+	     $bug->filter(repeat_merged => $param{repeatmerged},
+			  seen_merged => \%seenmerged,
+			  (keys %include ? (include => \%include):()),
+			  (keys %exclude ? (exclude => \%exclude):()),
+			 );
+
+	 my $html = "<li>";	#<a href=\"%s\">#%d: %s</a>\n<br>",
+	 $html .= short_bug_status_html(bug => $bug,
+				       ) . "\n";
+	 push @status, [ $bug, $html ];
+     }
+     # parse bug order indexes into subroutines
+     my @order_subs =
+	 map {
+	     my $a = $_;
+	     [map {parse_order_statement_to_subroutine($_)} @{$a}];
+	 } @{$param{prior}};
      for my $entry (@status) {
 	  my $key = "";
-	  for my $i (0..$#{$param{prior}}) {
-	       my $v = get_bug_order_index($param{prior}[$i], $entry->[1]);
+	  for my $i (0..$#order_subs) {
+	       my $v = get_bug_order_index($order_subs[$i], $entry->[0]);
 	       $count{"g_${i}_${v}"}++;
 	       $key .= "_$v";
 	  }
-	  $section{$key} .= $entry->[2];
+	  $section{$key} .= $entry->[1];
 	  $count{"_$key"}++;
      }
 
      my $result = "";
      if ($param{ordering} eq "raw") {
-	  $result .= "<UL class=\"bugs\">\n" . join("", map( { $_->[ 2 ] } @status ) ) . "</UL>\n";
+	  $result .= "<UL class=\"bugs\">\n" . join("", map( { $_->[ 1 ] } @status ) ) . "</UL>\n";
      }
      else {
 	  $header .= "<div class=\"msgreceived\">\n<ul>\n";
@@ -474,6 +431,58 @@ sub pkg_htmlizebugs {
      return $result;
 }
 
+sub parse_order_statement_to_subroutine {
+    my ($statement) = @_;
+    if (not defined $statement or not length $statement) {
+	return sub {return 1};
+    }
+    croak "invalid statement '$statement'" unless
+	$statement =~ /^(?:(package|tag|pending|severity) # field
+			   = # equals
+			   ([^=|\&,\+]+(?:,[^=|\&,+])*) #value
+			   (\+|,|$) # joiner or end
+		       )+ # one or more of these statements
+		      /x;
+    my @sub_bits;
+    while ($statement =~ /(?<joiner>^|,|\+) # joiner
+			  (?<field>package|tag|pending|severity) # field
+			   = # equals
+			   (?<value>[^=|\&,\+]+(?:,[^=|\&,\+])*) #value
+			 /xg) {
+	my $field = $+{field};
+	my $value = $+{value};
+	my $joiner = $+{joiner} // '';
+	my @vals = apply {quotemeta($_)} split /,/,$value;
+	if (length $joiner) {
+	    if ($joiner eq '+') {
+		push @sub_bits, ' and ';
+	    }
+	    else {
+		push @sub_bits, ' or ';
+	    }
+	}
+	my @vals_bits;
+	for my $val (@vals) {
+	    if ($field =~ /package|pending|severity/o) {
+		push @vals_bits, '$_[0]->'.$field.
+		    ' eq q('.$val.')';
+	    } elsif ($field eq 'tag') {
+		push @vals_bits, '$_[0]->tags->is_set('.
+		    'q('.$val.'))';
+	    }
+	}
+	push @sub_bits ,' ('.join(' or ',@vals_bits).') ';
+    }
+    # return a subroutine reference which determines whether an order statement
+    # matches this bug
+    my $sub = 'sub { return ('.join ("\n",@sub_bits).');};';
+    my $subref = eval $sub;
+    if ($@) {
+	croak "Unable to generate subroutine: $@; $sub";
+    }
+    return $subref;
+}
+
 sub parse_order_statement_into_boolean {
     my ($statement,$status,$tags) = @_;
 
@@ -510,19 +519,13 @@ sub parse_order_statement_into_boolean {
 }
 
 sub get_bug_order_index {
-     my $order = shift;
-     my $status = shift;
-     my $pos = 0;
-     my $tags = {map { $_, 1 } split / /, $status->{"tags"}
-                }
-         if defined $status->{"tags"};
-     for my $el (@${order}) {
-         if (not length $el or
-             parse_order_statement_into_boolean($el,$status,$tags)
-            ) {
-             return $pos;
-         }
-         $pos++;
+    my ($order,$bug) = @_;
+    my $pos = 0;
+    for my $el (@{$order}) {
+	if ($el->($bug)) {
+	    return $pos;
+	 }
+	 $pos++;
      }
      return $pos;
 }

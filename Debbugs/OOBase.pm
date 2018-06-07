@@ -28,6 +28,15 @@ has schema => (is => 'ro', isa => 'Object',
 	       predicate => 'has_schema',
 	      );
 
+sub schema_argument {
+    my $self = shift;
+    if ($self->has_schema) {
+        return (schema => $self->schema);
+    } else {
+       return ();
+    }
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
