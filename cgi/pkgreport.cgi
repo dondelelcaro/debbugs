@@ -37,6 +37,7 @@ BEGIN {
     # if the first directory in @INC is not an absolute directory, assume that
     # someone has overridden us via -I.
     if ($INC[0] !~ /^\//) {
+	undef $debbugs_dir;
     }
 }
 use if defined $debbugs_dir, lib => $debbugs_dir;
@@ -53,6 +54,7 @@ use Debbugs::Common qw(getparsedaddrs make_list getmaintainers getpseudodesc);
 
 use Debbugs::Bugs qw(get_bugs bug_filter newest_bug);
 use Debbugs::Packages qw(source_to_binary binary_to_source get_versions);
+use Debbugs::Collection::Bug;
 
 use Debbugs::Status qw(splitpackages);
 
@@ -464,7 +466,14 @@ my %bugs;
 @bugs{@bugs} = @bugs;
 @bugs = keys %bugs;
 
-my $result = pkg_htmlizebugs(bugs => \@bugs,
+my $bugs = Debbugs::Collection::Bug->
+    new(bugs => \@bugs,
+	@schema_arg,
+       );
+
+$bugs->load_related_packages_and_versions();
+
+my $result = pkg_htmlizebugs(bugs => $bugs,
 			     names => \@names,
 			     title => \@title,
 			     order => \@order,

@@ -25,52 +25,69 @@ use namespace::autoclean;
 use Debbugs::Common qw(make_list hash_slice);
 use Debbugs::OOTypes;
 use Debbugs::Status qw(get_bug_statuses);
+use Debbugs::Collection::Package;
+use Debbugs::Collection::Correspondent;
+
+use Debbugs::Bug;
 
 extends 'Debbugs::Collection';
 
 has '+members' => (isa => 'ArrayRef[Bug]');
-has 'package_collection' => (is => 'rw',
-                          isa => 'Debbugs::Collection::Package',
-                          default => sub {Debbugs::Collection::Package->new()}
-                         );
+has 'package_collection' =>
+    (is => 'ro',
+     isa => 'Debbugs::Collection::Package',
+     builder => '_build_package_collection',
+     lazy => 1,
+    );
 
-around BUILDARGS => sub {
-    my $orig = shift;
-    my $class = shift;
+sub _build_package_collection {
+    my $self = shift;
+    return Debbugs::Collection::Package->new($self->has_schema?(schema => $self->schema):());
+}
 
-    my %args;
-    if (@_==1 and ref($_[0]) eq 'HASH') {
-        %args = %{$_[0]};
-    } else {
-        %args = @_;
+has 'correspondent_collection' =>
+    (is => 'ro',
+     isa => 'Debbugs::Collection::Correspondent',
+     builder => '_build_correspondent_collection',
+     lazy => 1,
+    );
+
+sub _build_correspondent_collection {
+    my $self = shift;
+    return Debbugs::Collection::Correspondent->new($self->has_schema?(schema => $self->schema):());
+}
+
+sub BUILD {
+    my $self = shift;
+    my $args = shift;
+    if (exists $args->{bugs}) {
+        $self->add(
+            $self->_member_constructor(bugs => $args->{bugs}
+                                      ));
     }
-    $args{members} //= [];
-    if (exists $args{bugs}) {
-        push @{$args{members}},
-            _member_constructor(bugs => $args{bugs},
-                                hash_slice(%args,qw(schema constructor_args)),
-                               );
-        delete $args{bugs};
-    }
-    return $class->$orig(%args);
-};
+}
 
 sub _member_constructor {
     # handle being called $self->_member_constructor;
-    if ((@_ % 2) == 1) {
-        shift;
-    }
+    my $self = shift;
     my %args = @_;
     my @return;
-    if (exists $args{schema}) {
+    my $schema;
+    $schema = $self->schema if $self->has_schema;
+
+    if (defined $schema) {
         my $statuses = get_bug_statuses(bug => [make_list($args{bugs})],
-                                        schema => $args{schema},
+                                        schema => $schema,
                                        );
         while (my ($bug, $status) = each %{$statuses}) {
             push @return,
-                Debbugs::Bug->new(bug=>$bug,
-                                  status=>$status,
-                                  schema=>$args{schema},
+                Debbugs::Bug->new(bug => $bug,
+                                  status => $status,
+                                  schema => $schema,
+                                  package_collection =>
+                                  $self->package_collection->universe,
+                                  correspondent_collection =>
+                                  $self->correspondent_collection->universe,
                                   @{$args{constructor_args}//[]},
                                  );
         }
@@ -78,6 +95,10 @@ sub _member_constructor {
         for my $bug (make_list($args{bugs})) {
             push @return,
                 Debbugs::Bug->new(bug => $bug,
+                                  package_collection =>
+                                  $self->package_collection->universe,
+                                  correspondent_collection =>
+                                  $self->correspondent_collection->universe,
                                   @{$args{constructor_args}//[]},
                                  );
         }
@@ -89,15 +110,21 @@ around add_by_key => sub {
     my $orig = shift;
     my $self = shift;
     my @members =
-        _member_constructor(bugs => [@_],
-                            $self->has_schema?(schema => $self->schema):(),
-                            constructor_args => $self->constructor_args,
-                           );
+        $self->_member_constructor(bugs => [@_],
+                                  );
     return $self->$orig(@members);
 };
 
 sub member_key {
     return $_[1]->bug;
+}
+
+sub load_related_packages_and_versions {
+    my $self = shift;
+    my @related_packages_and_versions =
+        $self->map(sub {$_->related_packages_and_versions});
+    $self->package_collection->
+        add_packages_and_versions(@related_packages_and_versions);
 }
 
 __PACKAGE__->meta->make_immutable;

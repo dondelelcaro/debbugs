@@ -27,15 +27,19 @@ use namespace::clean;
 use v5.10; # for state
 
 use DateTime;
-use List::AllUtils qw(max);
+use List::AllUtils qw(max first min);
 
+use Params::Validate qw(validate_with :types);
 use Debbugs::Config qw(:config);
 use Debbugs::Status qw(read_bug);
 use Debbugs::Bug::Tag;
 use Debbugs::Collection::Package;
 use Debbugs::Collection::Bug;
+use Debbugs::Collection::Correspondent;
 
 use Debbugs::OOTypes;
+
+use Carp;
 
 extends 'Debbugs::OOBase';
 
@@ -45,6 +49,10 @@ state $strong_severities =
 has bug => (is => 'ro', isa => 'Int',
 	    required => 1,
 	   );
+
+sub id {
+    return $_[0]->bug;
+}
 
 has saved => (is => 'ro', isa => 'Bool',
 	      default => 0,
@@ -71,16 +79,39 @@ has 'package_collection' => (is => 'ro',
 			    );
 
 sub _build_package_collection {
+    my $self = shift;
+    if ($self->has_schema) {
+        return Debbugs::Collection::Package->new(schema => $self->schema);
+    }
+    carp "No schema when building package collection";
     return Debbugs::Collection::Package->new();
 }
+
 has bug_collection => (is => 'ro',
 		       isa => 'Debbugs::Collection::Bug',
 		       builder => '_build_bug_collection',
 		      );
 sub _build_bug_collection {
+    my $self = shift;
+    if ($self->has_schema) {
+        return Debbugs::Collection::Bug->new(schema => $self->schema);
+    }
     return Debbugs::Collection::Bug->new();
 }
 
+has correspondent_collection =>
+    (is => 'ro',
+     isa => 'Debbugs::Collection::Correspondent',
+     builder => '_build_package_collection',
+     lazy => 1,
+    );
+sub _build_correspondent_collection   {
+    my $self = shift;
+    if ($self->has_schema) {
+        return Debbugs::Collection::Correspondent->new(schema => $self->schema);
+    }
+    return Debbugs::Collection::Correspondent->new();
+}
 
 sub reset {
     my $self = shift;
@@ -129,7 +160,7 @@ for my $attr (qw(packages affects sources)) {
 # bugs
 for my $attr (qw(blocks blockedby mergedwith)) {
     has $attr =>
-	(is => 'bare',
+	(is => 'ro',
 	 isa => 'Debbugs::Collection::Bug',
 	 clearer => '_clear_'.$attr,
 	 builder => '_build_'.$attr,
@@ -139,10 +170,34 @@ for my $attr (qw(blocks blockedby mergedwith)) {
 }
 
 
+for my $attr (qw(owner submitter)) {
+    has $attr.'_corr' =>
+        (is => 'ro',
+         isa => 'Debbugs::Correspondent',
+         lazy => 1,
+         builder => '_build_'.$attr.'_corr',
+         clearer => '_clear_'.$attr.'_corr',
+         handles => {$attr.'_url' => $attr.'_url',
+                     $attr.'_email' => 'email',
+                     $attr.'_phrase' => 'phrase',
+                    },
+        );
+}
+
+sub _build_owner_corr {
+    my $self = shift;
+    return $self->correspondent_collection->get_or_create($self->owner);
+}
+
+sub _build_submitter_corr {
+    my $self = shift;
+    return $self->correspondent_collection->get_or_create($self->submitter);
+}
 
 for my $attr (qw(done severity),
-	      qw(found fixed),
+	      qw(forwarded),
 	      qw(pending location submitter),
+	      qw(owner subject),
 	     ) {
     has $attr =>
 	(is => 'rw',
@@ -165,21 +220,38 @@ sub _build_severity {
     return $_[0]->status->{severity} // $config{default_severity};
 }
 
+sub _build_subject {
+    return $_[0]->status->{subject} // '(No subject)';
+}
+
 sub strong_severity {
     my $self = shift;
     return exists $strong_severities->{$self->severity};
 }
 
+sub short_severity {
+    $_[0]->severity =~ m/^(.)/;
+    return $1;
+}
+
 sub package {
-    local $_;
-    return join(', ',map {$_->name} $_[0]->packages);
+    my $self = shift;
+    return join(', ',$self->packages->apply(sub{$_->name}));
 }
 
 sub _build_packages {
-    return [$_[0]->package_collection->
-	    get_package($_[0]->status->{package} //
-			'')
-	   ];
+    my $self = shift;
+    my @packages;
+    if (length($self->status->{package}//'')) {
+	@packages = split /,/,$self->status->{package}//'';
+    }
+    return $self->package_collection->
+	    limit(@packages);
+}
+
+sub is_affecting {
+    my $self = shift;
+    return $self->affects->count > 0;
 }
 
 sub affect {
@@ -188,10 +260,12 @@ sub affect {
 }
 
 sub _build_affects {
-    return [$_[0]->package_collection->
-	    get_package($_[0]->status->{affects} //
-			'')
-	   ];
+    my @packages;
+    if (length($_[0]->status->{affects}//'')) {
+	@packages = split /,/,$_[0]->status->{affects}//'';
+    }
+    return $_[0]->package_collection->
+	    limit(@packages);
 }
 sub source {
     local $_;
@@ -199,7 +273,17 @@ sub source {
 }
 sub _build_sources {
     local $_;
-    my @sources = map {$_->sources} $_[0]->packages;
+    my @sources = map {$_->sources} $_[0]->packages->members;
+    return @sources;
+}
+
+sub is_owned {
+    my $self = shift;
+    return length($self->owner) > 0;
+}
+sub _build_owner {
+    my $self = shift;
+    return $self->status->{owner} // '';
 }
 
 
@@ -215,37 +299,84 @@ sub _split_if_defined {
     return ();
 }
 
+sub is_blocking {
+    my $self = shift;
+    return $self->blocks->count > 0;
+}
+
 sub _build_blocks {
     my $self = shift;
     return $self->bug_collection->
-	limit_or_create(sort {$a <=> $b}
-			$self->_split_if_defined('blocks'));
+	limit(sort {$a <=> $b}
+	      $self->_split_if_defined('blocks'));
+}
+
+sub is_blocked {
+    my $self = shift;
+    return $self->blockedby->count > 0;
 }
 
 sub _build_blockedby {
     my $self = shift;
     return $self->bug_collection->
-	limit_or_create(sort {$a <=> $b}
-			$self->_split_if_defined('blockedby'));
+	limit(sort {$a <=> $b}
+	      $self->_split_if_defined('blockedby'));
+}
+
+sub is_forwarded {
+    length($_[0]->forwarded) > 0;
+}
+
+sub _build_forwarded {
+    my $self = shift;
+    return $self->status->{forwarded} // '';
+}
+
+
+
+for my $attr (qw(fixed found)) {
+    has $attr =>
+	(is => 'ro',
+	 isa => 'Debbugs::Collection::Version',
+	 clearer => '_clear_'.$attr,
+	 builder => '_build_'.$attr,
+	 handles => {},
+	 lazy => 1,
+	);
+}
+
+sub has_found {
+    my $self = shift;
+    return $self->found->count > 0;
 }
 
 sub _build_found {
     my $self = shift;
-    return $self->sources->
-	versions($self->_split_if_defined('found',',\s*'));
+    return $self->packages->
+	get_source_versions(@{$self->status->{found_versions} // []});
 }
 
+sub has_fixed {
+    my $self = shift;
+    return $self->fixed->count > 0;
+}
 
 sub _build_fixed {
-    my $self;
-    return $self->sources->
-	versions($self->_split_if_defined('fixed',',\s*'));
+    my $self = shift;
+    return $self->packages->
+        get_source_versions(@{$self->status->{fixed_versions} // []});
 }
+
+sub is_merged {
+    my $self = shift;
+    return $self->mergedwith->count > 0;
+}
+
 sub _build_mergedwith {
     my $self = shift;
     return $self->bug_collection->
-	limit_or_create(sort {$a <=> $b}
-			$self->_split_if_defined('mergedwith'));
+	limit(sort {$a <=> $b}
+	      $self->_split_if_defined('mergedwith'));
 }
 sub _build_pending {
     return $_[0]->status->{pending} // '';
@@ -307,21 +438,21 @@ sub buggy {
     my $self = shift;
     my $vertree =
 	$self->package_collection->
-	versions;
+	universe->versiontree;
     my $max_buggy = 'absent';
     for my $ver (@_) {
 	if (not ref($ver)) {
 	    $ver = Debbugs::Version->
-		new(string => $ver,
+		new(version => $ver,
+                    package => $self,
 		    package_collection => $self->package_collection,
 		   );
 	}
 	$vertree->load($ver->source);
 	my $buggy =
-	    $vertree->tree->
-	    buggy($ver->srcver,
-		  [map {$_->srcver} $self->found],
-		  [map {$_->srcver} $self->fixed]);
+	    $vertree->buggy($ver,
+                            [$self->found],
+                            [$self->fixed]);
 	if ($buggy eq 'found') {
 	    return 'found'
 	}
@@ -382,10 +513,10 @@ sub _populate_archiveable {
 	}
     }
     my $time = time;
-    state $remove_time = 24 * 60 * 60 * $config{removal_age};
+    state $remove_time = 24 * 60 * 60 * ($config{removal_age} // 30);
     # 4. Have been modified more than removal_age ago
     my $moded_ago =
-	$time - $self->last_modified;
+	$time - $self->modified->epoch;
     # if we don't need to know when we can archive, we can stop here if it's
     # been modified too recently
     if ($moded_ago < $remove_time) {
@@ -399,17 +530,18 @@ sub _populate_archiveable {
 	    @{$config{removal_strong_severity_default_distribution_tags}};
     }
     # 3. Have a maximum buggy of fixed
-    my $buggy = $self->buggy($self->package->
-			     dist_source_versions(@distributions));
+    my $buggy = $self->buggy($self->packages->
+			     get_source_versions_distributions(@distributions));
     if ('found' eq $buggy) {
 	$self->_set_archiveable(0);
 	$self->_set_when_archiveable(-1);
 	return;
     }
-    my $fixed_ago = $time - $self->when_fixed(@distributions);
-    if ($fixed_ago < $remove_time) {
-	$self->_set_archiveable(0);
-    }
+    my $fixed_ago = $moded_ago;
+    # $fixed_ago = $time - $self->when_fixed(@distributions);
+    # if ($fixed_ago < $remove_time) {
+    #     $self->_set_archiveable(0);
+    # }
     $self->_set_when_archiveable(($remove_time - min($fixed_ago,$moded_ago)) / (24 * 60 * 60));
     if ($fixed_ago > $remove_time and
 	$moded_ago > $remove_time) {
@@ -417,6 +549,128 @@ sub _populate_archiveable {
 	$self->_set_when_archiveable(0);
     }
     return;
+}
+
+sub filter {
+    my $self = shift;
+    my %param = validate_with(params => \@_,
+			      spec   => {seen_merged => {type => HASHREF,
+							 default => sub {return {}},
+							},
+					 repeat_merged => {type => BOOLEAN,
+							   default => 1,
+							  },
+					 include => {type => HASHREF,
+						     optional => 1,
+						    },
+					 exclude => {type => HASHREF,
+						     optional => 1,
+						    },
+					 min_days => {type => SCALAR,
+						      optional => 1,
+						     },
+					 max_days => {type => SCALAR,
+						      optional => 1,
+						     },
+					 },
+			     );
+    if (exists $param{include}) {
+	return 1 if not $self->matches($param{include});
+    }
+    if (exists $param{exclude}) {
+	return 1 if $self->matches($param{exclude});
+    }
+    if (exists $param{repeat_merged} and not $param{repeat_merged}) {
+	my @merged = sort {$a<=>$b} $self->bug, map {$_->bug} $self->mergedwith->members;
+	return 1 if first {sub {defined $_}}
+            @{$param{seen_merged}}{@merged};
+	@{$param{seen_merged}}{@merged} = (1) x @merged;
+    }
+    if (exists $param{min_days}) {
+	return 1 unless $param{min_days} <=
+	    (DateTime->now() - $self->created)->days();
+    }
+    if (exists $param{max_days}) {
+	return 1 unless $param{max_days} >=
+	    (DateTime->now() - $self->created)->days();
+    }
+    return 0;
+
+}
+
+sub __exact_match {
+    my ($field, $values) = @_;
+    my @ret = first {sub {$_ eq $field}} @{$values};
+    return @ret != 0;
+}
+
+sub __contains_match {
+    my ($field, $values) = @_;
+    foreach my $value (@{$values}) {
+        return 1 if (index($field, $value) > -1);
+    }
+    return 0;
+}
+
+state $field_match =
+   {subject => sub {__contains_match($_[0]->subject,@_)},
+    tags => sub {
+	for my $value (@{$_[1]}) {
+	    if ($_[0]->tags->is_set($value)) {
+		return 1;
+	    }
+	}
+	return 0;
+	},
+    severity => sub {__exact_match($_[0]->severity,@_)},
+    pending => sub {__exact_match($_[0]->pending,@_)},
+    originator => sub {__exact_match($_[0]->submitter,@_)},
+    submitter => sub {__exact_match($_[0]->submitter,@_)},
+    forwarded => sub {__exact_match($_[0]->forwarded,@_)},
+    owner => sub {__exact_match($_[0]->owner,@_)},
+   };
+
+sub matches {
+    my ($self,$hash) = @_;
+    for my $key (keys %{$hash}) {
+	my $sub = $field_match->{$key};
+	if (not defined $sub) {
+	    carp "No subroutine for key: $key";
+	    next;
+	}
+	return 1 if $sub->($self,$hash->{$key});
+    }
+    return 0;
+}
+
+sub url {
+    my $self = shift;
+    return $config{web_domain}.'/'.$self->id;
+}
+
+sub related_packages_and_versions {
+    my $self = shift;
+    my @packages;
+    if (length($self->status->{package}//'')) {
+	@packages = split /,/,$self->status->{package}//'';
+    }
+    my @versions =
+        (@{$self->status->{found_versions}//[]},
+         @{$self->status->{fixed_versions}//[]});
+    my @unqualified_versions;
+    my @return;
+    for my $ver (@versions) {
+        if ($ver =~ m{(<src>.+)/(<ver>.+)}) { # It's a src_pkg_ver
+            push @return, ['src:'.$+{src}, $+{ver}];
+        } else {
+           push @unqualified_versions,$ver;
+        }
+    }
+    for my $pkg (@packages) {
+        push @return,
+            [$pkg,@unqualified_versions];
+    }
+    return @return;
 }
 
 

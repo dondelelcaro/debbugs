@@ -30,24 +30,32 @@ has 'members' => (is => 'bare',
 		  traits => ['Array'],
 		  default => sub {[]},
                   writer => '_set_members',
+                  predicate => '_has_members',
 		  handles => {_add => 'push',
 			      members => 'elements',
 			      count => 'count',
 			      _get_member => 'get',
                               grep => 'grep',
                               apply => 'apply',
+                              map => 'map',
                               sort => 'sort',
 			     },
 		 );
 
+sub members_ref {
+    my $self = shift;
+    return [$self->members];
+}
+
 has 'member_hash' => (traits => ['Hash'],
-		      is => 'ro',
+		      is => 'bare',
 		      isa => 'HashRef[Int]',
 		      lazy => 1,
 		      reader => '_member_hash',
 		      builder => '_build_member_hash',
                       clearer => '_clear_member_hash',
-		      predicate => '_has_member_hash',
+                      predicate => '_has_member_hash',
+                      writer => '_set_member_hash',
 		      handles => {_add_member_hash => 'set',
 				  _member_key_exists => 'exists',
 				  _get_member_hash => 'get',
@@ -67,19 +75,32 @@ sub _build_universe {
     return $_[0];
 }
 
+sub clone {
+    my $self = shift;
+    my $new = bless { %{$self} }, ref $self;
+    if ($self->_has_members) {
+        $new->_set_members([$self->members]);
+    }
+    if ($self->_has_member_hash) {
+        $new->_set_member_hash({%{$self->_member_hash}})
+    }
+    return $new;
+}
+
 sub limit {
     my $self = shift;
     my $limit = $self->clone();
     # Set the universe to whatever my universe is (potentially myself)
-    $limit->_set_universe($self->universe);
-    $limit->_set_members();
+    # $limit->_set_universe($self->universe);
+    $limit->_set_members([]);
     $limit->_clear_member_hash();
-    $limit->add($self->universe->get_or_create(@_));
+    $limit->add($self->universe->get_or_create(@_)) if @_;
     return $limit;
 }
 
 sub get_or_create {
     my $self = shift;
+    return () unless @_;
     my @return;
     my @exists;
     my @need_to_add;
@@ -96,10 +117,19 @@ sub get_or_create {
         }
     }
     # create and add by key
-    @return[@need_to_add] =
-        $self->add_by_key(@_[@need_to_add]);
-    @return[@exists] =
-        $self->get(@_[@exists]);
+    if (@need_to_add) {
+        @return[@need_to_add] =
+            $self->add_by_key(@_[@need_to_add]);
+    }
+    if (@exists) {
+        @return[@exists] =
+            $self->get(@_[@exists]);
+    }
+    # if we've only been asked to get or create one thing, then it's expected
+    # that we are returning only one thing
+    if (@_ == 1) {
+        return $return[0];
+    }
     return @return;
 }
 
@@ -116,18 +146,21 @@ sub add_by_key {
 
 sub add {
     my $self = shift;
-    my @members_to_add;
+    my @members_added;
     for my $member (@_) {
+        if (not defined $member) {
+            confess("Undefined member to add");
+        }
+        push @members_added,$member;
 	if ($self->exists($member)) {
 	    next;
 	}
 	$self->_add($member);
 	$self->_add_member_hash($self->member_key($member),
-				$self->count(),
+				$self->count()-1,
 			       );
     }
-    $self->_add(@members_to_add);
-    return @members_to_add;
+    return @members_added;
 }
 
 sub get {
