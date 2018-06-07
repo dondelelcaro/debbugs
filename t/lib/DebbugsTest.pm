@@ -24,6 +24,8 @@ use strict;
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
 use base qw(Exporter);
 
+use v5.10;
+
 use IO::File;
 use File::Temp qw(tempdir);
 use Cwd qw(getcwd);
@@ -41,7 +43,8 @@ BEGIN{
      $DEBUG = 0 unless defined $DEBUG;
 
      @EXPORT = ();
-     %EXPORT_TAGS = (configuration => [qw(dirsize create_debbugs_configuration send_message)],
+     %EXPORT_TAGS = (configuration => [qw(dirsize create_debbugs_configuration send_message),
+				       qw(submit_bug run_processall)],
 		     mail          => [qw(num_messages_sent)],
 		     control       => [qw(test_control_commands)],
 		     database => [qw(create_postgresql_database update_postgresql_database)]
@@ -207,9 +210,13 @@ sub send_message{
      }
      # now we should run processall to see if the message gets processed
      if ($param{run_processall}) {
-	  system('scripts/processall') == 0 or die "processall failed";
+	 run_processall();
       }
      return 1;
+}
+
+sub run_processall {
+    system('scripts/processall') == 0 or die "processall failed";
 }
 
 =item test_control_commands
@@ -283,6 +290,49 @@ EOF
 		 )
 	    or fail(Data::Dumper->Dump([$status],[qw(status)]));
     }
+}
+
+sub submit_bug {
+    state $spec =
+       {subject => {type => SCALAR,
+		    default => 'Submitting a bug',
+		   },
+	body => {type => SCALAR,
+		 default => 'This is a silly bug',
+		},
+	submitter => {type => SCALAR,
+		      default => 'foo@bugs.something',
+		     },
+	pseudoheaders => {type => HASHREF,
+			  default => sub {{}},
+			 },
+	package => {type => SCALAR,
+		    default => 'foo',
+		   },
+	run_processall => {type => SCALAR,
+			   default => 0,
+			  },
+       };
+    my %param =
+	validate_with(params => \@_,
+		      spec => $spec);
+    my $body = 'Package: '.$param{package}."\n";
+    foreach my $key (keys %{$param{pseudoheaders}}) {
+	for my $val (ref($param{pseudoheaders}{$key}) ?
+		     @{$param{pseudoheaders}{$key}} :
+		     $param{pseudoheaders}{$key}) {
+	    $body .= $key. ': '.$val."\n";
+	}
+    }
+    $body .="\n".$param{body};
+    send_message(to => 'submit@bugs.something',
+		 headers => [To => 'submit@bugs.something',
+			     From => $param{submitter},
+			     Subject => $param{subject},
+			    ],
+		 run_processall => $param{run_processall},
+		 body => $body
+		);
 }
 
 

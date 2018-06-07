@@ -35,21 +35,13 @@ $tests++;
 
 # create 4 bugs
 for (1..4) {
-    send_message(to=>'submit@bugs.something',
-		 headers => [To   => 'submit@bugs.something',
-			     From => 'foo@bugs.something',
-			     Subject => 'Submitting a bug '.$_,
-			    ],
-		 run_processall => ($_ == 4 ? 1 : 0),
-		 body => <<EOF) or fail('Unable to send message');
-Package: foo
-Severity: normal
-Tags: wontfix moreinfo
-
-This is a silly bug $_
-EOF
+    submit_bug(subject => 'Submitting a bug '.$_,
+	       pseudoheaders => {Severity => 'normal',
+				 Tags => 'wontfix moreinfo',
+				},
+	      );
 }
-
+run_processall();
 
 my $bc = Debbugs::Collection::Bug->new(bugs => [1..4]);
 
