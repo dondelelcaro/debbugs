@@ -22,11 +22,14 @@ Debbugs::Version -- OO interface to Version
 =cut
 
 use Mouse;
+use v5.10;
 use strictures 2;
 use namespace::autoclean;
 
+use Debbugs::Config qw(:config);
 use Debbugs::Collection::Package;
 use Debbugs::OOTypes;
+use Carp;
 
 extends 'Debbugs::OOBase';
 
@@ -39,96 +42,66 @@ has version => (is => 'ro', isa => 'Str',
 		predicate => '_has_version',
 	       );
 
-has source_version => (is => 'ro',
-		       isa => 'Str',
-		       builder => '_build_source_version',
-		       predicate => '_has_source_version',
-		       clearer => '_clear_source_version',
-		      );
+sub type {
+    confess("Subclass must define type");
+}
 
-has source => (is => 'ro',
-	       isa => 'Debbugs::Package',
-	       lazy => 1,
-	       writer => 'set_source',
-	       builder => '_build_source',
-	       predicate => '_has_source',
-	       clearer => '_clear_source',
-	      );
+has package => (is => 'bare',
+                isa => 'Debbugs::Package',
+                lazy => 1,
+                builder => '_build_package',
+               );
 
-has packages => (is => 'rw',
-		 isa => 'Debbugs::Collection::Package',
-		 writer => 'set_package',
-		 builder => '_build_package',
-		 predicate => '_has_package',
-		 clearer => '_clear_package',
-		);
+around BUILDARGS => sub {
+    my $orig = shift;
+    my $class = shift;
+    my %args;
+    if (@_==1 and ref($_[0]) eq 'HASH') {
+	%args = %{$_[0]};
+    } else {
+        %args = @_;
+    }
+    carp("No schema") unless exists $args{schema};
+    if (exists $args{package} and
+        not blessed($args{package})) {
+        # OK, need a package Collection
+        my $pkgc = $args{package_collection} //
+            Debbugs::Collection::Package->
+                new(exists $args{schema}?(schema => $args{schema}):());
+        $args{package} =
+            $pkgc->universe->get_or_create($args{package});
+    }
+    return $class->$orig(%args);
+};
+
+
+sub _build_package {
+    my $self = shift;
+    return Debbugs::Package->new(package => '(unknown)',
+                                 type => $self->type,
+                                 valid => 0,
+                                 package_collection => $self->package_collection,
+                                 $self->has_schema?(schema => $self->schema):(),
+                                );
+}
+
+
+has valid => (is => 'ro',
+	      isa => 'Bool',
+	      default => 0,
+	      reader => 'is_valid',
+	     );
 
 has 'package_collection' => (is => 'ro',
 			     isa => 'Debbugs::Collection::Package',
 			     builder => '_build_package_collection',
 			     lazy => 1,
 			    );
-
 sub _build_package_collection {
-    return Debbugs::Collection::Package->new();
-}
-
-# one of source_version or version must be provided
-
-sub BUILD {
     my $self = shift;
-    my $args = shift;
-    if (not $self->_has_version and
-	not $self->_has_source_version) {
-	confess("Version objects must have at least a source version or a version");
-    }
-    if ($self->_has_source and
-	$self->source->is_source
-       ) {
-	confess("You have provided a source package which is not a source package");
-    }
+    return Debbugs::Collection::Package->new($self->schema_arg)
 }
 
-sub _build_version {
-    my $self = shift;
-    my $srcver = $self->source_version;
-    $srcver =~ s{.+/}{};
-    return $srcver;
-}
-
-sub _build_source_version {
-    my $self = shift;
-    # should we verify that $self->source is a valid package?
-    my $src = $self->source;
-    if ($src->is_valid) {
-	return $self->source->name.'/'.$self->version;
-    }
-    # do we want invalid sources to be in parenthesis?
-    return $self->version;
-}
-
-sub _build_source {
-    my $self = shift;
-    if ($self->_has_binaries) {
-	# this should be the standard case
-	if ($self->binaries->sources->count == 1) {
-	    return $self->binaries->sources->first(sub {1});
-	}
-	# might need to figure out how to speed up limit_by_version
-	return $self->binaries->limit_by_version($self->version)->
-	    sources;
-    }
-    confess("No binary package, cannot know what source package this version is for");
-}
-
-sub _build_packages {
-    my $self = shift;
-    if ($self->_has_source) {
-	return $self->package_collection->
-	    get_or_create($self->source->binaries,$self->source);
-    }
-    confess("No source package, cannot know what binary packages this version is for");
-}
 
 __PACKAGE__->meta->make_immutable;
 no Mouse;
