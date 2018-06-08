@@ -189,8 +189,14 @@ sub _build_member_hash {
     return $hash;
 }
 
-__PACKAGE__->meta->make_immutable;
+sub CARP_TRACE {
+    my $self = shift;
+    return 'Debbugs::Collection={n_members='.$self->count().'}';
+}
 
+
+__PACKAGE__->meta->make_immutable;
+no Mouse;
 1;
 
 __END__

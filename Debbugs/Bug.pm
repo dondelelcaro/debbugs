@@ -673,6 +673,12 @@ sub related_packages_and_versions {
     return @return;
 }
 
+sub CARP_TRACE {
+    my $self = shift;
+    return 'Debbugs::Bug={bug='.$self->bug.'}';
+}
+
+__PACKAGE__->meta->make_immutable;
 
 no Mouse;
 1;

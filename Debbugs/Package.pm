@@ -578,6 +578,13 @@ sub _build_package_collection {
     return Debbugs::Collection::Package->new($self->has_schema?(schema => $self->schema):());
 }
 
+sub CARP_TRACE {
+    my $self = shift;
+    return 'Debbugs::Package={package='.$self->qualified_name.'}';
+}
+
+__PACKAGE__->meta->make_immutable;
+no Mouse;
 
 1;
 
