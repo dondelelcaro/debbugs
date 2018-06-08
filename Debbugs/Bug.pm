@@ -72,6 +72,31 @@ sub _build_status {
     return $status;
 }
 
+has log => (is => 'bare', isa => 'Debbugs::Log',
+            lazy => 1,
+            builder => '_build_log',
+            handles => {_read_record => 'read_record',
+                        log_records => 'read_all_records',
+                       },
+           );
+
+sub _build_log {
+    my $self = shift;
+    return Debbugs::Log->new(bug_num => $self->id,
+                             inner_file => 1,
+                            );
+}
+
+has spam => (is => 'bare', isa => 'Debbugs::Log::Spam',
+             lazy => 1,
+             builder => '_build_spam',
+             handles => ['is_spam'],
+            );
+sub _build_spam {
+    my $self = shift;
+    return Debbugs::Log::Spam->new(bug_num => $self->id);
+}
+
 has 'package_collection' => (is => 'ro',
 			     isa => 'Debbugs::Collection::Package',
 			     builder => '_build_package_collection',
