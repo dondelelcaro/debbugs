@@ -663,6 +663,10 @@ sub related_packages_and_versions {
     if (length($self->status->{package}//'')) {
 	@packages = split /,/,$self->status->{package}//'';
     }
+    if (length($self->status->{affects}//'')) {
+	push @packages,
+            split /,/,$self->status->{affects}//'';
+    }
     my @versions =
         (@{$self->status->{found_versions}//[]},
          @{$self->status->{fixed_versions}//[]});
@@ -676,8 +680,12 @@ sub related_packages_and_versions {
         }
     }
     for my $pkg (@packages) {
-        push @return,
-            [$pkg,@unqualified_versions];
+        if (@unqualified_versions) {
+            push @return,
+                [$pkg,@unqualified_versions];
+        } else {
+           push @return,$pkg;
+        }
     }
     return @return;
 }
