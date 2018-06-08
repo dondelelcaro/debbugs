@@ -182,7 +182,7 @@ sub add_packages_and_versions {
 # }
 
 sub member_key {
-    return $_[1]->name;
+    return $_[1]->qualified_name;
 }
 
 has 'correspondent_collection' =>

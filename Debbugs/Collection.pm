@@ -197,7 +197,8 @@ sub add {
 
 sub get {
     my $self = shift;
-    return $self->_get_member($self->_get_member_hash(@_));
+    return map {$self->_get_member($_)}
+        $self->_get_member_hash(@_);
 }
 
 
