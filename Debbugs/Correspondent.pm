@@ -80,6 +80,14 @@ sub submitter_url {
     return $config{web_domain}.'/submitter:'.$self->email;
 }
 
+sub CARP_TRACE {
+    my $self = shift;
+    return 'Debbugs::Correspondent={name='.$self->name.'}';
+}
+
+
+__PACKAGE__->meta->make_immutable;
+
 no Mouse;
 1;
 
