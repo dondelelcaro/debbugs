@@ -22,6 +22,7 @@ Debbugs::Collection -- Collection base class which can generate lots of objects
 use Mouse;
 use strictures 2;
 use namespace::autoclean;
+use List::AllUtils qw(pairmap);
 
 extends 'Debbugs::OOBase';
 
@@ -161,8 +162,13 @@ sub get_or_create {
 
 has 'constructor_args' => (is => 'rw',
 			   isa => 'ArrayRef',
-			   default => sub {[]},
+			   lazy => 1,
+                           builder => '_build_constructor_args',
 			  );
+
+sub _build_constructor_args {
+    return [];
+}
 
 sub add_by_key {
     my $self = shift;
