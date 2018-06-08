@@ -69,6 +69,9 @@ sub _member_constructor {
     }
     my @return;
     if (defined $schema) {
+        if (not ref($args{packages}) or @{$args{packages}} == 1) {
+            carp("Likely inefficiency; member_constructor called with one argument");
+        }
         my $packages =
             Debbugs::Package::_get_valid_version_info_from_db(packages => $args{packages},
                                                               schema => $schema,
