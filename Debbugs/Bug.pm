@@ -369,11 +369,23 @@ sub is_merged {
     return $self->mergedwith->count > 0;
 }
 
+has _mergedwith_array =>
+    (is => 'ro',
+     isa => 'ArrayRef[Int]',
+     builder => '_build_mergedwith_array',
+     lazy => 1,
+    );
+
+sub _build_mergedwith_array {
+    my $self = shift;
+    return [sort {$a <=> $b}
+            $self->_split_if_defined('mergedwith')];
+}
+
 sub _build_mergedwith {
     my $self = shift;
     return $self->bug_collection->
-	limit(sort {$a <=> $b}
-	      $self->_split_if_defined('mergedwith'));
+	limit(@{$self->_mergedwith_array//[]});
 }
 sub _build_pending {
     return $_[0]->status->{pending} // '';
@@ -578,7 +590,7 @@ sub filter {
 	return 1 if $self->matches($param{exclude});
     }
     if (exists $param{repeat_merged} and not $param{repeat_merged}) {
-	my @merged = sort {$a<=>$b} $self->bug, map {$_->bug} $self->mergedwith->members;
+	my @merged = sort {$a<=>$b} $self->bug, @{$self->_mergedwith_array // []};
 	return 1 if first {sub {defined $_}}
             @{$param{seen_merged}}{@merged};
 	@{$param{seen_merged}}{@merged} = (1) x @merged;
