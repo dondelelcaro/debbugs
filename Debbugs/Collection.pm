@@ -49,18 +49,39 @@ sub members_ref {
 
 has 'member_hash' => (traits => ['Hash'],
 		      is => 'bare',
-		      isa => 'HashRef[Int]',
+                      # really a HashRef[Int], but type checking is too slow
+		      isa => 'HashRef',
 		      lazy => 1,
 		      reader => '_member_hash',
 		      builder => '_build_member_hash',
                       clearer => '_clear_member_hash',
                       predicate => '_has_member_hash',
                       writer => '_set_member_hash',
-		      handles => {_add_member_hash => 'set',
+		      handles => {# _add_member_hash => 'set',
 				  _member_key_exists => 'exists',
 				  _get_member_hash => 'get',
 				 },
 		     );
+
+# because _add_member_hash needs to be fast, we are overriding the default set
+# method which is very safe but slow, because it makes copies.
+sub _add_member_hash {
+    my ($self,@kv) = @_;
+    pairmap {
+        defined($a)
+            or $self->meta->
+            throw_error("Hash keys passed to _add_member_hash must be defined" );
+        ($b eq int($b)) or
+            $self->meta->
+            throw_error("Values passed to _add_member_hash must be integer");
+    } @kv;
+    my @return;
+    while (my ($key, $value) = splice @kv, 0, 2 ) {
+        push @return,
+            $self->{member_hash}{$key} = $value
+    }
+    wantarray ? return @return: return $return[0];
+}
 
 has 'universe' => (is => 'ro',
                    isa => 'Debbugs::Collection',
@@ -87,9 +108,14 @@ sub clone {
     return $new;
 }
 
+sub _shallow_clone {
+    my $self = shift;
+    return bless { %{$self} }, ref $self;
+}
+
 sub limit {
     my $self = shift;
-    my $limit = $self->clone();
+    my $limit = $self->_shallow_clone();
     # Set the universe to whatever my universe is (potentially myself)
     # $limit->_set_universe($self->universe);
     $limit->_set_members([]);
