@@ -578,7 +578,7 @@ sub _create_version {
 		    new(package => $self,
 			version => $v,
 			package_collection => $self->package_collection,
-                        $self->has_schema?(schema => $self->schema):(),
+                        $self->schema_argument,
 		       );
 	}
     } else {
@@ -589,7 +589,7 @@ sub _create_version {
 		    new(package => $self,
 			version => $v,
 			package_collection => $self->package_collection,
-                        $self->has_schema?(schema => $self->schema):(),
+                        $self->schema_argument,
 		       );
 	}
     }
@@ -605,7 +605,7 @@ has 'package_collection' => (is => 'ro',
 
 sub _build_package_collection {
     my $self = shift;
-    return Debbugs::Collection::Package->new($self->has_schema?(schema => $self->schema):());
+    return Debbugs::Collection::Package->new($self->schema_argument)
 }
 
 sub CARP_TRACE {

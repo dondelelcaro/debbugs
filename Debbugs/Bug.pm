@@ -107,10 +107,7 @@ has correspondent_collection =>
     );
 sub _build_correspondent_collection   {
     my $self = shift;
-    if ($self->has_schema) {
-        return Debbugs::Collection::Correspondent->new(schema => $self->schema);
-    }
-    return Debbugs::Collection::Correspondent->new();
+    return Debbugs::Collection::Correspondent->new($self->schema_argument);
 }
 
 sub reset {
