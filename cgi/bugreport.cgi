@@ -58,9 +58,11 @@ use URI::Escape qw(uri_escape_utf8);
 use List::AllUtils qw(max);
 
 my $s;
+my @schema_arg = ();
 if (defined $config{database}) {
     $s = Debbugs::DB->connect($config{database}) or
-        die "Unable to connect to database";
+        die "Unable to connect to DB";
+    @schema_arg = ('schema',$s);
 }
 
 use CGI::Simple;
@@ -436,7 +438,7 @@ my @blockedby= make_list($status{blockedby});
 $status{blockedby_array} = [];
 if (@blockedby && $status{"pending"} ne 'fixed' && ! length($status{done})) {
     for my $b (@blockedby) {
-        my %s = %{get_bug_status($b)};
+        my %s = %{get_bug_status($b,@schema_arg)};
         next if (defined $s{pending} and
                  $s{"pending"} eq 'fixed') or
                      length $s{done};
@@ -448,7 +450,7 @@ my @blocks= make_list($status{blocks});
 $status{blocks_array} = [];
 if (@blocks && $status{"pending"} ne 'fixed' && ! length($status{done})) {
     for my $b (@blocks) {
-        my %s = %{get_bug_status($b)};
+        my %s = %{get_bug_status($b,@schema_arg)};
         next if $s{"pending"} eq 'fixed' || length $s{done};
 	push @{$status{blocks_array}}, {bug_num => $b, subject => $s{subject}, status => \%s};
     }
