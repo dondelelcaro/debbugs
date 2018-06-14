@@ -470,23 +470,24 @@ returning htmlized links.
 =cut
 
 sub bug_links {
+    state $spec = {bug => {type => SCALAR|ARRAYREF,
+			   optional => 1,
+			  },
+		   links_only => {type => BOOLEAN,
+				  default => 0,
+				 },
+		   class => {type => SCALAR,
+			     default => '',
+			    },
+		   separator => {type => SCALAR,
+				 default => ', ',
+				},
+		   options => {type => HASHREF,
+			       default => {},
+			      },
+		  };
      my %param = validate_with(params => \@_,
-			       spec   => {bug => {type => SCALAR|ARRAYREF,
-						  optional => 1,
-						 },
-					  links_only => {type => BOOLEAN,
-							 default => 0,
-							},
-					  class => {type => SCALAR,
-						    default => '',
-						   },
-					  separator => {type => SCALAR,
-							default => ', ',
-						       },
-					  options => {type => HASHREF,
-						      default => {},
-						     },
-					 },
+			       spec   => $spec,
 			      );
      my %options = %{$param{options}};
 
