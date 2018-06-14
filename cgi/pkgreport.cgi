@@ -294,8 +294,10 @@ my %bugusertags;
 my %ut;
 my %seen_users;
 
+my @users;
 for my $user (map {split /[\s*,\s*]+/} make_list($param{users}||[])) {
     next unless length($user);
+    push @users, $user;
     add_user($user,\%ut,\%bugusertags,\%seen_users,\%cats,\%hidden);
 }
 
@@ -306,7 +308,8 @@ if (defined $param{usertag}) {
 	  Debbugs::User::read_usertags(\%select_ut, $u);
 	  unless (defined $t && $t ne "") {
 	       $t = join(",", keys(%select_ut));
-	  }
+	   }
+	  push @users,$u;
 	  add_user($u,\%ut,\%bugusertags,\%seen_users,\%cats,\%hidden);
 	  push @{$param{tag}}, split /,/, $t;
      }
@@ -357,6 +360,8 @@ if (defined $config{usertag_package_domain}) {
     }
     for my $package (@possible_packages) {
 	next unless defined $package and length $package;
+	push @users,
+	    $package.'@'.$config{usertag_package_domain};
 	add_user($package.'@'.$config{usertag_package_domain},
 		 \%ut,\%bugusertags,\%seen_users,\%cats,\%hidden);
     }
@@ -469,6 +474,7 @@ my %bugs;
 my $bugs = Debbugs::Collection::Bug->
     new(bugs => \@bugs,
 	@schema_arg,
+	users => [map {Debbugs::User->new($_)} @users],
        );
 
 $bugs->load_related_packages_and_versions();
