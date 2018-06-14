@@ -41,14 +41,22 @@ around BUILDARGS => sub {
     my $orig = shift;
     my $class = shift;
     if (@_ == 1 && !ref $_[0]) {
-	my @tags = split / /,$_[0];
-	my %tags;
-	@tags{@tags} = (1) x @tags;
-	return $class->$orig(tags => \%tags);
+	return $class->$orig(keywords => $_[0]);
     } else {
 	return $class->$orig(@_);
     }
 };
+
+sub BUILD {
+    my $self = shift;
+    my $args = shift;
+    if (exists $args->{keywords}) {
+        my @tags = split /[, ]/,$args->{keywords};
+        return unless @tags;
+        $self->_set_tag(map {($_,1)} @tags);
+        delete $args->{keywords};
+    }
+}
 
 has tags => (is => 'ro',
 	     isa => 'HashRef[Str]',
@@ -56,21 +64,51 @@ has tags => (is => 'ro',
 	     lazy => 1,
 	     reader => '_tags',
 	     builder => '_build_tags',
-	     handles => {has_tags => 'count'}
+	     handles => {has_tags => 'count',
+                         _set_tag => 'set',
+                         unset_tag => 'delete',
+                        },
 	    );
 has usertags => (is => 'ro',
 		 isa => 'HashRef[Str]',
 		 lazy => 1,
+                 traits => ['Hash'],
+                 handles => {unset_usertag => 'delete',
+                             has_usertags => 'count',
+                            },
 		 reader => '_usertags',
 		 builder => '_build_usertags',
 		);
+
+sub has_any_tags {
+    my $self = shift;
+    return ($self->has_tags || $self->has_usertags);
+}
+
+has bug => (is => 'ro',
+            isa => 'Debbugs::Bug',
+            required => 1,
+           );
+
+has users => (is => 'ro',
+              isa => 'ArrayRef[Debbugs::User]',
+              default => sub {[]},
+             );
 
 sub _build_tags {
     return {};
 }
 
 sub _build_usertags {
-    return {};
+    my $self = shift;
+    local $_;
+    my $t = {};
+    for my $user (@{$self->users}) {
+        for my $tag ($user->tags_on_bug($self->bug->id)) {
+            $t->{$tag} = $user->email;
+        }
+    }
+    return $t;
 }
 
 sub is_set {
@@ -84,16 +122,6 @@ sub tag_is_set {
 
 sub usertag_is_set {
     return exists $_[0]->_usertags->{$_[1]} ? 1 : 0;
-}
-
-sub unset_tag {
-    my $self = shift;
-    delete $self->_tags->{$_} foreach @_;
-}
-
-sub unset_usertag {
-    my $self = shift;
-    delete $self->_usertags->{$_} foreach @_;
 }
 
 sub set_tag {
@@ -121,6 +149,20 @@ sub join_all {
     my $joiner = shift;
     $joiner //= ', ';
     return join($joiner,$self->all_tags);
+}
+
+sub join_usertags {
+    my $self = shift;
+    my $joiner = shift;
+    $joiner //= ', ';
+    return join($joiner,$self->usertags);
+}
+
+sub join_tags {
+    my $self = shift;
+    my $joiner = shift;
+    $joiner //= ', ';
+    return join($joiner,$self->tags);
 }
 
 sub all_tags {

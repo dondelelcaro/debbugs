@@ -446,13 +446,18 @@ sub _build_archived {
     return $_[0]->location eq 'archived'?1:0;
 }
 
-has tags => (is => 'ro', isa => 'Object',
+has tags => (is => 'ro',
+             isa => 'Debbugs::Bug::Tag',
 	     clearer => '_clear_tags',
 	     builder => '_build_tags',
 	     lazy => 1,
 	    );
 sub _build_tags {
-    return Debbugs::Bug::Tag->new($_[0]->status->{keywords});
+    my $self = shift;
+    return Debbugs::Bug::Tag->new(keywords => $self->status->{keywords},
+                                  bug => $self,
+                                  users => $self->bug_collection->users,
+                                 );
 }
 
 =item buggy
