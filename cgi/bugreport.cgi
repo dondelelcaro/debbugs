@@ -45,10 +45,11 @@ use Debbugs::Log qw(:read);
 use Debbugs::Log::Spam;
 use Debbugs::CGI qw(:url :html :util :cache :usertags);
 use Debbugs::CGI::Bugreport qw(:all);
-use Debbugs::Common qw(buglog getmaintainers make_list bug_status);
-use Debbugs::Packages qw(getpkgsrc);
+use Debbugs::Common qw(buglog getmaintainers make_list bug_status package_maintainer);
+use Debbugs::Packages qw(binary_to_source);
 use Debbugs::DB;
 use Debbugs::Status qw(splitpackages split_status_fields get_bug_status isstrongseverity);
+use Debbugs::Bug;
 
 use Scalar::Util qw(looks_like_number);
 
@@ -213,19 +214,21 @@ if (defined $param{usertag}) {
      }
 }
 
+my $bug = Debbugs::Bug->new(bug => $ref,
+                            @schema_arg,
+                           );
+
 my %status;
 if ($need_status) {
     %status = %{split_status_fields(get_bug_status(bug=>$ref,
 						   bugusertags => \%bugusertags,
-                                                   defined $s?(schema => $s):(),
+                                                   @schema_arg,
 						  ))}
 }
 
 my @records;
-my $spam;
 eval{
-    @records = read_log_records(bug_num => $ref,inner_file => 1);
-    $spam = Debbugs::Log::Spam->new(bug_num => $ref);
+    @records = $bug->log_records();
 };
 if ($@) {
      quitcgi("Bad bug log for $gBug $ref. Unable to read records: $@");
@@ -301,7 +304,7 @@ END
 	  next if not $boring and not $record->{type} eq $wanted_type and not $record_wanted_anyway and @records > 1;
 	  $seen_message_ids{$msg_id} = 1 if defined $msg_id;
           # skip spam messages if we're outputting more than one message
-          next if @records > 1 and $spam->is_spam($msg_id);
+          next if @records > 1 and $bug->is_spam($msg_id);
       my @lines;
       if ($record->{inner_file}) {
           push @lines, scalar $record->{fh}->getline;
@@ -359,7 +362,7 @@ else {
 				   terse => $terse,
                                    # if we're only looking at one record, allow
                                    # spam to be output
-                                   spam  => (@records > 1)?$spam:undef,
+                                   spam  => (@records > 1)?$bug:undef,
                                   );
      }
 }
@@ -370,23 +373,12 @@ $log = join("\n",@log);
 
 # All of the below should be turned into a template
 
-my %maintainer = %{getmaintainers()};
-my %pkgsrc = %{getpkgsrc()};
-
 my $indexentry;
 my $showseverity;
-
-my $tpack;
-my $tmain;
-
-my $dtime = strftime "%a, %e %b %Y %T UTC", gmtime;
 
 unless (%status) {
     no_such_bug($q,$ref);
 }
-
-#$|=1;
-
 
 my @packages = make_list($status{package});
 
@@ -475,7 +467,8 @@ print $q->header(-type => "text/html",
 		);
 
 print fill_in_template(template => 'cgi/bugreport',
-		       variables => {status => \%status,
+		       variables => {bug => $bug,
+                                     status => \%status,
 				     package => $packages_affects{'package'},
 				     affects => $packages_affects{'affects'},
 				     log           => $log,
