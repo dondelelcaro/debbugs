@@ -78,6 +78,7 @@ use Debbugs::User qw();
 use Mail::Address;
 use POSIX qw(ceil);
 use Storable qw(dclone);
+use Scalar::Util qw(looks_like_number);
 
 use List::AllUtils qw(max);
 use File::stat;
@@ -504,8 +505,11 @@ sub bug_links {
 			    $_);
 		       } make_list($param{bug}) if exists $param{bug};
      } else {
-	 push @links, map {('bugreport.cgi?bug='.uri_escape_utf8($_),
-			    $_)}
+	 push @links,
+	     map {my $b = ceil($_);
+		  ('bugreport.cgi?bug='.$b,
+		   $b)}
+	     grep {looks_like_number($_)}
 	     make_list($param{bug}) if exists $param{bug};
      }
      my @return;
