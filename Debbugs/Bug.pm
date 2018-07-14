@@ -682,9 +682,43 @@ sub matches {
     return 0;
 }
 
+sub email {
+    my $self = shift;
+    return $self->id.'@'.$config{email_domain};
+}
+
+sub subscribe_email {
+    my $self = shift;
+    return $self->id.'-subscribe@'.$config{email_domain};
+}
+
 sub url {
     my $self = shift;
     return $config{web_domain}.'/'.$self->id;
+}
+
+sub mbox_url {
+    my $self = shift;
+    return $config{web_domain}.'/mbox:'.$self->id;
+}
+
+sub mbox_status_url {
+    my $self = shift;
+    return $self->mbox_url.'?mboxstatus=yes';
+}
+
+sub mbox_maint_url {
+    my $self = shift;
+    $self->mbox_url.'?mboxmaint=yes';
+}
+
+sub version_url {
+    my $self = shift;
+    return version_url(package => $self->package,
+                       found => [$self->found->members],
+                       fixed => [$self->fixed->members],
+                       @_,
+                      );
 }
 
 sub related_packages_and_versions {
