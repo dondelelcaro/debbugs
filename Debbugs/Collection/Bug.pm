@@ -86,6 +86,8 @@ sub _member_constructor {
                                   schema => $schema,
                                   package_collection =>
                                   $self->package_collection->universe,
+                                  bug_collection =>
+                                  $self->universe,
                                   correspondent_collection =>
                                   $self->correspondent_collection->universe,
                                   @{$args{constructor_args}//[]},
@@ -97,6 +99,8 @@ sub _member_constructor {
                 Debbugs::Bug->new(bug => $bug,
                                   package_collection =>
                                   $self->package_collection->universe,
+                                  bug_collection =>
+                                  $self->universe,
                                   correspondent_collection =>
                                   $self->correspondent_collection->universe,
                                   @{$args{constructor_args}//[]},
