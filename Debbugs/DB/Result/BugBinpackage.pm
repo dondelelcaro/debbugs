@@ -64,6 +64,20 @@ __PACKAGE__->add_columns(
 
 =head1 UNIQUE CONSTRAINTS
 
+=head2 C<bug_binpackage_bin_pkg_bug_idx>
+
+=over 4
+
+=item * L</bin_pkg>
+
+=item * L</bug>
+
+=back
+
+=cut
+
+__PACKAGE__->add_unique_constraint("bug_binpackage_bin_pkg_bug_idx", ["bin_pkg", "bug"]);
+
 =head2 C<bug_binpackage_id_pkg>
 
 =over 4
@@ -111,8 +125,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07046 @ 2017-03-04 10:59:03
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:wL+pwSCfWe/mMQOjziKSeg
+# Created by DBIx::Class::Schema::Loader v0.07048 @ 2018-04-20 10:29:04
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:PJ2U+jVEO2uKfwgCYtho1A
 
 
 sub sqlt_deploy_hook {

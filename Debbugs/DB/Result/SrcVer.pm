@@ -263,5 +263,23 @@ __PACKAGE__->has_many(
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:gY5LidUaQeuJ5AnN06CfKQ
 
 
+sub sqlt_deploy_hook {
+    my ($self, $sqlt_table) = @_;
+    $sqlt_table->schema->
+	add_procedure(name => 'src_ver_to_src_pkg',
+		      sql => <<'EOF',
+CREATE OR REPLACE FUNCTION src_ver_to_src_pkg(src_ver INT) RETURNS INT
+  AS $src_ver_to_src_pkg$
+  DECLARE
+  src_pkg int;
+  BEGIN
+	SELECT sv.src_pkg INTO STRICT src_pkg
+	       FROM src_ver sv WHERE sv.id=src_ver;
+	RETURN src_pkg;
+  END
+  $src_ver_to_src_pkg$ LANGUAGE plpgsql;
+EOF
+		     );
+}
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 1;

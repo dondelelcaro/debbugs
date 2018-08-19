@@ -288,6 +288,74 @@ INSERT INTO column_comments VALUES ('bin_ver','src_ver','Source version (matchin
 INSERT INTO column_comments VALUES ('bin_ver','arch','Architecture id (matches arch)');
 INSERT INTO column_comments VALUES ('bin_ver','ver','Binary version');
 
+CREATE TABLE bin_pkg_src_pkg (
+       bin_pkg INT NOT NULL REFERENCES bin_pkg ON UPDATE CASCADE ON DELETE CASCADE,
+       src_pkg INT NOT NULL REFERENCES src_pkg ON UPDATE CASCADE ON DELETE CASCADE
+);
+CREATE UNIQUE INDEX bin_pkg_src_pkg_bin_pkg_src_pkg ON bin_pkg_src_pkg (bin_pkg,src_pkg);
+CREATE UNIQUE INDEX bin_pkg_src_pkg_src_pkg_bin_pkg ON bin_pkg_src_pkg (src_pkg,bin_pkg);
+
+
+INSERT INTO table_comments VALUES ('bin_pkg_src_pkg',
+       'Binary package <-> source package mapping sumpmary table');
+INSERT INTO column_comments VALUES ('bin_pkg_src_pkg','bin_pkg','Binary package id (matches bin_pkg)');
+INSERT INTO column_comments VALUES ('bin_pkg_src_pkg','src_pkg','Source package id (matches src_pkg)');
+
+CREATE OR REPLACE FUNCTION bin_ver_to_src_pkg(bin_ver INT) RETURNS INT
+  AS $src_pkg_from_bin_ver$
+  DECLARE
+  src_pkg int;
+  BEGIN
+	SELECT sv.src_pkg INTO STRICT src_pkg
+	       FROM bin_ver bv JOIN src_ver sv ON bv.src_ver=sv.id
+	       WHERE bv.id=bin_ver;
+	RETURN src_pkg;
+  END
+  $src_pkg_from_bin_ver$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION src_ver_to_src_pkg(src_ver INT) RETURNS INT
+  AS $src_ver_to_src_pkg$
+  DECLARE
+  src_pkg int;
+  BEGIN
+	SELECT sv.src_pkg INTO STRICT src_pkg
+	       FROM src_ver sv WHERE sv.id=src_ver;
+	RETURN src_pkg;
+  END
+  $src_ver_to_src_pkg$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION update_bin_pkg_src_pkg_bin_ver () RETURNS TRIGGER
+  AS $update_bin_pkg_src_pkg_bin_ver$
+  DECLARE
+  src_ver_rows integer;
+  BEGIN
+  IF (TG_OP = 'DELETE' OR TG_OP = 'UPDATE' )  THEN
+     -- if there is still a bin_ver with this src_pkg, then do nothing
+     PERFORM * FROM bin_ver bv JOIN src_ver sv ON bv.src_ver = sv.id
+     	    WHERE sv.id = OLD.src_ver LIMIT 2;
+     GET DIAGNOSTICS src_ver_rows = ROW_COUNT;
+     IF (src_ver_rows <= 1) THEN
+        DELETE FROM bin_pkg_src_pkg
+	       WHERE bin_pkg=OLD.bin_pkg AND
+	       	     src_pkg=src_ver_to_src_pkg(OLD.src_ver);
+     END IF;
+  END IF;
+  IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') THEN
+     BEGIN
+     INSERT INTO bin_pkg_src_pkg (bin_pkg,src_pkg)
+     	VALUES (NEW.bin_pkg,src_ver_to_src_pkg(NEW.src_ver))
+	ON CONFLICT (bin_pkg,src_pkg) DO NOTHING;
+     END;
+  END IF;
+  RETURN NULL;
+  END
+  $update_bin_pkg_src_pkg_bin_ver$ LANGUAGE plpgsql;
+
+CREATE TRIGGER bin_ver_update_bin_pkg_src_pkg
+AFTER INSERT OR UPDATE OR DELETE ON bin_ver
+FOR EACH ROW EXECUTE PROCEDURE update_bin_pkg_src_pkg_bin_ver();
+
+
 CREATE TABLE tag (
        id SERIAL PRIMARY KEY,
        tag TEXT NOT NULL UNIQUE,
@@ -573,6 +641,17 @@ CREATE VIEW bug_status --(id,bug_num,tags,subject,
 	      	     JOIN src_pkg sp ON bsp.src_pkg=sp.id
                      WHERE bsp.bug=b.id) AS package
         ) AS package,
+       (SELECT string_agg(affects.affects,',' ORDER BY affects)
+        FROM (SELECT bp.pkg AS affects
+	             FROM bug_affects_binpackage bbp
+                     JOIN bin_pkg bp ON bbp.bin_pkg=bp.id
+                     WHERE bbp.bug=b.id
+	      UNION
+	      SELECT CONCAT('src:',sp.pkg) AS affects
+	      	     FROM bug_affects_srcpackage bsp
+	      	     JOIN src_pkg sp ON bsp.src_pkg=sp.id
+                     WHERE bsp.bug=b.id) AS affects
+        ) AS affects,
 	b.submitter_full AS originator,
 	EXTRACT(EPOCH FROM b.log_modified) AS log_modified,
 	EXTRACT(EPOCH FROM b.creation) AS date,

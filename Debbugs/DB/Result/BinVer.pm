@@ -203,6 +203,62 @@ sub sqlt_deploy_hook {
     $sqlt_table->add_index(name => 'bin_ver_src_ver_id_arch_idx',
 			   fields => [qw(src_ver arch)]
 			  );
+    $sqlt_table->schema->
+	add_procedure(name => 'bin_ver_to_src_pkg',
+		      sql => <<'EOF',
+CREATE OR REPLACE FUNCTION bin_ver_to_src_pkg(bin_ver INT) RETURNS INT
+  AS $src_pkg_from_bin_ver$
+  DECLARE
+  src_pkg int;
+  BEGIN
+	SELECT sv.src_pkg INTO STRICT src_pkg
+	       FROM bin_ver bv JOIN src_ver sv ON bv.src_ver=sv.id
+	       WHERE bv.id=bin_ver;
+	RETURN src_pkg;
+  END
+  $src_pkg_from_bin_ver$ LANGUAGE plpgsql;
+EOF
+		     );
+    $sqlt_table->schema->
+	add_procedure(name => 'update_bin_pkg_src_pkg_bin_ver',
+		      sql => <<'EOF',
+CREATE OR REPLACE FUNCTION update_bin_pkg_src_pkg_bin_ver () RETURNS TRIGGER
+  AS $update_bin_pkg_src_pkg_bin_ver$
+  DECLARE
+  src_ver_rows integer;
+  BEGIN
+  IF (TG_OP = 'DELETE' OR TG_OP = 'UPDATE' )  THEN
+     -- if there is still a bin_ver with this src_pkg, then do nothing
+     PERFORM * FROM bin_ver bv JOIN src_ver sv ON bv.src_ver = sv.id
+     	    WHERE sv.id = OLD.src_ver LIMIT 2;
+     GET DIAGNOSTICS src_ver_rows = ROW_COUNT;
+     IF (src_ver_rows <= 1) THEN
+        DELETE FROM bin_pkg_src_pkg
+	       WHERE bin_pkg=OLD.bin_pkg AND
+	       	     src_pkg=src_ver_to_src_pkg(OLD.src_ver);
+     END IF;
+  END IF;
+  IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') THEN
+     BEGIN
+     INSERT INTO bin_pkg_src_pkg (bin_pkg,src_pkg)
+     	VALUES (NEW.bin_pkg,src_ver_to_src_pkg(NEW.src_ver))
+	ON CONFLICT (bin_pkg,src_pkg) DO NOTHING;
+     END;
+  END IF;
+  RETURN NULL;
+  END
+  $update_bin_pkg_src_pkg_bin_ver$ LANGUAGE plpgsql;
+EOF
+		     );
+#     $sqlt_table->schema->
+# 	add_trigger(name => 'bin_ver_update_bin_pkg_src_pkg',
+# 		    perform_action_when => 'after',
+# 		    database_events => [qw(INSERT UPDATE DELETE)],
+# 		    on_table => 'bin_ver',
+# 		    action => <<'EOF',
+# FOR EACH ROW EXECUTE PROCEDURE update_bin_pkg_src_pkg_bin_ver();
+# EOF
+# 		   );
 }
 
 1;
