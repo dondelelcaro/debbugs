@@ -1,4 +1,4 @@
-#!/usr/bin/perl -wT
+#!/usr/bin/perl -T
 # This script is part of debbugs, and is released
 # under the terms of the GPL version 2, or any later
 # version at your option.
