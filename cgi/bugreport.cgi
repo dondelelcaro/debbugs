@@ -396,17 +396,29 @@ for my $p_a (qw(package affects)) {
     foreach my $pkg (make_list($status{$p_a})) {
         if ($pkg =~ /^src\:/) {
             my ($srcpkg) = $pkg =~ /^src:(.*)/;
+            my @maint = package_maintainer(source => $srcpkg,
+                                           @schema_arg,
+                                          );
             $packages_affects{$p_a}{$pkg} =
-               {maintainer => exists($maintainer{$srcpkg}) ? $maintainer{$srcpkg} : '(unknown)',
+               {maintainer => @maint?\@maint : ['(unknown)'],
                 source     => $srcpkg,
                 package    => $pkg,
                 is_source  => 1,
                };
         }
         else {
+            my @maint = package_maintainer(binary => $pkg,
+                                           @schema_arg,
+                                          );
+            my $source =
+                binary_to_source(binary => $pkg,
+                                 source_only => 1,
+                                 scalar_only => 1,
+                                 @schema_arg,
+                                );
             $packages_affects{$p_a}{$pkg} =
-               {maintainer => exists($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)',
-                exists($pkgsrc{$pkg}) ? (source => $pkgsrc{$pkg}) : (),
+               {maintainer => @maint?\@maint : '(unknown)',
+                length($source)?(source => $source):(),
                 package    => $pkg,
                };
         }
