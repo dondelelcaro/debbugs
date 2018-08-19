@@ -1401,13 +1401,6 @@ sub get_bug_statuses {
 	 $status->{package} = '' if not defined $status->{package};
 	 $status->{"package"} =~ s/\s*$//;
 
-	 $status->{source} = binary_to_source(binary=>[split /\s*,\s*/, $status->{package}],
-					      source_only => 1,
-					      cache => $bin_to_src_cache,
-					      defined $param{schema}?
-					      (schema => $param{schema}):(),
-					     );
-
 	 $status->{"package"} = 'unknown' if ($status->{"package"} eq '');
 	 $status->{"severity"} = 'normal' if (not defined $status->{severity} or $status->{"severity"} eq '');
 
