@@ -965,20 +965,24 @@ Returns undef on failure.
 # This will eventually need to be fixed before we start using mod_perl
 our $version_cache = {};
 sub bug_archiveable{
+     state $spec = {bug => {type => SCALAR,
+			    regex => qr/^\d+$/,
+			   },
+		    status => {type => HASHREF,
+			       optional => 1,
+			      },
+		    days_until => {type => BOOLEAN,
+				   default => 0,
+				  },
+		    ignore_time => {type => BOOLEAN,
+				    default => 0,
+				   },
+		    schema => {type => OBJECT,
+			       optional => 1,
+			      },
+		   };
      my %param = validate_with(params => \@_,
-			       spec   => {bug => {type => SCALAR,
-						  regex => qr/^\d+$/,
-						 },
-					  status => {type => HASHREF,
-						     optional => 1,
-						    },
-					  days_until => {type => BOOLEAN,
-							 default => 0,
-							},
-					  ignore_time => {type => BOOLEAN,
-							  default => 0,
-							 },
-					 },
+			       spec   => $spec,
 			      );
      # This is what we return if the bug cannot be archived.
      my $cannot_archive = $param{days_until}?-1:0;
@@ -1063,6 +1067,7 @@ sub bug_archiveable{
 	  my @sourceversions = get_versions(package => $status->{package},
 					    dist => [keys %dists],
 					    source => 1,
+					    hash_slice(%param,'schema'),
 					   );
 	  @source_versions{@sourceversions} = (1) x @sourceversions;
 	  # If the bug has not been fixed in the versions actually
@@ -1073,6 +1078,7 @@ sub bug_archiveable{
 				   fixed          => $status->{fixed_versions},
 				   version_cache  => $version_cache,
 				   package        => $status->{package},
+				   hash_slice(%param,'schema'),
 				  )) {
 	       print STDERR "Cannot archive $param{bug} because it's found\n" if $DEBUG;
 	       return $cannot_archive;
@@ -1093,6 +1099,7 @@ sub bug_archiveable{
 					   dist    => [keys %dists],
 					   source  => 1,
 					   time    => 1,
+					   hash_slice(%param,'schema'),
 					  );
 	  for my $version (sort {$time_versions{$b} <=> $time_versions{$a}} keys %time_versions) {
 	       my $buggy = buggy(bug => $param{bug},
@@ -1101,6 +1108,7 @@ sub bug_archiveable{
 				 fixed          => $status->{fixed_versions},
 				 version_cache  => $version_cache,
 				 package        => $status->{package},
+				 hash_slice(%param,'schema'),
 				);
 	       last if $buggy eq 'found';
 	       $min_fixed_time = min($time_versions{$version},$min_fixed_time);
@@ -1337,7 +1345,7 @@ sub get_bug_statuses {
 	     $statuses{$bug_status->{bug_num}} =
 		 $bug_status;
 	     for my $field (qw(blocks blockedby done),
-			    qw(tags mergedwith)
+			    qw(tags mergedwith affects)
 			   ) {
 		 $bug_status->{$field} //='';
 	     }
@@ -1644,6 +1652,9 @@ sub max_buggy{
 					  version_cache  => {type => HASHREF,
 							     default => {},
 							    },
+					  schema => {type => OBJECT,
+						     optional => 1,
+						    },
 					 },
 			      );
      # Resolve bugginess states (we might be looking at multiple
@@ -1706,6 +1717,9 @@ sub buggy {
 						     },
 					  version => {type => SCALAR,
 						     },
+					  schema => {type => OBJECT,
+						     optional => 1,
+						    },
 					 },
 			      );
      my @found = @{$param{found}};
@@ -1740,8 +1754,10 @@ sub buggy {
 	       my $version_fh = IO::File->new("$config{version_packages_dir}/$srchash/$source", 'r');
 	       if (not defined $version_fh) {
 		    # We only want to warn if it's a package which actually has a maintainer
-		    my $maints = getmaintainers();
-		    next if not exists $maints->{$source};
+		   my @maint = package_maintainer(source => $source,
+						  hash_slice(%param,'schema'),
+						 );
+		    next unless @maint;
 		    warn "Bug $param{bug}: unable to open $config{version_packages_dir}/$srchash/$source: $!";
 		    next;
 	       }
