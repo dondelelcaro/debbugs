@@ -46,7 +46,7 @@ use Debbugs::DB;
 use Debbugs::CGI qw(htmlize_packagelinks html_escape cgi_parameters munge_url :cache);
 use Debbugs::Versions;
 use Debbugs::Versions::Dpkg;
-use Debbugs::Packages qw(get_versions makesourceversions);
+use Debbugs::Packages qw(get_versions make_source_versions);
 use HTML::Entities qw(encode_entities);
 use File::Temp qw(tempdir);
 use IO::File;
@@ -54,7 +54,7 @@ use IO::Handle;
 
 my @schema_arg = ();
 if (defined $config{database}) {
-    $s = Debbugs::DB->connect($config{database}) or
+    my $s = Debbugs::DB->connect($config{database}) or
         die "Unable to connect to DB";
     @schema_arg = ('schema',$s);
 }
@@ -157,9 +157,18 @@ for my $dist (@{$config{distributions}}) {
 
 # then figure out which are affected.
 # turn found and fixed into full versions
-@{$cgi_var{found}} = map {makesourceversions($_,undef,@{$cgi_var{found}})} split/\s*,\s*/, $cgi_var{package};
-@{$cgi_var{fixed}} = map {makesourceversions($_,undef,@{$cgi_var{fixed}})} split/\s*,\s*/, $cgi_var{package};
-my @interesting_versions = map {makesourceversions($_,undef,keys %version_to_dist)} split/\s*,\s*/, $cgi_var{package};
+@{$cgi_var{found}} =
+    map {make_source_versions(package => $_,
+			      versions => $cgi_var{found})}
+    split/\s*,\s*/, $cgi_var{package};
+@{$cgi_var{fixed}} =
+    map {make_source_versions(package =>$_,
+			      versions => $cgi_var{fixed})}
+    split/\s*,\s*/, $cgi_var{package};
+my @interesting_versions =
+    map {make_source_versions(package => $_,
+			      versions => [keys %version_to_dist])}
+    split/\s*,\s*/, $cgi_var{package};
 
 # We need to be able to rip out leaves which the versions that do not affect the current versions of unstable/testing
 my %sources;
@@ -170,7 +179,7 @@ my %sources;
 # at this point, we know enough to calculate the etag.
 
 my @versions_files;
-foreach my $source (keys %sources) {
+foreach my $source (sort keys %sources) {
     my $srchash = substr $source, 0, 1;
     next unless -e "$config{version_packages_dir}/$srchash/$source";
     push @versions_files, "$config{version_packages_dir}/$srchash/$source";
