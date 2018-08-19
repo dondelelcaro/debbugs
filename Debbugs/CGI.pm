@@ -409,8 +409,6 @@ sub package_links {
      for my $type (qw(maint owner submitter correspondent)) {
 	 next unless exists $param{$type};
 	 for my $target (make_list($param{$type})) {
-	     my $addr = getparsedaddrs($target);
-	     $addr = defined $addr?$addr->address:'';
 	     if ($has_options) {
 		 push @links,
 		     (munge_url('pkgreport.cgi?',
