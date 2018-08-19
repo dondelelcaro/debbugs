@@ -37,100 +37,99 @@
         <:- if ! $~package.is_last { -:>, <: } else if ! $~package.is_first { -:>.<:- } -:>
         <:- } :>]
         <a href="<: $bug.url :>"><: $bug.subject :></a>
-  <div id="extra_status_<: $bug.bug :>" class="shortbugstatusextra">
-      <span>Reported by: <a href="<: $bug.submitter_url :>"><: $bug.submitter :></a>;</span>
-      <span>Date: <: $bug.created.stringify :>;</span>
+        <div id="extra_status_<: $bug.bug :>" class="shortbugstatusextra">
+            <table class="extra_status">
+                <tr><td>Reported by</td><td><a href="<: $bug.submitter_url :>"><: $bug.submitter :></a></td></tr>
+                <tr><td>Date</td><td><: $bug.created.stringify :></td></tr>
       <:- if $bug.is_owned { -:>
-      <span>Owned by: <a href="<: $bug.owner_url :>"><: $bug.owner :></a>;</span>
+                <tr><td>Owned by</td><td><a href="<: $bug.owner_url :>"><: $bug.owner :></a></td></tr>
       <:- } :>
-      <span>Severity:
+                <tr><td>Severity</td><td>
           <: if $bug.strong_severity { -:>
           <em class="severity"><: $bug.severity :></em>
           <:- } else { -:>
           <: $bug.severity :>
-          <:- } -:></span>
-      <span>
-          <:- if $bug.tags.has_tags { -:>
-          Tags: <:  $bug.tags.join_all(', ') :>;
+          <:- } -:></td></tr>
+      <:- if $bug.tags.has_any_tags { -:>
+          <tr><td>Tags</td><td>
+          : if $bug.tags.has_tags {
+          <span class="tags"><:  $bug.tags.join_tags(', ') :></span>
+          : }
+          <: if $bug.tags.has_usertags  {
+              if $bug.tags.has_tags { :>, <: } -:>
+          <span class="usertags"><: $bug.tags.join_usertags(', ') :></span>
           <:- } -:>
-      </span>
-      <:- if $bug.is_merged > 0 { -:>
-      <span>Merged with 
+          </td></tr>
+          <: } :>
+          <:- if $bug.is_merged > 0 { -:>
+          <tr><td>Merged with </td><td>
           <: for $bug.mergedwith.members_ref -> $bug { -:>
           <:- bug_url_subject($bug) -:>
           <:- if ! $~bug.is_last {-:>, <: } else { -:>.<:- } -:>
           <:- } -:>
-      </span>
-      <:- } -:>
-      : if $bug.has_found or $bug.has_fixed {
-      <a href="<:
-	           version_url(package => $bug.package,
-		           found   => [$bug.found],
-		           fixed   => [$bug.fixed],
-		       ):>">
+          </td></tr>
           <:- } -:>
           <:- if $bug.has_found { -:>
-          <span>Found in version<: if $bug.found.count > 1 { :>s<: } :>
-              <:- $bug.found.join(', ') -:>;
-          </span>
+          <tr><td>Found in version<: if $bug.found.count > 1 { :>s<: } :></td>
+              <td><a href="<: $bug.version_url :>"><:- $bug.found.join(', ') -:></a></td></tr>
           <:- } -:>
-          <:- if $bug.has_fixed { :>
-          <span>Fixed in version<: if $bug.fixed.count > 1 { :>s<: } :>
-              <:- $bug.fixed.join(', ') -:>;
-          </span>
+              <:- if $bug.has_fixed { :>
+              <tr><td>Fixed in version<: if $bug.fixed.count > 1 { :>s<: } :></td><td>
+                  <a href="<: $bug.version_url :>"><:- $bug.fixed.join(', ') -:></a></td></tr>
           <:- } -:>
           <:- if $bug.has_found or $bug.has_fixed { -:>
       </a>
       <:- } -:>
       <:-  if $bug.is_forwarded { :>
-      <span><strong>Forwarded</strong> to 
-          <: $bug.forwarded.split('\,\s+').map(maybelink).join(', ') :>
-      </span>
+      <tr><td><strong>Forwarded</strong> to</td>
+          <td><: $bug.forwarded.split('\,\s+').map(maybelink).join(', ') :></td>
+      </tr>
       <:- } -:>
       <:- if $bug.is_done { -:>
-      <span><strong>Done:</strong>
-          <: $bug.done :>
-      </span>
+      <tr><td><strong>Done:</strong></td><td>
+          <: $bug.done :></td>
+      </tr>
       <:- } -:>
       <:- if  not $bug.archived and $bug.when_archiveable >= 0 { -:>
-      <span><strong>Can be archived
+      <tr><td><strong>Can be archived</strong></td><td><strong>
           <: if $bug.when_archiveable == 0 { :>
           today
           <: } else if $bug.when_archiveable == 1 { :>
           in 1 day
           <: } else { :>
           in <: $bug.when_archiveable :> days
-          <:- } :>;</strong></span>
+          <:- } :></strong></td></tr>
       <:- } else if $bug.archived { -:>
-      <span><strong>Archived</strong></span>
+      <tr><td><strong>Archived</strong></td></tr>
       <:- } -:>
       <:- if $bug.blockedby.count > 0 { :>
-      <span>Fix blocked by 
+      <tr><td>Fix blocked by</td><td>
           <: for $bug.blockedby -> $bug { :>
           <: bug_url_subject($bug) :>
           <:- if ! $~bug.is_last { -:>, <: } else { -:>.<:- } -:>
-          <:- } -:>
-      </span>
+          <:- } -:></td>
+      </tr>
       <:- } -:>
       <:- if $bug.blocks.count > 0 { :>
-      <span>Blocking fix for
+      <tr><td>Blocking fix for</td><td>
           <: for $bug.blocks -> $bug { :>
           <: bug_url_subject($bug) :>
           <:- if ! $~bug.is_last {-:>, <: } else { -:>.<:- } -:>
           <:- } -:>
-      </span>
+      </td></tr>
       <:- } -:>
       <:- macro days_ago->($what,$ago) {-:>
-      <span>
+      <tr>
           <:- if ($time - $ago) / 86400 > 60 { -:>
-          <strong><: $what :> <:  secs_to_english($time-$ago) :> ago.</strong>
+          <td class="ancient"><: $what :></td><td><:  secs_to_english($time-$ago) :> ago.</td>
           <:- } else if ($time - $ago) / 86400 > 30 { :>
-          <strong><: $what :> <:  secs_to_english($time-$ago) :> ago.</strong>
-          <:- } -:>;
-      </span>
+          <td class="old"><: $what :></td><td><:  secs_to_english($time-$ago) :> ago.</td>
+          <:- } -:>
+      </tr>
       <:- } -:>
       <: days_ago("Filed",$bug.created.epoch) :>
       <: days_ago("Modified",$bug.modified.epoch) :>
+            </table>
       <:- if $bug.archived {:>
       <span>Bug is archived. No further changes may be made.</span>
       <:- } -:>
