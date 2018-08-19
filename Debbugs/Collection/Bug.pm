@@ -57,6 +57,14 @@ sub _build_correspondent_collection {
     return Debbugs::Collection::Correspondent->new($self->has_schema?(schema => $self->schema):());
 }
 
+has 'users' =>
+    (is => 'ro',
+     isa => 'ArrayRef[Debbugs::User]',
+     traits => ['Array'],
+     default => sub {[]},
+     handles => {'add_user' => 'push'},
+    );
+
 sub BUILD {
     my $self = shift;
     my $args = shift;
