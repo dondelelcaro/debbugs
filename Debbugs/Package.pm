@@ -234,118 +234,128 @@ sub _get_valid_version_info_from_db {
             $bp->{$pkg->{bin_pkg}}++;
 	}
     }
-    my $src_rs = $s->resultset('SrcVer')->
-        search({-or => [-and => {'src_pkg.pkg' => [keys %src_packages],
-                                 -or => {'suite.codename' => $common_dists,
-                                         'suite.suite_name' => $common_dists,
-                                        },
-                                },
-                        @src_ver_search,
-                       ],
-               },
-              {join => ['src_pkg',
-		       {'src_associations' => 'suite'},
-		       {'bin_vers' => ['bin_pkg','arch']},
-			'maintainer',
-                       ],
-               'select' => [qw(src_pkg.pkg),
-			    qw(suite.codename),
-			    qw(suite.suite_name),
-			    qw(src_associations.modified),
-                            qw(me.ver),
-			    q(CONCAT(src_pkg.pkg,'/',me.ver)),
-			    qw(bin_vers.ver bin_pkg.pkg arch.arch),
-			    qw(maintainer.name),
-			   ],
-               'as' => [qw(src_pkg codename suite_name),
-			qw(modified_time src_ver src_pkg_ver),
-			qw(bin_ver bin_pkg arch maintainer),
-		       ],
-               result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-              },
-              );
-    add_result_to_package($packages,$src_rs,
-                          \%src_ver_packages,
-                          \%bin_ver_packages,
-                          \%src_packages,
-                          \%bin_packages,
-                         );
-    my $bin_assoc_rs =
-        $s->resultset('BinAssociation')->
-        search({-and => {'bin_pkg.pkg' => [keys %bin_packages],
-                         -or => {'suite.codename' => $common_dists,
-                                 'suite.suite_name' => $common_dists,
-                                },
-                        }},
-               {join => [{'bin' =>
-                         [{'src_ver' => ['src_pkg',
-                                        'maintainer',
-                                       ]},
-                          'bin_pkg',
-                          'arch']},
-                         'suite',
-                      ],
-              'select' => [qw(src_pkg.pkg),
-			    qw(suite.codename),
-			    qw(suite.suite_name),
-			    qw(me.modified),
-                            qw(src_ver.ver),
-			    q(CONCAT(src_pkg.pkg,'/',src_ver.ver)),
-			    qw(bin.ver bin_pkg.pkg arch.arch),
-			    qw(maintainer.name),
-			    ],
-               'as' => [qw(src_pkg codename suite_name),
-			qw(modified_time src_ver src_pkg_ver),
-			qw(bin_ver bin_pkg arch maintainer),
-		       ],
-               result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-              },
-              );
-    add_result_to_package($packages,$bin_assoc_rs,
-                          \%src_ver_packages,
-                          \%bin_ver_packages,
-                          \%src_packages,
-                          \%bin_packages,
-                         );
-    my $bin_rs = $s->resultset('BinVer')->
-        search({-or => [@bin_ver_search,
-                       ],
-               },
-             {join => ['bin_pkg',
-                      {'bin_associations' => 'suite'},
-                      {'src_ver' => ['src_pkg',
-                                     'maintainer',
-                                    ]},
-                       'arch',
-                      ],
-              'select' => [qw(src_pkg.pkg),
-			    qw(suite.codename),
-			    qw(suite.suite_name),
-			    qw(bin_associations.modified),
-                            qw(src_ver.ver),
-			    q(CONCAT(src_pkg.pkg,'/',src_ver.ver)),
-			    qw(me.ver bin_pkg.pkg arch.arch),
-			    qw(maintainer.name),
-			    ],
-               'as' => [qw(src_pkg codename suite_name),
-			qw(modified_time src_ver src_pkg_ver),
-			qw(bin_ver bin_pkg arch maintainer),
-		       ],
-               result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-              },
-              );
-    add_result_to_package($packages,$bin_rs,
-                          \%src_ver_packages,
-                          \%bin_ver_packages,
-                          \%src_packages,
-                          \%bin_packages,
-                         );
+    if (keys %src_packages) {
+        my $src_rs = $s->resultset('SrcVer')->
+            search({-or => [-and => {'src_pkg.pkg' => [keys %src_packages],
+                                     -or => {'suite.codename' => $common_dists,
+                                             'suite.suite_name' => $common_dists,
+                                            },
+                                    },
+                            @src_ver_search,
+                           ],
+                   },
+                  {join => ['src_pkg',
+                           {
+                            'src_associations' => 'suite'},
+                           {
+                            'bin_vers' => ['bin_pkg','arch']},
+                            'maintainer',
+                           ],
+                   'select' => [qw(src_pkg.pkg),
+                                qw(suite.codename),
+                                qw(suite.suite_name),
+                                qw(src_associations.modified),
+                                qw(me.ver),
+                                q(CONCAT(src_pkg.pkg,'/',me.ver)),
+                                qw(bin_vers.ver bin_pkg.pkg arch.arch),
+                                qw(maintainer.name),
+                               ],
+                   'as' => [qw(src_pkg codename suite_name),
+                            qw(modified_time src_ver src_pkg_ver),
+                            qw(bin_ver bin_pkg arch maintainer),
+                           ],
+                   result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+                  },
+                  );
+        add_result_to_package($packages,$src_rs,
+                              \%src_ver_packages,
+                              \%bin_ver_packages,
+                              \%src_packages,
+                              \%bin_packages,
+                             );
+    }
+    if (keys %bin_packages) {
+        my $bin_assoc_rs =
+            $s->resultset('BinAssociation')->
+            search({-and => {'bin_pkg.pkg' => [keys %bin_packages],
+                             -or => {'suite.codename' => $common_dists,
+                                     'suite.suite_name' => $common_dists,
+                                    },
+                            }},
+                  {join => [{'bin' =>
+                             [{'src_ver' => ['src_pkg',
+                                             'maintainer',
+                                            ]},
+                              'bin_pkg',
+                              'arch']},
+                            'suite',
+                           ],
+                   'select' => [qw(src_pkg.pkg),
+                                qw(suite.codename),
+                                qw(suite.suite_name),
+                                qw(me.modified),
+                                qw(src_ver.ver),
+                                q(CONCAT(src_pkg.pkg,'/',src_ver.ver)),
+                                qw(bin.ver bin_pkg.pkg arch.arch),
+                                qw(maintainer.name),
+                               ],
+                   'as' => [qw(src_pkg codename suite_name),
+                            qw(modified_time src_ver src_pkg_ver),
+                            qw(bin_ver bin_pkg arch maintainer),
+                           ],
+                   result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+                  },
+                  );
+        add_result_to_package($packages,$bin_assoc_rs,
+                              \%src_ver_packages,
+                              \%bin_ver_packages,
+                              \%src_packages,
+                              \%bin_packages,
+                             );
+    }
+    if (@bin_ver_search) {
+        my $bin_rs = $s->resultset('BinVer')->
+            search({-or => [@bin_ver_search,
+                           ],
+                   },
+                  {join => ['bin_pkg',
+                           {
+                            'bin_associations' => 'suite'},
+                           {'src_ver' => ['src_pkg',
+                                          'maintainer',
+                                         ]},
+                            'arch',
+                           ],
+                   'select' => [qw(src_pkg.pkg),
+                                qw(suite.codename),
+                                qw(suite.suite_name),
+                                qw(bin_associations.modified),
+                                qw(src_ver.ver),
+                                q(CONCAT(src_pkg.pkg,'/',src_ver.ver)),
+                                qw(me.ver bin_pkg.pkg arch.arch),
+                                qw(maintainer.name),
+                               ],
+                   'as' => [qw(src_pkg codename suite_name),
+                            qw(modified_time src_ver src_pkg_ver),
+                            qw(bin_ver bin_pkg arch maintainer),
+                           ],
+                   result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+                  },
+                  );
+        add_result_to_package($packages,$bin_rs,
+                              \%src_ver_packages,
+                              \%bin_ver_packages,
+                              \%src_packages,
+                              \%bin_packages,
+                             );
+    }
     for my $sp (keys %src_ver_packages) {
         if (not exists $packages->{'src:'.$sp}) {
             $packages->{'src:'.$sp} =
                 _default_pkg_info($sp,'source',0);
         }
         for my $sv (keys %{$src_ver_packages{$sp}}) {
+            next if $src_ver_packages{$sp}{$sv} > 0;
             $packages->{'src:'.$sp}{invalid_versions}{$sv} = 1;
         }
     }
@@ -355,6 +365,7 @@ sub _get_valid_version_info_from_db {
                 _default_pkg_info($bp,'binary',0);
         }
         for my $bv (keys %{$bin_ver_packages{$bp}}) {
+            next if $bin_ver_packages{$bp}{$bv} > 0;
             $packages->{$bp}{invalid_versions}{$bv} = 1;
         }
     }
