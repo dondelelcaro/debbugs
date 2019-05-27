@@ -28,6 +28,7 @@ use v5.10; # for state
 use Debbugs::User;
 use List::AllUtils qw(uniq);
 use Debbugs::Config qw(:config);
+use Carp qw(croak);
 
 state $valid_tags =
     {map {($_,1)} @{$config{tags}}};
@@ -51,7 +52,12 @@ sub BUILD {
     my $self = shift;
     my $args = shift;
     if (exists $args->{keywords}) {
-        my @tags = split /[, ]/,$args->{keywords};
+        my @tags;
+        if (ref($args->{keywords})) {
+            @tags = @{$args->{keywords}}
+        } else {
+            @tags = split /[, ]/,$args->{keywords};
+        }
         return unless @tags;
         $self->_set_tag(map {($_,1)} @tags);
         delete $args->{keywords};
