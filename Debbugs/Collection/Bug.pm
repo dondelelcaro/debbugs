@@ -12,10 +12,15 @@ Debbugs::Collection::Bug -- Bug generation factory
 
 =head1 SYNOPSIS
 
+This collection extends L<Debbugs::Collection> and contains members of
+L<Debbugs::Bug>. Useful for any field which contains one or more bug or tracking
+lists of packages
 
 =head1 DESCRIPTION
 
 
+
+=head1 METHODS
 
 =cut
 
@@ -31,6 +36,52 @@ use Debbugs::Collection::Correspondent;
 use Debbugs::Bug;
 
 extends 'Debbugs::Collection';
+
+=head2 my $bugs = Debbugs::Collection::Bug->new(%params|$param)
+
+Parameters:
+
+=over
+
+=item package_collection
+
+Optional L<Debbugs::Collection::Package> which is used to look up packages
+
+
+=item correspondent_collection
+
+Optional L<Debbugs::Collection::Correspondent> which is used to look up correspondents
+
+
+=item users
+
+Optional arrayref of L<Debbugs::User> which set usertags for bugs in this collection
+
+=back
+
+=head2 $bugs->package_collection()
+
+Returns the package collection that this bug collection is using
+
+=head2 $bugs->correspondent_collection()
+
+Returns the correspondent collection that this bug collection is using
+
+=head2 $bugs->users()
+
+Returns the arrayref of users that this bug collection is using
+
+=head2 $bugs->add_user($user)
+
+Add a user to the set of users that this bug collection is using
+
+=head2 $bugs->load_related_packages_and_versions()
+
+Preload all of the related packages and versions for the bugs in this bug
+collection. You should call this if you plan on calculating whether the bugs in
+this collection are present/absent.
+
+=cut
 
 has '+members' => (isa => 'ArrayRef[Bug]');
 has 'package_collection' =>
@@ -87,10 +138,21 @@ sub _member_constructor {
         my $statuses = get_bug_statuses(bug => [make_list($args{bugs})],
                                         schema => $schema,
                                        );
+        # preload as many of the packages as we need
+        my %packages;
+        while (my ($bug, $status) = each %{$statuses}) {
+            $packages{$_} = 1 for split /,/, $status->{package};
+            $packages{$_} = 1 for split /,/, $status->{source};
+        }
+        $self->package_collection->universe->add_by_key(keys %packages);
         while (my ($bug, $status) = each %{$statuses}) {
             push @return,
                 Debbugs::Bug->new(bug => $bug,
-                                  status => $status,
+                                  status =>
+                                  Debbugs::Bug::Status->new(status => $status,
+                                                            bug => $bug,
+                                                            status_source => 'db',
+                                                           ),
                                   schema => $schema,
                                   package_collection =>
                                   $self->package_collection->universe,
