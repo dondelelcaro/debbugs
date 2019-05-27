@@ -69,7 +69,7 @@ around BUILDARGS => sub {
             Debbugs::Collection::Package->
                 new(exists $args{schema}?(schema => $args{schema}):());
         $args{package} =
-            $pkgc->universe->get_or_create($args{package});
+            $pkgc->universe->get_or_add_by_key($args{package});
     }
     return $class->$orig(%args);
 };
