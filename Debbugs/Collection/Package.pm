@@ -12,6 +12,10 @@ Debbugs::Collection::Package -- Package generation factory
 
 =head1 SYNOPSIS
 
+This collection extends L<Debbugs::Collection> and contains members of
+L<Debbugs::Package>. Useful for any field which contains one or more package or
+tracking lists of packages
+
 
 =head1 DESCRIPTION
 
@@ -38,6 +42,45 @@ use Debbugs::Collection::Correspondent;
 use Debbugs::VersionTree;
 
 extends 'Debbugs::Collection';
+
+=head2 my $packages = Debbugs::Collection::Package->new(%params|$param)
+
+Parameters in addition to those defined by L<Debbugs::Collection>
+
+=over
+
+=item correspondent_collection
+
+Optional L<Debbugs::Collection::Correspondent> which is used to look up correspondents
+
+
+=item versiontree
+
+Optional L<Debbugs::VersionTree> which contains known package source versions
+
+=back
+
+=head2 $packages->correspondent_collection
+
+Returns the L<Debbugs::Collection::Correspondent> for this package collection
+
+=head2 versiontree
+
+Returns the L<Debbugs::VersionTree> for this package collection
+
+=head2 $packages->get_source_versions_distributions(@distributions)
+
+Returns a L<Debbugs::Collection::Version> of all versions in this package
+collection which belong to the distributions given.
+
+=head2 $packages->get_source_versions('1.2.3-1','foo/1.2.3-5')
+
+Given a list of binary versions or src/versions, returns a
+L<Debbugs::Collection::Version> of all of the versions in this package
+collection which are known to match. You'll have to be sure to load appropriate
+versions beforehand for this to actually work.
+
+=cut
 
 has '+members' => (isa => 'ArrayRef[Debbugs::Package]');
 
@@ -69,7 +112,9 @@ sub _member_constructor {
     }
     my @return;
     if (defined $schema) {
-        if (not ref($args{packages}) or @{$args{packages}} == 1) {
+        if (not ref($args{packages}) or @{$args{packages}} == 1 and
+            $self->universe->count() > 0
+           ) {
             carp("Likely inefficiency; member_constructor called with one argument");
         }
         my $packages =
@@ -228,7 +273,7 @@ sub get_source_versions {
     for my $ver (@_) {
         my $sv;
         if ($ver =~ m{(<src>.+?)/(?<ver>.+)$/}) {
-            my $sp = $self->get_or_create('src:'.$+{src});
+            my $sp = $self->get_or_add_by_key('src:'.$+{src});
             push @return,
                 $sp->get_source_version($ver);
            next;
