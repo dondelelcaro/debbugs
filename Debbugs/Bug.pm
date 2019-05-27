@@ -27,12 +27,13 @@ use namespace::clean;
 use v5.10; # for state
 
 use DateTime;
-use List::AllUtils qw(max first min);
+use List::AllUtils qw(max first min any);
 
 use Params::Validate qw(validate_with :types);
 use Debbugs::Config qw(:config);
 use Debbugs::Status qw(read_bug);
 use Debbugs::Bug::Tag;
+use Debbugs::Bug::Status;
 use Debbugs::Collection::Package;
 use Debbugs::Collection::Bug;
 use Debbugs::Collection::Correspondent;
@@ -42,6 +43,8 @@ use Debbugs::OOTypes;
 use Carp;
 
 extends 'Debbugs::OOBase';
+
+my $meta = __PACKAGE__->meta;
 
 state $strong_severities =
    {map {($_,1)} @{$config{strong_severities}}};
@@ -59,17 +62,25 @@ has saved => (is => 'ro', isa => 'Bool',
 	      writer => '_set_saved',
 	     );
 
-has status => (is => 'ro', isa => 'HashRef',
+has status => (is => 'ro', isa => 'Debbugs::Bug::Status',
 	       lazy => 1,
 	       builder => '_build_status',
+               handles => {date => 'date',
+                           subject => 'subject',
+                           message_id => 'message_id',
+                           severity => 'severity',
+                           archived => 'archived',
+                           summary => 'summary',
+                           outlook => 'outlook',
+                           forwarded => 'forwarded',
+                          },
 	      );
 
 sub _build_status {
     my $self = shift;
-    $self->reset;
-    my $status = read_bug(bug=>$self->bug) or
-	confess("Unable to read bug ".$self->bug);
-    return $status;
+    return Debbugs::Bug::Status->new(bug=>$self->bug,
+                                     $self->schema_argument,
+                                    );
 }
 
 has log => (is => 'bare', isa => 'Debbugs::Log',
@@ -127,44 +138,12 @@ sub _build_bug_collection {
 has correspondent_collection =>
     (is => 'ro',
      isa => 'Debbugs::Collection::Correspondent',
-     builder => '_build_package_collection',
+     builder => '_build_correspondent_collection',
      lazy => 1,
     );
 sub _build_correspondent_collection   {
     my $self = shift;
     return Debbugs::Collection::Correspondent->new($self->schema_argument);
-}
-
-sub reset {
-    my $self = shift;
-    $self->_clear_done();
-    $self->_clear_severity();
-    $self->_clear_packages();
-    $self->_clear_sources();
-    $self->_clear_affects();
-    $self->_clear_blocks();
-    $self->_clear_blockedby();
-    $self->_clear_found();
-    $self->_clear_fixed();
-    $self->_clear_mergedwith();
-    $self->_clear_pending();
-    $self->_clear_location();
-    $self->_clear_archived();
-    $self->_clear_archiveable();
-    $self->_clear_when_archiveable();
-    $self->_clear_submitter();
-    $self->_clear_created();
-    $self->_clear_modified();
-    $self->_set_saved(1);
-}
-
-sub _clear_saved_if_changed {
-    my ($self,$new,$old) = @_;
-    if (@_ > 2) {
-	if ($new ne $old) {
-	    $self->_set_saved(0);
-	}
-    }
 }
 
 # package attributes
@@ -174,13 +153,12 @@ for my $attr (qw(packages affects sources)) {
 	 isa => 'Debbugs::Collection::Package',
 	 clearer => '_clear_'.$attr,
 	 builder => '_build_'.$attr,
-	 trigger => \&_clear_saved_if_changed,
 	 lazy => 1,
 	);
 }
 
 # bugs
-for my $attr (qw(blocks blockedby mergedwith)) {
+for my $attr (qw(blocks blocked_by mergedwith)) {
     has $attr =>
 	(is => 'ro',
 	 isa => 'Debbugs::Collection::Bug',
@@ -192,10 +170,10 @@ for my $attr (qw(blocks blockedby mergedwith)) {
 }
 
 
-for my $attr (qw(owner submitter)) {
-    has $attr.'_corr' =>
+for my $attr (qw(owner submitter done)) {
+    has $attr,
         (is => 'ro',
-         isa => 'Debbugs::Correspondent',
+         isa => 'Maybe[Debbugs::Correspondent]',
          lazy => 1,
          builder => '_build_'.$attr.'_corr',
          clearer => '_clear_'.$attr.'_corr',
@@ -204,46 +182,29 @@ for my $attr (qw(owner submitter)) {
                      $attr.'_phrase' => 'phrase',
                     },
         );
-}
-
-sub _build_owner_corr {
-    my $self = shift;
-    return $self->correspondent_collection->get_or_create($self->owner);
-}
-
-sub _build_submitter_corr {
-    my $self = shift;
-    return $self->correspondent_collection->get_or_create($self->submitter);
-}
-
-for my $attr (qw(done severity),
-	      qw(forwarded),
-	      qw(pending location submitter),
-	      qw(owner subject),
-	     ) {
-    has $attr =>
-	(is => 'rw',
-	 isa => 'Str',
-	 clearer => '_clear_'.$attr,
-	 builder => '_build_'.$attr,
-	 trigger => \&_clear_saved_if_changed,
-	 lazy => 1,
-	);
+    use Data::Printer;
+    $meta->add_method('has_'.$attr,
+		      sub {my $self = shift;
+                           my $m = $meta->find_method_by_name($attr);
+                           return defined $m->($self);
+		       });
+    $meta->add_method('_build_'.$attr.'_corr',
+                      sub {my $self = shift;
+                           my $m = $self->status->meta->find_method_by_name($attr);
+                           my $v = $m->($self->status);
+                           if (defined $v and length($v)) {
+                               return $self->correspondent_collection->
+                                   get_or_add_by_key($v);
+                           } else {
+                               return undef;
+                           }
+                       }
+                     );
 }
 
 sub is_done {
-    return length $_[0]->done?1:0;
-}
-sub _build_done {
-    return $_[0]->status->{done} // '';
-}
-
-sub _build_severity {
-    return $_[0]->status->{severity} // $config{default_severity};
-}
-
-sub _build_subject {
-    return $_[0]->status->{subject} // '(No subject)';
+    my $self = shift;
+    return $self->has_done;
 }
 
 sub strong_severity {
@@ -256,19 +217,10 @@ sub short_severity {
     return $1;
 }
 
-sub package {
-    my $self = shift;
-    return join(', ',$self->packages->apply(sub{$_->name}));
-}
-
 sub _build_packages {
     my $self = shift;
-    my @packages;
-    if (length($self->status->{package}//'')) {
-	@packages = split /,/,$self->status->{package}//'';
-    }
     return $self->package_collection->
-	    limit(@packages);
+	    limit($self->status->package);
 }
 
 sub is_affecting {
@@ -276,49 +228,21 @@ sub is_affecting {
     return $self->affects->count > 0;
 }
 
-sub affect {
-    local $_;
-    return join(', ',map {$_->name} $_[0]->affects->members);
-}
-
 sub _build_affects {
-    my @packages;
-    if (length($_[0]->status->{affects}//'')) {
-	@packages = split /,/,$_[0]->status->{affects}//'';
-    }
-    return $_[0]->package_collection->
-	    limit(@packages);
-}
-sub source {
-    local $_;
-    return join(', ',map {$_->name} $_[0]->sources->members);
+    my $self = shift;
+    return $self->package_collection->
+	    limit($self->status->affects);
 }
 sub _build_sources {
+    my $self = shift;
     local $_;
-    my @sources = map {$_->sources} $_[0]->packages->members;
+    my @sources = map {$_->sources} $self->packages->members;
     return @sources;
 }
 
 sub is_owned {
     my $self = shift;
-    return length($self->owner) > 0;
-}
-sub _build_owner {
-    my $self = shift;
-    return $self->status->{owner} // '';
-}
-
-
-sub _split_if_defined {
-    my ($self,$field,$split) = @_;
-    $split //= ' ';
-    my $e = $self->status->{$field};
-    my @f;
-    if (defined $e and
-	length $e) {
-	return split /$split/,$e;
-    }
-    return ();
+    return defined $self->owner;
 }
 
 sub is_blocking {
@@ -329,32 +253,23 @@ sub is_blocking {
 sub _build_blocks {
     my $self = shift;
     return $self->bug_collection->
-	limit(sort {$a <=> $b}
-	      $self->_split_if_defined('blocks'));
+	limit($self->status->blocks);
 }
 
 sub is_blocked {
     my $self = shift;
-    return $self->blockedby->count > 0;
+    return $self->blocked_by->count > 0;
 }
 
-sub _build_blockedby {
+sub _build_blocked_by {
     my $self = shift;
     return $self->bug_collection->
-	limit(sort {$a <=> $b}
-	      $self->_split_if_defined('blockedby'));
+	limit($self->status->blocked_by);
 }
 
 sub is_forwarded {
     length($_[0]->forwarded) > 0;
 }
-
-sub _build_forwarded {
-    my $self = shift;
-    return $self->status->{forwarded} // '';
-}
-
-
 
 for my $attr (qw(fixed found)) {
     has $attr =>
@@ -369,54 +284,35 @@ for my $attr (qw(fixed found)) {
 
 sub has_found {
     my $self = shift;
-    return $self->found->count > 0;
+    return any {1} $self->status->found;
 }
 
 sub _build_found {
     my $self = shift;
     return $self->packages->
-	get_source_versions(@{$self->status->{found_versions} // []});
+	get_source_versions($self->status->found);
 }
 
 sub has_fixed {
     my $self = shift;
-    return $self->fixed->count > 0;
+    return any {1} $self->status->fixed;
 }
 
 sub _build_fixed {
     my $self = shift;
     return $self->packages->
-        get_source_versions(@{$self->status->{fixed_versions} // []});
+        get_source_versions($self->status->fixed);
 }
 
 sub is_merged {
     my $self = shift;
-    return $self->mergedwith->count > 0;
-}
-
-has _mergedwith_array =>
-    (is => 'ro',
-     isa => 'ArrayRef[Int]',
-     builder => '_build_mergedwith_array',
-     lazy => 1,
-    );
-
-sub _build_mergedwith_array {
-    my $self = shift;
-    return [sort {$a <=> $b}
-            $self->_split_if_defined('mergedwith')];
+    return any {1} $self->status->mergedwith;
 }
 
 sub _build_mergedwith {
     my $self = shift;
     return $self->bug_collection->
-	limit(@{$self->_mergedwith_array//[]});
-}
-sub _build_pending {
-    return $_[0]->status->{pending} // '';
-}
-sub _build_submitter {
-    return $_[0]->status->{originator} // '';
+	limit($self->status->mergedwith);
 }
 
 for my $attr (qw(created modified)) {
@@ -427,23 +323,13 @@ for my $attr (qw(created modified)) {
 }
 sub _build_created {
     return DateTime->
-	from_epoch(epoch => $_[0]->status->{date} // time);
+	from_epoch(epoch => $_[0]->status->date);
 }
 sub _build_modified {
     return DateTime->
-	from_epoch(epoch => max($_[0]->status->{log_modified},
-				$_[0]->status->{last_modified}
+	from_epoch(epoch => max($_[0]->status->log_modified,
+				$_[0]->status->last_modified
 			       ));
-}
-sub _build_location {
-    return $_[0]->status->{location};
-}
-has archived => (is => 'ro', isa => 'Bool',
-		 clearer => '_clear_archived',
-		 builder => '_build_archived',
-		 lazy => 1);
-sub _build_archived {
-    return $_[0]->location eq 'archived'?1:0;
 }
 
 has tags => (is => 'ro',
@@ -454,10 +340,34 @@ has tags => (is => 'ro',
 	    );
 sub _build_tags {
     my $self = shift;
-    return Debbugs::Bug::Tag->new(keywords => $self->status->{keywords},
+    return Debbugs::Bug::Tag->new(keywords => join(' ',$self->status->tags),
                                   bug => $self,
                                   users => $self->bug_collection->users,
                                  );
+}
+
+has pending => (is => 'ro',
+                isa => 'Str',
+                clearer => '_clear_pending',
+                builder => '_build_pending',
+                lazy => 1,
+               );
+
+sub _build_pending {
+    my $self = shift;
+
+    my $pending = 'pending';
+    if (length($self->status->forwarded)) {
+        $pending = 'forwarded';
+    }
+    if ($self->tags->tag_is_set('pending')) {
+        $pending = 'pending-fixed';
+    }
+    if ($self->tags->tag_is_set('pending')) {
+        $pending = 'fixed';
+    }
+    # XXX This isn't quite right
+    return $pending;
 }
 
 =item buggy
@@ -620,7 +530,7 @@ sub filter {
 	return 1 if $self->matches($param{exclude});
     }
     if (exists $param{repeat_merged} and not $param{repeat_merged}) {
-	my @merged = sort {$a<=>$b} $self->bug, @{$self->_mergedwith_array // []};
+	my @merged = sort {$a<=>$b} $self->bug, $self->status->mergedwith;
 	return 1 if first {sub {defined $_}}
             @{$param{seen_merged}}{@merged};
 	@{$param{seen_merged}}{@merged} = (1) x @merged;
@@ -714,11 +624,13 @@ sub mbox_maint_url {
 
 sub version_url {
     my $self = shift;
-    return version_url(package => $self->package,
-                       found => [$self->found->members],
-                       fixed => [$self->fixed->members],
-                       @_,
-                      );
+    my $url = Debbugs::URI->new('version.cgi?');
+    $url->query_form(package => $self->status->package(),
+                       found => [$self->status->found],
+                       fixed => [$self->status->fixed],
+                     @_,
+                    );
+    return $url->as_string;
 }
 
 sub related_packages_and_versions {
