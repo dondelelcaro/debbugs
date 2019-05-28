@@ -257,6 +257,11 @@ sub tags_on_bug {
     return map {@{$self->{"bug_tags"}{$_}//[]}} @_;
 }
 
+sub has_bug_tags {
+    my $self = shift;
+    return keys %{$self->{bug_tags}} > 0;
+}
+
 sub write {
     my $self = shift;
 

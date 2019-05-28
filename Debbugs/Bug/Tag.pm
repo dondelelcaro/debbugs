@@ -109,8 +109,9 @@ sub _build_usertags {
     my $self = shift;
     local $_;
     my $t = {};
+    my $id = $self->bug->id;
     for my $user (@{$self->users}) {
-        for my $tag ($user->tags_on_bug($self->bug->id)) {
+        for my $tag ($user->tags_on_bug($id)) {
             $t->{$tag} = $user->email;
         }
     }

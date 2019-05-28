@@ -474,7 +474,9 @@ my %bugs;
 my $bugs = Debbugs::Collection::Bug->
     new(bugs => \@bugs,
 	@schema_arg,
-	users => [map {Debbugs::User->new($_)} @users],
+	users => [map {my $u = Debbugs::User->new($_);
+		       $u->has_bug_tags()?($u):()
+		   } @users],
        );
 
 $bugs->load_related_packages_and_versions();
