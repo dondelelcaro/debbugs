@@ -39,10 +39,10 @@
         <a href="<: $bug.url :>"><: $bug.subject :></a>
         <div id="extra_status_<: $bug.bug :>" class="shortbugstatusextra">
             <table class="extra_status">
-                <tr><td>Reported by</td><td><a href="<: $bug.submitter_url :>"><: $bug.submitter :></a></td></tr>
+                <tr><td>Reported by</td><td><a href="<: $bug.submitter_url :>"><: $bug.submitter.name :></a></td></tr>
                 <tr><td>Date</td><td><: $bug.created.stringify :></td></tr>
       <:- if $bug.is_owned { -:>
-                <tr><td>Owned by</td><td><a href="<: $bug.owner_url :>"><: $bug.owner :></a></td></tr>
+                <tr><td>Owned by</td><td><a href="<: $bug.owner_url :>"><: $bug.owner.name :></a></td></tr>
       <:- } :>
                 <tr><td>Severity</td><td>
           <: if $bug.strong_severity { -:>
@@ -102,9 +102,9 @@
       <:- } else if $bug.archived { -:>
       <tr><td><strong>Archived</strong></td></tr>
       <:- } -:>
-      <:- if $bug.blockedby.count > 0 { :>
+      <:- if $bug.is_blocked { :>
       <tr><td>Fix blocked by</td><td>
-          <: for $bug.blockedby -> $bug { :>
+          <: for $bug.blocked_by -> $bug { :>
           <: bug_url_subject($bug) :>
           <:- if ! $~bug.is_last { -:>, <: } else { -:>.<:- } -:>
           <:- } -:></td>
