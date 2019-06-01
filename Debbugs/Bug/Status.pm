@@ -53,6 +53,14 @@ has status_source => (is => 'ro',
 		      writer => '_set_status_source',
 		     );
 
+has _status => (is => 'bare',
+                writer => '_set_status',
+                reader => '_status',
+                predicate => '_has__status',
+               );
+
+my %field_methods;
+
 sub BUILD {
     my $self = shift;
     my $args = shift;
@@ -98,6 +106,7 @@ sub BUILD {
 	if (ref($args->{status}) ne 'HASH') {
 	    croak "status must be a HASHREF (argument to __PACKAGE__)";
 	}
+        $self->_set_status($args->{status});
 	# single value fields
 	for my $field (qw(submitter date subject message_id done severity unarchived),
 		       qw(owner summary outlook bug log_modified),
@@ -105,26 +114,35 @@ sub BUILD {
 	    next unless defined $args->{status}{$field};
 	    # we're going to let status override passed values in args for now;
 	    # maybe this should change
-	    my $field_method = $meta->find_method_by_name('_set_'.$field);
-	    if (not defined $field_method) {
-		croak "Unable to find field method for _set_$field";
-	    }
-	    $field_method->($self,$args->{status}{$field});
+            if (not exists $field_methods{'_set_'.$field}) {
+                $field_methods{'_set_'.$field} =
+                    $meta->find_method_by_name('_set_'.$field);
+                if (not defined $field_methods{'_set_'.$field}) {
+                    croak "Unable to find field method for _set_$field";
+                }
+            }
+            $field_methods{'_set_'.$field}->($self,$args->{status}{$field});
 	}
 	# multi value fields
 	for my $field (qw(affects package tags blocks blocked_by mergedwith),
 		       qw(found fixed)) {
 	    next unless defined $args->{status}{$field};
 	    my $field_method = $meta->find_method_by_name('_set_'.$field);
+            if (not exists $field_methods{'_set_'.$field}) {
+                $field_methods{'_set_'.$field} =
+                    $meta->find_method_by_name('_set_'.$field);
+                if (not defined $field_methods{'_set_'.$field}) {
+                    croak "Unable to find field method for _set_$field";
+                }
+            }
 	    my $split_field = $args->{status}{$field};
 	    if (!ref($split_field)) {
 		$split_field =
 		    _build_split_field($args->{status}{$field},
 				       $field);
 	    }
-	    $field_method->($self,
-			    $split_field,
-			    );
+            $field_methods{'_set_'.$field}->($self,
+                                             $split_field);
 	}
 	delete $args->{status};
     }
@@ -134,6 +152,15 @@ has saved => (is => 'ro', isa => 'Bool',
 	      default => 0,
 	      writer => '_set_set_saved',
 	     );
+
+sub __field_or_def {
+    my ($self,$field,$default) = @_;
+    if ($self->_has__status) {
+        my $s = $self->_status()->{$field};
+        return $s if defined $s;
+    }
+    return $default;
+}
 
 =head2 Status Fields
 
@@ -150,7 +177,12 @@ has saved => (is => 'ro', isa => 'Bool',
 has submitter =>
     (is => 'ro',
      isa => 'Str',
-     default => $config{maintainer_email},
+     builder =>
+     sub {
+         my $self = shift;
+         $self->__field_or_def('submitter',
+                               $config{maintainer_email});
+      },
      writer => '_set_submitter',
     );
 
@@ -161,7 +193,12 @@ has submitter =>
 has date =>
     (is => 'ro',
      isa => 'Str',
-     builder => sub {return time},
+     builder =>
+     sub {
+         my $self = shift;
+         $self->__field_or_def('date',
+                               time);
+      },
      lazy => 1,
      writer => '_set_date',
     );
@@ -173,7 +210,12 @@ has date =>
 has last_modified =>
     (is => 'ro',
      isa => 'Str',
-     builder => sub {return time},
+     builder =>
+     sub {
+         my $self = shift;
+         $self->__field_or_def('last_modified',
+                               time);
+      },
      lazy => 1,
      writer => '_set_last_modified',
     );
@@ -185,7 +227,12 @@ has last_modified =>
 has log_modified =>
     (is => 'ro',
      isa => 'Str',
-     builder => sub {return time},
+     builder =>
+     sub {
+         my $self = shift;
+         $self->__field_or_def('log_modified',
+                                time);
+      },
      lazy => 1,
      writer => '_set_log_modified',
     );
@@ -198,7 +245,12 @@ has log_modified =>
 has subject =>
     (is => 'ro',
      isa => 'Str',
-     default => 'No subject',
+     builder =>
+     sub {
+         my $self = shift;
+         $self->__field_or_def('subject',
+                               'No subject');
+     },
      writer => '_set_subject',
     );
 
@@ -213,8 +265,11 @@ has message_id =>
      builder =>
      sub {
 	 my $self = shift;
-	 return 'nomessageid.'.$self->date.'_'.
-	     md5_hex($self->subject.$self->submitter).'@'.$config{email_domain},
+         $self->__field_or_def('message_id',
+                               'nomessageid.'.$self->date.'_'.
+                               md5_hex($self->subject.$self->submitter).
+                               '@'.$config{email_domain},
+                              );
      },
      writer => '_set_message_id',
     );
@@ -229,7 +284,12 @@ has message_id =>
 has severity =>
     (is => 'ro',
      isa => 'Str',
-     default => $config{default_severity},
+     builder =>
+     sub {
+         my $self = shift;
+         $self->__field_or_def('severity',
+                               $config{default_severity});
+     },
      writer => '_set_severity',
     );
 
@@ -243,7 +303,12 @@ unarchived.
 has unarchived =>
     (is => 'ro',
      isa => 'Int',
-     default => 0,
+     builder =>
+     sub {
+         my $self = shift;
+         $self->__field_or_def('unarchived',
+                               0);
+     },
      writer => '_set_unarchived',
     );
 
@@ -256,7 +321,12 @@ True if the bug is archived, false otherwise.
 has archived =>
     (is => 'ro',
      isa => 'Int',
-     default => 0,
+     builder =>
+     sub {
+         my $self = shift;
+         $self->__field_or_def('archived',
+                               0);
+     },
      writer => '_set_archived',
     );
 
@@ -276,7 +346,12 @@ for my $field (qw(owner unarchived summary outlook done forwarded)) {
     has $field =>
 	(is => 'ro',
 	 isa => 'Str',
-	 default => '',
+         builder =>
+         sub {
+             my $self = shift;
+             $self->__field_or_def($field,
+                                   '');
+         },
 	 writer => '_set_'.$field,
 	);
     my $field_method = $meta->find_method_by_name($field);
@@ -306,7 +381,19 @@ for my $field (qw(affects package tags)) {
 	(is => 'ro',
 	 traits => [qw(Array)],
 	 isa => 'ArrayRef[Str]',
-	 default => sub {return []},
+         builder =>
+         sub {
+             my $self = shift;
+             if ($self->_has__status) {
+                 my $s = $self->_status()->{$field};
+                 if (!ref($s)) {
+                     $s = _build_split_field($s,
+                                             $field);
+                 }
+                 return $s;
+             }
+             return [];
+         },
 	 writer => '_set_'.$field,
 	 handles => {$field => 'elements',
 		    },
@@ -327,11 +414,41 @@ for my $field (qw(affects package tags)) {
 
 =cut
 
+sub __hashref_field {
+    my ($self,$field) = @_;
+
+    if ($self->_has__status) {
+        my $s = $self->_status()->{$field};
+        if (!ref($s)) {
+            $s = _build_split_field($s,
+                                    $field);
+        }
+        return $s;
+    }
+    return [];
+}
+
 for my $field (qw(found fixed)) {
     has '_'.$field =>
 	(is => 'ro',
 	 traits => ['Hash'],
 	 isa => 'HashRef[Str]',
+         builder =>
+         sub {
+             my $self = shift;
+             if ($self->_has__status) {
+                 my $s = $self->_status()->{$field};
+                 if (!ref($s)) {
+                     $s = _build_split_field($s,
+                                             $field);
+                 }
+                 if (ref($s) ne 'HASH') {
+                     $s = {map {$_,'1'} @{$s}};
+                 }
+                 return $s;
+             }
+             return {};
+         },
 	 default => sub {return {}},
 	 writer => '_set_'.$field,
 	 handles => {$field => 'keys',
@@ -378,7 +495,22 @@ for my $field (qw(blocks blocked_by mergedwith)) {
 	(is => 'ro',
 	 traits => ['Hash'],
 	 isa => 'HashRef[Int]',
-	 default => sub {return {}},
+         builder =>
+         sub {
+             my $self = shift;
+             if ($self->_has__status) {
+                 my $s = $self->_status()->{$field};
+                 if (!ref($s)) {
+                     $s = _build_split_field($s,
+                                             $field);
+                 }
+                 if (ref($s) ne 'HASH') {
+                     $s = {map {$_,'1'} @{$s}};
+                 }
+                 return $s;
+             }
+             return {};
+         },
 	 writer => '_set_'.$field,
 	 lazy => 1,
 	);
