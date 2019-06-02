@@ -182,7 +182,6 @@ for my $attr (qw(owner submitter done)) {
                      $attr.'_phrase' => 'phrase',
                     },
         );
-    use Data::Printer;
     $meta->add_method('has_'.$attr,
 		      sub {my $self = shift;
                            my $m = $meta->find_method_by_name($attr);

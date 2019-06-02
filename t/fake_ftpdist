@@ -112,8 +112,6 @@ for my $suite (keys %s_p) {
 	}
 }
 $prog_bar->target($tot) if $prog_bar;
-use Data::Printer;
-p %s_di;
 my $i = 0;
 my $avg_pkgs = 0;
 my $tot_suites = scalar keys %s_p;

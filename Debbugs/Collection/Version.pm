@@ -47,8 +47,6 @@ sub _build_package_collection {
 }
 
 sub member_key {
-    use Data::Printer;
-    p @_;
     return $_[1]->package.'/'.$_[1]->version.'/'.$_[1]->arch;
 }
 
