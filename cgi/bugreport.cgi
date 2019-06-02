@@ -385,83 +385,6 @@ unless (%status) {
 my @packages = make_list($status{package});
 
 
-my %packages_affects;
-for my $p_a (qw(package affects)) {
-    foreach my $pkg (make_list($status{$p_a})) {
-        if ($pkg =~ /^src\:/) {
-            my ($srcpkg) = $pkg =~ /^src:(.*)/;
-            $packages_affects{$p_a}{$pkg} =
-               {maintainer => exists($maintainer{$srcpkg}) ? $maintainer{$srcpkg} : '(unknown)',
-                source     => $srcpkg,
-                package    => $pkg,
-                is_source  => 1,
-               };
-        }
-        else {
-            $packages_affects{$p_a}{$pkg} =
-               {maintainer => exists($maintainer{$pkg}) ? $maintainer{$pkg} : '(unknown)',
-                exists($pkgsrc{$pkg}) ? (source => $pkgsrc{$pkg}) : (),
-                package    => $pkg,
-               };
-        }
-    }
-}
-
-# fixup various bits of the status
-$status{tags_array} = [sort(make_list($status{tags}))];
-$status{date_text} = strftime('%a, %e %b %Y %T UTC', gmtime($status{date}));
-$status{mergedwith_array} = [make_list($status{mergedwith})];
-
-
-my $version_graph = '';
-if (@{$status{found_versions}} or @{$status{fixed_versions}}) {
-     $version_graph = q(<a href=").
-	  html_escape(version_url(package => $status{package},
-				  found => $status{found_versions},
-				  fixed => $status{fixed_versions},
-				 )
-		     ).
-	  q("><img alt="version graph" src=").
-	  html_escape(version_url(package => $status{package},
-				  found => $status{found_versions},
-				  fixed => $status{fixed_versions},
-				  width => 2,
-				  height => 2,
-				 )
-		     ).
-	  qq{"></a>};
-}
-
-
-
-my @blockedby= make_list($status{blockedby});
-$status{blockedby_array} = [];
-if (@blockedby && $status{"pending"} ne 'fixed' && ! length($status{done})) {
-    for my $b (@blockedby) {
-        my %s = %{get_bug_status($b,@schema_arg)};
-        next if (defined $s{pending} and
-                 $s{"pending"} eq 'fixed') or
-                     length $s{done};
-	push @{$status{blockedby_array}},{bug_num => $b, subject => $s{subject}, status => \%s};
-   }
-}
-
-my @blocks= make_list($status{blocks});
-$status{blocks_array} = [];
-if (@blocks && $status{"pending"} ne 'fixed' && ! length($status{done})) {
-    for my $b (@blocks) {
-        my %s = %{get_bug_status($b,@schema_arg)};
-        next if $s{"pending"} eq 'fixed' || length $s{done};
-	push @{$status{blocks_array}}, {bug_num => $b, subject => $s{subject}, status => \%s};
-    }
-}
-
-if ($buglog !~ m#^\Q$gSpoolDir/db#) {
-     $status{archived} = 1;
-}
-
-my $descriptivehead = $indexentry;
-
 print $q->header(-type => "text/html",
 		 -charset => 'utf-8',
 		 -cache_control => 'public, max-age=300',
@@ -470,12 +393,7 @@ print $q->header(-type => "text/html",
 
 print fill_in_template(template => 'cgi/bugreport',
 		       variables => {bug => $bug,
-                                     status => \%status,
-				     package => $packages_affects{'package'},
-				     affects => $packages_affects{'affects'},
 				     log           => $log,
-				     bug_num       => $ref,
-				     version_graph => $version_graph,
 				     msg           => $msg,
 				     isstrongseverity => \&Debbugs::Status::isstrongseverity,
 				     html_escape   => \&Debbugs::CGI::html_escape,
