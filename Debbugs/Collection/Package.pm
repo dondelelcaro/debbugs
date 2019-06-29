@@ -295,14 +295,14 @@ sub get_source_versions {
                     Debbugs::Version::Binary->new(version => $ver,
                                                   package_collection => $self->universe,
                                                   valid => 0,
-                                                  $self->has_schema?(schema => $self->schema):(),
+                                                  $self->schema_argument,
                                                  );
             }
         }
     }
     return
         Debbugs::Collection::Version->new(versions => \@return,
-                                          $self->has_schema?(schema => $self->schema):(),
+                                          $self->schema_argument,
                                           package_collection => $self->universe,
                                          );
 }
