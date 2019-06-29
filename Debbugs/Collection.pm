@@ -79,7 +79,8 @@ Returns a clone of this collection with the same universe as this collection
 
 =head2 $collection->limit(@member_keys)
 
-Returns a new collection limited to the list of member keys passed
+Returns a new collection limited to the list of member keys passed. Will add new
+members to the universe if they do not currently exist.
 
 =head2 $collection->add($member)
 
@@ -88,6 +89,10 @@ Add a member to this collection
 =head2 $collection->add_by_key($member_key)
 
 Add a member to this collection by key
+
+=head2 $collection->combine($collection2) or $collection + $collection2
+
+Combines the members of both collections together and returns the new collection
 
 =head2 $collection->get($member_key)
 
@@ -295,6 +300,16 @@ sub add {
     return @members_added;
 }
 
+use overload '+' => "combine",
+    '""' => "CARP_TRACE";
+
+sub combine {
+    my $self = shift;
+    my $return = $self->clone;
+    $return->add($_->members) for @_;
+    return $return;
+}
+
 sub get {
     my $self = shift;
     my @res = map {$self->_get_member($_)}
@@ -309,7 +324,7 @@ sub member_key {
 
 sub keys_of_members {
     my $self = shift;
-    return $self->map(sub {$self->member_key($_[0])});
+    return $self->map(sub {$self->member_key($_)});
 }
 
 sub exists {
