@@ -141,8 +141,12 @@ sub _member_constructor {
         # preload as many of the packages as we need
         my %packages;
         while (my ($bug, $status) = each %{$statuses}) {
-            $packages{$_} = 1 for split /,/, $status->{package};
-            $packages{$_} = 1 for split /,/, $status->{source};
+            if (defined $status->{package}) {
+                $packages{$_} = 1 for split /,/, $status->{package};
+            }
+            if (defined $status->{source}) {
+                $packages{$_} = 1 for split /,/, $status->{source};
+            }
         }
         $self->package_collection->universe->add_by_key(keys %packages);
         while (my ($bug, $status) = each %{$statuses}) {
