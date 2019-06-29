@@ -463,12 +463,15 @@ sub parse_order_statement_to_subroutine {
 	}
 	my @vals_bits;
 	for my $val (@vals) {
-	    if ($field =~ /package|pending|severity/o) {
-		push @vals_bits, '$_[0]->'.$field.
+	    if ($field =~ /package|severity/o) {
+		push @vals_bits, '$_[0]->status->'.$field.
 		    ' eq q('.$val.')';
 	    } elsif ($field eq 'tag') {
 		push @vals_bits, '$_[0]->tags->is_set('.
 		    'q('.$val.'))';
+	    } elsif ($field eq 'pending') {
+		push @vals_bits, '$_[0]->'.$field.
+		    ' eq q('.$val.')';
 	    }
 	}
 	push @sub_bits ,' ('.join(' or ',@vals_bits).') ';
