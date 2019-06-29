@@ -1,7 +1,7 @@
 <div class="buginfo">
     <ul>
         <li><span class="key">Reported by</span>
-            <span class="value"><: package_links(submitter=>$status.originator) :></span>
+            <span class="value"><a href="<: $bug.submitter_url :>"><: $bug.submitter.name :></a></span>
         </li>
         <li><span class="key">Date</span>
             <span class="value"><: $status.date_text :></span>
