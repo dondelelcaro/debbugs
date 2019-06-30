@@ -116,9 +116,15 @@ locally to each member object
 
 Returns the keys of the members of this collection joined
 
-=head2 $collection->apply({$_*2}) $collection->map({$_*2})
+=head2 $collection->apply({$_*2})
 
-Return the list of applying BLOCK to each member
+Return the list of applying BLOCK to each member; each member can return 0 or
+more results
+
+=head2 $collection->map({$_*2})
+
+Returns the list of applying BLOCK to each member; each member should return
+exactly one result
 
 =head2 $collection->sort({$a <=> $b})
 
@@ -137,11 +143,20 @@ has 'members' => (is => 'bare',
 			      count => 'count',
 			      _get_member => 'get',
                               grep => 'grep',
-                              apply => 'apply',
                               map => 'map',
                               sort => 'sort',
 			     },
 		 );
+
+sub apply {
+    my $self = shift;
+    my $block = shift;
+    my @r;
+    for ($self->members) {
+        push @r,$block->();
+    }
+    return @r;
+}
 
 sub members_ref {
     my $self = shift;

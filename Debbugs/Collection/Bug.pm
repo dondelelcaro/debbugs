@@ -200,7 +200,7 @@ sub member_key {
 sub load_related_packages_and_versions {
     my $self = shift;
     my @related_packages_and_versions =
-        $self->map(sub {$_->related_packages_and_versions});
+        $self->apply(sub {$_->related_packages_and_versions});
     $self->package_collection->
         add_packages_and_versions(@related_packages_and_versions);
 }
