@@ -54,7 +54,7 @@ use IO::Handle;
 
 my @schema_arg = ();
 if (defined $config{database}) {
-    $s = Debbugs::DB->connect($config{database}) or
+    my $s = Debbugs::DB->connect($config{database}) or
         die "Unable to connect to DB";
     @schema_arg = ('schema',$s);
 }
