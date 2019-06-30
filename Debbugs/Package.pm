@@ -138,7 +138,7 @@ has valid => (is => 'ro', isa => 'Bool',
 
 sub _build_valid {
     my $self = shift;
-    if ($self->_valid_versioninfo > 0) {
+    if ($self->valid_version_info_count> 0) {
 	return 1;
     }
     return 0;
@@ -151,16 +151,17 @@ has 'valid_version_info' =>
     (is => 'bare', isa => 'ArrayRef',
      traits => ['Array'],
      lazy => 1,
-     builder => '_build_valid_versioninfo',
-     predicate => '_has_valid_versioninfo',
-     clearer => '_clear_valid_versioninfo',
-     handles => {'_get_valid_versioninfo' => 'get',
-		 '_grep_valid_versioninfo' => 'grep',
-		 '_valid_versioninfo' => 'elements',
+     builder => '_build_valid_version_info',
+     predicate => '_has_valid_version_info',
+     clearer => '_clear_valid_version_info',
+     handles => {'_get_valid_version_info' => 'get',
+		 'valid_version_info_grep' => 'grep',
+		 '_valid_version_info' => 'elements',
+                 'valid_version_info_count' => 'count',
 		},
     );
 
-sub _build_valid_versioninfo {
+sub _build_valid_version_info {
     my $self = shift;
     my $pkgs = $self->_get_valid_version_info_from_db;
     for my $invalid_version (@{$pkgs->{$self->qualified_name}->{invalid_versions}}) {
@@ -432,7 +433,7 @@ sub _build_source_version_to_info {
     my $self = shift;
     my $info = {};
     my $i = 0;
-    for my $v ($self->_valid_versioninfo) {
+    for my $v ($self->_valid_version_info) {
 	push @{$info->{$v->{src_ver}}}, $i;
 	$i++;
     }
@@ -452,7 +453,7 @@ sub _build_binary_version_to_info {
     my $self = shift;
     my $info = {};
     my $i = 0;
-    for my $v ($self->_valid_versioninfo) {
+    for my $v ($self->_valid_version_info) {
 	push @{$info->{$v->{bin_ver}}}, $i;
 	$i++;
     }
@@ -471,8 +472,9 @@ sub _build_dist_to_info {
     my $self = shift;
     my $info = {};
     my $i = 0;
-    for my $v ($self->_valid_versioninfo) {
-	push @{$info->{$v->{dist}}}, $i;
+    for my $v ($self->_valid_version_info) {
+        next unless defined $v->{suite_name} and length($v->{suite_name});
+	push @{$info->{$v->{suite_name}}}, $i;
 	$i++;
     }
     return $info;
@@ -500,11 +502,11 @@ has 'binaries' => (is => 'ro',
 sub _build_binaries {
     my $self = shift;
     if ($self->is_binary) {
-	return $self->package_collection->limit($self);
+	return $self->package_collection->limit($self->name);
     }
     # OK, walk through the valid_versions for this package
     my @binaries =
-	uniq map {$_->{bin_pkg}} $self->_valid_versioninfo;
+	uniq map {$_->{bin_pkg}} $self->_valid_version_info;
     return $self->package_collection->limit(@binaries);
 }
 
@@ -589,7 +591,7 @@ sub get_source_version_distribution {
             grep {defined $_}
             $self->_get_dist_to_info($dist);
         for my $v ($self->
-                   _get_valid_versioninfo(@ver_loc)) {
+                   _get_valid_version_info(@ver_loc)) {
             $src_pkg_vers{$v->{src_pkg_ver}} = 1;
         }
     }
@@ -616,7 +618,7 @@ sub get_source_version {
             @{$self->_get_binary_version_to_info($ver)//[]};
         next unless @ver_loc;
         my @vers = map {$self->
-                            _get_valid_versioninfo($_)}
+                            _get_valid_version_info($_)}
             @ver_loc;
         for my $v (@vers) {
             if (keys %archs) {
