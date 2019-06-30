@@ -125,7 +125,6 @@ sub _member_constructor {
                                      );
         }
     } else {
-        carp "No schema\n";
         for my $package (make_list($args{packages})) {
             push @return,
                 Debbugs::Package->new(name => $package,
