@@ -70,12 +70,12 @@
           </td></tr>
           <:- } -:>
           <:- if $bug.has_found { -:>
-          <tr><td>Found in version<: if $bug.found.count > 1 { :>s<: } :></td>
-              <td><a href="<: $bug.version_url :>"><:- $bug.found.join(', ') -:></a></td></tr>
+          <tr><td>Found in version<: if $bug.status.found_count > 1 { :>s<: } :></td>
+              <td><a href="<: $bug.version_url :>"><:- $bug.status.found_join(', ') -:></a></td></tr>
           <:- } -:>
               <:- if $bug.has_fixed { :>
-              <tr><td>Fixed in version<: if $bug.fixed.count > 1 { :>s<: } :></td><td>
-                  <a href="<: $bug.version_url :>"><:- $bug.fixed.join(', ') -:></a></td></tr>
+              <tr><td>Fixed in version<: if $bug.status.fixed_count > 1 { :>s<: } :></td><td>
+                  <a href="<: $bug.version_url :>"><:- $bug.status.fixed_join(', ') -:></a></td></tr>
           <:- } -:>
           <:- if $bug.has_found or $bug.has_fixed { -:>
       </a>
@@ -87,7 +87,7 @@
       <:- } -:>
       <:- if $bug.is_done { -:>
       <tr><td><strong>Done:</strong></td><td>
-          <: $bug.done :></td>
+          <: $bug.done.name :></td>
       </tr>
       <:- } -:>
       <:- if  not $bug.archived and $bug.when_archiveable >= 0 { -:>
