@@ -18,6 +18,7 @@ Build-Depends-Indep: libparams-validate-perl,
  libdbix-class-timestamp-perl,
  libdbix-class-deploymenthandler-perl,
  libdatetime-format-mail-perl,
+ libdatetime-perl,
  libaliased-perl,
  postgresql,
  postgresql-9.6-debversion|postgresql-10-debversion,
@@ -63,6 +64,7 @@ Depends:
  # used by the database
  libdbix-class-timestamp-perl,
  libdbix-class-deploymenthandler-perl,
+ libdatetime-perl,
  libaliased-perl,
  libdatetime-format-mail-perl, libdbix-class-perl, libdatetime-format-pg-perl
 Section: perl
