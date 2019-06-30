@@ -64,6 +64,14 @@ my %field_methods;
 sub BUILD {
     my $self = shift;
     my $args = shift;
+    state $field_mapping =
+       {originator => 'submitter',
+        keywords => 'tags',
+        msgid => 'message_id',
+        blockedby => 'blocked_by',
+        found_versions => 'found',
+        fixed_versions => 'fixed',
+       };
     if (not exists $args->{status} and exists $args->{bug}) {
 	if ($self->has_schema) {
 	    ($args->{status}) =
@@ -71,12 +79,6 @@ sub BUILD {
 		search_rs({id => [make_list($args->{bug})]},
 			 {result_class => 'DBIx::Class::ResultClass::HashRefInflator'})->
 			     all();
-	    state $field_mapping =
-	       {originator => 'submitter',
-		blockedby => 'blocked_by',
-		found_versions => 'found',
-		fixed_versions => 'fixed',
-	       };
 	    for my $field (keys %{$field_mapping}) {
 		$args->{status}{$field_mapping->{$field}} =
 		    $args->{status}{$field} if defined $args->{status}{$field};
@@ -85,21 +87,17 @@ sub BUILD {
 	    $self->_set_status_source('db');
 	} else {
 	    $args->{status} = get_bug_status(bug=>$args->{bug});
-	    state $field_mapping =
-	       {originator => 'submitter',
-		keywords => 'tags',
-		msgid => 'message_id',
-		blockedby => 'blocked_by',
-		found_versions => 'found',
-		fixed_versions => 'fixed',
-	       };
 	    for my $field (keys %{$field_mapping}) {
 		$args->{status}{$field_mapping->{$field}} =
-		    $args->{status}{$field};
+		    $args->{status}{$field} if defined $args->{status}{$field};
 	    }
 	    $self->_set_status_source('filesystem');
 	}
     } elsif (exists $args->{status}) {
+        for my $field (keys %{$field_mapping}) {
+            $args->{status}{$field_mapping->{$field}} =
+                $args->{status}{$field} if defined $args->{status}{$field};
+        }
 	$self->_set_status_source('hashref');
     }
     if (exists $args->{status}) {
@@ -107,43 +105,6 @@ sub BUILD {
 	    croak "status must be a HASHREF (argument to __PACKAGE__)";
 	}
         $self->_set_status($args->{status});
-	# single value fields
-	for my $field (qw(submitter date subject message_id done severity unarchived),
-		       qw(owner summary outlook bug log_modified),
-		       qw(last_modified archived forwarded)) {
-	    next unless defined $args->{status}{$field};
-	    # we're going to let status override passed values in args for now;
-	    # maybe this should change
-            if (not exists $field_methods{'_set_'.$field}) {
-                $field_methods{'_set_'.$field} =
-                    $meta->find_method_by_name('_set_'.$field);
-                if (not defined $field_methods{'_set_'.$field}) {
-                    croak "Unable to find field method for _set_$field";
-                }
-            }
-            $field_methods{'_set_'.$field}->($self,$args->{status}{$field});
-	}
-	# multi value fields
-	for my $field (qw(affects package tags blocks blocked_by mergedwith),
-		       qw(found fixed)) {
-	    next unless defined $args->{status}{$field};
-	    my $field_method = $meta->find_method_by_name('_set_'.$field);
-            if (not exists $field_methods{'_set_'.$field}) {
-                $field_methods{'_set_'.$field} =
-                    $meta->find_method_by_name('_set_'.$field);
-                if (not defined $field_methods{'_set_'.$field}) {
-                    croak "Unable to find field method for _set_$field";
-                }
-            }
-	    my $split_field = $args->{status}{$field};
-	    if (!ref($split_field)) {
-		$split_field =
-		    _build_split_field($args->{status}{$field},
-				       $field);
-	    }
-            $field_methods{'_set_'.$field}->($self,
-                                             $split_field);
-	}
 	delete $args->{status};
     }
 }
@@ -183,6 +144,7 @@ has submitter =>
          $self->__field_or_def('submitter',
                                $config{maintainer_email});
       },
+     lazy => 1,
      writer => '_set_submitter',
     );
 
@@ -251,6 +213,7 @@ has subject =>
          $self->__field_or_def('subject',
                                'No subject');
      },
+     lazy => 1,
      writer => '_set_subject',
     );
 
@@ -284,6 +247,7 @@ has message_id =>
 has severity =>
     (is => 'ro',
      isa => 'Str',
+     lazy => 1,
      builder =>
      sub {
          my $self = shift;
@@ -303,6 +267,7 @@ unarchived.
 has unarchived =>
     (is => 'ro',
      isa => 'Int',
+     lazy => 1,
      builder =>
      sub {
          my $self = shift;
@@ -321,6 +286,7 @@ True if the bug is archived, false otherwise.
 has archived =>
     (is => 'ro',
      isa => 'Int',
+     lazy => 1,
      builder =>
      sub {
          my $self = shift;
@@ -353,6 +319,7 @@ for my $field (qw(owner unarchived summary outlook done forwarded)) {
                                    '');
          },
 	 writer => '_set_'.$field,
+         lazy => 1,
 	);
     my $field_method = $meta->find_method_by_name($field);
     die "No field method for $field" unless defined $field_method;
@@ -396,6 +363,8 @@ for my $field (qw(affects package tags)) {
          },
 	 writer => '_set_'.$field,
 	 handles => {$field => 'elements',
+                     $field.'_count' => 'count',
+                     $field.'_join' => 'join',
 		    },
 	 lazy => 1,
 	);
@@ -452,6 +421,7 @@ for my $field (qw(found fixed)) {
 	 default => sub {return {}},
 	 writer => '_set_'.$field,
 	 handles => {$field => 'keys',
+                     $field.'_count' => 'count',
 		    },
 	 lazy => 1,
 	);
@@ -460,6 +430,10 @@ for my $field (qw(found fixed)) {
 	$meta->add_method('_'.$field.'_ref'=>
 			  sub {my $self = shift;
 			       return [$field_method->($self)]
+			   });
+	$meta->add_method($field.'_join'=>
+			  sub {my ($self,$joiner) = @_;
+			       return join($joiner,$field_method->($self));
 			   });
     }
 }
@@ -511,6 +485,8 @@ for my $field (qw(blocks blocked_by mergedwith)) {
              }
              return {};
          },
+	 handles => {$field.'_count' => 'count',
+		    },
 	 writer => '_set_'.$field,
 	 lazy => 1,
 	);
@@ -527,6 +503,10 @@ for my $field (qw(blocks blocked_by mergedwith)) {
 		      sub {my $self = shift;
 			   return [$field_method->($self)]
 		       });
+    $meta->add_method($field.'_join'=>
+                      sub {my ($self,$joiner) = @_;
+                           return join($joiner,$field_method->($self));
+                       });
 }
 
 for (qw(blocks blocked_by mergedwith)) {
