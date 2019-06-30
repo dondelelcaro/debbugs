@@ -229,6 +229,7 @@ sub _get_valid_version_info_from_db {
                      },
              );
     }
+    my @src_packages = keys %src_packages;
 
     my @bin_ver_search;
     for my $sp (keys %bin_ver_packages) {
@@ -238,6 +239,7 @@ sub _get_valid_version_info_from_db {
                      },
              );
     }
+    my @bin_packages = keys %bin_packages;
     my $packages = {};
     sub _default_pkg_info {
         return {name => $_[0],
@@ -272,9 +274,9 @@ sub _get_valid_version_info_from_db {
             $bp->{$pkg->{bin_pkg}}++;
 	}
     }
-    if (keys %src_packages) {
+    if (@src_packages) {
         my $src_rs = $s->resultset('SrcVer')->
-            search({-or => [-and => {'src_pkg.pkg' => [keys %src_packages],
+            search({-or => [-and => {'src_pkg.pkg' => [@src_packages],
                                      -or => {'suite.codename' => $common_dists,
                                              'suite.suite_name' => $common_dists,
                                             },
@@ -312,10 +314,10 @@ sub _get_valid_version_info_from_db {
                               \%bin_packages,
                              );
     }
-    if (keys %bin_packages) {
+    if (@bin_packages) {
         my $bin_assoc_rs =
             $s->resultset('BinAssociation')->
-            search({-and => {'bin_pkg.pkg' => [keys %bin_packages],
+            search({-and => {'bin_pkg.pkg' => [@bin_packages],
                              -or => {'suite.codename' => $common_dists,
                                      'suite.suite_name' => $common_dists,
                                     },
