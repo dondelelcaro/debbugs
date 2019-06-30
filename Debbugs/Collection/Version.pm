@@ -89,12 +89,11 @@ sub _member_constructor {
     for my $pkg_ver_arch (make_list($args{versions})) {
         my ($pkg,$ver,$arch) = $pkg_ver_arch =~ m{^([^/]+)/([^/]+)/?([^/]*)$} or
             confess("Invalid version key: $pkg_ver_arch");
+        if ($pkg =~ s/^src://) {
+            $arch = 'source';
+        }
         if (not length $arch) {
-            if ($pkg =~ /^src:/) {
-                $arch = 'source';
-            } else {
-               $arch = 'any';
-            }
+            $arch = 'any';
         }
         if ($arch eq 'source') {
             push @return,
