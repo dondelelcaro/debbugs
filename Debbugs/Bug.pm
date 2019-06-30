@@ -390,11 +390,16 @@ sub buggy {
     my $max_buggy = 'absent';
     for my $ver (@_) {
 	if (not ref($ver)) {
-	    $ver = Debbugs::Version->
-		new(version => $ver,
-                    package => $self,
-		    package_collection => $self->package_collection,
-		   );
+            my @ver_opts = (version => $ver,
+                            package => $self->status->package,
+                            package_collection => $self->package_collection,
+                            $self->schema_arg
+                           );
+            if ($ver =~ m{/}) {
+                $ver = Debbugs::Version::Source->(@ver_opts);
+            } else {
+                $ver = Debbugs::Version::Binary->(@ver_opts);
+            }
 	}
 	$vertree->load($ver->source);
 	my $buggy =
