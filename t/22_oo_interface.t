@@ -56,7 +56,7 @@ ok(!$bug->archiveable,
   );
 $tests++;
 
-is($bug->submitter,'foo@bugs.something',
+is($bug->submitter->email,'foo@bugs.something',
    "Submitter works"
   );
 $tests++;
