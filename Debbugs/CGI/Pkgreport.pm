@@ -133,7 +133,7 @@ sub generate_package_info{
 				 # distribution.
 				 @{$config{distributions}//[]} ?
 				 (dist => [@{$config{distributions}}]) : (),
-				);
+				) if defined $srcforpkg;
      @pkgs = grep( !/^\Q$package\E$/, @pkgs );
      if ( @pkgs ) {
 	  @pkgs = sort @pkgs;
