@@ -517,13 +517,41 @@ has 'sources' => (is => 'ro',
 
 sub _build_sources {
     my $self = shift;
+    return $self->package_collection->limit($self->source_names);
+}
+
+sub source_names {
+    my $self = shift;
+
     if ($self->is_source) {
-	return $self->package_collection->limit($self);
+        return $self->name
     }
-    # OK, walk through the valid_versions for this package
-    my @sources =
-	uniq map {'src:'.$_->{src_pkg_name}} $self->_valid_versioninfo;
-    return $self->package_collection->limit(@sources);
+    return uniq map {'src:'.$_->{src_pkg}} $self->_valid_version_info;
+}
+
+=head2 maintainers 
+
+L<Debbugs::Collection::Correspondent> of the maintainer(s) of the current package
+
+=cut
+
+has maintainers => (is => 'ro',
+                    isa => 'Debbugs::Collection::Correspondent',
+                    lazy => 1,
+                    builder => '_build_maintainers',
+                    predicate => '_has_maintainers',
+                   );
+
+sub _build_maintainers {
+    my $self = shift;
+    my @maintainers;
+    for my $v ($self->_valid_version_info) {
+        next unless length($v->{suite_name}) and length($v->{maintainer});
+        push @maintainers,$v->{maintainer};
+    }
+    @maintainers =
+        uniq @maintainers;
+    return $self->correspondent_collection->limit(@maintainers);
 }
 
 has 'versions' => (is => 'bare',
@@ -660,6 +688,23 @@ has 'package_collection' => (is => 'ro',
 sub _build_package_collection {
     my $self = shift;
     return Debbugs::Collection::Package->new($self->schema_argument)
+}
+
+=head2 correspondent_collection
+
+L<Debbugs::Collection::Correspondent> to get additional maintainers required
+
+=cut
+
+has 'correspondent_collection' => (is => 'ro',
+                                   isa => 'Debbugs::Collection::Correspondent',
+                                   builder => '_build_correspondent_collection',
+                                   lazy => 1,
+                                  );
+
+sub _build_correspondent_collection {
+    my $self = shift;
+    return Debbugs::Collection::Correspondent->new($self->schema_argument)
 }
 
 sub CARP_TRACE {
