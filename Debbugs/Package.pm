@@ -33,9 +33,34 @@ use Debbugs::Version::Binary;
 
 extends 'Debbugs::OOBase';
 
+=head2 name
+
+Name of the Package
+
+=head2 qualified_name
+
+name if binary, name prefixed with C<src:> if source
+
+=cut
+
 has name => (is => 'ro', isa => 'Str',
 	     required => 1,
 	    );
+
+sub qualified_name {
+    my $self = shift;
+    return
+	# src: if source, nothing if binary
+	($self->_type eq 'source' ? 'src:':'') .
+	$self->name;
+}
+
+
+=head2 type
+
+Type of the package; either C<binary> or C<source>
+
+=cut
 
 has type => (is => 'bare', isa => 'Str',
 	     lazy => 1,
@@ -52,13 +77,11 @@ sub _build_type {
     }
 }
 
-sub qualified_name {
-    my $self = shift;
-    return
-	# src: if source, nothing if binary
-	($self->_type eq 'source' ? 'src:':'') .
-	$self->name;
-}
+=head2 url
+
+url to the package
+
+=cut
 
 sub url {
     my $self = shift;
@@ -85,6 +108,16 @@ around BUILDARGS => sub {
     return $class->$orig(%args);
 };
 
+=head2 is_source
+
+true if the package is a source package
+
+=head2 is_binary
+
+true if the package is a binary package
+
+=cut
+
 sub is_source {
     return $_[0]->_type eq 'source'
 }
@@ -92,6 +125,10 @@ sub is_source {
 sub is_binary {
     return $_[0]->_type eq 'binary'
 }
+
+=head2 valid -- true if the package has any valid versions
+
+=cut
 
 has valid => (is => 'ro', isa => 'Bool',
 	      lazy => 1,
@@ -606,6 +643,12 @@ sub _create_version {
     }
     $self->_set_version(@versions);
 }
+
+=head2 package_collection
+
+L<Debbugs::Collection::Package> to get additional packages required
+
+=cut
 
 # gets used to retrieve packages
 has 'package_collection' => (is => 'ro',
