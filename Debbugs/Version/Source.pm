@@ -42,7 +42,7 @@ sub source_version {
 
 sub src_pkg_ver {
     my $self = shift;
-    return $self->source->name.'/'.$self->version;
+    return $self->package.'/'.$self->version;
 }
 
 has maintainer => (is => 'ro',
@@ -51,7 +51,7 @@ has maintainer => (is => 'ro',
 
 sub source {
     my $self = shift;
-    return $self->package;
+    return $self->pkg;
 }
 
 sub arch {

@@ -655,7 +655,7 @@ sub _create_version {
 	    push @versions,
 		$v,
 		Debbugs::Version::Source->
-		    new(package => $self,
+		    new(pkg => $self,
 			version => $v,
 			package_collection => $self->package_collection,
                         $self->schema_argument,
@@ -666,7 +666,7 @@ sub _create_version {
 	    push @versions,
 		$v,
 		Debbugs::Version::Binary->
-		    new(package => $self,
+		    new(pkg => $self,
 			version => $v,
 			package_collection => $self->package_collection,
                         $self->schema_argument,

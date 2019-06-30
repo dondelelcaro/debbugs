@@ -45,7 +45,7 @@ has source_version => (is => 'ro',
 sub _build_source_version {
     my $self = shift;
     my $source_version =
-	$self->package->
+	$self->pkg->
 	get_source_version(version => $self->version,
 			   $self->_count_archs?(archs => [$self->_archs]):(),
 			  );
@@ -57,6 +57,11 @@ sub _build_source_version {
 					 valid => 0,
 					 package_collection => $self->package_collection,
 					);
+}
+
+sub src_pkg_ver {
+    my $self = shift;
+    return $self->source->src_pkg_ver;
 }
 
 has archs => (is => 'bare',
@@ -76,7 +81,7 @@ sub _build_archs {
 
 sub arch {
     my $self = shift;
-    return $self->_count_archs > 0?join('',$self->_archs):'any';
+    return $self->_count_archs > 0?join(',',$self->_archs):'any';
 }
 
 
