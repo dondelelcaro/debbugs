@@ -43,6 +43,8 @@ use Debbugs::VersionTree;
 
 extends 'Debbugs::Collection';
 
+=head1 Object Creation
+
 =head2 my $packages = Debbugs::Collection::Package->new(%params|$param)
 
 Parameters in addition to those defined by L<Debbugs::Collection>
@@ -60,25 +62,17 @@ Optional L<Debbugs::VersionTree> which contains known package source versions
 
 =back
 
-=head2 $packages->correspondent_collection
+=head1 Methods
+
+=head2 correspondent_collection
+
+     $packages->correspondent_collection
 
 Returns the L<Debbugs::Collection::Correspondent> for this package collection
 
 =head2 versiontree
 
 Returns the L<Debbugs::VersionTree> for this package collection
-
-=head2 $packages->get_source_versions_distributions(@distributions)
-
-Returns a L<Debbugs::Collection::Version> of all versions in this package
-collection which belong to the distributions given.
-
-=head2 $packages->get_source_versions('1.2.3-1','foo/1.2.3-5')
-
-Given a list of binary versions or src/versions, returns a
-L<Debbugs::Collection::Version> of all of the versions in this package
-collection which are known to match. You'll have to be sure to load appropriate
-versions beforehand for this to actually work.
 
 =cut
 
@@ -149,85 +143,6 @@ sub add_packages_and_versions {
     $self->add($self->_member_constructor(packages => \@_));
 }
 
-# state $common_dists = [@{$config{distributions}}];
-# sub _get_packages {
-#     my %args = @_;
-#     my $s = $args{schema};
-#     my %src_packages;
-#     my %src_ver_packages;
-#     my %bin_packages;
-#     my %bin_ver_packages;
-#     # split packages into src/ver, bin/ver, src, and bin so we can select them
-#     # from the database
-#     local $_;
-#     for my $pkg (@{$args{packages}}) {
-#         if (ref($pkg)) {
-#             if ($pkg->[0] =~ /^src:(.+)$/) {
-#                 for my $ver (@{$pkg}[1..$#{$pkg}]) {
-#                     $src_ver_packages{$1}{$ver} = 1;
-#                 }
-#             } else {
-#                 for my $ver (@{$pkg}[1..$#{$pkg}]) {
-#                     $bin_ver_packages{$pkg->[0]}{$ver} = 1;
-#                 }
-#             }
-#         } elsif ($pkg =~ /^src:(.+)$/) {
-#             $src_packages{$1} = 1;
-#         } else {
-#             $bin_packages{$pkg} = 1;
-#         }
-#     }
-#     my @src_ver_search;
-#     for my $sp (keys %src_ver_packages) {
-#         push @src_ver_search,
-#             (-and => {'src_pkg.pkg' => $sp,
-#                       'me.ver' => [keys %{$src_ver_packages{$sp}}],
-#                      },
-#              );
-#     }
-#     my %packages;
-#     my $src_rs = $s->resultset('SrcVer')->
-#         search({-or => [-and => {'src_pkg.pkg' => [keys %src_packages],
-#                                  -or => {'suite.codename' => $common_dists,
-#                                          'suite.suite_name' => $common_dists,
-#                                         },
-#                                 },
-#                         @src_ver_search,
-#                        ],
-#                },
-#               {join => ['src_pkg',
-#                         {'src_associations' => 'suite'},
-#                        ],
-#                '+select' => [qw(src_pkg.pkg),
-#                              qw(suite.codename),
-#                              qw(src_associations.modified),
-#                              q(CONCAT(src_pkg.pkg,'/',me.ver))],
-#                '+as' => [qw(src_pkg_name codename modified_time src_pkg_ver)],
-#                result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-#                order_by => {-desc => 'me.ver'}
-#               },
-#               );
-#     while (my $pkg = $src_rs->next) {
-#         my $n = 'src:'.$pkg->{src_pkg_name};
-#         if (exists $packages{$n}) {
-#             push @{$packages{$n}{versions}},
-#                 $pkg->{src_pkg_ver};
-#             if (defined $pkg->{codename}) {
-#                 push @{$packages{$n}{dists}{$pkg->{codename}}},
-#                     $#{$packages{$n}{versions}};
-#             }
-#         } else {
-#             $packages{$n} =
-#            {name => $pkg->{src_pkg_name},
-#             type => 'source',
-#             valid => 1,
-#             versions => [$pkg->{src_pkg_ver}],
-#             dists => {defined $pkg->{codename}?($pkg->{codename} => [1]):()},
-#            };
-#         }
-#     }
-#     return \%packages;
-# }
 
 sub member_key {
     return $_[1]->qualified_name;
@@ -251,31 +166,61 @@ sub _build_versiontree {
     return Debbugs::VersionTree->new($self->has_schema?(schema => $self->schema):());
 }
 
+=head2 get_source_versions_distributions
+
+     $packages->get_source_versions_distributions('unstable')
+
+Given a list of distributions or suites, returns a
+L<Debbugs::Collection::Version> of all of the versions in this package
+collection which are known to match.
+
+Effectively, this calls L<Debbugs::Package/get_source_version_distribution> for
+each package in the collection and merges the results and returns them
+
+=cut
 
 sub get_source_versions_distributions {
     my $self = shift;
     my @return;
     push @return,
-            $self->apply(sub {$_->get_source_version_distribution(@_)});
-    return
-        Debbugs::Collection::Version->new(versions => \@return,
-                                          $self->has_schema?(schema => $self->schema):(),
-                                          package_collection => $self->universe,
-                                         );
+        $self->map(sub {$_->get_source_version_distribution(@_)});
+    if (@return > 1) {
+        return $return[0]->combine($return[1..$#return]);
+    }
+    return @return;
 }
 
-# given a list of binary versions or src/versions, returns all of the versions
-# in this package collection which are known to match. You'll have to be sure to
-# load appropriate versions beforehand for this to actually work.
+
+=head2 get_source_versions
+
+    $packages->get_source_versions('1.2.3-1','foo/1.2.3-5')
+
+Given a list of binary versions or src/versions, returns a
+L<Debbugs::Collection::Version> of all of the versions in this package
+collection which are known to match.
+
+If you give a binary version ('1.2.3-1'), you must have already loaded source
+packages into this package collection for it to find an appropriate match.
+
+If no package is known to match, an version which is invalid will be returned
+
+For fully qualified versions this loads the appropriate source package into the
+universe of this collection and calls L<Debbugs::Package/get_source_version>.
+For unqualified versions, calls L<Debbugs::Package/get_source_version>; if no
+valid versions are returned, creates an invalid version.
+
+=cut
+
 sub get_source_versions {
     my $self = shift;
     my @return;
     for my $ver (@_) {
         my $sv;
-        if ($ver =~ m{(<src>.+?)/(?<ver>.+)$/}) {
-            my $sp = $self->get_or_add_by_key('src:'.$+{src});
+        if ($ver =~ m{(?<src>.+?)/(?<ver>.+)$}) {
+            my $sp = $self->universe->
+                get_or_add_by_key('src:'.$+{src});
             push @return,
-                $sp->get_source_version($ver);
+                $sp->get_source_version($+{ver});
            next;
         } else {
             my $found_valid = 0;
@@ -301,14 +246,44 @@ sub get_source_versions {
         }
     }
     return
-        Debbugs::Collection::Version->new(versions => \@return,
+        Debbugs::Collection::Version->new(members => \@return,
                                           $self->schema_argument,
                                           package_collection => $self->universe,
                                          );
 }
 
+=head2 source_names
+
+     $packages->source_names()
+
+Returns a unique list of source names from all members of this collection by
+calling L<Debbugs::Package/source_names> on each member.
+
+=cut
+
+sub source_names {
+    my $self = shift;
+    local $_;
+    return uniq map {$_->source_names} $self->members;
+}
+
+=head2 sources
+
+     $packages->sources()
+
+Returns a L<Debbugs::Collection::Package> limited to source packages
+corresponding to all packages in this collection
+
+=cut
+
+sub sources {
+    my $self = shift;
+    return $self->universe->limit($self->source_names);
+}
+
 
 __PACKAGE__->meta->make_immutable;
+no Mouse;
 
 1;
 
