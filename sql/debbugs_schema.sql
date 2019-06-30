@@ -573,6 +573,8 @@ CREATE VIEW bug_status --(id,bug_num,tags,subject,
 	      	     JOIN src_pkg sp ON bsp.src_pkg=sp.id
                      WHERE bsp.bug=b.id) AS package
         ) AS package,
+	(SELECT msgid FROM message m LEFT JOIN bug_message bm ON bm.message=m.id
+		WHERE bm.bug=b.id ORDER BY m.sent_date ASC limit 1) AS message_id,
 	b.submitter_full AS originator,
 	EXTRACT(EPOCH FROM b.log_modified) AS log_modified,
 	EXTRACT(EPOCH FROM b.creation) AS date,
