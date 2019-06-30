@@ -367,7 +367,7 @@ sub _build_pending {
     return $pending;
 }
 
-=item buggy
+=head2 buggy
 
      $bug->buggy('debbugs/2.6.0-1','debbugs/2.6.0-2');
      $bug->buggy(Debbugs::Version->new('debbugs/2.6.0-1'),
@@ -637,17 +637,9 @@ sub version_url {
 
 sub related_packages_and_versions {
     my $self = shift;
-    my @packages;
-    if (length($self->status->{package}//'')) {
-	@packages = split /,/,$self->status->{package}//'';
-    }
-    if (length($self->status->{affects}//'')) {
-	push @packages,
-            split /,/,$self->status->{affects}//'';
-    }
-    my @versions =
-        (@{$self->status->{found_versions}//[]},
-         @{$self->status->{fixed_versions}//[]});
+    my @packages = $self->status->package;
+    my @versions = ($self->status->found,
+                    $self->status->fixed);
     my @unqualified_versions;
     my @return;
     for my $ver (@versions) {
