@@ -234,9 +234,7 @@ sub _build_affects {
 }
 sub _build_sources {
     my $self = shift;
-    local $_;
-    my @sources = map {$_->sources} $self->packages->members;
-    return @sources;
+    return $self->packages->sources->clone;
 }
 
 sub is_owned {
