@@ -40,7 +40,7 @@
         <div id="extra_status_<: $bug.bug :>" class="shortbugstatusextra">
             <table class="extra_status">
                 <tr><td>Reported by</td><td><a href="<: $bug.submitter_url :>"><: $bug.submitter.name :></a></td></tr>
-                <tr><td>Date</td><td><: $bug.created.stringify :></td></tr>
+                <tr><td>Date</td><td><: $bug.created.iso8601 :></td></tr>
       <:- if $bug.is_owned { -:>
                 <tr><td>Owned by</td><td><a href="<: $bug.owner_url :>"><: $bug.owner.name :></a></td></tr>
       <:- } :>
