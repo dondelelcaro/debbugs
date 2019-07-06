@@ -147,6 +147,8 @@ Creates a link to the version cgi script
 
 =item fixed -- arrayref of fixed versions
 
+=item format -- optional image format override
+
 =item width -- optional width of graph
 
 =item height -- optional height of graph
@@ -170,6 +172,9 @@ sub version_url{
 						      },
 					   fixed   => {type => ARRAYREF,
 						       default => [],
+						      },
+					   format  => {type => SCALAR,
+						       optional => 1,
 						      },
 					   width   => {type => SCALAR,
 						       optional => 1,
