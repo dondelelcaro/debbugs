@@ -1151,7 +1151,7 @@ sub read_config{
 	 return;
      }
      # first, figure out what type of file we're reading in.
-     my $fh = new IO::File $conf_file,'r'
+     my $fh = IO::File->new($conf_file,'r')
 	  or die "Unable to open configuration file $conf_file for reading: $!";
      # A new version configuration file must have a comment as its first line
      my $first_line = <$fh>;
