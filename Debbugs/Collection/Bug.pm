@@ -39,7 +39,7 @@ extends 'Debbugs::Collection';
 
 =head2 my $bugs = Debbugs::Collection::Bug->new(%params|$param)
 
-Parameters:
+Parameters in addition to those defined by L<Debbugs::Collection>
 
 =over
 
