@@ -66,7 +66,7 @@ if (defined $config{database}) {
 }
 
 use CGI::Simple;
-my $q = new CGI::Simple;
+my $q = CGI::Simple->new();
 # STDOUT should be using the utf8 io layer
 binmode(STDOUT,':raw:encoding(UTF-8)');
 
