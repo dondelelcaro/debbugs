@@ -406,6 +406,7 @@ CREATE TABLE bug_binpackage (
        bin_pkg INT NOT NULL REFERENCES bin_pkg ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE UNIQUE INDEX bug_binpackage_id_pkg ON bug_binpackage(bug,bin_pkg);
+CREATE UNIQUE INDEX bug_binpackage_bin_pkg_bug_idx ON bug_binpackage(bin_pkg,bug);
 INSERT INTO table_comments VALUES ('bug_binpackage','Bug <-> binary package mapping');
 INSERT INTO column_comments VALUES ('bug_binpackage','bug','Bug id (matches bug)');
 INSERT INTO column_comments VALUES ('bug_binpackage','bin_pkg','Binary package id (matches bin_pkg)');
@@ -652,6 +653,8 @@ CREATE VIEW bug_status --(id,bug_num,tags,subject,
 	      	     JOIN src_pkg sp ON bsp.src_pkg=sp.id
                      WHERE bsp.bug=b.id) AS affects
         ) AS affects,
+	(SELECT msgid FROM message m LEFT JOIN bug_message bm ON bm.message=m.id
+		WHERE bm.bug=b.id ORDER BY m.sent_date ASC limit 1) AS message_id,
 	b.submitter_full AS originator,
 	EXTRACT(EPOCH FROM b.log_modified) AS log_modified,
 	EXTRACT(EPOCH FROM b.creation) AS date,

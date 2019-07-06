@@ -11,9 +11,10 @@
 
 package Debbugs::Log;
 
-
-use warnings;
-use strict;
+use Mouse;
+use strictures 2;
+use namespace::clean;
+use v5.10; # for state
 
 use vars qw($VERSION $DEBUG @EXPORT @EXPORT_OK %EXPORT_TAGS);
 use Exporter qw(import);
@@ -41,7 +42,6 @@ use Debbugs::Common qw(getbuglocation getbugcomponent make_list);
 use Params::Validate qw(:types validate_with);
 use Encode qw(encode encode_utf8 is_utf8);
 use IO::InnerFile;
-use feature 'state';
 
 =head1 NAME
 
@@ -165,70 +165,99 @@ One of the above options must be passed.
 
 =cut
 
-sub new
-{
-    my $this = shift;
-    my %param;
-    if (@_ == 1) {
-	 ($param{logfh}) = @_;
-	 $param{inner_file} = 0;
-    }
-    else {
-        state $spec =
-            {bug_num => {type => SCALAR,
-                         optional => 1,
-                        },
-             logfh   => {type => HANDLE,
-                         optional => 1,
-                        },
-             log_name => {type => SCALAR,
-                          optional => 1,
-                         },
-             inner_file => {type => BOOLEAN,
-                            default => 0,
-                           },
-            };
-        %param = validate_with(params => \@_,
-                               spec   => $spec,
-                              );
-    }
-    if (grep({exists $param{$_} and defined $param{$_}}
-             qw(bug_num logfh log_name)) ne 1) {
+sub BUILD {
+    my ($self,$args) = @_;
+    if (not ($self->_has_bug_num or
+             $self->_has_logfh or
+             $self->_has_log_name)) {
         croak "Exactly one of bug_num, logfh, or log_name ".
             "must be passed and must be defined";
     }
-
-    my $class = ref($this) || $this;
-    my $self = {};
-    bless $self, $class;
-
-    if (exists $param{logfh}) {
-        $self->{logfh} = $param{logfh}
-    } else {
-	my $bug_log;
-	if (exists $param{bug_num}) {
-	    my $location = getbuglocation($param{bug_num},'log');
-	    $bug_log = getbugcomponent($param{bug_num},'log',$location);
-	} else {
-	    $bug_log = $param{log_name};
-	}
-	if ($bug_log =~ m/\.gz$/) {
-	    my $oldpath = $ENV{'PATH'};
-	    $ENV{'PATH'} = '/bin:/usr/bin';
-	    open($self->{logfh},'-|','gzip','-dc',$bug_log) or
-		die "Unable to open $bug_log for reading: $!";
-            $ENV{'PATH'} = $oldpath;
-	} else {
-            open($self->{logfh},'<',$bug_log) or
-                die "Unable to open $bug_log for reading: $!";
-	}
-    }
-
-    $self->{state} = 'kill-init';
-    $self->{linenum} = 0;
-    $self->{inner_file} = $param{inner_file};
-    return $self;
 }
+
+has 'bug_num' =>
+    (is => 'ro',
+     isa => 'Int',
+     predicate => '_has_bug_num',
+    );
+
+has 'logfh' =>
+    (is => 'ro',
+     lazy => 1,
+     builder => '_build_logfh',
+     predicate => '_has_logfh',
+    );
+
+sub _build_logfh {
+    my $self = shift;
+    my $bug_log =
+        $self->log_name;
+    my $log_fh;
+    if ($bug_log =~ m/\.gz$/) {
+        my $oldpath = $ENV{'PATH'};
+        $ENV{'PATH'} = '/bin:/usr/bin';
+        open($log_fh,'-|','gzip','-dc',$bug_log) or
+            die "Unable to open $bug_log for reading: $!";
+        $ENV{'PATH'} = $oldpath;
+    } else {
+        open($log_fh,'<',$bug_log) or
+            die "Unable to open $bug_log for reading: $!";
+    }
+    return $log_fh;
+}
+
+has 'log_name' =>
+    (is => 'ro',
+     isa => 'Str',
+     lazy => 1,
+     builder => '_build_log_name',
+     predicate => '_has_log_name',
+    );
+
+sub _build_log_name {
+    my $self = shift;
+    my $location = getbuglocation($self->bug_num,'log');
+    return getbugcomponent($self->bug_num,'log',$location);
+}
+
+has 'inner_file' =>
+    (is => 'ro',
+     isa => 'Bool',
+     default => 0,
+    );
+
+has 'state' =>
+    (is => 'ro',
+     isa => 'Str',
+     default => 'kill-init',
+     writer => '_state',
+    );
+
+sub state_transition {
+    my $self = shift;
+    my $new_state = shift;
+    my $old_state = $self->state;
+    local $_ = "$old_state $new_state";
+    unless (/^(go|go-nox|html) kill-end$/ or
+            /^(kill-init|kill-end) (incoming-recv|autocheck|recips|html)$/ or
+            /^autocheck autowait$/ or
+            /^autowait go-nox$/ or
+            /^recips kill-body$/ or
+            /^(kill-body|incoming-recv) go$/) {
+        confess "transition from $old_state to $new_state at $self->linenum disallowed";
+    }
+    $self->_state($new_state);
+}
+
+sub increment_linenum {
+    my $self = shift;
+    $self->_linenum($self->_linenum+1);
+}
+has '_linenum' =>
+    (is => 'rw',
+     isa => 'Int',
+     default => 0,
+    );
 
 =item read_record
 
@@ -241,7 +270,7 @@ in an eval().
 sub read_record
 {
     my $this = shift;
-    my $logfh = $this->{logfh};
+    my $logfh = $this->logfh;
 
     # This comes from bugreport.cgi, but is much simpler since it doesn't
     # worry about the details of output.
@@ -251,74 +280,66 @@ sub read_record
     while (defined (my $line = <$logfh>)) {
         $record->{start} = $logfh->tell() if not defined $record->{start};
 	chomp $line;
-	++$this->{linenum};
+	$this->increment_linenum;
 	if (length($line) == 1 and exists $states{ord($line)}) {
 	    # state transitions
-	    my $newstate = $states{ord($line)};
-
-	    # disallowed transitions
-	    $_ = "$this->{state} $newstate";
-	    unless (/^(go|go-nox|html) kill-end$/ or
-		    /^(kill-init|kill-end) (incoming-recv|autocheck|recips|html)$/ or
-		    /^kill-body go$/) {
-		die "transition from $this->{state} to $newstate at $this->{linenum} disallowed";
-	    }
-
-	    $this->{state} = $newstate;
-	    if ($this->{state} =~ /^(autocheck|recips|html|incoming-recv)$/) {
-            $record->{type} = $this->{state};
-            $record->{start} = $logfh->tell;
-            $record->{stop} = $logfh->tell;
-            $record->{inner_file} = $this->{inner_file};
-	    } elsif ($this->{state} eq 'kill-end') {
-            if ($this->{inner_file}) {
-                $record->{fh} = IO::InnerFile->new($logfh,$record->{start},$record->{stop} - $record->{start})
-            }
+	    $this->state_transition($states{ord($line)});
+	    if ($this->state =~ /^(autocheck|recips|html|incoming-recv)$/) {
+                $record->{type} = $this->state;
+                $record->{start} = $logfh->tell;
+                $record->{stop} = $logfh->tell;
+                $record->{inner_file} = $this->inner_file;
+	    } elsif ($this->state eq 'kill-end') {
+                if ($this->inner_file) {
+                    $record->{fh} =
+                        IO::InnerFile->new($logfh,$record->{start},
+                                           $record->{stop} - $record->{start})
+                        }
 		return $record;
 	    }
 
 	    next;
 	}
-    $record->{stop} = $logfh->tell;
+        $record->{stop} = $logfh->tell;
 	$_ = $line;
-	if ($this->{state} eq 'incoming-recv') {
+	if ($this->state eq 'incoming-recv') {
 	    my $pl = $_;
 	    unless (/^Received: \(at \S+\) by \S+;/) {
 		die "bad line '$pl' in state incoming-recv";
 	    }
-	    $this->{state} = 'go';
-	    $record->{text} .= "$_\n" unless $this->{inner_file};
-	} elsif ($this->{state} eq 'html') {
-	    $record->{text} .= "$_\n"  unless $this->{inner_file};
-	} elsif ($this->{state} eq 'go') {
+	    $this->state_transition('go');
+	    $record->{text} .= "$_\n" unless $this->inner_file;
+	} elsif ($this->state eq 'html') {
+	    $record->{text} .= "$_\n"  unless $this->inner_file;
+	} elsif ($this->state eq 'go') {
 	    s/^\030//;
-	    $record->{text} .= "$_\n"  unless $this->{inner_file};
-	} elsif ($this->{state} eq 'go-nox') {
-	    $record->{text} .= "$_\n"  unless $this->{inner_file};
-	} elsif ($this->{state} eq 'recips') {
+	    $record->{text} .= "$_\n"  unless $this->inner_file;
+	} elsif ($this->state eq 'go-nox') {
+	    $record->{text} .= "$_\n"  unless $this->inner_file;
+	} elsif ($this->state eq 'recips') {
 	    if (/^-t$/) {
 		undef $record->{recips};
 	    } else {
 		# preserve trailing null fields, e.g. #2298
 		$record->{recips} = [split /\04/, $_, -1];
 	    }
-	    $this->{state} = 'kill-body';
-        $record->{start} = $logfh->tell+2;
-        $record->{stop} = $logfh->tell+2;
-        $record->{inner_file} = $this->{inner_file};
-	} elsif ($this->{state} eq 'autocheck') {
-	    $record->{text} .= "$_\n" unless $this->{inner_file};
+	    $this->state_transition('kill-body');
+            $record->{start} = $logfh->tell+2;
+            $record->{stop} = $logfh->tell+2;
+            $record->{inner_file} = $this->inner_file;
+	} elsif ($this->state eq 'autocheck') {
+	    $record->{text} .= "$_\n" unless $this->inner_file;
 	    next if !/^X-Debian-Bugs(-\w+)?: This is an autoforward from (\S+)/;
-	    $this->{state} = 'autowait';
-	} elsif ($this->{state} eq 'autowait') {
-	    $record->{text} .= "$_\n" unless $this->{inner_file};
+	    $this->state_transition('autowait');
+	} elsif ($this->state eq 'autowait') {
+	    $record->{text} .= "$_\n" unless $this->inner_file;
 	    next if !/^$/;
-	    $this->{state} = 'go-nox';
+	    $this->state_transition('go-nox');
 	} else {
-	    die "state $this->{state} at line $this->{linenum} ('$_')";
+	    die "state $this->state at line $this->linenum ('$_')";
 	}
     }
-    die "state $this->{state} at end" unless $this->{state} eq 'kill-end';
+    die "state $this->state at end" unless $this->state eq 'kill-end';
 
     if (keys %$record) {
 	return $record;
@@ -326,6 +347,42 @@ sub read_record
 	return undef;
     }
 }
+
+=item rewind
+
+Rewinds the Debbugs::Log to the beginning
+
+=cut
+
+sub rewind {
+    my $self = shift;
+    if ($self->_has_log_name) {
+        $self->_clear_log_fh;
+    } else {
+        $self->log_fh->seek(0);
+    }
+    $self->_state('kill-init');
+    $self->_linenum(0);
+}
+
+=item read_all_records
+
+Reads all of the Debbugs::Records
+
+=cut
+
+sub read_all_records {
+    my $self = shift;
+    if ($self->_linenum != 0) {
+        $self->rewind;
+    }
+    my @records;
+    while (defined(my $record = $self->read_record())) {
+	push @records, $record;
+    }
+    return @records;
+}
+
 
 =item read_log_records
 

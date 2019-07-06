@@ -45,10 +45,11 @@ use Debbugs::Log qw(:read);
 use Debbugs::Log::Spam;
 use Debbugs::CGI qw(:url :html :util :cache :usertags);
 use Debbugs::CGI::Bugreport qw(:all);
-use Debbugs::Common qw(buglog getmaintainers make_list bug_status);
-use Debbugs::Packages qw(getpkgsrc);
+use Debbugs::Common qw(buglog getmaintainers make_list bug_status package_maintainer);
+use Debbugs::Packages qw(binary_to_source);
 use Debbugs::DB;
 use Debbugs::Status qw(splitpackages split_status_fields get_bug_status isstrongseverity);
+use Debbugs::Bug;
 
 use Scalar::Util qw(looks_like_number);
 
@@ -57,13 +58,15 @@ use URI::Escape qw(uri_escape_utf8);
 use List::AllUtils qw(max);
 
 my $s;
+my @schema_arg = ();
 if (defined $config{database}) {
     $s = Debbugs::DB->connect($config{database}) or
-        die "Unable to connect to database";
+        die "Unable to connect to DB";
+    @schema_arg = ('schema',$s);
 }
 
 use CGI::Simple;
-my $q = new CGI::Simple;
+my $q = CGI::Simple->new();
 # STDOUT should be using the utf8 io layer
 binmode(STDOUT,':raw:encoding(UTF-8)');
 
@@ -213,19 +216,21 @@ if (defined $param{usertag}) {
      }
 }
 
+my $bug = Debbugs::Bug->new(bug => $ref,
+                            @schema_arg,
+                           );
+
 my %status;
 if ($need_status) {
     %status = %{split_status_fields(get_bug_status(bug=>$ref,
 						   bugusertags => \%bugusertags,
-                                                   defined $s?(schema => $s):(),
+                                                   @schema_arg,
 						  ))}
 }
 
 my @records;
-my $spam;
 eval{
-    @records = read_log_records(bug_num => $ref,inner_file => 1);
-    $spam = Debbugs::Log::Spam->new(bug_num => $ref);
+    @records = $bug->log_records();
 };
 if ($@) {
      quitcgi("Bad bug log for $gBug $ref. Unable to read records: $@");
@@ -301,7 +306,7 @@ END
 	  next if not $boring and not $record->{type} eq $wanted_type and not $record_wanted_anyway and @records > 1;
 	  $seen_message_ids{$msg_id} = 1 if defined $msg_id;
           # skip spam messages if we're outputting more than one message
-          next if @records > 1 and $spam->is_spam($msg_id);
+          next if @records > 1 and $bug->is_spam($msg_id);
       my @lines;
       if ($record->{inner_file}) {
           push @lines, scalar $record->{fh}->getline;
@@ -359,7 +364,7 @@ else {
 				   terse => $terse,
                                    # if we're only looking at one record, allow
                                    # spam to be output
-                                   spam  => (@records > 1)?$spam:undef,
+                                   spam  => (@records > 1)?$bug:undef,
                                   );
      }
 }
@@ -370,115 +375,15 @@ $log = join("\n",@log);
 
 # All of the below should be turned into a template
 
-my %maintainer = %{getmaintainers()};
-my %pkgsrc = %{getpkgsrc()};
-
 my $indexentry;
 my $showseverity;
-
-my $tpack;
-my $tmain;
-
-my $dtime = strftime "%a, %e %b %Y %T UTC", gmtime;
 
 unless (%status) {
     no_such_bug($q,$ref);
 }
 
-#$|=1;
-
-
 my @packages = make_list($status{package});
 
-
-my %packages_affects;
-for my $p_a (qw(package affects)) {
-    foreach my $pkg (make_list($status{$p_a})) {
-        if ($pkg =~ /^src\:/) {
-            my ($srcpkg) = $pkg =~ /^src:(.*)/;
-            my @maint = package_maintainer(source => $srcpkg,
-                                           @schema_arg,
-                                          );
-            $packages_affects{$p_a}{$pkg} =
-               {maintainer => @maint?\@maint : ['(unknown)'],
-                source     => $srcpkg,
-                package    => $pkg,
-                is_source  => 1,
-               };
-        }
-        else {
-            my @maint = package_maintainer(binary => $pkg,
-                                           @schema_arg,
-                                          );
-            my $source =
-                binary_to_source(binary => $pkg,
-                                 source_only => 1,
-                                 scalar_only => 1,
-                                 @schema_arg,
-                                );
-            $packages_affects{$p_a}{$pkg} =
-               {maintainer => @maint?\@maint : '(unknown)',
-                length($source)?(source => $source):(),
-                package    => $pkg,
-               };
-        }
-    }
-}
-
-# fixup various bits of the status
-$status{tags_array} = [sort(make_list($status{tags}))];
-$status{date_text} = strftime('%a, %e %b %Y %T UTC', gmtime($status{date}));
-$status{mergedwith_array} = [make_list($status{mergedwith})];
-
-
-my $version_graph = '';
-if (@{$status{found_versions}} or @{$status{fixed_versions}}) {
-     $version_graph = q(<a href=").
-	  html_escape(version_url(package => $status{package},
-				  found => $status{found_versions},
-				  fixed => $status{fixed_versions},
-				 )
-		     ).
-	  q("><img alt="version graph" src=").
-	  html_escape(version_url(package => $status{package},
-				  found => $status{found_versions},
-				  fixed => $status{fixed_versions},
-				  width => 2,
-				  height => 2,
-				 )
-		     ).
-	  qq{"></a>};
-}
-
-
-
-my @blockedby= make_list($status{blockedby});
-$status{blockedby_array} = [];
-if (@blockedby && $status{"pending"} ne 'fixed' && ! length($status{done})) {
-    for my $b (@blockedby) {
-        my %s = %{get_bug_status($b)};
-        next if (defined $s{pending} and
-                 $s{"pending"} eq 'fixed') or
-                     length $s{done};
-	push @{$status{blockedby_array}},{bug_num => $b, subject => $s{subject}, status => \%s};
-   }
-}
-
-my @blocks= make_list($status{blocks});
-$status{blocks_array} = [];
-if (@blocks && $status{"pending"} ne 'fixed' && ! length($status{done})) {
-    for my $b (@blocks) {
-        my %s = %{get_bug_status($b)};
-        next if $s{"pending"} eq 'fixed' || length $s{done};
-	push @{$status{blocks_array}}, {bug_num => $b, subject => $s{subject}, status => \%s};
-    }
-}
-
-if ($buglog !~ m#^\Q$gSpoolDir/db#) {
-     $status{archived} = 1;
-}
-
-my $descriptivehead = $indexentry;
 
 print $q->header(-type => "text/html",
 		 -charset => 'utf-8',
@@ -487,12 +392,8 @@ print $q->header(-type => "text/html",
 		);
 
 print fill_in_template(template => 'cgi/bugreport',
-		       variables => {status => \%status,
-				     package => $packages_affects{'package'},
-				     affects => $packages_affects{'affects'},
+		       variables => {bug => $bug,
 				     log           => $log,
-				     bug_num       => $ref,
-				     version_graph => $version_graph,
 				     msg           => $msg,
 				     isstrongseverity => \&Debbugs::Status::isstrongseverity,
 				     html_escape   => \&Debbugs::CGI::html_escape,

@@ -37,6 +37,7 @@ BEGIN {
     # if the first directory in @INC is not an absolute directory, assume that
     # someone has overridden us via -I.
     if ($INC[0] !~ /^\//) {
+	undef $debbugs_dir;
     }
 }
 use if defined $debbugs_dir, lib => $debbugs_dir;
@@ -53,6 +54,7 @@ use Debbugs::Common qw(getparsedaddrs make_list getmaintainers getpseudodesc);
 
 use Debbugs::Bugs qw(get_bugs bug_filter newest_bug);
 use Debbugs::Packages qw(source_to_binary binary_to_source get_versions);
+use Debbugs::Collection::Bug;
 
 use Debbugs::Status qw(splitpackages);
 
@@ -292,8 +294,10 @@ my %bugusertags;
 my %ut;
 my %seen_users;
 
+my @users;
 for my $user (map {split /[\s*,\s*]+/} make_list($param{users}||[])) {
     next unless length($user);
+    push @users, $user;
     add_user($user,\%ut,\%bugusertags,\%seen_users,\%cats,\%hidden);
 }
 
@@ -304,7 +308,8 @@ if (defined $param{usertag}) {
 	  Debbugs::User::read_usertags(\%select_ut, $u);
 	  unless (defined $t && $t ne "") {
 	       $t = join(",", keys(%select_ut));
-	  }
+	   }
+	  push @users,$u;
 	  add_user($u,\%ut,\%bugusertags,\%seen_users,\%cats,\%hidden);
 	  push @{$param{tag}}, split /,/, $t;
      }
@@ -355,6 +360,8 @@ if (defined $config{usertag_package_domain}) {
     }
     for my $package (@possible_packages) {
 	next unless defined $package and length $package;
+	push @users,
+	    $package.'@'.$config{usertag_package_domain};
 	add_user($package.'@'.$config{usertag_package_domain},
 		 \%ut,\%bugusertags,\%seen_users,\%cats,\%hidden);
     }
@@ -464,7 +471,17 @@ my %bugs;
 @bugs{@bugs} = @bugs;
 @bugs = keys %bugs;
 
-my $result = pkg_htmlizebugs(bugs => \@bugs,
+my $bugs = Debbugs::Collection::Bug->
+    new(bugs => \@bugs,
+	@schema_arg,
+	users => [map {my $u = Debbugs::User->new($_);
+		       $u->has_bug_tags()?($u):()
+		   } @users],
+       );
+
+$bugs->load_related_packages_and_versions();
+
+my $result = pkg_htmlizebugs(bugs => $bugs,
 			     names => \@names,
 			     title => \@title,
 			     order => \@order,

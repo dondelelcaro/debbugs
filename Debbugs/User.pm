@@ -154,6 +154,7 @@ sub new {
 		"visible_cats" => [],
 		"unknown_stanzas" => [],
 		values => {},
+		bug_tags => {},
 		email => $email,
 	       };
     bless $self, $class;
@@ -176,7 +177,12 @@ sub new {
             my %tag = @stanza;
             my $t = $tag{"Tag"};
             $ut->{$t} = [] unless defined $ut->{$t};
-            push @{$ut->{$t}}, split /\s*,\s*/, $tag{Bugs};
+	    my @bugs = split /\s*,\s*/, $tag{Bugs};
+            push @{$ut->{$t}}, @bugs;
+	    for my $bug (@bugs) {
+		push @{$self->{bug_tags}{$bug}},
+		    $t;
+	    }
         } elsif ($stanza[0] eq "Category") {
             my @cat = ();
             my %stanza = @stanza;
@@ -233,6 +239,27 @@ sub new {
     }
 
     return $self;
+}
+
+sub email {
+    my $self = shift;
+    return $self->{email};
+}
+
+sub tags {
+    my $self = shift;
+
+    return $self->{"tags"};
+}
+
+sub tags_on_bug {
+    my $self = shift;
+    return map {@{$self->{"bug_tags"}{$_}//[]}} @_;
+}
+
+sub has_bug_tags {
+    my $self = shift;
+    return keys %{$self->{bug_tags}} > 0;
 }
 
 sub write {

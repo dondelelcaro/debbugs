@@ -621,26 +621,22 @@ sub get_bugs_by_db{
 	 # identify all of the srcpackages and binpackages that match first
 	 my $src_pkgs_rs =
 	 $s->resultset('SrcPkg')->
-	     search({-or => [map {('me.pkg' => $_,
-				  )}
-			     make_list($param{src})],
+	     search({'pkg' => [make_list($param{src})],
 		    },
 		   { columns => ['id'],
 		     group_by => ['me.id'],
 		    },
 		   );
 	 my $bin_pkgs_rs =
-	 $s->resultset('BinPkg')->
-	     search({-or => [map {('src_pkg.pkg' => $_,
-				  )}
-			     make_list($param{src})],
-		     },
-		   {join => {bin_vers => {src_ver => 'src_pkg'}},
-		    columns => ['id'],
-		    group_by => ['me.id'],
+	     $s->resultset('BinPkgSrcPkg')->
+	     search({'src_pkg.pkg' => [make_list($param{src})],
+		    },
+		   {columns => ['bin_pkg'],
+		    join => ['src_pkg'],
+		    group_by => ['bin_pkg'],
 		   });
          $rs = $rs->search({-or => {'bug_binpackages.bin_pkg' =>
-				   { -in => $bin_pkgs_rs->get_column('id')->as_query},
+				   { -in => $bin_pkgs_rs->get_column('bin_pkg')->as_query},
 				    'bug_srcpackages.src_pkg' =>
 				   { -in => $src_pkgs_rs->get_column('id')->as_query},
 				    'me.unknown_packages' =>
