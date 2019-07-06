@@ -183,6 +183,21 @@ __PACKAGE__->belongs_to(
   },
 );
 
+=head2 bin_pkg_src_pkgs
+
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::BinPkgSrcPkg>
+
+=cut
+
+__PACKAGE__->has_many(
+  "bin_pkg_src_pkgs",
+  "Debbugs::DB::Result::BinPkgSrcPkg",
+  { "foreign.src_pkg" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 bug_affects_srcpackages
 
 Type: has_many
@@ -259,8 +274,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07046 @ 2017-03-04 10:59:03
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:j8LGu4eUfNUNxM/jkHUG2A
+# Created by DBIx::Class::Schema::Loader v0.07049 @ 2019-01-01 17:29:32
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:yiCFtO7j409+ZPBejeWitQ
 
 
 sub sqlt_deploy_hook {

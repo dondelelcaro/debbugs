@@ -95,6 +95,21 @@ __PACKAGE__->add_unique_constraint("bin_pkg_pkg_key", ["pkg"]);
 
 =head1 RELATIONS
 
+=head2 bin_pkg_src_pkgs
+
+Type: has_many
+
+Related object: L<Debbugs::DB::Result::BinPkgSrcPkg>
+
+=cut
+
+__PACKAGE__->has_many(
+  "bin_pkg_src_pkgs",
+  "Debbugs::DB::Result::BinPkgSrcPkg",
+  { "foreign.bin_pkg" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 bin_vers
 
 Type: has_many
@@ -141,8 +156,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2014-11-30 21:56:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:My1zg7yJ4SSXL78poec5ag
+# Created by DBIx::Class::Schema::Loader v0.07049 @ 2019-01-01 17:29:32
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:4DCmbmHyVSpW1I9vmDz3UA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
