@@ -71,11 +71,11 @@
           <:- } -:>
           <:- if $bug.has_found { -:>
           <tr><td>Found in version<: if $bug.status.found_count > 1 { :>s<: } :></td>
-              <td><a href="<: $bug.version_url :>"><:- $bug.status.found_join(', ') -:></a></td></tr>
+              <td><a href="<: $bug.version_url("format","svg") :>"><:- $bug.status.found_join(', ') -:></a></td></tr>
           <:- } -:>
               <:- if $bug.has_fixed { :>
               <tr><td>Fixed in version<: if $bug.status.fixed_count > 1 { :>s<: } :></td><td>
-                  <a href="<: $bug.version_url :>"><:- $bug.status.fixed_join(', ') -:></a></td></tr>
+                  <a href="<: $bug.version_url("format","svg") :>"><:- $bug.status.fixed_join(', ') -:></a></td></tr>
           <:- } -:>
           <:- if $bug.has_found or $bug.has_fixed { -:>
       </a>

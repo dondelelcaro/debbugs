@@ -23,9 +23,9 @@ function toggle_infmessages()
     </h1>
 : if $bug.has_found or $bug.has_fixed {
     <div class="versiongraph">
-        <a href="<: $bug.version_url :>">
+        <a href="<: $bug.version_url("format","svg") :>">
             <img alt="version graph"
-                 src="<: $bug.version_url("width",2,"height",2) :>">
+                 src="<: $bug.version_url("format","svg","width",2,"height",2) :>">
         </a></div>
 : }
 <: include "cgi/bugreport_pkginfo.tx" :>
