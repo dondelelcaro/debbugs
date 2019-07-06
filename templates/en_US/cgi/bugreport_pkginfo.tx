@@ -11,15 +11,29 @@
 ,
 : } } }
 <div class="pkginfo">
-    <p>Package<: if ($package.keys.count > 1) {:>s<: } :>
-    <: link_to_package($package) :>
-: for $package.values() -> $pkg { 
-<p>Maintainer for <: package_links($pkg.is_source ? "source": "package",$pkg.is_source ? $pkg.source : $pkg.package ) :> is <: package_links(maintainer => $pkg.maintainer) :>;
-<: if defined($pkg.source) && not $pkg.is_source { :>
-Source for <: package_links(package => $pkg.package) :> is
-<: package_links(source => $pkg.source) :>.
-<: } :></p>
+    <table><th>Package</th><th>Source(s)</th><th></th><th>Maintainer(s)</th>
+: for $bug.packages.members_ref -> $pkg {
+        <tr>
+            <td><a href="<: $pkg.url :>"><: $pkg.name :></a></td>
+	    <td>
+: for $pkg.sources.members_ref -> $src {
+		<a href="<: $src.url :>"><: $src.name :></a>
+		<:- if ! $~src.is_last { :>, <: } -:>
 : }
+            </td>
+	    <td><a href="https://tracker.debian.org/<:$pkg.name:>">PTS</a>
+		<a href="https://buildd.debian.org/<:$pkg.name:>">Buildd</a>
+		<a href="https://qa.debian.org/popcon.php?package=<:$pkg.name:>">Popcon</a>
+	    </td>
+	    <td>
+: for $pkg.maintainers.members_ref -> $maint {
+                <a href="<: $maint.maintainer_url :>"><: $maint.name :></a>
+                <:- if ! $~maint.is_last { :>, <: } -:>
+: }
+            </td>
+        </tr>
+: }
+    </table>
 : if $affects.keys.size > 0 {
 <p>Affects: <: link_to_package($affects) :>
 </p>
