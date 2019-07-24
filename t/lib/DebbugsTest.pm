@@ -78,7 +78,7 @@ sub create_debbugs_configuration {
 
 
      $ENV{DEBBUGS_CONFIG_FILE}  ="$config_dir/debbugs_config";
-     $ENV{PERL5LIB} = getcwd();
+     $ENV{PERL5LIB} = getcwd().'/lib/';
      $ENV{SENDMAIL_TESTDIR} = $sendmail_dir;
      eval {
      my $sendmail_tester = getcwd().'/t/sendmail_tester';

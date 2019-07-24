@@ -30,10 +30,10 @@ build:
 	$(MAKE) -C html/logo
 
 test:
-	LC_ALL=$(UTF8_LOCALE) $(PERL) -MTest::Harness -I. -e 'runtests(glob(q(t/*.t)))'
+	LC_ALL=$(UTF8_LOCALE) $(PERL) -MTest::Harness -Ilib -e 'runtests(glob(q(t/*.t)))'
 
 test_%: t/%.t
-	LC_ALL=$(UTF8_LOCALE) $(PERL) -MTest::Harness -I. -e 'runtests(q($<))'
+	LC_ALL=$(UTF8_LOCALE) $(PERL) -MTest::Harness -Ilib -e 'runtests(q($<))'
 
 testcover:
 	LC_ALL=$(UTF8_LOCALE) PERL5LIB=t/cover_lib/:. cover -test

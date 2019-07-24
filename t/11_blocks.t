@@ -156,7 +156,7 @@ ok($status->{blockedby} eq '5','bug 3 is blocked by exactly 5');
 my $bugreport_cgi_handler = sub {
      # I do not understand why this is necessary.
      $ENV{DEBBUGS_CONFIG_FILE} = "$config{config_dir}/debbugs_config";
-     my $content = qx(perl -I. -T cgi/bugreport.cgi);
+     my $content = qx(perl -Ilib -T cgi/bugreport.cgi);
      $content =~ s/^\s*Content-Type:[^\n]+\n*//si;
      print $content;
 };
