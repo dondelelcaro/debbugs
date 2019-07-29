@@ -181,8 +181,7 @@ sub fill_in_template{
 	) {
 	 $tt_templates{$output_type}{$language} =
 	     Text::Xslate->new(# cache in template_cache or temp directory
-			       cache_dir => $config{template_cache} //
-			       File::Temp::tempdir(CLEANUP => 1),
+			       cache_dir => File::Temp::tempdir(CLEANUP => 1),
 			       # default to the language, but fallback to en_US
 			       path => [$config{template_dir}.'/'.$language.'/',
 					$config{template_dir}.'/en_US/',
