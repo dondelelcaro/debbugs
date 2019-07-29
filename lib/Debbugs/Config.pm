@@ -31,8 +31,13 @@ DEBBUGS_CONFIG_FILE env variable to point at a different location.
 
 =cut
 
-use warnings;
-use strict;
+use Mouse;
+use strictures 2;
+use namespace::clean;
+
+use Carp qw(croak);
+use List::Util qw(uniq);
+
 use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT $USING_GLOBALS %config);
 use base qw(Exporter);
 
@@ -65,7 +70,6 @@ BEGIN {
 				 qw($gSendmail @gSendmailArguments $gLibPath $gSpamScan @gExcludeFromControl),
 				 qw(%gSeverityDisplay @gTags @gSeverityList @gStrongSeverities),
 				 qw(%gTagsSingleLetter),
-				 qw(%gSearchEstraier),
 				 qw(%gDistributionAliases),
 				 qw(%gObsoleteSeverities),
 				 qw(@gPostProcessall @gRemovalDefaultDistributionTags @gRemovalDistributionTags @gRemovalArchitectures),
@@ -81,7 +85,7 @@ BEGIN {
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
                      cgi => [qw($gLibravatarUri $gLibravatarCacheDir $gLibravatarUriOptions @gLibravatarBlacklist)],
-		     config   => [qw(%config)],
+		     config   => [qw(%config config)],
 		    );
      @EXPORT_OK = ();
      Exporter::export_ok_tags(keys %EXPORT_TAGS);
@@ -104,20 +108,6 @@ use Safe;
 
 # read in the files;
 %config = ();
-# untaint $ENV{DEBBUGS_CONFIG_FILE} if it's owned by us
-# This enables us to test things that are -T.
-if (exists $ENV{DEBBUGS_CONFIG_FILE}) {
-# This causes all sorts of problems for mirrors of debbugs; disable
-# it.
-#     if (${[stat($ENV{DEBBUGS_CONFIG_FILE})]}[4] == $<) {
-	  $ENV{DEBBUGS_CONFIG_FILE} =~ /(.+)/;
-	  $ENV{DEBBUGS_CONFIG_FILE} = $1;
-#      }
-#      else {
-# 	  die "Environmental variable DEBBUGS_CONFIG_FILE set, and $ENV{DEBBUGS_CONFIG_FILE} is not owned by the user running this script.";
-#      }
-}
-read_config(exists $ENV{DEBBUGS_CONFIG_FILE}?$ENV{DEBBUGS_CONFIG_FILE}:'/etc/debbugs/config');
 
 =item email_domain $gEmailDomain
 
@@ -133,7 +123,7 @@ The list domain of the bts, defaults to the email domain
 
 =cut
 
-set_default(\%config,'list_domain',$config{email_domain});
+set_default(\%config,'list_domain',sub {$_[0]->email_domain});
 
 =item web_host $gWebHost
 
@@ -141,7 +131,7 @@ The web host of the bts; defaults to the email domain
 
 =cut
 
-set_default(\%config,'web_host',$config{email_domain});
+set_default(\%config,'web_host',sub {$_[0]->email_domain});
 
 =item web_host_bug_dir $gWebHostDir
 
@@ -159,7 +149,11 @@ L</web_host_bug_dir>
 
 =cut
 
-set_default(\%config,'web_domain','http://'.$config{web_host}.($config{web_host}=~m{/$}?'':'/').$config{web_host_bug_dir});
+set_default(\%config,'web_domain',
+	    sub {my $config = shift;
+		 return 'http://'.$config->web_host.($config->web_host=~m{/$}?'':'/').
+		     $config->web_host_bug_dir;
+		 });
 
 =item html_suffix $gHTMLSuffix
 
@@ -176,7 +170,10 @@ the concatentation of L</web_domain> and cgi.
 
 =cut
 
-set_default(\%config,'cgi_domain',$config{web_domain}.($config{web_domain}=~m{/$}?'':'/').'cgi');
+set_default(\%config,'cgi_domain',
+	    sub {my $config = shift;
+		 return $config->web_domain.($config->web_domain=~m{/$}?'':'/').'cgi'
+		});
 
 =item mirrors @gMirrors
 
@@ -185,7 +182,7 @@ List of mirrors [What these mirrors are used for, no one knows.]
 =cut
 
 
-set_default(\%config,'mirrors',[]);
+set_default(\%config,'mirrors',sub {[]});
 
 =item package_pages  $gPackagePages
 
@@ -216,7 +213,13 @@ Domain where where usertags of packages belong; defaults to $gPackagePages
 
 =cut
 
-set_default(\%config,'usertag_package_domain',map {my $a = $_; defined $a?$a =~ s{https?://}{}:(); $a} $config{package_pages});
+set_default(\%config,'usertag_package_domain',
+	    sub {my $config = shift;
+		 my $a = $config->package_pages;
+		 return $a unless defined $a;
+		 $a =~ s{https?://}{};
+		 return $a;
+	     });
 
 
 =item subscription_domain $gSubscriptionDomain
@@ -240,7 +243,7 @@ set_default(\%config,'cc_all_mails_to_addr',undef);
 =item cve_tracker $gCVETracker
 
 URI to CVE security tracker; in bugreport.cgi, CVE-2001-0002 becomes
-linked to $config{cve_tracker}CVE-2001-002
+linked to $config->cve_trackerCVE-2001-002
 
 Default: https://security-tracker.debian.org/tracker/
 
@@ -272,11 +275,11 @@ set_default(\%config,'project','Something');
 
 Name of this install of Debbugs, defaults to "L</project> Debbugs Install"
 
-Default: "$config{project} Debbugs Install"
+Default: "$config->project Debbugs Install"
 
 =cut
 
-set_default(\%config,'project_title',"$config{project} Debbugs Install");
+set_default(\%config,'project_title',sub {$_[0]->project." Debbugs Install"});
 
 =item maintainer $gMaintainer
 
@@ -292,31 +295,31 @@ set_default(\%config,'maintainer','Local DebBugs Owner');
 
 Webpage of the maintainer of this install of debbugs
 
-Default: "$config{web_domain}/~owner"
+Default: "$config->web_domain/~owner"
 
 =cut
 
-set_default(\%config,'maintainer_webpage',"$config{web_domain}/~owner");
+set_default(\%config,'maintainer_webpage',sub {$_[0]->web_domain."/~owner"});
 
 =item maintainer_email $gMaintainerEmail
 
 Email address of the maintainer of this Debbugs install
 
-Default: 'root@'.$config{email_domain}
+Default: 'root@'.$config->email_domain
 
 =cut
 
-set_default(\%config,'maintainer_email','root@'.$config{email_domain});
+set_default(\%config,'maintainer_email',sub {'root@'.$_[0]->email_domain});
 
 =item unknown_maintainer_email
 
 Email address where packages with an unknown maintainer will be sent
 
-Default: $config{maintainer_email}
+Default: $config->maintainer_email
 
 =cut
 
-set_default(\%config,'unknown_maintainer_email',$config{maintainer_email});
+set_default(\%config,'unknown_maintainer_email',sub {$_[0]->maintainer_email});
 
 =item machine_name
 
@@ -329,7 +332,7 @@ Default: Sys::Hostname::hostname()
 
 =cut
 
-set_default(\%config,'machine_name',Sys::Hostname::hostname());
+set_default(\%config,'machine_name',sub {Sys::Hostname::hostname()});
 
 =head2 BTS Mailing Lists
 
@@ -382,7 +385,7 @@ Default: list_domain
 
 =cut
 
-set_default(\%config,'bug_subscription_domain',$config{list_domain});
+set_default(\%config,'bug_subscription_domain',sub {$_[0]->list_domain});
 
 
 
@@ -407,7 +410,7 @@ Default: bug
 
 =item ubug
 
-Default: ucfirst($config{bug});
+Default: ucfirst($config->bug);
 
 =item bugs
 
@@ -415,14 +418,14 @@ Default: bugs
 
 =item ubugs
 
-Default: ucfirst($config{ubugs});
+Default: ucfirst($config->ubugs);
 
 =cut
 
 set_default(\%config,'bug','bug');
-set_default(\%config,'ubug',ucfirst($config{bug}));
+set_default(\%config,'ubug',sub {ucfirst($_[0]->bug)});
 set_default(\%config,'bugs','bugs');
-set_default(\%config,'ubugs',ucfirst($config{bugs}));
+set_default(\%config,'ubugs',sub {ucfirst($_[0]->bugs)});
 
 =item remove_age
 
@@ -463,7 +466,7 @@ Default:
 =cut
 
 set_default(\%config,'distribution_aliases',
-	    {experimental => 'experimental',
+	    sub {{experimental => 'experimental',
 	     unstable     => 'unstable',
 	     testing      => 'testing',
 	     stable       => 'stable',
@@ -472,7 +475,7 @@ set_default(\%config,'distribution_aliases',
 	     lenny        => 'testing',
 	     etch         => 'stable',
 	     sarge        => 'oldstable',
-	    },
+	    }},
 	   );
 
 
@@ -485,9 +488,11 @@ Default: The values of the distribution aliases map.
 
 =cut
 
-my %_distributions_default;
-@_distributions_default{values %{$config{distribution_aliases}}} = values %{$config{distribution_aliases}};
-set_default(\%config,'distributions',[keys %_distributions_default]);
+set_default(\%config,'distributions',
+	    sub {
+		my $config = shift;
+		return [uniq keys %{$config->distribution_aliases}];
+	    });
 
 
 =item default_architectures
@@ -500,7 +505,7 @@ Default: i386 amd64 arm ppc sparc alpha
 =cut
 
 set_default(\%config,'default_architectures',
-	    [qw(i386 amd64 arm powerpc sparc alpha)]
+	    sub {[qw(i386 amd64 arm powerpc sparc alpha)]}
 	   );
 
 =item affects_distribution_tags
@@ -514,12 +519,12 @@ bug.
 
 Setting this to [] will remove this feature.
 
-Default: @{$config{distributions}}
+Default: @{$config->distributions}
 
 =cut
 
 set_default(\%config,'affects_distribution_tags',
-	    [@{$config{distributions}}],
+	    sub {return [@{$_[0]->distributions}]},
 	   );
 
 =item removal_unremovable_tags
@@ -531,19 +536,19 @@ Default: []
 =cut
 
 set_default(\%config,'removal_unremovable_tags',
-	    [],
+	    sub {[]},
 	   );
 
 =item removal_distribution_tags
 
 Tags which specifiy distributions to check
 
-Default: @{$config{distributions}}
+Default: @{$config->distributions}
 
 =cut
 
 set_default(\%config,'removal_distribution_tags',
-	    [@{$config{distributions}}]);
+	    sub {[@{$_[0]->distributions}]});
 
 =item removal_default_distribution_tags
 
@@ -555,7 +560,7 @@ Default: qw(experimental unstable testing);
 =cut
 
 set_default(\%config,'removal_default_distribution_tags',
-	    [qw(experimental unstable testing)]
+	    sub {[qw(experimental unstable testing)]}
 	   );
 
 =item removal_strong_severity_default_distribution_tags
@@ -568,7 +573,7 @@ Default: qw(experimental unstable testing stable);
 =cut
 
 set_default(\%config,'removal_strong_severity_default_distribution_tags',
-	    [qw(experimental unstable testing stable)]
+	    sub {[qw(experimental unstable testing stable)]}
 	   );
 
 
@@ -584,7 +589,7 @@ Default: value of default_architectures
 =cut
 
 set_default(\%config,'removal_architectures',
-	    $config{default_architectures},
+	    sub {[@{$_[0]->default_architectures}]},
 	   );
 
 
@@ -632,12 +637,12 @@ set_default(\%config,'default_package',
 This address is used by Debbugs::Control as the request address which
 sent a control request for faked log messages.
 
-Default:"Debbugs Internal Request <$config{maintainer_email}>"
+Default:"Debbugs Internal Request <$config->maintainer_email>"
 
 =cut
 
 set_default(\%config,'control_internal_requester',
-	    "Debbugs Internal Request <$config{maintainer_email}>",
+	    sub {"Debbugs Internal Request <".$_[0]->maintainer_email.">"},
 	   );
 
 =item control_internal_request_addr
@@ -645,12 +650,12 @@ set_default(\%config,'control_internal_requester',
 This address is used by Debbugs::Control as the address to which a
 faked log message request was sent.
 
-Default: "internal_control\@$config{email_domain}";
+Default: "internal_control\@$config->email_domain";
 
 =cut
 
 set_default(\%config,'control_internal_request_addr',
-	    'internal_control@'.$config{email_domain},
+	    sub {'internal_control@'.$_[0]->email_domain},
 	   );
 
 
@@ -660,7 +665,7 @@ Addresses which are not allowed to send messages to control
 
 =cut
 
-set_default(\%config,'exclude_from_control',[]);
+set_default(\%config,'exclude_from_control',sub {[]});
 
 
 
@@ -680,22 +685,23 @@ A hashref of severities and the informative text which describes them.
 
 Default:
 
- {critical => "Critical $config{bugs}",
-  grave    => "Grave $config{bugs}",
-  normal   => "Normal $config{bugs}",
-  wishlist => "Wishlist $config{bugs}",
+ {critical => "Critical $config->bugs",
+  grave    => "Grave $config->bugs",
+  normal   => "Normal $config->bugs",
+  wishlist => "Wishlist $config->bugs",
  }
 
 =cut
 
-set_default(\%config,'severity_display',{critical => "Critical $config{bugs}",
-					 grave    => "Grave $config{bugs}",
-					 serious  => "Serious $config{bugs}",
-					 important=> "Important $config{bugs}",
-					 normal   => "Normal $config{bugs}",
-					 minor    => "Minor $config{bugs}",
-					 wishlist => "Wishlist $config{bugs}",
-					});
+set_default(\%config,'severity_display',
+	    sub {
+		my $config = shift;
+		my $s = {};
+		for (@{$config->severity_list}) {
+		    $s->{$_} = ucfirst($_). ' '. $config->bugs;
+		}
+		return $s;
+	    });
 
 =item show_severities
 
@@ -706,7 +712,13 @@ hashlist with ', ' above.
 
 =cut
 
-set_default(\%config,'show_severities',join(', ',keys %{$config{severity_display}}));
+set_default(\%config,'show_severities',
+	    sub {
+		my $config = shift;
+		return join (', ',
+		      @{$config->severity_list});
+	     }
+	   );
 
 =item strong_severities
 
@@ -716,7 +728,7 @@ Default: [qw(critical grave)]
 
 =cut
 
-set_default(\%config,'strong_severities',[qw(critical grave)]);
+set_default(\%config,'strong_severities',sub {[qw(critical grave)]});
 
 =item severity_list
 
@@ -726,7 +738,8 @@ Defaults to the keys of the severity display hashref
 
 =cut
 
-set_default(\%config,'severity_list',[keys %{$config{severity_display}}]);
+set_default(\%config,'severity_list',
+	    sub {[qw(critical grave serious important normal minor wishlist)]});
 
 =item obsolete_severities
 
@@ -736,7 +749,7 @@ Default: {}
 
 =cut
 
-set_default(\%config,'obsolete_severities',{});
+set_default(\%config,'obsolete_severities',sub {{}});
 
 =item tags
 
@@ -747,20 +760,27 @@ includes the distributions.
 
 =cut
 
-set_default(\%config,'tags',[qw(patch wontfix moreinfo unreproducible fixed),
-			     @{$config{distributions}}
-			    ]);
+set_default(\%config,'tags',
+	    sub {
+		my $config = shift;
+		return [qw(patch wontfix moreinfo unreproducible fixed),
+			@{$config->distributions}
+		       ]
+	    });
 
 set_default(\%config,'tags_single_letter',
-	    {patch => '+',
-	     wontfix => '',
-	     moreinfo => 'M',
-	     unreproducible => 'R',
-	     fixed   => 'F',
-	    }
+	    sub {
+	       return {patch => '+',
+		       wontfix => '',
+		       moreinfo => 'M',
+		       unreproducible => 'R',
+		       fixed   => 'F',
+		      };
+	   }
 	   );
 
-set_default(\%config,'bounce_froms','^mailer|^da?emon|^post.*mast|^root|^wpuser|^mmdf|^smt.*|'.
+set_default(\%config,'bounce_froms',
+	    '^mailer|^da?emon|^post.*mast|^root|^wpuser|^mmdf|^smt.*|'.
 	    '^mrgate|^vmmail|^mail.*system|^uucp|-maiser-|^mal\@|'.
 	    '^mail.*agent|^tcpmail|^bitmail|^mailman');
 
@@ -771,11 +791,12 @@ set_default(\%config,'spool_dir','/var/lib/debbugs/spool');
 
 Directory which contains the usertags
 
-Default: $config{spool_dir}/user
+Default: $config->spool_dir/user
 
 =cut
 
-set_default(\%config,'usertag_dir',$config{spool_dir}.'/user');
+set_default(\%config,'usertag_dir',
+	    sub {$_[0]->spool_dir.'/user'});
 set_default(\%config,'incoming_dir','incoming');
 
 =item web_dir $gWebDir
@@ -801,13 +822,13 @@ directory of templates; defaults to /usr/share/debbugs/templates.
 set_default(\%config,'template_dir','/usr/share/debbugs/templates');
 
 
-set_default(\%config,'maintainer_file',$config{config_dir}.'/Maintainers');
-set_default(\%config,'maintainer_file_override',$config{config_dir}.'/Maintainers.override');
-set_default(\%config,'source_maintainer_file',$config{config_dir}.'/Source_maintainers');
+set_default(\%config,'maintainer_file',sub {$_[0]->config_dir.'/Maintainers'});
+set_default(\%config,'maintainer_file_override',sub {$_[0]->config_dir.'/Maintainers.override'});
+set_default(\%config,'source_maintainer_file',sub {$_[0]->config_dir.'/Source_maintainers'});
 set_default(\%config,'source_maintainer_file_override',undef);
-set_default(\%config,'pseudo_maint_file',$config{config_dir}.'/pseudo-packages.maintainers');
-set_default(\%config,'pseudo_desc_file',$config{config_dir}.'/pseudo-packages.description');
-set_default(\%config,'package_source',$config{config_dir}.'/indices/sources');
+set_default(\%config,'pseudo_maint_file',sub {$_[0]->config_dir.'/pseudo-packages.maintainers'});
+set_default(\%config,'pseudo_desc_file',sub {$_[0]->config_dir.'/pseudo-packages.description'});
+set_default(\%config,'package_source',sub {$_[0]->config_dir.'/indices/sources'});
 
 
 =item simple_versioning
@@ -828,7 +849,7 @@ spool_dir/../versions/pkg
 
 =cut
 
-set_default(\%config,'version_packages_dir',$config{spool_dir}.'/../versions/pkg');
+set_default(\%config,'version_packages_dir',sub {$_[0]->spool_dir.'/../versions/pkg'});
 
 =item version_time_index
 
@@ -839,7 +860,12 @@ exists; otherwise defaults to undef.
 =cut
 
 
-set_default(\%config,'version_time_index', -d $config{spool_dir}.'/../versions' ? $config{spool_dir}.'/../versions/indices/versions_time.idx' : undef);
+set_default(\%config,'version_time_index',
+	    sub {my $config = shift;
+		 return -d $config->spool_dir.'/../versions' ?
+		     $config->spool_dir.'/../versions/indices/versions_time.idx' :
+		     undef
+		 });
 
 =item version_index
 
@@ -849,7 +875,12 @@ exists; otherwise defaults to undef.
 
 =cut
 
-set_default(\%config,'version_index',-d $config{spool_dir}.'/../versions' ? $config{spool_dir}.'/../versions/indices/versions.idx' : undef);
+set_default(\%config,'version_index',
+	    sub {my $config = shift;
+		 return -d $config->spool_dir.'/../versions' ?
+		     $config->spool_dir.'/../versions/indices/versions.idx' :
+		     undef
+		 });
 
 =item binary_source_map
 
@@ -859,7 +890,12 @@ exists; otherwise defaults to undef.
 
 =cut
 
-set_default(\%config,'binary_source_map',-d $config{spool_dir}.'/../versions' ? $config{spool_dir}.'/../versions/indices/binsrc.idx' : undef);
+set_default(\%config,'binary_source_map',
+	    sub {my $config = shift;
+		 return -d $config->spool_dir.'/../versions' ?
+		     $config->spool_dir.'/../versions/indices/binsrc.idx' :
+		     undef
+		 });
 
 =item source_binary_map
 
@@ -869,11 +905,16 @@ exists; otherwise defaults to undef.
 
 =cut
 
-set_default(\%config,'source_binary_map',-d $config{spool_dir}.'/../versions' ? $config{spool_dir}.'/../versions/indices/srcbin.idx' : undef);
+set_default(\%config,'source_binary_map',
+	    sub {my $config = shift;
+		 return -d $config->spool_dir.'/../versions' ?
+		     $config->spool_dir.'/../versions/indices/srcbin.idx' :
+		     undef
+		 });
 
 
 
-set_default(\%config,'post_processall',[]);
+set_default(\%config,'post_processall',sub {[]});
 
 =item sendmail
 
@@ -889,7 +930,7 @@ Default arguments to pass to sendmail. Defaults to C<qw(-oem -oi)>.
 
 =cut
 
-set_default(\%config,'sendmail_arguments',[qw(-oem -oi)]);
+set_default(\%config,'sendmail_arguments',sub {[qw(-oem -oi)]});
 
 =item envelope_from
 
@@ -915,7 +956,8 @@ spool_dir/../CrossAssassinDb
 
 =cut
 
-set_default(\%config,'spam_crossassassin_db',$config{spool_dir}.'/../CrossAssassinDb');
+set_default(\%config,'spam_crossassassin_db',
+	    sub {$_[0]->spool_dir.'/../CrossAssassinDb'});
 
 =item spam_max_cross
 
@@ -957,7 +999,8 @@ Location to store spam messages; is run through strftime to allow for
 
 =cut
 
-set_default(\%config,'spam_mailbox',$config{spool_dir}.'/../mail/spam/assassinated.%Y-%m-%d');
+set_default(\%config,'spam_mailbox',
+	    sub {$_[0]->spool_dir.'/../mail/spam/assassinated.%Y-%m-%d'});
 
 =item spam_crossassassin_mailbox
 
@@ -967,7 +1010,8 @@ to allow for %d,%m,%Y, et al. Defaults to
 
 =cut
 
-set_default(\%config,'spam_crossassassin_mailbox',$config{spool_dir}.'/../mail/spam/crossassassinated.%Y-%m-%d');
+set_default(\%config,'spam_crossassassin_mailbox',
+	    sub {$_[0]->spool_dir.'/../mail/spam/crossassassinated.%Y-%m-%d'});
 
 =item spam_local_tests_only
 
@@ -1008,7 +1052,8 @@ libravatar.cgi, our internal federated libravatar system.
 
 =cut
 
-set_default(\%config,'libravatar_uri',$config{cgi_domain}.'/libravatar.cgi?email=');
+set_default(\%config,'libravatar_uri',
+	    sub {$_[0]->cgi_domain.'/libravatar.cgi?email='});
 
 =item libravatar_uri_options $gLibravatarUriOptions
 
@@ -1030,21 +1075,21 @@ Default image to serve for libravatar if there is no avatar for an
 e-mail address. By default, this is a 1x1 png. [This will also be the
 image served if someone specifies avatar=no.]
 
-Default: $config{web_dir}/1x1.png
+Default: $config->web_dir/1x1.png
 
 =cut
 
-set_default(\%config,'libravatar_default_image',$config{web_dir}.'/1x1.png');
+set_default(\%config,'libravatar_default_image',sub {$_[0]->web_dir.'/1x1.png'});
 
 =item libravatar_cache_dir
 
 Directory where cached libravatar images are stored
 
-Default: $config{web_dir}/libravatar/
+Default: $config->web_dir/libravatar/
 
 =cut
 
-set_default(\%config,'libravatar_cache_dir',$config{web_dir}.'/libravatar/');
+set_default(\%config,'libravatar_cache_dir',sub {$_[0]->web_dir.'/libravatar/'});
 
 =item libravatar_blacklist
 
@@ -1055,7 +1100,7 @@ Default: empty array
 
 =cut
 
-set_default(\%config,'libravatar_blacklist',[]);
+set_default(\%config,'libravatar_blacklist',sub {[]});
 
 =back
 
@@ -1104,7 +1149,7 @@ This gives more information about bad e-mails to receive.in
 
 =cut
 
-set_default(\%config,'text_instructions',$config{bad_email_prefix});
+set_default(\%config,'text_instructions',sub {$_[0]->bad_email_prefix});
 
 =item html_tail
 
@@ -1114,14 +1159,16 @@ In many pages this has been replaced by the html/tail template.
 
 =cut
 
-set_default(\%config,'html_tail',<<END);
- <ADDRESS>$config{maintainer} &lt;<A HREF=\"mailto:$config{maintainer_email}\">$config{maintainer_email}</A>&gt;.
+set_default(\%config,'html_tail',sub {
+		my $config = shift;
+		my $a = <<END; return $a; });
+ <ADDRESS>@{[$config->maintainer]} &lt;<A HREF=\"mailto:@{[$config->maintainer_email]}\">@{[$config->maintainer_email]}</A>&gt;.
  Last modified:
  <!--timestamp-->
  SUBSTITUTE_DTIME
  <!--timestamp-->
  <P>
- <A HREF=\"$config{web_domain}/\">Debian $config{bug} tracking system</A><BR>
+ <A HREF=\"@{[$config->web_domain]}\">Debian @{[$config->bug]} tracking system</A><BR>
  Copyright (C) 1999 Darren O. Benham,
  1997,2003 nCipher Corporation Ltd,
  1994-97 Ian Jackson.
@@ -1137,7 +1184,12 @@ This message explains what happens to archive/remove-able bugs
 =cut
 
 set_default(\%config,'html_expire_note',
-	    "(Closed $config{bugs} are archived $config{remove_age} days after the last related message is received.)");
+	    sub {
+		my $config = shift;
+		return "(Closed ".$config->bugs." are archived ".
+		    $config->remove_age.
+		    " days after the last related message is received.)"
+		});
 
 =back
 
@@ -1145,7 +1197,7 @@ set_default(\%config,'html_expire_note',
 
 
 sub read_config{
-     my ($conf_file) = @_;
+     my ($config,$conf_file) = @_;
      if (not -e $conf_file) {
 	 print STDERR "configuration file '$conf_file' doesn't exist; skipping it\n" if $DEBUG;
 	 return;
@@ -1169,7 +1221,7 @@ sub read_config{
 	  # Ugh. Old configuration file
 	  # What we do here is we create a new Safe compartment
           # so fucked up crap in the config file doesn't sink us.
-	  my $cpt = new Safe or die "Unable to create safe compartment";
+	  my $cpt = Safe->new() or die "Unable to create safe compartment";
 	  # perldoc Opcode; for details
 	  $cpt->permit('require',':filesys_read','entereval','caller','pack','unpack','dofile');
 	  $cpt->reval(qq(require '$conf_file';));
@@ -1195,7 +1247,7 @@ sub read_config{
 		    # We punt here, because we can't tell if the value was
                     # defined intentionally, or if it was just left alone;
                     # this tries to set sane defaults.
-		    set_default(\%config,$hash_name,$value) if defined $value;
+		    set_value($config,$hash_name,$value) if defined $value;
 	       }}
 	  }
      }
@@ -1220,7 +1272,24 @@ sub __convert_name{
 # otherwise doesn't do anything
 # If $USING_GLOBALS, then sets an appropriate global.
 
-sub set_default{
+sub set_default {
+    my ($config,$option,$value) = @_;
+
+    has $option =>
+	(is => 'rw',
+	 lazy => 1,
+	 ref($value) eq 'CODE' ?
+	 (builder => $value):
+	 (builder => sub {
+	      my $self = shift;
+	      return $value;
+	  }),
+	);
+
+    # set_value(@_);
+}
+
+sub set_value{
      my ($config,$option,$value) = @_;
      my $varname;
      if ($USING_GLOBALS) {
@@ -1229,6 +1298,11 @@ sub set_default{
 	  # Fix stupid HTML names
 	  $varname =~ s/(Html|Cgi)/uc($1)/ge;
      }
+     my $m = $config->meta->find_method_by_name($option);
+     if (not defined $m) {
+	 croak "Not a valid option $option";
+     }
+     $m->($config,$value);
      # update the configuration value
      if (not $USING_GLOBALS and not exists $config->{$option}) {
 	  $config->{$option} = $value;
@@ -1237,17 +1311,85 @@ sub set_default{
 	  no strict 'refs';
 	  # Need to check if a value has already been set in a global
 	  if (defined *{"Debbugs::Config::${varname}"}) {
-	       $config->{$option} = *{"Debbugs::Config::${varname}"};
+	       $m->($config,*{"Debbugs::Config::${varname}"});
 	  }
 	  else {
-	       $config->{$option} = $value;
+	       $m->($config,$value);
 	  }
      }}
      if ($USING_GLOBALS) {{
 	  no strict 'refs';
-	  *{"Debbugs::Config::${varname}"} = $config->{$option};
+	  *{"Debbugs::Config::${varname}"} = $m->($config);
      }}
 }
+
+__PACKAGE__->meta->make_immutable();
+
+
+our $config = __PACKAGE__->new();
+
+sub TIEHASH {
+    return $config;
+}
+
+sub FETCH {
+    my ($this,$key) = @_;
+    my $m = $config->meta->find_method_by_name($key);
+    croak "No such element $key" if not defined $m;
+    return $m->($this);
+}
+
+sub STORE {
+    my ($this,$key,$value) = @_;
+    my $m = $config->meta->find_method_by_name($key);
+    croak "No such element $key" if not defined $m;
+    return $m->($this,$value);
+}
+
+sub EXISTS {
+    my ($this,$key) = @_;
+    my $m = $config->meta->find_method_by_name($key);
+    return defined $m;
+}
+
+sub DELETE {
+    # do nothing
+}
+
+sub CLEAR {
+    # do nothing
+}
+
+sub SCALAR {
+    return "Debbugs::Config(HASH)"
+}
+
+sub UNTIE {
+    # do nothing
+}
+
+sub DESTROY {
+    # do nothing
+}
+
+our %config;
+tie %config,__PACKAGE__;
+
+
+# untaint $ENV{DEBBUGS_CONFIG_FILE} if it's owned by us
+# This enables us to test things that are -T.
+if (exists $ENV{DEBBUGS_CONFIG_FILE}) {
+# This causes all sorts of problems for mirrors of debbugs; disable
+# it.
+#     if (${[stat($ENV{DEBBUGS_CONFIG_FILE})]}[4] == $<) {
+	  $ENV{DEBBUGS_CONFIG_FILE} =~ /(.+)/;
+	  $ENV{DEBBUGS_CONFIG_FILE} = $1;
+#      }
+#      else {
+# 	  die "Environmental variable DEBBUGS_CONFIG_FILE set, and $ENV{DEBBUGS_CONFIG_FILE} is not owned by the user running this script.";
+#      }
+}
+read_config($config,exists $ENV{DEBBUGS_CONFIG_FILE}?$ENV{DEBBUGS_CONFIG_FILE}:'/etc/debbugs/config');
 
 
 ### import magick
@@ -1255,6 +1397,10 @@ sub set_default{
 # All we care about here is whether we've been called with the globals or text option;
 # if so, then we need to export some symbols back up.
 # In any event, we call exporter.
+
+sub config {
+    return $config;
+}
 
 sub import {
      if (grep /^:(?:text|globals)$/, @_) {
