@@ -24,6 +24,8 @@ Build-Depends-Indep: libparams-validate-perl,
  postgresql-9.6-debversion|postgresql-10-debversion|postgresql-11-debversion,
  libtext-xslate-perl, graphviz, libtext-iconv-perl, libnet-server-perl,
  libmouse-perl, libmousex-nativetraits-perl,
+# required for use strictures 2
+ libstrictures-perl, libbareword-filehandles-perl, libindirect-perl, libmultidimensional-perl,
 # used to make the logo
  inkscape
 Homepage: https://salsa.debian.org/debbugs-team
