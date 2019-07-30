@@ -107,7 +107,7 @@ my %options =
      quiet           => 0,
      quick           => 0,
      archived        => 0,
-     service         => $config{debbugs_db},
+     service         => $config{database},
      progress        => 0,
     );
 
