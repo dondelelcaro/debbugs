@@ -455,7 +455,11 @@ END
 	    } else {
 		print {$transcript} "Usertags were: " . join(" ", @oldtags) . ".\n";
 	    }
-	    print {$transcript} "Usertags are now: " . join(" ", @newtags) . ".\n";
+	    if (@newtags == 0) {
+		print {$transcript} "There are now no usertags set.\n";
+	    } else {
+		print {$transcript} "Usertags are now: " . join(" ", @newtags) . ".\n";
+	    }
 	    Debbugs::User::write_usertags(\%ut, $user);
 	}
     } elsif (!$control) {
