@@ -32,6 +32,7 @@ use List::AllUtils qw(max first min any);
 use Params::Validate qw(validate_with :types);
 use Debbugs::Config qw(:config);
 use Debbugs::Status qw(read_bug);
+use Debbugs::Common qw(bug_status);
 use Debbugs::Bug::Tag;
 use Debbugs::Bug::Status;
 use Debbugs::Collection::Package;
@@ -55,6 +56,24 @@ has bug => (is => 'ro', isa => 'Int',
 
 sub id {
     return $_[0]->bug;
+}
+
+has exists => (is => 'ro',
+               isa => 'Bool',
+               builder => '_build_exists',
+              );
+
+sub _build_exists {
+    my $self = shift;
+    if ($self->has_schema) { # check database to see if the bug exists
+        my $count = $self->schema->resultset('Bug')->
+            search({id => $self->bug})->
+            count();
+        return $count;
+    } else { # check filesystem to see if the bug exists
+        return defined bug_status($self->bug);
+    }
+    return 0;
 }
 
 has saved => (is => 'ro', isa => 'Bool',
