@@ -6,6 +6,7 @@ sub startup {
   my $self = shift;
 
   $self->plugin('Debbugs::Mojo::Plugin::DBI');
+  $self->plugin('Debbugs::Mojo::Plugin::Xslate');
   my $r = $self->routes;
   $r->namespaces(['Debbugs::Mojo::Controller']);
   $r->add_type(bug => qr/\d+/);

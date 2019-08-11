@@ -10,8 +10,13 @@ sub show {
     my $bug = Debbugs::Bug->new(bug => $id,
 				schema => $c->db
 			       );
-    
-    return $c->render(text => 'Bug '.$bug->id);
+    return $c->reply->not_found if not $bug->exists;
+    $c->respond_to(json => {json => $bug->structure},
+		   any => sub {$c->render(template => 'cgi/bugreport',
+					  handler => 'tx',
+					  bug => $bug)},
+		  );
+
 }
 
 1;
