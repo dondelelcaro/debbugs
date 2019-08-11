@@ -48,8 +48,8 @@
         : if $bug.blocked_by.count {
         <li><span class="key">Fix blocked by</span>
             <span class="value">
-                : for $bug.blockedby_array -> $bug {
-                <: bug_links("bug",$bug.bug_num) :>: <: $bug.subject -:>
+                : for $bug.blocked_by.members_ref -> $bug {
+                <a href="<: $bug.url :>"><: $bug.subject -:></a>
                 <:- if !$~bug.is_last { :>, <:  } else {  :>.<: } :>
                 : }
             </span>
@@ -58,9 +58,9 @@
         : if $bug.blocks.count {
         <li><span class="key">Blocking fix for</span>
             <span class="value" 
-                  : for $bug.blocks_array -> $bug {
-                  <: bug_links("bug",$bug.bug_num) :>: <: $bug.subject -:>
-                  <:- if ! $~bug.is_last { :>, <:  } else {  :>.<: } :>
+                  : for $bug.blocks.members_ref -> $bug {
+                <a href="<: $bug.url :>"><: $bug.subject -:></a>
+                <:- if ! $~bug.is_last { :>, <:  } else {  :>.<: } :>
                   : }
             </span>
         </li>
