@@ -15,6 +15,7 @@ sub startup {
   $r->get('/bug/<bug:bug>')->to('Bug#show')->name('show_bug');
   $r->get('/<package:package>')->to('Package#show')->name('show_package');
   $r->get('/package/<package:package>')->to('Package#show')->name('show_package');
+  $r->get('/config/:item')->to('Config#show')->name('show_config');
   $r->get('/' => sub {
 	      my $c = shift;
 	      $c->render(text => 'Mojolicious rocks');
