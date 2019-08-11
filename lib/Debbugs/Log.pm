@@ -42,6 +42,7 @@ use Debbugs::Common qw(getbuglocation getbugcomponent make_list);
 use Params::Validate qw(:types validate_with);
 use Encode qw(encode encode_utf8 is_utf8);
 use IO::InnerFile;
+use Debbugs::Log::Record;
 
 =head1 NAME
 
@@ -259,6 +260,30 @@ has '_linenum' =>
      default => 0,
     );
 
+=item write
+
+writes a record
+
+=cut 
+
+sub write {
+    my $self = shift;
+
+    my @records = @_;
+    if (not defined ref($_[0])) {
+        @records = [@records];
+    }
+    for my $record (@records) {
+        if (not isa($record,'Debbugs::Log::Record')) {
+            if (ref($record) ne 'ARRAY') {
+                croak("Debbugs::Log->write must be passed either a Debbugs::Log::Record or an ARRAYREF");
+            }
+            $record = Debbugs::Log::Record->new(@{$record});
+        }
+        
+    }
+}
+
 =item read_record
 
 Reads and returns a single record from a log reader object. At end of file,
@@ -275,32 +300,27 @@ sub read_record
     # This comes from bugreport.cgi, but is much simpler since it doesn't
     # worry about the details of output.
 
-    my $record = {};
-
+    my $record;
     while (defined (my $line = <$logfh>)) {
-        $record->{start} = $logfh->tell() if not defined $record->{start};
+        if (not defined $record) {
+            $record =
+                Debbugs::Log::Record->new(log_fh => $logfh,
+                                          start => $logfh->tell()
+                                         );
+        }
 	chomp $line;
 	$this->increment_linenum;
+        $record->stop($logfh->tell);
 	if (length($line) == 1 and exists $states{ord($line)}) {
 	    # state transitions
 	    $this->state_transition($states{ord($line)});
 	    if ($this->state =~ /^(autocheck|recips|html|incoming-recv)$/) {
-                $record->{type} = $this->state;
-                $record->{start} = $logfh->tell;
-                $record->{stop} = $logfh->tell;
-                $record->{inner_file} = $this->inner_file;
+                $record->type($this->state);
 	    } elsif ($this->state eq 'kill-end') {
-                if ($this->inner_file) {
-                    $record->{fh} =
-                        IO::InnerFile->new($logfh,$record->{start},
-                                           $record->{stop} - $record->{start})
-                        }
-		return $record;
+                return $record;
 	    }
-
 	    next;
 	}
-        $record->{stop} = $logfh->tell;
 	$_ = $line;
 	if ($this->state eq 'incoming-recv') {
 	    my $pl = $_;
@@ -308,31 +328,30 @@ sub read_record
 		die "bad line '$pl' in state incoming-recv";
 	    }
 	    $this->state_transition('go');
-	    $record->{text} .= "$_\n" unless $this->inner_file;
+            $record->add_text($_."\n");
 	} elsif ($this->state eq 'html') {
-	    $record->{text} .= "$_\n"  unless $this->inner_file;
+            $record->add_text($_."\n");
 	} elsif ($this->state eq 'go') {
 	    s/^\030//;
-	    $record->{text} .= "$_\n"  unless $this->inner_file;
+            $record->add_text($_."\n");
 	} elsif ($this->state eq 'go-nox') {
-	    $record->{text} .= "$_\n"  unless $this->inner_file;
+            $record->add_text($_."\n");
 	} elsif ($this->state eq 'recips') {
 	    if (/^-t$/) {
-		undef $record->{recips};
+                $record->recipients([]);
 	    } else {
 		# preserve trailing null fields, e.g. #2298
-		$record->{recips} = [split /\04/, $_, -1];
+                $record->recipients([split /\04/, $_, -1]);
 	    }
 	    $this->state_transition('kill-body');
-            $record->{start} = $logfh->tell+2;
-            $record->{stop} = $logfh->tell+2;
-            $record->{inner_file} = $this->inner_file;
+            $record->start($logfh->tell+2);
+            $record->stop($logfh->tell+2);
 	} elsif ($this->state eq 'autocheck') {
-	    $record->{text} .= "$_\n" unless $this->inner_file;
+            $record->add_text($_."\n");
 	    next if !/^X-Debian-Bugs(-\w+)?: This is an autoforward from (\S+)/;
 	    $this->state_transition('autowait');
 	} elsif ($this->state eq 'autowait') {
-	    $record->{text} .= "$_\n" unless $this->inner_file;
+            $record->add_text($_."\n");
 	    next if !/^$/;
 	    $this->state_transition('go-nox');
 	} else {
@@ -341,11 +360,7 @@ sub read_record
     }
     die "state $this->state at end" unless $this->state eq 'kill-end';
 
-    if (keys %$record) {
-	return $record;
-    } else {
-	return undef;
-    }
+    return $record;
 }
 
 =item rewind
@@ -474,11 +489,11 @@ sub write_log_records
     my @records = make_list($param{records});
 
     for my $record (@records) {
-	my $type = $record->{type};
-	croak "record type '$type' with no text field" unless defined $record->{text};
+	my $type = $record->type;
+	croak "record type '$type' with no text field" unless defined $record->text;
 	# I am not sure if we really want to croak here; but this is
 	# almost certainly a bug if is_utf8 is on.
-        my $text = $record->{text};
+        my $text = $record->text;
         if (is_utf8($text)) {
             carp('Record text was in the wrong encoding (perl internal instead of utf8 octets)');
             $text = encode_utf8($text)
@@ -489,7 +504,7 @@ sub write_log_records
 		die "Unable to write to logfile: $!";
 	} elsif ($type eq 'recips') {
 	    print {$logfh} "\02\n";
-	    my $recips = $record->{recips};
+	    my $recips = $record->recipients;
 	    if (defined $recips) {
 		croak "recips not undef or array"
 		    unless ref($recips) eq 'ARRAY';

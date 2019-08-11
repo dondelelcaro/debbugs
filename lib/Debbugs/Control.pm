@@ -115,6 +115,7 @@ use Debbugs::UTF8;
 use Debbugs::Status qw(bug_archiveable :read :hook writebug new_bug splitpackages split_status_fields get_bug_status);
 use Debbugs::CGI qw(html_escape);
 use Debbugs::Log qw(:misc :write);
+use Debbugs::Log::Record;
 use Debbugs::Recipients qw(:add);
 use Debbugs::Packages qw(:versions :mapping);
 
@@ -3475,10 +3476,11 @@ sub append_action_to_log{
 		    };
      $msg = '';
      if ((ref($param{message}) and @{$param{message}}) or length($param{message})) {
-	 push @records, {type => exists $param{recips}?'recips':'incoming-recv',
-			 exists $param{recips}?(recips => [map {encode_utf8_safely($_)} make_list($param{recips})]):(),
-			 text => join('',make_list($param{message})),
-			};
+	 push @records, Debbugs::Log::Record->
+	     new(type => exists $param{recips}?'recips':'incoming-recv',
+		 exists $param{recips}?(recips => [map {encode_utf8_safely($_)} make_list($param{recips})]):(),
+		 text => join('',make_list($param{message})),
+	     );
      }
      write_log_records(logfh=>$logfh,
 		       records => \@records,

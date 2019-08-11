@@ -1136,9 +1136,11 @@ sub appendlog {
     my $logfh = IO::File->new(">>$log_location") or
 	die "Unable to open $log_location for appending: $!";
     write_log_records(logfh => $logfh,
-		      records => [{type => 'incoming-recv',
-				   text => $msg,
-				  }]);
+		      records => [Debbugs::Log::Record->
+				  new(type => 'incoming-recv',
+				      text => $msg,
+				     )
+				 ]);
     close ($logfh) or die "Unable to close $log_location: $!";
 }
 
@@ -1219,15 +1221,21 @@ sub sendmessage {
     # RFC1522 encode the header.
     $msg = encode_headers($msg) unless $no_encode;
 
+    my $log = Debbugs::Log->new($ref);
+    $log->write(text=>stripbccs($msg),
+		type => 'recips',
+		recipients => [map {encode_utf8($_)} @{$recips}]
+	       );
     my $hash = get_hashname($ref);
     #save email to the log
     my $logfh = IO::File->new(">>db-h/${hash}/${ref}.log") or
 	die "opening db-h/$hash/${ref}.log: $!";
     write_log_records(logfh => $logfh,
-		      records => {text => stripbccs($msg),
-				  type => 'recips',
-				  recips => [map {encode_utf8($_)} @{$recips}],
-				 },
+		      records => [Debbugs::Log::Record->
+		      new(text => stripbccs($msg),
+			  type => 'recips',
+			  recipients => [map {encode_utf8($_)} @{$recips}],
+		      )],
 		     );
     if (ref($bcc)) {
         shift @$recips if $recips->[0] eq '-t';
