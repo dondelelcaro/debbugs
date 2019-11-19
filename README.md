@@ -61,7 +61,7 @@ If you can't use the `.deb`, do the following:
 
     2. Grab bugs ending in 00
 
-            mkdir -p splool/db-h/00;
+            mkdir -p spool/db-h/00;
             cd spool/db-h;
             rsync -av rsync://bugs-mirror.debian.org/bts-spool-db/00 .;
 
