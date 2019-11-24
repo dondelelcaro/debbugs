@@ -40,7 +40,7 @@ BEGIN {
 	undef $debbugs_dir;
     }
 }
-use if defined $debbugs_dir, lib => $debbugs_dir;
+use if defined $debbugs_dir, lib => $debbugs_dir.'/lib/';
 
 binmode(STDOUT,':encoding(UTF-8)');
 use POSIX qw(strftime nice);

@@ -78,7 +78,7 @@ use vars qw($DEBUG);
 # non-absolute INC, don't do that.
 use FindBin;
 use if (-d $FindBin::Bin.'/../.git/' && $INC[0] =~ m#^/#),
-    lib => $FindBin::Bin.'/../';
+    lib => $FindBin::Bin.'/../lib/';
 
 use Debbugs::DB;
 use Debbugs::DB::Util qw(prepare_execute);

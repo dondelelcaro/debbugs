@@ -24,7 +24,7 @@ BEGIN {
     if ($INC[0] !~ /^\//) {
     }
 }
-use if defined $debbugs_dir, lib => $debbugs_dir;
+use if defined $debbugs_dir, lib => $debbugs_dir.'/lib/';
 
 use Debbugs::Config qw(:config);
 use Debbugs::CGI qw(cgi_parameters);
