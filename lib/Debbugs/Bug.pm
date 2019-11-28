@@ -464,8 +464,8 @@ sub _populate_archiveable {
 	}
     }
     my $time = time;
-    state $remove_time = 24 * 60 * 60 * ($config{removal_age} // 30);
-    # 4. Have been modified more than removal_age ago
+    state $remove_time = 24 * 60 * 60 * ($config{remove_age} // 30);
+    # 4. Have been modified more than remove_age ago
     my $moded_ago =
 	$time - $self->modified->epoch;
     # if we don't need to know when we can archive, we can stop here if it's
