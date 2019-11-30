@@ -97,7 +97,6 @@ sub generate_package_info{
 
      my $package = $param{package};
 
-     my %pkgsrc = %{getpkgsrc()};
      my $srcforpkg = $package;
      if ($param{binary}) {
 	 $srcforpkg =
