@@ -657,6 +657,7 @@ sub related_packages_and_versions {
            push @return,$pkg;
         }
     }
+    push @return,$self->status->affects;
     return @return;
 }
 
