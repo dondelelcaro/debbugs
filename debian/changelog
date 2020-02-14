@@ -1,3 +1,9 @@
+debbugs (2.6.1) unstable; urgency=medium
+
+  * Add support for a Done: psuedoheader (closes: #950133)
+
+ -- Don Armstrong <don@debian.org>  Fri, 09 Mar 2018 11:17:10 -0800
+
 debbugs (2.6.0) unstable; urgency=medium
 
   [ Don Armstrong ]

@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 126;
+use Test::More tests => 127;
 
 use warnings;
 use strict;
@@ -112,6 +112,22 @@ eval "use Debbugs::Status qw(read_bug writebug);";
 my $status = read_bug(bug=>1);
 ok($status->{subject} eq 'new title','bug 1 retitled');
 ok($status->{severity} eq 'wishlist','bug 1 wishlisted');
+
+# now check to see if we can close a bug using a psuedoheader done
+send_message(to => '1-done@bugs.something',
+	     headers => [To   => 'control@bugs.something',
+			 From => 'foo@bugs.something',
+			 Subject => 'Munging a bug',
+			],
+	     body => <<'EOF') or fail 'message to control@bugs.something failed';
+Done: Me Developer <me@bugs.something>
+
+I'm closing this bug for reasons
+EOF
+
+$status = read_bug(bug=>1);
+ok($status->{done} eq 'Me Developer <me@bugs.something>');
+
 
 # now we're going to go through and methododically test all of the control commands.
 my @control_commands =

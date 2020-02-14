@@ -240,7 +240,7 @@ for my $phline (@bodylines)
 	push @control_bits,$fv;
     } else {
 	# Don't lc owner or forwarded
-	$fv = lc $fv unless $fn =~ /^(?:owner|forwarded|usertags|version|source-version)$/;
+	$fv = lc $fv unless $fn =~ /^(?:owner|forwarded|usertags|version|source-version|done)$/;
 	$pheader{$fn} = $fv;
     }
     print {$debugfh} ">$fn~$fv<\n";
@@ -389,7 +389,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
         }
         $receivedat= "done\@$gEmailDomain";
         $markaswhat= 'done';
-        $set_done= $header{'from'};
+        $set_done= $pheader{'done'} // $header{'from'};
 	if ( length( $gListDomain ) > 0 && length( $gDoneList ) > 0 ) {
             $generalcc= "$gDoneList\@$gListDomain";
 	    push @generalcc, "$gDoneList\@$gListDomain";
