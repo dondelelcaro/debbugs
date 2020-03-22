@@ -370,13 +370,17 @@ sub spam_score {
         if ($exit_code) {
             $is_spam = 1;
         }
+        my $in_spam_header = 0;
         while (<$spamc_out>) {
-            if (/^X-Spam/) {
+            if (/^X-Spam/ or (/^\s+/ and $in_spam_header)) {
+                $in_spam_header = 1;
                 $report .= $_;
                 if (/^X-Spam-Status: (Yes|No), score=(-?[\d\.]+) required=(-?[\d\.]+)/) {
                     $threshold = $3;
                     $score = $2;
                 }
+            } else {
+               $in_spam_header = 0;
             }
             if (/^\s*$/) {
                 last;
