@@ -2,17 +2,31 @@
 <link rel="canonical" href="{html_escape(bug_links{bug=>$bug_num})}">
 <script type="text/javascript">
 <!--
-function toggle_infmessages()
+function toggle_elements(cls,tag)
 \{
-        allDivs=document.getElementsByTagName("div");
+     if (!cls) \{
+	 var cls = "infmessage";
+     \}
+     if (!tag) \{
+	 var tag = "div";
+     \}
+        allDivs=document.getElementsByTagName(tag);
         for (var i = 0 ; i < allDivs.length ; i++ )
         \{
-                if (allDivs[i].className == "infmessage")
+                if (allDivs[i].className == cls)
                 \{
                         allDivs[i].style.display=(allDivs[i].style.display == 'none' | allDivs[i].style.display == '') ? 'block' : 'none';
                 \}
         \}
 \}
+function toggle_infmessage()
+\{
+     toggle_elements("infmessage","div");
+\}
+function toggle_spamreport()
+\{
+     toggle_elements("spamreport","div");
+\}     
 -->
 </script>
 </head>
@@ -44,7 +58,7 @@ function toggle_infmessages()
 }
 {$log}
 <hr>
-<p class="msgreceived">Send a report that <a href="{$config{cgi_domain}}/bugspam.cgi?bug={$bug_num}">this bug log contains spam</a>.</p>
+<p class="msgreceived">Report that <a href="javascript:toggle_spamreport()">messages in this bug log are spam</a>.</p>
 <hr>
 {include(q(html/html_tail))}
 </body>
