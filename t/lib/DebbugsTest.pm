@@ -418,8 +418,9 @@ returns is destroyed (or goes out of scope) the database will be removed.
 sub create_postgresql_database {
     my $pgsql = Test::PostgreSQL->new(use_socket => 1) or
 	return undef;
+    my $base_dir = File::Spec->rel2abs(dirname(__FILE__).'/../..');
     my $installsql =
-	File::Spec->rel2abs(dirname(__FILE__).'/../..').
+	$base_dir .
 	    '/bin/debbugs-installsql';
     # create the debversion extension
     my $dbh = DBI->connect($pgsql->dsn);
@@ -427,11 +428,10 @@ sub create_postgresql_database {
 CREATE EXTENSION IF NOT EXISTS debversion;
 END
     # create the schema for the bug tracking system
-    my $dep_dir = File::Temp::tempdir(CLEANUP=>1);
     system($installsql,
 	   '--dsn',$pgsql->dsn,
 	   '--install',
-	   '--deployment-dir',$dep_dir);
+	   '--deployment-dir',$base_dir.'/sql');
 
     initialize_postgresql_database($pgsql,@_);
     return $pgsql;

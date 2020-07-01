@@ -14,7 +14,7 @@ use Pod::Usage;
 
 =head1 NAME
 
-debbugs-installsql - installs the SQL database using DBIx::Class::DeploymentHandler
+debbugs-installsql - installs and upgrades Debbugs Databases
 
 =head1 SYNOPSIS
 
@@ -43,12 +43,7 @@ environmental variable (which this option overrides).
 
 =item B<--deployment-dir>
 
-Deployment directory (defaults to /usr/share/debbugs/sqldeployment)
-
-=item B<--drop>
-
-Drop tables before trying to create them. (Useful for --install, primarily).
-Defaults to not drop tables for safety.
+Deployment directory (defaults to /usr/share/debbugs/sql/upgrade)
 
 =item B<--debug, -d>
 
@@ -81,8 +76,6 @@ use if (-d $FindBin::Bin.'/../.git/' && $INC[0] =~ m#^/#),
     lib => $FindBin::Bin.'/../lib/';
 
 use Debbugs::DB;
-use Debbugs::DB::Util qw(prepare_execute);
-use aliased 'DBIx::Class::DeploymentHandler' => 'DH';
 
 my %options = (debug           => 0,
 	       help            => 0,
@@ -90,7 +83,7 @@ my %options = (debug           => 0,
                overwrite_deployment => 0,
 	       drop            => 0,
                service         => 'debbugs',
-               deployment_dir  => '/usr/share/debbugs/sqldeployment',
+               deployment_dir  => '/usr/share/debbugs/sql',
               );
 
 GetOptions(\%options,
@@ -100,9 +93,7 @@ GetOptions(\%options,
            'install',
            'install_version_storage|install-version-storage',
            'upgrade',
-	   'drop',
            'current_version|current-version',
-           'overwrite_deployment|overwrite-deployment|force_overwrite|force-overwrite',
            'deployment_dir|deployment-dir=s',
 	   'debug|d+','help|h|?','man|m');
 
@@ -140,100 +131,29 @@ if (not exists $options{dsn} or
 }
 
 
-my $schema = Debbugs::DB->connect($options{dsn}) or
+my $s = Debbugs::DB->connect($options{dsn}) or
     die "Unable to connect to database";
 
 
-my $dh = DH->new({schema => $schema,
-                  force_overwrite => $options{overwrite_deployment},
-                  script_directory => $options{deployment_dir},
-                  databases => 'PostgreSQL',
-		  sql_translator_args => {producer_args => {postgres_version => 8.1},
-					  add_drop_table => $options{drop},
-					 },
-                 });
-
 if ($options{current_version}) {
-    print "The current database version is: ".$dh->database_version."\n";
+    print "The current database version is: ".$s->database_version."\n";
     exit 0;
 } elsif ($options{install}) {
-    $dh->prepare_install;
-    $schema->storage->
-	dbh_do(sub {my ($s,$dbh) = @_;
-		    prepare_execute($dbh,<<'SQL');});
-CREATE OR REPLACE FUNCTION bin_ver_to_src_pkg(bin_ver INT) RETURNS INT
-  AS $src_pkg_from_bin_ver$
-  DECLARE
-  src_pkg int;
-  BEGIN
-	SELECT sv.src_pkg INTO STRICT src_pkg
-	       FROM bin_ver bv JOIN src_ver sv ON bv.src_ver=sv.id
-	       WHERE bv.id=bin_ver;
-	RETURN src_pkg;
-  END
-  $src_pkg_from_bin_ver$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION src_ver_to_src_pkg(src_ver INT) RETURNS INT
-  AS $src_ver_to_src_pkg$
-  DECLARE
-  src_pkg int;
-  BEGIN
-	SELECT sv.src_pkg INTO STRICT src_pkg
-	       FROM src_ver sv WHERE sv.id=src_ver;
-	RETURN src_pkg;
-  END
-  $src_ver_to_src_pkg$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION update_bin_pkg_src_pkg_bin_ver () RETURNS TRIGGER
-  AS $update_bin_pkg_src_pkg_bin_ver$
-  DECLARE
-  src_ver_rows integer;
-  BEGIN
-  IF (TG_OP = 'DELETE' OR TG_OP = 'UPDATE' )  THEN
-     -- if there is still a bin_ver with this src_pkg, then do nothing
-     PERFORM * FROM bin_ver bv JOIN src_ver sv ON bv.src_ver = sv.id
-     	    WHERE sv.id = OLD.src_ver LIMIT 2;
-     GET DIAGNOSTICS src_ver_rows = ROW_COUNT;
-     IF (src_ver_rows <= 1) THEN
-        DELETE FROM bin_pkg_src_pkg
-	       WHERE bin_pkg=OLD.bin_pkg AND
-	       	     src_pkg=src_ver_to_src_pkg(OLD.src_ver);
-     END IF;
-  END IF;
-  IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') THEN
-     BEGIN
-     INSERT INTO bin_pkg_src_pkg (bin_pkg,src_pkg)
-     	VALUES (NEW.bin_pkg,src_ver_to_src_pkg(NEW.src_ver))
-	ON CONFLICT (bin_pkg,src_pkg) DO NOTHING;
-     END;
-  END IF;
-  RETURN NULL;
-  END
-  $update_bin_pkg_src_pkg_bin_ver$ LANGUAGE plpgsql;
-SQL
-    $dh->install;
-    ## this is lame, but because the current release of DeploymentHandler does
-    ## not support WHERE or quoted indexes properly (fixed in git), we create
-    ## these indexes manually here.
-    $schema->storage->
-	dbh_do(sub{my ($s,$dbh) = @_;
-		   prepare_execute($dbh,<<SQL);
-
-CREATE UNIQUE INDEX bug_status_cache_bug_col_suite_col_arch_idx ON
- bug_status_cache(bug,COALESCE(suite,0),COALESCE(arch,0));
-CREATE UNIQUE INDEX bug_status_cache_bug_suite_idx ON
- bug_status_cache(bug,suite) WHERE arch is NULL;
-CREATE UNIQUE INDEX bug_status_cache_bug_idx ON
- bug_status_cache(bug) WHERE arch is NULL AND suite IS NULL;
-SQL
-		   });
+    $s->sql_file_in_txn($options{deployment_dir}.'/debbugs_schema.sql');
 } elsif ($options{upgrade}) {
-    $dh->prepare_deploy;
-    $dh->prepare_upgrade;
-    $dh->upgrade;
+    my @upgrades = $s->upgrades_to_run($options{deployment_dir});
+    for my $u_f (@upgrades) {
+	eval {
+	    $s->sql_file_in_txn($u_f->file);
+	};
+	if ($@) {
+	    print STDERR "Upgrade from $s->database_version to $u_f->version failed: $@";
+	    exit 1;
+	}
+    }
 } elsif ($options{install_version_storage}) {
-    $dh->prepare_version_storage_install;
-    $dh->install_version_storage;
+    # TODO Check if db_version already exists, and error out
+    $s->sql_file_in_txn($options{deployment_dir}.'/version_storage.sql');
 }
 
 
