@@ -24,14 +24,10 @@ use warnings;
 
 use base 'DBIx::Class::ResultSet';
 
-use Debbugs::DB::Util qw(select_one);
-
 sub get_message_id {
     my ($self,$msg_id,$from,$to,$subject) = @_;
-    return $self->result_source->schema->storage->
-	dbh_do(sub {
-		   my ($dbh,$msg_id,$from,$to,$subject) = @_;
-		   my $mi = select_one($dbh,<<'SQL',@_[1..$#_],@_[1..$#_]);
+    return $self->result_source->schema->
+	select_one(<<'SQL',@_,@_);
 WITH ins AS (
 INSERT INTO message (msgid,from_complete,to_complete,subject) VALUES (?,?,?,?)
  ON CONFLICT (msgid,from_complete,to_complete,subject) DO NOTHING RETURNING id
@@ -42,11 +38,6 @@ SELECT id FROM correspondent WHERE msgid=? AND from_complete = ?
 AND to_complete = ? AND subject = ?
 LIMIT 1;
 SQL
-		   return $mi;
-},
-	       @_[1..$#_]
-	      );
-
 }
 
 

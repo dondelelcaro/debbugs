@@ -24,8 +24,6 @@ use warnings;
 
 use base 'DBIx::Class::ResultSet';
 
-use Debbugs::DB::Util qw(select_one);
-
 use List::AllUtils qw(natatime);
 
 
@@ -68,17 +66,11 @@ actually be calling C<Debbugs::DB::Load::load_bug> instead of this function.
 
 sub quick_insert_bug {
     my ($self,$bug) = @_;
-    return $self->result_source->schema->storage->
-	dbh_do(sub {
-		   my ($s,$dbh,$b) = @_;
-		   select_one($dbh,<<'SQL',$b);
+    return $self->result_source->schema->
+	select_one(<<'SQL',$bug);
 INSERT INTO bug (id,subject,severity) VALUES (?,'',1)
 ON CONFLICT (id) DO NOTHING RETURNING id;
 SQL
-	       },
-	       $bug
-	      );
-
 }
 
 

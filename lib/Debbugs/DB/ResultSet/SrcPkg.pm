@@ -24,8 +24,6 @@ use warnings;
 
 use base 'DBIx::Class::ResultSet';
 
-use Debbugs::DB::Util qw(select_one);
-
 sub src_pkg_and_ver_in_suite {
     my ($self,$suite) = @_;
     if (ref($suite)) {
@@ -59,23 +57,16 @@ sub src_pkg_and_ver_in_suite {
 
 sub get_src_pkg_id {
     my ($self,$source) = @_;
-    return $self->result_source->schema->storage->
-	dbh_do(sub {
-		   my ($s,$dbh,$src_pkg) = @_;
-		   return select_one($dbh,<<'SQL',$src_pkg);
+    return $self->result_source->schema->
+	select_one(<<'SQL',$source);
 SELECT id FROM src_pkg where pkg = ?;
 SQL
-	       },
-	       $source
-	      );
 }
 
 sub get_or_create_src_pkg_id {
     my ($self,$source) = @_;
-    return $self->result_source->schema->storage->
-	dbh_do(sub {
-		   my ($s,$dbh,$source) = @_;
-		   return select_one($dbh,<<'SQL',$source,$source);
+    return $self->result_source->schema->
+	select_one(<<'SQL',$source,$source);
 WITH ins AS (
 INSERT INTO src_pkg (pkg)
    VALUES (?) ON CONFLICT (pkg,disabled) DO NOTHING RETURNING id
@@ -85,9 +76,6 @@ UNION ALL
 SELECT id FROM src_pkg where pkg = ? AND disabled = 'infinity'::timestamptz
 LIMIT 1;
 SQL
-	       },
-	       $source
-	      );
 }
 
 1;

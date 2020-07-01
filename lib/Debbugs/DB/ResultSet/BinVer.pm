@@ -24,15 +24,10 @@ use warnings;
 
 use base 'DBIx::Class::ResultSet';
 
-use Debbugs::DB::Util qw(select_one);
-
-
 sub get_bin_ver_id {
     my ($self,$bin_pkg_id,$bin_ver,$arch_id,$src_ver_id) = @_;
-    return $self->result_source->schema->storage->
-	dbh_do(sub {
-		   my ($s,$dbh,$bp_id,$bv,$a_id,$sv_id) = @_;
-		   return select_one($dbh,<<'SQL',
+    return $self->result_source->schema->
+	select_one(<<'SQL',
 WITH ins AS (
 INSERT INTO bin_ver (bin_pkg,src_ver,arch,ver)
 VALUES (?,?,?,?) ON CONFLICT (bin_pkg,arch,ver) DO NOTHING RETURNING id
@@ -42,13 +37,10 @@ UNION ALL
 SELECT id FROM bin_ver WHERE bin_pkg = ? AND arch = ? AND ver = ?
 LIMIT 1;
 SQL
-				     $bp_id,$sv_id,
-				     $a_id,$bv,
-				     $bp_id,$a_id,
-				     $bv);
-	       },
-	       $bin_pkg_id,$bin_ver,$arch_id,$src_ver_id
-	      );
+		   $bin_pkg_id,$src_ver_id,
+		   $arch_id,$bin_ver,
+		   $bin_pkg_id,$arch_id,
+		   $bin_ver);
 }
 
 1;

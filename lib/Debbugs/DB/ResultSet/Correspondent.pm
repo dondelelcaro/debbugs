@@ -27,7 +27,6 @@ use base 'DBIx::Class::ResultSet';
 use Debbugs::DB::Util qw(select_one);
 
 use Debbugs::Common qw(getparsedaddrs);
-use Debbugs::DB::Util qw(select_one);
 use Scalar::Util qw(blessed);
 
 sub get_correspondent_id {
@@ -54,10 +53,9 @@ sub get_correspondent_id {
     if (defined $rs) {
 	return $rs->{id};
     }
-    return $self->result_source->schema->storage->
-	dbh_do(sub {
-		   my ($s,$dbh,$addr,$full_name) = @_;
-		   my $ci = select_one($dbh,<<'SQL',$addr,$addr);
+    my $ci =
+	$self->result_source->schema->
+	select_one(<<'SQL',$addr,$addr);
 WITH ins AS (
 INSERT INTO correspondent (addr) VALUES (?)
  ON CONFLICT (addr) DO NOTHING RETURNING id
@@ -67,8 +65,9 @@ UNION ALL
 SELECT id FROM correspondent WHERE addr = ?
 LIMIT 1;
 SQL
-		   if (defined $full_name) {
-		       select_one($dbh,<<'SQL',$ci,$full_name);
+    if (defined $full_name) {
+	$self->result_source->schema->
+	    select_one(<<'SQL',$ci,$full_name);
 WITH ins AS (
 INSERT INTO correspondent_full_name (correspondent,full_name)
    VALUES (?,?) ON CONFLICT (correspondent,full_name) DO NOTHING RETURNING 1
@@ -76,13 +75,8 @@ INSERT INTO correspondent_full_name (correspondent,full_name)
 UNION ALL
 SELECT 1;
 SQL
-		   }
-		   return $ci;
-},
-	       $addr,
-	       $full_name
-	      );
-
+    }
+    return $ci;
 }
 
 

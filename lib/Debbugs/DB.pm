@@ -19,6 +19,8 @@ __PACKAGE__->load_namespaces;
 # DBIx::Class::DeploymentHandler can do its work
 our $VERSION=12;
 
+__PACKAGE__->load_components('+Debbugs::DB::Util');
+
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 
 # override connect to handle just passing a bare service

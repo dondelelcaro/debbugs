@@ -23,21 +23,10 @@ None known.
 
 use warnings;
 use strict;
-use vars qw($VERSION $DEBUG %EXPORT_TAGS @EXPORT_OK @EXPORT);
-use base qw(Exporter);
 
-BEGIN{
-     ($VERSION) = q$Revision$ =~ /^Revision:\s+([^\s+])/;
-     $DEBUG = 0 unless defined $DEBUG;
+use base qw(DBIx::Class);
 
-     @EXPORT = ();
-     %EXPORT_TAGS = (select => [qw(select_one)],
-		     execute => [qw(prepare_execute)]
-		    );
-     @EXPORT_OK = ();
-     Exporter::export_ok_tags(keys %EXPORT_TAGS);
-     $EXPORT_TAGS{all} = [@EXPORT_OK];
-}
+use Debbugs::Common qw(open_compressed_file);
 
 =head2 select
 
@@ -47,42 +36,69 @@ Routines for select requests
 
 =item select_one
 
-	select_one($dbh,$sql,@bind_vals)
+	$schema->select_one($sql,@bind_vals)
 
 Returns the first column from the first row returned from a select statement
 
 =cut
 
 sub select_one {
-    my ($dbh,$sql,@bind_vals) = @_;
-    my $sth = $dbh->
+    my ($self,$sql,@bind_vals) = @_;
+    my $results =
+	$self->storage->
+	dbh_do(sub {
+		   my ($s,$dbh) = @_;
+		   my $sth = $dbh->
         prepare_cached($sql,
                       {dbi_dummy => __FILE__.__LINE__ })
         or die "Unable to prepare statement: $sql";
-    $sth->execute(@bind_vals) or
-        die "Unable to select one: ".$dbh->errstr();
-    my $results = $sth->fetchall_arrayref([0]);
-    $sth->finish();
+		   $sth->execute(@bind_vals) or
+		       die "Unable to select one: ".$dbh->errstr();
+		   my $results = $sth->fetchall_arrayref([0]);
+		   $sth->finish();
+		   return $results;
+	       });
     return (ref($results) and ref($results->[0]))?$results->[0][0]:undef;
 }
 
 =item prepare_execute
 
-	prepare_execute($dbh,$sql,@bind_vals)
+	$schema->prepare_execute($sql,@bind_vals)
 
 Prepares and executes a statement
 
 =cut
 
 sub prepare_execute {
-    my ($dbh,$sql,@bind_vals) = @_;
-    my $sth = $dbh->
-        prepare_cached($sql,
+    my ($self,$sql,@bind_vals) = @_;
+    $self->storage->
+	dbh_do(sub {
+		   my ($s,$dbh) = @_;
+		   my $sth = $dbh->
+		       prepare_cached($sql,
                       {dbi_dummy => __FILE__.__LINE__ })
-        or die "Unable to prepare statement: $sql";
-    $sth->execute(@bind_vals) or
-        die "Unable to execute statement: ".$dbh->errstr();
-    $sth->finish();
+		       or die "Unable to prepare statement: $sql";
+		   $sth->execute(@bind_vals) or
+		       die "Unable to execute statement: ".$dbh->errstr();
+		   $sth->finish();
+	       });
+}
+
+=item sql_file_in_txn
+
+C<sql_file_in_txn();>
+
+
+
+=cut
+sub sql_file_in_txn {
+    my ($self,$fn) = @_;
+    my $fh = open_compressed_file($fn) or
+	die "Unable to open $fn for reading: $!";
+    local $/;
+    my $sql = <$fh>;
+    defined($sql) or die "Unable to read from file: $!";
+    $self->prepare_execute($sql);
 }
 
 

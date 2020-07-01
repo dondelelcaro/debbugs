@@ -24,9 +24,6 @@ use warnings;
 
 use base 'DBIx::Class::ResultSet';
 
-use Debbugs::DB::Util qw(select_one);
-
-
 =over
 
 =item get_maintainers 
@@ -90,10 +87,8 @@ sub get_maintainer_id {
     my $ci =
 	$self->result_source->schema->resultset('Correspondent')->
 	get_correspondent_id($maint);
-    return $self->result_source->schema->storage->
-	dbh_do(sub {
-		   my ($s,$dbh,$maint,$ci) = @_;
-		   return select_one($dbh,<<'SQL',$maint,$ci,$maint);
+    return $self->result_source->schema->
+	select_one(<<'SQL',$maint,$ci,$maint);
 WITH ins AS (
 INSERT INTO maintainer (name,correspondent) VALUES (?,?)
 ON CONFLICT (name) DO NOTHING RETURNING id
@@ -103,9 +98,6 @@ UNION ALL
 SELECT id FROM maintainer WHERE name = ?
 LIMIT 1;
 SQL
-	       },
-	       $maint,$ci
-	      );
 }
 
 =back

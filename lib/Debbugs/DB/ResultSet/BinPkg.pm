@@ -24,8 +24,6 @@ use warnings;
 
 use base 'DBIx::Class::ResultSet';
 
-use Debbugs::DB::Util qw(select_one);
-
 sub bin_pkg_and_ver_in_suite {
     my ($self,$suite) = @_;
     $suite = $self->result_source->schema->
@@ -43,22 +41,16 @@ sub bin_pkg_and_ver_in_suite {
 
 sub get_bin_pkg_id {
     my ($self,$pkg) = @_;
-    return $self->result_source->schema->storage->
-	dbh_do(sub {
-		   my ($s,$dbh,$bin_pkg) = @_;
-		   return select_one($dbh,<<'SQL',$bin_pkg);
+    return $self->result_source->schema->
+	select_one(<<'SQL',$pkg);
 SELECT id FROM bin_pkg where pkg = ?;
 SQL
-	       },
-	       $pkg
-	      );
 }
+
 sub get_or_create_bin_pkg_id {
     my ($self,$pkg) = @_;
-    return $self->result_source->schema->storage->
-	dbh_do(sub {
-		   my ($s,$dbh,$bin_pkg) = @_;
-		   return select_one($dbh,<<'SQL',$bin_pkg,$bin_pkg);
+    return $self->result_source->schema->
+	select_one(<<'SQL',$pkg,$pkg);
 WITH ins AS (
 INSERT INTO bin_pkg (pkg)
 VALUES (?) ON CONFLICT (pkg) DO NOTHING RETURNING id
@@ -68,9 +60,6 @@ UNION ALL
 SELECT id FROM bin_pkg where pkg = ?
 LIMIT 1;
 SQL
-	       },
-	       $pkg
-	      );
 }
 
 1;
