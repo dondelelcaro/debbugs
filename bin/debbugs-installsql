@@ -76,6 +76,7 @@ use if (-d $FindBin::Bin.'/../.git/' && $INC[0] =~ m#^/#),
     lib => $FindBin::Bin.'/../lib/';
 
 use Debbugs::DB;
+use JSON;
 
 my %options = (debug           => 0,
 	       help            => 0,
@@ -136,18 +137,28 @@ my $s = Debbugs::DB->connect($options{dsn}) or
 
 
 if ($options{current_version}) {
-    print "The current database version is: ".$s->database_version."\n";
+    print "The current database version is: ".$s->db_version."\n";
     exit 0;
 } elsif ($options{install}) {
     $s->sql_file_in_txn($options{deployment_dir}.'/debbugs_schema.sql');
 } elsif ($options{upgrade}) {
-    my @upgrades = $s->upgrades_to_run($options{deployment_dir});
+    my @upgrades = $s->upgrades_to_run($options{deployment_dir}.'/upgrade');
     for my $u_f (@upgrades) {
 	eval {
-	    $s->sql_file_in_txn($u_f->file);
+	    package fake;
+	    require $u_f->{file};
+	    $s->txn_do(sub {fake::upgrade($s);
+			    $s->resultset('DbVersion')->
+				create({version => $u_f->{to},
+					metadata => JSON::encode_json({from => $u_f->{from}+0,
+								       to => $u_f->{to}+0,
+								       file => $u_f->{file},
+								      }),
+				       });
+			});
 	};
 	if ($@) {
-	    print STDERR "Upgrade from $s->database_version to $u_f->version failed: $@";
+	    print STDERR "Upgrade from $s->database_version to $u_f->{to} failed: $@";
 	    exit 1;
 	}
     }
