@@ -96,6 +96,8 @@ sub sql_file_in_txn {
 
 =head2 Database Upgrade and Version
 
+=over
+
 =item db_version
 
 C<db_version();>
