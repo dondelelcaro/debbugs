@@ -43,7 +43,8 @@ environmental variable (which this option overrides).
 
 =item B<--deployment-dir>
 
-Deployment directory (defaults to /usr/share/debbugs/sql/upgrade)
+Deployment directory (defaults to /usr/share/debbugs/sql/). This directory
+contains an upgrade subdirectory and scripts which perform the upgrade
 
 =item B<--debug, -d>
 
@@ -163,6 +164,10 @@ if ($options{current_version}) {
 	}
     }
 } elsif ($options{install_version_storage}) {
+    if ($s->db_version > 1) {
+	print STDERR "Version storage is already installed, current version is > 1\n";
+	exit 1;
+    }
     # TODO Check if db_version already exists, and error out
     $s->sql_file_in_txn($options{deployment_dir}.'/version_storage.sql');
 }

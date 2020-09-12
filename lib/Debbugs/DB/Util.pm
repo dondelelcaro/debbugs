@@ -136,13 +136,10 @@ sub upgrades_to_run {
 		     $deployment_dir
 		    );
     # sort the upgrades
-    use Data::Dumper;
-    print STDERR Dumper(@files);
     @files = sort {$a->{from} <=> $b->{from}}
 	# strip out upgrades which don't need to be run
 	grep {$_->{from} >= $current_version } @files;
 
-    print STDERR Dumper(@files);
     return @files;
 }
 
