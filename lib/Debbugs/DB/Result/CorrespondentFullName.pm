@@ -45,16 +45,20 @@ __PACKAGE__->table("correspondent_full_name");
 
 Correspondent ID (matches correspondent)
 
-=head2 full_name
+=head2 full_addr
 
   data_type: 'text'
   is_nullable: 0
 
-Correspondent full name (includes e-mail address)
+=head2 name
+
+  data_type: 'text'
+  default_value: (empty string)
+  is_nullable: 0
 
 =head2 last_seen
 
-  data_type: 'timestamp'
+  data_type: 'timestamp with time zone'
   default_value: current_timestamp
   is_nullable: 0
   original: {default_value => \"now()"}
@@ -64,11 +68,13 @@ Correspondent full name (includes e-mail address)
 __PACKAGE__->add_columns(
   "correspondent",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "full_name",
+  "full_addr",
   { data_type => "text", is_nullable => 0 },
+  "name",
+  { data_type => "text", default_value => "", is_nullable => 0 },
   "last_seen",
   {
-    data_type     => "timestamp",
+    data_type     => "timestamp with time zone",
     default_value => \"current_timestamp",
     is_nullable   => 0,
     original      => { default_value => \"now()" },
@@ -83,7 +89,7 @@ __PACKAGE__->add_columns(
 
 =item * L</correspondent>
 
-=item * L</full_name>
+=item * L</full_addr>
 
 =back
 
@@ -91,7 +97,7 @@ __PACKAGE__->add_columns(
 
 __PACKAGE__->add_unique_constraint(
   "correspondent_full_name_correspondent_full_name_idx",
-  ["correspondent", "full_name"],
+  ["correspondent", "full_addr"],
 );
 
 =head1 RELATIONS
@@ -112,8 +118,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07046 @ 2017-03-04 10:59:03
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:2Ac8mrDV2IsE/11YsYoqQQ
+# Created by DBIx::Class::Schema::Loader v0.07049 @ 2020-08-01 13:43:06
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:3IdwxC/wrKHGQT05XYLDYg
 
 sub sqlt_deploy_hook {
     my ($self, $sqlt_table) = @_;
