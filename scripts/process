@@ -233,9 +233,9 @@ for my $phline (@bodylines)
     my ($fn, $fv) = ($1, $2);
     $fv =~ s/\s*$//;
     # pluralize tag/usertag
+    $fn = lc $fn;
     $fn = $fn.'s' if $fn =~ /^(?:tag|usertag)$/;
     print {$debugfh} ">$fn|$fv|\n";
-    $fn = lc $fn;
     if ($fn =~ /^control$/) {
 	push @control_bits,$fv;
     } else {
