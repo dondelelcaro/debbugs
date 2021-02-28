@@ -220,6 +220,7 @@ if (@bodylines and $bodylines[0] =~ /^-----BEGIN PGP SIGNED/) {
 #psuedoheaders
 my %pheader;
 my @control_bits;
+my @usertag_bits;
 # extract pseudo-headers
 for my $phline (@bodylines)
 {
@@ -233,15 +234,18 @@ for my $phline (@bodylines)
 			 (\S.*)/x; # pseudoheader value
     my ($fn, $fv) = ($1, $2);
     $fv =~ s/\s*$//;
-    # pluralize tag/usertag
     $fn = lc $fn;
+    # pluralize tag/usertag
     $fn = $fn.'s' if $fn =~ /^(?:tag|usertag)$/;
     print {$debugfh} ">$fn|$fv|\n";
     if ($fn =~ /^control$/) {
 	push @control_bits,$fv;
+    } elsif ($fn =~ /^(?:user|usertags)$/) {
+	$fv = lc $fv;
+	push @usertag_bits, [$fn, $fv];
     } else {
 	# Don't lc owner or forwarded
-	$fv = lc $fv unless $fn =~ /^(?:owner|forwarded|usertags|version|source-version|done)$/;
+	$fv = lc $fv unless $fn =~ /^(?:owner|forwarded|version|source-version|done)$/;
 	$pheader{$fn} = $fv;
     }
     print {$debugfh} ">$fn~$fv<\n";
@@ -696,32 +700,37 @@ if ($ref<0) { # new bug report
     $data->{msgid} = $header{'message-id'};
     writebug($ref, $data);
     # Deal with usertags
-    if (exists $pheader{usertags}) {
-	 my $user = $replyto;
-	 $user = $pheader{user} if exists $pheader{user};
-	 $user =~ s/,.*//;
-	 $user =~ s/^.*<(.*)>.*$/$1/;
-	 $user =~ s/[(].*[)]//;
-	 $user =~ s/^\s*(\S+)\s+.*$/$1/;
-	 if ($user ne '' and Debbugs::User::is_valid_user($user)) {
-	      $pheader{usertags} =~ s/(?:^\s+|\s+$)//g;
-	      my %user_tags;
-	      read_usertags(\%user_tags,$user);
-	      for my $tag (split /[,\s]+/, $pheader{usertags}) {
-		   if ($tag =~ /^[a-zA-Z0-9.+\@-]+/) {
-			my %bugs_with_tag; 
-			@bugs_with_tag{@{$user_tags{$tag}||[]}} = (1) x @{$user_tags{$tag}||[]};
-			$bugs_with_tag{$ref} = 1;
-			$user_tags{$tag} = [keys %bugs_with_tag];
-		   }
-	      }
-	      write_usertags(\%user_tags,$user);
-	 }
-	 else {
-	      $brokenness .= fill_template('mail/invalid_user',
-					   {user => $user}
-					  );
-	 }
+    my $current_user = $replyto;
+    for my $field (@usertags_bits) {
+        my ($name, $value) = @$field;
+        if ($name eq 'user') {
+            my $user = $value;
+            $user =~ s/,.*//;
+            $user =~ s/^.*<(.*)>.*$/$1/;
+            $user =~ s/[(].*[)]//;
+            $user =~ s/^\s*(\S+)\s+.*$/$1/;
+            if ($user ne '' and Debbugs::User::is_valid_user($user)) {
+                $current_user = $user;
+            } else {
+                $brokenness .= fill_template('mail/invalid_user',
+                                             {user => $user}
+                                            );
+            }
+        }
+        if ($name eq 'usertags'){
+            my %user_tags;
+            read_usertags(\%user_tags, $current_user);
+            $value =~ s/(?:^\s+|\s+$)//g;
+            for my $tag (split /[,\s]+/, $value) {
+                if ($tag =~ /^[a-zA-Z0-9.+\@-]+/) {
+                    my %bugs_with_tag;
+                    @bugs_with_tag{@{$user_tags{$tag}||[]}} = (1) x @{$user_tags{$tag}||[]};
+                    $bugs_with_tag{$ref} = 1;
+                    $user_tags{$tag} = [keys %bugs_with_tag];
+                }
+            }
+            write_usertags(\%user_tags,$current_user);
+        }
     }
     overwritefile("db-h/$hash/$ref.report",
 		  map {"$_\n"} @msg);
