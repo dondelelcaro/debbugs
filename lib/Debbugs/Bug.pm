@@ -119,7 +119,9 @@ sub _build_package_collection {
     if ($self->has_schema) {
         return Debbugs::Collection::Package->new(schema => $self->schema);
     }
-    carp "No schema when building package collection";
+    if (defined $config{database}) {
+        carp "No schema when building package collection";
+    }
     return Debbugs::Collection::Package->new();
 }
 
