@@ -192,6 +192,7 @@ sub _get_valid_version_info_from_db {
 	@packages = @{$args{packages}};
     }
     if (not defined $s) {
+        # FIXME: Implement equivalent loader when there isn't a schema
 	confess("get_info_from_db not implemented without schema");
     }
     my %src_packages;
