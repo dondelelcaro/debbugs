@@ -39,8 +39,11 @@ BEGIN {
     if ($INC[0] !~ /^\//) {
 	undef $debbugs_dir;
     }
+    if (defined $debbugs_dir) {
+	unshift @INC, $debbugs_dir.'/lib/';
+    }
 }
-use if defined $debbugs_dir, lib => $debbugs_dir.'/lib/';
+
 
 binmode(STDOUT,':encoding(UTF-8)');
 use POSIX qw(strftime nice);

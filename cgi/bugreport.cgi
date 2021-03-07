@@ -34,9 +34,12 @@ BEGIN {
     # if the first directory in @INC is not an absolute directory, assume that
     # someone has overridden us via -I.
     if ($INC[0] !~ /^\//) {
+	undef $debbugs_dir;
+    }
+    if (defined $debbugs_dir) {
+	unshift @INC, $debbugs_dir.'/lib/';
     }
 }
-use if defined $debbugs_dir, lib => $debbugs_dir.'/lib/';
 
 use Debbugs::Config qw(:globals :text :config);
 
