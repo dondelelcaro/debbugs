@@ -10,10 +10,15 @@ use DebbugsTest qw(:all);
 
 plan tests => 3;
 
+create_debbugs_configuration();
+
+my $debbugs_config_file = $ENV{DEBBUGS_CONFIG_FILE};
+
 my $port = 11344;
 
 my $version_cgi_handler = sub {
     my $fh;
+    $ENV{DEBBUGS_CONFIG_FILE} = $debbugs_config_file;
     open($fh,'-|',-e './cgi/version.cgi'? './cgi/version.cgi' : '../cgi/version.cgi');
     my $headers;
     my $status = 200;
