@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 
 
-use Test::More tests => 18;
+use Test::More tests => 19;
 
 use warnings;
 use strict;
@@ -37,7 +37,9 @@ send_message(to=>'submit@bugs.something',
 Package: foo
 Severity: normal
 
-This is a silly bug
+This is a silly bug which contains an unescaped From line.
+
+From line
 EOF
 
 
@@ -91,6 +93,9 @@ ok($mech->content() =~ qr/Subject: Submitting a bug/i,
    'Subject of bug maibox is right');
 ok($mech->content() =~ qr/^From /m,
    'Starts with a From appropriately');
+ok($mech->content() =~ qr/^(>F|=46)rom line/m,
+   'From line escaped appropriately');
+print STDERR $mech->content();
 
 $mech->get_ok('http://localhost:'.$port.'/?bug=1;mboxmaint=yes',
               'Page received ok');

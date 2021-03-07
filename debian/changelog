@@ -3,6 +3,7 @@ debbugs (3.0.0~alpha.1) unstable; urgency=medium
   * Use Text::Xslate instead of Text::Template; Text::Xslate is significantly
     faster.
   * Add support for a Done: psuedoheader (closes: #950133)
+  * Fix unescaped From (closes: #983847)
 
  -- Don Armstrong <don@debian.org>  Fri, 09 Mar 2018 11:17:10 -0800
 

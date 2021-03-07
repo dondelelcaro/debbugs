@@ -329,7 +329,11 @@ END
 	  print map { s/^(>*From )/>$1/; $_."\n" } @lines[ 1 .. $#lines ];
       if ($record->{inner_file}) {
           my $fh = $record->{fh};
-          print $_ while (<$fh>);
+          local $/;
+          while (<$fh>) {
+              s/^(>*From )/>$1/gm;
+              print $_;
+          }
       }
      }
      exit 0;
