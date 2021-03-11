@@ -701,7 +701,7 @@ if ($ref<0) { # new bug report
     writebug($ref, $data);
     # Deal with usertags
     my $current_user = $replyto;
-    for my $field (@usertags_bits) {
+    for my $field (@usertag_bits) {
         my ($name, $value) = @$field;
         if ($name eq 'user') {
             my $user = $value;
