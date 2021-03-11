@@ -95,7 +95,6 @@ ok($mech->content() =~ qr/^From /m,
    'Starts with a From appropriately');
 ok($mech->content() =~ qr/^(>F|=46)rom line/m,
    'From line escaped appropriately');
-print STDERR $mech->content();
 
 $mech->get_ok('http://localhost:'.$port.'/?bug=1;mboxmaint=yes',
               'Page received ok');
