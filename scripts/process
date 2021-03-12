@@ -700,7 +700,8 @@ if ($ref<0) { # new bug report
     $data->{msgid} = $header{'message-id'};
     writebug($ref, $data);
     # Deal with usertags
-    my $current_user = $replyto;
+    my $current_user;
+    unshift @usertag_bits, ['user', $replyto];
     for my $field (@usertag_bits) {
         my ($name, $value) = @$field;
         if ($name eq 'user') {
