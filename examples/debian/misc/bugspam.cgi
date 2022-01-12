@@ -16,7 +16,7 @@ sub quitcgi($;$) {
 }
 
 my $bug = param('bug') or quitcgi('No bug specfied', '400 Bad Request');
-quitcgi('No valid bug number', '400 Bad Request') unless $bug =~ /^\d{3,6}$/;
+quitcgi('No valid bug number', '400 Bad Request') unless $bug =~ /^\d{3,7}$/;
 my $remote_host = remote_host or quitcgi("No remote host");
 my $ok = param('ok');
 if (not defined $ok) {
