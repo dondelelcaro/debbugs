@@ -212,7 +212,8 @@ my @log;
 if ( $mbox ) {
      binmode(STDOUT,":raw");
      my $date = strftime "%a %b %d %T %Y", localtime;
-     if (@records > 1) {
+     my $multiple_messages = @records > 1;
+     if ($multiple_messages) {
 	 print $q->header(-type => "application/mbox",
 			  -cache_control => 'public, max-age=600',
 			  -etag => $etag,
@@ -224,10 +225,10 @@ if ( $mbox ) {
 	  print $q->header(-type => "message/rfc822",
 			   -cache_control => 'public, max-age=86400',
 			   -etag => $etag,
-			   content_disposition => qq(attachment; filename="bug_${ref}_message_${msg_num}.mbox"),
+			   content_disposition => qq(attachment; filename="bug_${ref}_message_${msg_num}.eml"),
 			  );
      }
-     if ($mbox_status_message and @records > 1) {
+     if ($mbox_status_message and $multiple_messages) {
 	  my $status_message='';
 	  my @status_fields = (retitle   => 'subject',
 			       package   => 'package',
@@ -271,7 +272,7 @@ END
 	  next if not $boring and not $record->{type} eq $wanted_type and not $record_wanted_anyway and @records > 1;
 	  $seen_message_ids{$msg_id} = 1 if defined $msg_id;
           # skip spam messages if we're outputting more than one message
-          next if @records > 1 and $spam->is_spam($msg_id);
+          next if $multiple_messages and $bug->is_spam($msg_id);
       my @lines;
       if ($record->{inner_file}) {
           push @lines, scalar $record->{fh}->getline;
@@ -288,12 +289,13 @@ END
 	       unshift @lines, "From unknown $date";
        }
       print $lines[0]."\n";
-	  print map { s/^(>*From )/>$1/; $_."\n" } @lines[ 1 .. $#lines ];
+	  print map { s/^(>*From )/>$1/ if $multiple_messages;
+                      $_."\n" } @lines[ 1 .. $#lines ];
       if ($record->{inner_file}) {
           my $fh = $record->{fh};
           local $/;
           while (<$fh>) {
-              s/^(>*From )/>$1/gm;
+              s/^(>*From )/>$1/gm if $multiple_messages;
               print $_;
           }
       }
