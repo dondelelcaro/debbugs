@@ -170,6 +170,11 @@ pre.mime {
     color: #797979;
 }
 
+/* Show info messages when uselessmessages is checked */
+#uselessmessages:checked ~ .infmessage {
+    display: block;
+}
+
 /* This must be separate from the other CSS to make the showing of
    unimportant messages work in bugreport.cgi. */ 
 .infmessage { display: none; }

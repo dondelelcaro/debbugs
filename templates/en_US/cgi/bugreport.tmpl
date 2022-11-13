@@ -33,7 +33,7 @@ function toggle_infmessages()
 	   qq(or <a href="mailto:$bug_num-subscribe\@$config{email_domain}">subscribe</a> ).
 	       qq(to this bug.</p>\n);
      }
-     $output .=  qq(<p><a href="javascript:toggle_infmessages();">Toggle useless messages</a></p>);
+     $output .=  qq(<p><input id="uselessmesages" type="checkbox"><label for="uselessmessages">Display info messages</label></p>);
      $output .= sprintf qq(<div class="msgreceived"><p>View this report as an <a href="%s">mbox folder</a>, ).
 	  qq(<a href="%s">status mbox</a>, <a href="%s">maintainer mbox</a></p></div>\n),
 	       html_escape(bug_links(bug=>$bug_num, links_only=>1,options=>{mbox=>'yes'})),
