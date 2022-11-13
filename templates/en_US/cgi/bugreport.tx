@@ -1,20 +1,5 @@
 <: include "html/pre_title.tx" :>#<: $bug.id :> - <: $bug.subject :> - <: $config.project :> <: $config.bug :> report logs<: include "html/post_title.tx" :>
 <link rel="canonical" href="<: $bug.url :>">
-<script type="text/javascript">
-<!--
-function toggle_infmessages()
-{
-        allDivs=document.getElementsByTagName("div");
-        for (var i = 0 ; i < allDivs.length ; i++ )
-       {
-                if (allDivs[i].className == "infmessage")
-                {
-                        allDivs[i].style.display=(allDivs[i].style.display == 'none' | allDivs[i].style.display == '') ? 'block' : 'none';
-                }
-       }
-}
--->
-</script>
 </head>
 <body>
     <div class="debbugs_install"><: $config.project :> <: $config.bug :> report logs</div>
@@ -47,9 +32,8 @@ to this <: $config.bug :>.</span>
 </div>
 : }
 <: raw($log) :>
-<script>
- document.write("<span class=\"uselessmessages\"><a href=\"javascript:toggle_infmessages();\">Toggle useless messages</a></span>")
-</script>
+<input id="uselessmessages" type="checkbox">
+<label for="uselessmessages">Display info messages</label>
 <hr>
 <p class="msgreceived">Send a report that <a href="<: $config.cgi_domain :>/bugspam.cgi?bug=<: $bug_num :>">this bug log contains spam</a>.</p>
 <hr>
