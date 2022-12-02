@@ -3295,6 +3295,20 @@ sub bug_unarchive {
      __end_control(%info);
 }
 
+= head2 valid_usertag
+
+     valid_usertag
+
+This checks if the usertag contains valid characters or not.
+
+=cut
+
+sub valid_usertag {
+    my $usertag = shift;
+    return $usertag =~ m/^[a-zA-Z0-9.+\@-]+$/;
+}
+
+
 =head2 append_action_to_log
 
      append_action_to_log
