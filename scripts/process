@@ -30,7 +30,7 @@ use Debbugs::Text qw(:templates);
 
 use Debbugs::Config qw(:globals :config);
 
-use Debbugs::Control qw(append_action_to_log);
+use Debbugs::Control qw(append_action_to_log valid_usertag);
 use Debbugs::Control::Service qw(valid_control control_line);
 use Debbugs::Recipients qw(determine_recipients);
 use Encode qw(encode_utf8 decode);
@@ -721,7 +721,7 @@ if ($ref<0) { # new bug report
             read_usertags(\%user_tags, $current_user);
             $value =~ s/(?:^\s+|\s+$)//g;
             for my $tag (split /[,\s]+/, $value) {
-                if ($tag =~ /^[a-zA-Z0-9.+\@-]+/) {
+                if (valid_usertag($tag)) {
                     my %bugs_with_tag;
                     @bugs_with_tag{@{$user_tags{$tag}||[]}} = (1) x @{$user_tags{$tag}||[]};
                     $bugs_with_tag{$ref} = 1;

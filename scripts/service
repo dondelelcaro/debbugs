@@ -32,7 +32,7 @@ use Debbugs::Versions::Dpkg;
 use Debbugs::Status qw(splitpackages);
 
 use Debbugs::CGI qw(html_escape);
-use Debbugs::Control qw(:all);
+use Debbugs::Control qw(:all valid_usertag);
 use Debbugs::Control::Service qw(:all);
 use Debbugs::Log qw(:misc);
 use Debbugs::Text qw(:templates);
@@ -425,7 +425,7 @@ END
 	    my %chtags;
 	    if (defined $tags and length $tags) {
 		 for my $t (split /[,\s]+/, $tags) {
-		      if ($t =~ m/^[a-zA-Z0-9.+\@-]+$/) {
+		      if (valid_usertag($t)) {
 			   $chtags{$t} = 1;
 		      } else {
 			   push @badtags, $t;
