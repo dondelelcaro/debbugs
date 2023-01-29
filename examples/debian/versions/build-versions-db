@@ -189,6 +189,7 @@ for my $suite (@{$suites}) {
     for my $component ('main', 'main/debian-installer',
 		       'contrib', 'contrib/debian-installer',
 		       'non-free', 'non-free/debian-installer',
+		       'non-free-firmware', 'non-free-firmware/debian-installer',
 		      ) {
 	my $componentdir = "$suitedir/$component";
 	if (not -d $componentdir) {
