@@ -93,6 +93,7 @@ use Debbugs::Config qw(:config);
 use Debbugs::Common qw(cleanup_eval_fail);
 use Debbugs::Control qw(:all);
 use Debbugs::Status qw(splitpackages);
+use Debbugs::MIME qw(encode_rfc1522);
 use Params::Validate qw(:types validate_with);
 use List::AllUtils qw(first);
 
@@ -367,7 +368,7 @@ sub control_line {
     }
     elsif ($ctl eq 'submitter') {
 	my $newsubmitter = $matches[1] eq '!' ? $param{replyto} : $matches[1];
-        if (not Mail::RFC822::Address::valid($newsubmitter)) {
+        if (not Mail::RFC822::Address::valid(encode_rfc1522($newsubmitter))) {
 	     print {$transcript} "$newsubmitter is not a valid e-mail address; not changing submitter\n";
 	     $errors++;
 	}

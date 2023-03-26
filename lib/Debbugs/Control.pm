@@ -96,7 +96,7 @@ BEGIN{
 		     package => [qw(set_package)],
 		     block   => [qw(set_blocks)],
 		     merge   => [qw(set_merged)],
-		     tag     => [qw(set_tag)],
+		     tag     => [qw(set_tag valid_usertag)],
 		     clone   => [qw(clone_bug)],
 		     archive => [qw(bug_archive bug_unarchive),
 				],
@@ -3295,7 +3295,7 @@ sub bug_unarchive {
      __end_control(%info);
 }
 
-= head2 valid_usertag
+=head2 valid_usertag
 
      valid_usertag
 
