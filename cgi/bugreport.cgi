@@ -272,7 +272,7 @@ END
 	  next if not $boring and not $record->{type} eq $wanted_type and not $record_wanted_anyway and @records > 1;
 	  $seen_message_ids{$msg_id} = 1 if defined $msg_id;
           # skip spam messages if we're outputting more than one message
-          next if $multiple_messages and $bug->is_spam($msg_id);
+          next if $multiple_messages and $spam->is_spam($msg_id);
       my @lines;
       if ($record->{inner_file}) {
           push @lines, scalar $record->{fh}->getline;
