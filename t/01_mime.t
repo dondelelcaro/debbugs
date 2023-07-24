@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 01_mime.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 6;
+use Test::More tests => 7;
 
 use warnings;
 use strict;
@@ -36,7 +36,8 @@ ok(Debbugs::MIME::decode_rfc1522(Debbugs::MIME::encode_rfc1522(encode_utf8($test
   "encode_rfc1522 encodes strings that decode_rfc1522 can decode");
 ok(Debbugs::MIME::decode_rfc1522(Debbugs::MIME::encode_rfc1522(encode_utf8($test_str3))) eq $test_str3,
   "encode_rfc1522 properly handles parenthesis and \"");
-
+ok(Debbugs::MIME::handle_escaped_commas(q(),q(From: =?UTF-8?Q?Armstrong=2C?= Don <don@donarmstrong.com>)) eq q("Armstrong, Don" <don@donarmstrong.com>),
+  "handle_escaped_commas properly handles commas in RFC1522 encoded strings");
 
 # Make sure that create_mime_message has encoded headers and doesn't enclude any 8-bit characters
 

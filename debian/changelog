@@ -6,6 +6,7 @@ debbugs (3.0.0~alpha.1) unstable; urgency=medium
   * Fix unescaped From (closes: #983847)
   * Actually return message/rfc822 when there is a single message instead
     of mbox (closes: #1009181)
+  * Fix missing escaping of comma in address fields (closes: #1041638)
 
  -- Don Armstrong <don@debian.org>  Fri, 09 Mar 2018 11:17:10 -0800
 
