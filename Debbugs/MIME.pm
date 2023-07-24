@@ -42,7 +42,7 @@ BEGIN {
     @EXPORT = ();
 
     %EXPORT_TAGS = (mime => [qw(parse create_mime_message getmailbody)],
-		    rfc1522 => [qw(decode_rfc1522 encode_rfc1522)],
+		    rfc1522 => [qw(decode_rfc1522 encode_rfc1522 handle_escaped_commas)],
 		   );
     @EXPORT_OK=();
     Exporter::export_ok_tags(keys %EXPORT_TAGS);
@@ -52,6 +52,7 @@ BEGIN {
 use File::Path qw(remove_tree);
 use File::Temp qw(tempdir);
 use MIME::Parser;
+use Mail::Message::Field;
 
 use POSIX qw(strftime);
 use List::AllUtils qw(apply);
@@ -355,6 +356,38 @@ sub encode_rfc1522 {
 	  }
      }
      return $string;
+}
+
+=head2
+
+    $header = handle_escaped_commas('','From: ')
+
+Handle commas in addresses which have been RFC1522 escaped and now need to be
+quoted to avoid parsing as a record separator.
+
+=cut
+
+sub handle_escaped_commas {
+    my ($modified_hdr, $orig_hdr) = @_;
+
+    my $field = Mail::Message::Field->new($orig_hdr);
+    # if the header isn't structured, it can't contain an address
+    if (not $field->isStructured()) {
+	return $modified_hdr
+    }
+    if ($field->name() !~ m/^(?:to|from|reply-to)$/) {
+	return $modified_hdr
+    }
+    my @addresses = $field->addresses();
+    if (not @addresses) {
+	return $modified_hdr
+    }
+    my @return_addresses;
+    for my $address (@addresses) {
+	$address->phrase(decode_rfc1522($address->phrase()));
+	push @return_addresses, $address->format();
+    }
+    return join(', ',@return_addresses)
 }
 
 1;

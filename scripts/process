@@ -183,7 +183,7 @@ for my $hdr (@headerlines) {
 			 mail-followup-to|
 			 references):
 		 |From\s|X-Debbugs-)/xi;
-    $fwd .= encode_utf8($hdr)."\n" if $ins;
+    $fwd .= $orig_hdr."\n" if $ins;
     # print {$debugfh} ">$_<\n";
     if (s/^(\S+):\s*//) {
 	my $v = lc $1;
@@ -191,7 +191,13 @@ for my $hdr (@headerlines) {
 	    push @common_headers, 'X-Loop',$_;
 	}
 	print {$debugfh} ">$v=$_<\n";
-	$header{$v} = $_;
+	# Handle a comma which is escaped being passed through un-escaped. See
+	# https://bugs.debian.org/1041638
+	if ($_ =~ m/,/ and not $orig_hdr =~ m/,/) {
+	    $header{$v} = handle_escaped_commas($_,$orig_hdr);
+	} else {
+	    $header{$v} = $_;
+	}
     } else {
 	print {$debugfh} "!>$_<\n";
     }
@@ -716,7 +722,7 @@ if ($ref<0) { # new bug report
                                             );
             }
         }
-        if ($name eq 'usertags'){
+        if ($name eq 'usertags' and defined $current_user){
             my %user_tags;
             read_usertags(\%user_tags, $current_user);
             $value =~ s/(?:^\s+|\s+$)//g;
