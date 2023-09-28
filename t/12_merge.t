@@ -142,7 +142,7 @@ send_message(to => 'control@bugs.something',
 			],
 	     body => <<'EOF') or fail 'message to control@bugs.something failed';
 debug 10
-clone 2 -1 -2 -3 -4 -5 -6
+clone 2 -1 -2 -3 -4 -5 -6 -7 -8
 retitle 2 foo
 owner 2 bar@baz.com
 submitter 2 fleb@bleh.com
@@ -159,8 +159,20 @@ fixed -4 1.2-3
 found -4 1.2-1
 found -5 1.2-5
 fixed -5 1.2-6
+block -7 by -1
+block -7 by -2
+block -8 by -2
+block -8 by -1
 thanks
 EOF
+
+# The order of "Blocked-By:" in *.summary is not deterministic, so
+# these tests assert that the blockers of bugs #9 and #10 are sorted
+# differently.
+ok(system('perl', '-i', '-pwe', 's/^Blocked-By: 4 3\n/Blocked-By: 3 4\n/;', $spool_dir . '/db-h/09/9.summary') == 0, 'Changed bug #9');
+ok(system('perl', '-i', '-pwe', 's/^Blocked-By: 3 4\n/Blocked-By: 4 3\n/;', $spool_dir . '/db-h/10/10.summary') == 0, 'Changed bug #10');
+ok(system('grep','-q','^Blocked-By: 3 4',"$spool_dir/db-h/09/9.summary") == 0,'Bug #9 has "Blocked-By: 3 4"');
+ok(system('grep','-q','^Blocked-By: 4 3',"$spool_dir/db-h/10/10.summary") == 0,'Bug #10 has "Blocked-By: 4 3"');
 
 test_control_commands(\%config,
 		      forcemerge   => {command => 'forcemerge',
@@ -190,6 +202,12 @@ test_control_commands(\%config,
 				       status_key => 'mergedwith',
 				       status_value => '8',
 				       bug => '7',
+				      },
+		      merge        => {command => 'merge',
+				       value   => '9 10',
+				       status_key => 'mergedwith',
+				       status_value => '10',
+				       bug => '9',
 				      },
 		     );
 

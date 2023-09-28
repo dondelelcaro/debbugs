@@ -299,6 +299,17 @@ sub read_bug{
     $data{archived} = (defined($location) and ($location eq 'archive'))?1:0;
     $data{bug_num} = $param{bug};
 
+    # Sort blockedby numerically so that bugs with identical blockers have
+    # identical lists.
+    if (defined $data{blockedby} and
+	$data{blockedby}) {
+	$data{blockedby} =
+	    join(' ',
+                 sort { $a <=> $b }
+		 split / /, $data{blockedby}
+		);
+    }
+
     # mergedwith occasionally is sorted badly. Fix it to always be sorted by <=>
     # and not include this bug
     if (defined $data{mergedwith} and
