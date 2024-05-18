@@ -62,8 +62,8 @@ Depends:
  graphviz, libtext-iconv-perl, libuser-perl,
  libmouse-perl, libmousex-nativetraits-perl,
 # used by Debbugs::Libravatar and libravatar.cgi
- libfile-libmagic-perl, libgravatar-url-perl, libwww-perl, imagemagick
- # used by the database
+ libfile-libmagic-perl, libgravatar-url-perl, libwww-perl, imagemagick,
+# used by the database
  libdbix-class-timestamp-perl,
  libdbix-class-deploymenthandler-perl,
  libdatetime-perl,
