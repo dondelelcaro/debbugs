@@ -7,3 +7,12 @@ include:
 # https://salsa.debian.org/%{project_path}/-/pipelines, ensure that
 # https://salsa.debian.org/%{project_path}/-/settings/ci_cd has in field "CI/CD
 # configuration file" filename "debian/salsa-ci.yml"
+
+# The package does not have any debian/tests and thus autopkgtest will run
+# autodep8-perl which does not pass, and will need some work before enabled:
+#   autodep8-perl-build-deps FAIL non-zero exit status 253
+#   autodep8-perl        PASS (superficial)
+#   autodep8-perl-recommends FAIL non-zero exit status 1
+autopkgtest:
+  extends: .test-autopkgtest
+  allow_failure: true
