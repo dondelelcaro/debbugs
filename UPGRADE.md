@@ -93,7 +93,7 @@ Add the following variable to the `/etc/debbugs/text` file:
 
 <dt><code>moreinfo</code>
   <dd>This `$gBug can\'t be addressed until more information is provided by the
-  submitter. The `$gBug will be closed if the submitter doesn\'t provide ore
+  submitter. The `$gBug will be closed if the submitter doesn\'t provide more
   information in a reasonable (few months) timeframe. This is for `$gBugs like
   \"It doesn\'t work\". What doesn\'t work?
 
