@@ -10,7 +10,7 @@ update_debbugs_logo: debbugs_logo_orig.svg
 	--export-text-to-path --export-plain-svg debbugs_logo.svg $<;
 
 debbugs_logo_icon.png: debbugs_logo.svg
-	inkscape --without-gui \
+	inkscape  \
 	--export-width 32 --export-height 32 \
 	--export-background=white \
-	--export-png $@ $<
+	--export-type=png --export-filename=$@ $<
