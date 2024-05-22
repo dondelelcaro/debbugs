@@ -27,8 +27,7 @@ all: build
 build:
 	$(PERL) Makefile.PL
 	$(MAKE) -f Makefile.perl
-# Don't bother to make the logo; it's not necessary
-#       $(MAKE) -C html/logo
+	$(MAKE) -C html/logo
 
 test:
 	LC_ALL=$(UTF8_LOCALE) $(PERL) -MTest::Harness -Ilib -e 'runtests(glob(q(t/*.t)))'
