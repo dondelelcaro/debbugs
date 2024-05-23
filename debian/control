@@ -21,7 +21,7 @@ Build-Depends-Indep: libparams-validate-perl,
  libdatetime-perl,
  libaliased-perl,
  postgresql,
- postgresql-13-debversion|postgresql-15-debversion|postgresql-16-debversion,
+ postgresql-16-debversion|postgresql-15-debversion|postgresql-13-debversion,
  libtext-xslate-perl, graphviz, libtext-iconv-perl, libnet-server-perl,
  libmouse-perl, libmousex-nativetraits-perl,
 # required for use strictures 2
