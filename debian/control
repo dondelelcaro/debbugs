@@ -61,6 +61,7 @@ Depends:
  libmail-rfc822-address-perl, liblist-allutils-perl,
  graphviz, libtext-iconv-perl, libuser-perl,
  libmouse-perl, libmousex-nativetraits-perl,
+ libmail-message-perl,
 # used by Debbugs::Libravatar and libravatar.cgi
  libfile-libmagic-perl, libgravatar-url-perl, libwww-perl, imagemagick,
 # used by the database
