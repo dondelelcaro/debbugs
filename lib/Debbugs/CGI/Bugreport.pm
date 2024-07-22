@@ -283,7 +283,7 @@ sub display_entity {
 	 # We don't html escape here because we escape above;
 	 # wierd terminators are because of that
 	 $body =~ s{((?:ftp|http|https|svn|ftps|rsync)://[\S~-]+?/?) # Url
-		    ((?:\&gt\;)?[)]?(?:'|\&\#39\;|\&quot\;)?[:.\,]?(?:\s|$)) # terminators
+		    ((?:\&gt\;)?[)]?(?:'|\&\#39\;|\&quot\;)?[:.\,;]?(?:\s|$)) # terminators
 	      }{<a href=\"$1\">$1</a>$2}gox;
 	 # Add links to bug closures
 	 $body =~ s[((?:closes|see):\s* # start of closed/referenced bugs
