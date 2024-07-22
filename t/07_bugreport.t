@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 
 
-use Test::More tests => 19;
+use Test::More tests => 22;
 
 use warnings;
 use strict;
@@ -150,4 +150,24 @@ EOF
 }
 
 # Other tests for bugs in the page should be added here eventually
+send_message(to => '1@bugs.something',
+	       headers => [To   => '1@bugs.something',
+			   From => 'foo@bugs.something',
+			   Subject => "Message with some links to linkify",
+			  ],
+	       body => <<EOF) or fail 'message to 1@bugs.something failed';
+This is a test message.
 
+This is a link https://example.com/foo; which should not include the ;
+
+
+This is a link https://example.com/foo;bar which should include the ;
+EOF
+
+$mech->get_ok('http://localhost:'.$port.'/?bug=1',
+		'Page received ok');
+like($mech->content(), qr(href="https://example.com/foo;bar"),
+     'Link includes ; correctly');
+
+like($mech->content(), qr(href="https://example.com/foo"),
+     'Link excludes trailing ;');

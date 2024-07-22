@@ -6,6 +6,8 @@ debbugs (2.6.1) unstable; urgency=medium
     of mbox (closes: #1009181)
   * Fix missing escaping of comma in address fields (closes: #1041638)
   * Sort blocked-by (closes: 751808), thanks to Tim Landscheidt.
+  * Don't linkify trailing ; in bug messages (closes: #1076323), thanks to
+    Blair Noctis.
 
  -- Don Armstrong <don@debian.org>  Fri, 09 Mar 2018 11:17:10 -0800
 
