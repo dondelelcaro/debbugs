@@ -624,8 +624,8 @@ sub package_maintainer {
 	not defined $_maintainer_rev) {
 	$_maintainer = {};
 	$_maintainer_rev = {};
-	if (-e $config{spool_dir}.'/maintainers.idx' and
-	    -e $config{spool_dir}.'/maintainers_reverse.idx'
+	if (-e $config{spool_dir}.'/binary_maintainers.idx' and
+	    -e $config{spool_dir}.'/binary_maintainers_reverse.idx'
 	   ) {
 	    tie %{$_maintainer},
 		MLDBM => $config{spool_dir}.'/binary_maintainers.idx',
