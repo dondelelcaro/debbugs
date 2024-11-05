@@ -614,7 +614,7 @@ set_default(\%config,'package_version_re',
 =item default_package
 
 This is the name of the default package. If set, bugs assigned to
-packages without a maintainer and bugs missing a Package: psuedoheader
+packages without a maintainer and bugs missing a Package: pseudoheader
 will be assigned to this package instead.
 
 Defaults to unset, which is the traditional debbugs behavoir

@@ -113,7 +113,7 @@ my $status = read_bug(bug=>1);
 ok($status->{subject} eq 'new title','bug 1 retitled');
 ok($status->{severity} eq 'wishlist','bug 1 wishlisted');
 
-# now check to see if we can close a bug using a psuedoheader done
+# now check to see if we can close a bug using a pseudoheader done
 send_message(to => '1-done@bugs.something',
 	     headers => [To   => 'control@bugs.something',
 			 From => 'foo@bugs.something',

@@ -222,7 +222,7 @@ if (@bodylines and $bodylines[0] =~ /^-----BEGIN PGP SIGNED/) {
     map { s/^- // } @bodylines;
 }
 
-#psuedoheaders
+#pseudoheaders
 my %pheader;
 my @control_bits;
 my @usertag_bits;
@@ -233,7 +233,7 @@ for my $phline (@bodylines)
     # Fixes #488554
     $phline =~ s/\xef\xbb\xbf//g;
     $phline =~ s/\N{U+FEFF}//g;
-    last if $phline !~ m/^([\w-]+): # psuedoheader
+    last if $phline !~ m/^([\w-]+): # pseudoheader
 			 (?:\s|\N{U+00A0})* # zero or more spaces, including
                                             # non-breaking space
 			 (\S.*)/x; # pseudoheader value
