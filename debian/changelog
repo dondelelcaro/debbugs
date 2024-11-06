@@ -1,15 +1,39 @@
 debbugs (2.6.1) unstable; urgency=medium
 
+  [ Otto Kekäläinen ]
+  * Fix filename in install: UPGRADE -> UPGRADE.md (closes: #903413)
+
+  [ Don Armstrong ]
   * Add support for a Done: pseudoheader (closes: #950133)
   * Fix unescaped From (closes: #983847)
+  * Support 7 digit bugs in bugspam.cgi
   * Actually return message/rfc822 when there is a single message instead
     of mbox (closes: #1009181)
+  * Include non-free-firmware; thanks to Cyril Brulebois for the patch
   * Fix missing escaping of comma in address fields (closes: #1041638)
-  * Sort blocked-by (closes: 751808), thanks to Tim Landscheidt.
+  * Sort blocked-by (closes: #751808), thanks to Tim Landscheidt.
+  * add WSDL contributed by Michael Albinus and Felix Lechner
   * Don't linkify trailing ; in bug messages (closes: #1076323), thanks to
     Blair Noctis.
 
- -- Don Armstrong <don@debian.org>  Fri, 09 Mar 2018 11:17:10 -0800
+  [ Chris Lamb ]
+  * Don't print strange-looking "Usertags are now: ." message when removing all
+    usertags.
+
+  [ Paul Wise ]
+  * Add support for setting usertags for multiple users in new bugs
+    (closes: #582171)
+  * Prevent usertags created at submit time from including invalid trailing
+    chars
+  * Use a checkbox and CSS to show info messages instead of JavaScript
+  * Allow exporting of debbugs responses to mbox format when requested
+
+  [ Bill Allombert ]
+  * Add Build-Depends-Indep on libmail-message-perl for running the test-suite
+  * debbugs-local: add Depends on sensible-utils
+  * Actually upload the package (closes: #477182, #1079842)
+
+ -- Bill Allombert <ballombe@debian.org>  Tue, 05 Nov 2024 19:08:52 +0100
 
 debbugs (2.6.0) unstable; urgency=medium
 
