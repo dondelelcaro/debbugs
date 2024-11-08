@@ -33,6 +33,7 @@ debbugs (2.6.1) unstable; urgency=medium
     - Build-Depends-Indep on libmail-message-perl for running the test-suite
     - Build-Depends on debhelper-compat (= 12)
     - debbugs-local Depends on sensible-utils
+    - Update Standards-Version to 4.7.0
   * debian/compat: removed
   * Actually upload the package (closes: #477182, #1079842)
 
