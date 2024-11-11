@@ -34,6 +34,7 @@ debbugs (2.6.1) unstable; urgency=medium
     - Build-Depends on debhelper-compat (= 12)
     - debbugs-local Depends on sensible-utils
     - Update Standards-Version to 4.7.0
+    - debbugs: Replace exim4 by default-mta in Depends
   * debian/compat: removed
   * Actually upload the package (closes: #477182, #1079842)
   * cgi/search.cgi, cgi/version.cgi:

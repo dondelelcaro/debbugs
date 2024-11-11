@@ -28,7 +28,7 @@ Architecture: all
 Depends:
  ${perl:Depends},
  ${misc:Depends},
- exim4 | mail-transport-agent,
+ default-mta | mail-transport-agent,
  libdebbugs-perl
 Recommends: debbugs-web (>= 2.6~)
 Suggests: spamassassin (>= 3.0), libcgi-alert-perl
