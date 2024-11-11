@@ -3,15 +3,6 @@
 use warnings;
 use strict;
 
-# Hack to work on merkel where suexec is in place
-BEGIN{
-     if ($ENV{HTTP_HOST} eq 'merkel.debian.org') {
-	  unshift @INC, qw(/home/don/perl/usr/share/perl5 /home/don/perl/usr/lib/perl5 /home/don/source);
-	  $ENV{DEBBUGS_CONFIG_FILE}="/home/don/config_internal";
-     }
-}
-
-
 use CGI::Simple;
 
 # use CGI::Alert 'nobody@example.com';
