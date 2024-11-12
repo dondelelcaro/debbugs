@@ -1,3 +1,12 @@
+debbugs (2.6.2) unstable; urgency=medium
+
+  [ Bill Allombert ]
+  * debian/control:
+    - debbugs, debbugs-web Suggests:
+      + Remove libcgi-alert-perl which does not exist anymore
+
+ -- Bill Allombert <ballombe@debian.org>  Mon, 11 Nov 2024 19:48:01 +0100
+
 debbugs (2.6.1) unstable; urgency=medium
 
   [ Otto Kekäläinen ]
