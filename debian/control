@@ -28,7 +28,7 @@ Architecture: all
 Depends:
  ${perl:Depends},
  ${misc:Depends},
- default-mta | mail-transport-agent,
+ default-mta | mail-transport-agent, lynx,
  libdebbugs-perl
 Recommends: debbugs-web (>= 2.6~)
 Suggests: spamassassin (>= 3.0)
