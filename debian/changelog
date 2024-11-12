@@ -12,6 +12,8 @@ debbugs (2.6.2) unstable; urgency=medium
       + Add lynx (closes: #698283)
     - Testsuite: autopkgtest-pkg-perl: removed. No chance to pass
       in the current state of the package.
+  * debian/docs: update so that README.md is installed
+
   [ Don Armstrong ]
   * templates/en_US/html/pre_title.tmpl:
     - fix favicon (closes: #912186)

@@ -1,1 +1,3 @@
-UPGRADE.md debian/README.mail
+usr/share/doc/debbugs/README.mail
+usr/share/doc/debbugs/README.md
+usr/share/doc/debbugs/UPGRADE.md
