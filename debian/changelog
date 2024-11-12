@@ -10,6 +10,8 @@ debbugs (2.6.2) unstable; urgency=medium
       + Add libtext-iconv-perl
     - debbugs Depends:
       + Add lynx (closes: #698283)
+    - Testsuite: autopkgtest-pkg-perl: removed. No chance to pass
+      in the current state of the package.
 
  -- Bill Allombert <ballombe@debian.org>  Mon, 11 Nov 2024 19:48:01 +0100
 

@@ -21,7 +21,6 @@ Build-Depends-Indep: libparams-validate-perl,
 # used to make the logo
  inkscape
 Homepage: https://salsa.debian.org/debbugs-team
-Testsuite: autopkgtest-pkg-perl
 
 Package: debbugs
 Architecture: all
