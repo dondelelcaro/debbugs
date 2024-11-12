@@ -18,7 +18,7 @@ debbugs (2.6.2) unstable; urgency=medium
   * templates/en_US/html/pre_title.tmpl:
     - fix favicon (closes: #912186)
 
- -- Bill Allombert <ballombe@debian.org>  Tue, 12 Nov 2024 19:01:14 +0000
+ -- Bill Allombert <ballombe@debian.org>  Tue, 12 Nov 2024 22:28:18 +0100
 
 debbugs (2.6.1) unstable; urgency=medium
 
