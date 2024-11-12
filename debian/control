@@ -50,7 +50,7 @@ Depends:
  ${perl:Depends}, libmailtools-perl, ed, libmime-tools-perl,
  libio-stringy-perl, libmldbm-perl, liburi-perl, libsoap-lite-perl,
  libcgi-simple-perl, libparams-validate-perl, libtext-template-perl,
- libsafe-hole-perl, libmail-rfc822-address-perl, liblist-moreutils-perl,
+ libsafe-hole-perl, libmail-rfc822-address-perl, liblist-allutils-perl,
  libtext-template-perl,
  libmail-message-perl,
 # used by Debbugs::Libravatar and libravatar.cgi
