@@ -51,7 +51,7 @@ Depends:
  libio-stringy-perl, libmldbm-perl, liburi-perl, libsoap-lite-perl,
  libcgi-simple-perl, libparams-validate-perl, libtext-template-perl,
  libsafe-hole-perl, libmail-rfc822-address-perl, liblist-allutils-perl,
- libmail-message-perl,
+ libmail-message-perl, libtext-iconv-perl,
 # used by Debbugs::Libravatar and libravatar.cgi
  libfile-libmagic-perl, libgravatar-url-perl, libwww-perl, imagemagick
 Section: perl
