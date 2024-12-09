@@ -75,7 +75,7 @@ BEGIN {
 				 qw($gMachineName),
 				 qw($gTemplateDir),
 				 qw($gDefaultPackage),
-				 qw($gSpamMaxThreads $gSpamSpamsPerThread $gSpamKeepRunning $gSpamScan $gSpamCrossassassinDb),
+				 qw($gSpamMaxThreads $gSpamSpamsPerThread $gSpamKeepRunning $gSpamRulesDir $gSpamCrossassassinDb),
 				],
 		     text     => [qw($gBadEmailPrefix $gHTMLTail $gHTMLExpireNote),
 				 ],
