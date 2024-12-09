@@ -987,11 +987,11 @@ set_default(\%config,'spam_user_prefs',"$ENV{HOME}/.spamassassin/user_prefs");
 =item spam_rules_dir
 
 Site rules directory for spamassassin, defaults to
-'/usr/share/spamassassin'
+'/etc/spamassassin'
 
 =cut
 
-set_default(\%config,'spam_rules_dir','/usr/share/spamassassin');
+set_default(\%config,'spam_rules_dir','/etc/spamassassin');
 
 =back
 
