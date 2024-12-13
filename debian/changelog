@@ -1,6 +1,6 @@
 debbugs (2.6.3) unstable; urgency=medium
 
-  * Debbugs/Config.pm:
+  * Debbugs/Config.pm: (closes: #1089557)
     - Fix spam_rules_dir default to /etc/spamassassin
     - add $gSpamRulesDir to 'globals' export list.
 
