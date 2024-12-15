@@ -89,12 +89,12 @@ for my $ref (@files) {
 
         # Test new .summary file
         my $newdata = readbug($ref, $archive);
-        my %jointkeys = map { $_ => 1 } (keys %$data), (keys %$newdata);
+        my %jointkeys = map { $_ => 1 } grep { $data->{$_} } keys %$data, grep { $newdata->{$_} } keys %$newdata;
         for my $key (keys %jointkeys) {
-            unless (exists $data->{$key}) {
+            unless (defined $data->{$key}) {
                 die "BUG: $ref: key '$key' in .summary but not .status!\n";
             }
-            unless (exists $newdata->{$key}) {
+            unless (defined $newdata->{$key}) {
                 die "BUG: $ref: key '$key' in .status but not .summary!\n";
             }
             if ($data->{$key} ne $newdata->{$key}) {
