@@ -9,6 +9,11 @@ debbugs (2.6.3) unstable; urgency=medium
   * migrate/debbugs-upgradestatus:
     - fix correct error about missing optionnal fields. (closes: #644242)
 
+  [ Tollef Fog Heen ]
+  * Debbugs/Log.pm, ./scripts/expire:
+    - Fix spelling of Colin Watson's name in copyright notice
+      (closes: #615483)
+
  -- Bill Allombert <ballombe@debian.org>  Sun, 15 Dec 2024 22:47:51 +0100
 
 debbugs (2.6.2) unstable; urgency=medium
