@@ -5,7 +5,7 @@
 #
 # [Other people have contributed to this file; their copyrights should
 # go here too.]
-# Copyright 2004 by Collin Watson <cjwatson@debian.org>
+# Copyright 2004 by Colin Watson <cjwatson@debian.org>
 # Copyright 2007 by Don Armstrong <don@donarmstrong.com>
 
 
