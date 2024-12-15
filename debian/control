@@ -87,7 +87,7 @@ Architecture: all
 Depends:
  ${perl:Depends},
  ${misc:Depends},
- libdebbugs-perl, debbugs-web, libconfig-simple-perl,
+ libdebbugs-perl, debbugs-web, libconfig-simple-perl, libipc-run-perl,
  libuser-perl, rsync, libhttp-server-simple-perl, libnet-server-perl,
  sensible-utils
 Description: Run and maintains a local mirror of the Debian BTS
