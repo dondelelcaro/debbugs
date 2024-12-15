@@ -4,6 +4,8 @@ debbugs (2.6.3) unstable; urgency=medium
   * Debbugs/Config.pm: (closes: #1089557)
     - Fix spam_rules_dir default to /etc/spamassassin
     - add $gSpamRulesDir to 'globals' export list.
+  * debian/control:
+    - debbugs-local: Depends on libipc-run-perl. (closes: #607928)
 
   [ Mark Hindley ]
   * migrate/debbugs-upgradestatus:
@@ -14,7 +16,7 @@ debbugs (2.6.3) unstable; urgency=medium
     - Fix spelling of Colin Watson's name in copyright notice
       (closes: #615483)
 
- -- Bill Allombert <ballombe@debian.org>  Sun, 15 Dec 2024 22:47:51 +0100
+ -- Bill Allombert <ballombe@debian.org>  Thu, 19 Dec 2024 11:35:39 +0100
 
 debbugs (2.6.2) unstable; urgency=medium
 
