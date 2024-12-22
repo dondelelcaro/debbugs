@@ -1,3 +1,10 @@
+debbugs (2.6.4) unstable; urgency=medium
+
+  [ Kentaro Hayashi]
+  * README.md: fix typo splool for spool.
+
+ -- Bill Allombert <ballombe@debian.org>  Sun, 22 Dec 2024 11:10:50 +0100
+
 debbugs (2.6.3) unstable; urgency=medium
 
   [ Bill Allombert ]
