@@ -9,6 +9,7 @@ debbugs (2.6.4) unstable; urgency=medium
   [ Bill Allombert ]
   * debian/control:
     - Move to debhelper-compat (=13).
+    - Set Rules-Requires-Root: no
 
  -- Bill Allombert <ballombe@debian.org>  Sat, 28 Dec 2024 15:34:48 +0100
 

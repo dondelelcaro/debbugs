@@ -5,6 +5,7 @@ Maintainer: Debbugs developers <debian-debbugs@lists.debian.org>
 Uploaders: Colin Watson <cjwatson@debian.org>, Don Armstrong <don@debian.org>,
            Bill Allombert <ballombe@debian.org>
 Standards-Version: 4.7.0
+Rules-Requires-Root: no
 Vcs-Browser: https://salsa.debian.org/debbugs-team/debbugs
 Vcs-Git: https://salsa.debian.org/debbugs-team/debbugs.git
 Build-Depends: debhelper-compat (=13)
