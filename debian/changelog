@@ -11,7 +11,11 @@ debbugs (2.6.4) unstable; urgency=medium
     - Move to debhelper-compat (=13).
     - Set Rules-Requires-Root: no
 
- -- Bill Allombert <ballombe@debian.org>  Sat, 28 Dec 2024 15:34:48 +0100
+  [ John Lightsey ]
+  * debian/debbugsconfig:
+    - Create /etc/debbugs/indices/ if needed (closes: #592117)
+
+ -- Bill Allombert <ballombe@debian.org>  Sun, 29 Dec 2024 15:31:48 +0100
 
 debbugs (2.6.3) unstable; urgency=medium
 
