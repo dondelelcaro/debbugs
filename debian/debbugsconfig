@@ -79,9 +79,13 @@ exit(0);
 sub template {
   my ($name, $destdir) = @_;
   if (! -f "$destdir/$name") {
-  system("cp /usr/share/doc/debbugs/examples/$name $destdir/$name") == 0 ||
-	die "$!";
-  print "created $destdir/$name from template.\n";
+    if (! -d $destdir ) {
+      File::Path::make_path($destdir, {'mode' => 0755 });
+      print "created $destdir/.\n";
+    }
+    system("cp /usr/share/doc/debbugs/examples/$name $destdir/$name") == 0 ||
+          die "$!";
+    print "created $destdir/$name from template.\n";
   }
 } 
 
