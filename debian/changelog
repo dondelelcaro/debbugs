@@ -10,12 +10,16 @@ debbugs (2.6.4) unstable; urgency=medium
   * debian/control:
     - Move to debhelper-compat (=13).
     - Set Rules-Requires-Root: no
+  * Move template files for debbugsconfig to /usr/share/debbugs/example.
+    (closes: #1090997)
+  * debian/debbugsconfig:
+    - Use install instead of cp.
 
   [ John Lightsey ]
   * debian/debbugsconfig:
     - Create /etc/debbugs/indices/ if needed (closes: #592117)
 
- -- Bill Allombert <ballombe@debian.org>  Sun, 29 Dec 2024 15:31:48 +0100
+ -- Bill Allombert <ballombe@debian.org>  Sun, 12 Jan 2025 22:32:28 +0100
 
 debbugs (2.6.3) unstable; urgency=medium
 
