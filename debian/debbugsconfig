@@ -84,7 +84,7 @@ sub template {
       File::Path::make_path($destdir, {'mode' => 0755 });
       print "created $destdir/.\n";
     }
-    system("cp $config_dir/$name $destdir/$name") == 0 ||
+    system("install -m644 $config_dir/$name $destdir/$name") == 0 ||
           die "$!";
     print "created $destdir/$name from template.\n";
   }
