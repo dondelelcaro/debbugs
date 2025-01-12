@@ -10,6 +10,7 @@ templates_dir	:= $(DESTDIR)/usr/share/debbugs/templates
 man_dir		:= $(DESTDIR)/usr/share/man
 man8_dir	:= $(man_dir)/man8
 examples_dir	:= $(doc_dir)/examples
+config_dir	:= $(DESTDIR)/usr/share/debbugs/examples
 
 scripts_in	= $(foreach script, $(filter-out scripts/config% scripts/errorlib scripts/text, $(wildcard scripts/*)),$(patsubst scripts/%,%,$(script)))
 htmls_in	:= $(wildcard html/*.html.in)
@@ -54,7 +55,7 @@ install_mostfiles:
 $(var_dir)/indices $(var_dir)/www/cgi $(var_dir)/www/db $(var_dir)/www/txt \
 $(var_dir)/www/css \
 $(var_dir)/spool/lock $(var_dir)/spool/archive $(var_dir)/spool/incoming \
-$(var_dir)/spool/db-h $(scripts_dir) $(examples_dir) $(man8_dir); \
+$(var_dir)/spool/db-h $(scripts_dir) $(examples_dir) $(config_dir) $(man8_dir); \
           do test -d $$dir || $(install_exec) -d $$dir; done
 
 	# install the scripts
@@ -65,6 +66,11 @@ $(var_dir)/spool/db-h $(scripts_dir) $(examples_dir) $(man8_dir); \
 	$(install_data) examples/config $(examples_dir)/config
 	$(install_data) examples/config.debian $(examples_dir)/config.debian
 	$(install_data) scripts/text $(examples_dir)/text
+
+	$(install_data) examples/config scripts/text misc/Maintainers \
+	  misc/Maintainers.override misc/pseudo-packages.description \
+	  misc/sources misc/nextnumber $(config_dir)
+
 	$(install_data) debian/crontab misc/nextnumber misc/Maintainers \
 	  misc/Maintainers.override misc/pseudo-packages.description \
 	  misc/sources $(examples_dir)

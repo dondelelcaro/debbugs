@@ -23,6 +23,7 @@ EOF
 }
 
 $gConfigDir = "/etc/debbugs" if (!defined($gConfigDir));
+$config_dir="/usr/share/debbugs/examples";
 &template("config", $gConfigDir);
 require "$gConfigDir/config";
 unshift @INC, $gConfigDir;
@@ -83,7 +84,7 @@ sub template {
       File::Path::make_path($destdir, {'mode' => 0755 });
       print "created $destdir/.\n";
     }
-    system("cp /usr/share/doc/debbugs/examples/$name $destdir/$name") == 0 ||
+    system("cp $config_dir/$name $destdir/$name") == 0 ||
           die "$!";
     print "created $destdir/$name from template.\n";
   }

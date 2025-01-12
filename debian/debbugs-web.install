@@ -1,4 +1,5 @@
 var/lib/debbugs/www/*
 var/lib/debbugs/www/cgi/*
 etc/debbugs/html
+usr/share/debbugs/examples/*
 usr/share/debbugs/templates/*
