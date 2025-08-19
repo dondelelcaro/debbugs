@@ -15,7 +15,7 @@ use IO::File;
 use Getopt::Long;
 use Pod::Usage;
 use MIME::Parser;
-use Debbugs::MIME qw(decode_rfc1522 create_mime_message getmailbody);
+use Debbugs::MIME qw(decode_rfc1522 create_mime_message getmailbody handle_escaped_commas);
 use Debbugs::Mail qw(send_mail_message encode_headers get_addresses);
 use Debbugs::Packages qw(getpkgsrc binary_to_source);
 use Debbugs::User qw(read_usertags write_usertags);
