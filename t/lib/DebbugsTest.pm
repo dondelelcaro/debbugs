@@ -69,6 +69,9 @@ sub create_debbugs_configuration {
 					  cleanup => {type => BOOLEAN,
 						      optional => 1,
 						     },
+					  additional_debbugs_config => {type => SCALAR,
+									default => '',
+								       },
 					 },
 			      );
      $param{cleanup} = $param{debug}?0:1 if not exists $param{cleanup};
@@ -92,6 +95,7 @@ sub create_debbugs_configuration {
 \$gTemplateDir='@{[getcwd()]}/templates';
 \$gWebDir='@{[getcwd()]}/html';
 \$gWebHost='localhost';
+$param{additional_debbugs_config}
 1;
 END
 			    "$spool_dir/nextnumber" => qq(1\n),

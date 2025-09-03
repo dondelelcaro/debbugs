@@ -97,6 +97,9 @@ sub add_recipients {
 					  unknown_packages => {type => HASHREF,
 							       default => {},
 							      },
+					  received_at_quiet => {type => SCALAR,
+								default => 0,
+							       },
 					 },
 			      );
 
@@ -106,7 +109,7 @@ sub add_recipients {
 	  for my $data (@{$param{data}}) {
 	       add_recipients(data => $data,
 			      map {exists $param{$_}?($_,$param{$_}):()}
-			      qw(recipients debug transcript actions_taken unknown_packages)
+			      qw(recipients debug transcript actions_taken unknown_packages received_at_quiet)
 			     );
 	  }
 	  return;
@@ -136,7 +139,7 @@ sub add_recipients {
 				);
 	       }
 	  }
-	  if (defined $param{data}{severity} and defined $config{strong_list} and
+	  if (not $param{received_at_quiet} and defined $param{data}{severity} and defined $config{strong_list} and
 	      isstrongseverity($param{data}{severity})) {
 	       _add_address(recipients => $param{recipients},
 			    address => "$config{strong_list}\@".$config{list_domain},
@@ -186,8 +189,8 @@ sub add_recipients {
 	 length $config{cc_all_mails_to_addr}
 	) {
 	 _add_address(recipients => $param{recipients},
-		      address    => $config{cc_all_mails_to},
-		      reason     => "cc_all_mails_to",
+		      address    => $config{cc_all_mails_to_addr},
+		      reason     => "cc_all_mails_to_addr",
 		      bug_num    => $param{data}{bug_num},
 		      type       => 'bcc',
 		     );
