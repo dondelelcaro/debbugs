@@ -25,6 +25,7 @@ use Mouse;
 use strictures 2;
 use v5.10; # for state
 use namespace::autoclean;
+use Carp qw(carp);
 
 use List::AllUtils  qw(uniq pairmap);
 use Debbugs::Config qw(:config);
@@ -193,7 +194,8 @@ sub _get_valid_version_info_from_db {
     }
     if (not defined $s) {
         # FIXME: Implement equivalent loader when there isn't a schema
-	confess("get_info_from_db not implemented without schema");
+	carp("get_info_from_db not implemented without schema");
+        return {}
     }
     my %src_packages;
     my %src_ver_packages;
