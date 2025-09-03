@@ -3,6 +3,10 @@ include:
   - https://salsa.debian.org/salsa-ci-team/pipeline/raw/master/salsa-ci.yml
   - https://salsa.debian.org/salsa-ci-team/pipeline/raw/master/pipeline-jobs.yml
 
+variables:
+  # Fails for the same reason as autopkgtest (below), and is not interesting.
+  SALSA_CI_DISABLE_AUTOPKGTEST_I386: 1
+
 # If Salsa-CI is not running at
 # https://salsa.debian.org/%{project_path}/-/pipelines, ensure that
 # https://salsa.debian.org/%{project_path}/-/settings/ci_cd has in field "CI/CD
