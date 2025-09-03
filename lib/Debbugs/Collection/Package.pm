@@ -34,7 +34,7 @@ use Debbugs::Config qw(:config);
 use Debbugs::OOTypes;
 use Debbugs::Package;
 
-use List::AllUtils qw(part);
+use List::AllUtils qw(part uniq);
 
 use Debbugs::Version::Binary;
 use Debbugs::Collection::Version;
