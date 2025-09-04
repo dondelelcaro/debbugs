@@ -32,7 +32,7 @@ use Debbugs::Config qw(:globals :config);
 
 use Debbugs::Control qw(append_action_to_log valid_usertag);
 use Debbugs::Control::Service qw(valid_control control_line);
-use Debbugs::Recipients qw(determine_recipients);
+use Debbugs::Recipients qw(add_recipients determine_recipients);
 use Encode qw(encode_utf8 decode);
 
 =head1 NAME
@@ -141,6 +141,7 @@ my @msg;
     close($log);
 }
 
+my $veryquiet= $codeletter eq 'Q';
 
 my $tdate = strftime "%a, %d %h %Y %T +0000", gmtime;
 my $fwd= "Received: via spool by $baddress\@$gEmailDomain id=$nn\n".
@@ -151,14 +152,10 @@ my (@headerlines, @bodylines);
 
 # whether maintainer addresses have been checked
 our $maintainerschecked = 0;
-#maintainer address for this message
-our @maintaddrs;
-# other src addresses
-our @addsrcaddrs;
-our @resentccs;
-our @bccs;
-
+my @resentccs;
 my $resentccexplain='';
+# recipients for this message
+my %recipients;
 
 # whether there's a new reference with this email
 our $newref = 0;
@@ -373,7 +370,6 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
     my $receivedat;
     my $markaswhat;
     my $set_forwarded;
-    my $generalcc;
     my $set_done;
     if ($codeletter eq 'F') { # Forwarded
         (appendlog($ref,$msg),finish()) if defined $data->{forwarded} and length($data->{forwarded});
@@ -386,10 +382,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	}
 	if ( length( $gListDomain ) > 0 && length( $gForwardList ) > 0 ) {
 	    push @generalcc, "$gForwardList\@$gListDomain";
-	    $generalcc= "$gForwardList\@$gListDomain";
-	} else { 
-	    $generalcc='';
-        }
+	}
     } else { # Done
         if (defined $data->{done} and length($data->{done}) and
                 not defined $pheader{'source-version'} and
@@ -401,15 +394,8 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
         $markaswhat= 'done';
         $set_done= $pheader{'done'} // $header{'from'};
 	if ( length( $gListDomain ) > 0 && length( $gDoneList ) > 0 ) {
-            $generalcc= "$gDoneList\@$gListDomain";
 	    push @generalcc, "$gDoneList\@$gListDomain";
-	} else { 
-	    $generalcc=''; 
 	}
-    }
-    if (defined $gStrongList and isstrongseverity($data->{severity})) {
-        $generalcc = join ', ', $generalcc, "$gStrongList\@$gListDomain";
-	push @generalcc,"$gStrongList\@$gListDomain";
     }
     if ($ref<0) {
 	&sendmessage(create_mime_message(
@@ -434,12 +420,12 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 	finish();
     }
 
-    &checkmaintainers;
+    add_recipients(
+        data              => $data,
+        recipients        => \%recipients,
+        received_at_quiet => $veryquiet,
+    );
 
-    my @noticecc = grep($_ ne $replyto,@maintaddrs);
-    my $noticeccval.= join(', ', grep($_ ne $replyto,@maintaddrs));
-    $noticeccval =~ s/\s+\n\s+/ /g; 
-    $noticeccval =~ s/^\s+/ /; $noticeccval =~ s/\s+$//;
 
     my @process= ($ref,split(/ /,$data->{mergedwith}));
     my $orgref= $ref;
@@ -480,18 +466,6 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 
 	# Add bug mailing list to $generalbcc as appropriate
  	# This array is used to specify bcc in the cases where we're using create_mime_message.
-	my @generalbcc = @generalcc;
-	if (defined $config{subscription_domain} and length $config{subscription_domain}) {
-	    @generalbcc = (@generalbcc, @addsrcaddrs);
-	}
-	if (defined $config{bug_subscription_domain} and length $config{bug_subscription_domain}) {
-	    @generalbcc = (@generalbcc, "bugs=$ref\@$config{bug_subscription_domain}");
-	}
-	my $generalbcc = join(', ', @generalbcc);
-	$generalbcc =~ s/\s+\n\s+/ /g;
-	$generalbcc =~ s/^\s+/ /; $generalbcc =~ s/\s+$//;
-	if (length $generalbcc) {$generalbcc = "Bcc: $generalbcc\n"};
-
 	writebug($ref, $data);
 
 	my $hash = get_hashname($ref);
@@ -525,7 +499,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 				      data      => $data,
 				     },
 				    ),
-	     [join("\n",@msg)]),'',[$replyto,@generalbcc,@noticecc],1);
+	     [join("\n",@msg)]),'',[$replyto,@generalcc,make_list(values %{{determine_recipients(recipients => \%recipients,address_only => 1)}})],1);
         } else {
 	    &htmllog("Reply","sent",$replyto,"You have taken responsibility.");
             &sendmessage(create_mime_message(
@@ -551,7 +525,7 @@ if ($codeletter eq 'D' || $codeletter eq 'F')
 				      data      => $data,
 				     },
 				    ),
-	     [$orig_report,join("\n",@msg)]),'',[$replyto,@generalbcc,@noticecc],1);
+	     [$orig_report,join("\n",@msg)]),'',[$replyto,@generalcc, make_list(values %{{determine_recipients(recipients => \%recipients,address_only => 1)}})],1);
             &htmllog("Notification","sent",$data->{originator},
 		"$gBug acknowledged by developer.");
             &sendmessage(create_mime_message(
@@ -648,9 +622,9 @@ if ($ref<0) { # new bug report
     }
 
     if (defined $config{default_package}) {
-	 &checkmaintainers;
 	 # if there are no maintainers for this package, assign it to the default package
-	 if (not @maintaddrs) {
+	 my @maintainers = package_maintainers(package => $data->{package});
+	 if (not @maintainers) {
 	      $data->{package} = $config{default_package};
 	      $brokenness.= fill_template('mail/process_default_package_selected',
 					  {old_package => $pheader{source} || $pheader{package} || 'No package',
@@ -658,8 +632,12 @@ if ($ref<0) { # new bug report
 					  }
 					 );
 	      # force the maintainers to be rechecked
-	      $maintainerschecked = 0;
-	      &checkmaintainers;
+              add_recipients(
+                  data              => $data,
+                  recipients        => \%recipients,
+                  received_at_quiet => $veryquiet,
+              );
+
 	 }
     }
 
@@ -704,6 +682,7 @@ if ($ref<0) { # new bug report
     $data->{subject} = $subject;
     $data->{msgid} = $header{'message-id'};
     writebug($ref, $data);
+    $data->{bug_num} = $ref;
     # Deal with usertags
     my $current_user = $replyto;
     for my $field (@usertag_bits) {
@@ -741,7 +720,19 @@ if ($ref<0) { # new bug report
 		  map {"$_\n"} @msg);
 }
 
-&checkmaintainers;
+add_recipients(
+    data              => $data,
+    recipients        => \%recipients,
+    received_at_quiet => $veryquiet,
+);
+
+my @maintaddrs;
+for my $p (splitpackages($data->{package})) {
+    for my $maint (package_maintainer(binary=>$p)) {
+	push @maintaddrs, get_addresses($maint);
+    }
+}
+
 
 print {$debugfh} "maintainers >".join(' ',@maintaddrs)."<\n";
 
@@ -762,16 +753,6 @@ if (@maintaddrs && ($codeletter eq 'B' || $codeletter eq 'M')) {
 				     {maintaddrs => \@maintaddrs,
 				     },
 				    );
-}
-
-@bccs = @addsrcaddrs;
-if (defined $gStrongList and isstrongseverity($data->{severity})) {
-    push @bccs, "$gStrongList\@$gListDomain";
-}
-
-# Send mail to the per bug list subscription too
-if (defined $config{bug_subscription_domain} and length $config{bug_subscription_domain}) {
-    push @bccs, "bugs=$ref\@$config{bug_subscription_domain}";
 }
 
 if (defined $pheader{source}) {
@@ -813,7 +794,6 @@ if (defined $pheader{source}) {
      writebug($ref, $data);
 }
 
-my $veryquiet= $codeletter eq 'Q';
 if ($codeletter eq 'M' && !@maintaddrs) {
     $veryquiet= 1;
     $brokenness.= fill_template('mail/invalid_maintainer',
@@ -857,11 +837,11 @@ ${references}${source_pr_header}
 END
     chomp $enc_msg;
     $enc_msg = encode_utf8($enc_msg).$fwd."\n";
-    &sendmessage($enc_msg,[$data->{originator},@resentccs],[@bccs]);
+    &sendmessage($enc_msg,[$data->{originator},make_list(values %{{determine_recipients(recipients => \%recipients,address_only => 1)}})]);
 } elsif ($codeletter eq 'B') { # Sent to submit
     my $report_followup = $newref ? 'report' : 'followup';
     &htmllog($newref ? "Report" : "Information", "forwarded",
-             join(', ',"$gSubmitList\@$gListDomain",@resentccs),
+             join(', ',"$gSubmitList\@$gListDomain",determine_recipients(recipients=>\%recipients,cc=>1)),
              "<code>$gBug#$ref</code>".
              (length($data->{package})? "; Package <code>".html_escape($data->{package})."</code>" : '').
              ".");
@@ -880,8 +860,8 @@ ${references}${source_pr_header}
 END
     chomp $enc_msg;
     $enc_msg = encode_utf8($enc_msg).$fwd."\n";
-    &sendmessage($enc_msg,["$gSubmitList\@$gListDomain",@resentccs],[@bccs]);
-} elsif (@resentccs or @bccs) { # Quiet or Maintainer
+    &sendmessage($enc_msg,["$gSubmitList\@$gListDomain",make_list(values %{{determine_recipients(recipients => \%recipients,address_only => 1)}})]);
+} else { # Quiet or Maintainer
     # D and F done far earlier; B just done - so this must be M or Q
     # We preserve whichever it was in the Reply-To (possibly adding
     # the $gBug#).
@@ -914,7 +894,7 @@ ${references}${source_pr_header}
 END
     chomp $enc_msg;
     $enc_msg = encode_utf8($enc_msg).$fwd."\n";
-    &sendmessage($enc_msg,[@resentccs],[@bccs]);
+    &sendmessage($enc_msg,[make_list(values %{{determine_recipients(recipients => \%recipients,address_only => 1)}})]);
 }
 
 my $htmlbreak= length($brokenness) ? "<p>\n".html_escape($brokenness)."\n<p>\n" : '';
@@ -1306,54 +1286,6 @@ sub fill_template{
 }
 
 
-# this shole routine is *bad*; will be changed to use
-# Debbugs::Recipients and stuff therin in short order.
-sub checkmaintainers {
-    return if $maintainerschecked++;
-    return if !length($data->{package});
-
-    my $anymaintfound=0; my $anymaintnotfound=0;
-    for my $p (splitpackages($data->{package})) {
-        $p =~ y/A-Z/a-z/;
-	$p =~ /((?:src:)?[a-z0-9.+-]+)/;
-	$p = $1;
-	next unless defined $p;
-        if (defined $config{subscription_domain} and length $config{subscription_domain}) {
-	    my @source = binary_to_source(binary => $p,
-					  source_only => 1,
-					 );
-	    if (@source) {
-		push @addsrcaddrs,
-		    map {"$_\@$config{subscription_domain}"} @source;
-	    } else {
-		push @addsrcaddrs, "$p\@$config{subscription_domain}";
-	    }
-	}
-	# this is utter hackery until we switch to Debbugs::Recipients
-	my @maints = package_maintainer(binary => $p);
-        if (@maints) {
-	    print {$debugfh} "maintainer add >$p|".join(',',@maints)."<\n";
-	    my %temp;
-	    @temp{@maintaddrs} = @maintaddrs;
-            push(@maintaddrs,
-		 grep {$_ ne $replyto and
-			   not exists $temp{$_}} @maints);
-            $anymaintfound++;
-        } else {
-	    print {$debugfh} "maintainer none >$p<\n";
-	    push(@maintaddrs,$gUnknownMaintainerEmail) unless $anymaintnotfound;
-            $anymaintnotfound++;
-            last;
-        }
-    }
-
-    if (defined $data->{owner} and length $data->{owner}) {
-        print {$debugfh} "owner add >$data->{package}|$data->{owner}<\n";
-        my $addmaint = $data->{owner};
-        push(@maintaddrs, $addmaint) unless
-            $addmaint eq $replyto or grep($_ eq $addmaint, @maintaddrs);
-    }
-}
 
 =head2 bug_list_forward
 
