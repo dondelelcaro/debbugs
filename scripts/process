@@ -724,6 +724,8 @@ add_recipients(
     data              => $data,
     recipients        => \%recipients,
     received_at_quiet => $veryquiet,
+    additional_cc     =>
+      [ defined( $header{'x-debbugs-cc'} ) ? $header{'x-debbugs-cc'} : () ],
 );
 
 my @maintaddrs;

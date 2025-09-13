@@ -1,6 +1,6 @@
 # -*- mode: cperl;-*-
 
-use Test::More tests => 4;
+use Test::More tests => 5;
 
 use warnings;
 use strict;
@@ -79,9 +79,10 @@ send_message(
         From    => 'foo@bugs.something',
         Subject => 'Sending a message to a bug',
     ],
-    body => <<EOF ) or fail('sending message to 1@bugs.someting failed');
+    body => <<'EOF' ) or fail('sending message to 1@bugs.someting failed');
 Package: foo
 Severity: normal
+X-Debbugs-Cc: xdebbugscc@example.com
 
 This is a silly bug
 EOF
@@ -89,6 +90,17 @@ EOF
 $SD_SIZE =
   num_messages_sent( $SD_SIZE, 2, $sendmail_dir,
     '1@bugs.something messages appear to have been sent out properly' );
+
+# Validate that a message has been sent to xdebbugscc@example.com
+ok(
+    system( 'sh', '-c',
+            'find '
+          . $sendmail_dir
+          . q( -type f | xargs grep -q "called with:.*'xdebbugscc@example.com'") )
+      == 0,
+    'Message sent to xdebbugscc@example.com'
+);
+
 
 # just check to see that control doesn't explode
 send_message(

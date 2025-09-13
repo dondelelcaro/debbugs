@@ -100,6 +100,9 @@ sub add_recipients {
 					  received_at_quiet => {type => SCALAR,
 								default => 0,
 							       },
+					  additional_cc => {type => SCALAR|ARRAYREF,
+							    optional => 1,
+							   },
 					 },
 			      );
 
@@ -232,7 +235,19 @@ sub add_recipients {
 			    reason     => "bug $param{data}{bug_num} forwarded",
 			   );
 	  }
-     }
+      }
+    if ( exists $param{additional_cc} ) {
+        for my $address ( make_list( $param{additional_cc} ) ) {
+            _add_address(
+                recipients => $param{recipients},
+                type       => 'cc',
+                address    => $address,
+                bug_num    => $param{data}{bug_num},
+                reason     => "additional cc recipient",
+            );
+        }
+    }
+
 }
 
 =head2 determine_recipients
