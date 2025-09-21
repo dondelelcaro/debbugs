@@ -1,3 +1,17 @@
+debbugs (2.6.5) unstable; urgency=medium
+
+  [Colin Watson]
+  * scripts/process: import missing handle_escaped_commas
+  * bugreport.tmpl: fix typo uselessmesages -> uselessmessages
+
+  [ Don Armstrong ]
+  * New config option $gCcAllmailsToAddr
+  * Debbugs/CGI/Pkgreport.pm: generate_package_info:
+    - use package_tracking_domain instead of subscription_domain
+  * Support X-Debbugs-Cc inside pseudo-headers
+
+ -- Bill Allombert <ballombe@debian.org>  Sun, 21 Sep 2025 12:23:38 +0200
+
 debbugs (2.6.4) unstable; urgency=medium
 
   [ Kentaro Hayashi ]
