@@ -48,11 +48,13 @@
 	<tr><td><h2>Misc options</h2></td>
 	    <td>
 		: macro input_checkbox ->($what,$text) {
-		<input type="checkbox" name="<: $what :>"
+		<label>
+		    <input type="checkbox" name="<: $what :>"
 		       : if defined($param[$what]) and $param[$what] {
 			   checked
-               : }
-		><:- $text -:><br>
+		       : }
+		    > <:- $text -:>
+		</label><br>
 		: }
 		<:- input_checkbox("repeatmerged","Repeat Merged") :>
 		<:- input_checkbox("bug-rev","Reverse Bugs") :>
