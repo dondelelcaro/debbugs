@@ -234,6 +234,7 @@ my $dot = "digraph G {\n";
 if (defined $cgi_var{width} and defined $cgi_var{height}) {
      $dot .= qq(size="$cgi_var{width},$cgi_var{height}";\n);
 }
+my $empty_graph = 1;
 my %state = (found  => ['fillcolor="salmon"',
 			'style="filled"',
 			'shape="ellipse"',
@@ -315,6 +316,7 @@ if ($cgi_var{collapse}) {
 	  next if $used_node{$group->{name}};
 	  $used_node{$group->{name}} = 1;
 	  $dot .= $group->{attr};
+	  $empty_graph = 0;
      }
 }
 
@@ -329,6 +331,7 @@ foreach my $key (keys %all_states) {
      }
      my $node_attributes = qq("$key" [).join(',',@attributes).qq(]\n);
      $dot .= $node_attributes;
+     $empty_graph = 0;
 }
 
 foreach my $key (keys %{$version->{parent}}) {
@@ -343,6 +346,7 @@ foreach my $key (keys %{$version->{parent}}) {
 	  (exists $collapsed_nodes{$version->{parent}{$key}}?
 	   $group_nodes{$collapsed_nodes{$version->{parent}{$key}}}{name}:$version->{parent}{$key}).
 		qq(" [dir="back"])."\n" if defined $version->{parent}{$key};
+     $empty_graph = 0;
 }
 if ($cgi_var{collapse}) {
      my %used_node;
@@ -354,6 +358,14 @@ if ($cgi_var{collapse}) {
 	       (exists $collapsed_nodes{$group->{parent}}?
 		$group_nodes{$collapsed_nodes{$group->{parent}}}{name}:$group->{parent}).
 		    qq(" [dir="back"])."\n";
+	  $empty_graph = 0;
+     }
+}
+if ($empty_graph) {
+     if ($cgi_var{ignore_boring}) {
+	  $dot .= qq("No Relevant Versions" [shape=plain]);
+     } else {
+	  $dot .= qq("No Known Versions" [shape=plain]);
      }
 }
 $dot .= "}\n";
