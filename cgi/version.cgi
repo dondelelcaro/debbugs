@@ -149,6 +149,12 @@ for my $dist (@{$config{distributions}}) {
 				      source => 1,
 				      @schema_arg,
 				     )];
+     $versions{$dist} = [get_versions(package => [map {qq(src:$_)} split /\s*,\s*/, $cgi_var{package}],
+				      dist => $dist,
+				      arch => "source",
+				      source => 1,
+				      @schema_arg,
+				     )];
      # make version_to_dist
      foreach my $version (@{$versions{$dist}}){
 	  push @{$version_to_dist{$version}}, $dist;
