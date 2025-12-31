@@ -105,7 +105,7 @@ sub no_such_bug {
     print $q->header(-status => 404,
 		     -content_type => "text/html",
 		     -charset => 'utf-8',
-		     -cache_control => 'public, max-age=600',
+		     -cache_control => 'public, max-age=300',
 		    );
     print fill_in_template(template=>'cgi/no_such_bug',
 			   variables => {modify_time => strftime('%a, %e %b %Y %T UTC', gmtime),
