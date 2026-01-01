@@ -228,10 +228,17 @@ sub read_bug{
     my $version = 2;
     local $_;
 
-    while (<$status_fh>) {
-        chomp;
-        push @lines, $_;
-        $version = $1 if /^Format-Version: ([0-9]+)/i;
+    {
+        no warnings 'utf8';
+        while (<$status_fh>) {
+            chomp;
+            push @lines, $_;
+            if ( not defined $version
+                and /^Format-Version: ([0-9]+)/i )
+            {
+                $version = $1;
+            }
+        }
     }
 
     # Version 3 is the latest format version currently supported.
