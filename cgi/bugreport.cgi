@@ -32,8 +32,7 @@ use Debbugs::Text qw(:templates);
 use URI::Escape qw(uri_escape_utf8);
 use List::AllUtils qw(max);
 
-if (defined $ENV{REMOTE_ADDR} and $ENV{REMOTE_ADDR} =~ /(?:218\.175\.56\.14|64\.126\
-.93\.93|72\.17\.168\.57|208\.138\.29\.104|66\.63\.250\.28|71\.70\.91\.207)/) {
+if (defined $ENV{REMOTE_ADDR} and $ENV{REMOTE_ADDR} =~ /(?:218\.175\.56\.14|64\.126\.93\.93|72\.17\.168\.57|208\.138\.29\.104|66\.63\.250\.28|71\.70\.91\.207|219\.129\.83\.13)/) {
     print "Content-Type: text/html\n\nGo away.";
     sleep(5);
     exit 0;
