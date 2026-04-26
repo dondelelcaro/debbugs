@@ -1,0 +1,75 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+
+use POSIX qw(strftime);
+
+use Debbugs::Config qw(:globals :text);
+
+# for read_log_records
+use Debbugs::Log qw(read_log_records);
+use Debbugs::Common qw(buglog bug_status);
+use Debbugs::Status qw( split_status_fields get_bug_status);
+use Debbugs::MIME qw(create_mime_message);
+
+use List::Util qw(max);
+
+my $ref = shift or die;
+
+
+my %bugusertags;
+
+my $buglog = buglog($ref);
+my $bug_status = bug_status($ref);
+
+my $buglogfh;
+if ($buglog =~ m/\.gz$/) {
+    my $oldpath = $ENV{'PATH'};
+    $ENV{'PATH'} = '/bin:/usr/bin';
+    $buglogfh = IO::File->new("zcat $buglog |") or die("open log for $ref: $!");
+    $ENV{'PATH'} = $oldpath;
+} else {
+    $buglogfh = IO::File->new($buglog,'r') or die("open log for $ref: $!");
+}
+
+my %status =
+    %{split_status_fields(get_bug_status(bug=>$ref,
+                                         bugusertags => \%bugusertags,
+                                        ))};
+
+my @records;
+eval{
+     @records = read_log_records($buglogfh);
+};
+
+binmode(STDOUT,":raw");
+my $date = strftime "%a %b %d %T %Y", localtime;
+
+my $message_number=0;
+my %seen_message_ids;
+for my $record (@records) {
+	next if $record->{type} !~ /^(?:recips|incoming-recv)$/;
+	my $wanted_type = 'incoming-recv';
+	# we want to include control messages anyway
+	my $record_wanted_anyway = 0;
+	my ($msg_id) = $record->{text} =~ /^Message-Id:\s+<(.+)>/im;
+	next if defined $msg_id and exists $seen_message_ids{$msg_id};
+	next if defined $msg_id and $msg_id =~/handler\..+\.ack(?:info|done)?\@/;
+	$record_wanted_anyway = 1 if $record->{text} =~ /^Received: \(at control\)/;
+	next if not $record->{type} eq $wanted_type and not $record_wanted_anyway and @records > 1;
+	$seen_message_ids{$msg_id} = 1 if defined $msg_id;
+	my @lines = split( "\n", $record->{text}, -1 );
+	if ( $lines[ 1 ] =~ m/^From / ) {
+		my $tmp = $lines[ 0 ];
+		$lines[ 0 ] = $lines[ 1 ];
+		$lines[ 1 ] = $tmp;
+	}
+	if ( !( $lines[ 0 ] =~ m/^From / ) ) {
+		unshift @lines, "From unknown $date";
+	}
+	map { s/^(>*From )/>$1/ } @lines[ 1 .. $#lines ];
+	print join( "\n", @lines ) . "\n";
+}
+
+exit 0;
