@@ -19,7 +19,11 @@ debbugs (2.6.5) unstable; urgency=medium
   [Bill Allombert]
   * debian/control: Update Standards-Version to 4.7.4
 
- -- Bill Allombert <ballombe@debian.org>  Sat, 25 Apr 2026 21:27:13 +0200
+  [Mike Gabriel]
+  * script/bug2mbox: retrieve mbox associated to bug number locally
+    (closes: #815198)
+
+ -- Bill Allombert <ballombe@debian.org>  Sun, 26 Apr 2026 10:39:08 +0200
 
 debbugs (2.6.4) unstable; urgency=medium
 
