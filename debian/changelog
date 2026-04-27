@@ -1,6 +1,6 @@
 debbugs (2.6.5) unstable; urgency=medium
 
-  [Colin Watson]
+  [ Colin Watson ]
   * scripts/process: import missing handle_escaped_commas
   * bugreport.tmpl: fix typo uselessmesages -> uselessmessages
   * pkgreport_options.tmpl: Add labels for pkgreport "Misc options"
@@ -16,14 +16,14 @@ debbugs (2.6.5) unstable; urgency=medium
   * Debbugs/Status.pm: Suppress malformed UTF-8 warnings when reading status
   * bugreport.tmpl: Fix link rel="canonical" (closes: #979319)
 
-  [Bill Allombert]
+  [ Bill Allombert ]
   * debian/control: Update Standards-Version to 4.7.4
 
-  [Mike Gabriel]
+  [ Mike Gabriel ]
   * script/bug2mbox: retrieve mbox associated to bug number locally
     (closes: #815198)
 
- -- Bill Allombert <ballombe@debian.org>  Sun, 26 Apr 2026 10:39:08 +0200
+ -- Bill Allombert <ballombe@debian.org>  Mon, 27 Apr 2026 22:05:07 +0200
 
 debbugs (2.6.4) unstable; urgency=medium
 
