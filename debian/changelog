@@ -304,7 +304,7 @@ debbugs (2.4.2~exp1) experimental; urgency=low
     Wirzenius
   * Don't RFC1522 escape ", ( and ). (Closes: #588859). Thanks to Glenn
     Morris
-  * Various changes to make debbugs-local work better (Closes: #585796) 
+  * Various changes to make debbugs-local work better (Closes: #585796)
     - Add libnet-server-fork-perl to Depends for debbugs-local
     - Sanitize env in -T code
 
@@ -366,7 +366,7 @@ debbugs (2.4.2~exp0) experimental; urgency=low
     configuration file which implements the rewrite rules that are
     currently used on bugs.debian.org. (closes: #222264)
   * Change spamscan.in to work with SA 3.0; This is an incompatible
-    change with SA 2.6, and as such, we now Suggests: spamassassin 
+    change with SA 2.6, and as such, we now Suggests: spamassassin
     (>=3.0) (closes: #290501)
   * Update MTA to exim4 (closes: #228597) and add instructions on using
     exim 4 (thanks to Marc Haber) (closes: #248335)
@@ -425,7 +425,7 @@ debbugs (2.4.2~exp0) experimental; urgency=low
   * Add links to Closes: text for closed bugs. (closes: #320986)
   * Add X-$gProject-PR-Source: line (closes: #219230)
   * Use the %cats data structure properly in pkgreport.cgi
-    (closes: #367514)  
+    (closes: #367514)
   * Document nnn.*@foobar addresses (closes: #188670)
   * Support cloned bugs in control blocking (closes: #337329)
   * Indicate which bugs are blocked after blocking (closes: #367496)
@@ -570,7 +570,7 @@ debbugs (2.4.2~exp0) experimental; urgency=low
   * Forcibly wrap format flowed and other messages (closes: #601242)
   * Add a link to ack_thanks in process (Closes: #863274)
 
-  
+
  -- Don Armstrong <don@debian.org>  Sun, 26 Jul 2009 05:48:16 -0700
 
 debbugs (2.4.1) unstable; urgency=low
@@ -778,7 +778,7 @@ debbugs (2.3-1) unstable; urgency=low
   * Added optional bug archiving for expired bugs
   * Added "fixed" to the default severities
   * Some scripts are now perl -w clean.
-  * Added "severity display" to "Summary of outstanding reports" 
+  * Added "severity display" to "Summary of outstanding reports"
     (db/ix/summary.html and db/ix/psummary.html)
   * Added a variable to allow for a uniformed <BODY> and starting text tag
   * Send both message that closes and original bug to bug submitter
