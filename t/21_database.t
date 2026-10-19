@@ -19,7 +19,11 @@ use DebbugsTest qw(:all);
 our $tests_run = 0;
 
 my %config = create_debbugs_configuration();
-
+if (%config) {
+    # Tests will be planned dynamically
+} else {
+    plan skip_all => 'Could not find debbugs configuration';
+}
 
 # create 4 bugs
 for (1..4) {
@@ -54,9 +58,11 @@ EOF
 my $pgsql = create_postgresql_database();
 update_postgresql_database($pgsql);
 
-BEGIN{
-    use_ok('Debbugs::DB')
-}
+# This module will try to initialize the database to test is is ok before
+# proceeding with the tests. Do not attempt to run it at compile-time in a BEGIN
+# block.
+use_ok('Debbugs::DB');
+
 $tests_run++;
 
 my $s;

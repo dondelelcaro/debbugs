@@ -13,6 +13,11 @@ use Data::Dumper;
 
 my %config =
     create_debbugs_configuration();
+if (%config) {
+    # Tests will be counted by done_testing()
+} else {
+    plan skip_all => 'Could not find debbugs configuration';
+}
 
 my $sendmail_dir = $config{sendmail_dir};
 my $spool_dir = $config{spool_dir};

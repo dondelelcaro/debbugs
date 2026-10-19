@@ -1,6 +1,6 @@
 # -*- mode: cperl;-*-
 
-use Test::More tests => 4;
+use Test::More;
 
 use warnings;
 use strict;
@@ -28,6 +28,11 @@ use Encode qw(decode encode);
 $SIG{CHLD} = sub { };
 my %config = create_debbugs_configuration( additional_debbugs_config =>
       qq(\$gCcAllMailsToAddr='cc_addr\@example.com';\n) );
+if (%config) {
+    plan tests => 4;
+} else {
+    plan skip_all => 'Could not find debbugs configuration';
+}
 
 my $sendmail_dir = $config{sendmail_dir};
 my $spool_dir    = $config{spool_dir};

@@ -25,6 +25,11 @@ use Data::Dumper;
 # HTTP::Server:::Simple defines a SIG{CHLD} handler that breaks system; undef it here.
 $SIG{CHLD} = sub {};
 my %config = create_debbugs_configuration();
+if (%config) {
+    # Tests will be counted by done_testing()
+} else {
+    plan skip_all => 'Could not find debbugs configuration';
+}
 
 
 my $sendmail_dir = $config{sendmail_dir};

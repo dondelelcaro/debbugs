@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 #
 
-use Test::More tests => 21;
+use Test::More;
 
 use warnings;
 use strict;
@@ -26,6 +26,11 @@ use Data::Dumper;
 # HTTP::Server:::Simple defines a SIG{CHLD} handler that breaks system; undef it here.
 $SIG{CHLD} = sub {};
 my %config = create_debbugs_configuration();
+if (%config) {
+    plan tests => 21;
+} else {
+    plan skip_all => 'Could not find debbugs configuration';
+}
 
 
 my $sendmail_dir = $config{sendmail_dir};

@@ -8,7 +8,6 @@ use Test::More;
 use lib qw(t/lib);
 use DebbugsTest qw(:all);
 
-plan tests => 3;
 
 my $port = 11344;
 
@@ -21,13 +20,17 @@ eval {
 if ($@) {
      BAIL_OUT($@);
  }
+if (%config) {
+    plan tests => 3;
+} else {
+    plan skip_all => 'Could not find debbugs configuration';
+}
 $ENV{DEBBUGS_CONFIG_FILE}  = "$config{config_dir}/debbugs_config";
 
 my $libravatar_cgi_handler = sub {
     my $fh;
     $ENV{DEBBUGS_CONFIG_FILE} = $config{config_dir}."/debbugs_config";
-    open($fh,'-|',-e './cgi/libravatar.cgi'? './cgi/libravatar.cgi'
-	 : '../cgi/libravatar.cgi');
+    open($fh,'-|', 'cgi/libravatar.cgi') or die "Can't run 'cgi/libravatar.cgi': $!";
     my $headers;
     my $status = 200;
     while (<$fh>) {

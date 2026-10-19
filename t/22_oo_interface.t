@@ -26,8 +26,14 @@ use DebbugsTest qw(:all);
 # This must happen before anything is used, otherwise Debbugs::Config will be
 # set to wrong values.
 my %config = create_debbugs_configuration();
+if (%config) {
+    # Tests will be planned dynamically
+} else {
+    plan skip_all => 'Could not find debbugs configuration';
+}
 
-my $tests = 0;
+my $tests = 0; # Initialize tests_run AFTER exit check
+
 use_ok('Debbugs::Bug');
 $tests++;
 use_ok('Debbugs::Collection::Bug');

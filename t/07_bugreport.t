@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 
 
-use Test::More tests => 22;
+use Test::More;
 
 use warnings;
 use strict;
@@ -25,6 +25,11 @@ use lib qw(t/lib);
 use DebbugsTest qw(:all);
 
 my %config = create_debbugs_configuration();
+if (%config) {
+    plan tests => 22;
+} else {
+    plan skip_all => 'Could not find debbugs configuration';
+}
 
 
 # create a bug
@@ -50,7 +55,7 @@ my $bugreport_cgi_handler = sub {
     # I do not understand why this is necessary.
     $ENV{DEBBUGS_CONFIG_FILE} = "$config{config_dir}/debbugs_config";
     my $fh;
-    open($fh,'-|',-e './cgi/version.cgi'? 'perl -Ilib -T ./cgi/bugreport.cgi' : 'perl -Ilib -T ../cgi/bugreport.cgi');
+    open($fh,'-|', 'perl', '-I', 'lib', '-T', 'cgi/bugreport.cgi') or die "Can't run 'cgi/bugreport.cgi': $!";
     my $headers;
     my $status = 200;
     while (<$fh>) {

@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 
 
-use Test::More tests => 4;
+use Test::More;
 
 use warnings;
 use strict;
@@ -18,6 +18,11 @@ use DebbugsTest qw(:configuration);
 use Cwd;
 
 my %config = create_debbugs_configuration();
+if (%config) {
+    plan tests => 4;
+} else {
+    plan skip_all => 'Could not find debbugs configuration';
+}
 
 
 # create a bug

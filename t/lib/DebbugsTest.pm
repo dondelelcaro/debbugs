@@ -28,12 +28,46 @@ use v5.10;
 
 use IO::File;
 use File::Temp qw(tempdir);
-use Cwd qw(getcwd);
-use Debbugs::MIME qw(create_mime_message);
+use Cwd qw(abs_path chdir);
+use File::Spec;
 use File::Basename qw(dirname basename);
+use lib dirname(__FILE__) . '/../..';
+use Debbugs::MIME qw(create_mime_message);
 use IPC::Open3;
 use IO::Handle;
 use Test::More;
+
+sub find_project_root {
+    my @paths_to_check;
+    # Start with the directory of this file, made absolute.
+    push @paths_to_check, abs_path(dirname(__FILE__));
+
+    # Add paths from @INC, made absolute.
+    for my $path (@INC) {
+        # Make relative paths absolute from the current working directory.
+        my $abs = eval { File::Spec->file_name_is_absolute($path) ? $path : abs_path($path) };
+        push @paths_to_check, $abs if defined $abs and -d $abs;
+    }
+
+    for my $path (@paths_to_check) {
+        my $current_path = $path;
+        # Walk up the directory tree from each path.
+        while (defined $current_path and length $current_path > 1 and -d $current_path) {
+            if (-e File::Spec->catfile($current_path, 'Makefile.PL') and
+                -d File::Spec->catfile($current_path, 'scripts')) {
+                return $current_path;
+            }
+            # Prevent infinite loop if dirname doesn't change
+            my $parent = dirname($current_path);
+            last if $parent eq $current_path;
+            $current_path = $parent;
+        }
+    }
+    return undef; # Failed to find it.
+}
+
+our $project_root = find_project_root();
+our $script_dir;
 use Test::PostgreSQL;
 
 use Params::Validate qw(validate_with :types);
@@ -81,19 +115,34 @@ sub create_debbugs_configuration {
 
 
      $ENV{DEBBUGS_CONFIG_FILE}  ="$config_dir/debbugs_config";
-     $ENV{PERL5LIB} = getcwd().'/lib/';
+
+     if (not defined $project_root) {
+         plan skip_all => 'Could not find project root; skipping tests that require source tree.';
+         return ();
+     }
+     chdir $project_root or die "Can't chdir to $project_root: $!";
+
+     my $sendmail_tester = "$project_root/t/sendmail_tester";
+     unless (-x $sendmail_tester) {
+         plan skip_all => "sendmail_tester not found or not executable; skipping mail handling tests.";
+         return ();
+     }
+
+     $ENV{PERL5LIB} = "$project_root/lib";
+     $script_dir = "$project_root/scripts";
+     my $gLibPath = "$project_root/scripts"; # Correct path for executables used by processall
+     my $gTemplateDir = "$project_root/templates";
+     my $gWebDir = "$project_root/html";
+     my $maint_indices_cmd = "$script_dir/maintainer-indices";
+
      $ENV{SENDMAIL_TESTDIR} = $sendmail_dir;
      eval {
-     my $sendmail_tester = getcwd().'/t/sendmail_tester';
-     unless (-x $sendmail_tester) {
-	  die q(t/sendmail_tester doesn't exist or isn't executable. You may be in the wrong directory.);
-     }
      my %files_to_create = ("$config_dir/debbugs_config" => <<END,
 \$gSendmail='$sendmail_tester';
 \$gSpoolDir='$spool_dir';
-\$gLibPath='@{[getcwd()]}/scripts';
-\$gTemplateDir='@{[getcwd()]}/templates';
-\$gWebDir='@{[getcwd()]}/html';
+\$gLibPath='$gLibPath';
+\$gTemplateDir='$gTemplateDir';
+\$gWebDir='$gWebDir';
 \$gWebHost='localhost';
 $param{additional_debbugs_config}
 1;
@@ -132,7 +181,7 @@ END
      system('mkdir','-p',"$spool_dir/incoming");
      system('mkdir','-p',"$spool_dir/lock");
      # generate the maintainers index files
-     system('scripts/maintainer-indices') == 0
+     system($maint_indices_cmd) == 0
 	 or die "Unable to generate maintainer index files";
      eval '
 END{
@@ -187,7 +236,7 @@ sub send_message{
      my $pipe_handler = $SIG{PIPE};
      $SIG{PIPE} = 'IGNORE';
      $SIG{CHLD} = 'DEFAULT';
-     my $pid = open3($wfd,$rfd,$rfd,'scripts/receive')
+     my $pid = open3($wfd,$rfd,$rfd,"$script_dir/receive")
 	  or die "Unable to start receive: $!";
      print {$wfd} create_mime_message($param{headers},
 				      $param{body},
@@ -220,7 +269,7 @@ sub send_message{
 }
 
 sub run_processall {
-    system('scripts/processall') == 0 or die "processall failed";
+    system("$script_dir/processall") == 0 or die "processall failed";
 }
 
 =item test_control_commands

@@ -1,7 +1,7 @@
 # -*- mode: cperl;-*-
 # $Id: 05_mail.t,v 1.1 2005/08/17 21:46:17 don Exp $
 
-use Test::More tests => 13;
+use Test::More;
 
 use warnings;
 use strict;
@@ -29,6 +29,11 @@ use Encode qw(decode encode decode_utf8 encode_utf8);
 # HTTP::Server:::Simple defines a SIG{CHLD} handler that breaks system; undef it here.
 $SIG{CHLD} = sub {};
 my %config = create_debbugs_configuration();
+if (%config) {
+    plan tests => 13;
+} else {
+    plan skip_all => 'Could not find debbugs configuration';
+}
 
 
 my $sendmail_dir = $config{sendmail_dir};
