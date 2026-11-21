@@ -1,7 +1,10 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -T
 
 use warnings;
 use strict;
+
+# Reset path since we are running in taint mode
+$ENV{PATH}="/usr/local/bin:/usr/bin:/bin";
 
 use CGI::Simple;
 
@@ -130,14 +133,19 @@ my @interesting_versions = map {makesourceversions($_,undef,keys %version_to_dis
 
 # We need to be able to rip out leaves which the versions that do not affect the current versions of unstable/testing
 my %sources;
-@sources{map {m{(.+)/}; $1} @{$cgi_var{found}}} = (1) x @{$cgi_var{found}};
-@sources{map {m{(.+)/}; $1} @{$cgi_var{fixed}}} = (1) x @{$cgi_var{fixed}};
-@sources{map {m{(.+)/}; $1} @interesting_versions} = (1) x @interesting_versions;
+@sources{ map { m{($config{package_name_re})/}; $1 } @{ $cgi_var{found} } } =
+  (1) x @{ $cgi_var{found} };
+@sources{ map { m{($config{package_name_re})/}; $1 } @{ $cgi_var{fixed} } } =
+  (1) x @{ $cgi_var{fixed} };
+@sources{ map { m{($config{package_name_re})/}; $1 } @interesting_versions } =
+  (1) x @interesting_versions;
 
 # at this point, we know enough to calculate the etag.
 
 my @versions_files;
-foreach my $source (keys %sources) {
+foreach my $source (sort keys %sources) {
+    next if $source !~ /^$config{package_name_re}$/;
+    next if $source =~ m{/};
     my $srchash = substr $source, 0, 1;
     next unless -e "$config{version_packages_dir}/$srchash/$source";
     push @versions_files, "$config{version_packages_dir}/$srchash/$source";

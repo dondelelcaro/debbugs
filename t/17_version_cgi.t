@@ -8,7 +8,7 @@ use Test::More;
 use lib qw(t/lib);
 use DebbugsTest qw(:all);
 
-plan tests => 3;
+plan tests => 4;
 
 my $port = 11344;
 
@@ -53,5 +53,12 @@ $req = HTTP::Request->new(GET => "http://localhost:$port/",['If-None-Match',$eta
 $res = $ua->request($req);
 ok($res->code() eq '304','If-None-Match set gives us 304 not modified');
 
+# Test that we can't expose other files
+$req = HTTP::Request->new(GET => "http://localhost:$port/?package=abc&found=../../sentinel_file/abc&dot=1&format=dot&ignore_boring=0&collapse=0&info=0");
+$res = $ua->request($req);
+# This is the CVE in version.cgi that potentially allows viewing modified
+# contents of arbitrary files; test that it no longer works.
+print STDERR $res->content;
+ok($res->content !~ /SUPERSECRETVALUE/);
 
 

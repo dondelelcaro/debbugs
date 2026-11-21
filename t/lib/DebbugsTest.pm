@@ -90,6 +90,7 @@ sub create_debbugs_configuration {
 \$gTemplateDir='@{[getcwd()]}/templates';
 \$gWebDir='@{[getcwd()]}/html';
 \$gWebHost='localhost';
+\$gVersionPackagesDir='$config_dir/versions/pkg';
 $param{additional_debbugs_config}
 1;
 END
@@ -102,6 +103,8 @@ foo main foo
 END
 			    "$config_dir/pseudo-packages.description" => '',
 			    "$config_dir/pseudo-packages.maintainers" => '',
+			    "$config_dir/versions/pkg/abcd" => '',
+			    "$config_dir/sentinel_file" => 'SUPERSECRETVALUE',
 			   );
      while (my ($file,$contents) = each %files_to_create) {
 	  system('mkdir','-p',dirname($file));
